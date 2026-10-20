@@ -22,7 +22,7 @@ import { landTab, stepTabs, type BuildTabKey } from "@/pages/site/build/buildMod
 
 import type { DesignPageProps } from "./KitPages";
 
-const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one"];
+const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one", "one-sitting", "runs-on-github"];
 
 export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const [params] = useSearchParams();
@@ -52,7 +52,10 @@ export default function BuildStepsDemo({ viewport }: DesignPageProps) {
       </BareSurface>
     );
   }
-  return <BuildView fit="content" {...props} hero={{ ...props.hero, title, outcome }} viewer={viewer} steps={steps} />;
+  // CA-04 P4: Download is a menu once the build has a session setup.
+  const hasSetup = steps.steps.some((entry) => entry.chat?.kind === "new" && entry.chat.setup.length > 0);
+  const actions = hasSetup ? { ...props.actions, onDownloadSetup: () => undefined } : props.actions;
+  return <BuildView fit="content" {...props} actions={actions} hero={{ ...props.hero, title, outcome }} viewer={viewer} steps={steps} />;
 }
 
 /** The Map board's crop: the frame, and the surface 6 in from every edge, padding 32 48, its two columns 32 apart. */

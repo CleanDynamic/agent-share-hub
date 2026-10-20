@@ -7,11 +7,13 @@
 
 import {
   goesInto,
+  groupOfStep,
   inputRefusal,
   madeFileNamesOf,
   madeFilesOf,
   RUNS_COUNT_MAX,
   RUNS_COUNT_MIN,
+  SCRIPT_DETAIL_MAX,
   stepTitle,
   UNTIL_DETAIL_MAX,
   WHEN_DETAIL_MAX,
@@ -28,7 +30,9 @@ export const DETAILS_ROWS = 6;
 /** The field a way of running needs, if it needs one. */
 export type RunsField =
   | { kind: "count"; label: string; min: number; max: number }
-  | { kind: "text"; label: string; max: number; placeholder: string };
+  | { kind: "text"; label: string; max: number; placeholder: string }
+  /** CA-04 P6: a code well, optional. */
+  | { kind: "code"; label: string; max: number; placeholder: string };
 
 export interface RunsChoice {
   how: RunsHow;
@@ -58,6 +62,9 @@ export const RUNS_CHOICES: readonly RunsChoice[] = [
   { how: "event", label: "When something happened", field: { kind: "text", label: "What happened", max: WHEN_DETAIL_MAX, placeholder: "a new supplier email" }, more: false },
   { how: "until", label: "Again until a condition was met", field: { kind: "text", label: "The condition", max: UNTIL_DETAIL_MAX, placeholder: "until the review has no changes" }, more: true },
   { how: "parallel", label: "Several at the same time", field: { kind: "count", label: "How many", min: RUNS_COUNT_MIN, max: RUNS_COUNT_MAX }, more: true },
+  /* CA-04 P6: chosen for you when the session has a goal. */
+  { how: "goal", label: "Until a goal was reached", field: null, more: true },
+  { how: "script", label: "From a script or GitHub", field: { kind: "code", label: "The command or workflow", max: SCRIPT_DETAIL_MAX, placeholder: 'claude -p "Fix the failing tests"' }, more: true },
 ];
 
 /** "3 at the same time", for the count beside the number field. */
@@ -126,10 +133,7 @@ function parentOf(steps: readonly Step[], id: string): Step | undefined {
 
 /** The session number a step belongs to, when it has one. */
 export function sessionNumberOf(step: Step, groups: readonly SessionGroup[]): number | null {
-  const group = step.sessionId
-    ? groups.find((candidate) => candidate.sessionId === step.sessionId)
-    : groups.find((candidate) => candidate.sessionId === null && candidate.stepNumbers.includes(step.number));
-  return group?.number ?? null;
+  return groupOfStep(groups, step)?.number ?? null;
 }
 
 /** An input a step has, as a row: "Output of 1" over "Homepage copy · Session 2". */

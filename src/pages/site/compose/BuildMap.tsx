@@ -45,7 +45,7 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CS
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
+import { groupKey, inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapBox, type MapPiece, type MapResult, type MapSuggestion, type MapWire } from "@/lib/build/mapLayout";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -217,6 +217,16 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
+  /* CA-04 P2: the tiles sent with a step are rows inside its box: kind and name, 12 `--text2`. */
+  const sentRows = box.sentWith?.length ? (
+    <span data-testid={`map-sent-with-${box.id}`} style={{ display: "flex", flexDirection: "column", flexShrink: 0, padding: "0 12px" }}>
+      {box.sentWith.map((tile) => (
+        <span key={tile.id} data-testid="map-sent-row" style={{ height: MAP_SIZES.sentRow, display: "block", ...geist(12, 400, t.text2), lineHeight: `${MAP_SIZES.sentRow}px`, ...ellipsis }}>
+          {[tile.kind, tile.name].filter(Boolean).join(" · ")}
+        </span>
+      ))}
+    </span>
+  ) : null;
   const inputRows = (
     <span style={{ display: "flex", flexDirection: "column", gap: MAP_SIZES.row - row, paddingTop: 1, flexShrink: 0 }}>
       {box.inputs.map((input, at) => (
@@ -317,6 +327,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
             <>
               {/* The reader's box says its inputs in its name alone, as the board draws it. */}
               {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
+              {sentRows}
               {box.kind === "step" && !manual ? (
                 <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`}</span>
               ) : null}
@@ -349,6 +360,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               >
                 {box.text}
               </span>
+              {sentRows}
               <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "block", lineHeight: "20px", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums", ...ellipsis }}>
                 {box.kind === "step" && !manual ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
               </span>
@@ -692,7 +704,7 @@ export function BuildMap(props: BuildMapProps) {
   const count: CSSProperties = { fontVariantNumeric: "tabular-nums" };
   const Box = RefinedBoxView;
   /** The session each lane is led by the real mark of (its tool's, else its model's), from the groups `layoutMap` made the first lanes from. */
-  const laneMark = new Map(groups.map((group) => [group.sessionId ?? `typed-${group.number}`, group]));
+  const laneMark = new Map(groups.map((group) => [groupKey(group), group]));
 
   return (
     <div onKeyDown={onKeyDown} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>

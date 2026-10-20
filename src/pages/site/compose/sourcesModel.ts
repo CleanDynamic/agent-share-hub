@@ -9,11 +9,12 @@
    is in the build, and "added by you" otherwise. A file a step makes is noted
    "made in step {n}". */
 
-import { FILE_TYPE, madeByOf, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
+import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
-import { toolLabel } from "@/lib/build/making";
+import { goalLine, toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
+import { isSetupPayload } from "@/lib/build/setup";
 import type { BuildNode } from "@/lib/build/types";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
@@ -28,7 +29,7 @@ export interface SourcePrompt {
 }
 
 export interface SourceSession {
-  /** The import session's id, or "typed-{n}" for prompts written here. */
+  /** The import session's id, `typed-<uuid>` for a session made here, or `typed-legacy-{n}` for an old build's typed prompts. */
   key: string;
   number: number;
   tool: string;
@@ -37,6 +38,12 @@ export interface SourceSession {
   prompts: SourcePrompt[];
   /** TF-13: set for a session whose client names no tool. `value` is the tool the maker gave it, or null. */
   pickTool?: { value: string | null };
+  /** CA-04 P4: how many items its setup holds; absent for none. */
+  setupCount?: number;
+  /** CA-04 P6: "Worked until …", and whether the goal was reached; absent when it had none. */
+  goal?: { line: string; reached: boolean };
+  /** CA-04 P6: "Runs when a pull request is opened", from a workflow in its setup; absent when it has none. */
+  runsWhen?: string;
 }
 
 export interface SourceFile {
@@ -82,24 +89,30 @@ export function sourceSessions(
   steps: readonly Step[],
   inBuild: readonly SessionSummary[] = [],
   sessionTools: Readonly<Record<string, string>> = {},
+  setupCounts: Readonly<Record<string, number>> = {},
+  runsWhen: Readonly<Record<string, string>> = {},
 ): SourceSession[] {
   const clients = new Map(inBuild.map((session) => [session.id, session.client]));
   const pickTool = (id: string): SourceSession["pickTool"] =>
     toolLabel(clients.get(id)) ? undefined : { value: sessionTools[id] ?? null };
   const prompts = flatten(steps).filter((step) => step.kind === "prompt");
-  const grouped = groups.map((group) => {
-    const mine = group.sessionId
-      ? prompts.filter((step) => step.sessionId === group.sessionId)
-      : prompts.filter((step) => group.stepNumbers.includes(step.number));
+  // CA-04 P1: an old build's implicit group (its steps before any session) has no row.
+  const grouped = shownGroups(groups).map((group) => {
+    const key = groupKey(group);
+    const kind = groupKind(group);
+    const mine = prompts.filter((step) => group.stepNumbers.includes(step.number) || (kind === "import" && step.sessionId === group.sessionId));
     // `sessionGroups` has already turned the client and the model into their labels.
     const model = group.model;
-    const when = group.sessionId ? shortDate(group.startedAt) : TYPED_HERE;
+    const when = kind === "legacy" ? TYPED_HERE : shortDate(group.startedAt);
     return {
-      key: group.sessionId ?? `typed-${group.number}`,
+      key,
       number: group.number,
-      tool: group.tool ?? "Unknown tool",
+      tool: group.tool ?? (kind === "typed" ? "Typed here" : "Unknown tool"),
       detail: [model, when].filter(Boolean).join(" · "),
-      ...(group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
+      ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
+      ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
+      ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
+      ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
       prompts: mine.map((step) => ({
         id: step.id,
         number: step.number,
@@ -108,12 +121,12 @@ export function sourceSessions(
       })),
     };
   });
-  const seen = new Set(groups.map((group) => group.sessionId));
+  const seen = new Set(groups.map(groupKey));
   const waiting = inBuild
     .filter((session) => !seen.has(session.id))
     .map((session, at): SourceSession => ({
       key: session.id,
-      number: groups.length + at + 1,
+      number: grouped.length + at + 1,
       tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : "Unknown tool"),
       detail: [session.modelName, shortDate(session.createdAt)].filter(Boolean).join(" · "),
       pickTool: pickTool(session.id),
@@ -126,7 +139,8 @@ export function sourceSessions(
 export function sourceFiles(tree: readonly BuildNode[], groups: readonly SessionGroup[], steps: readonly Step[] = []): SourceFile[] {
   const numbers = new Map(flatten(steps).map((step) => [step.id, step.number]));
   return tree
-    .filter((node) => node.type === FILE_TYPE && node.parent_id === null)
+    // CA-04 P4: a session's setup is not a file of the build.
+    .filter((node) => node.type === FILE_TYPE && node.parent_id === null && !isSetupPayload(node.payload))
     .map((node) => {
       const payload = (node.payload ?? {}) as Record<string, unknown>;
       const name = typeof payload.title === "string" && payload.title.trim() ? payload.title : "Untitled file";

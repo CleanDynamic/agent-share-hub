@@ -17,10 +17,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { addMadeWithTools } from "@/lib/build/making";
+import { addMadeWithTools, newSessionKey, setSessionMeta, type SessionMeta } from "@/lib/build/making";
 import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
-import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
+import { composeBuildQueryKey, SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import { deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
 import {
   addSessionPrompt,
@@ -59,7 +59,14 @@ import {
   setManualFields,
   setAgentSetup,
   setRuns,
+  setStepSession,
   setStepTitle,
+  nestStep,
+  NEST_COPY,
+  dismissSentWith,
+  setToolConnection,
+  type ToolConnection,
+  type ToolRunsAt,
   toolNodeFor,
   usesOf,
   type AgentModel,
@@ -69,6 +76,7 @@ import {
   type Use,
 } from "@/lib/build/graph";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
+import type { CodeSuggestion } from "@/lib/build/sentWithSuggest";
 
 import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
 import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
@@ -129,6 +137,8 @@ export interface AgentInput extends AgentSetupInput {
   kind: "agent" | "team";
   name: string | null;
   instructions?: string;
+  /** CA-04 P1: the session it was added to. */
+  session?: string | null;
 }
 
 export interface ComposePrompts {
@@ -148,7 +158,7 @@ export interface ComposePrompts {
   /** Write every pending edit now; resolves once the queue is empty. */
   flush: () => Promise<void>;
   /** UI-P65: add a prompt the maker wrote, now, with the tool and model it names. Resolves true once it is saved. */
-  addNow: (input: { text: string; tool: string | null; model: string | null }) => Promise<boolean>;
+  addNow: (input: { text: string; tool: string | null; model: string | null; session?: string | null }) => Promise<boolean>;
   /** UI-P65: name a step ("" puts its default name back). */
   rename: (id: string, title: string) => void;
   /** UI-P65: take a suggested input. */
@@ -182,15 +192,34 @@ export interface ComposePrompts {
   /** UI-P69: an agent's instructions (its system prompt). */
   setInstructions: (agentId: string, text: string) => void;
   /** UI-P70: add a manual step, with its picture if given, straight after step `afterId` (the end when null). Resolves its id, or null if it failed. */
-  addManual: (input: { tool: string; text: string; file: File | null; afterId: string | null }) => Promise<string | null>;
+  addManual: (input: { tool: string; text: string; file: File | null; afterId: string | null; session?: string | null }) => Promise<string | null>;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
   setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
   setManualPicture: (id: string, file: File) => Promise<boolean>;
   /** CA-02 P7: add code steps, one for each piece, in order, written with the tool and model given. Resolves the first one's id, or null if none was added. */
-  addCodeSteps: (input: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) => Promise<string | null>;
+  addCodeSteps: (input: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null; session?: string | null }) => Promise<string | null>;
   /** CA-03 P5: add a check, using the step it tested. Resolves its id, or null if it failed. */
   addCheckStep: (input: CheckInput) => Promise<string | null>;
+  /**
+   * CA-04 P1: save an old build's run of typed prompts (read as `typed-legacy-<n>`) as a session made here: its
+   * entry in `making.sessions_meta`, then `payload.session` on each of its steps. Resolves the new key, or null if it
+   * failed. Only ever called when the maker changes that session.
+   */
+  claimSession: (stepIds: readonly string[], meta: SessionMeta) => Promise<string | null>;
+  /** CA-04 P1: put a top-level step into a session (null: none). */
+  setSessionOf: (id: string, session: string | null) => void;
+  /**
+   * CA-04 P2: put a tile inside a step, sent with it, at `index` among what it holds (`parentId`), or make it its own
+   * step at `index` among the top-level steps (null). Resolves true once it is written; a refusal is said as written.
+   */
+  nest: (id: string, parentId: string | null, index: number) => Promise<boolean>;
+  /** CA-04 P2: Accept on a block sent with an imported prompt: a code tile inside it. */
+  keepSentWith: (suggestion: CodeSuggestion) => void;
+  /** CA-04 P2: Ignore on one: it is not offered again. */
+  ignoreSentWith: (stepId: string, key: string) => void;
+  /** CA-04 P5: how a tool was connected, and where an MCP server ran. */
+  setConnection: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
 }
 
 export function useComposePrompts({
@@ -480,11 +509,11 @@ export function useComposePrompts({
     }
   };
 
-  const addNow = ({ text, tool, model }: { text: string; tool: string | null; model: string | null }) =>
+  const addNow = ({ text, tool, model, session }: { text: string; tool: string | null; model: string | null; session?: string | null }) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
-        const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model });
+        const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model, session });
         nodes.record(created.id, created);
         noteTool(build, tool);
         return true;
@@ -582,7 +611,7 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, session }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
@@ -594,6 +623,7 @@ export function useComposePrompts({
           ...(models && models.length > 1 ? { models } : null),
           ...(toolRefs.length ? { toolRefs } : null),
           ...(memory?.trim() ? { memory } : null),
+          ...(session ? { session } : null),
         };
         if (kind === "agent") {
           const created = await addAgent(build, nodes.current(), { name, model, ...setup });
@@ -650,14 +680,14 @@ export function useComposePrompts({
   const setInstructionsOf = (agentId: string, text: string) =>
     void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
 
-  const addManual = ({ tool, text, file, afterId }: { tool: string; text: string; file: File | null; afterId: string | null }) =>
+  const addManual = ({ tool, text, file, afterId, session }: { tool: string; text: string; file: File | null; afterId: string | null; session?: string | null }) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         let mediaId: string | undefined;
         if (file) mediaId = (await uploadMedia({ buildId: build, file })).id;
         // `addManualStep` places it last; then it moves straight after the selected step.
-        const created = await addManualStep(build, nodes.current(), { tool, text, media_id: mediaId });
+        const created = await addManualStep(build, nodes.current(), { tool, text, media_id: mediaId, session });
         nodes.record(created.id, created);
         noteTool(build, tool);
         if (afterId) {
@@ -673,13 +703,13 @@ export function useComposePrompts({
         return null;
       });
 
-  const addCodeSteps = ({ steps, tool, model }: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) =>
+  const addCodeSteps = ({ steps, tool, model, session }: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null; session?: string | null }) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         let first: string | null = null;
         for (const step of steps) {
-          const created = await addCode(build, nodes.current(), { ...step, tool, model });
+          const created = await addCode(build, nodes.current(), { ...step, tool, model, session });
           nodes.record(created.id, created);
           first ??= created.id;
         }
@@ -705,6 +735,59 @@ export function useComposePrompts({
         failed(said ?? "Couldn't add that check. Try again.")(cause);
         return null;
       });
+
+  const claimSession = (stepIds: readonly string[], meta: SessionMeta) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const key = newSessionKey();
+        await setSessionMeta(build, key, meta);
+        for (const id of stepIds) {
+          const node = findTop(nodes.current(), id);
+          if (node) nodes.record(node.id, await setStepSession(rowOf(node), key));
+        }
+        await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build) });
+        return key;
+      })
+      .catch((cause) => {
+        failed("Couldn't save that session. Try again.")(cause);
+        return null;
+      });
+
+  const setSessionOf = (id: string, session: string | null) =>
+    void writeStep(id, "Couldn't move that to the session. Try again.", (node) => setStepSession(node, session));
+
+  const nest = (id: string, parentId: string | null, index: number) =>
+    nodes
+      .run(async () => {
+        const build = latest.current.buildId;
+        if (!build) return false;
+        for (const move of await nestStep(build, nodes.current(), id, parentId, index)) {
+          const node = findNode(nodes.current(), move.id);
+          if (node) nodes.record(node.id, { ...rowOf(node), parent_id: move.parent_id, position: move.position });
+        }
+        return true;
+      })
+      .catch((cause) => {
+        // A refusal is one of the guards' own sentences; anything else is said once.
+        const said = cause instanceof Error ? Object.values(NEST_COPY).find((line) => cause.message.includes(line)) : undefined;
+        failed(said ?? "Couldn't move that. Try again.")(cause);
+        return false;
+      });
+
+  const keepSentWith = ({ stepId, source, language, filename }: CodeSuggestion) =>
+    void nodes
+      .run(async () => {
+        const build = latest.current.buildId;
+        if (!build) return;
+        const created = await addCode(build, nodes.current(), { source, language, filename, parentId: stepId });
+        nodes.record(created.id, created);
+      })
+      .catch(failed("Couldn't keep that inside. Try again."));
+  const ignoreSentWith = (stepId: string, key: string) => void writeStep(stepId, "Couldn't ignore that. Try again.", (node) => dismissSentWith(node, key));
+
+  const setConnection = (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) =>
+    void writeStep(id, "Couldn't save how it was connected. Try again.", (node) => setToolConnection(node, connection, runsAt));
 
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
     void writeStep(id, "Couldn't save that. Try again.", async (node) => {
@@ -739,5 +822,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

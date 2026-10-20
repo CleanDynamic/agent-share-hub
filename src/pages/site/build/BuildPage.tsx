@@ -94,7 +94,10 @@ import {
 } from "@/lib/build";
 import { BUILD_PAGE_STEPS_ENABLED } from "@/lib/build/flags";
 import { toMarkdown, toPortable } from "@/lib/build/portable";
-import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
+import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia, type ReaderSetupItem } from "@/lib/build/readerSteps";
+import { setupFolder } from "@/lib/build/setupFolder";
+import { toast } from "sonner";
+import { writeZip } from "@/lib/build/zip";
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
 import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
 import { isBuildHidden } from "@/lib/moderation";
@@ -197,6 +200,28 @@ function downloadPortable(record: BuildRecord) {
   anchor.click();
   anchor.remove();
   if (objectUrl) URL.revokeObjectURL(objectUrl);
+}
+
+/** CA-04 P4: every session's setup, as the folder its tool expects, in one ZIP. A file that cannot be fetched is left out and said. */
+async function downloadSetup(slug: string, items: readonly ReaderSetupItem[]) {
+  const load = async (url: string) => {
+    const response = await fetch(url);
+    return response.ok ? new Uint8Array(await response.arrayBuffer()) : null;
+  };
+  const { entries, missing } = await setupFolder(items, load);
+  const zip = writeZip(entries);
+  const blob = new Blob([zip as unknown as BlobPart], { type: "application/zip" });
+  const objectUrl = typeof URL.createObjectURL === "function" ? URL.createObjectURL(blob) : null;
+  if (!objectUrl) return;
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = `${slug}-setup.zip`;
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+  if (missing.length > 0) toast(`Left out ${missing.join(", ")}: ${missing.length === 1 ? "it" : "they"} couldn't be fetched.`);
 }
 
 async function copyText(text: string | null | undefined): Promise<boolean> {
@@ -523,6 +548,11 @@ export function BuildPage() {
     };
   }, [build, tree, media.data]);
   const stepsOn = reader !== null;
+  /* CA-04 P4: every session's setup, from the chats that start them. */
+  const setupItems = useMemo(
+    () => (reader?.steps ?? []).flatMap((entry) => (entry.chat?.kind === "new" ? entry.chat.setup : [])),
+    [reader],
+  );
   const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
 
   /* #node-<id> in the address selects that part, as the old page scrolled to it. With the steps drawn it
@@ -1008,6 +1038,7 @@ export function BuildPage() {
                 : toMarkdown(toPortable(record)),
             ),
           onDownload: () => downloadPortable(record),
+          ...(setupItems.length > 0 ? { onDownloadSetup: () => void downloadSetup(build.slug, setupItems) } : null),
           onRebuild: () => navigate(isLoggedIn ? `/rebuild/${build.slug}` : loginBack(`/rebuild/${build.slug}`)),
           lineageTo: `/b2/${build.slug}/lineage`,
         }}

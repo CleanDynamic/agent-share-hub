@@ -8,17 +8,23 @@
 import { promptNodes, promptOrigin } from "@/lib/build/composePrompts";
 import {
   FILE_TYPE,
+  groupKey,
+  groupKind,
+  groupOfStep,
   madeByOf,
   madeFilesOf,
   RESULT_TYPE,
   stepTitle,
   TOOL_TYPE,
+  toolConnectionOf,
+  toolsUsedOf,
   type SessionGroup,
   type Step,
 } from "@/lib/build/graph";
 import type { SessionPrompt } from "@/lib/build/sessions";
 import type { NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
+import { toolFor } from "@/lib/tools/registry";
 
 import {
   fileSize,
@@ -35,6 +41,7 @@ import {
   type NamedPiece,
 } from "./detailsModel";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
+import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/lib/build/setup";
 import type { AgentView, CheckView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
@@ -58,7 +65,21 @@ export interface ViewContext {
   media: (mediaId: string) => MediaFacts | undefined;
 }
 
-const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
+/** Every step, and (CA-04 P2) every tile sent with one, parents first. */
+const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children), ...flatten(step.sentWith ?? [])]);
+
+/** CA-04 P2: what a tile inside another says in its eyebrow. */
+const insideOf = (step: Step) => (step.inside ? { sentWithLine: `Sent with ${step.inside.label}` } : null);
+
+/** A node at any depth. */
+const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
+  for (const node of tree) {
+    if (node.id === id) return node;
+    const inner = node.children?.length ? findNode(node.children, id) : null;
+    if (inner) return inner;
+  }
+  return null;
+};
 
 const payloadOf = (node: Pick<NodeTree, "payload">): Record<string, unknown> =>
   node.payload && typeof node.payload === "object" && !Array.isArray(node.payload) ? (node.payload as Record<string, unknown>) : {};
@@ -71,7 +92,8 @@ export function pieces(tree: readonly NodeTree[], files: readonly SourceFile[]):
   const fileRows: NamedPiece[] = [];
   const toolRows: NamedPiece[] = [];
   for (const node of tree) {
-    if (node.parent_id !== null) continue;
+    // CA-04 P4: a session's setup is not a file or a tool a step uses.
+    if (node.parent_id !== null || isSetupPayload(node.payload)) continue;
     const payload = payloadOf(node);
     if (node.type === FILE_TYPE) fileRows.push({ id: node.id, name: text(payload.title) || "Untitled file", note: `File · ${notes.get(node.id) ?? "added by you"}` });
     if (node.type === TOOL_TYPE) toolRows.push({ id: node.id, name: text(payload.service) || "Untitled tool", note: "Tool" });
@@ -83,23 +105,24 @@ export function pieces(tree: readonly NodeTree[], files: readonly SourceFile[]):
 
 function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): PromptView {
   const instructions = step.id.endsWith(":instructions");
-  const group = step.sessionId
-    ? ctx.groups.find((candidate) => candidate.sessionId === step.sessionId)
-    : ctx.groups.find((candidate) => candidate.sessionId === null && candidate.stepNumbers.includes(step.number));
+  const group = groupOfStep(ctx.groups, step);
   const number = sessionNumberOf(step, ctx.groups);
   const tool = group?.tool ?? step.tool;
   const typed = !step.sessionId && !instructions;
+  // CA-04 P1: a prompt typed into a session (one made here, or an imported one) reads as that session's.
+  const inSession = Boolean(group) && groupKind(group as SessionGroup) !== "legacy";
   const model = step.model ? modelLabel(step.model) : null;
-  const when = group?.sessionId ? shortDate(group.startedAt) : "";
+  const when = inSession && group ? shortDate(group.startedAt) : "";
   const place = promptPlace(step, ctx.steps);
   return {
     kind: "prompt",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
     defaultTitle: step.defaultTitle,
     editable: !instructions,
-    sessionLine: instructions ? "Instructions" : typed ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
+    sessionLine: instructions ? "Instructions" : typed && !inSession ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
     detailLine: instructions ? "" : [model, when, place].filter(Boolean).join(" · "),
     typed,
     model,
@@ -124,6 +147,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   const facts = step.mediaId ? ctx.media(step.mediaId) : undefined;
   return {
     kind: "manual",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
@@ -141,6 +165,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
 function codeView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): CodeView {
   return {
     kind: "code",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
@@ -162,6 +187,7 @@ function codeView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>):
 function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): CheckView {
   return {
     kind: "check",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
@@ -176,6 +202,7 @@ function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {
   return {
     kind: step.kind === "team" ? "team" : "agent",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     name: step.title,
@@ -186,6 +213,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
     inside: insideCounts(step),
+    ...(groupOfStep(ctx.groups, step)?.goal ? { sessionGoal: true } : null),
     instructions: step.kind === "agent" ? step.text : "",
     parent: parentLine(step.id, ctx.steps),
     // CA-02 P5: what it ran in, its models and its tools, as the setup controls hold them.
@@ -207,7 +235,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
 }
 
 function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
-  const group = ctx.groups.find((candidate) => (candidate.sessionId ?? `typed-${candidate.number}`) === source.key);
+  const group = ctx.groups.find((candidate) => groupKey(candidate) === source.key);
   const real = !source.key.startsWith("typed-");
   const mine = flatten(ctx.steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions") && (real ? step.sessionId === source.key : source.prompts.some((p) => p.id === step.id)));
 
@@ -240,11 +268,19 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     tool: group?.tool ?? source.tool,
     ...(source.pickTool ? { pickTool: source.pickTool } : null),
     model: model || "",
-    date: group ? (group.sessionId ? shortDate(group.startedAt) : "") : rest.join(" · "),
+    date: group ? (groupKind(group) !== "legacy" ? shortDate(group.startedAt) : "") : rest.join(" · "),
     inBuild: checklist.filter((row) => row.stepId !== null).length,
     total,
     status,
     checklist,
+    // CA-04 P6: what it worked until.
+    ...(group?.goal ? { goal: group.goal } : null),
+    // CA-04 P4: its setup, in the order it was added.
+    setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared })),
+    // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.
+    ...(group && !real
+      ? { editable: { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: groupKind(group) === "typed" ? (group.startedAt ?? "") : "" } }
+      : null),
   };
 }
 
@@ -275,6 +311,9 @@ function toolView(node: NodeTree, ctx: ViewContext): ToolView {
     service: text(payload.service) || "Untitled tool",
     scopes: text(payload.scopes),
     usedBy: usedBy(ctx.steps, { kind: "tool", node_id: node.id }),
+    // CA-04 P5: how it was connected, and the tools it was seen calling.
+    ...toolConnectionOf(node),
+    toolsUsed: toolsUsedOf(node),
   };
 }
 
@@ -291,13 +330,49 @@ function resultView(node: NodeTree, ctx: ViewContext): ResultView {
   };
 }
 
+/** CA-04 P4: a setup item: its file, its server as a tool, or its rule as the code it runs, named in its eyebrow. */
+function setupView(node: NodeTree, ctx: ViewContext): DetailsView | null {
+  const [item] = setupItemsOf([node]);
+  if (!item) return null;
+  const eyebrow = `Setup · ${SETUP_KIND_LABEL[item.kind]}`;
+  if (node.type === FILE_TYPE) return { ...fileView(node, ctx), name: item.name === "Skill" ? fileView(node, ctx).name : item.name, sentWithLine: eyebrow };
+  if (node.type === TOOL_TYPE) return toolView(node, ctx);
+  if (!item.rule) return null;
+  return {
+    kind: "code",
+    id: node.id,
+    number: "",
+    title: node.title,
+    defaultTitle: item.rule.when || "Rule",
+    sentWithLine: [eyebrow, item.rule.when, item.rule.filter].filter(Boolean).join(" · "),
+    language: "bash",
+    filename: null,
+    source: item.rule.command,
+    lines: lineCount(item.rule.command),
+    tool: null,
+    model: null,
+    uses: [],
+    options: [],
+    goesInto: [],
+    makes: [],
+  };
+}
+
 /** The view of what is selected, or null when nothing is, or what was selected is gone. */
 export function resolveView(ctx: ViewContext): DetailsView | null {
   const id = ctx.selectedId;
   if (!id) return null;
   const all = pieces(ctx.tree, ctx.sourceFiles as SourceFile[]);
 
+  // CA-04 P4: a setup item opens as a file, a tool or its rule does.
+  const setupNode = ctx.tree.find((candidate) => candidate.id === id && candidate.parent_id === null && setupOfNode(candidate));
+  if (setupNode) return setupView(setupNode, ctx);
+
   const step = flatten(ctx.steps).find((candidate) => candidate.id === id);
+  if (step?.kind === "file") {
+    const node = findNode(ctx.tree, id);
+    return node ? { ...fileView(node, ctx), ...insideOf(step) } : null;
+  }
   if (step) {
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);

@@ -47,6 +47,7 @@ import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
+import { copyTogether } from "@/lib/build/copyTogether";
 import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
 
@@ -87,8 +88,8 @@ export function teamText(entry: ReaderStep): string {
   return parts.join("\n\n");
 }
 
-/** The words a copy puts on the clipboard for a step. */
-export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.text);
+/** The words a copy puts on the clipboard for a step: CA-04 P2, a step and what is sent with it, together. */
+export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.sentWith?.length ? copyTogether(entry.step) : entry.step.text);
 
 export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
@@ -356,13 +357,14 @@ function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone
 }
 
 /** An underlined text button: "Read all of it", "See the team in Map". */
-function ReadAll({ onRead, label = "Read all of it" }: { onRead: () => void; label?: string }) {
+function ReadAll({ onRead, label = "Read all of it", expanded }: { onRead: () => void; label?: string; expanded?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
       type="button"
       data-hit=""
       onClick={onRead}
+      aria-expanded={expanded}
       {...handlers}
       style={{
         ...bareButton,
@@ -532,6 +534,52 @@ function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; i
   );
 }
 
+/* ── tiles sent with a step (CA-04 P2) ── */
+
+/** A tile's kind as its row says it. */
+const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team" };
+
+/** What is sent with a step, indented 36 under its text as the paste-ins are, each able to hold more, indented again. */
+function SentWith({ entries, ctx }: { entries: readonly ReaderStep[]; ctx: Ctx }) {
+  if (entries.length === 0) return null;
+  return (
+    <div data-testid="sent-with" style={{ marginLeft: INDENT, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      {entries.map((entry) => (
+        <SentWithTile key={entry.step.id} entry={entry} ctx={ctx} />
+      ))}
+    </div>
+  );
+}
+
+function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
+  const { step } = entry;
+  const file = entry.file ?? null;
+  const name = step.kind === "file" || step.kind === "code" ? (step.filename ?? step.title ?? step.language ?? null) : step.title;
+  return (
+    <div id={stepDomId(step.id)} data-testid="sent-with-tile" data-kind={step.kind} style={{ ...tileStyle, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <span style={{ ...text(12, 400, t.label), padding: "4px 0" }}>{`Sent with ${step.inside?.label ?? "this step"}`}</span>
+      {step.kind === "file" ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
+          <span style={text(12.5, 400, t.text2)}>attach</span>
+          <Chip>{file?.name ?? name ?? "a file"}</Chip>
+          <span style={{ flexGrow: 1 }} />
+          {file ? <AttachDownload file={file} /> : null}
+        </div>
+      ) : (
+        <>
+          <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{[TILE_KIND[step.kind] ?? step.kind, name].filter(Boolean).join(" · ")}</span>
+          {step.kind === "code" ? (
+            <pre style={{ margin: 0, ...mono(12), color: t.text, whiteSpace: "pre", overflowX: "auto" }}>{step.text}</pre>
+          ) : step.text ? (
+            <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
+          ) : null}
+        </>
+      )}
+      <SentWith entries={entry.sentWith} ctx={ctx} />
+    </div>
+  );
+}
+
 /* ── the heads ── */
 
 /** A group's head: the tool's mark (or a 6px square where there is none), the heading, its meta and a hairline. */
@@ -552,6 +600,62 @@ function Head({ children, detail, tool, model }: { children: ReactNode; detail?:
       ) : null}
       <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
     </div>
+  );
+}
+
+/* ── a session's setup (CA-04 P4) ── */
+
+/** How far a session's setup sits in under its head. */
+const SETUP_INDENT = 28;
+
+/** A chat's head, with Setup at its end when the session has one: closed until asked, then its rows under the head. */
+function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }> }) {
+  const [open, setOpen] = useState(false);
+  const setup = chat.setup;
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <div style={{ flexGrow: 1, minWidth: 0 }}>
+          <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
+            {chat.headline}
+          </Head>
+        </div>
+        {setup.length > 0 ? (
+          <span style={{ paddingTop: 8, flexShrink: 0 }} data-testid="setup-toggle">
+            <ReadAll label="Setup" onRead={() => setOpen((value) => !value)} expanded={open} />
+          </span>
+        ) : null}
+      </div>
+      {/* CA-04 P6: what the session worked until, and when it runs, one quiet line each under its head. */}
+      {chat.goal ? (
+        <DotLine testId="goal-line" dot={chat.goal.reached ? t.evidence : t.label}>
+          {chat.goal.line}
+        </DotLine>
+      ) : null}
+      {chat.runsWhen ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
+      {open ? (
+        <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
+          {setup.map((item) => (
+            <div key={item.id} data-testid="setup-row" data-not-shared={item.notShared ? "true" : undefined} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0, ...(item.notShared ? { borderBottom: `1px dashed ${t.line}` } : null) }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+                  <span style={text(12, 400, t.label)}>{item.notShared ? `${item.kindLabel} · not shared` : item.kindLabel}</span>
+                  <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
+                  {item.description ? <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
+                </div>
+                {item.download ? <DownloadButton href={item.download} name={item.name} /> : null}
+              </div>
+              {item.files.map((file) => (
+                <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12, minWidth: 0 }}>
+                  <span style={{ ...text(12, 400, t.text2), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{file.name}</span>
+                  {file.download ? <DownloadButton href={file.download} name={file.name} /> : null}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -601,6 +705,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <Title entry={entry} right={null} />
         <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{CHECK_COPY.eyebrow}</div>
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );
   }
@@ -625,6 +730,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         </div>
         <p style={{ ...text(13.5, 400, t.text), margin: 0, paddingLeft: INDENT, lineHeight: "22px" }}>{entry.manual.line}</p>
         <SaveLines files={entry.makes} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
         {entry.manual.mediaId ? (
           <div style={{ paddingLeft: INDENT }}>
             <MediaFigure reference={entry.manual.mediaId} resolveMedia={view.resolveMedia} width={480} alt={entry.manual.line} />
@@ -636,9 +742,10 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
 
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ringed)}>
-      <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />} />
+      <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
       <SaveLines files={entry.makes} />
+      <SentWith entries={entry.sentWith} ctx={ctx} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />
       {entry.chat?.kind === "same" ? <p style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>{entry.chat.text}</p> : null}
     </article>
@@ -804,7 +911,8 @@ function groupsOf(steps: readonly ReaderStep[]): Group[] {
     if (chat) {
       groups.push({
         key: `chat:${entry.step.id}`,
-        head: (
+        // CA-04 P4: Setup at the head's end, when the session has one.
+        head: chat.setup?.length || chat.goal || chat.runsWhen ? <ChatHead chat={chat} /> : (
           <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
             {chat.headline}
           </Head>
@@ -930,10 +1038,20 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
               <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
             )}
             {row.detail ? <span style={text(11.5, 400, t.label)}>{row.detail}</span> : null}
+            {row.extra ? <span data-testid="need-extra" style={text(11.5, 400, t.label)}>{row.extra}</span> : null}
           </div>
           {group.key === "files" && row.download ? <DownloadButton href={row.download} name={row.title} /> : null}
         </div>
       ))}
+      {group.note ? (
+        <div data-testid="need-note" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 0", borderBottom: `1px solid ${t.hairline}` }}>
+          <span style={text(12.5, 500, t.text)}>{group.note.title}</span>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: t.catBreakage, flexShrink: 0, marginTop: 6 }} />
+            <span style={{ ...text(12.5, 400, t.text), lineHeight: "18px" }}>{group.note.line}</span>
+          </div>
+        </div>
+      ) : null}
       {more > 0 ? (
         <button type="button" onClick={() => setAll(true)} style={{ ...bareButton, ...text(12.5, 500, t.text), padding: "8px 0 0", textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
           Show {more} more

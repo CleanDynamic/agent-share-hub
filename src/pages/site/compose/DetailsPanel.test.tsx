@@ -148,13 +148,13 @@ describe("a session whose client names no tool (TF-13)", () => {
 });
 
 describe("an agent", () => {
-  it("is a real radio group of five, and the chosen one is checked", () => {
+  it("is a real radio group of seven (CA-04 P6 adds two), and the chosen one is checked", () => {
     panel("agent");
     const group = screen.getByRole("radiogroup", { name: "How did it run?" });
     const radios = within(group).getAllByRole("radio") as HTMLInputElement[];
-    // The fixture's agent repeats until a condition is met, so the two under More ways it ran show straight away.
-    expect(radios).toHaveLength(5);
-    expect(radios.map((radio) => radio.checked)).toEqual([false, false, false, true, false]);
+    // The fixture's agent repeats until a condition is met, so the four under More ways it ran show straight away.
+    expect(radios).toHaveLength(7);
+    expect(radios.map((radio) => radio.checked)).toEqual([false, false, false, true, false, false, false]);
     expect((screen.getByLabelText("The condition") as HTMLInputElement).value).toBe("every item has a price");
     expect(screen.getByText("22 / 80")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "More ways it ran" })).toBeNull();
@@ -193,7 +193,7 @@ describe("an agent", () => {
     return { ...base.view, runs };
   };
 
-  it("shows three ways it ran, and the other two under More ways it ran", () => {
+  it("shows three ways it ran, and the other four under More ways it ran (CA-04 P6)", () => {
     panel("agent", "bakery", { view: withRuns(null) });
     const group = screen.getByRole("radiogroup", { name: "How did it run?" });
     expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual(["When I asked", "On a schedule", "When something happened"]);
@@ -204,6 +204,8 @@ describe("an agent", () => {
       "When something happened",
       "Again until a condition was met",
       "Several at the same time",
+      "Until a goal was reached",
+      "From a script or GitHub",
     ]);
   });
 
@@ -763,5 +765,39 @@ describe("an agent that reads content it doesn't control, in Details (CA-03 P7)"
     cleanup();
     panel("agent", "bakery");
     expect(screen.queryByTestId("outside-warning")).toBeNull();
+  });
+});
+
+describe("a session made here (CA-04 P1)", () => {
+  it("is read with its tool and day editable, and an imported one is not", async () => {
+    const { buildSteps, sessionGroups } = await import("@/lib/build/graph");
+    const { resolveView } = await import("./detailsView");
+    const { sourceSessions } = await import("./sourcesModel");
+    const node = (id: string, position: number, payload: Record<string, unknown>, source_ref: unknown = null) =>
+      ({ id, build_id: "b", parent_id: null, position, type: "prompt", title: null, note: null, payload, source_ref, event_id: null, is_gap: false, created_at: "", children: [] }) as never;
+    const tree = [node("p1", 1, { text: "a", session: "typed-a" }), node("p2", 2, { text: "b" }, { source: "x", session_id: "e", index: 0, import_session_id: "imp" })];
+    const steps = buildSteps(tree);
+    const groups = sessionGroups(steps, [], {}, { "typed-a": { tool: "claude-code", date: "2026-10-12" } });
+    const ctx = { steps, groups, tree, sources: sourceSessions(groups, steps), sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined };
+    const typed = resolveView({ ...ctx, selectedId: "typed-a" }) as SessionView;
+    expect(typed.editable).toEqual({ tool: "claude-code", date: "2026-10-12" });
+    const imported = resolveView({ ...ctx, selectedId: "imp" }) as SessionView;
+    expect(imported.editable).toBeUndefined();
+  });
+
+  it("changes its tool with the tool picker and its day as 2026-10-12, refusing anything else", () => {
+    const onSessionMeta = vi.fn();
+    const view: SessionView = { kind: "session", key: "typed-a", number: 2, tool: "Claude Code", model: "", date: "12 Oct", inBuild: 1, total: 1, status: "ready", checklist: [], editable: { tool: "claude-code", date: "2026-10-12" } };
+    panel("session", "bakery", { view, onSessionMeta });
+    expect(screen.getByRole("button", { name: "Tool" }).textContent).toBe("Claude Code");
+    const date = screen.getByRole("textbox", { name: "Date" }) as HTMLInputElement;
+    expect(date.value).toBe("2026-10-12");
+    fireEvent.change(date, { target: { value: "13 Oct" } });
+    fireEvent.keyDown(date, { key: "Enter" });
+    expect(onSessionMeta).not.toHaveBeenCalled();
+    expect(screen.getByText("Write the day as 2026-10-12.")).toBeTruthy();
+    fireEvent.change(date, { target: { value: "2026-10-13" } });
+    fireEvent.keyDown(date, { key: "Enter" });
+    expect(onSessionMeta).toHaveBeenCalledWith("typed-a", { date: "2026-10-13" });
   });
 });

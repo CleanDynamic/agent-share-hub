@@ -4,7 +4,7 @@
    the parts that need more than one step to decide: where the session dividers
    fall, what an input chip says, and which steps go into a result. */
 
-import { stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
+import { groupKey, shownGroups, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 
 import { sourceSessions, type SourceSession } from "./sourcesModel";
@@ -36,14 +36,27 @@ export const suggestionKey = (use: Use): string => `${use.kind}:${use.node_id}`;
  * The session divider that goes before a step: keyed by the number of the
  * first step of each run of steps from one session. A step that begins a new
  * session, or a new run of typed prompts, gets one; the steps after it do not.
+ *
+ * CA-04 P1: a build with exactly one session shows no head, and an old build's
+ * implicit group (its steps before any session) never has one.
  */
-export function dividers(steps: readonly Step[], groups: readonly SessionGroup[]): Map<string, SourceSession> {
-  const sessions = sourceSessions(groups, steps);
+export function dividers(
+  steps: readonly Step[],
+  groups: readonly SessionGroup[],
+  setupCounts: Readonly<Record<string, number>> = {},
+  runsWhen: Readonly<Record<string, string>> = {},
+): Map<string, SourceSession> {
   const out = new Map<string, SourceSession>();
-  groups.forEach((group, at) => {
+  const shown = shownGroups(groups);
+  // CA-04 P4, P6: a lone session keeps its head when it has something to say there: Setup {n}, Worked until, Runs when.
+  const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal);
+  if (shown.length === 0 || (shown.length === 1 && !says(shown[0]))) return out;
+  const sessions = new Map(sourceSessions(groups, steps, [], {}, setupCounts, runsWhen).map((session) => [session.key, session]));
+  for (const group of shown) {
     const first = group.stepNumbers[0];
-    if (first) out.set(first, sessions[at]);
-  });
+    const session = sessions.get(groupKey(group));
+    if (first && session) out.set(first, session);
+  }
   return out;
 }
 

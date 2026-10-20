@@ -27,6 +27,8 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowUp, MoreHorizontal } from "lucide-react";
 import {
+  createContext,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -40,9 +42,12 @@ import {
 import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
+import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { checkStatus, runsLabel, stepTitle, TOOL_TYPE } from "@/lib/build/graph";
+import { checkStatus, runsLabel, sentWithLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { copyTogether } from "@/lib/build/copyTogether";
+import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
 import { markFor } from "@/lib/models/marks";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
@@ -72,7 +77,8 @@ import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
-import { ToolPicker } from "./ToolPicker";
+import { FLOATING_Z, ToolPicker } from "./ToolPicker";
+import { DragHandle, NestGap, NestList, TAKES, useNestSession, useNestTile, type NestTarget } from "./listNest";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
   INDENT,
@@ -142,6 +148,30 @@ export interface BuildListProps {
   onNameMade?: (id: string) => void;
   /** TF-08: the names of the files each step makes, by step id. */
   madeNames?: Readonly<Record<string, readonly string[]>>;
+  /**
+   * CA-04 P1: the sessions a new prompt can go into, "Session 2 · Claude Code", in order. Absent while the build has
+   * only the one session its typed prompts make: the field then reads as it always did.
+   */
+  sessionChoices?: readonly SessionChoice[];
+  /** CA-04 P1: the key of the session a new prompt goes into. */
+  currentSession?: string | null;
+  onCurrentSession?: (key: string) => void;
+  /** CA-04 P1: "New session" at the end of the menu: asks for its tool, then it is the current session. */
+  onNewSession?: () => void;
+  /**
+   * CA-04 P2: put a tile inside a step, sent with it, at `index` among what it holds, or (null) make it its own step at
+   * `index` among the top-level steps. Resolves true once written. Absent: no handles, no drops, no buttons.
+   */
+  onNest?: (id: string, parentId: string | null, index: number) => Promise<boolean>;
+  /** CA-04 P2: whether a tile can go inside a step (`nestRefusal` says no to none of it). */
+  canNest?: (id: string, parentId: string) => boolean;
+  /** CA-04 P2: a tile dropped on another session's head goes into that session. Resolves true once written. */
+  onMoveToSession?: (id: string, sessionKey: string) => Promise<boolean>;
+  /** CA-04 P2: Accept and Ignore on code sent with an imported prompt. Absent: nothing is offered. */
+  onKeepSentWith?: (suggestion: CodeSuggestion) => void;
+  onIgnoreSentWith?: (stepId: string, key: string) => void;
+  /** CA-04 P4: "Setup {n}" on a session's head selects the session and scrolls Details to its Setup. */
+  onOpenSetup?: (sessionKey: string) => void;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -173,6 +203,174 @@ function MenuRow({ children, disabled, onSelect, phone }: { children: ReactNode;
   );
 }
 
+/* ── tiles inside tiles (CA-04 P2) ── */
+
+export const NEST_LIST_COPY = {
+  sendWithAbove: "Send with the step above",
+  ownStep: "Make it its own step",
+  copyTogether: "Copy together",
+  sentWith: (label: string) => `Sent with ${label}`,
+  nowSentWith: (name: string, label: string) => `${name} is now sent with ${label}.`,
+  nowOwnStep: (name: string) => `${name} is now its own step.`,
+  nowIn: (name: string, session: string) => `${name} is now in ${session}.`,
+  copied: (name: string) => `Copied ${name} together.`,
+} as const;
+
+/** What a card needs to take part in moving tiles. Null while the List does not move tiles. */
+interface ListNest {
+  move: (id: string, parentId: string | null, index: number) => void;
+  canNest: (id: string, parentId: string) => boolean;
+  /** The step above a top-level tile, or null for the first. */
+  above: (id: string) => Step | null;
+  /** The place after the top-level step that holds a tile, for "Make it its own step". */
+  after: (id: string) => number;
+  copy: (step: Step) => void;
+}
+
+const ListNestContext = createContext<ListNest | null>(null);
+
+/** "Send with the step above" on a top-level tile after the first; "Make it its own step" on a tile inside one. */
+function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
+  const nest = useContext(ListNestContext);
+  if (!nest) return null;
+  if (step.inside) {
+    return (
+      <TextButton target={phone} style={text(12, 500, t.text2)} onClick={(event) => {
+        event.stopPropagation();
+        nest.move(step.id, null, nest.after(step.id));
+      }}>
+        {NEST_LIST_COPY.ownStep}
+      </TextButton>
+    );
+  }
+  const above = nest.above(step.id);
+  if (!above || !nest.canNest(step.id, above.id)) return null;
+  return (
+    <TextButton target={phone} style={text(12, 500, t.text2)} onClick={(event) => {
+      event.stopPropagation();
+      nest.move(step.id, above.id, Number.MAX_SAFE_INTEGER);
+    }}>
+      {NEST_LIST_COPY.sendWithAbove}
+    </TextButton>
+  );
+}
+
+/** "Copy together" in a top-level tile's menu. */
+function CopyTogetherRow({ step, phone }: { step: Step; phone: boolean }) {
+  const nest = useContext(ListNestContext);
+  if (!nest) return null;
+  return (
+    <MenuRow phone={phone} onSelect={() => nest.copy(step)}>
+      {NEST_LIST_COPY.copyTogether}
+    </MenuRow>
+  );
+}
+
+/** A tile's name in the List's lines: its file name, else "prompt 2", else its kind. */
+const tileName = (step: Step) => sentWithLabel(step);
+
+/** A tile inside another: its eyebrow says what it is sent with; it has no number. It can hold more tiles. */
+function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
+  const nest = useNestTile(step.id);
+  const selected = props.selectedId === step.id;
+  const named = step.kind === "code" ? (step.filename ?? step.language ?? null) : null;
+  const kind = step.kind === "manual" ? "Manual step" : step.kind === "file" ? "File" : step.kind === "code" ? "Code" : step.kind === "check" ? "Check" : step.kind === "agent" ? "Agent" : step.kind === "team" ? "Team" : "Prompt";
+  return (
+    <div
+      ref={nest.setRef}
+      role="group"
+      aria-label={`${kind} sent with ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
+      data-testid="sent-with-tile"
+      data-kind={step.kind}
+      data-selected={selected ? "true" : undefined}
+      tabIndex={0}
+      onClick={(event) => {
+        event.stopPropagation();
+        props.onSelect(step.id);
+      }}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          event.stopPropagation();
+          props.onSelect(step.id);
+        }
+      }}
+      style={{
+        ...tileStyle,
+        padding: 12,
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        outline: "none",
+        cursor: "pointer",
+        ...(selected ? { background: t.selectedFill, borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
+        ...(nest.takes ? TAKES : null),
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
+        <Quiet style={{ ...ellipsis, minWidth: 0 }}>{NEST_LIST_COPY.sentWith(step.inside?.label ?? "the step above")}</Quiet>
+      </div>
+      <span style={{ ...text(13, 500, step.title ? t.text : t.text2), overflowWrap: "anywhere" }}>
+        {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
+      </span>
+      {step.kind === "code" ? (
+        <pre data-testid="code-lines" style={{ ...wellField, margin: 0, width: "auto", padding: "8px 12px", fontFamily: DM_MONO, fontSize: 12, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", color: t.text }}>
+          {firstLines(step.text)}
+        </pre>
+      ) : step.text ? (
+        <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
+      ) : null}
+      <SentWithList step={step} props={props} indent={0} />
+      <span>
+        <NestButtons step={step} phone={props.phone} />
+      </span>
+    </div>
+  );
+}
+
+/** CA-04 P2: code sent with an imported prompt in the chat, offered dashed: Accept puts it inside, Ignore leaves it. */
+function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProps }) {
+  if (!props.onKeepSentWith || !props.onIgnoreSentWith) return null;
+  const offered = codeInPrompt(step);
+  if (offered.length === 0) return null;
+  return (
+    <div style={{ paddingLeft: INDENT, display: "flex", flexDirection: "column", gap: 8 }}>
+      {offered.map((suggestion) => (
+        <div
+          key={suggestion.key}
+          data-testid="sent-with-suggestion"
+          onClick={(event) => event.stopPropagation()}
+          style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 12px", borderRadius: 6, border: `1px dashed ${t.line}` }}
+        >
+          <span style={text(12, 400, t.text2)}>{SENT_WITH_COPY.line}</span>
+          <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Button variant="secondary" size={props.phone ? 44 : 28} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
+              {SENT_WITH_COPY.accept}
+            </Button>
+            <TextButton target={props.phone} style={text(12, 500, t.text2)} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
+              {SENT_WITH_COPY.ignore}
+            </TextButton>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The tiles sent with a step, under its text, indented as its text is. */
+function SentWithList({ step, props, indent = INDENT }: { step: Step; props: BuildListProps; indent?: number }) {
+  if (!step.sentWith?.length) return null;
+  return (
+    <div data-testid="sent-with" style={{ paddingLeft: indent, display: "flex", flexDirection: "column", gap: 8 }}>
+      {step.sentWith.map((tile) => (
+        <SentWithTile key={tile.id} step={tile} props={props} />
+      ))}
+    </div>
+  );
+}
+
 /** The row under a step's text, and the words at its right. */
 const footRow = (indent: number): CSSProperties => ({
   display: "flex",
@@ -187,12 +385,24 @@ const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 
 /* ── a session's head ── */
 
-function SessionHead({ session }: { session: SourceSession }) {
+function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; phone: boolean; onOpenSetup?: (key: string) => void }) {
+  /* CA-04 P2: a tile dropped on a session's head goes into that session. */
+  const drop = useNestSession(session.key);
   return (
+    <>
     <div
+      ref={drop.setRef}
       role="separator"
       aria-label={`Session ${session.number} · ${session.tool}`}
-      style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, minWidth: 0 }}
+      data-takes={drop.takes ? "true" : undefined}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        paddingTop: 8,
+        minWidth: 0,
+        ...(drop.takes ? { background: t.selectedFill, boxShadow: `inset 0 0 0 1px ${t.text2}`, borderRadius: 6 } : null),
+      }}
     >
       <ToolMark tool={session.tool} size={20} />
       <span style={{ ...text(13, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -200,7 +410,20 @@ function SessionHead({ session }: { session: SourceSession }) {
       </span>
       <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{session.detail}</span>
       <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
+      {session.setupCount && onOpenSetup ? (
+        <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
+          {`Setup ${session.setupCount}`}
+        </TextButton>
+      ) : null}
     </div>
+    {/* CA-04 P6: what the session worked until, and when it runs, one quiet line each under its head. */}
+    {session.goal ? (
+      <DotLine testId="goal-line" dot={session.goal.reached ? t.evidence : t.label}>
+        {session.goal.line}
+      </DotLine>
+    ) : null}
+    {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
+    </>
   );
 }
 
@@ -393,11 +616,13 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     }
   };
 
+  const nest = useNestTile(step.id);
   const takesDrops = Boolean(props.fine && props.onDropOnStep);
   const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
 
   return (
     <div
+      ref={nest.setRef}
       role="group"
       aria-label={`Prompt ${step.number}: ${title}`}
       data-testid="step-card"
@@ -427,9 +652,10 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
         <NumberTile>{step.number}</NumberTile>
         {renaming ? (
           <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
@@ -457,6 +683,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <MenuRow phone={phone} disabled={!open} onSelect={open}>Read all of it</MenuRow>
+                <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => props.onNameMade?.(step.id)}>Name a file it makes</MenuRow> : null}
                 <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
@@ -474,8 +701,11 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         {step.text}
       </p>
       <MadeLine names={props.madeNames?.[step.id]} />
+      <SentWithList step={step} props={props} />
+      <SentWithSuggestions step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
+        <NestButtons step={step} phone={phone} />
         <span style={{ flexGrow: 1 }} />
         {clamped ? (
           <button
@@ -626,16 +856,19 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
   /** One agent of a team shows its own prompts at a time. */
   const [openAgent, setOpenAgent] = useState<string | null>(null);
   const goes = props.intoResult.has(step.id);
+  const nest = useNestTile(step.id);
   return (
     <div
+      ref={nest.setRef}
       role="group"
       aria-label={`${isTeam ? "Team" : "Agent"} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 12, outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 12, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
@@ -702,6 +935,20 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           <GoesInto />
         </div>
       ) : null}
+      <NestFoot step={step} phone={props.phone} />
+    </div>
+  );
+}
+
+/** The keyboard's way to move a tile, on its own row, when there is one. */
+function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
+  const nest = useContext(ListNestContext);
+  if (!nest) return null;
+  const above = nest.above(step.id);
+  if (!above || !nest.canNest(step.id, above.id)) return null;
+  return (
+    <div style={footRow(INDENT)}>
+      <NestButtons step={step} phone={phone} />
     </div>
   );
 }
@@ -714,12 +961,14 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const renameNext = useRef(false);
+  const nest = useNestTile(step.id);
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
   };
   return (
     <div
+      ref={nest.setRef}
       role="group"
       aria-label={`Manual step ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -733,9 +982,10 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span data-testid="manual-eyebrow" style={text(11.5, 400, t.label)}>
@@ -780,6 +1030,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
               }}
             >
               <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+              <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
@@ -789,8 +1040,10 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
       </div>
       <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
       <MadeLine names={props.madeNames?.[step.id]} />
+      <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
+        <NestButtons step={step} phone={phone} />
         {step.mediaId ? (
           <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 }}>
             <Quiet>1 screenshot</Quiet>
@@ -810,6 +1063,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const renameNext = useRef(false);
+  const nest = useNestTile(step.id);
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
@@ -818,6 +1072,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   const named = step.filename ?? step.language ?? null;
   return (
     <div
+      ref={nest.setRef}
       role="group"
       aria-label={`Code ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -831,9 +1086,10 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span data-testid="code-eyebrow" style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>
@@ -866,6 +1122,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
               }}
             >
               <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+              <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
@@ -892,8 +1149,10 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         {firstLines(step.text)}
       </pre>
       <MadeLine names={props.madeNames?.[step.id]} />
+      <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
+        <NestButtons step={step} phone={phone} />
       </div>
     </div>
   );
@@ -907,6 +1166,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const renameNext = useRef(false);
+  const nest = useNestTile(step.id);
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
@@ -914,6 +1174,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   const status = step.check ? checkStatus(step.check) : null;
   return (
     <div
+      ref={nest.setRef}
       role="group"
       aria-label={`Check ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -927,9 +1188,10 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span data-testid="check-eyebrow" style={text(11.5, 400, t.label)}>
@@ -962,6 +1224,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
               }}
             >
               <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+              <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
@@ -975,8 +1238,10 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           <span style={tnum}>{status.line}</span>
         </DotLine>
       ) : null}
+      <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
+        <NestButtons step={step} phone={phone} />
       </div>
     </div>
   );
@@ -1035,7 +1300,72 @@ export interface AddAsAgentInput {
   instructions: string;
 }
 
-function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, inBuild = [] }: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "focusAdd" | "inBuild">) {
+/** CA-04 P1: a session a new prompt can go into, and the tool its prompts are typed in. */
+export interface SessionChoice {
+  key: string;
+  label: string;
+  tool?: string | null;
+}
+
+export const SESSION_MENU_COPY = {
+  adding: "Adding to",
+  newSession: "New session",
+} as const;
+
+/** CA-04 P1: "Adding to Session 2 · Claude Code": where a new prompt goes. The menu lists the sessions, then New session. */
+function SessionMenu({ phone, choices, current, onCurrent, onNew }: { phone: boolean; choices: readonly SessionChoice[]; current: string | null; onCurrent?: (key: string) => void; onNew?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const chosen = choices.find((choice) => choice.key === current);
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger asChild>
+        <MenuButton
+          data-testid="adding-to"
+          aria-label={`${SESSION_MENU_COPY.adding} ${chosen?.label ?? SESSION_MENU_COPY.newSession}`}
+          label={SESSION_MENU_COPY.adding}
+          value={chosen?.label ?? ""}
+          open={open}
+          style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }}
+        />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content align="start" sideOffset={4} collisionPadding={16} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
+          <Menu.RadioGroup value={current ?? ""} onValueChange={(key) => onCurrent?.(key)}>
+            {choices.map((choice) => (
+              <Menu.RadioItem key={choice.key} value={choice.key} style={{ ...menuItem(true, phone), gap: 6 }}>
+                <span style={{ width: 14, display: "inline-flex" }}>
+                  <Menu.ItemIndicator>
+                    <Glyph name="check" size={14} />
+                  </Menu.ItemIndicator>
+                </span>
+                {choice.label}
+              </Menu.RadioItem>
+            ))}
+          </Menu.RadioGroup>
+          <Menu.Item disabled={!onNew} onSelect={onNew} style={{ ...menuItem(Boolean(onNew), phone), gap: 6 }}>
+            <span style={{ width: 14, display: "inline-flex" }}>
+              <Glyph name="plus" size={14} />
+            </span>
+            {SESSION_MENU_COPY.newSession}
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+function AddPrompt({
+  phone,
+  onAddPrompt,
+  onAddAsAgent,
+  onKeepAsCode,
+  focusAdd,
+  inBuild = [],
+  sessionChoices,
+  currentSession = null,
+  onCurrentSession,
+  onNewSession,
+}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "focusAdd" | "inBuild" | "sessionChoices" | "currentSession" | "onCurrentSession" | "onNewSession">) {
   const [value, setValue] = useState("");
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
@@ -1048,6 +1378,15 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, i
   useEffect(() => {
     if (focusAdd > 0) field.current?.focus();
   }, [focusAdd]);
+
+  /* CA-04 P1: choosing a session puts its tool in the field; the maker can still change it. */
+  const sessionTool = sessionChoices?.find((choice) => choice.key === currentSession)?.tool ?? null;
+  const chosenSession = sessionChoices ? currentSession : null;
+  useEffect(() => {
+    if (chosenSession === null) return;
+    setTool(sessionTool ? (toolFor(sessionTool)?.id ?? sessionTool) : null);
+    setModel(null);
+  }, [chosenSession, sessionTool]);
 
   useEffect(() => {
     if (!cleared) return;
@@ -1102,6 +1441,11 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, i
 
   return (
     <div data-testid="add-prompt" style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5 }}>
+      {sessionChoices && sessionChoices.length > 0 ? (
+        <div>
+          <SessionMenu phone={phone} choices={sessionChoices} current={currentSession} onCurrent={onCurrentSession} onNew={onNewSession} />
+        </div>
+      ) : null}
       <textarea
         ref={field}
         aria-label="Add a prompt"
@@ -1176,6 +1520,57 @@ function runsOf(steps: readonly Step[], dividers: BuildListProps["dividers"]): R
 export function BuildList(props: BuildListProps) {
   const { steps } = props;
   const prompts = steps.filter((step) => step.kind === "prompt");
+  /* CA-04 P2: tiles move once there is somewhere to move them: two steps, or a tile already inside one. */
+  const nestOn = Boolean(props.onNest) && (steps.length > 1 || steps.some((step) => (step.sentWith?.length ?? 0) > 0));
+  const [said, setSaid] = useState("");
+  const tiles = new Map(steps.flatMap(withSentWith).map((step) => [step.id, step]));
+  const label = (id: string) => {
+    const tile = tiles.get(id);
+    return tile ? tileName(tile) : "that tile";
+  };
+  const topOf = (id: string): Step | undefined => steps.find((step) => withSentWith(step).some((tile) => tile.id === id));
+
+  const move = (id: string, parentId: string | null, index: number) => {
+    void props.onNest?.(id, parentId, index).then((done) => {
+      if (done) setSaid(parentId ? NEST_LIST_COPY.nowSentWith(label(id), label(parentId)) : NEST_LIST_COPY.nowOwnStep(label(id)));
+    });
+  };
+  const nest: ListNest | null = nestOn
+    ? {
+        move,
+        canNest: (id, parentId) => props.canNest?.(id, parentId) ?? false,
+        above: (id) => {
+          const at = steps.findIndex((step) => step.id === id);
+          return at > 0 ? steps[at - 1] : null;
+        },
+        after: (id) => {
+          const top = topOf(id);
+          return top ? steps.indexOf(top) + 1 : steps.length;
+        },
+        copy: (step) => {
+          const words = copyTogether(step);
+          const done = () => setSaid(NEST_LIST_COPY.copied(tileName(step)));
+          try {
+            void navigator.clipboard?.writeText(words).then(done, () => undefined);
+          } catch {
+            /* No clipboard: nothing to say. */
+          }
+        },
+      }
+    : null;
+  const onDrop = (id: string, target: NestTarget) => {
+    if (target.kind === "tile") move(id, target.id, Number.MAX_SAFE_INTEGER);
+    else if (target.kind === "gap") {
+      const from = steps.findIndex((step) => step.id === id);
+      move(id, null, from >= 0 && from < target.index ? target.index - 1 : target.index);
+    } else {
+      const session = [...props.dividers.values()].find((entry) => entry.key === target.key);
+      void props.onMoveToSession?.(id, target.key).then((done) => {
+        if (done) setSaid(NEST_LIST_COPY.nowIn(label(id), session ? `Session ${session.number}` : "that session"));
+      });
+    }
+  };
+
   const card = (step: Step) =>
     step.kind === "prompt" ? (
       <StepCard key={step.id} step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
@@ -1188,22 +1583,59 @@ export function BuildList(props: BuildListProps) {
     ) : (
       <ContainerCard key={step.id} step={step} props={props} />
     );
-  return (
+  /* While tiles move, each top-level tile stands in a wrapper that holds the place to drop before it (and, for the
+     last, after it). Otherwise the cards are drawn as they always were. */
+  const placed = (step: Step) => {
+    if (!nestOn) return card(step);
+    const at = steps.indexOf(step);
+    return (
+      <div key={step.id} style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <NestGap index={at} />
+        {card(step)}
+        {at === steps.length - 1 ? <NestGap index={steps.length} edge="bottom" /> : null}
+      </div>
+    );
+  };
+  const body = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
     <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hint}</p>
       {runsOf(steps, props.dividers).map((run) => (
         <div key={run.key} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-          {run.head ? <SessionHead session={run.head} /> : null}
-          {run.steps.map(card)}
+          {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} /> : null}
+          {run.steps.map(placed)}
         </div>
       ))}
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
       ))}
-      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} onAddAsAgent={props.onAddAsAgent} onKeepAsCode={props.onKeepAsCode} focusAdd={props.focusAdd} inBuild={props.inBuild} />
+      {nestOn ? (
+        <div aria-live="polite" data-testid="nest-said">
+          {said ? <Quiet>{said}</Quiet> : null}
+        </div>
+      ) : null}
+      <AddPrompt
+        phone={props.phone}
+        onAddPrompt={props.onAddPrompt}
+        onAddAsAgent={props.onAddAsAgent}
+        onKeepAsCode={props.onKeepAsCode}
+        focusAdd={props.focusAdd}
+        inBuild={props.inBuild}
+        sessionChoices={props.sessionChoices}
+        currentSession={props.currentSession}
+        onCurrentSession={props.onCurrentSession}
+        onNewSession={props.onNewSession}
+      />
     </div>
+  );
+  if (!nest) return body;
+  return (
+    <ListNestContext.Provider value={nest}>
+      <NestList phone={props.phone} canTake={nest.canNest} label={label} onDrop={onDrop}>
+        {body}
+      </NestList>
+    </ListNestContext.Provider>
   );
 }
 

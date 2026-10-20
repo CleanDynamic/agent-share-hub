@@ -24,7 +24,7 @@ const file: NamedPiece = { id: "f1", name: "menu.pdf", note: "File · added by y
 const tool: NamedPiece = { id: "t1", name: "Gmail", note: "Tool" };
 
 describe("how it runs", () => {
-  it("asks How did it run? with the three always shown, then the two under More ways it ran (CA-03 P3)", () => {
+  it("asks How did it run? with the three always shown, then the four under More ways it ran (CA-03 P3, CA-04 P6)", () => {
     expect(RUNS_COPY.title).toBe("How did it run?");
     expect(RUNS_CHOICES.map((choice) => [choice.how, choice.label, choice.more])).toEqual([
       ["once", "When I asked", false],
@@ -32,8 +32,10 @@ describe("how it runs", () => {
       ["event", "When something happened", false],
       ["until", "Again until a condition was met", true],
       ["parallel", "Several at the same time", true],
+      ["goal", "Until a goal was reached", true],
+      ["script", "From a script or GitHub", true],
     ]);
-    expect(RUNS_CHOICES.map((choice) => choice.field?.kind ?? null)).toEqual([null, "text", "text", "text", "count"]);
+    expect(RUNS_CHOICES.map((choice) => choice.field?.kind ?? null)).toEqual([null, "text", "text", "text", "count", null, "code"]);
     expect(RUNS_CHOICES[4].field).toMatchObject({ min: 2, max: 20 });
     expect(RUNS_CHOICES.slice(1, 4).map((choice) => (choice.field as { max: number }).max)).toEqual([60, 60, 80]);
   });

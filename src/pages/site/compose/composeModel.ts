@@ -14,6 +14,7 @@ import { promptModel, promptOrigin } from "@/lib/build/composePrompts";
 import { toolLabel, type MadeWithState } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { MINIMUM_PUBLISHABLE_KEYS, type Completeness, type RequirementKey } from "@/lib/build/signals";
+import { nestNodes } from "@/lib/build/nodes";
 import type { BuildNode, NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
@@ -88,11 +89,11 @@ export function parseAudience(text: string): string[] {
 
 export type SaveState = "idle" | "saved" | "saving" | "error";
 
-/** The save half of the status line. "not saved — " is followed by a button the view draws. */
+/** The save half of the status line. "not saved · " is followed by a button the view draws. */
 export const SAVE_WORDS: Record<Exclude<SaveState, "idle">, string> = {
   saved: "saved just now",
   saving: "saving…",
-  error: "not saved — ",
+  error: "not saved · ",
 };
 
 /** The saving state, from the hook's three facts. An error outranks a save in flight. */
@@ -153,9 +154,11 @@ export function promptSourceLine(
 /**
  * The composer's own node writes laid over the tree the record holds. Pure.
  *
- * A written node replaces the node with its id, or joins the top level when
- * the tree does not hold it yet; null removes it. The top level is then put
- * back in position order. Returns the same array when nothing differs, so the
+ * A written node replaces the node with its id, or joins the tree when the
+ * tree does not hold it yet; null removes it, and everything inside it, as the
+ * delete's cascade does. CA-04 P2: a write can move a node into another or out
+ * of one, so the rows are nested again by `parent_id` and put back in position
+ * order at every depth. Returns the same array when nothing differs, so the
  * caller can tell a no-op from a change.
  */
 export function applyNodeWrites(tree: NodeTree[], writes: ReadonlyMap<string, BuildNode | null>): NodeTree[] {
@@ -171,31 +174,37 @@ export function applyNodeWrites(tree: NodeTree[], writes: ReadonlyMap<string, Bu
 
   let changed = false;
   const seen = new Set<string>();
-  const next: NodeTree[] = [];
-  for (const node of tree) {
-    seen.add(node.id);
-    if (!writes.has(node.id)) {
-      next.push(node);
-      continue;
+  const rows: BuildNode[] = [];
+  const walk = (nodes: readonly NodeTree[]) => {
+    for (const node of nodes) {
+      seen.add(node.id);
+      const { children, ...row } = node;
+      const written = writes.get(node.id);
+      if (written === null) changed = true;
+      else if (written === undefined || same(row, written)) rows.push(row);
+      else {
+        changed = true;
+        rows.push(written);
+      }
+      walk(children ?? []);
     }
-    const written = writes.get(node.id);
-    if (!written) {
-      changed = true;
-      continue;
-    }
-    if (same(node, written)) next.push(node);
-    else {
-      changed = true;
-      next.push({ ...written, children: node.children });
-    }
-  }
+  };
+  walk(tree);
   for (const [id, written] of writes) {
-    if (!written || seen.has(id) || written.parent_id !== null) continue;
+    if (!written || seen.has(id)) continue;
     changed = true;
-    next.push({ ...written, children: [] });
+    rows.push(written);
   }
   if (!changed) return tree;
-  return next.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+  // A deleted node takes what it holds with it.
+  const gone = new Set([...writes].filter(([, written]) => written === null).map(([id]) => id));
+  const parentOf = new Map(rows.map((row) => [row.id, row.parent_id]));
+  const removed = (id: string | null, depth = 0): boolean => {
+    if (!id || depth > 200) return false;
+    return gone.has(id) || removed(parentOf.get(id) ?? null, depth + 1);
+  };
+  return nestNodes(rows.filter((row) => !removed(row.parent_id)).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)));
 }
 
 /* ── UI-P48: Made with ── */

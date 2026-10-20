@@ -10,8 +10,10 @@ import { buildCounts, readerMap, readerResults, readerSteps, whatYouNeed, type R
 import type { Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
+import { SHAPES } from "./shapes";
 
-export type BuildStepsSample = "list" | "team" | "one";
+/** CA-04 P7: "one-sitting" and "runs-on-github" are the shapes of the same names (src/dev/fixtures/shapes.ts). */
+export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github";
 
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -138,6 +140,18 @@ const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making
   list: { tree: bakery, making: bakeryMaking, title: "Bakery homepage", outcome: "A homepage for a neighbourhood bakery, from brand brief to live site, made across four AI tools." },
   team: { tree: team, making: teamMaking, title: "Weekly research brief", outcome: "A team of agents that writes a one-page brief every Monday." },
   one: { tree: fox, making: foxMaking, title: "Watercolour fox poster", outcome: "A poster-size fox in loose watercolour, made with one prompt." },
+  "one-sitting": {
+    tree: () => SHAPES["one-sitting"].tree,
+    making: SHAPES["one-sitting"].making as Making,
+    title: SHAPES["one-sitting"].title,
+    outcome: "An order page planned in one sitting in Claude, then built by a team in Claude Code.",
+  },
+  "runs-on-github": {
+    tree: () => SHAPES["runs-on-github"].tree,
+    making: SHAPES["runs-on-github"].making as Making,
+    title: SHAPES["runs-on-github"].title,
+    outcome: "Claude Code reviews each pull request when it is opened.",
+  },
 };
 
 /**

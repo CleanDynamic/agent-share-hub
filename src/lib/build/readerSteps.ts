@@ -21,15 +21,24 @@ import {
   TOOL_TYPE,
   buildSteps,
   goesInto,
+  groupKey,
+  groupKind,
+  groupOfStep,
   madeByOf,
+  promptNumbersOf,
+  shownGroups,
   runsLabel,
   untilClause,
   sessionGroups,
   stepTitle,
+  toolConnectionOf,
   type SessionGroup,
   type Step,
 } from "./graph";
-import type { Making } from "./making";
+import { copyTogether } from "./copyTogether";
+import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupRule, type SetupServer } from "./setup";
+import { goalLine, sessionsMetaOf, type Making } from "./making";
+import { runsWhenLine } from "./runsFrom";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
 import type { MapPiece, MapResult } from "./mapLayout";
@@ -56,6 +65,12 @@ export type ReaderChat =
       headline: string;
       /** "GPT-6 Astra · session 1 · 3 Oct". */
       detail: string;
+      /** CA-04 P4: what the AI was given before this session's first prompt. Empty for none. */
+      setup: ReaderSetupItem[];
+      /** CA-04 P6: "Worked until …", and whether the goal was reached; absent when it had none. */
+      goal?: { line: string; reached: boolean };
+      /** CA-04 P6: "Runs when a pull request is opened", from a workflow in its setup. */
+      runsWhen?: string;
     }
   | {
       kind: "same";
@@ -64,6 +79,27 @@ export type ReaderChat =
       /** "Send in the same chat as step 4". */
       text: string;
     };
+
+/** CA-04 P4: one item of a session's setup, as a reader gets it. */
+export interface ReaderSetupItem {
+  id: string;
+  kind: SetupKind;
+  /** "Instructions", "Skill", "MCP server", "Rule". */
+  kindLabel: string;
+  name: string;
+  description: string | null;
+  notShared: boolean;
+  /** The file's download; null for a server, a rule, and anything not shared. */
+  download: string | null;
+  /** A skill's other files, each with its download. */
+  files: { id: string; name: string; path: string | null; download: string | null }[];
+  server: SetupServer | null;
+  rule: SetupRule | null;
+  /** CA-04 P6: a workflow file that runs Claude Code, as written, and what was read of it. */
+  workflow: SetupItem["workflow"];
+  /** Where it sat ("docs/CLAUDE.md"), when known. */
+  path: string | null;
+}
 
 export interface ReaderPasteIn {
   /** The step it came from. */
@@ -94,6 +130,8 @@ export interface ReaderFile {
 export interface ReaderTool {
   id: string;
   name: string;
+  /** CA-04 P5: an MCP server, and where it ran; null when the maker did not say it was one. */
+  mcp?: { runsAt: "web" | "local" | null; signIn: boolean; session: string | null } | null;
 }
 
 export interface ReaderStep {
@@ -124,11 +162,17 @@ export interface ReaderStep {
   /** "3.3, until every claim has a source", then "then the result". Only for a step that repeats until a condition is met. */
   goesInto: string[];
   children: ReaderStep[];
+  /** CA-04 P2: the tiles sent with this step, in order, each as a step a reader reads; a file tile carries its file. */
+  sentWith: ReaderStep[];
+  /** CA-04 P2, a file tile: the file to attach. */
+  file?: ReaderFile | null;
 }
 
 export interface NeedRow {
   title: string;
   detail: string;
+  /** CA-04 P5: one more line, for a tool connected by MCP: "MCP server · at a web address · sign in with your GitHub account". */
+  extra?: string;
   /** A file's download. */
   download?: string | null;
   /** An "Other parts" row's node, so the page can open it. */
@@ -141,6 +185,8 @@ export interface NeedGroup {
   key: NeedKey;
   label: string;
   rows: NeedRow[];
+  /** CA-04 P5: "Before you connect", under Tools and models, only when the build has an MCP server. */
+  note?: { title: string; line: string };
 }
 
 export interface ReaderResult {
@@ -254,6 +300,8 @@ interface Context {
   toolIds: string[];
   /** The placed tree, for what a step's references point at. */
   tree: readonly NodeTree[];
+  /** CA-04 P4: each session's setup, by its key. */
+  setup: Map<string, ReaderSetupItem[]>;
 }
 
 const walk = (steps: readonly Step[], out: Step[] = []): Step[] => {
@@ -272,6 +320,8 @@ function readFiles(
   const files = new Map<string, ReaderFile>();
   const visit = (nodes: readonly NodeTree[]) => {
     for (const node of nodes) {
+      // CA-04 P4: a session's setup is read by `setupItemsOf`, and lists under its session, not in Files.
+      if (isSetupPayload(node.payload)) continue;
       if (node.type === FILE_TYPE) {
         const mediaId = text(node, "media_id");
         const found = mediaId ? media.get(mediaId) : undefined;
@@ -301,7 +351,17 @@ function readTools(tree: readonly NodeTree[]): Map<string, ReaderTool> {
   const tools = new Map<string, ReaderTool>();
   const visit = (nodes: readonly NodeTree[]) => {
     for (const node of nodes) {
-      if (node.type === TOOL_TYPE) tools.set(node.id, { id: node.id, name: text(node, "service") ?? "Tool" });
+      if (node.type === TOOL_TYPE) {
+        const { connection, runsAt } = toolConnectionOf(node);
+        const server = isRecord(node.payload) && isRecord(node.payload.server) ? node.payload.server : null;
+        // Signing in is needed when its setup kept a placeholder for a header or an env value.
+        const signIn = Boolean(server && [server.env, server.headers].some((values) => isRecord(values) && Object.keys(values).length > 0));
+        tools.set(node.id, {
+          id: node.id,
+          name: text(node, "service") ?? "Tool",
+          ...(connection === "mcp" ? { mcp: { runsAt, signIn, session: setupOfNode(node)?.session ?? null } } : null),
+        });
+      }
       visit(node.children ?? []);
     }
   };
@@ -322,7 +382,7 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     }
   }
   const byId = new Map(all.map((step) => [step.id, step]));
-  const groups = sessionGroups(topSteps, sessions, making?.session_tools ?? {});
+  const groups = sessionGroups(topSteps, sessions, making?.session_tools ?? {}, sessionsMetaOf(making));
   const tools = readTools(tree);
   const toolIds = [
     ...new Set(
@@ -344,7 +404,36 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     resultFrom,
     toolIds,
     tree,
+    setup: readSetup(tree, media),
   };
+}
+
+/** CA-04 P4: each session's setup, by its key; what is not shared has no download. */
+function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderMedia>): Map<string, ReaderSetupItem[]> {
+  const out = new Map<string, ReaderSetupItem[]>();
+  const download = (mediaId: string | null, url: string | null, notShared: boolean): string | null => {
+    if (notShared) return null;
+    const found = mediaId ? media.get(mediaId) : undefined;
+    return found ? mediaUrl(found, { width: "original" }) : url;
+  };
+  for (const item of setupItemsOf(tree)) {
+    const entry: ReaderSetupItem = {
+      id: item.id,
+      kind: item.kind,
+      kindLabel: SETUP_KIND_LABEL[item.kind],
+      name: item.name,
+      description: item.description,
+      notShared: item.notShared,
+      download: item.kind === "instructions" || item.kind === "skill" ? download(item.mediaId, item.url, item.notShared) : null,
+      files: item.notShared ? [] : item.files.map((file) => ({ id: file.id, name: file.name, path: file.path, download: download(file.mediaId, null, false) })),
+      server: item.notShared && item.server ? { ...item.server, url: null, command: null, args: [] } : item.server,
+      rule: item.rule,
+      workflow: item.notShared ? null : item.workflow,
+      path: item.path,
+    };
+    out.set(item.session, [...(out.get(item.session) ?? []), entry]);
+  }
+  return out;
 }
 
 /** What an attached file is for: a project file of a coding tool the build uses, or a .json file used by a step whose tool imports it. A file a step makes is neither. */
@@ -360,15 +449,20 @@ function setupOf(file: ReaderFile, context: Context, stepToolIds: readonly strin
 /* ── the chat each prompt starts or joins ── */
 
 function chatFor(step: Step, context: Context): ReaderChat | null {
-  if (step.kind !== "prompt" || !isTop(step)) return null;
-  const group = context.groups.find((candidate) => candidate.stepNumbers.includes(step.number));
+  if (!isTop(step)) return null;
+  const group = groupOfStep(context.groups, step);
   if (!group) return null;
-  const at = group.stepNumbers.indexOf(step.number);
+  // CA-04 P1: a session holds every kind of step; the chat is its prompts'. A session made here or imported that has
+  // no prompt before its first step still starts with its head, so its setup and its goal have somewhere to be.
+  const prompts = promptNumbersOf(group, context.topSteps);
+  if (step.kind !== "prompt" && (groupKind(group) === "legacy" || group.stepNumbers[0] !== step.number || prompts.length > 0)) return null;
+  const at = prompts.indexOf(step.number);
   if (at > 0) {
-    const previous = group.stepNumbers[at - 1];
+    const previous = prompts[at - 1];
     return { kind: "same", step: previous, text: `Send in the same chat as step ${previous}` };
   }
-  const typed = group.sessionId === null;
+  // A session made in the composer reads as an imported one does: its number and its day.
+  const typed = groupKind(group) === "legacy";
   const startedAt = typed ? null : group.startedAt;
   const date = shortDate(startedAt);
   const detail = typed
@@ -384,7 +478,16 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     typed,
     headline: group.tool ? `New chat in ${group.tool}` : "New chat",
     detail,
+    setup: context.setup.get(groupKey(group)) ?? [],
+    ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
+    ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
   };
+}
+
+/** CA-04 P6: when a session runs, from the events its workflow files were read to run on. */
+function runsWhenOf(setup: readonly ReaderSetupItem[]): { runsWhen?: string } {
+  const events = setup.flatMap((item) => item.workflow?.events ?? []);
+  return events.length > 0 ? { runsWhen: runsWhenLine(events) } : {};
 }
 
 /* ── one step ── */
@@ -392,7 +495,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
 /** The step as readers get it: a suggestion the maker dismissed is the maker's, never published. */
 function publicStep(step: Step): Step {
   const { dismissed: _dismissed, ...rest } = step;
-  return { ...rest, children: step.children.map(publicStep) };
+  return { ...rest, children: step.children.map(publicStep), ...(step.sentWith ? { sentWith: step.sentWith.map(publicStep) } : null) };
 }
 
 function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
@@ -428,9 +531,10 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
   }
 
   // The tools this step is done in: the session it belongs to, the tool it names, and the tools it uses.
+  // CA-04 P1: the step's own tool first; a session now holds every kind of step, and a manual step names its own.
   const stepToolIds = [
-    context.groups.find((group) => group.stepNumbers.includes(step.number))?.tool,
     step.tool,
+    context.groups.find((group) => group.stepNumbers.includes(step.number))?.tool,
     ...tools.map((tool) => tool.name),
   ].flatMap((name) => {
     const found = toolFor(name);
@@ -469,6 +573,8 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     outside: readsOutsideContent(step, context.tree),
     goesInto: loop,
     children: step.children.map((child) => readerStep(child, context, container)),
+    sentWith: (step.sentWith ?? []).map((tile) => readerStep(tile, context, container)),
+    ...(step.kind === "file" ? { file: context.files.get(step.id) ?? null } : null),
   };
 }
 
@@ -541,6 +647,8 @@ const HOW_WORDS: Record<string, string> = {
   until: "Again until a condition was met",
   schedule: "On a schedule",
   event: "When something happened",
+  goal: "Until a goal was reached",
+  script: "From a script or GitHub",
 };
 
 /** The agents a run starts: one for each, and several for one that runs several at once. */
@@ -575,13 +683,17 @@ export function whatYouNeed(
   /* Tools and models */
   const tools: NeedRow[] = [];
   const byTool = new Map<string, { models: string[]; steps: string[]; named: boolean }>();
-  for (const group of context.groups) {
+  for (const group of shownGroups(context.groups)) {
     const key = group.tool ?? group.model ?? "";
     if (!key) continue;
+    // CA-04 P1: the steps a tool row names are the session's prompts; a session made here with none names them all.
+    const prompts = promptNumbersOf(group, context.topSteps);
+    const numbers = prompts.length > 0 || groupKind(group) !== "typed" ? prompts : group.stepNumbers;
+    if (numbers.length === 0) continue;
     const entry = byTool.get(key) ?? { models: [], steps: [], named: Boolean(group.tool) };
     const model = group.tool ? group.model : null;
     if (model && !entry.models.includes(model)) entry.models.push(model);
-    entry.steps.push(...group.stepNumbers);
+    entry.steps.push(...numbers);
     byTool.set(key, entry);
   }
   for (const [tool, entry] of byTool) {
@@ -600,7 +712,12 @@ export function whatYouNeed(
 
   for (const tool of context.tools.values()) {
     const numbers = used.get(tool.id) ?? [];
-    tools.push({ title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool" });
+    const row: NeedRow = { title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool" };
+    if (tool.mcp) {
+      const where = tool.mcp.runsAt === "web" ? "at a web address" : tool.mcp.runsAt === "local" ? "on your computer" : null;
+      row.extra = ["MCP server", where, tool.mcp.signIn ? `sign in with your ${tool.name} account` : null].filter(Boolean).join(" · ");
+    }
+    tools.push(row);
   }
   for (const node of walkTree(tree)) {
     if (node.type !== PREREQUISITE_TYPE || node.is_gap) continue;
@@ -610,7 +727,23 @@ export function whatYouNeed(
       detail: [text(node, "requirement"), stepList(numbers)].filter(Boolean).join(" · ") || "prerequisite",
     });
   }
-  if (tools.length > 0) groups.push({ key: "tools", label: "Tools and models", rows: tools });
+  if (tools.length > 0) {
+    // CA-04 P5: a build that uses an MCP server says to read its tool descriptions first, and when it was used.
+    const servers = [...context.tools.values()].filter((tool) => tool.mcp);
+    const day = servers
+      .map((tool) => (tool.mcp?.session ? context.groups.find((group) => groupKey(group) === tool.mcp?.session)?.startedAt : null) ?? null)
+      .concat((making?.sessions ?? []).map((session) => session.started_at ?? null))
+      .map((iso) => shortDate(iso))
+      .find((date): date is string => Boolean(date));
+    groups.push({
+      key: "tools",
+      label: "Tools and models",
+      rows: tools,
+      ...(servers.length > 0
+        ? { note: { title: "Before you connect", line: `This build uses an MCP server. Read its tool descriptions before you connect it.${day ? ` It was used on ${day}.` : ""}` } }
+        : null),
+    });
+  }
 
   /* Files */
   const files: NeedRow[] = [...context.files.values()].map((file) => {
@@ -658,7 +791,7 @@ export function whatYouNeed(
   /* Other parts */
   const handled = new Set<string>([PROMPT_TYPE, AGENT_TYPE, TEAM_TYPE, MANUAL_STEP_TYPE, FILE_TYPE, TOOL_TYPE, RESULT_TYPE, PREREQUISITE_TYPE]);
   const other: NeedRow[] = tree
-    .filter((node) => node.parent_id === null && !handled.has(node.type) && !EVIDENCE_NODE_TYPES.has(node.type))
+    .filter((node) => node.parent_id === null && !handled.has(node.type) && !EVIDENCE_NODE_TYPES.has(node.type) && !isSetupPayload(node.payload))
     .map((node) => ({ id: node.id, title: (node.title ?? "").trim() || node.type, detail: node.type }));
   if (other.length > 0) groups.push({ key: "other", label: "Other parts", rows: other });
 
@@ -727,6 +860,25 @@ function chatSentence(chat: ReaderChat): string {
   return chat.model ? `${where} (${chat.model}).` : `${where}.`;
 }
 
+/**
+ * CA-04 P4: what a session starts with: its instruction files, then the names of its skills, servers and rules.
+ * Nothing that is not shared is linked; its name is still said.
+ */
+export function setupSentences(setup: readonly ReaderSetupItem[]): string[] {
+  const out: string[] = [];
+  for (const item of setup.filter((entry) => entry.kind === "instructions")) {
+    out.push(item.download ? `Before you start, put ${item.name} in your project folder: ${item.download}.` : `Before you start, put ${item.name} in your project folder.`);
+  }
+  const names = (kind: SetupKind) => setup.filter((entry) => entry.kind === kind).map((entry) => (kind === "rule" && entry.rule ? `${entry.rule.when}${entry.rule.filter ? ` (${entry.rule.filter})` : ""}: ${entry.name}` : entry.name));
+  const skills = names("skill");
+  const servers = names("server");
+  const rules = names("rule");
+  if (skills.length > 0) out.push(`Skills: ${join(skills)}.`);
+  if (servers.length > 0) out.push(`MCP servers: ${join(servers)}.`);
+  if (rules.length > 0) out.push(`Rules: ${rules.join("; ")}.`);
+  return out;
+}
+
 function inputSentences(entry: ReaderStep): string[] {
   const out: string[] = [];
   for (const paste of entry.pasteIns) out.push(`Paste in what step ${paste.number} gave you (${paste.title}).`);
@@ -781,6 +933,11 @@ export function stepsMarkdown(
   for (const entry of steps) {
     const { step } = entry;
     lines.push(`## Step ${step.number} · ${entry.title}`, "");
+    // CA-04 P4: a session that starts with an agent, a team or a manual step still starts with its setup.
+    if (entry.chat?.kind === "new" && step.kind !== "prompt") {
+      lines.push(chatSentence(entry.chat), "");
+      if (entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
+    }
 
     const saves = saveSentences(entry);
     if (entry.manual) {
@@ -796,10 +953,13 @@ export function stepsMarkdown(
       subSteps(entry, lines);
       continue;
     }
-    if (entry.chat) lines.push(chatSentence(entry.chat), "");
+    if (entry.chat && step.kind === "prompt") lines.push(chatSentence(entry.chat), "");
+    if (entry.chat?.kind === "new" && step.kind === "prompt" && entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
-    if (step.text) lines.push(fenced(step.text), "");
+    // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.
+    const message = step.sentWith?.length ? copyTogether(step) : step.text;
+    if (message) lines.push(fenced(message), "");
     if (saves.length > 0) lines.push(...saves, "");
   }
 

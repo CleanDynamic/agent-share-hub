@@ -17,7 +17,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, swapMoves } from "./composePrompts";
 import { toolFor, toolName } from "@/lib/tools/registry";
-import { toolLabel, type MakingSession } from "./making";
+import { goalOf, LEGACY_SESSION_PREFIX, TYPED_SESSION_PREFIX, toolLabel, type MakingSession, type SessionGoal, type SessionMeta } from "./making";
 import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
@@ -37,7 +37,8 @@ export const CODE_TYPE = "code";
  */
 export const CHECK_TYPE = "eval_run";
 
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check";
+/** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -47,7 +48,8 @@ export interface Use {
   node_id: string;
 }
 
-export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event";
+/** CA-04 P6: "goal" ran until a goal was reached; "script" ran from a script or GitHub, its command or workflow as the detail. */
+export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event" | "goal" | "script";
 
 export interface Runs {
   how: RunsHow;
@@ -74,6 +76,12 @@ export interface Step {
   model: string | null;
   /** The import session a prompt came from; null for one written by hand. */
   sessionId: string | null;
+  /**
+   * CA-04 P1: the session a top-level step was recorded in: `payload.session` (a session made here, or an imported one
+   * a typed prompt was added to), else the import it came from. Null for a step saved before CA-04 with neither:
+   * `sessionGroups` reads those into the session they sit in.
+   */
+  session?: string | null;
   /** The tool a prompt written by hand, or a manual step, names. */
   tool: string | null;
   runs: Runs | null;
@@ -98,6 +106,14 @@ export interface Step {
   memory?: string;
   /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
   check?: CheckFacts;
+  /**
+   * CA-04 P2: the tiles sent with this step, at the same time, in the same message: the nodes whose `parent_id` is
+   * this step (not an agent or a team, whose children keep their meaning), in position order. Each can hold more.
+   * Absent when it holds none.
+   */
+  sentWith?: Step[];
+  /** CA-04 P2, a tile inside another: the step it is sent with, as its eyebrow names it ("prompt 2", "order-form.tsx"). */
+  inside?: { id: string; label: string };
 }
 
 /** CA-03 P5: what a check says, read from its payload. */
@@ -112,6 +128,19 @@ export interface CheckFacts {
 }
 
 export interface SessionGroup {
+  /**
+   * CA-04 P1: the session's key: its import id, `typed-<uuid>` for one made here, or `typed-legacy-<n>` for a run of an
+   * old build's typed prompts (read, never stored). `sessionGroups` always sets it; read it through `groupKey`, which
+   * gives a group written by hand (a fixture) the key it had before.
+   */
+  key?: string;
+  /** CA-04 P1: imported, made here, or an old build's run of typed prompts. Read it through `groupKind`. */
+  kind?: "import" | "typed" | "legacy";
+  /**
+   * CA-04 P1: an old build's steps that are not prompts and come before any session. They sit in a group so every
+   * step has one, but no head, no number and no lane is drawn for it.
+   */
+  implicit?: boolean;
   /** null for prompts typed here. */
   sessionId: string | null;
   number: number;
@@ -119,7 +148,10 @@ export interface SessionGroup {
   model: string | null;
   /** The session's date, or "typed here" for prompts with no session. */
   startedAt: string | null;
+  /** CA-04 P1: every top-level step in the session, not only its prompts. */
   stepNumbers: string[];
+  /** CA-04 P6: what the session worked until, when the maker said. */
+  goal?: SessionGoal;
 }
 
 /** Where the date would be, for prompts written by hand. */
@@ -149,7 +181,10 @@ export const MANUAL_TEXT_MAX = 140;
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
 
 const USE_KINDS: readonly UseKind[] = ["output", "file", "tool"];
-const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event"];
+const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event", "goal", "script"];
+
+/** CA-04 P6: the longest command or workflow a step that ran from a script keeps. */
+export const SCRIPT_DETAIL_MAX = 4000;
 
 type Payload = Record<string, Json | undefined>;
 
@@ -220,7 +255,7 @@ export function parseRuns(value: unknown): Runs | null {
   if (!isRecord(value) || !RUNS_HOWS.includes(value.how as RunsHow)) return null;
   const runs: Runs = { how: value.how as RunsHow };
   if (runs.how === "parallel" && typeof value.count === "number" && Number.isFinite(value.count)) runs.count = value.count;
-  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event") {
+  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event" || runs.how === "script") {
     const detail = stringOf(value.detail)?.trim();
     if (detail) runs.detail = detail;
   }
@@ -271,6 +306,10 @@ export function runsLabel(runs: Runs | null | undefined): string {
       return `On a schedule${detail}`;
     case "event":
       return `When something happened${detail}`;
+    case "goal":
+      return "Until a goal was reached";
+    case "script":
+      return "From a script or GitHub";
     default:
       return "";
   }
@@ -292,13 +331,17 @@ const KIND_NAME: Record<StepKind, string> = {
   manual: "Manual step",
   code: "Code",
   check: "Check",
+  file: "File",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
 const isCheckPayload = (payload: unknown): boolean => isRecord(payload) && typeof payload.tested === "string" && payload.tested.trim().length > 0;
 
+/** CA-04 P4: part of a session's setup (setup.ts): never a step, though a rule is code. */
+const isSetupNode = (payload: unknown): boolean => isRecord(payload) && isRecord(payload.setup);
+
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
-  node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload));
+  node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload);
 
 const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
@@ -363,7 +406,18 @@ const dismissedOf = (payload: Payload): string[] =>
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
   const text =
-    kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : kind === "code" ? (stringOf(payload.source) ?? "") : kind === "check" ? (stringOf(payload.tested) ?? "") : (stringOf(payload.text) ?? "");
+    kind === "agent"
+      ? (stringOf(payload.system_prompt) ?? "")
+      : kind === "code"
+        ? (stringOf(payload.source) ?? "")
+        : kind === "check"
+          ? (stringOf(payload.tested) ?? "")
+          : kind === "file"
+            ? (stringOf(payload.summary) ?? "")
+            : (stringOf(payload.text) ?? "");
+  // CA-04 P2: a tile inside another has no number; it is named by its kind, or by its file name.
+  const named = kind === "file" ? stringOf(payload.title)?.trim() : kind === "code" ? stringOf(payload.filename)?.trim() : null;
+  const defaultTitle = number ? `${KIND_NAME[kind]} ${number}` : (named || KIND_NAME[kind]);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = stringOf(payload.tool);
   return {
@@ -371,11 +425,12 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     kind,
     number,
     title: stringOf(node.title)?.trim() || null,
-    defaultTitle: `${KIND_NAME[kind]} ${number}`,
+    defaultTitle,
     text,
     words: wordCount(text),
     model: stringOf(payload.model),
     sessionId: typeof import_ === "string" && import_ ? import_ : null,
+    session: stringOf(payload.session) ?? (typeof import_ === "string" && import_ ? import_ : null),
     tool: tool ? (toolName(tool) ?? tool) : null,
     runs: kind === "agent" || kind === "team" ? parseRuns(payload.runs) : null,
     uses: usesOf(node),
@@ -385,6 +440,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload) } : null),
+    ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
   };
 }
 
@@ -401,6 +457,7 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     uses: [],
     dismissed: [],
     sessionId: null,
+    session: null,
     tool: null,
     children: [],
     harness: undefined,
@@ -410,41 +467,63 @@ function instructionsOf(agent: NodeTree, number: string): Step {
   };
 }
 
+/** CA-04 P2: how deep tiles go inside tiles. The design sets no limit; this is the technical one. */
+export const NEST_DEPTH_MAX = 50;
+
+/** CA-04 P2: what can be sent with a step: any step, and a file. */
+const isSentWithNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean => node.type === FILE_TYPE || isStepNode(node);
+
+const sub = (number: string, at: number): string => (number ? `${number}.${at}` : "");
+
+/** How a tile's eyebrow names the step it is sent with: "prompt 2", "order-form.tsx". */
+export function sentWithLabel(step: Pick<Step, "kind" | "number" | "title" | "filename">): string {
+  if ((step.kind === "code" || step.kind === "file") && step.filename) return step.filename;
+  if (step.number) return `${KIND_NAME[step.kind].toLowerCase()} ${step.number}`;
+  return step.title ?? KIND_NAME[step.kind].toLowerCase();
+}
+
+/**
+ * One node read as a step, with what it holds. An agent's children are its instructions then its prompts; a team's
+ * are its agents (an agent in a team has children only when it has prompts of its own, numbered one level further,
+ * "3.1.2"). Any other step's children are the tiles sent with it (CA-04 P2), unnumbered, read the same way, to
+ * `NEST_DEPTH_MAX` levels.
+ */
+function readStep(node: NodeTree, number: string, kind: StepKind, depth: number, inTeam = false): Step {
+  if (kind === "agent") {
+    const prompts = byPosition((node.children ?? []).filter((child) => child.type === PROMPT_TYPE));
+    if (inTeam && prompts.length === 0) return stepFor(node, number, kind, []);
+    return stepFor(node, number, kind, [instructionsOf(node, sub(number, 1)), ...prompts.map((child, i) => stepFor(child, sub(number, i + 2), "prompt"))]);
+  }
+  if (kind === "team") {
+    const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
+    return stepFor(node, number, kind, agents.map((child, i) => readStep(child, sub(number, i + 1), "agent", depth, true)));
+  }
+  const step = stepFor(node, number, kind);
+  if (depth >= NEST_DEPTH_MAX) return step;
+  const label = sentWithLabel(step);
+  const sent = byPosition((node.children ?? []).filter(isSentWithNode)).map((child) => ({
+    ...readStep(child, "", child.type === FILE_TYPE ? "file" : KIND_OF_TYPE[child.type], depth + 1),
+    inside: { id: step.id, label },
+  }));
+  return sent.length > 0 ? { ...step, sentWith: sent } : step;
+}
+
 /**
  * The steps in order, numbered (DATA §1). `tree` is the nested placed tree.
  * An agent's children are its instructions then its prompts; a team's are its
  * agents. An agent in a team has children only when it has prompts of its own
  * (its instructions, then those prompts, numbered one level further, "3.1.2"),
- * which show when it is opened.
+ * which show when it is opened. CA-04 P2: any other step carries the tiles sent
+ * with it in `sentWith`, recursively; only top-level steps take numbers.
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return top.map((node, index) => {
-    const number = String(index + 1);
-    const kind = KIND_OF_TYPE[node.type];
-    if (kind === "agent") {
-      const prompts = byPosition((node.children ?? []).filter((child) => child.type === PROMPT_TYPE));
-      return stepFor(node, number, kind, [
-        instructionsOf(node, `${number}.1`),
-        ...prompts.map((child, i) => stepFor(child, `${number}.${i + 2}`, "prompt")),
-      ]);
-    }
-    if (kind === "team") {
-      const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
-      return stepFor(
-        node,
-        number,
-        kind,
-        agents.map((child, i) => {
-          const inner = `${number}.${i + 1}`;
-          // An agent in a team shows its instructions in its own row; any prompts of its own show when it is opened.
-          const own = byPosition((child.children ?? []).filter((grand) => grand.type === PROMPT_TYPE));
-          return stepFor(child, inner, "agent", own.length === 0 ? [] : [instructionsOf(child, `${inner}.1`), ...own.map((grand, k) => stepFor(grand, `${inner}.${k + 2}`, "prompt"))]);
-        }),
-      );
-    }
-    return stepFor(node, number, kind);
-  });
+  return top.map((node, index) => readStep(node, String(index + 1), KIND_OF_TYPE[node.type], 0));
+}
+
+/** CA-04 P2: a step and every tile sent with it, depth first, in order. */
+export function withSentWith(step: Step): Step[] {
+  return [step, ...(step.sentWith ?? []).flatMap(withSentWith)];
 }
 
 /** The title the maker typed, else the default. */
@@ -459,68 +538,123 @@ function chosenTool(raw: string | undefined): string | null {
 }
 
 /**
- * The sessions and runs of typed prompts that make up the top-level steps, in
- * order of first step (DATA §5). A session is one group wherever its prompts
- * sit; prompts with no session form one group per run of consecutive steps.
- * `sessions` is builds.making.sessions; an entry without an id cannot be
- * matched, and its prompts keep the model they name.
+ * The sessions that make up the top-level steps, in order of first step (DATA §5; CA-04 P1). Every top-level step is
+ * in one group, not only the prompts: a session is one group wherever its steps sit.
  *
- * `sessionTools` is builds.making.session_tools (TF-13): a session whose client
- * names no tool takes the tool the maker gave it, by `toolName` or as typed. A
- * client's own tool always wins.
+ * A step's session is the one it recorded (`step.session`: `payload.session`, else its import). A step saved before
+ * CA-04 with neither is read, never written: a prompt typed by hand joins the unbroken run of typed prompts it is in,
+ * one session per run as before, keyed `typed-legacy-<n>`, its tool the first tool those prompts name; any other step
+ * sits in the session of the step before it. An old build's steps that come before any session are one `implicit`
+ * group, which has no number and no head.
+ *
+ * `sessions` is builds.making.sessions; an entry without an id cannot be matched, and its prompts keep the model they
+ * name. `sessionTools` is builds.making.session_tools (TF-13): a session whose client names no tool takes the tool the
+ * maker gave it, by `toolName` or as typed. A client's own tool always wins. `meta` is builds.making.sessions_meta: a
+ * session made here takes its tool, model and day from it, and one with no steps yet follows the others.
  */
 export function sessionGroups(
   steps: readonly Step[],
   sessions: readonly MakingSession[],
   sessionTools: Readonly<Record<string, string>>,
+  meta: Readonly<Record<string, SessionMeta>> = {},
 ): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
 
   const groups: SessionGroup[] = [];
-  const bySession = new Map<string, SessionGroup>();
-  let typed: SessionGroup | null = null;
+  const byKey = new Map<string, SessionGroup>();
+  let numbered = 0;
+  let legacy = 0;
+  /** The run of typed prompts the last step was in, while it is unbroken. */
+  let run: SessionGroup | null = null;
+  let previous: SessionGroup | null = null;
+
+  const open = (group: Omit<SessionGroup, "number" | "stepNumbers"> & { key: string }): SessionGroup => {
+    const made: SessionGroup = { ...group, number: group.implicit ? 0 : ++numbered, stepNumbers: [] };
+    groups.push(made);
+    byKey.set(group.key, made);
+    return made;
+  };
+
+  const recorded = (key: string, step: Step): SessionGroup => {
+    const found = byKey.get(key);
+    if (found) return found;
+    const session = known.get(key);
+    const own = meta[key];
+    if (session || !own || !key.startsWith(TYPED_SESSION_PREFIX)) {
+      // An import (or a key nothing else names, read as one).
+      const model = session?.model ?? own?.model ?? (step.kind === "prompt" ? step.model : null);
+      return open({
+        key,
+        kind: "import",
+        sessionId: key,
+        tool: (session ? toolLabel(session.client) : null) ?? chosenTool(sessionTools[key]) ?? chosenTool(own?.tool ?? undefined),
+        model: model ? modelLabel(model) : null,
+        startedAt: session?.started_at ?? null,
+      });
+    }
+    return open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
+  };
 
   for (const step of steps) {
-    if (step.kind !== "prompt") {
-      typed = null;
-      continue;
-    }
-    if (step.sessionId) {
-      typed = null;
-      let group = bySession.get(step.sessionId);
-      if (!group) {
-        const session = known.get(step.sessionId);
-        const model = session?.model ?? step.model;
-        group = {
-          sessionId: step.sessionId,
-          number: groups.length + 1,
-          tool: (session ? toolLabel(session.client) : null) ?? chosenTool(sessionTools[step.sessionId]),
-          model: model ? modelLabel(model) : null,
-          startedAt: session?.started_at ?? null,
-          stepNumbers: [],
-        };
-        bySession.set(step.sessionId, group);
-        groups.push(group);
+    let group: SessionGroup;
+    if (step.session) {
+      group = recorded(step.session, step);
+      run = null;
+    } else if (step.kind === "prompt") {
+      if (!run) {
+        run = open({
+          key: `${LEGACY_SESSION_PREFIX}${++legacy}`,
+          kind: "legacy",
+          sessionId: null,
+          tool: step.tool,
+          model: step.model ? modelLabel(step.model) : null,
+          startedAt: TYPED_HERE,
+        });
       }
-      group.stepNumbers.push(step.number);
-      continue;
+      run.tool ??= step.tool;
+      group = run;
+    } else {
+      run = null;
+      group =
+        previous ??
+        open({ key: `${LEGACY_SESSION_PREFIX}0`, kind: "legacy", implicit: true, sessionId: null, tool: step.tool ?? step.harness ?? null, model: null, startedAt: TYPED_HERE });
     }
-    if (!typed) {
-      typed = {
-        sessionId: null,
-        number: groups.length + 1,
-        tool: step.tool,
-        model: step.model ? modelLabel(step.model) : null,
-        startedAt: TYPED_HERE,
-        stepNumbers: [],
-      };
-      groups.push(typed);
-    }
-    typed.stepNumbers.push(step.number);
+    group.stepNumbers.push(step.number);
+    previous = group;
+  }
+
+  // Sessions made here that have no step yet, in the order they were made.
+  for (const [key, own] of Object.entries(meta)) {
+    if (byKey.has(key) || !key.startsWith(TYPED_SESSION_PREFIX) || key.startsWith(LEGACY_SESSION_PREFIX) || !own.date) continue;
+    open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
+  }
+  // CA-04 P6: what each session worked until, from its entry.
+  for (const [key, group] of byKey) {
+    const goal = goalOf(meta[key]?.goal);
+    if (goal) group.goal = goal;
   }
   return groups;
 }
+
+/** CA-04 P1: a group's key: its own, else the import's id, else "typed-{n}" as before. */
+export const groupKey = (group: Pick<SessionGroup, "key" | "sessionId" | "number">): string => group.key ?? group.sessionId ?? `typed-${group.number}`;
+
+/** CA-04 P1: a group's kind: its own, else imported when it has an import and typed by hand when not. */
+export const groupKind = (group: Pick<SessionGroup, "kind" | "sessionId">): "import" | "typed" | "legacy" => group.kind ?? (group.sessionId ? "import" : "legacy");
+
+/** CA-04 P1: the session groups a reader is shown: every one but an old build's implicit one. */
+export const shownGroups = (groups: readonly SessionGroup[]): SessionGroup[] => groups.filter((group) => !group.implicit);
+
+/** CA-04 P1: the group a top-level step is in, read by its number, else by its import; never an implicit group. */
+export function groupOfStep(groups: readonly SessionGroup[], step: Pick<Step, "number"> & Partial<Pick<Step, "sessionId">>): SessionGroup | undefined {
+  const found = groups.find((group) => group.stepNumbers.includes(step.number)) ?? (step.sessionId ? groups.find((group) => group.sessionId === step.sessionId) : undefined);
+  return found?.implicit ? undefined : found;
+}
+
+/** CA-04 P1: the numbers of a group's prompts, in order: a group now holds every kind of step. */
+export const promptNumbersOf = (group: Pick<SessionGroup, "stepNumbers">, steps: readonly Pick<Step, "number" | "kind">[]): string[] =>
+  group.stepNumbers.filter((number) => steps.find((step) => step.number === number)?.kind === "prompt");
 
 /** Every step, parents before their children. */
 function flattenSteps(steps: readonly Step[]): Step[] {
@@ -556,6 +690,18 @@ export async function setStepTitle(node: BuildNode, title: string): Promise<Buil
   const trimmed = title.trim();
   if (trimmed.length > TITLE_MAX) throw refuse("setStepTitle", `A title is at most ${TITLE_MAX} characters.`);
   return upsertNode({ ...nodeRow(node), title: trimmed || null });
+}
+
+/**
+ * CA-04 P1: the session a top-level step sits in (`payload.session`), or none (null), which an old build's step reads
+ * as the session it sits in. A key that is only read, never stored (`typed-legacy-<n>`), is refused.
+ */
+export async function setStepSession(node: BuildNode, session: string | null): Promise<BuildNode> {
+  if (session && session.startsWith(LEGACY_SESSION_PREFIX)) throw refuse("setStepSession", "That session is not saved yet.");
+  const payload = { ...payloadOf(node) };
+  if (session) payload.session = session;
+  else delete payload.session;
+  return upsertNode(withPayload(node, payload));
 }
 
 const useKey = (use: Use): string => `${use.kind}:${use.node_id}`;
@@ -650,6 +796,14 @@ export async function dismissSuggestion(node: BuildNode, key: string): Promise<B
   return upsertNode(withPayload(node, { ...payloadOf(node), dismissed: [...dismissed, key] }));
 }
 
+/** CA-04 P2: keep a block sent with an imported prompt from being offered again. `key` is "sent:<n>". */
+export async function dismissSentWith(node: BuildNode, key: string): Promise<BuildNode> {
+  if (!/^sent:\d+$/.test(key)) throw refuse("dismissSentWith", "That is not a suggestion.");
+  const dismissed = dismissedOf(payloadOf(node));
+  if (dismissed.includes(key)) return node;
+  return upsertNode(withPayload(node, { ...payloadOf(node), dismissed: [...dismissed, key] }));
+}
+
 /**
  * How an agent or a team runs (CONCEPT §3). "When I asked" (once) is no `runs` at all.
  * Several at the same time needs a count of 2 to 20; the others take one short line.
@@ -668,9 +822,11 @@ export async function setRuns(node: BuildNode, runs: Runs | null): Promise<Build
         throw refuse("setRuns", `Several at the same time is ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
       }
       next.count = count;
+    } else if (runs.how === "goal") {
+      // The goal is the session's (making.sessions_meta), never repeated here.
     } else {
       const detail = (runs.detail ?? "").trim();
-      const max = runs.how === "until" ? UNTIL_DETAIL_MAX : WHEN_DETAIL_MAX;
+      const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : WHEN_DETAIL_MAX;
       if (detail.length > max) throw refuse("setRuns", `That line is at most ${max} characters.`);
       if (detail) next.detail = detail;
     }
@@ -742,12 +898,12 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, parentId, instructions, ...setup }: { name?: string | null; model: string; parentId?: string | null; instructions?: string } & AgentSetup,
+  { name, model, parentId, instructions, session, ...setup }: { name?: string | null; model: string; parentId?: string | null; instructions?: string; session?: string | null } & AgentSetup,
 ): Promise<BuildNode> {
   const keys = setupPayload("addAgent", model, setup);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys } as Json };
+  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys, ...(session && !parentId ? { session } : null) } as Json };
   return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
 }
 
@@ -755,13 +911,13 @@ export async function addAgent(
 export async function addTeam(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, instructions, ...setup }: { name?: string | null; model: string; instructions?: string } & AgentSetup,
+  { name, model, instructions, session, ...setup }: { name?: string | null; model: string; instructions?: string; session?: string | null } & AgentSetup,
 ): Promise<{ team: BuildNode; agent: BuildNode }> {
   await requireLiveType("addTeam", TEAM_TYPE);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
   const keys = setupPayload("addTeam", model, setup);
-  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
+  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: session ? { session } : {} });
   const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: instructions ?? "", ...keys } as Json });
   return { team, agent };
 }
@@ -824,7 +980,7 @@ export async function addAgentPrompt(agent: BuildNode, tree: readonly NodeTree[]
 export async function addManualStep(
   buildId: string,
   tree: readonly NodeTree[],
-  { tool, text, media_id }: { tool: string; text: string; media_id?: string | null },
+  { tool, text, media_id, session }: { tool: string; text: string; media_id?: string | null; session?: string | null },
 ): Promise<BuildNode> {
   await requireLiveType("addManualStep", MANUAL_STEP_TYPE);
   const name = tool.trim();
@@ -833,6 +989,7 @@ export async function addManualStep(
   if (!line || line.length > MANUAL_TEXT_MAX) throw refuse("addManualStep", `A manual step is 1 to ${MANUAL_TEXT_MAX} characters.`);
   const payload: Record<string, string> = { tool: name, text: line };
   if (media_id) payload.media_id = media_id;
+  if (session) payload.session = session;
   return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload });
 }
 
@@ -874,7 +1031,16 @@ const CODE_TOOL_MAX = 40;
 export async function addCode(
   buildId: string,
   tree: readonly NodeTree[],
-  { source, language, filename, tool, model, entrypoint }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean },
+  {
+    source,
+    language,
+    filename,
+    tool,
+    model,
+    entrypoint,
+    session,
+    parentId,
+  }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean; session?: string | null; parentId?: string | null },
 ): Promise<BuildNode> {
   if (!source.trim()) throw refuse("addCode", "Code needs its lines.");
   if (source.length > CODE_MAX) throw refuse("addCode", "Code is at most 100,000 characters. Upload it as a file instead.");
@@ -892,6 +1058,13 @@ export async function addCode(
   }
   if (model?.trim()) payload.model = model.trim();
   if (entrypoint) payload.entrypoint = true;
+  // CA-04 P2: with `parentId`, the code is sent with that step: a tile inside it, after what it holds.
+  if (parentId) {
+    const why = nestHomeRefusal(tree, parentId);
+    if (why) throw refuse("addCode", why);
+    return placeChildNode(buildId, tree as NodeTree[], parentId, { type: CODE_TYPE, title: null, payload });
+  }
+  if (session) payload.session = session;
   return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload });
 }
 
@@ -917,6 +1090,8 @@ export interface CheckInput {
   runAt?: string | null;
   /** The step it tested: the check uses its output. */
   testedStep?: string | null;
+  /** CA-04 P1: the session it was added to. */
+  session?: string | null;
 }
 
 /**
@@ -991,6 +1166,7 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
     if (!isStep) throw refuse(operation, "That is not a step of this build.");
     out.uses = [{ kind: "output", node_id: input.testedStep }] as unknown as Json;
   }
+  if (input.session) out.session = input.session;
   return out as Json;
 }
 
@@ -1046,14 +1222,130 @@ export async function moveStep(
   return moves;
 }
 
-/** A file the AI read. `title` is the file name. */
+// --- tiles inside tiles (CA-04 P2) ---------------------------------------------
+
+interface Located {
+  node: NodeTree;
+  /** 0 at the top level, 1 inside a top-level step, and so on. */
+  depth: number;
+}
+
+function locate(tree: readonly NodeTree[], id: string, depth = 0): Located | null {
+  for (const node of tree) {
+    if (node.id === id) return { node, depth };
+    const inner = node.children?.length ? locate(node.children, id, depth + 1) : null;
+    if (inner) return inner;
+  }
+  return null;
+}
+
+/** The levels a node and what it holds take up: 1 for a tile that holds nothing. */
+function heightOf(node: NodeTree): number {
+  return 1 + Math.max(0, ...(node.children ?? []).map(heightOf));
+}
+
+const holds = (node: NodeTree, id: string): boolean => (node.children ?? []).some((child) => child.id === id || holds(child, id));
+
+export const NEST_COPY = {
+  missing: "That tile is not in this build.",
+  notATile: "Only a step or a file moves like that.",
+  noParent: "That step is not in this build.",
+  cycle: "A tile can't go inside itself or anything it holds.",
+  result: "Nothing goes inside a result.",
+  file: "Nothing goes inside a file.",
+  agent: "An agent holds its own prompts only.",
+  team: "A team holds its own agents only.",
+  depth: `Tiles go ${NEST_DEPTH_MAX} deep at most. Make one of them its own step first.`,
+} as const;
+
+/**
+ * Why a tile cannot go inside `parentId` (null: its own step at the top level), or null when it can. Pure, so the
+ * List can say no to a drop before anything is written. A tile never goes inside itself or anything it holds; a
+ * result holds nothing; an agent and a team keep their meaning (an agent's prompts, a team's agents); and nothing
+ * goes more than `NEST_DEPTH_MAX` deep.
+ */
+export function nestRefusal(tree: readonly NodeTree[], id: string, parentId: string | null): string | null {
+  const found = locate(tree, id);
+  if (!found) return NEST_COPY.missing;
+  if (!isSentWithNode(found.node)) return NEST_COPY.notATile;
+  if (parentId === null) return null;
+  const target = locate(tree, parentId);
+  if (!target) return NEST_COPY.noParent;
+  if (parentId === id || holds(found.node, parentId)) return NEST_COPY.cycle;
+  const type = target.node.type;
+  if (type === RESULT_TYPE) return NEST_COPY.result;
+  if (type === FILE_TYPE) return NEST_COPY.file;
+  if (!isStepNode(target.node)) return NEST_COPY.noParent;
+  if (type === AGENT_TYPE && found.node.type !== PROMPT_TYPE) return NEST_COPY.agent;
+  if (type === TEAM_TYPE && found.node.type !== AGENT_TYPE) return NEST_COPY.team;
+  if (target.depth + heightOf(found.node) > NEST_DEPTH_MAX) return NEST_COPY.depth;
+  return null;
+}
+
+/** Why a new file or code tile cannot be made inside `parentId`, or null when it can: a step that is not an agent or a team, not too deep. */
+function nestHomeRefusal(tree: readonly NodeTree[], parentId: string): string | null {
+  const target = locate(tree, parentId);
+  if (!target || !isStepNode(target.node)) return NEST_COPY.noParent;
+  if (target.node.type === AGENT_TYPE) return NEST_COPY.agent;
+  if (target.node.type === TEAM_TYPE) return NEST_COPY.team;
+  if (target.depth + 1 > NEST_DEPTH_MAX) return NEST_COPY.depth;
+  return null;
+}
+
+/**
+ * The moves that put tile `id` inside `parentId` at `index` among what it holds, or, with `parentId` null, make it its
+ * own step at `index` among the top-level steps. Inside a step its tiles are numbered 1, 2, 3 by position again; at
+ * the top level the steps hand their own positions out again in order (a new slot after everything else for a tile
+ * coming out), so files, tools and results keep theirs. Only the rows that change are moved. Pure.
+ */
+export function nestMoves(tree: readonly NodeTree[], id: string, parentId: string | null, index: number): NodeMove[] {
+  const found = locate(tree, id);
+  if (!found) return [];
+  const clampAt = (length: number) => Math.max(0, Math.min(Number.isFinite(index) ? Math.floor(index) : length, length));
+  if (parentId !== null) {
+    const target = locate(tree, parentId);
+    if (!target) return [];
+    const siblings = byPosition((target.node.children ?? []).filter((child) => child.id !== id));
+    siblings.splice(clampAt(siblings.length), 0, found.node);
+    return siblings.flatMap((node, i) => (node.parent_id === parentId && node.position === i + 1 ? [] : [{ id: node.id, parent_id: parentId, position: i + 1 }]));
+  }
+  const next = Math.max(0, ...tree.filter((node) => node.parent_id === null && typeof node.position === "number").map((node) => node.position as number)) + 1;
+  if (!isStepNode(found.node)) return found.node.parent_id === null ? [] : [{ id, parent_id: null, position: next }];
+  const steps = topSteps(tree);
+  const slots = steps.map((step) => step.position as number);
+  if (found.node.parent_id !== null) slots.push(next);
+  slots.sort((a, b) => a - b);
+  const order = steps.filter((step) => step.id !== id);
+  order.splice(clampAt(order.length), 0, found.node);
+  return order.flatMap((node, i) => (node.parent_id === null && node.position === slots[i] ? [] : [{ id: node.id, parent_id: null, position: slots[i] }]));
+}
+
+/**
+ * Put a tile inside another step, sent with it, or make it its own step (CA-04 P2): one `reorderNodes` write, refused
+ * by `nestRefusal` (the cycle and depth guards among them) before anything is written. Resolves with the moves.
+ */
+export async function nestStep(buildId: string, tree: readonly NodeTree[], id: string, parentId: string | null, index: number): Promise<NodeMove[]> {
+  const why = nestRefusal(tree, id, parentId);
+  if (why) throw refuse("nestStep", why);
+  const moves = nestMoves(tree, id, parentId, index);
+  if (moves.length > 0) await reorderNodes(buildId, moves);
+  return moves;
+}
+
+/** A file the AI read. `title` is the file name. CA-04 P2: with `parentId`, a file sent with that step, after what it holds. */
 export async function addFile(
   buildId: string,
   tree: readonly NodeTree[],
-  { title, url, summary, media_id }: { title: string; url?: string; summary?: string; media_id?: string },
+  { title, url, summary, media_id, parentId }: { title: string; url?: string; summary?: string; media_id?: string; parentId?: string | null },
 ): Promise<BuildNode> {
   if (!title.trim()) throw refuse("addFile", "A file needs its name.");
-  return placeTopNode(buildId, tree, { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) });
+  const node = { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) };
+  if (parentId) {
+    const why = nestHomeRefusal(tree, parentId);
+    if (why) throw refuse("addFile", why);
+    return placeChildNode(buildId, tree as NodeTree[], parentId, node);
+  }
+  return placeTopNode(buildId, tree, node);
 }
 
 export const MADE_FILE_NAME_MAX = 120;
@@ -1108,6 +1400,48 @@ function compact(fields: Record<string, string | undefined>): Json {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(fields)) if (typeof value === "string" && value.trim()) out[key] = value.trim();
   return out;
+}
+
+// --- how a tool was connected (CA-04 P5) ------------------------------------
+
+export type ToolConnection = "app" | "mcp" | "code";
+export type ToolRunsAt = "web" | "local";
+export const TOOL_CONNECTIONS: readonly ToolConnection[] = ["app", "mcp", "code"];
+export const TOOL_RUNS_AT: readonly ToolRunsAt[] = ["web", "local"];
+
+/** How a tool was connected, and where an MCP server ran, as saved; null for what was never said. */
+export function toolConnectionOf(node: Pick<BuildNode, "payload">): { connection: ToolConnection | null; runsAt: ToolRunsAt | null } {
+  const payload = payloadOf(node);
+  const connection = TOOL_CONNECTIONS.includes(payload.connection as ToolConnection) ? (payload.connection as ToolConnection) : null;
+  const runsAt = connection === "mcp" && TOOL_RUNS_AT.includes(payload.runs_at as ToolRunsAt) ? (payload.runs_at as ToolRunsAt) : null;
+  return { connection, runsAt };
+}
+
+/** The tools an MCP server's tool was seen calling, with how many times (`payload.tools_used`), most used first. Never typed. */
+export function toolsUsedOf(node: Pick<BuildNode, "payload">): { name: string; count: number }[] {
+  const raw = payloadOf(node).tools_used;
+  if (!isRecord(raw)) return [];
+  return Object.entries(raw)
+    .filter((entry): entry is [string, number] => typeof entry[1] === "number" && Number.isFinite(entry[1]) && entry[1] > 0)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/**
+ * Say how a tool was connected: built into the app, an MCP server, or the maker's own code (`payload.connection`), and
+ * for an MCP server whether it ran at a web address or on the maker's computer (`payload.runs_at`). Null takes the
+ * answer off; `runs_at` goes when the tool is not an MCP server.
+ */
+export async function setToolConnection(node: BuildNode, connection: ToolConnection | null, runsAt: ToolRunsAt | null = null): Promise<BuildNode> {
+  if (node.type !== TOOL_TYPE) throw refuse("setToolConnection", "Only a tool is connected.");
+  if (connection !== null && !TOOL_CONNECTIONS.includes(connection)) throw refuse("setToolConnection", "That is not a way to connect a tool.");
+  if (runsAt !== null && !TOOL_RUNS_AT.includes(runsAt)) throw refuse("setToolConnection", "That is not where a server runs.");
+  const payload = { ...payloadOf(node) };
+  if (connection) payload.connection = connection;
+  else delete payload.connection;
+  if (connection === "mcp" && runsAt) payload.runs_at = runsAt;
+  else delete payload.runs_at;
+  return upsertNode(withPayload(node, payload));
 }
 
 // --- fields of a file, a tool and a result (UI-P66) ---------------------------

@@ -33,8 +33,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, canCheck, FILE_TYPE, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
-import { sessionToolsOf, type MakingSession } from "@/lib/build/making";
+import { addFile, buildSteps, canCheck, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { toolFor } from "@/lib/tools/registry";
+import { addWrittenPrompt } from "@/lib/build/composePrompts";
+import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
+import { goalRefusal, type SessionGoal } from "@/lib/build/making";
+import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
+import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
@@ -47,6 +52,7 @@ import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddToolDialog } from "./AddToolDialog";
+import { AddSessionDialog } from "./AddSessionDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
@@ -117,14 +123,15 @@ export function SandboxPage() {
   const made = (build as { making?: unknown } | null)?.making;
   const { counts, hasAgent, sessionCount, steps, groups } = useMemo(() => {
     const steps = buildSteps(tree);
-    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made));
+    // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
+    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made));
     const all = flatten(steps);
     const next: SandboxCounts = {
-      sessions: groups.length,
+      sessions: shownGroups(groups).length,
       prompts: all.filter((step) => step.kind === "prompt").length,
-      files: tree.filter((node) => node.type === FILE_TYPE).length,
+      files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
-    return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: groups.length, steps, groups };
+    return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
   }, [tree, made]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
@@ -280,7 +287,7 @@ export function SandboxPage() {
       suggestUses(
         steps,
         Object.entries(listFacts.names)
-          .filter(([id]) => tree.some((node) => node.id === id && node.type === FILE_TYPE))
+          .filter(([id]) => tree.some((node) => node.id === id && node.type === FILE_TYPE && !isSetupPayload(node.payload)))
           .map(([id, name]) => ({ id, name })),
         madeFiles,
       ).map((suggestion) => ({ ...suggestion, label: listFacts.names[suggestion.use.node_id] ?? "File" })),
@@ -301,7 +308,19 @@ export function SandboxPage() {
         }),
     [tree],
   );
-  const dividerRows = useMemo(() => dividers(steps, groups), [steps, groups]);
+  /** CA-04 P4: each session's setup, and how many items it holds. */
+  const setupCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const item of setupItemsOf(tree)) out[item.session] = (out[item.session] ?? 0) + 1;
+    return out;
+  }, [tree]);
+  /** CA-04 P6: when each session runs, from the workflow files in its setup. */
+  const runsWhen = useMemo(() => {
+    const events = new Map<string, WorkflowEvent[]>();
+    for (const item of setupItemsOf(tree)) if (item.workflow?.events) events.set(item.session, [...(events.get(item.session) ?? []), ...item.workflow.events]);
+    return Object.fromEntries([...events].map(([key, list]) => [key, runsWhenLine(list)]));
+  }, [tree]);
+  const dividerRows = useMemo(() => dividers(steps, groups, setupCounts, runsWhen), [steps, groups, setupCounts, runsWhen]);
 
   /* ── Sources ── */
 
@@ -329,8 +348,126 @@ export function SandboxPage() {
     picker.current?.click();
   }, []);
 
-  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools), [groups, steps, sessions.sessions, sessionTools]);
+  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen), [groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
+
+  /* ── sessions (CA-04 P1) ── */
+
+  /** The session the maker chose for what they add next; the build's last session while they have chosen none. */
+  const [chosenSession, setChosenSession] = useState<string | null>(null);
+  const shown = useMemo(() => shownGroups(groups), [groups]);
+  const currentSession = useMemo(() => {
+    if (chosenSession && sourceSessionRows.some((row) => row.key === chosenSession)) return chosenSession;
+    const last = shown[shown.length - 1];
+    return last ? groupKey(last) : null;
+  }, [chosenSession, sourceSessionRows, shown]);
+  /* The add field names its session once the build has more than the one session its typed prompts make. */
+  const sessionChoices = useMemo(
+    () =>
+      shown.length > 1 || shown.some((group) => groupKind(group) !== "legacy")
+        ? sourceSessionRows.map((row) => ({ key: row.key, label: `Session ${row.number} · ${row.tool}`, tool: row.tool === "Typed here" || row.tool === "Unknown tool" ? null : row.tool }))
+        : undefined,
+    [shown, sourceSessionRows],
+  );
+  const [addSessionOpen, setAddSessionOpen] = useState(false);
+  const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
+
+  /** An old build's run of typed prompts, saved as a session made here so it can change. Resolves its new key. */
+  const claim = useCallback(
+    async (key: string, change: Partial<SessionMeta> = {}): Promise<string | null> => {
+      const group = groups.find((candidate) => groupKey(candidate) === key);
+      if (!group) return null;
+      const ids = steps.filter((step) => group.stepNumbers.includes(step.number)).map((step) => step.id);
+      const meta: SessionMeta = { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: todayDay(), ...change };
+      const next = await prompts.claimSession(ids, meta);
+      if (next) setChosenSession(next);
+      return next;
+    },
+    [groups, steps, prompts],
+  );
+
+  /**
+   * The session a new step records. None while it is an old build's last run of typed prompts, which a step added at
+   * the end joins by itself; an earlier run is saved first, so the step can name it.
+   */
+  const sessionToWrite = useCallback(async (): Promise<string | null> => {
+    const key = currentSession;
+    if (!key) return null;
+    if (!isLegacySession(key)) return key;
+    const last = shown[shown.length - 1];
+    if (last && groupKey(last) === key) return null;
+    return claim(key);
+  }, [currentSession, shown, claim]);
+
+  const onNewSession = useCallback(
+    async (tool: string | null) => {
+      try {
+        const id = await ensureBuild();
+        const key = newSessionKey();
+        await setSessionMeta(id, key, { tool, date: todayDay() });
+        await refreshRecord(id);
+        setChosenSession(key);
+      } catch (cause) {
+        console.error("[Sandbox] session not made", cause);
+        toast.error("Couldn't make that session. Try again.");
+      }
+    },
+    [ensureBuild, refreshRecord],
+  );
+
+  const onSessionMeta = useCallback(
+    async (key: string, change: { tool?: string | null; date?: string }) => {
+      try {
+        if (isLegacySession(key)) {
+          await claim(key, change);
+          return;
+        }
+        const id = await ensureBuild();
+        const group = groups.find((candidate) => groupKey(candidate) === key);
+        const before = sessionsMetaOf(made)[key] ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() };
+        await setSessionMeta(id, key, { ...before, ...change });
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] session not saved", cause);
+        toast.error("Couldn't save that session. Try again.");
+      }
+    },
+    [claim, ensureBuild, groups, made, refreshRecord],
+  );
+
+  /** CA-04 P6: what a session worked until; an old build's run of typed prompts is saved as a session first. */
+  const onSessionGoal = useCallback(
+    async (key: string, goal: SessionGoal | null) => {
+      if (goal) {
+        const why = goalRefusal(goal);
+        if (why) {
+          toast.error(why);
+          return;
+        }
+      }
+      try {
+        if (isLegacySession(key)) {
+          await claim(key, { goal: goal ?? undefined });
+          return;
+        }
+        const id = await ensureBuild();
+        const group = groups.find((candidate) => groupKey(candidate) === key);
+        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
+        const { goal: _old, ...rest } = before;
+        await setSessionMeta(id, key, goal ? { ...rest, goal } : rest);
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] goal not saved", cause);
+        toast.error("Couldn't save the goal. Try again.");
+      }
+    },
+    [claim, ensureBuild, groups, made, refreshRecord],
+  );
+
+  const onAddPrompt = useCallback(
+    async (input: { text: string; tool: string | null; model: string | null }) => prompts.addNow({ ...input, session: await sessionToWrite() }),
+    [prompts, sessionToWrite],
+  );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
   const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
 
@@ -383,10 +520,39 @@ export function SandboxPage() {
     });
   }, [nodes, build?.id, queryClient]);
 
+  /* ── tiles inside tiles (CA-04 P2) ── */
+
+  const canNest = useCallback((id: string, parentId: string) => nestRefusal(tree, id, parentId) === null, [tree]);
+  const onNest = useCallback(
+    async (id: string, parentId: string | null, index: number) => {
+      const done = await prompts.nest(id, parentId, index);
+      if (done) afterWrite();
+      return done;
+    },
+    [prompts, afterWrite],
+  );
+  /** A tile dropped on a session's head: placed after that session's last step, then put in it. */
+  const onMoveToSession = useCallback(
+    async (id: string, key: string) => {
+      const group = groups.find((candidate) => groupKey(candidate) === key);
+      const last = group?.stepNumbers[group.stepNumbers.length - 1];
+      const end = last ? steps.findIndex((step) => step.number === last) + 1 : steps.length;
+      const from = steps.findIndex((step) => step.id === id);
+      const stable = isLegacySession(key) ? await claim(key) : key;
+      if (!stable) return false;
+      if (!(await prompts.nest(id, null, from >= 0 && from < end ? end - 1 : end))) return false;
+      prompts.setSessionOf(id, stable);
+      afterWrite();
+      return true;
+    },
+    [groups, steps, claim, prompts, afterWrite],
+  );
+
   const onAddAgentOrTeam = useCallback(
     async (input: AddAgentInput) => {
       savingSeed.current = true;
-      const id = await prompts.addAgentOrTeam(input).finally(() => {
+      const session = await sessionToWrite();
+      const id = await prompts.addAgentOrTeam({ ...input, session }).finally(() => {
         savingSeed.current = false;
       });
       settleSeed(Boolean(id));
@@ -394,7 +560,7 @@ export function SandboxPage() {
       setSelectedId(id);
       afterWrite();
     },
-    [prompts, afterWrite, settleSeed],
+    [prompts, afterWrite, settleSeed, sessionToWrite],
   );
 
   const onAddAgentTo = useCallback(
@@ -418,35 +584,36 @@ export function SandboxPage() {
 
   const onAddManual = useCallback(
     async (input: AddManualStepInput) => {
-      const id = await prompts.addManual({ ...input, afterId: afterStep?.id ?? null });
+      const id = await prompts.addManual({ ...input, afterId: afterStep?.id ?? null, session: await sessionToWrite() });
       if (!id) return;
       setSelectedId(id);
       afterWrite();
     },
-    [prompts, afterStep, afterWrite],
+    [prompts, afterStep, afterWrite, sessionToWrite],
   );
 
   const onAddCheck = useCallback(
     async (input: AddCheckInput) => {
       // A check uses the step it tested: the selected one, else the last agent, team or code.
-      const id = await prompts.addCheckStep({ ...input, testedStep: testedStepOf(steps, afterStep?.id ?? null) });
+      const id = await prompts.addCheckStep({ ...input, testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
       if (!id) return;
       setSelectedId(id);
       afterWrite();
     },
-    [prompts, steps, afterStep, afterWrite],
+    [prompts, steps, afterStep, afterWrite, sessionToWrite],
   );
 
   const onAddCode = useCallback(
     async (input: AddCodeInput) => {
       savingCode.current = true;
-      const id = await prompts.addCodeSteps(input).finally(() => {
+      const session = await sessionToWrite();
+      const id = await prompts.addCodeSteps({ ...input, session }).finally(() => {
         savingCode.current = false;
       });
       settleCode(Boolean(id));
       if (id) setSelectedId(id);
     },
-    [prompts, settleCode],
+    [prompts, settleCode, sessionToWrite],
   );
 
   const onAddAgentPrompt = useCallback(
@@ -546,9 +713,9 @@ export function SandboxPage() {
     [ensureBuild, queryClient],
   );
 
-  /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. */
+  /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
   const addOneFile = useCallback(
-    async (file: File, verb: "add" | "attach" = "add"): Promise<BuildNode | null> => {
+    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null): Promise<BuildNode | null> => {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
@@ -563,7 +730,7 @@ export function SandboxPage() {
         const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
           const media = await uploadMedia({ buildId: id, file });
-          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id });
+          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId });
           nodes.record(node.id, node);
           added.node = node;
         });
@@ -588,36 +755,172 @@ export function SandboxPage() {
     [addOneFile, prompts, steps, afterWrite],
   );
 
-  /** A drop on a prompt's card: a chat export goes to the intake and nothing is attached. */
+  /** A drop on a step's card: a chat export goes to the intake and nothing is attached. */
   const onDropOnStep = useCallback(
     async (stepId: string, files: File[]) => {
       if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
         navigate("/compose/start");
         return;
       }
-      await attach(stepId, files);
-    },
-    [attach, navigate],
-  );
-
-  /** A drop sorts its files: a chat export goes to the intake, the rest are files of the build. */
-  const onDropFiles = useCallback(
-    async (files: File[]) => {
-      if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
-        navigate("/compose/start");
-        return;
-      }
-      for (const file of files) void addOneFile(file);
+      // CA-04 P2: a file dropped on a step is sent with it: a tile inside that step.
+      for (const file of files) await addOneFile(file, "attach", stepId);
     },
     [addOneFile, navigate],
   );
 
-  /** The picker is an explicit choice of files, so nothing is taken for an export. */
-  const onPicked = useCallback(
-    (files: File[]) => {
-      for (const file of files) void addOneFile(file);
+  /* ── the session setup (CA-04 P4) ── */
+
+  /** The session a setup goes to: the one given, else the current one, saved first when it is an old build's run. */
+  const sessionForSetup = useCallback(
+    async (key: string | null): Promise<string | null> => {
+      const wanted = key ?? currentSession;
+      if (wanted && !isLegacySession(wanted)) return wanted;
+      if (wanted) return claim(wanted);
+      // A build with no session yet starts one, typed here, for its setup.
+      const id = await ensureBuild();
+      const made = newSessionKey();
+      await setSessionMeta(id, made, { tool: null, date: todayDay() });
+      setChosenSession(made);
+      return made;
     },
-    [addOneFile],
+    [currentSession, claim, ensureBuild],
+  );
+
+  /** A file stored for the setup, or null when it was refused (the maker has been told). */
+  const storeSetupFile = useCallback(async (buildId: string, file: File): Promise<string | null> => {
+    const decided = fileKindFor(file);
+    if ("refused" in decided) {
+      toast.error(decided.refused);
+      return null;
+    }
+    if (file.size > MEDIA_MAX_BYTES) {
+      toast.error(`${file.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+      return null;
+    }
+    return (await uploadMedia({ buildId, file })).id;
+  }, []);
+
+  /**
+   * Files routed to a session's setup when their names say what they are (`routeSetupFiles`); with `all`, every file
+   * goes to the setup, the ones no name places as instructions. Resolves with the files that stay the build's own.
+   * An .mcp.json and a .claude/settings.json are read, never stored, and a server's secrets never leave this page.
+   */
+  const addSetup = useCallback(
+    async (files: File[], paths: readonly string[] | undefined, { session = null, all = false }: { session?: string | null; all?: boolean } = {}): Promise<File[]> => {
+      const dropped: DroppedFile[] = await Promise.all(
+        files.map(async (file, at) => {
+          const path = paths?.[at] || file.name;
+          return { name: file.name, path, text: needsText(path) ? await file.text().catch(() => "") : undefined };
+        }),
+      );
+      const { drafts, rest } = routeSetupFiles(dropped);
+      const plan: SetupDraft[] = all ? [...drafts, ...rest.map((at): SetupDraft => ({ kind: "instructions", file: at }))] : drafts;
+      const left = all ? [] : rest.map((at) => files[at]);
+      if (plan.length === 0) return left;
+      try {
+        const id = await ensureBuild();
+        const key = await sessionForSetup(session);
+        if (!key) return left;
+        await nodes.run(async () => {
+          for (const draft of plan) {
+            if (draft.kind === "server") {
+              const node = await addSetupServer(id, nodes.current(), key, draft.server);
+              nodes.record(node.id, node);
+            } else if (draft.kind === "rule") {
+              const node = await addSetupRule(id, nodes.current(), key, draft.rule);
+              nodes.record(node.id, node);
+            } else if (draft.kind === "workflow") {
+              // CA-04 P6: kept as written; its prompt, when read plainly, is the session's prompt.
+              const file = files[draft.file];
+              const node = await addSetupWorkflow(id, nodes.current(), key, { filename: file.name, source: dropped[draft.file].text ?? "", reading: draft.reading });
+              nodes.record(node.id, node);
+              if (draft.reading.prompt) {
+                const prompt = await addWrittenPrompt({ buildId: id, tree: nodes.current(), text: draft.reading.prompt, session: key });
+                nodes.record(prompt.id, prompt);
+              }
+            } else {
+              const file = files[draft.file];
+              const media = await storeSetupFile(id, file);
+              if (!media) continue;
+              const node = await addSetupFile(id, nodes.current(), {
+                session: key,
+                kind: draft.kind,
+                title: file.name,
+                path: dropped[draft.file].path,
+                media_id: media,
+                ...(draft.kind === "skill" ? { skill: { name: draft.name, description: draft.description } } : null),
+              });
+              nodes.record(node.id, node);
+              if (draft.kind === "skill") {
+                for (const at of draft.files) {
+                  const inner = await storeSetupFile(id, files[at]);
+                  if (!inner) continue;
+                  const child = await addSetupFile(id, nodes.current(), { session: key, kind: "skill", title: files[at].name, path: dropped[at].path, media_id: inner, parentId: node.id });
+                  nodes.record(child.id, child);
+                }
+              }
+            }
+          }
+        });
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] setup not added", cause);
+        toast.error("Couldn't add that to the setup. Try again.");
+      }
+      return left;
+    },
+    [ensureBuild, sessionForSetup, nodes, storeSetupFile, refreshRecord],
+  );
+
+  /** "Add to setup": the picker's next files go to that session's setup. */
+  const setupFor = useRef<string | null>(null);
+  const pickForSetup = useCallback((key: string) => {
+    pickFor.current = null;
+    setupFor.current = key;
+    picker.current?.click();
+  }, []);
+
+  const onNotShared = useCallback(
+    (id: string) =>
+      void nodes
+        .run(async () => {
+          const node = tree.find((candidate) => candidate.id === id);
+          if (!node) return;
+          const { children: _children, ...row } = node;
+          nodes.record(id, await setNotShared(row, true));
+        })
+        .catch((cause) => {
+          console.error("[Sandbox] not marked", cause);
+          toast.error("Couldn't change that. Try again.");
+        }),
+    [nodes, tree],
+  );
+
+  /** "Setup 2" on a session's head: the session in Details, scrolled to its Setup. */
+  const [focusSetup, setFocusSetup] = useState<{ key: string; at: number } | null>(null);
+  const onOpenSetup = useCallback((key: string) => {
+    setSelectedId(key);
+    setFocusSetup({ key, at: Date.now() });
+  }, []);
+
+  /** A drop sorts its files: a chat export goes to the intake, a setup file to the current session's setup, the rest are files of the build. */
+  const onDropFiles = useCallback(
+    async (files: File[], paths?: string[]) => {
+      if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
+        navigate("/compose/start");
+        return;
+      }
+      for (const file of await addSetup(files, paths)) void addOneFile(file);
+    },
+    [addOneFile, addSetup, navigate],
+  );
+
+  /** The picker is an explicit choice of files, so nothing is taken for an export; setup files still go to the setup. */
+  const onPicked = useCallback(
+    async (files: File[]) => {
+      for (const file of await addSetup(files, undefined)) void addOneFile(file);
+    },
+    [addOneFile, addSetup],
   );
 
   return (
@@ -633,10 +936,13 @@ export function SandboxPage() {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";
           const stepId = pickFor.current;
+          const setupKey = setupFor.current;
           pickFor.current = null;
+          setupFor.current = null;
           if (files.length === 0) return;
-          if (stepId) void attach(stepId, files);
-          else onPicked(files);
+          if (setupKey) void addSetup(files, undefined, { session: setupKey, all: true });
+          else if (stepId) void attach(stepId, files);
+          else void onPicked(files);
         }}
       />
       <SandboxView
@@ -652,6 +958,7 @@ export function SandboxPage() {
           />
         }
         threadNote={thread.hold}
+        onNewSession={() => setAddSessionOpen(true)}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => setAddToolOpen(true)}
@@ -717,6 +1024,14 @@ export function SandboxPage() {
             }}
             onRuns={(id, runs) => {
               prompts.setRuns(id, runs);
+              // CA-04 P6: a pasted `claude -p "…"` keeps its command as written; its quoted text is the session's prompt.
+              const said = runs?.how === "script" && runs.detail ? claudePromptOf(runs.detail) : null;
+              if (said) {
+                const top = steps.find((step) => step.id === id || step.children.some((child) => child.id === id));
+                const group = top ? groups.find((candidate) => candidate.stepNumbers.includes(top.number)) : undefined;
+                const key = group && groupKind(group) !== "legacy" ? groupKey(group) : null;
+                void prompts.addNow({ text: said, tool: null, model: null, session: key });
+              }
               afterWrite();
             }}
             onManual={(id, fields) => {
@@ -745,10 +1060,16 @@ export function SandboxPage() {
               } else if (row.stepId) prompts.remove(row.stepId);
             }}
             onSessionTool={(sessionId, tool) => void sessions.setTool(sessionId, tool)}
+            onSessionMeta={(key, change) => void onSessionMeta(key, change)}
+            onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}
             onAddPicture={(id, file) => void addPicture(id, file)}
             onUseAsCover={(mediaId) => void setAsCover(mediaId)}
+            onAddToSetup={pickForSetup}
+            onToolConnection={prompts.setConnection}
+            onNotShared={onNotShared}
+            focusSetup={focusSetup}
           />
         }
         list={
@@ -772,10 +1093,23 @@ export function SandboxPage() {
             onNameMade={onNameMade}
             madeNames={madeByStep}
             onDropOnStep={(id, files) => void onDropOnStep(id, files)}
+            onNest={onNest}
+            canNest={canNest}
+            onMoveToSession={onMoveToSession}
+            onKeepSentWith={(suggestion) => {
+              prompts.keepSentWith(suggestion);
+              afterWrite();
+            }}
+            onIgnoreSentWith={prompts.ignoreSentWith}
+            onOpenSetup={onOpenSetup}
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
-            onAddPrompt={prompts.addNow}
+            onAddPrompt={onAddPrompt}
+            sessionChoices={sessionChoices}
+            currentSession={currentSession}
+            onCurrentSession={setChosenSession}
+            onNewSession={() => setAddSessionOpen(true)}
             onAddAsAgent={onAddAsAgent}
             onKeepAsCode={onKeepAsCode}
             inBuild={inBuild}
@@ -828,6 +1162,7 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
+      <AddSessionDialog open={addSessionOpen} onOpenChange={setAddSessionOpen} inBuild={inBuild} onAdd={(tool) => void onNewSession(tool)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
       <FullPromptWindow
         steps={steps}

@@ -308,3 +308,47 @@ describe("setSessionTool (TF-13)", () => {
     expect((patch().making as { session_tools: unknown }).session_tools).toEqual({ s9: "perplexity" });
   });
 });
+
+describe("sessions made in the composer (CA-04 P1)", () => {
+  it("writes one session's tool and day into making.sessions_meta, keeping everything else", async () => {
+    const { setSessionMeta } = await import("./making");
+    build(["Claude"], { sessions: [], excluded_models: ["X"], session_tools: { s1: "perplexity" }, sessions_meta: { "typed-a": { tool: "claude", date: "2026-10-01" } } });
+    await setSessionMeta(BUILD_ID, "typed-b", { tool: "Claude Code", date: "2026-10-20" });
+    const making = patch().making as Record<string, unknown>;
+    expect(making.excluded_models).toEqual(["X"]);
+    expect(making.session_tools).toEqual({ s1: "perplexity" });
+    expect(making.sessions_meta).toEqual({ "typed-a": { tool: "claude", date: "2026-10-01" }, "typed-b": { tool: "claude-code", date: "2026-10-20" } });
+  });
+
+  it("refuses a key that is only ever read (typed-legacy) and a day that is not one, before reading anything", async () => {
+    const { setSessionMeta } = await import("./making");
+    await expect(setSessionMeta(BUILD_ID, "typed-legacy-1", { tool: null, date: "2026-10-20" })).rejects.toThrow(/not saved yet/);
+    await expect(setSessionMeta(BUILD_ID, "typed-b", { tool: null, date: "20 Oct" })).rejects.toThrow(/2026-10-12/);
+    expect(updateBuild).not.toHaveBeenCalled();
+    expect(fromBuilds).not.toHaveBeenCalled();
+  });
+
+  it("reads sessions_meta defensively: a session made here without a day is skipped, unknown keys are dropped", async () => {
+    const { sessionsMetaOf } = await import("./making");
+    expect(
+      sessionsMetaOf({
+        sessions_meta: {
+          "typed-a": { tool: " claude ", date: "2026-10-01", secret: "x" },
+          "typed-b": { tool: "claude" },
+          imp1: { goal: { condition: "tests pass" } },
+          bad: "nope",
+        },
+      }),
+    ).toEqual({ "typed-a": { tool: "claude", date: "2026-10-01" }, imp1: { tool: null, date: "", goal: { condition: "tests pass" } } });
+    expect(sessionsMetaOf(null)).toEqual({});
+  });
+
+  it("makes keys that read as sessions made here, and never as an old build's", async () => {
+    const { isLegacySession, isTypedSession, newSessionKey } = await import("./making");
+    const key = newSessionKey();
+    expect(key).toMatch(/^typed-/);
+    expect(isTypedSession(key)).toBe(true);
+    expect(isLegacySession(key)).toBe(false);
+    expect(isTypedSession("typed-legacy-2")).toBe(false);
+  });
+});

@@ -273,3 +273,27 @@ describe("the summary line under the title (CA-03 P8)", () => {
     expect(plaqueOf(props)).toBe(without);
   });
 });
+
+describe("Download, once the build has a session setup (CA-04 P4)", () => {
+  it("is a menu: the build as before, and the setup as a folder", async () => {
+    const onDownload = vi.fn();
+    const onDownloadSetup = vi.fn();
+    const props = stepsProps();
+    mount({ ...props, actions: { ...props.actions, onDownload, onDownloadSetup } });
+    const dock = screen.getByRole("group", { name: "Take this build" });
+    const trigger = within(dock).getByRole("button", { name: "Download" });
+    expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual(["The build", "The setup, as a folder"]);
+    fireEvent.click(items[1]);
+    expect(onDownloadSetup).toHaveBeenCalledTimes(1);
+    expect(onDownload).not.toHaveBeenCalled();
+  });
+
+  it("stays one button while the build has none", () => {
+    mount(stepsProps());
+    const dock = screen.getByRole("group", { name: "Take this build" });
+    expect(within(dock).getByRole("button", { name: "Download" }).getAttribute("aria-haspopup")).toBeNull();
+  });
+});

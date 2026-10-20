@@ -36,10 +36,11 @@ import { IconButton } from "@/components/brand/IconButton";
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelTag } from "@/components/brand/ModelTag";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
+import { groupKind, groupOfStep, promptNumbersOf, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { EYEBROW } from "@/pages/site/compose/refinedStyles";
 
 export type FullPromptMode = "maker" | "reader";
 
@@ -109,18 +110,19 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   const place = prompts.findIndex((candidate) => candidate.id === step.id) + 1;
   const instructions = isInstructions(step);
 
-  const group = step.sessionId
-    ? groups.find((candidate) => candidate.sessionId === step.sessionId)
-    : groups.find((candidate) => candidate.sessionId === null && candidate.stepNumbers.includes(step.number));
-  const inSession = group ? group.stepNumbers.indexOf(step.number) + 1 : 0;
+  const group = groupOfStep(groups, step);
+  // CA-04 P1: a session holds every kind of step; "prompt 2 of 3" counts its prompts.
+  const sessionPrompts = group ? promptNumbersOf(group, steps) : [];
+  const inSession = sessionPrompts.indexOf(step.number) + 1;
   const tool = group?.tool ?? step.tool;
   const model = step.model ? modelLabel(step.model) : group?.model ?? null;
-  const when = group?.sessionId ? shortDate(group.startedAt) : "";
+  const dated = group ? groupKind(group) !== "legacy" : false;
+  const when = dated && group ? shortDate(group.startedAt) : "";
   const facts = [
-    group || tool ? `${group?.sessionId ? `Session ${group.number}` : "Typed here"}${tool ? ` · ${tool}` : ""}` : null,
+    group || tool ? `${dated && group ? `Session ${group.number}` : "Typed here"}${tool ? ` · ${tool}` : ""}` : null,
     model,
     when || null,
-    group && inSession > 0 ? `prompt ${inSession} of ${group.stepNumbers.length} in the session` : null,
+    group && inSession > 0 ? `prompt ${inSession} of ${sessionPrompts.length} in the session` : null,
   ].filter((fact): fact is string => Boolean(fact));
 
   const all = flatten(steps);
@@ -280,7 +282,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
     <div style={{ display: "flex", flexDirection: "column", gap: 16, minHeight: phone ? "100%" : undefined }}>
       <LiveRegion message={said} />
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Dialog.Title style={{ ...geist(10.5, 500, t.label), margin: 0, flexGrow: 1, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        <Dialog.Title style={{ ...EYEBROW, margin: 0, flexGrow: 1 }}>
           Prompt {step.number} of {prompts.length} · full prompt
         </Dialog.Title>
         <Dialog.Close asChild>

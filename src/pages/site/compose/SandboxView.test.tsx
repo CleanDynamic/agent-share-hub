@@ -95,9 +95,9 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the nine Add items in order, Code after Manual step and Check after Code; all nine are live (UI-P64 to UI-P70, CA-02 P7, CA-03 P5)", () => {
-    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "agent", "file", "tool", "manual", "code", "check", "result"]);
+  it("lists the ten Add items in order, New session first (CA-04 P1), Code after Manual step and Check after Code; all are live (UI-P64 to UI-P70, CA-02 P7, CA-03 P5)", () => {
+    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["New session", "Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["newSession", "prompt", "session", "agent", "file", "tool", "manual", "code", "check", "result"]);
     expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Lines of code you wrote or ran");
     expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "How it tested its own work", ready: true });
   });
@@ -184,9 +184,10 @@ describe("the Build panel's head when an agent or a team is opened (UI-P69)", ()
   });
 });
 
-describe("the Add menu holds exactly 9 items, all enabled (UI-P70, CA-02 P7, CA-03 P5)", () => {
+describe("the Add menu holds exactly 10 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-04 P1)", () => {
   it("enables every item once each has something to open", async () => {
     view({
+      onNewSession: vi.fn(),
       onAddCheck: vi.fn(),
       checkable: true,
       onAddFile: vi.fn(),
@@ -201,8 +202,9 @@ describe("the Add menu holds exactly 9 items, all enabled (UI-P70, CA-02 P7, CA-
     });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items).toHaveLength(9);
-    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(9).fill(null));
+    expect(items).toHaveLength(10);
+    expect(items[0].textContent).toBe("New sessionOne sitting with one tool");
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(10).fill(null));
   });
 
   it("lists Check disabled, saying why, when the build has nothing to check (CA-03 P5)", async () => {

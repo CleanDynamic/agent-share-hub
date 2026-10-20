@@ -10,7 +10,7 @@
 // and the one extra read goes through a narrow cast, as provenance.ts does.
 
 import { supabase } from "@/integrations/supabase/client";
-import { TOOLS, toolName } from "@/lib/tools/registry";
+import { TOOLS, toolFor, toolName } from "@/lib/tools/registry";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
 import { buildLayerError, type BuildPatch } from "./types";
@@ -43,12 +43,126 @@ export interface MakingSession {
   turns: number;
 }
 
-/** builds.making. `excluded_models` is the maker's to change (UI-P48); so is `session_tools` (TF-13). */
+/**
+ * CA-04 P1: what a session carries beyond its steps. A session made in the composer is keyed `typed-<uuid>` and has
+ * its tool and its day here; an imported one is keyed by its `import_sessions` id and keeps its own tool and day, so
+ * its entry carries only what the maker adds to it (P6's goal).
+ */
+export interface SessionMeta {
+  /** A tool id or a typed name; null for a session typed here with no tool. */
+  tool: string | null;
+  model?: string | null;
+  /** "2026-10-20"; "" on an imported session's entry, whose day is its own. */
+  date: string;
+  goal?: unknown;
+  runs?: unknown;
+}
+
+/** CA-04 P6: what a session worked until. Stored in `making.sessions_meta[key].goal`. */
+export interface SessionGoal {
+  /** The condition, up to 200 characters, as written. */
+  condition: string;
+  /** At most this many turns, 1 to 500. */
+  atMost?: number;
+  /** Was it reached? */
+  reached?: "reached" | "limit" | "me";
+  /** How many turns it took, when it was reached. */
+  turns?: number;
+}
+
+export const GOAL_CONDITION_MAX = 200;
+export const GOAL_TURNS_MIN = 1;
+export const GOAL_TURNS_MAX = 500;
+const GOAL_REACHED = ["reached", "limit", "me"] as const;
+
+const turnsOf = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isInteger(value) && value >= GOAL_TURNS_MIN && value <= GOAL_TURNS_MAX ? value : undefined;
+
+/** A stored goal, read defensively; null when there is no condition. */
+export function goalOf(value: unknown): SessionGoal | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const condition = typeof raw.condition === "string" ? raw.condition.trim() : "";
+  if (!condition) return null;
+  const goal: SessionGoal = { condition: condition.slice(0, GOAL_CONDITION_MAX) };
+  const atMost = turnsOf(raw.atMost);
+  if (atMost) goal.atMost = atMost;
+  if (GOAL_REACHED.includes(raw.reached as SessionGoal["reached"] & string)) goal.reached = raw.reached as SessionGoal["reached"];
+  const turns = turnsOf(raw.turns);
+  if (turns && goal.reached === "reached") goal.turns = turns;
+  return goal;
+}
+
+/** Why a goal cannot be saved, or null. */
+export function goalRefusal(goal: SessionGoal): string | null {
+  const condition = goal.condition.trim();
+  if (!condition) return "Say what it worked until.";
+  if (condition.length > GOAL_CONDITION_MAX) return `The condition is at most ${GOAL_CONDITION_MAX} characters.`;
+  for (const n of [goal.atMost, goal.turns]) {
+    if (n !== undefined && turnsOf(n) === undefined) return `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`;
+  }
+  return null;
+}
+
+/** "Worked until the tests pass · at most 40 turns · reached in 12", with the parts that exist. */
+export function goalLine(goal: SessionGoal): string {
+  const parts = [`Worked until ${goal.condition}`];
+  if (goal.atMost) parts.push(`at most ${goal.atMost} ${goal.atMost === 1 ? "turn" : "turns"}`);
+  if (goal.reached === "reached" && goal.turns) parts.push(`reached in ${goal.turns}`);
+  return parts.join(" · ");
+}
+
+/** builds.making. `excluded_models` is the maker's to change (UI-P48); so is `session_tools` (TF-13), and so is `sessions_meta` (CA-04). */
 export interface Making {
   sessions: MakingSession[];
   excluded_models: string[];
   /** Import session id to the tool the maker gave a session whose client names none: a tool id or a typed name. */
   session_tools?: Record<string, string>;
+  /** CA-04 P1: a session's key to what it carries. */
+  sessions_meta?: Record<string, SessionMeta>;
+}
+
+/** The key of a session made in the composer starts with this. */
+export const TYPED_SESSION_PREFIX = "typed-";
+/** An old build's prompts typed by hand, read as one session per unbroken run, are keyed with this and a number. Never stored. */
+export const LEGACY_SESSION_PREFIX = "typed-legacy-";
+
+export const isLegacySession = (key: string | null | undefined): boolean => Boolean(key?.startsWith(LEGACY_SESSION_PREFIX));
+/** A session made in the composer and saved: its key is stable. */
+export const isTypedSession = (key: string | null | undefined): boolean => Boolean(key?.startsWith(TYPED_SESSION_PREFIX)) && !isLegacySession(key);
+
+/** A new session's key. */
+export function newSessionKey(): string {
+  const uuid =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+  return `${TYPED_SESSION_PREFIX}${uuid}`;
+}
+
+/** Today, as a session's day is saved. */
+export const todayDay = (now: Date = new Date()): string => now.toISOString().slice(0, 10);
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** builds.making.sessions_meta, read defensively: entries without a day are skipped, and only the known keys are kept. */
+export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
+  const raw = asObject(asObject(making).sessions_meta);
+  const out: Record<string, SessionMeta> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const entry = asObject(value);
+    const date = typeof entry.date === "string" && ISO_DAY.test(entry.date) ? entry.date : "";
+    // A session made here has a day; an imported one keeps its own, and its entry may have none.
+    if (!date && isTypedSession(key)) continue;
+    const tool = typeof entry.tool === "string" && entry.tool.trim() ? entry.tool.trim() : null;
+    const meta: SessionMeta = { tool, date };
+    if (typeof entry.model === "string" && entry.model.trim()) meta.model = entry.model.trim();
+    if (entry.goal !== undefined) meta.goal = entry.goal;
+    if (entry.runs !== undefined) meta.runs = entry.runs;
+    out[key] = meta;
+  }
+  return out;
 }
 
 interface MakingRow {
@@ -293,6 +407,40 @@ export async function setSessionTool(buildId: string, sessionId: string, tool: s
   else delete tools[sessionId];
   await updateBuild(buildId, { making: { ...asObject(making), session_tools: tools } } as unknown as BuildPatch);
   return value ? addMadeWithTools(buildId, [toolName(value) ?? value]) : state;
+}
+
+/**
+ * CA-04 P1: what a session carries, checked. A session made here needs its day; its tool, when given, is a tool id
+ * or a typed name of at most 40 characters, and is kept as `toolFor` knows it. Pure, so the composer can say no first.
+ */
+export function sessionMetaRefusal(key: string, meta: SessionMeta): string | null {
+  if (!key || isLegacySession(key)) return "That session is not saved yet.";
+  if (isTypedSession(key) && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
+  if (meta.date && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
+  if (meta.tool && meta.tool.trim().length > SESSION_TOOL_MAX) return `A tool name is at most ${SESSION_TOOL_MAX} characters.`;
+  return null;
+}
+
+/**
+ * Write what one session carries (`making.sessions_meta[key]`), or take it away (null). Only that key changes; the
+ * rest of `making` is kept as it is. A named tool joins Made with, as a session's tool does. Resolves with the
+ * session's entries as they stand.
+ */
+export async function setSessionMeta(buildId: string, key: string, meta: SessionMeta | null): Promise<Record<string, SessionMeta>> {
+  if (meta) {
+    const why = sessionMetaRefusal(key, meta);
+    if (why) throw buildLayerError("setSessionMeta", new Error(why));
+  } else if (!key) throw buildLayerError("setSessionMeta", new Error("That session is not saved yet."));
+  const { making } = await readMadeWith("setSessionMeta", buildId);
+  const entries = { ...sessionsMetaOf(making) };
+  if (meta) {
+    const tool = meta.tool?.trim() || null;
+    entries[key] = { ...meta, tool: tool ? (toolFor(tool)?.id ?? tool) : null };
+  } else delete entries[key];
+  await updateBuild(buildId, { making: { ...asObject(making), sessions_meta: entries } } as unknown as BuildPatch);
+  const tool = meta?.tool?.trim();
+  if (tool) await addMadeWithTools(buildId, [toolName(tool) ?? tool]).catch(() => console.warn("[setSessionMeta] Made with not updated", { buildId }));
+  return entries;
 }
 
 /** A code for the log, and only a code. */

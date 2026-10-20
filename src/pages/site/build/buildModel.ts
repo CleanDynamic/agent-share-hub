@@ -34,7 +34,7 @@ import {
   type NodeType,
   type RebuildSummary,
 } from "@/lib/build";
-import type { Making, MakingSession } from "@/lib/build/making";
+import { sessionsMetaOf, type Making, type MakingSession } from "@/lib/build/making";
 import type { PortableCost } from "@/lib/build/portable";
 import type { NeedGroup, ReaderMapData, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 
@@ -144,6 +144,8 @@ export interface BuildActionsView {
   /** Puts the build on the clipboard as markdown. Resolves true when it landed. */
   onCopyForAI: () => Promise<boolean>;
   onDownload: () => void;
+  /** CA-04 P4: the build's session setup as a folder. Absent while the build has none: Download stays one button. */
+  onDownloadSetup?: () => void;
   onRebuild: () => void;
   lineageTo: string;
 }
@@ -257,7 +259,9 @@ export function asMaking(value: unknown): Making {
   const excluded = Array.isArray(record.excluded_models) ? record.excluded_models.filter((entry): entry is string => typeof entry === "string") : [];
   const tools = record.session_tools && typeof record.session_tools === "object" && !Array.isArray(record.session_tools) ? Object.entries(record.session_tools) : [];
   const session_tools = Object.fromEntries(tools.filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim() !== ""));
-  return { sessions, excluded_models: excluded, session_tools };
+  // CA-04 P1: the sessions made here, and what each session carries, read the same way.
+  const sessions_meta = sessionsMetaOf(record);
+  return { sessions, excluded_models: excluded, session_tools, ...(Object.keys(sessions_meta).length > 0 ? { sessions_meta } : null) };
 }
 
 export interface BuildTimelineView {
