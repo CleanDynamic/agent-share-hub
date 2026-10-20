@@ -59,6 +59,8 @@ import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type Too
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
+import { SessionFactsFields } from "./SessionExtrasFields";
+import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
 
 export interface InputsView {
@@ -130,6 +132,8 @@ export interface SessionView {
   setup?: readonly SetupRow[];
   /** CA-04 P6: what it worked until, when the maker said. */
   goal?: SessionGoal | null;
+  /** CA-05: what the session carries beyond its steps (cost, background, ...). Absent in older fixtures. */
+  extras?: SessionExtras;
 }
 
 /** CA-04 P4: one row of a session's setup. */
@@ -257,6 +261,8 @@ export interface DetailsHandlers {
   onSessionMeta?: (key: string, change: { tool?: string | null; date?: string }) => void;
   /** CA-04 P6: what a session worked until (null takes it off). Absent: Worked until is shown, not edited. */
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
+  /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
+  onSessionExtras?: (key: string, extras: SessionExtras) => void;
   /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */
   onToolConnection?: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
   /** CA-04 P4: "Add to setup" opens the file picker for this session's setup. Absent: the button is not shown. */
@@ -1136,9 +1142,10 @@ function SessionDetails({
   onAddToSetup,
   onNotShared,
   onSessionGoal,
+  onSessionExtras,
 }: { view: SessionView; phone: boolean; inBuild: readonly string[]; focusSetup?: DetailsPanelProps["focusSetup"] } & Pick<
   DetailsHandlers,
-  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal"
+  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal" | "onSessionExtras"
 >) {
   const [goalAsked, setGoalAsked] = useState(false);
   const [all, setAll] = useState(false);
@@ -1202,6 +1209,7 @@ function SessionDetails({
           </TextButton>
         </span>
       ) : null}
+      {onSessionExtras ? <SessionFactsFields id={view.key} extras={view.extras ?? {}} phone={phone} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
       <Section title="Prompts in the build">
         <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
         {view.status === "loading" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>Loading this session's prompts…</p> : null}
@@ -1705,7 +1713,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} focusSetup={focusSetup} /> : null}
+      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} onSessionExtras={h.onSessionExtras} focusSetup={focusSetup} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}

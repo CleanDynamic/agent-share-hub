@@ -38,6 +38,7 @@ import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
 import { goalRefusal, type SessionGoal } from "@/lib/build/making";
+import { extrasRefusal, readResultFile, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
@@ -459,6 +460,32 @@ export function SandboxPage() {
       } catch (cause) {
         console.error("[Sandbox] goal not saved", cause);
         toast.error("Couldn't save the goal. Try again.");
+      }
+    },
+    [claim, ensureBuild, groups, made, refreshRecord],
+  );
+
+  /** CA-05: what a session carries beyond its steps (cost, background, ...), written whole; an old build's run of typed prompts is saved as a session first. */
+  const onSessionExtras = useCallback(
+    async (key: string, extras: SessionExtras) => {
+      const why = extrasRefusal(extras);
+      if (why) {
+        toast.error(why);
+        return;
+      }
+      try {
+        if (isLegacySession(key)) {
+          await claim(key, extras);
+          return;
+        }
+        const id = await ensureBuild();
+        const group = groups.find((candidate) => groupKey(candidate) === key);
+        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
+        await setSessionMeta(id, key, withExtras(before, extras));
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] session facts not saved", cause);
+        toast.error("Couldn't save that. Try again.");
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -903,6 +930,40 @@ export function SandboxPage() {
     setFocusSetup({ key, at: Date.now() });
   }, []);
 
+  /**
+   * CA-05 P2: a dropped Claude Code result file (the JSON a script run prints) tells what the session cost, the tokens it
+   * used and the tokens read from the cache. It is read, never stored, and goes to the current session. Resolves with
+   * the files that are not one.
+   */
+  const takeResultFiles = useCallback(
+    async (files: File[]): Promise<File[]> => {
+      const rest: File[] = [];
+      for (const file of files) {
+        const facts = /\.jsonl?$/i.test(file.name) && file.size <= 2 * 1024 * 1024 ? readResultFile(await file.text().catch(() => "")) : null;
+        if (!facts) {
+          rest.push(file);
+          continue;
+        }
+        try {
+          const key = await sessionForSetup(null);
+          if (!key) {
+            rest.push(file);
+            continue;
+          }
+          const group = groups.find((candidate) => groupKey(candidate) === key);
+          const { cost, tokens, cached } = facts;
+          const { cost: _c, currency: _u, tokens: _t, cached: _k, ...kept } = group?.extras ?? {};
+          await onSessionExtras(key, { ...kept, ...(cost !== undefined ? { cost, currency: "USD" as const } : null), ...(tokens ? { tokens } : null), ...(cached ? { cached } : null) });
+        } catch (cause) {
+          console.error("[Sandbox] result file not read", cause);
+          rest.push(file);
+        }
+      }
+      return rest;
+    },
+    [groups, onSessionExtras, sessionForSetup],
+  );
+
   /** A drop sorts its files: a chat export goes to the intake, a setup file to the current session's setup, the rest are files of the build. */
   const onDropFiles = useCallback(
     async (files: File[], paths?: string[]) => {
@@ -910,17 +971,17 @@ export function SandboxPage() {
         navigate("/compose/start");
         return;
       }
-      for (const file of await addSetup(files, paths)) void addOneFile(file);
+      for (const file of await addSetup(await takeResultFiles(files), paths)) void addOneFile(file);
     },
-    [addOneFile, addSetup, navigate],
+    [addOneFile, addSetup, navigate, takeResultFiles],
   );
 
   /** The picker is an explicit choice of files, so nothing is taken for an export; setup files still go to the setup. */
   const onPicked = useCallback(
     async (files: File[]) => {
-      for (const file of await addSetup(files, undefined)) void addOneFile(file);
+      for (const file of await addSetup(await takeResultFiles(files), undefined)) void addOneFile(file);
     },
-    [addOneFile, addSetup],
+    [addOneFile, addSetup, takeResultFiles],
   );
 
   return (
@@ -1062,6 +1123,7 @@ export function SandboxPage() {
             onSessionTool={(sessionId, tool) => void sessions.setTool(sessionId, tool)}
             onSessionMeta={(key, change) => void onSessionMeta(key, change)}
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
+            onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}
             onAddPicture={(id, file) => void addPicture(id, file)}

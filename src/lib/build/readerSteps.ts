@@ -40,6 +40,7 @@ import { copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionsMetaOf, type Making } from "./making";
 import { runsWhenLine } from "./runsFrom";
+import { sessionFactsLine } from "./sessionFacts";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
 import type { MapPiece, MapResult } from "./mapLayout";
@@ -72,6 +73,8 @@ export type ReaderChat =
       goal?: { line: string; reached: boolean };
       /** CA-04 P6: "Runs when a pull request is opened", from a workflow in its setup. */
       runsWhen?: string;
+      /** CA-05 P2: length, cost and nobody watching, as a reader gets them: the cost only when the maker ticked Show readers. */
+      facts?: string;
     }
   | {
       kind: "same";
@@ -482,7 +485,14 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     setup: context.setup.get(groupKey(group)) ?? [],
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
+    ...factsOfGroup(group),
   };
+}
+
+/** CA-05 P2: the line under a session's head, as a reader gets it. */
+function factsOfGroup(group: SessionGroup): { facts?: string } {
+  const facts = sessionFactsLine({ extras: group.extras, words: group.longWords }, "reader");
+  return facts ? { facts } : {};
 }
 
 /** CA-04 P6: when a session runs, from the events its workflow files were read to run on. */

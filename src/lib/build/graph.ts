@@ -23,6 +23,7 @@ import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
 import { changesOf, type ChangeRange } from "./changes";
+import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -155,6 +156,10 @@ export interface SessionGroup {
   stepNumbers: string[];
   /** CA-04 P6: what the session worked until, when the maker said. */
   goal?: SessionGoal;
+  /** CA-05: what the maker or a result file said of it: cost, tokens, background, started with, at the same time as. Absent when nothing was. */
+  extras?: SessionExtras;
+  /** CA-05 P2: the session's own text in words, kept only when it is long enough to say so. */
+  longWords?: number;
 }
 
 /** Where the date would be, for prompts written by hand. */
@@ -564,6 +569,7 @@ export function sessionGroups(
 ): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
+  const stepsByNumber = new Map(steps.map((step) => [step.number, step]));
 
   const groups: SessionGroup[] = [];
   const byKey = new Map<string, SessionGroup>();
@@ -637,8 +643,18 @@ export function sessionGroups(
   for (const [key, group] of byKey) {
     const goal = goalOf(meta[key]?.goal);
     if (goal) group.goal = goal;
+    // CA-05: what its entry carries beyond that, and how long its own text is.
+    const extras = extrasOf(meta[key]);
+    if (Object.keys(extras).length > 0) group.extras = extras;
+    const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
+    if (words > LONG_SESSION_WORDS) group.longWords = words;
   }
   return groups;
+}
+
+/** CA-05 P2: the words a step and everything inside it hold. */
+function sessionWords(step: Step): number {
+  return step.words + step.children.reduce((sum, child) => sum + sessionWords(child), 0) + (step.sentWith ?? []).reduce((sum, tile) => sum + sessionWords(tile), 0);
 }
 
 /** CA-04 P1: a group's key: its own, else the import's id, else "typed-{n}" as before. */

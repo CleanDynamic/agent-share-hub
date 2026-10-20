@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TOOLS, toolFor, toolName } from "@/lib/tools/registry";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
+import { extrasOf, extrasRefusal, type SessionExtras } from "./sessionFacts";
 import { buildLayerError, type BuildPatch } from "./types";
 
 /** The order `TOOL_CLIENTS` lists the clients in. */
@@ -48,7 +49,7 @@ export interface MakingSession {
  * its tool and its day here; an imported one is keyed by its `import_sessions` id and keeps its own tool and day, so
  * its entry carries only what the maker adds to it (P6's goal).
  */
-export interface SessionMeta {
+export interface SessionMeta extends SessionExtras {
   /** A tool id or a typed name; null for a session typed here with no tool. */
   tool: string | null;
   model?: string | null;
@@ -160,6 +161,8 @@ export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
     if (typeof entry.model === "string" && entry.model.trim()) meta.model = entry.model.trim();
     if (entry.goal !== undefined) meta.goal = entry.goal;
     if (entry.runs !== undefined) meta.runs = entry.runs;
+    // CA-05: cost, tokens, background, started with, at the same time as, own copy.
+    Object.assign(meta, extrasOf(entry));
     out[key] = meta;
   }
   return out;
@@ -418,7 +421,7 @@ export function sessionMetaRefusal(key: string, meta: SessionMeta): string | nul
   if (isTypedSession(key) && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
   if (meta.date && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
   if (meta.tool && meta.tool.trim().length > SESSION_TOOL_MAX) return `A tool name is at most ${SESSION_TOOL_MAX} characters.`;
-  return null;
+  return extrasRefusal(meta);
 }
 
 /**

@@ -9,6 +9,7 @@
    is in the build, and "added by you" otherwise. A file a step makes is noted
    "made in step {n}". */
 
+import { sessionFactsLine } from "@/lib/build/sessionFacts";
 import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
 import { goalLine, toolLabel } from "@/lib/build/making";
@@ -44,6 +45,8 @@ export interface SourceSession {
   goal?: { line: string; reached: boolean };
   /** CA-04 P6: "Runs when a pull request is opened", from a workflow in its setup; absent when it has none. */
   runsWhen?: string;
+  /** CA-05 P2: length, cost, and nobody watching, one line, the parts that exist; the maker sees all of it. Absent when none. */
+  facts?: string;
 }
 
 export interface SourceFile {
@@ -68,6 +71,9 @@ export function shortDate(iso: string | null | undefined): string {
   const at = new Date(iso);
   return Number.isNaN(at.getTime()) ? "" : `${at.getDate()} ${MONTHS[at.getMonth()]}`;
 }
+
+/** CA-05 P2: the line under a session's head. */
+const factsOf = (group: SessionGroup, audience: "maker" | "reader"): string | null => sessionFactsLine({ extras: group.extras, words: group.longWords }, audience);
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
@@ -113,6 +119,7 @@ export function sourceSessions(
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
       ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
       ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
+      ...(factsOf(group, "maker") ? { facts: factsOf(group, "maker") as string } : null),
       prompts: mine.map((step) => ({
         id: step.id,
         number: step.number,

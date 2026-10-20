@@ -276,6 +276,8 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     checklist,
     // CA-04 P6: what it worked until.
     ...(group?.goal ? { goal: group.goal } : null),
+    // CA-05: cost, background and the rest.
+    ...(group?.extras ? { extras: group.extras } : null),
     // CA-04 P4: its setup, in the order it was added.
     setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared })),
     // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.

@@ -124,6 +124,11 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/changes.copy.test.ts",
   "src/lib/build/changes.test.ts",
   "src/lib/build/changes.ts",
+  // CA-05 P2
+  "src/lib/build/sessionFacts.test.ts",
+  "src/lib/build/sessionFacts.ts",
+  "src/pages/site/compose/SessionExtrasFields.tsx",
+  "src/pages/site/compose/facts.ui.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
