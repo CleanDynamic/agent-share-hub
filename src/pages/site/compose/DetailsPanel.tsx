@@ -57,6 +57,7 @@ import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type Too
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
+import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
 
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
@@ -123,6 +124,8 @@ export interface SessionView {
   editable?: { tool: string | null; date: string };
   /** CA-04 P4: what the AI was given before the first prompt. Absent or empty: no Setup section. */
   setup?: readonly SetupRow[];
+  /** CA-04 P6: what it worked until, when the maker said. */
+  goal?: SessionGoal | null;
 }
 
 /** CA-04 P4: one row of a session's setup. */
@@ -180,6 +183,8 @@ export interface AgentView extends InputsView {
   setup?: AgentSetupValue;
   /** CA-03 P7, an agent only: the tools it can use that read content it doesn't control. */
   outside?: readonly string[];
+  /** CA-04 P6: its session worked until a goal: "Until a goal was reached" is chosen for it until it says otherwise. */
+  sessionGoal?: boolean;
 }
 
 export interface ResultView {
@@ -246,6 +251,8 @@ export interface DetailsHandlers {
   onSessionTool?: (sessionId: string, tool: string | null) => void;
   /** CA-04 P1: change a session made here: its tool (null: "Typed here") or its day. Absent: they are shown, not edited. */
   onSessionMeta?: (key: string, change: { tool?: string | null; date?: string }) => void;
+  /** CA-04 P6: what a session worked until (null takes it off). Absent: Worked until is shown, not edited. */
+  onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
   /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */
   onToolConnection?: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
   /** CA-04 P4: "Add to setup" opens the file picker for this session's setup. Absent: the button is not shown. */
@@ -1021,6 +1028,97 @@ function SetupSection({ view, phone, focus, onSelect, onAddToSetup, onNotShared 
   );
 }
 
+export const GOAL_COPY = {
+  title: "Worked until",
+  add: "Add a goal",
+  condition: "The condition",
+  conditionHint: "the tests pass and the page loads",
+  atMost: "At most",
+  turns: "turns",
+  reached: "Was it reached?",
+  tookTurns: "Reached in",
+  remove: "Take the goal off",
+  badTurns: `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`,
+} as const;
+
+const REACHED_ROWS = [
+  { value: "reached", label: "Reached" },
+  { value: "limit", label: "Stopped at the limit" },
+  { value: "me", label: "Stopped by me" },
+] as const;
+
+/** A whole number of turns, 1 to 500, or undefined for blank; null for anything else. */
+const turnsField = (value: string): number | undefined | null => {
+  const text = value.trim();
+  if (!text) return undefined;
+  const n = Number(text);
+  return Number.isInteger(n) && n >= GOAL_TURNS_MIN && n <= GOAL_TURNS_MAX ? n : null;
+};
+
+/**
+ * CA-04 P6: Worked until, under Setup: a well for the condition (up to 200), an optional At most (1 to 500 turns), and
+ * Was it reached? as choice rows (Reached, Stopped at the limit, Stopped by me); reached, how many turns it took.
+ */
+function GoalSection({ view, phone, onSessionGoal, onClose }: { view: SessionView; phone: boolean; onSessionGoal: NonNullable<DetailsHandlers["onSessionGoal"]>; onClose: () => void }) {
+  const goal = view.goal ?? null;
+  const [wrong, setWrong] = useState(false);
+  const save = (change: Partial<SessionGoal>) => {
+    const next = { condition: goal?.condition ?? "", ...goal, ...change };
+    if (!next.condition.trim()) return;
+    onSessionGoal(view.key, next);
+  };
+  const turns = (key: "atMost" | "turns") => (value: string) => {
+    const n = turnsField(value);
+    setWrong(n === null);
+    if (n !== null) save({ [key]: n });
+  };
+  return (
+    <section aria-label={GOAL_COPY.title} data-testid="session-goal" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
+        <h3 style={{ ...text(12.5, 500, t.text), margin: 0, flexGrow: 1 }}>{GOAL_COPY.title}</h3>
+        <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => (goal ? onSessionGoal(view.key, null) : onClose())}>
+          {GOAL_COPY.remove}
+        </TextButton>
+      </div>
+      <FieldBlock label={GOAL_COPY.condition}>
+        <CommitField key={`${view.key}:goal`} label={GOAL_COPY.condition} value={goal?.condition ?? ""} placeholder={GOAL_COPY.conditionHint} max={GOAL_CONDITION_MAX} phone={phone} multiline onCommit={(value) => save({ condition: value.trim() })} />
+      </FieldBlock>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <GroupLabel id={`${view.key}-most`}>{GOAL_COPY.atMost}</GroupLabel>
+        <div role="group" aria-labelledby={`${view.key}-most`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 72 }}>
+            <CommitField key={`${view.key}:most`} label={GOAL_COPY.atMost} value={goal?.atMost ? String(goal.atMost) : ""} max={3} phone={phone} onCommit={turns("atMost")} />
+          </div>
+          <span style={text(12.5, 400, t.text2)}>{GOAL_COPY.turns}</span>
+        </div>
+      </div>
+      {goal ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <GroupLabel id={`${view.key}-reached`}>{GOAL_COPY.reached}</GroupLabel>
+          <ChoiceRows<"reached" | "limit" | "me">
+            label={GOAL_COPY.reached}
+            name={`reached-${view.key}`}
+            phone={phone}
+            value={goal.reached ?? ("" as "reached")}
+            onChange={(reached) => save({ reached, ...(reached === "reached" ? null : { turns: undefined }) })}
+            rows={REACHED_ROWS}
+          />
+          {goal.reached === "reached" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={text(12.5, 400, t.text2)}>{GOAL_COPY.tookTurns}</span>
+              <div style={{ width: 72 }}>
+                <CommitField key={`${view.key}:took`} label={GOAL_COPY.tookTurns} value={goal.turns ? String(goal.turns) : ""} max={3} phone={phone} onCommit={turns("turns")} />
+              </div>
+              <span style={text(12.5, 400, t.text2)}>{GOAL_COPY.turns}</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      {wrong ? <span style={quiet()}>{GOAL_COPY.badTurns}</span> : null}
+    </section>
+  );
+}
+
 function SessionDetails({
   view,
   phone,
@@ -1032,7 +1130,12 @@ function SessionDetails({
   onSelect,
   onAddToSetup,
   onNotShared,
-}: { view: SessionView; phone: boolean; inBuild: readonly string[]; focusSetup?: DetailsPanelProps["focusSetup"] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared">) {
+  onSessionGoal,
+}: { view: SessionView; phone: boolean; inBuild: readonly string[]; focusSetup?: DetailsPanelProps["focusSetup"] } & Pick<
+  DetailsHandlers,
+  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal"
+>) {
+  const [goalAsked, setGoalAsked] = useState(false);
   const [all, setAll] = useState(false);
   const shown = all ? { visible: [...view.checklist], hidden: 0 } : firstRows(view.checklist);
   return (
@@ -1081,6 +1184,19 @@ function SessionDetails({
       </div>
       )}
       <SetupSection view={view} phone={phone} focus={focusSetup ?? null} onSelect={onSelect} onAddToSetup={onAddToSetup} onNotShared={onNotShared} />
+      {view.goal || (goalAsked && onSessionGoal) ? (
+        onSessionGoal ? (
+          <GoalSection view={view} phone={phone} onSessionGoal={onSessionGoal} onClose={() => setGoalAsked(false)} />
+        ) : (
+          <KeyValue label={GOAL_COPY.title}>{view.goal ? goalLine(view.goal) : ""}</KeyValue>
+        )
+      ) : onSessionGoal ? (
+        <span>
+          <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setGoalAsked(true)}>
+            {GOAL_COPY.add}
+          </TextButton>
+        </span>
+      ) : null}
       <Section title="Prompts in the build">
         <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
         {view.status === "loading" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>Loading this session's prompts…</p> : null}
@@ -1216,7 +1332,8 @@ function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
  * stored: `payload.runs` keeps its shape.
  */
 function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns">) {
-  const how = view.runs?.how ?? "once";
+  // CA-04 P6: in a session that worked until a goal, "Until a goal was reached" is chosen for you.
+  const how = view.runs?.how ?? (view.sessionGoal ? "goal" : "once");
   const choice = RUNS_CHOICES.find((entry) => entry.how === how) ?? RUNS_CHOICES[0];
   const name = `runs-${view.id}`;
   const field = choice.field;
@@ -1377,6 +1494,21 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
               {detail.length} / {field.max}
             </span>
           </div>
+        ) : null}
+
+        {how === "script" && field?.kind === "code" ? (
+          <FieldBlock label={field.label}>
+            <textarea
+              aria-label={field.label}
+              maxLength={field.max}
+              rows={3}
+              placeholder={field.placeholder}
+              value={detail}
+              onChange={(event) => setDetail(event.target.value)}
+              onBlur={() => write(detail)}
+              style={{ ...typedArea(phone), fontFamily: DM_MONO, fontSize: phone ? 16 : 12, whiteSpace: "pre", overflowX: "auto" }}
+            />
+          </FieldBlock>
         ) : null}
 
         {how === "until" && field?.kind === "text" ? (
@@ -1568,7 +1700,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} focusSetup={focusSetup} /> : null}
+      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} focusSetup={focusSetup} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}

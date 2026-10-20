@@ -58,6 +58,60 @@ export interface SessionMeta {
   runs?: unknown;
 }
 
+/** CA-04 P6: what a session worked until. Stored in `making.sessions_meta[key].goal`. */
+export interface SessionGoal {
+  /** The condition, up to 200 characters, as written. */
+  condition: string;
+  /** At most this many turns, 1 to 500. */
+  atMost?: number;
+  /** Was it reached? */
+  reached?: "reached" | "limit" | "me";
+  /** How many turns it took, when it was reached. */
+  turns?: number;
+}
+
+export const GOAL_CONDITION_MAX = 200;
+export const GOAL_TURNS_MIN = 1;
+export const GOAL_TURNS_MAX = 500;
+const GOAL_REACHED = ["reached", "limit", "me"] as const;
+
+const turnsOf = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isInteger(value) && value >= GOAL_TURNS_MIN && value <= GOAL_TURNS_MAX ? value : undefined;
+
+/** A stored goal, read defensively; null when there is no condition. */
+export function goalOf(value: unknown): SessionGoal | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const condition = typeof raw.condition === "string" ? raw.condition.trim() : "";
+  if (!condition) return null;
+  const goal: SessionGoal = { condition: condition.slice(0, GOAL_CONDITION_MAX) };
+  const atMost = turnsOf(raw.atMost);
+  if (atMost) goal.atMost = atMost;
+  if (GOAL_REACHED.includes(raw.reached as SessionGoal["reached"] & string)) goal.reached = raw.reached as SessionGoal["reached"];
+  const turns = turnsOf(raw.turns);
+  if (turns && goal.reached === "reached") goal.turns = turns;
+  return goal;
+}
+
+/** Why a goal cannot be saved, or null. */
+export function goalRefusal(goal: SessionGoal): string | null {
+  const condition = goal.condition.trim();
+  if (!condition) return "Say what it worked until.";
+  if (condition.length > GOAL_CONDITION_MAX) return `The condition is at most ${GOAL_CONDITION_MAX} characters.`;
+  for (const n of [goal.atMost, goal.turns]) {
+    if (n !== undefined && turnsOf(n) === undefined) return `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`;
+  }
+  return null;
+}
+
+/** "Worked until the tests pass · at most 40 turns · reached in 12", with the parts that exist. */
+export function goalLine(goal: SessionGoal): string {
+  const parts = [`Worked until ${goal.condition}`];
+  if (goal.atMost) parts.push(`at most ${goal.atMost} ${goal.atMost === 1 ? "turn" : "turns"}`);
+  if (goal.reached === "reached" && goal.turns) parts.push(`reached in ${goal.turns}`);
+  return parts.join(" · ");
+}
+
 /** builds.making. `excluded_models` is the maker's to change (UI-P48); so is `session_tools` (TF-13), and so is `sessions_meta` (CA-04). */
 export interface Making {
   sessions: MakingSession[];

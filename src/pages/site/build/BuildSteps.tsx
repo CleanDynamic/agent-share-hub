@@ -621,11 +621,18 @@ function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { k
           </Head>
         </div>
         {setup.length > 0 ? (
-          <span style={{ paddingTop: 8, flexShrink: 0 }}>
+          <span style={{ paddingTop: 8, flexShrink: 0 }} data-testid="setup-toggle">
             <ReadAll label="Setup" onRead={() => setOpen((value) => !value)} expanded={open} />
           </span>
         ) : null}
       </div>
+      {/* CA-04 P6: what the session worked until, and when it runs, one quiet line each under its head. */}
+      {chat.goal ? (
+        <DotLine testId="goal-line" dot={chat.goal.reached ? t.evidence : t.label}>
+          {chat.goal.line}
+        </DotLine>
+      ) : null}
+      {chat.runsWhen ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
       {open ? (
         <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
           {setup.map((item) => (
@@ -905,7 +912,7 @@ function groupsOf(steps: readonly ReaderStep[]): Group[] {
       groups.push({
         key: `chat:${entry.step.id}`,
         // CA-04 P4: Setup at the head's end, when the session has one.
-        head: chat.setup?.length ? <ChatHead chat={chat} /> : (
+        head: chat.setup?.length || chat.goal || chat.runsWhen ? <ChatHead chat={chat} /> : (
           <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
             {chat.headline}
           </Head>

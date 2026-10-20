@@ -30,7 +30,7 @@ import type { BuildNode, NodeTree } from "./types";
 
 /** A session's setup as the build page reads it: instructions, a skill with a file, two servers, the hooks, and a file not shared. */
 function readSetupForTest(mcp: string, settings: string, skill: string): ReaderSetupItem[] {
-  const base = { description: null, notShared: false, files: [], server: null, rule: null, path: null };
+  const base = { description: null, notShared: false, files: [], server: null, rule: null, workflow: null, path: null };
   return [
     { ...base, id: "i1", kind: "instructions", kindLabel: "Instructions", name: "CLAUDE.md", download: "https://example.com/claude.md", path: "project/CLAUDE.md" },
     { ...base, id: "i2", kind: "instructions", kindLabel: "Instructions", name: "copilot-instructions.md", download: "https://example.com/copilot.md", path: ".github/copilot-instructions.md" },

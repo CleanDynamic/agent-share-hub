@@ -148,13 +148,13 @@ describe("a session whose client names no tool (TF-13)", () => {
 });
 
 describe("an agent", () => {
-  it("is a real radio group of five, and the chosen one is checked", () => {
+  it("is a real radio group of seven (CA-04 P6 adds two), and the chosen one is checked", () => {
     panel("agent");
     const group = screen.getByRole("radiogroup", { name: "How did it run?" });
     const radios = within(group).getAllByRole("radio") as HTMLInputElement[];
-    // The fixture's agent repeats until a condition is met, so the two under More ways it ran show straight away.
-    expect(radios).toHaveLength(5);
-    expect(radios.map((radio) => radio.checked)).toEqual([false, false, false, true, false]);
+    // The fixture's agent repeats until a condition is met, so the four under More ways it ran show straight away.
+    expect(radios).toHaveLength(7);
+    expect(radios.map((radio) => radio.checked)).toEqual([false, false, false, true, false, false, false]);
     expect((screen.getByLabelText("The condition") as HTMLInputElement).value).toBe("every item has a price");
     expect(screen.getByText("22 / 80")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "More ways it ran" })).toBeNull();
@@ -193,7 +193,7 @@ describe("an agent", () => {
     return { ...base.view, runs };
   };
 
-  it("shows three ways it ran, and the other two under More ways it ran", () => {
+  it("shows three ways it ran, and the other four under More ways it ran (CA-04 P6)", () => {
     panel("agent", "bakery", { view: withRuns(null) });
     const group = screen.getByRole("radiogroup", { name: "How did it run?" });
     expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual(["When I asked", "On a schedule", "When something happened"]);
@@ -204,6 +204,8 @@ describe("an agent", () => {
       "When something happened",
       "Again until a condition was met",
       "Several at the same time",
+      "Until a goal was reached",
+      "From a script or GitHub",
     ]);
   });
 

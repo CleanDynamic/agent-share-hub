@@ -213,6 +213,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
     inside: insideCounts(step),
+    ...(groupOfStep(ctx.groups, step)?.goal ? { sessionGoal: true } : null),
     instructions: step.kind === "agent" ? step.text : "",
     parent: parentLine(step.id, ctx.steps),
     // CA-02 P5: what it ran in, its models and its tools, as the setup controls hold them.
@@ -272,6 +273,8 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     total,
     status,
     checklist,
+    // CA-04 P6: what it worked until.
+    ...(group?.goal ? { goal: group.goal } : null),
     // CA-04 P4: its setup, in the order it was added.
     setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared })),
     // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.

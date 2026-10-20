@@ -36,8 +36,9 @@ import {
   type Step,
 } from "./graph";
 import { copyTogether } from "./copyTogether";
-import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupKind, type SetupRule, type SetupServer } from "./setup";
-import { sessionsMetaOf, type Making } from "./making";
+import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupRule, type SetupServer } from "./setup";
+import { goalLine, sessionsMetaOf, type Making } from "./making";
+import { runsWhenLine } from "./runsFrom";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
 import type { MapPiece, MapResult } from "./mapLayout";
@@ -66,6 +67,10 @@ export type ReaderChat =
       detail: string;
       /** CA-04 P4: what the AI was given before this session's first prompt. Empty for none. */
       setup: ReaderSetupItem[];
+      /** CA-04 P6: "Worked until …", and whether the goal was reached; absent when it had none. */
+      goal?: { line: string; reached: boolean };
+      /** CA-04 P6: "Runs when a pull request is opened", from a workflow in its setup. */
+      runsWhen?: string;
     }
   | {
       kind: "same";
@@ -90,6 +95,8 @@ export interface ReaderSetupItem {
   files: { id: string; name: string; path: string | null; download: string | null }[];
   server: SetupServer | null;
   rule: SetupRule | null;
+  /** CA-04 P6: a workflow file that runs Claude Code, as written, and what was read of it. */
+  workflow: SetupItem["workflow"];
   /** Where it sat ("docs/CLAUDE.md"), when known. */
   path: string | null;
 }
@@ -421,6 +428,7 @@ function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
       files: item.notShared ? [] : item.files.map((file) => ({ id: file.id, name: file.name, path: file.path, download: download(file.mediaId, null, false) })),
       server: item.notShared && item.server ? { ...item.server, url: null, command: null, args: [] } : item.server,
       rule: item.rule,
+      workflow: item.notShared ? null : item.workflow,
       path: item.path,
     };
     out.set(item.session, [...(out.get(item.session) ?? []), entry]);
@@ -469,7 +477,15 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     headline: group.tool ? `New chat in ${group.tool}` : "New chat",
     detail,
     setup: context.setup.get(groupKey(group)) ?? [],
+    ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
+    ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
   };
+}
+
+/** CA-04 P6: when a session runs, from the events its workflow files were read to run on. */
+function runsWhenOf(setup: readonly ReaderSetupItem[]): { runsWhen?: string } {
+  const events = setup.flatMap((item) => item.workflow?.events ?? []);
+  return events.length > 0 ? { runsWhen: runsWhenLine(events) } : {};
 }
 
 /* ── one step ── */
@@ -629,6 +645,8 @@ const HOW_WORDS: Record<string, string> = {
   until: "Again until a condition was met",
   schedule: "On a schedule",
   event: "When something happened",
+  goal: "Until a goal was reached",
+  script: "From a script or GitHub",
 };
 
 /** The agents a run starts: one for each, and several for one that runs several at once. */

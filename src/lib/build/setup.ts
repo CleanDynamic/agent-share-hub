@@ -16,11 +16,13 @@ import { matchesProjectFile, TOOLS } from "@/lib/tools/registry";
 import { placeChildNode, placeTopNode } from "./composeCover";
 import { CODE_TYPE, FILE_TYPE, TOOL_TYPE } from "./graph";
 import { upsertNode } from "./nodes";
+import { readWorkflow, usesClaudeAction, type WorkflowEvent, type WorkflowReading } from "./runsFrom";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 
-export type SetupKind = "instructions" | "skill" | "server" | "rule";
+/** CA-04 P6 adds "workflow": a GitHub workflow that runs Claude Code, kept as a code tile in the setup. */
+export type SetupKind = "instructions" | "skill" | "server" | "rule" | "workflow";
 
-export const SETUP_KINDS: readonly SetupKind[] = ["instructions", "skill", "server", "rule"];
+export const SETUP_KINDS: readonly SetupKind[] = ["instructions", "skill", "server", "rule", "workflow"];
 
 /** How a kind is named in a setup row. */
 export const SETUP_KIND_LABEL: Record<SetupKind, string> = {
@@ -28,6 +30,7 @@ export const SETUP_KIND_LABEL: Record<SetupKind, string> = {
   skill: "Skill",
   server: "MCP server",
   rule: "Rule",
+  workflow: "Workflow",
 };
 
 /** A hook's event in plain words; any other event reads as its name as written. */
@@ -79,6 +82,8 @@ export interface SetupItem {
   files: { id: string; name: string; path: string | null; mediaId: string | null }[];
   server: SetupServer | null;
   rule: SetupRule | null;
+  /** CA-04 P6: a workflow file, as written, and what was read of it (null where the reader was not sure). */
+  workflow: { filename: string; source: string; events: WorkflowEvent[] | null; prompt: string | null } | null;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -113,6 +118,16 @@ function readServer(payload: Record<string, unknown>, name: string): SetupServer
   };
 }
 
+function workflowOf(payload: Record<string, unknown>): SetupItem["workflow"] {
+  const read = isRecord(payload.workflow) ? payload.workflow : {};
+  const events = Array.isArray(read.events)
+    ? read.events.flatMap((event) =>
+        isRecord(event) && typeof event.name === "string" ? [{ name: event.name, types: Array.isArray(event.types) ? event.types.filter((type): type is string => typeof type === "string") : [] }] : [],
+      )
+    : null;
+  return { filename: str(payload.filename) ?? "workflow.yml", source: str(payload.source) ?? "", events: events && events.length > 0 ? events : null, prompt: str(read.prompt) };
+}
+
 /** The setup items of a tree, in position order; with `session`, only that session's. */
 export function setupItemsOf(tree: readonly NodeTree[], session?: string | null): SetupItem[] {
   const out: SetupItem[] = [];
@@ -124,7 +139,9 @@ export function setupItemsOf(tree: readonly NodeTree[], session?: string | null)
     const skill = isRecord(payload.skill) ? payload.skill : null;
     const rule = isRecord(payload.rule) ? payload.rule : null;
     const name =
-      setup.kind === "skill"
+      setup.kind === "workflow"
+        ? (str(payload.filename) ?? "workflow.yml")
+        : setup.kind === "skill"
         ? (str(skill?.name) ?? str(payload.title) ?? "Skill")
         : setup.kind === "server"
           ? (str(payload.service) ?? "MCP server")
@@ -149,6 +166,7 @@ export function setupItemsOf(tree: readonly NodeTree[], session?: string | null)
         }),
       server: setup.kind === "server" ? readServer(payload, name) : null,
       rule: setup.kind === "rule" ? { when: str(rule?.when) ?? "", filter: str(rule?.filter), command: str(payload.source) ?? "" } : null,
+      workflow: setup.kind === "workflow" ? workflowOf(payload) : null,
     });
   }
   return out;
@@ -168,7 +186,8 @@ export type SetupDraft =
   | { kind: "instructions"; file: number }
   | { kind: "skill"; file: number; name: string | null; description: string | null; files: number[] }
   | { kind: "server"; server: SetupServer }
-  | { kind: "rule"; rule: SetupRule };
+  | { kind: "rule"; rule: SetupRule }
+  | { kind: "workflow"; file: number; reading: WorkflowReading };
 
 const norm = (path: string) => path.replace(/\\/g, "/").replace(/^\.\//, "");
 const baseName = (path: string) => norm(path).split("/").pop() ?? path;
@@ -263,6 +282,9 @@ const isMcpJson = (path: string) => baseName(path).toLowerCase() === ".mcp.json"
 const isSettings = (file: DroppedFile) =>
   /(^|\/)\.claude\/settings(\.local)?\.json$/i.test(norm(file.path)) || (/^settings(\.local)?\.json$/i.test(baseName(file.path)) && readHooks(file.text ?? "").length > 0);
 const isSkillFile = (path: string) => baseName(path).toLowerCase() === "skill.md";
+/** CA-04 P6: a workflow file that runs Claude Code's action: under .github/workflows/, or a .yml dropped on its own that uses it. */
+const isYaml = (path: string) => /\.ya?ml$/i.test(path);
+const isWorkflowFile = (file: DroppedFile) => isYaml(file.path) && usesClaudeAction(file.text ?? "");
 
 /**
  * Where each dropped file goes: the session's setup when its name says what it is, the build's files otherwise.
@@ -297,6 +319,9 @@ export function routeSetupFiles(files: readonly DroppedFile[]): { drafts: SetupD
     } else if (isSettings(file)) {
       taken.add(at);
       for (const rule of readHooks(file.text ?? "")) drafts.push({ kind: "rule", rule });
+    } else if (isWorkflowFile(file)) {
+      taken.add(at);
+      drafts.push({ kind: "workflow", file: at, reading: readWorkflow(file.text ?? "") as WorkflowReading });
     } else if (isInstructionsFile(file.path)) {
       taken.add(at);
       drafts.push({ kind: "instructions", file: at });
@@ -306,7 +331,7 @@ export function routeSetupFiles(files: readonly DroppedFile[]): { drafts: SetupD
 }
 
 /** Whether a dropped file needs its text read to be routed. */
-export const needsText = (path: string): boolean => isSkillFile(path) || isMcpJson(path) || /(^|\/)settings(\.local)?\.json$/i.test(norm(path));
+export const needsText = (path: string): boolean => isSkillFile(path) || isMcpJson(path) || isYaml(path) || /(^|\/)settings(\.local)?\.json$/i.test(norm(path));
 
 /* ── writes ── */
 
@@ -366,6 +391,14 @@ export async function addSetupRule(buildId: string, tree: readonly NodeTree[], s
     rule: { when: rule.when, ...(rule.filter ? { filter: rule.filter } : null) },
   };
   return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload: payload as Json });
+}
+
+/** CA-04 P6: a workflow file, kept as written as a code tile in the setup, with what the reader was sure of. */
+export async function addSetupWorkflow(buildId: string, tree: readonly NodeTree[], session: string, { filename, source, reading }: { filename: string; source: string; reading: WorkflowReading }): Promise<BuildNode> {
+  refuseIf("addSetupWorkflow", !source.trim() ? "A workflow needs its lines." : null);
+  const workflow = { ...(reading.events ? { events: reading.events } : null), ...(reading.prompt ? { prompt: reading.prompt } : null) };
+  const payload = { source, language: "yaml", filename: filename.trim() || "workflow.yml", setup: setupKey(session, "workflow"), workflow };
+  return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload: payload as unknown as Json });
 }
 
 /**

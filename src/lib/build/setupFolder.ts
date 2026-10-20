@@ -68,6 +68,9 @@ export async function setupFolder(items: readonly ReaderSetupItem[], load: (url:
       await fetchInto(`${folder}/${inner}`, file.download, file.name);
     }
   }
+  for (const item of shared.filter((entry) => entry.kind === "workflow" && entry.workflow)) {
+    entries.push({ path: `.github/workflows/${safe(item.workflow?.filename ?? "workflow.yml")}`, data: encoder.encode(item.workflow?.source ?? "") });
+  }
   const servers = shared.flatMap((item) => (item.kind === "server" && item.server ? [item.server] : []));
   if (servers.length > 0) entries.push({ path: ".mcp.json", data: encoder.encode(mcpJson(servers)) });
   const rules = shared.flatMap((item) => (item.kind === "rule" && item.rule ? [item.rule] : []));

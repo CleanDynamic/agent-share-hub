@@ -11,7 +11,7 @@
 
 import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
-import { toolLabel } from "@/lib/build/making";
+import { goalLine, toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
 import { isSetupPayload } from "@/lib/build/setup";
@@ -40,6 +40,10 @@ export interface SourceSession {
   pickTool?: { value: string | null };
   /** CA-04 P4: how many items its setup holds; absent for none. */
   setupCount?: number;
+  /** CA-04 P6: "Worked until …", and whether the goal was reached; absent when it had none. */
+  goal?: { line: string; reached: boolean };
+  /** CA-04 P6: "Runs when a pull request is opened", from a workflow in its setup; absent when it has none. */
+  runsWhen?: string;
 }
 
 export interface SourceFile {
@@ -86,6 +90,7 @@ export function sourceSessions(
   inBuild: readonly SessionSummary[] = [],
   sessionTools: Readonly<Record<string, string>> = {},
   setupCounts: Readonly<Record<string, number>> = {},
+  runsWhen: Readonly<Record<string, string>> = {},
 ): SourceSession[] {
   const clients = new Map(inBuild.map((session) => [session.id, session.client]));
   const pickTool = (id: string): SourceSession["pickTool"] =>
@@ -106,6 +111,8 @@ export function sourceSessions(
       detail: [model, when].filter(Boolean).join(" · "),
       ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
+      ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
+      ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
       prompts: mine.map((step) => ({
         id: step.id,
         number: step.number,

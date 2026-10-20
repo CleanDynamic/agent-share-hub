@@ -389,6 +389,7 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
   /* CA-04 P2: a tile dropped on a session's head goes into that session. */
   const drop = useNestSession(session.key);
   return (
+    <>
     <div
       ref={drop.setRef}
       role="separator"
@@ -415,6 +416,14 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
         </TextButton>
       ) : null}
     </div>
+    {/* CA-04 P6: what the session worked until, and when it runs, one quiet line each under its head. */}
+    {session.goal ? (
+      <DotLine testId="goal-line" dot={session.goal.reached ? t.evidence : t.label}>
+        {session.goal.line}
+      </DotLine>
+    ) : null}
+    {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
+    </>
   );
 }
 

@@ -35,7 +35,10 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
 import { addFile, buildSteps, canCheck, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
-import { addSetupFile, addSetupRule, addSetupServer, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
+import { addWrittenPrompt } from "@/lib/build/composePrompts";
+import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
+import { goalRefusal, type SessionGoal } from "@/lib/build/making";
+import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
@@ -311,7 +314,13 @@ export function SandboxPage() {
     for (const item of setupItemsOf(tree)) out[item.session] = (out[item.session] ?? 0) + 1;
     return out;
   }, [tree]);
-  const dividerRows = useMemo(() => dividers(steps, groups, setupCounts), [steps, groups, setupCounts]);
+  /** CA-04 P6: when each session runs, from the workflow files in its setup. */
+  const runsWhen = useMemo(() => {
+    const events = new Map<string, WorkflowEvent[]>();
+    for (const item of setupItemsOf(tree)) if (item.workflow?.events) events.set(item.session, [...(events.get(item.session) ?? []), ...item.workflow.events]);
+    return Object.fromEntries([...events].map(([key, list]) => [key, runsWhenLine(list)]));
+  }, [tree]);
+  const dividerRows = useMemo(() => dividers(steps, groups, setupCounts, runsWhen), [steps, groups, setupCounts, runsWhen]);
 
   /* ── Sources ── */
 
@@ -339,7 +348,7 @@ export function SandboxPage() {
     picker.current?.click();
   }, []);
 
-  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools, setupCounts), [groups, steps, sessions.sessions, sessionTools, setupCounts]);
+  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen), [groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
 
   /* ── sessions (CA-04 P1) ── */
@@ -421,6 +430,35 @@ export function SandboxPage() {
       } catch (cause) {
         console.error("[Sandbox] session not saved", cause);
         toast.error("Couldn't save that session. Try again.");
+      }
+    },
+    [claim, ensureBuild, groups, made, refreshRecord],
+  );
+
+  /** CA-04 P6: what a session worked until; an old build's run of typed prompts is saved as a session first. */
+  const onSessionGoal = useCallback(
+    async (key: string, goal: SessionGoal | null) => {
+      if (goal) {
+        const why = goalRefusal(goal);
+        if (why) {
+          toast.error(why);
+          return;
+        }
+      }
+      try {
+        if (isLegacySession(key)) {
+          await claim(key, { goal: goal ?? undefined });
+          return;
+        }
+        const id = await ensureBuild();
+        const group = groups.find((candidate) => groupKey(candidate) === key);
+        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
+        const { goal: _old, ...rest } = before;
+        await setSessionMeta(id, key, goal ? { ...rest, goal } : rest);
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] goal not saved", cause);
+        toast.error("Couldn't save the goal. Try again.");
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -791,6 +829,15 @@ export function SandboxPage() {
             } else if (draft.kind === "rule") {
               const node = await addSetupRule(id, nodes.current(), key, draft.rule);
               nodes.record(node.id, node);
+            } else if (draft.kind === "workflow") {
+              // CA-04 P6: kept as written; its prompt, when read plainly, is the session's prompt.
+              const file = files[draft.file];
+              const node = await addSetupWorkflow(id, nodes.current(), key, { filename: file.name, source: dropped[draft.file].text ?? "", reading: draft.reading });
+              nodes.record(node.id, node);
+              if (draft.reading.prompt) {
+                const prompt = await addWrittenPrompt({ buildId: id, tree: nodes.current(), text: draft.reading.prompt, session: key });
+                nodes.record(prompt.id, prompt);
+              }
             } else {
               const file = files[draft.file];
               const media = await storeSetupFile(id, file);
@@ -977,6 +1024,14 @@ export function SandboxPage() {
             }}
             onRuns={(id, runs) => {
               prompts.setRuns(id, runs);
+              // CA-04 P6: a pasted `claude -p "…"` keeps its command as written; its quoted text is the session's prompt.
+              const said = runs?.how === "script" && runs.detail ? claudePromptOf(runs.detail) : null;
+              if (said) {
+                const top = steps.find((step) => step.id === id || step.children.some((child) => child.id === id));
+                const group = top ? groups.find((candidate) => candidate.stepNumbers.includes(top.number)) : undefined;
+                const key = group && groupKind(group) !== "legacy" ? groupKey(group) : null;
+                void prompts.addNow({ text: said, tool: null, model: null, session: key });
+              }
               afterWrite();
             }}
             onManual={(id, fields) => {
@@ -1006,6 +1061,7 @@ export function SandboxPage() {
             }}
             onSessionTool={(sessionId, tool) => void sessions.setTool(sessionId, tool)}
             onSessionMeta={(key, change) => void onSessionMeta(key, change)}
+            onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}
             onAddPicture={(id, file) => void addPicture(id, file)}

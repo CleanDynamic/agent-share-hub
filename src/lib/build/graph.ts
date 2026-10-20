@@ -17,7 +17,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, swapMoves } from "./composePrompts";
 import { toolFor, toolName } from "@/lib/tools/registry";
-import { LEGACY_SESSION_PREFIX, TYPED_SESSION_PREFIX, toolLabel, type MakingSession, type SessionMeta } from "./making";
+import { goalOf, LEGACY_SESSION_PREFIX, TYPED_SESSION_PREFIX, toolLabel, type MakingSession, type SessionGoal, type SessionMeta } from "./making";
 import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
@@ -48,7 +48,8 @@ export interface Use {
   node_id: string;
 }
 
-export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event";
+/** CA-04 P6: "goal" ran until a goal was reached; "script" ran from a script or GitHub, its command or workflow as the detail. */
+export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event" | "goal" | "script";
 
 export interface Runs {
   how: RunsHow;
@@ -149,6 +150,8 @@ export interface SessionGroup {
   startedAt: string | null;
   /** CA-04 P1: every top-level step in the session, not only its prompts. */
   stepNumbers: string[];
+  /** CA-04 P6: what the session worked until, when the maker said. */
+  goal?: SessionGoal;
 }
 
 /** Where the date would be, for prompts written by hand. */
@@ -178,7 +181,10 @@ export const MANUAL_TEXT_MAX = 140;
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
 
 const USE_KINDS: readonly UseKind[] = ["output", "file", "tool"];
-const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event"];
+const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event", "goal", "script"];
+
+/** CA-04 P6: the longest command or workflow a step that ran from a script keeps. */
+export const SCRIPT_DETAIL_MAX = 4000;
 
 type Payload = Record<string, Json | undefined>;
 
@@ -249,7 +255,7 @@ export function parseRuns(value: unknown): Runs | null {
   if (!isRecord(value) || !RUNS_HOWS.includes(value.how as RunsHow)) return null;
   const runs: Runs = { how: value.how as RunsHow };
   if (runs.how === "parallel" && typeof value.count === "number" && Number.isFinite(value.count)) runs.count = value.count;
-  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event") {
+  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event" || runs.how === "script") {
     const detail = stringOf(value.detail)?.trim();
     if (detail) runs.detail = detail;
   }
@@ -300,6 +306,10 @@ export function runsLabel(runs: Runs | null | undefined): string {
       return `On a schedule${detail}`;
     case "event":
       return `When something happened${detail}`;
+    case "goal":
+      return "Until a goal was reached";
+    case "script":
+      return "From a script or GitHub";
     default:
       return "";
   }
@@ -619,6 +629,11 @@ export function sessionGroups(
     if (byKey.has(key) || !key.startsWith(TYPED_SESSION_PREFIX) || key.startsWith(LEGACY_SESSION_PREFIX) || !own.date) continue;
     open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
   }
+  // CA-04 P6: what each session worked until, from its entry.
+  for (const [key, group] of byKey) {
+    const goal = goalOf(meta[key]?.goal);
+    if (goal) group.goal = goal;
+  }
   return groups;
 }
 
@@ -807,9 +822,11 @@ export async function setRuns(node: BuildNode, runs: Runs | null): Promise<Build
         throw refuse("setRuns", `Several at the same time is ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
       }
       next.count = count;
+    } else if (runs.how === "goal") {
+      // The goal is the session's (making.sessions_meta), never repeated here.
     } else {
       const detail = (runs.detail ?? "").trim();
-      const max = runs.how === "until" ? UNTIL_DETAIL_MAX : WHEN_DETAIL_MAX;
+      const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : WHEN_DETAIL_MAX;
       if (detail.length > max) throw refuse("setRuns", `That line is at most ${max} characters.`);
       if (detail) next.detail = detail;
     }
