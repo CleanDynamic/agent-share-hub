@@ -20,6 +20,8 @@ import { Pencil, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { ChangedText } from "@/components/build/ChangedText";
+import { changesLine, type ChangeRange } from "@/lib/build/changes";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
@@ -32,7 +34,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { ChoiceRows } from "./ChoiceRows";
-import { FIELD_LABEL, TextButton } from "./composeControls";
+import { Field, FIELD_LABEL, TextButton } from "./composeControls";
 import {
   atOnce,
   firstRows,
@@ -53,10 +55,16 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { isIsoDay, TRAINED_METHOD_MAX, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
+import { groupByLoaded, type SetupLoaded } from "@/lib/build/setup";
+import { ChangesEachRoundField, MemoryTidyField } from "./AgentNotesFields";
+import { ModelRunFields } from "./ModelRunFields";
+import { asksHowRun, type ModelRun } from "@/lib/build/modelRun";
+import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
+import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
 
 export interface InputsView {
@@ -86,6 +94,10 @@ export interface PromptView extends InputsView {
   tool?: string | null;
   text: string;
   words: number;
+  /** CA-05 P1: the words a reader changes, when the maker marked any. */
+  changes?: readonly ChangeRange[];
+  /** CA-05 P8: the model runs on the maker's own computer or has open weights: How it was run and Where are asked, with what is said so far. */
+  modelRun?: { run: ModelRun | null };
   /** The files it makes; empty for an agent's instructions. */
   makes: readonly MakesRow[];
 }
@@ -126,6 +138,10 @@ export interface SessionView {
   setup?: readonly SetupRow[];
   /** CA-04 P6: what it worked until, when the maker said. */
   goal?: SessionGoal | null;
+  /** CA-05: what the session carries beyond its steps (cost, background, ...). Absent in older fixtures. */
+  extras?: SessionExtras;
+  /** CA-05 P5: the build's other sessions, for Ran at the same time as. Absent or empty: the menu is not shown. */
+  others?: readonly OtherSession[];
 }
 
 /** CA-04 P4: one row of a session's setup. */
@@ -137,6 +153,8 @@ export interface SetupRow {
   /** A skill's description, word for word. */
   description: string | null;
   notShared: boolean;
+  /** CA-05 P6: read at the start, or only when needed. Absent in older fixtures: read as at the start. */
+  loaded?: SetupLoaded;
 }
 
 export interface FileView {
@@ -185,6 +203,11 @@ export interface AgentView extends InputsView {
   outside?: readonly string[];
   /** CA-04 P6: its session worked until a goal: "Until a goal was reached" is chosen for it until it says otherwise. */
   sessionGoal?: boolean;
+  /** CA-05 P8, an agent only: how its main model was run, when the maker said. */
+  modelRun?: ModelRun | null;
+  /** CA-05 P9, an agent only: how it tidies its notes, and what it changes each round. */
+  memoryTidy?: string;
+  changesEachRound?: string;
 }
 
 export interface ResultView {
@@ -194,7 +217,14 @@ export interface ResultView {
   url: string;
   /** Pictures kept with the result. */
   pictures: readonly { id: string; name: string }[];
+  /** CA-05 P10: what it is, as What it is shows it. Absent in older fixtures: a link, or a picture when it holds one. */
+  what?: ResultWhat;
+  /** CA-05 P10: a trained model's facts. Present only when `what` is "trained-model". */
+  trained?: { baseModel: string; method: string; trainedOn: { id: string; name: string; rows: number | null } | null };
 }
+
+/** CA-05 P10: A link, A picture, A file, A trained model. Only the last is stored (`payload.kind`). */
+export type ResultWhat = "link" | "picture" | "file" | "trained-model";
 
 /** CA-02 P7: lines of code. Shown in full, with Copy; never run. */
 export interface CodeView extends InputsView {
@@ -253,6 +283,18 @@ export interface DetailsHandlers {
   onSessionMeta?: (key: string, change: { tool?: string | null; date?: string }) => void;
   /** CA-04 P6: what a session worked until (null takes it off). Absent: Worked until is shown, not edited. */
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
+  /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
+  onSessionExtras?: (key: string, extras: SessionExtras) => void;
+  /** CA-05 P10: the file a trained model was trained on: sent with its result. Absent: the picker is not shown. */
+  onTrainedOn?: (resultId: string, file: File) => void;
+  /** CA-05 P9: how an agent tidies its notes and what it changes each round; an empty string takes a line off. Absent: the wells are not shown. */
+  onAgentNotes?: (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) => void;
+  /** CA-05 P8: say how a model was run (null takes it off). Absent: How it was run and Where are not shown. */
+  onModelRun?: (id: string, run: ModelRun | null) => void;
+  /** CA-05 P7: the runs of a check, newest first. Absent: Runs is not shown. */
+  onCheckRuns?: (id: string, runs: CheckRun[]) => void;
+  /** CA-05 P5: the sessions this one ran at the same time as; the pairing is written both ways. Absent: the menu is not shown. */
+  onSessionTogether?: (key: string, keys: string[]) => void;
   /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */
   onToolConnection?: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
   /** CA-04 P4: "Add to setup" opens the file picker for this session's setup. Absent: the button is not shown. */
@@ -789,11 +831,13 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
           <PairNote tool={view.tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => h.onModel(view.id, null)} />
         </div>
       ) : null}
+      {view.modelRun && h.onModelRun ? <ModelRunFields id={view.id} run={view.modelRun.run} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
       <div style={{ ...wellField, padding: 12 }}>
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          {view.text}
+          <ChangedText text={view.text} changes={view.changes} />
         </p>
       </div>
+      {view.changes?.length ? <span data-testid="changes-line" style={quiet()}>{changesLine(view.changes.length)}</span> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <ReadAll phone={phone} disabled={!open} onClick={() => open?.()} />
         <span style={{ flexGrow: 1 }} />
@@ -921,6 +965,7 @@ function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean }
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of check ${view.number}`} phone={phone} onRename={h.onRename} />
       </Head>
       <CheckBlock check={view.check} />
+      {h.onCheckRuns ? <CheckRunsField key={`${view.id}:${(view.check.runs ?? []).map((run) => `${run.at}${run.passed}${run.total}`).join(",")}`} id={view.id} runs={view.check.runs ?? []} phone={phone} onChange={(runs) => h.onCheckRuns?.(view.id, runs)} /> : null}
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
@@ -981,42 +1026,52 @@ function SetupSection({ view, phone, focus, onSelect, onAddToSetup, onNotShared 
   const rows = view.setup ?? [];
   // Shown only once the session has a setup: a drop on Sources starts one.
   if (rows.length === 0) return null;
+  // CA-05 P6: under two quiet labels, only when both have rows.
+  const grouped = groupByLoaded(rows.map((entry) => ({ ...entry, loaded: entry.loaded ?? ("start" as const) })));
+  const row = (row: SetupRow) => (
+        <div
+      key={row.id}
+      data-testid="setup-row"
+      data-not-shared={row.notShared ? "true" : undefined}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        minHeight: phone ? 44 : 40,
+        padding: "6px 8px",
+        boxSizing: "border-box",
+        borderBottom: line,
+        ...(row.notShared ? { border: `1px dashed ${t.line}`, borderRadius: 6, marginTop: 4 } : null),
+      }}
+    >
+      <button type="button" onClick={() => onSelect?.(row.id)} style={{ ...bareButton, display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+        <span style={text(12, 400, t.label)}>{row.kind}</span>
+        <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.name}</span>
+        {row.description ? <span style={{ ...quiet(), overflowWrap: "anywhere" }}>{row.description}</span> : null}
+      </button>
+      {row.notShared ? (
+        <span style={quiet()}>{SETUP_COPY.notShared}</span>
+      ) : onNotShared ? (
+        <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => onNotShared(row.id)}>
+          {SETUP_COPY.keepToMyself}
+        </TextButton>
+      ) : null}
+    </div>
+  );
   return (
     <section ref={ref} aria-label={SETUP_COPY.title} data-testid="session-setup" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
         <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{SETUP_COPY.title}</h3>
         <span style={{ ...quiet(), ...tnum }}>{rows.length}</span>
       </div>
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          data-testid="setup-row"
-          data-not-shared={row.notShared ? "true" : undefined}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            minHeight: phone ? 44 : 40,
-            padding: "6px 8px",
-            boxSizing: "border-box",
-            borderBottom: line,
-            ...(row.notShared ? { border: `1px dashed ${t.line}`, borderRadius: 6, marginTop: 4 } : null),
-          }}
-        >
-          <button type="button" onClick={() => onSelect?.(row.id)} style={{ ...bareButton, display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-            <span style={text(12, 400, t.label)}>{row.kind}</span>
-            <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.name}</span>
-            {row.description ? <span style={{ ...quiet(), overflowWrap: "anywhere" }}>{row.description}</span> : null}
-          </button>
-          {row.notShared ? (
-            <span style={quiet()}>{SETUP_COPY.notShared}</span>
-          ) : onNotShared ? (
-            <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => onNotShared(row.id)}>
-              {SETUP_COPY.keepToMyself}
-            </TextButton>
-          ) : null}
-        </div>
-      ))}
+      {grouped
+        ? grouped.map((group) => (
+            <div key={group.loaded} role="group" aria-label={group.label} data-testid="setup-loaded" data-loaded={group.loaded} style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ ...text(11.5, 400, t.label), paddingTop: 12, paddingBottom: 4 }}>{group.label}</span>
+              {group.items.map(row)}
+            </div>
+          ))
+        : rows.map(row)}
       {onAddToSetup ? (
         <div style={{ paddingTop: 8 }}>
           <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onAddToSetup(view.key)}>
@@ -1131,9 +1186,11 @@ function SessionDetails({
   onAddToSetup,
   onNotShared,
   onSessionGoal,
+  onSessionExtras,
+  onSessionTogether,
 }: { view: SessionView; phone: boolean; inBuild: readonly string[]; focusSetup?: DetailsPanelProps["focusSetup"] } & Pick<
   DetailsHandlers,
-  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal"
+  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal" | "onSessionExtras" | "onSessionTogether"
 >) {
   const [goalAsked, setGoalAsked] = useState(false);
   const [all, setAll] = useState(false);
@@ -1197,6 +1254,9 @@ function SessionDetails({
           </TextButton>
         </span>
       ) : null}
+      {onSessionExtras ? <StartedWithField key={`${view.key}:started`} id={view.key} extras={view.extras ?? {}} phone={phone} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
+      {onSessionExtras ? <TogetherFields id={view.key} extras={view.extras ?? {}} others={view.others ?? []} phone={phone} onTogether={onSessionTogether ? (keys) => onSessionTogether(view.key, keys) : undefined} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
+      {onSessionExtras ? <SessionFactsFields id={view.key} extras={view.extras ?? {}} phone={phone} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
       <Section title="Prompts in the build">
         <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
         {view.status === "loading" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>Loading this session's prompts…</p> : null}
@@ -1331,7 +1391,7 @@ function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
  * most" count, written into the same detail ("until the review has no changes · at most 3 times"). Nothing new is
  * stored: `payload.runs` keeps its shape.
  */
-function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns">) {
+function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns" | "onAgentNotes">) {
   // CA-04 P6: in a session that worked until a goal, "Until a goal was reached" is chosen for you.
   const how = view.runs?.how ?? (view.sessionGoal ? "goal" : "once");
   const choice = RUNS_CHOICES.find((entry) => entry.how === how) ?? RUNS_CHOICES[0];
@@ -1546,6 +1606,8 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
                 <span style={text(12.5, 400, t.text2)}>{RUNS_COPY.times}</span>
               </div>
             </div>
+            {/* CA-05 P9: what an agent changes each round, when it runs again until a condition was met. */}
+            {view.kind === "agent" && onAgentNotes ? <ChangesEachRoundField id={view.id} value={view.changesEachRound ?? ""} phone={phone} onCommit={(said) => onAgentNotes(view.id, { changesEachRound: said })} /> : null}
           </div>
         ) : null}
       </div>
@@ -1554,7 +1616,7 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
 }
 
 /** CA-02 P5: an agent's Runs in, Models and Tools, written as they change once every model is named. */
-function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]> }) {
+function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup, modelRun, onModelRun, memoryTidy, onAgentNotes }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]>; modelRun?: ModelRun | null; onModelRun?: DetailsHandlers["onModelRun"]; memoryTidy?: string; onAgentNotes?: DetailsHandlers["onAgentNotes"] }) {
   const [value, setValue] = useState(initial);
   const [openModel, setOpenModel] = useState(0);
   const change = (next: AgentSetupValue) => {
@@ -1577,6 +1639,10 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: st
         }}
       />
       <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} />
+      {/* CA-05 P9: under What it remembers. */}
+      {onAgentNotes ? <MemoryTidyField id={id} value={memoryTidy ?? ""} phone={phone} onCommit={(said) => onAgentNotes(id, { memoryTidy: said })} /> : null}
+      {/* CA-05 P8: a model on the maker's own computer, or with open weights, says how it was run. */}
+      {onModelRun && asksHowRun(value.harness, main) ? <ModelRunFields id={id} run={modelRun ?? null} phone={phone} onChange={(run) => onModelRun(id, run)} /> : null}
     </>
   );
 }
@@ -1616,7 +1682,7 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
       ) : null}
       {view.setup ? (
         h.onAgentSetup ? (
-          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} />
+          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} modelRun={view.modelRun} onModelRun={h.onModelRun} memoryTidy={view.memoryTidy} onAgentNotes={h.onAgentNotes} />
         ) : (
           <AgentSetupLines setup={view.setup} />
         )
@@ -1630,7 +1696,7 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
           )}
         </FieldBlock>
       ) : null}
-      <RunsGroup view={view} phone={phone} onRuns={h.onRuns} />
+      <RunsGroup view={view} phone={phone} onRuns={h.onRuns} onAgentNotes={h.onAgentNotes} />
       <Section title={`Inside ${view.inside}`}>
         {view.insideRows.map((row) => (
           <div key={row.id} style={listRow(44)}>
@@ -1647,14 +1713,97 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
 
 /* ── a result ── */
 
-function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { view: ResultView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onAddPicture" | "onUseAsCover">) {
+export const RESULT_COPY = {
+  what: "What it is",
+  link: "A link",
+  picture: "A picture",
+  file: "A file",
+  trained: "A trained model",
+  basedOn: "Based on",
+  trainedOn: "Trained on",
+  trainedOnLine: "The ratings or examples it learned from.",
+  addFile: "Add the file",
+  replaceFile: "Replace the file",
+  removeFile: "Remove the file",
+  how: "How it was trained",
+  howHint: "Rated answers, ranked by me",
+  optional: "Optional",
+} as const;
+
+const WHAT_ROWS: readonly { value: ResultWhat; label: string }[] = [
+  { value: "link", label: RESULT_COPY.link },
+  { value: "picture", label: RESULT_COPY.picture },
+  { value: "file", label: RESULT_COPY.file },
+  { value: "trained-model", label: RESULT_COPY.trained },
+];
+
+function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTrainedOn, onRemoveInside }: { view: ResultView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onAddPicture" | "onUseAsCover" | "onTrainedOn" | "onRemoveInside">) {
   const picker = useRef<HTMLInputElement>(null);
+  const trainedPicker = useRef<HTMLInputElement>(null);
+  const what: ResultWhat = view.what ?? (view.pictures.length > 0 ? "picture" : "link");
+  const trained = what === "trained-model" ? view.trained : undefined;
   return (
     <>
       <Head eyebrow="Result" />
       <FieldBlock label="Summary">
         <CommitField key={`${view.id}:summary`} label="Summary" value={view.summary} phone={phone} multiline max={200} onCommit={(value) => onFields(view.id, { summary: value })} />
       </FieldBlock>
+      {/* CA-05 P10: rare, so it is one choice here; the first three are read from what the result holds. */}
+      <Field id={`${view.id}-what`} label={RESULT_COPY.what} group>
+        <ChoiceRows<ResultWhat>
+          label={RESULT_COPY.what}
+          name={`what-${view.id}`}
+          phone={phone}
+          value={what}
+          onChange={(next) => onFields(view.id, { kind: next === "trained-model" ? "trained-model" : null })}
+          rows={WHAT_ROWS}
+        />
+      </Field>
+      {trained ? (
+        <>
+          <Field id={`${view.id}-based`} label={RESULT_COPY.basedOn} group>
+            <ModelPicker tool={null} value={trained.baseModel || null} onChange={(model) => onFields(view.id, { base_model: model ?? null })} phone={phone} name="Based on" anyWithoutTool />
+          </Field>
+          <Field id={`${view.id}-trained-on`} label={RESULT_COPY.trainedOn} group>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {trained.trainedOn ? (
+                <div data-testid="trained-on" style={listRow(44)}>
+                  <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>
+                    {trained.trainedOn.name}
+                    {trained.trainedOn.rows ? ` · ${trained.trainedOn.rows.toLocaleString("en-GB")} rows` : ""}
+                  </span>
+                  {onRemoveInside ? <RemoveButton label={RESULT_COPY.removeFile} phone={phone} onClick={() => onRemoveInside(trained.trainedOn?.id ?? "")} /> : null}
+                </div>
+              ) : (
+                <span style={quiet()}>{RESULT_COPY.trainedOnLine}</span>
+              )}
+              {onTrainedOn ? (
+                <>
+                  <input
+                    ref={trainedPicker}
+                    type="file"
+                    hidden
+                    data-testid="details-trained-on"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) onTrainedOn(view.id, file);
+                    }}
+                  />
+                  <span>
+                    <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => trainedPicker.current?.click()}>
+                      {trained.trainedOn ? RESULT_COPY.replaceFile : RESULT_COPY.addFile}
+                    </Button>
+                  </span>
+                </>
+              ) : null}
+            </div>
+          </Field>
+          <Field id={`${view.id}-method`} label={RESULT_COPY.how} hint={RESULT_COPY.optional}>
+            <CommitField key={`${view.id}:method`} label={RESULT_COPY.how} value={trained.method} placeholder={RESULT_COPY.howHint} max={TRAINED_METHOD_MAX} phone={phone} onCommit={(value) => onFields(view.id, { method: value })} />
+          </Field>
+        </>
+      ) : null}
       <FieldBlock label="Link">
         <CommitField key={`${view.id}:url`} label="Link" value={view.url} placeholder="https://" phone={phone} max={300} onCommit={(value) => onFields(view.id, { url: value })} />
       </FieldBlock>
@@ -1700,11 +1849,11 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} focusSetup={focusSetup} /> : null}
+      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} onSessionExtras={h.onSessionExtras} onSessionTogether={h.onSessionTogether} focusSetup={focusSetup} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
-      {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} /> : null}
+      {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} onTrainedOn={h.onTrainedOn} onRemoveInside={h.onRemoveInside} /> : null}
     </div>
   );
 }

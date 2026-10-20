@@ -28,7 +28,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
-import { checkStatus, groupKey, groupKind, groupOfStep, runsLabel, shownGroups, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
+import { checkStatus, groupKey, groupKind, groupOfStep, shownGroups, stepRunsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
   label: 100,
@@ -137,6 +137,8 @@ export interface MapBox {
 }
 
 export interface MapLane {
+  /** CA-05 P5: sessions that ran at the same time share this number, and their lanes sit together. Absent for any other lane. */
+  together?: number;
   key: string;
   kind: "session" | "typed" | "files" | "agent" | "hand";
   label: string;
@@ -193,6 +195,57 @@ const isContainer = (step: Pick<Step, "kind">): boolean => step.kind === "agent"
 
 /** Columns a step's box covers. */
 const spanOf = (step: Pick<Step, "kind">): number => (isContainer(step) ? 2 : 1);
+
+/**
+ * CA-05 P5: the sessions that ran at the same time, as a number for each key that has a partner. `parallelWith` is
+ * read both ways, so a session named by another is joined to it even where its own list is empty; a key that names no
+ * session of the build is ignored.
+ */
+export function togetherSets(groups: readonly SessionGroup[]): Map<string, number> {
+  const keys = new Set(groups.map(groupKey));
+  const parent = new Map<string, string>([...keys].map((key) => [key, key]));
+  const find = (key: string): string => {
+    let root = key;
+    while (parent.get(root) !== root) root = parent.get(root) as string;
+    return root;
+  };
+  for (const group of groups) {
+    for (const other of group.extras?.parallelWith ?? []) {
+      if (!keys.has(other)) continue;
+      const a = find(groupKey(group));
+      const b = find(other);
+      if (a !== b) parent.set(b, a);
+    }
+  }
+  const members = new Map<string, string[]>();
+  for (const group of groups) members.set(find(groupKey(group)), [...(members.get(find(groupKey(group))) ?? []), groupKey(group)]);
+  const out = new Map<string, number>();
+  let next = 0;
+  for (const group of groups) {
+    const list = members.get(find(groupKey(group))) ?? [];
+    if (list.length < 2 || out.has(groupKey(group))) continue;
+    for (const key of list) out.set(key, next);
+    next += 1;
+  }
+  return out;
+}
+
+/** CA-05 P5: the sessions in order, with each set that ran at the same time brought together at its first member. */
+export function orderTogether(groups: readonly SessionGroup[], sets: ReadonlyMap<string, number>): SessionGroup[] {
+  const out: SessionGroup[] = [];
+  const placed = new Set<string>();
+  for (const group of groups) {
+    const key = groupKey(group);
+    if (placed.has(key)) continue;
+    const set = sets.get(key);
+    const mates = set === undefined ? [group] : groups.filter((other) => sets.get(groupKey(other)) === set);
+    for (const mate of mates) {
+      placed.add(groupKey(mate));
+      out.push(mate);
+    }
+  }
+  return out;
+}
 
 const plural = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
 
@@ -255,15 +308,17 @@ export function layoutMap(
   /* ── lanes ── */
   /* CA-04 P1: an old build's implicit group (its steps before any session) draws no lane; a session made here is a
      session lane like an imported one. */
-  const groups = shownGroups(allGroups);
+  const sets = togetherSets(shownGroups(allGroups));
+  const groups = orderTogether(shownGroups(allGroups), sets);
   const lanes: MapLane[] = groups.map((group) => ({
     key: groupKey(group),
     kind: groupKind(group) === "legacy" ? "typed" : "session",
     label: groupKind(group) === "legacy" ? "Typed here" : `Session ${group.number}`,
-    sub: [group.tool, group.model].filter(Boolean).join(" · "),
+    sub: [group.tool, group.model, sets.has(groupKey(group)) ? "at the same time" : null].filter(Boolean).join(" · "),
     dashed: false,
     y: 0,
     h: 0,
+    ...(sets.has(groupKey(group)) ? { together: sets.get(groupKey(group)) } : null),
   }));
   const laneOfNumber = new Map<string, number>();
   groups.forEach((group, at) => group.stepNumbers.forEach((number) => laneOfNumber.set(number, at)));
@@ -336,27 +391,53 @@ export function layoutMap(
     const at = file.madeBy ? topOf.get(file.madeBy) : undefined;
     if (at !== undefined) makerOf.set(file.id, at);
   }
-  const stepColumn: number[] = [];
-  const lastInLane = new Map<number, number>();
-  steps.forEach((step, at) => {
-    let column = dateColumn[at];
-    const before = lastInLane.get(stepLane[at]);
-    if (before !== undefined) column = Math.max(column, stepColumn[before] + spanOf(steps[before]));
-    for (const use of step.uses) {
-      if (use.kind === "file") {
-        // A made file sits one column after its step, and what uses it one more after that.
-        const maker = makerOf.get(use.node_id);
-        if (maker !== undefined && maker < at) column = Math.max(column, stepColumn[maker] + spanOf(steps[maker]) + 1);
-        continue;
+  /* CA-05 P5: the first step of each session in a set that ran at the same time starts in the same column, so they sit
+     one above the other. A floor per set is raised to the latest first step and the columns are worked out again, until
+     none moves. */
+  const laneSet = (lane: number): number | undefined => lanes[lane]?.together;
+  const columnsFor = (floor: ReadonlyMap<number, number>): { stepColumn: number[]; firstOf: Map<number, number[]> } => {
+    const stepColumn: number[] = [];
+    const lastInLane = new Map<number, number>();
+    const firstOf = new Map<number, number[]>();
+    steps.forEach((step, at) => {
+      let column = dateColumn[at];
+      const before = lastInLane.get(stepLane[at]);
+      const set = laneSet(stepLane[at]);
+      if (before !== undefined) column = Math.max(column, stepColumn[before] + spanOf(steps[before]));
+      else if (set !== undefined) column = Math.max(column, floor.get(set) ?? 0);
+      for (const use of step.uses) {
+        if (use.kind === "file") {
+          // A made file sits one column after its step, and what uses it one more after that.
+          const maker = makerOf.get(use.node_id);
+          if (maker !== undefined && maker < at) column = Math.max(column, stepColumn[maker] + spanOf(steps[maker]) + 1);
+          continue;
+        }
+        if (use.kind !== "output") continue;
+        const from = indexOfStep.get(use.node_id);
+        // A use of a later step is a loop: it does not push this one right.
+        if (from !== undefined && from < at) column = Math.max(column, stepColumn[from] + spanOf(steps[from]));
       }
-      if (use.kind !== "output") continue;
-      const from = indexOfStep.get(use.node_id);
-      // A use of a later step is a loop: it does not push this one right.
-      if (from !== undefined && from < at) column = Math.max(column, stepColumn[from] + spanOf(steps[from]));
+      stepColumn.push(column);
+      lastInLane.set(stepLane[at], at);
+      if (before === undefined && set !== undefined) firstOf.set(set, [...(firstOf.get(set) ?? []), column]);
+    });
+    return { stepColumn, firstOf };
+  };
+  const floors = new Map<number, number>();
+  let laid = columnsFor(floors);
+  for (let pass = 0; pass < 8; pass++) {
+    let moved = false;
+    for (const [set, firsts] of laid.firstOf) {
+      const latest = Math.max(...firsts);
+      if (latest > (floors.get(set) ?? 0)) {
+        floors.set(set, latest);
+        moved = true;
+      }
     }
-    stepColumn.push(column);
-    lastInLane.set(stepLane[at], at);
-  });
+    if (!moved) break;
+    laid = columnsFor(floors);
+  }
+  const stepColumn = laid.stepColumn;
 
   /* ── the boxes, before they have a place ── */
   const pieceName = new Map<string, string>();
@@ -428,7 +509,7 @@ export function layoutMap(
       tool: step.kind === "manual" ? step.tool : null,
       span: spanOf(step),
       contents: container ? containsLine(step) : null,
-      runs: container ? runsLabel(step.runs) : null,
+      runs: container ? stepRunsLabel(step) : null,
       stack: null,
       ...(step.kind === "check" ? { text: step.check?.passing ?? "", status: step.check ? checkStatus(step.check) : null } : null),
       ...(sent.length > 0 ? { sentWith: sent } : null),
@@ -755,7 +836,7 @@ export function layoutOpened(
       suggested: 0,
       span: 1,
       contents: null,
-      runs: child.kind === "agent" ? runsLabel(child.runs) : null,
+      runs: child.kind === "agent" ? stepRunsLabel(child) : null,
       stack: stackOf(child),
     };
   });

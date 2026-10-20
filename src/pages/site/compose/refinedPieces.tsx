@@ -4,7 +4,8 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { ModelMark } from "@/components/brand/ModelMark";
-import { checkStatus, type CheckFacts } from "@/lib/build/graph";
+import { checkHistoryLine, checkStatus, type CheckFacts } from "@/lib/build/graph";
+import { casesLine } from "@/lib/build/testCases";
 import { markFor } from "@/lib/models/marks";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -91,6 +92,25 @@ export const CHECK_COPY = {
   failed: "When it failed",
 } as const;
 
+/** CA-05 P7: the lines a check says beyond its status, only the ones it has: the cases it was tested on, and how its runs went. */
+export function CheckExtraLines({ check, style }: { check: CheckFacts; style?: CSSProperties }) {
+  const history = checkHistoryLine(check.runs);
+  return (
+    <>
+      {check.cases ? (
+        <DotLine testId="check-cases" style={style}>
+          <span style={tnum}>{casesLine(check.cases)}</span>
+        </DotLine>
+      ) : null}
+      {history ? (
+        <DotLine testId="check-history" style={style}>
+          <span style={tnum}>{history}</span>
+        </DotLine>
+      ) : null}
+    </>
+  );
+}
+
 /** CA-03 P5: a check's one status line (a 7px `--evidence` or `--cat-breakage` dot) and its three answers, label over value. */
 export function CheckBlock({ check, style }: { check: CheckFacts; style?: CSSProperties }) {
   const status = checkStatus(check);
@@ -101,6 +121,7 @@ export function CheckBlock({ check, style }: { check: CheckFacts; style?: CSSPro
           <span style={tnum}>{status.line}</span>
         </DotLine>
       ) : null}
+      <CheckExtraLines check={check} />
       <div>
         <LabelValue label={CHECK_COPY.tested}>{check.tested}</LabelValue>
         {check.passing ? <LabelValue label={CHECK_COPY.passing}>{check.passing}</LabelValue> : null}

@@ -22,6 +22,9 @@ import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
+import { changesOf, type ChangeRange } from "./changes";
+import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
+import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -104,6 +107,16 @@ export interface Step {
   toolRefs?: string[];
   /** CA-03 P6, an agent only: what it remembers between runs (`payload.memory`), when it says. */
   memory?: string;
+  /** CA-05 P9, an agent only: how it tidies its notes (`payload.memory_tidy`), when it says. */
+  memoryTidy?: string;
+  /** CA-05 P9, an agent only: what it changes each round of "Again until a condition was met" (`payload.changes_each_round`), when it says. */
+  changesEachRound?: string;
+  /** CA-05 P8: how its model was run (size, where), when the maker said; for a prompt, an agent or code. */
+  modelRun?: ModelRun;
+  /** CA-05 P7, a file tile only: the cases in it, when it is a test file and they were counted exactly. */
+  rows?: number;
+  /** CA-05 P1, a prompt only: the words a reader changes (`payload.changes`), as character ranges of `text`. Absent when none. */
+  changes?: ChangeRange[];
   /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
   check?: CheckFacts;
   /**
@@ -125,6 +138,17 @@ export interface CheckFacts {
   total: number | null;
   /** The last run, as saved ("2026-10-12"). */
   runAt: string | null;
+  /** CA-05 P7: every run it kept, newest first. Absent when it kept none. */
+  runs?: CheckRun[];
+  /** CA-05 P7: how many cases the test files sent with it hold, when every file could be counted exactly. */
+  cases?: number;
+}
+
+/** CA-05 P7: one run of a check: the day and how many passed of how many. */
+export interface CheckRun {
+  at: string;
+  passed: number;
+  total: number;
 }
 
 export interface SessionGroup {
@@ -152,6 +176,10 @@ export interface SessionGroup {
   stepNumbers: string[];
   /** CA-04 P6: what the session worked until, when the maker said. */
   goal?: SessionGoal;
+  /** CA-05: what the maker or a result file said of it: cost, tokens, background, started with, at the same time as. Absent when nothing was. */
+  extras?: SessionExtras;
+  /** CA-05 P2: the session's own text in words, kept only when it is long enough to say so. */
+  longWords?: number;
 }
 
 /** Where the date would be, for prompts written by hand. */
@@ -176,6 +204,9 @@ export const ROLE_MAX = 40;
 export const AGENT_MODELS_MAX = 4;
 /** CA-03 P6: the longest "What it remembers". */
 export const MEMORY_MAX = 200;
+/** CA-05 P9: the longest "How it tidies its notes" and "What it changes each round". */
+export const MEMORY_TIDY_MAX = 120;
+export const CHANGES_EACH_ROUND_MAX = 120;
 export const MANUAL_TEXT_MAX = 140;
 
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
@@ -315,6 +346,25 @@ export function runsLabel(runs: Runs | null | undefined): string {
   }
 }
 
+/** The lead word of "changes its checklist each round": a determiner is lowered so the clause reads on from "changes". */
+const DETERMINERS = /^(its|their|his|her|our|my|your|the|this|these|a|an)\b/i;
+
+/** CA-05 P9: "changes its checklist each round", from what the maker typed ("Its checklist"). */
+export function changesEachRoundClause(text: string): string {
+  const said = text.trim();
+  return `changes ${DETERMINERS.test(said) ? said.charAt(0).toLowerCase() + said.slice(1) : said} each round`;
+}
+
+/**
+ * How a step runs, as its line reads it: the way it runs (`runsLabel`), and for an agent that runs again until a
+ * condition was met, what it changes each round: "Again until the review has no changes · at most 3 times · changes
+ * its checklist each round".
+ */
+export function stepRunsLabel(step: Pick<Step, "runs" | "changesEachRound">): string {
+  const base = runsLabel(step.runs);
+  return base && step.runs?.how === "until" && step.changesEachRound ? `${base} · ${changesEachRoundClause(step.changesEachRound)}` : base;
+}
+
 const KIND_OF_TYPE: Record<string, StepKind> = {
   [PROMPT_TYPE]: "prompt",
   [AGENT_TYPE]: "agent",
@@ -345,8 +395,38 @@ const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): bool
 
 const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
+/** The most runs a check keeps, and the most its line shows. */
+export const CHECK_RUNS_KEPT = 20;
+export const CHECK_RUNS_SHOWN = 5;
+
+/** A check's runs, read defensively and newest first; an entry that is not a real day and two whole numbers is left out. */
+export function checkRunsOf(value: unknown): CheckRun[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((entry) => {
+      if (!isRecord(entry) || typeof entry.at !== "string" || !isIsoDay(entry.at)) return [];
+      const { passed, total } = entry;
+      if (typeof passed !== "number" || typeof total !== "number" || !Number.isInteger(passed) || !Number.isInteger(total)) return [];
+      if (passed < 0 || total < 0 || total > CHECK_RUNS_MAX || passed > total) return [];
+      return [{ at: entry.at, passed, total }];
+    })
+    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+    .slice(0, CHECK_RUNS_KEPT);
+}
+
+/** CA-05 P7: "31 of 40 → 37 of 40 → 40 of 40", the latest five runs oldest first; null for fewer than two. */
+export function checkHistoryLine(runs: readonly CheckRun[] | undefined): string | null {
+  if (!runs || runs.length < 2) return null;
+  return [...runs]
+    .slice(0, CHECK_RUNS_SHOWN)
+    .reverse()
+    .map((run) => `${run.passed} of ${run.total}`)
+    .join(" → ");
+}
+
 /** A check's facts, read defensively. */
 function checkFacts(payload: Payload): CheckFacts {
+  const runs = checkRunsOf(payload.runs);
   return {
     tested: stringOf(payload.tested)?.trim() ?? "",
     passing: stringOf(payload.passing)?.trim() ?? "",
@@ -354,6 +434,7 @@ function checkFacts(payload: Payload): CheckFacts {
     passed: numberOf(payload.passed),
     total: numberOf(payload.total),
     runAt: stringOf(payload.run_at)?.trim() || null,
+    ...(runs.length > 0 ? { runs } : null),
   };
 }
 
@@ -387,16 +468,20 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
 }
 
 /** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory"> {
+function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
   const memory = stringOf(payload.memory)?.trim();
+  const memoryTidy = stringOf(payload.memory_tidy)?.trim().slice(0, MEMORY_TIDY_MAX);
+  const changesEachRound = stringOf(payload.changes_each_round)?.trim().slice(0, CHANGES_EACH_ROUND_MAX);
   return {
     harness: harness ? (toolName(harness) ?? harness) : null,
     ...(models.length > 1 ? { models } : null),
     ...(toolRefs.length ? { toolRefs } : null),
     ...(memory ? { memory } : null),
+    ...(memoryTidy ? { memoryTidy } : null),
+    ...(changesEachRound ? { changesEachRound } : null),
   };
 }
 
@@ -437,10 +522,13 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     dismissed: dismissedOf(payload),
     children,
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
+    ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
+    ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
+    ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
   };
 }
 
@@ -464,6 +552,9 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     models: undefined,
     toolRefs: undefined,
     memory: undefined,
+    memoryTidy: undefined,
+    changesEachRound: undefined,
+    modelRun: undefined,
   };
 }
 
@@ -505,7 +596,11 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
     ...readStep(child, "", child.type === FILE_TYPE ? "file" : KIND_OF_TYPE[child.type], depth + 1),
     inside: { id: step.id, label },
   }));
-  return sent.length > 0 ? { ...step, sentWith: sent } : step;
+  if (sent.length === 0) return step;
+  // CA-05 P7: a check's cases are the rows of the test files sent with it, counted only when every one of them was.
+  const files = sent.filter((tile) => tile.kind === "file" && /\.(csv|json|jsonl)$/i.test(tile.filename ?? ""));
+  const cases = files.length > 0 && files.every((tile) => tile.rows) ? files.reduce((sum, tile) => sum + (tile.rows ?? 0), 0) : 0;
+  return { ...step, sentWith: sent, ...(step.kind === "check" && step.check && cases > 0 ? { check: { ...step.check, cases } } : null) };
 }
 
 /**
@@ -560,6 +655,7 @@ export function sessionGroups(
 ): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
+  const stepsByNumber = new Map(steps.map((step) => [step.number, step]));
 
   const groups: SessionGroup[] = [];
   const byKey = new Map<string, SessionGroup>();
@@ -633,8 +729,18 @@ export function sessionGroups(
   for (const [key, group] of byKey) {
     const goal = goalOf(meta[key]?.goal);
     if (goal) group.goal = goal;
+    // CA-05: what its entry carries beyond that, and how long its own text is.
+    const extras = extrasOf(meta[key]);
+    if (Object.keys(extras).length > 0) group.extras = extras;
+    const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
+    if (words > LONG_SESSION_WORDS) group.longWords = words;
   }
   return groups;
+}
+
+/** CA-05 P2: the words a step and everything inside it hold. */
+function sessionWords(step: Step): number {
+  return step.words + step.children.reduce((sum, child) => sum + sessionWords(child), 0) + (step.sentWith ?? []).reduce((sum, tile) => sum + sessionWords(tile), 0);
 }
 
 /** CA-04 P1: a group's key: its own, else the import's id, else "typed-{n}" as before. */
@@ -853,13 +959,17 @@ export interface AgentSetup {
   toolRefs?: readonly string[];
   /** CA-03 P6: what it remembers, up to 200 characters; empty leaves the key out. */
   memory?: string | null;
+  /** CA-05 P9: how it tidies its notes, up to 120 characters; empty leaves the key out. */
+  memoryTidy?: string | null;
+  /** CA-05 P9: what it changes each round, up to 120 characters; empty leaves the key out. */
+  changesEachRound?: string | null;
 }
 
 /**
  * The payload keys an agent's setup writes, checked. `model` is the main model and stays required: everything that
  * reads an agent reads it. A row of `models` with no model is refused; so is a fifth row.
  */
-function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory }: AgentSetup): Payload {
+function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory, memoryTidy, changesEachRound }: AgentSetup): Payload {
   const main = model.trim();
   if (!main) throw refuse(operation, "An agent needs a model.");
   const out: Payload = { model: main };
@@ -886,6 +996,16 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   if (remembers) {
     if (remembers.length > MEMORY_MAX) throw refuse(operation, `What it remembers is at most ${MEMORY_MAX} characters.`);
     out.memory = remembers;
+  }
+  const tidy = memoryTidy?.trim();
+  if (tidy) {
+    if (tidy.length > MEMORY_TIDY_MAX) throw refuse(operation, `How it tidies its notes is at most ${MEMORY_TIDY_MAX} characters.`);
+    out.memory_tidy = tidy;
+  }
+  const changes = changesEachRound?.trim();
+  if (changes) {
+    if (changes.length > CHANGES_EACH_ROUND_MAX) throw refuse(operation, `What it changes each round is at most ${CHANGES_EACH_ROUND_MAX} characters.`);
+    out.changes_each_round = changes;
   }
   return out;
 }
@@ -947,6 +1067,51 @@ export async function setAgentSetup(node: BuildNode, { model, ...setup }: { mode
     if (keys.memory) payload.memory = keys.memory;
     else delete payload.memory;
   }
+  if ("memoryTidy" in setup) {
+    if (keys.memory_tidy) payload.memory_tidy = keys.memory_tidy;
+    else delete payload.memory_tidy;
+  }
+  if ("changesEachRound" in setup) {
+    if (keys.changes_each_round) payload.changes_each_round = keys.changes_each_round;
+    else delete payload.changes_each_round;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-05 P8: how a model was run (`payload.modelRun = { precision, where }`), beside the model it belongs to. Null, or a
+ * run with neither key, takes it off. For a prompt, an agent (its main model) or code.
+ */
+export async function setModelRun(node: BuildNode, run: ModelRun | null): Promise<BuildNode> {
+  if (node.type !== PROMPT_TYPE && node.type !== AGENT_TYPE && node.type !== CODE_TYPE) throw refuse("setModelRun", "Only a prompt, an agent or code has a model that was run.");
+  const payload = { ...payloadOf(node) };
+  const kept = run ? modelRunOf(run) : null;
+  if (run && kept) {
+    const why = modelRunRefusal(kept);
+    if (why) throw refuse("setModelRun", why);
+  }
+  if (kept) payload.modelRun = kept as unknown as Json;
+  else delete payload.modelRun;
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-05 P9: two optional lines of an agent, each up to 120 characters: how it tidies its notes (`payload.memory_tidy`)
+ * and, for one that runs again until a condition was met, what it changes each round (`payload.changes_each_round`).
+ * A key left out is kept; an empty one takes its key off.
+ */
+export async function setAgentNotes(node: BuildNode, notes: { memoryTidy?: string | null; changesEachRound?: string | null }): Promise<BuildNode> {
+  if (node.type !== AGENT_TYPE) throw refuse("setAgentNotes", "Only an agent has these lines.");
+  const payload = { ...payloadOf(node) };
+  const apply = (key: "memory_tidy" | "changes_each_round", value: string | null | undefined, max: number, label: string) => {
+    if (value === undefined) return;
+    const said = (value ?? "").trim();
+    if (said.length > max) throw refuse("setAgentNotes", `${label} is at most ${max} characters.`);
+    if (said) payload[key] = said;
+    else delete payload[key];
+  };
+  apply("memory_tidy", notes.memoryTidy, MEMORY_TIDY_MAX, "How it tidies its notes");
+  apply("changes_each_round", notes.changesEachRound, CHANGES_EACH_ROUND_MAX, "What it changes each round");
   return upsertNode(withPayload(node, payload));
 }
 
@@ -1125,6 +1290,40 @@ export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | nu
   return null;
 }
 
+/** Why a check's runs cannot be kept, or null. Pure, so the composer can say it before anything is written. */
+export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
+  if (runs.length > CHECK_RUNS_KEPT) return `A check keeps ${CHECK_RUNS_KEPT} runs at most.`;
+  for (const run of runs) {
+    if (!isIsoDay(run.at)) return "A run's date is written as 2026-10-12.";
+    for (const n of [run.passed, run.total]) {
+      if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs are whole numbers from 0 to 10,000.";
+    }
+    if (run.passed > run.total) return "Passed can't be more than the total.";
+  }
+  return null;
+}
+
+/**
+ * CA-05 P7: the runs of a check (`payload.runs`, newest first, up to 20). The newest run is also the check's last run,
+ * so its passed, total and date are written to `passed`, `total` and `run_at` and the status line says the same. No
+ * runs takes the key off and leaves the last run as it was.
+ */
+export async function setCheckRuns(node: BuildNode, runs: readonly CheckRun[]): Promise<BuildNode> {
+  if (node.type !== CHECK_TYPE) throw refuse("setCheckRuns", "Only a check has runs.");
+  const why = checkRunsRefusal(runs);
+  if (why) throw refuse("setCheckRuns", why);
+  const payload = { ...payloadOf(node) };
+  const sorted = checkRunsOf(runs);
+  if (sorted.length === 0) delete payload.runs;
+  else {
+    payload.runs = sorted as unknown as Json;
+    payload.passed = sorted[0].passed;
+    payload.total = sorted[0].total;
+    payload.run_at = sorted[0].at;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "12 Oct", from a saved day; the day as saved when it is not one. */
@@ -1273,7 +1472,11 @@ export function nestRefusal(tree: readonly NodeTree[], id: string, parentId: str
   if (!target) return NEST_COPY.noParent;
   if (parentId === id || holds(found.node, parentId)) return NEST_COPY.cycle;
   const type = target.node.type;
-  if (type === RESULT_TYPE) return NEST_COPY.result;
+  // CA-05 P10: a result that is a trained model holds one thing: the file it was trained on.
+  if (type === RESULT_TYPE) {
+    if (!(isTrainedModel(target.node) && found.node.type === FILE_TYPE)) return NEST_COPY.result;
+    return target.depth + heightOf(found.node) > NEST_DEPTH_MAX ? NEST_COPY.depth : null;
+  }
   if (type === FILE_TYPE) return NEST_COPY.file;
   if (!isStepNode(target.node)) return NEST_COPY.noParent;
   if (type === AGENT_TYPE && found.node.type !== PROMPT_TYPE) return NEST_COPY.agent;
@@ -1285,6 +1488,8 @@ export function nestRefusal(tree: readonly NodeTree[], id: string, parentId: str
 /** Why a new file or code tile cannot be made inside `parentId`, or null when it can: a step that is not an agent or a team, not too deep. */
 function nestHomeRefusal(tree: readonly NodeTree[], parentId: string): string | null {
   const target = locate(tree, parentId);
+  // CA-05 P10: the file a trained model was trained on goes inside its result.
+  if (target && isTrainedModel(target.node)) return null;
   if (!target || !isStepNode(target.node)) return NEST_COPY.noParent;
   if (target.node.type === AGENT_TYPE) return NEST_COPY.agent;
   if (target.node.type === TEAM_TYPE) return NEST_COPY.team;
@@ -1336,10 +1541,12 @@ export async function nestStep(buildId: string, tree: readonly NodeTree[], id: s
 export async function addFile(
   buildId: string,
   tree: readonly NodeTree[],
-  { title, url, summary, media_id, parentId }: { title: string; url?: string; summary?: string; media_id?: string; parentId?: string | null },
+  { title, url, summary, media_id, parentId, rows }: { title: string; url?: string; summary?: string; media_id?: string; parentId?: string | null; rows?: number | null },
 ): Promise<BuildNode> {
   if (!title.trim()) throw refuse("addFile", "A file needs its name.");
-  const node = { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) };
+  // CA-05 P7: a test file kept with the cases it holds, when they were counted exactly.
+  const counted = typeof rows === "number" && Number.isInteger(rows) && rows > 0 ? { rows } : null;
+  const node = { type: FILE_TYPE, title: null, payload: { ...(compact({ title: title.trim(), url, summary, media_id }) as Record<string, Json>), ...counted } as Json };
   if (parentId) {
     const why = nestHomeRefusal(tree, parentId);
     if (why) throw refuse("addFile", why);
@@ -1449,8 +1656,59 @@ export async function setToolConnection(node: BuildNode, connection: ToolConnect
 const FIELDS: Record<string, { keys: readonly string[]; required: string }> = {
   [FILE_TYPE]: { keys: ["title", "summary", "url"], required: "title" },
   [TOOL_TYPE]: { keys: ["service", "scopes", "notes"], required: "service" },
-  [RESULT_TYPE]: { keys: ["summary", "url", "media_id"], required: "summary" },
+  // CA-05 P10: a result can be a trained model: `kind`, the model it is based on, and how it was trained.
+  [RESULT_TYPE]: { keys: ["summary", "url", "media_id", "kind", "base_model", "method"], required: "summary" },
 };
+
+/** CA-05 P10: the one kind a result states outright; a link, a picture and a file are read from what the result holds. */
+export const TRAINED_MODEL = "trained-model";
+export const BASE_MODEL_MAX = 80;
+export const TRAINED_METHOD_MAX = 200;
+
+/** The longest each result key may be, for the keys that are not free text. */
+const RESULT_LIMITS: Record<string, number> = { base_model: BASE_MODEL_MAX, method: TRAINED_METHOD_MAX };
+
+export interface TrainedModel {
+  /** The model it is based on, as saved; empty while not chosen. */
+  baseModel: string;
+  /** How it was trained: one line. */
+  method: string;
+  /** The file sent with it: the ratings or the examples. */
+  trainedOn: { id: string; name: string; rows: number | null } | null;
+}
+
+/** Whether a result is a trained model. */
+export const isTrainedModel = (node: Pick<BuildNode, "type" | "payload">): boolean => node.type === RESULT_TYPE && payloadOf(node).kind === TRAINED_MODEL;
+
+/** A trained-model result's facts, read from the node and the file sent with it; null for any other node. */
+export function trainedModelOf(node: Pick<NodeTree, "type" | "payload"> & { children?: readonly NodeTree[] }): TrainedModel | null {
+  if (!isTrainedModel(node)) return null;
+  const payload = payloadOf(node);
+  const file = (node.children ?? []).find((child) => child.type === FILE_TYPE);
+  const filePayload = file ? payloadOf(file) : {};
+  return {
+    baseModel: stringOf(payload.base_model)?.trim() ?? "",
+    method: stringOf(payload.method)?.trim() ?? "",
+    trainedOn: file
+      ? {
+          id: file.id,
+          name: stringOf(filePayload.title)?.trim() ?? "Untitled file",
+          rows: typeof filePayload.rows === "number" && Number.isInteger(filePayload.rows) && filePayload.rows > 0 ? filePayload.rows : null,
+        }
+      : null,
+  };
+}
+
+/**
+ * "A trained model, based on Muse Spark Open, trained on 1,200 rows of ratings.csv": the parts that exist. The file's
+ * rows are said only when they were counted exactly; the model is said as `modelName` gives it.
+ */
+export function trainedModelLine(trained: TrainedModel, modelName: (raw: string) => string = (raw) => raw): string {
+  const parts = ["A trained model"];
+  if (trained.baseModel) parts.push(`based on ${modelName(trained.baseModel)}`);
+  if (trained.trainedOn) parts.push(`trained on ${trained.trainedOn.rows ? `${trained.trainedOn.rows.toLocaleString("en-GB")} rows of ` : ""}${trained.trainedOn.name}`);
+  return parts.join(", ");
+}
 
 /**
  * Change the text fields of a file, a tool or a result (DATA §2). A blank value
@@ -1466,7 +1724,13 @@ export async function setNodeFields(node: BuildNode, fields: Record<string, stri
     if (!trimmed) {
       if (key === allowed.required) throw refuse("setNodeFields", "That field cannot be empty.");
       delete payload[key];
-    } else payload[key] = trimmed;
+    } else {
+      if (node.type === RESULT_TYPE && key === "kind" && trimmed !== TRAINED_MODEL) throw refuse("setNodeFields", "That is not a kind of result.");
+      const limit = node.type === RESULT_TYPE ? RESULT_LIMITS[key] : undefined;
+      if (limit && trimmed.length > limit) throw refuse("setNodeFields", `That field is at most ${limit} characters.`);
+      if (node.type === RESULT_TYPE && key === "method" && /\n/.test(trimmed)) throw refuse("setNodeFields", "How it was trained is one line.");
+      payload[key] = trimmed;
+    }
   }
   return upsertNode(withPayload(node, payload));
 }

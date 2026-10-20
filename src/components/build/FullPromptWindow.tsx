@@ -36,6 +36,8 @@ import { IconButton } from "@/components/brand/IconButton";
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelTag } from "@/components/brand/ModelTag";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { ChangedText } from "@/components/build/ChangedText";
+import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
 import { groupKind, groupOfStep, promptNumbersOf, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
@@ -58,6 +60,8 @@ export interface FullPromptWindowProps {
   groups?: readonly SessionGroup[];
   /** File and tool names, by node id, for the Uses chips. */
   names?: Readonly<Record<string, string>>;
+  /** CA-05 P1, maker mode: save the words a reader changes in a prompt; an empty list takes them off. */
+  onChanges?: (id: string, ranges: ChangeRange[]) => void;
   /** Reader mode (UI-P74): the "Before you send it" panel for a step, under the text, in place of the plain lines. */
   renderBefore?: (step: Step) => ReactNode;
 }
@@ -68,6 +72,8 @@ export const FULL_PROMPT_COPY = {
   copy: "Copy prompt",
   done: "Done",
   before: "Before you send it",
+  readerChanges: "A reader changes this",
+  keepAsWritten: "Keep as written",
 } as const;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -229,9 +235,35 @@ function RefinedTitleField({ step, onTitle, phone }: { step: Step; onTitle: (id:
   );
 }
 
+/** The offset of a point in the box's text, counted the way the text is stored. */
+function offsetIn(root: HTMLElement, node: Node, offset: number): number {
+  const range = document.createRange();
+  range.selectNodeContents(root);
+  range.setEnd(node, offset);
+  return range.toString().length;
+}
+
+/** What is selected in the box, trimmed of the spaces either side, or null when nothing is. */
+function selectionIn(root: HTMLElement, text: string): ChangeRange | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || !selection.anchorNode || !selection.focusNode) return null;
+  if (!root.contains(selection.anchorNode) || !root.contains(selection.focusNode)) return null;
+  const a = offsetIn(root, selection.anchorNode, selection.anchorOffset);
+  const b = offsetIn(root, selection.focusNode, selection.focusOffset);
+  let start = Math.min(a, b);
+  let end = Math.max(a, b);
+  if (start === end) return { start, end };
+  while (start < end && /\s/.test(text[start] ?? "")) start += 1;
+  while (end > start && /\s/.test(text[end - 1] ?? "")) end -= 1;
+  return end > start ? { start, end } : null;
+}
+
 /** The text, whole, in a well: scrolls and keeps its line breaks; its edge is `--selected-edge` while it has focus. */
-function RefinedTextBox({ text, boxRef, phone }: { text: string; boxRef: React.RefObject<HTMLDivElement | null>; phone: boolean }) {
+function RefinedTextBox({ text, changes, boxRef, phone, onPick }: { text: string; changes?: readonly ChangeRange[]; boxRef: React.RefObject<HTMLDivElement | null>; phone: boolean; onPick?: (selection: ChangeRange | null) => void }) {
   const [focused, setFocused] = useState(false);
+  const pick = () => {
+    if (boxRef.current && onPick) onPick(selectionIn(boxRef.current, text));
+  };
   return (
     <div
       ref={boxRef}
@@ -241,6 +273,8 @@ function RefinedTextBox({ text, boxRef, phone }: { text: string; boxRef: React.R
       data-testid="full-prompt-text"
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
+      onMouseUp={pick}
+      onKeyUp={pick}
       style={{
         ...WELL,
         ...(focused ? { borderColor: t.selectedEdge } : null),
@@ -254,14 +288,18 @@ function RefinedTextBox({ text, boxRef, phone }: { text: string; boxRef: React.R
         overflowWrap: "anywhere",
       }}
     >
-      {text}
+      <ChangedText text={text} changes={changes} />
     </div>
   );
 }
 
 function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
-  const { mode, onTitle, onClose, onNavigate } = props;
+  const { mode, onTitle, onClose, onNavigate, onChanges } = props;
   const [said, say] = useAnnouncer();
+  /** CA-05 P1: what is selected in the text (or the caret), while the maker can mark words. */
+  const [picked, setPicked] = useState<ChangeRange | null>(null);
+  const existing = rangeAt(step.changes ?? [], picked ?? { start: -1, end: -1 });
+  const markable = mode === "maker" && onChanges && !isInstructions(step) && picked !== null && (existing !== null || picked.end > picked.start);
   const textRef = useRef<HTMLDivElement>(null);
   const { previous, next, place, instructions, tool, model, facts, uses, goesInto, before } = bodyFacts(props, step, prompts);
 
@@ -271,7 +309,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
   }, []);
 
   const copy = async () => {
-    say((await copyText(step.text)) ? FULL_PROMPT_COPY.copied : "Couldn't copy. Select the text and copy it.");
+    say((await copyText(bracketed(step.text, step.changes))) ? FULL_PROMPT_COPY.copied : "Couldn't copy. Select the text and copy it.");
   };
 
   const quiet = geist(11.5, 400, t.label);
@@ -311,9 +349,32 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           )}
         </div>
       ) : null}
-      <RefinedTextBox key={step.id} text={step.text} boxRef={textRef} phone={phone} />
+      <RefinedTextBox key={step.id} text={step.text} changes={step.changes} boxRef={textRef} phone={phone} onPick={mode === "maker" && onChanges ? setPicked : undefined} />
+      {step.changes?.length ? (
+        <p data-testid="changes-line" style={{ ...quiet, margin: 0 }}>
+          {changesLine(step.changes.length)}
+        </p>
+      ) : null}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ ...quiet, flexGrow: 1, fontVariantNumeric: "tabular-nums" }}>{step.words} words</span>
+        {markable ? (
+          <Button
+            variant="secondary"
+            size={phone ? 48 : 28}
+            fontSize={12}
+            // The selection stays while the button is pressed.
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              if (!picked) return;
+              const kept = existing ? removeRange(step.changes ?? [], picked) : addRange(step.changes ?? [], picked, step.text.length);
+              onChanges?.(step.id, kept);
+              setPicked(null);
+              window.getSelection()?.removeAllRanges();
+            }}
+          >
+            {existing ? FULL_PROMPT_COPY.keepAsWritten : FULL_PROMPT_COPY.readerChanges}
+          </Button>
+        ) : null}
         <Button variant="secondary" size={phone ? 48 : 28} fontSize={12} onClick={() => void copy()}>
           {FULL_PROMPT_COPY.copy}
         </Button>

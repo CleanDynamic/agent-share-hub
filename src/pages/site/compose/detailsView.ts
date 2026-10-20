@@ -11,6 +11,7 @@ import {
   groupKey,
   groupKind,
   groupOfStep,
+  shownGroups,
   madeByOf,
   madeFilesOf,
   RESULT_TYPE,
@@ -18,12 +19,14 @@ import {
   TOOL_TYPE,
   toolConnectionOf,
   toolsUsedOf,
+  trainedModelOf,
   type SessionGroup,
   type Step,
 } from "@/lib/build/graph";
 import type { SessionPrompt } from "@/lib/build/sessions";
 import type { NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
+import { asksHowRun, modelRunLine } from "@/lib/build/modelRun";
 import { toolFor } from "@/lib/tools/registry";
 
 import {
@@ -123,13 +126,16 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     defaultTitle: step.defaultTitle,
     editable: !instructions,
     sessionLine: instructions ? "Instructions" : typed && !inSession ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
-    detailLine: instructions ? "" : [model, when, place].filter(Boolean).join(" · "),
+    detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun) : null, when, place].filter(Boolean).join(" · "),
     typed,
     model,
     // CA-02 P8: the tool a typed prompt names, as saved, for its model menu and the note on a pair that breaks the rules.
     ...(typed ? { tool: step.tool } : null),
     text: step.text,
     words: step.words,
+    ...(step.changes ? { changes: step.changes } : null),
+    // CA-05 P8: asked of a prompt whose model runs on the maker's computer or has open weights.
+    ...(!instructions && asksHowRun(tool, step.model) ? { modelRun: { run: step.modelRun ?? null } } : null),
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: instructions ? [] : inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: instructions ? [] : goesIntoRows(ctx.steps, step.id, ctx.intoResult),
@@ -208,6 +214,9 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     name: step.title,
     defaultName: step.defaultTitle,
     model: step.model ? modelLabel(step.model) : null,
+    ...(step.modelRun ? { modelRun: step.modelRun } : null),
+    ...(step.kind === "agent" && step.memoryTidy ? { memoryTidy: step.memoryTidy } : null),
+    ...(step.kind === "agent" && step.changesEachRound ? { changesEachRound: step.changesEachRound } : null),
     runs: step.runs,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
@@ -275,8 +284,14 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     checklist,
     // CA-04 P6: what it worked until.
     ...(group?.goal ? { goal: group.goal } : null),
+    // CA-05: cost, background and the rest.
+    ...(group?.extras ? { extras: group.extras } : null),
+    // CA-05 P5: the other sessions it could have run beside; an old build's run of typed prompts has no stable key to name.
+    ...(shownGroups(ctx.groups).filter((other) => groupKey(other) !== source.key && groupKind(other) !== "legacy").length > 0
+      ? { others: shownGroups(ctx.groups).filter((other) => groupKey(other) !== source.key && groupKind(other) !== "legacy").map((other) => ({ key: groupKey(other), label: `Session ${other.number}${other.tool ? ` · ${other.tool}` : ""}` })) }
+      : null),
     // CA-04 P4: its setup, in the order it was added.
-    setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared })),
+    setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared, loaded: item.loaded })),
     // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.
     ...(group && !real
       ? { editable: { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: groupKind(group) === "typed" ? (group.startedAt ?? "") : "" } }
@@ -321,12 +336,17 @@ function resultView(node: NodeTree, ctx: ViewContext): ResultView {
   const payload = payloadOf(node);
   const mediaId = text(payload.media_id);
   const facts = mediaId ? ctx.media(mediaId) : undefined;
+  // CA-05 P10: only a trained model is stated; a link, a picture and a file are read from what the result holds.
+  const trained = trainedModelOf(node);
+  const isPicture = Boolean(mediaId) && (!facts?.name || /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(facts.name));
   return {
     kind: "result",
     id: node.id,
     summary: text(payload.summary),
     url: text(payload.url),
     pictures: mediaId ? [{ id: mediaId, name: facts?.name ?? "Picture" }] : [],
+    what: trained ? "trained-model" : mediaId ? (isPicture ? "picture" : "file") : "link",
+    ...(trained ? { trained } : null),
   };
 }
 

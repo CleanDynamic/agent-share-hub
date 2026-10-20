@@ -5,6 +5,7 @@
 // for each file; a nested prompt's text. A manual step says what was done by hand. Nothing is invented: a tile with
 // nothing to say adds nothing.
 
+import { bracketed } from "./changes";
 import type { Step } from "./graph";
 
 /** A code fence longer than any run of backticks inside the text, so the text appears whole. */
@@ -25,7 +26,8 @@ function partOf(step: Step): string | null {
     case "file":
       return `Attach ${step.filename ?? step.title ?? "the file"}`;
     default:
-      return step.text.trim() ? step.text : null;
+      // CA-05 P1: the words a reader changes go in square brackets.
+      return step.text.trim() ? bracketed(step.text, step.changes) : null;
   }
 }
 

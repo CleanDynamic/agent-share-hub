@@ -53,6 +53,15 @@ const EXPECTED: Record<ShapeKey, unknown[]> = {
     ["o-team", "team", "4", null, null, ["o-lead", "o-build"]],
   ],
   "runs-on-github": [["w-p1", "prompt", "1", null, null, []]],
+  everything: [
+    ["e-p1", "prompt", "1", "Claude", "Opus 5.5", []],
+    ["e-p2", "prompt", "2", "Claude", "Opus 5.5", []],
+    ["e-a1", "agent", "3", null, "Muse Spark Open", ["e-a1:instructions"]],
+    ["e-a2", "agent", "4", null, "Sonnet 5.5", ["e-a2:instructions"]],
+    ["e-chk", "check", "5", null, null, []],
+    ["e-p3", "prompt", "6", "Claude Code", "Sonnet 5.5", []],
+    ["e-p4", "prompt", "7", "Ollama", "Muse Spark Open", []],
+  ],
 };
 
 describe.each(SHAPE_KEYS)("the %s shape", (key) => {

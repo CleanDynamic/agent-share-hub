@@ -13,7 +13,7 @@ import type { BuildStepsView } from "@/pages/site/build/buildModel";
 import { SHAPES } from "./shapes";
 
 /** CA-04 P7: "one-sitting" and "runs-on-github" are the shapes of the same names (src/dev/fixtures/shapes.ts). */
-export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github";
+export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything";
 
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -45,6 +45,9 @@ const prompt = (id: string, position: number, text: string, session: string | nu
 const media = new Map<string, ReaderMedia>([
   ["m-claude", { id: "m-claude", bucket: "build-media", path: "b/claude.md", kind: "file", bytes: 1228 }],
   ["m-tpl", { id: "m-tpl", bucket: "build-media", path: "b/template.md", kind: "file", bytes: 819 }],
+  // CA-05: the test cases of a check and the ratings a model was trained on.
+  ["m-cases", { id: "m-cases", bucket: "build-media", path: "b/cases.csv", kind: "file", bytes: 2140 }],
+  ["m-ratings", { id: "m-ratings", bucket: "build-media", path: "b/ratings.csv", kind: "file", bytes: 48200 }],
 ]);
 
 /* ── B1: the bakery ── */
@@ -145,6 +148,12 @@ const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making
     making: SHAPES["one-sitting"].making as Making,
     title: SHAPES["one-sitting"].title,
     outcome: "An order page planned in one sitting in Claude, then built by a team in Claude Code.",
+  },
+  everything: {
+    tree: () => SHAPES.everything.tree,
+    making: SHAPES.everything.making as Making,
+    title: SHAPES.everything.title,
+    outcome: "Every part of a build at once: words to change, what a session cost, Started with, sessions at the same time, a check with its runs, a model on your own computer and a trained model.",
   },
   "runs-on-github": {
     tree: () => SHAPES["runs-on-github"].tree,

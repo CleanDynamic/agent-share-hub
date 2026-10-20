@@ -45,7 +45,8 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { checkStatus, runsLabel, sentWithLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkStatus, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
@@ -76,7 +77,7 @@ import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
-import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { CHECK_COPY, CheckExtraLines, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestGap, NestList, TAKES, useNestSession, useNestTile, type NestTarget } from "./listNest";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
@@ -103,6 +104,8 @@ export const LIST_COPY = {
   check: CHECK_COPY.eyebrow,
   /** CA-03 P6. */
   remembers: (memory: string) => `Remembers ${memory}`,
+  /** CA-05 P9. */
+  tidies: (how: string) => `Tidies its notes: ${how}`,
 } as const;
 
 export interface BuildListProps {
@@ -423,6 +426,10 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
       </DotLine>
     ) : null}
     {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
+    {/* CA-05 P2: how long, what it cost, and whether nobody was watching: one line, only the parts that exist. */}
+    {session.facts ? <DotLine testId="facts-line">{session.facts}</DotLine> : null}
+    {/* CA-05 P5: the sessions it ran beside, and its own copy of the code. */}
+    {session.together ? <DotLine testId="together-line">{session.together}</DotLine> : null}
     </>
   );
 }
@@ -698,7 +705,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         ref={textRef}
         style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
       >
-        {step.text}
+        <ChangedText text={step.text} changes={step.changes} />
       </p>
       <MadeLine names={props.madeNames?.[step.id]} />
       <SentWithList step={step} props={props} />
@@ -749,6 +756,7 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [] }: { step: 
       </div>
       {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
       {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
+      {step.kind === "agent" && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
       <OutsideWarning names={outside} />
@@ -873,8 +881,9 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
           <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
-          {runsLabel(step.runs) ? <DotLine testId="runs-line">{runsLabel(step.runs)}</DotLine> : null}
+          {stepRunsLabel(step) ? <DotLine testId="runs-line">{stepRunsLabel(step)}</DotLine> : null}
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
+          {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
       </div>
       {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
@@ -892,7 +901,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
               <InnerCard
                 step={child}
                 eyebrow={isTeam ? (index === 0 ? TEAM_COPY.lead : TEAM_COPY.agent(stepTitle(child))) : undefined}
-                runs={isTeam ? runsLabel(child.runs) : undefined}
+                runs={isTeam ? stepRunsLabel(child) : undefined}
                 outside={isTeam ? outsideOf(child, props.names) : []}
                 made={props.madeNames?.[child.id]}
               />
@@ -1238,6 +1247,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           <span style={tnum}>{status.line}</span>
         </DotLine>
       ) : null}
+      {step.check ? <CheckExtraLines check={step.check} style={{ paddingLeft: INDENT }} /> : null}
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />

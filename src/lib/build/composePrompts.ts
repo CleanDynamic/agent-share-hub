@@ -25,6 +25,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import { toolFor } from "@/lib/tools/registry";
 import { nodeRow, placeTopNode } from "./composeCover";
+import { changesOf, normalizeRanges, shiftRanges, type ChangeRange } from "./changes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import type { SessionPrompt } from "./sessions";
 import { buildLayerError, type BuildNode, type NodeTree } from "./types";
@@ -161,7 +162,23 @@ export async function addWrittenPrompt({
 /** Save a prompt's text, keeping everything else it carries. Refuses an empty one. */
 export async function savePromptText(node: BuildNode, text: string): Promise<BuildNode> {
   if (!text.trim()) throw buildLayerError("savePromptText", new Error("A prompt needs its text."));
-  return upsertNode({ ...nodeRow(node), payload: { ...payloadOf(node), text } as Json });
+  const payload: Payload = { ...payloadOf(node), text };
+  // CA-05 P1: the words a reader changes move with the text around them.
+  const before = promptText(node);
+  const kept = shiftRanges(before, text, changesOf(payload, before));
+  if (kept.length > 0) payload.changes = kept as unknown as Json;
+  else delete payload.changes;
+  return upsertNode({ ...nodeRow(node), payload: payload as Json });
+}
+
+/** CA-05 P1: say which words of a prompt a reader changes (`payload.changes`); none takes the key off. */
+export async function setPromptChanges(node: BuildNode, ranges: readonly ChangeRange[]): Promise<BuildNode> {
+  if (node.type !== PROMPT_TYPE) throw buildLayerError("setPromptChanges", new Error("Only a prompt has words a reader changes."));
+  const payload = { ...payloadOf(node) };
+  const kept = normalizeRanges(ranges, promptText(node).length);
+  if (kept.length > 0) payload.changes = kept as unknown as Json;
+  else delete payload.changes;
+  return upsertNode({ ...nodeRow(node), payload: payload as Json });
 }
 
 /** Name the model a prompt ran on, once its session's model is known. */

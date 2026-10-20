@@ -118,6 +118,39 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/goal.ui.test.tsx",
   // CA-04 P7
   "src/pages/dev/BuildStepsDemo.tsx",
+  // CA-05 P1
+  "src/components/build/ChangedText.tsx",
+  "src/components/build/FullPromptWindow.changes.test.tsx",
+  "src/lib/build/changes.copy.test.ts",
+  "src/lib/build/changes.test.ts",
+  "src/lib/build/changes.ts",
+  // CA-05 P2
+  "src/lib/build/sessionFacts.test.ts",
+  "src/lib/build/sessionFacts.ts",
+  "src/pages/site/compose/SessionExtrasFields.tsx",
+  "src/pages/site/compose/facts.ui.test.tsx",
+  // CA-05 P3
+  "src/lib/build/startedWith.test.ts",
+  "src/lib/build/startedWith.ts",
+  "src/pages/site/compose/started.ui.test.tsx",
+  // CA-05 P4 wrote no code. CA-05 P5
+  "src/pages/site/compose/together.ui.test.tsx",
+  // CA-05 P7
+  "src/lib/build/testCases.test.ts",
+  "src/lib/build/testCases.ts",
+  "src/pages/site/compose/checkRuns.ui.test.tsx",
+  // CA-05 P8
+  "src/lib/build/modelRun.test.ts",
+  "src/lib/build/modelRun.ts",
+  "src/pages/site/compose/ModelRunFields.tsx",
+  "src/pages/site/compose/modelRun.ui.test.tsx",
+  // CA-05 P9
+  "src/pages/site/compose/AgentNotesFields.tsx",
+  "src/pages/site/compose/agentNotes.ui.test.tsx",
+  // CA-05 P10
+  "src/pages/site/compose/trainedModel.ui.test.tsx",
+  // CA-05 P11
+  "src/lib/build/everything.test.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

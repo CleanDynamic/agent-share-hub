@@ -22,7 +22,7 @@ import { landTab, stepTabs, type BuildTabKey } from "@/pages/site/build/buildMod
 
 import type { DesignPageProps } from "./KitPages";
 
-const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one", "one-sitting", "runs-on-github"];
+const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one", "one-sitting", "runs-on-github", "everything"];
 
 export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const [params] = useSearchParams();

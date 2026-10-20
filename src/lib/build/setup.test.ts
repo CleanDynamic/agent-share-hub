@@ -15,6 +15,7 @@ import {
   addSetupFile,
   addSetupRule,
   addSetupServer,
+  groupByLoaded,
   readHooks,
   readMcpJson,
   readSkillTop,
@@ -151,7 +152,7 @@ describe("what is kept", () => {
       title: "SKILL.md",
       path: "order-forms/SKILL.md",
       media_id: "m1",
-      setup: { session: "typed-a", kind: "skill" },
+      setup: { session: "typed-a", kind: "skill", loaded: "when-needed" },
       skill: { name: "order-forms", description: 'Builds an order form for a small shop, "with" a total that always adds up.' },
     });
     await addSetupFile("b", [], { session: "typed-a", kind: "skill", title: "form.tsx", media_id: "m2", parentId: "skill-1" });
@@ -204,5 +205,40 @@ describe("the setup, as a folder", () => {
     expect(rootPath("project/CLAUDE.md")).toBe("CLAUDE.md");
     expect(mcpJson([])).toBe('{\n  "mcpServers": {}\n}\n');
     expect(settingsJson([])).toBe('{\n  "hooks": {}\n}\n');
+  });
+});
+
+describe("loaded at the start, or only when needed (CA-05 P6)", () => {
+  const item = (id: string, payload: Record<string, unknown>, type = "document", position = 1): NodeTree =>
+    ({ id, build_id: "b", parent_id: null, position, type, title: null, note: null, payload, source_ref: null, event_id: null, is_gap: false, created_at: "", children: [] }) as NodeTree;
+
+  it("reads a default from what each is when the item does not say", () => {
+    const tree = [
+      item("i", { title: "CLAUDE.md", setup: { session: "s", kind: "instructions" } }, "document", 1),
+      item("k", { title: "SKILL.md", setup: { session: "s", kind: "skill" }, skill: { name: "n" } }, "document", 2),
+      item("m", { service: "github", setup: { session: "s", kind: "server" }, server: {} }, "integration", 3),
+      item("r", { source: "npm test", setup: { session: "s", kind: "rule" }, rule: { when: "x" } }, "code", 4),
+    ];
+    expect(setupItemsOf(tree).map((entry) => [entry.kind, entry.loaded])).toEqual([["instructions", "start"], ["skill", "when-needed"], ["server", "start"], ["rule", "start"]]);
+  });
+
+  it("keeps what an item says over its default, and ignores a value that is neither", () => {
+    const tree = [
+      item("k", { title: "SKILL.md", setup: { session: "s", kind: "skill", loaded: "start" } }, "document", 1),
+      item("i", { title: "CLAUDE.md", setup: { session: "s", kind: "instructions", loaded: "sometimes" } }, "document", 2),
+    ];
+    expect(setupItemsOf(tree).map((entry) => entry.loaded)).toEqual(["start", "start"]);
+  });
+
+  it("stamps new items with their default", async () => {
+    await addSetupRule("b", [], "typed-a", { when: "After a tool runs", filter: null, command: "npm test" });
+    expect(placeTopNode.mock.calls.at(-1)?.[2].payload.setup).toEqual({ session: "typed-a", kind: "rule", loaded: "start" });
+  });
+
+  it("groups under two labels only when both have rows", () => {
+    expect(groupByLoaded([{ loaded: "start" as const, n: 1 }, { loaded: "start" as const, n: 2 }])).toBeNull();
+    expect(groupByLoaded([{ loaded: "when-needed" as const, n: 1 }])).toBeNull();
+    const grouped = groupByLoaded([{ loaded: "when-needed" as const, n: 1 }, { loaded: "start" as const, n: 2 }, { loaded: "start" as const, n: 3 }]);
+    expect(grouped?.map((group) => [group.label, group.items.map((entry) => entry.n)])).toEqual([["At the start", [2, 3]], ["Only when needed", [1]]]);
   });
 });

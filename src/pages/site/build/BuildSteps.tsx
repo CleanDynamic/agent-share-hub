@@ -32,6 +32,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
+import { ChangedText } from "@/components/build/ChangedText";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import type { Step } from "@/lib/build/graph";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
@@ -47,6 +48,9 @@ import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
+import { modelRunLine } from "@/lib/build/modelRun";
+import { groupByLoaded } from "@/lib/build/setup";
+import { bracketed, changesLine } from "@/lib/build/changes";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
@@ -80,7 +84,7 @@ export function teamText(entry: ReaderStep): string {
   const parts: string[] = [];
   const visit = (list: readonly ReaderStep[]) => {
     for (const child of list) {
-      if (child.step.text) parts.push(`${child.step.number} ${child.title}\n\n${child.step.text}`);
+      if (child.step.text) parts.push(`${child.step.number} ${child.title}\n\n${bracketed(child.step.text, child.step.changes)}`);
       visit(child.children.filter((grand) => !isInstructions(grand)));
     }
   };
@@ -89,7 +93,7 @@ export function teamText(entry: ReaderStep): string {
 }
 
 /** The words a copy puts on the clipboard for a step: CA-04 P2, a step and what is sent with it, together. */
-export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.sentWith?.length ? copyTogether(entry.step) : entry.step.text);
+export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.sentWith?.length ? copyTogether(entry.step) : bracketed(entry.step.text, entry.step.changes));
 
 export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
@@ -103,7 +107,7 @@ export function useConfirmed(): [boolean, () => void] {
   return [on, confirm];
 }
 
-export const modelOf = (step: Step): string => (step.model ? modelLabel(step.model) || step.model : "");
+export const modelOf = (step: Step): string => (step.model ? modelRunLine(modelLabel(step.model) || step.model, step.modelRun) : "");
 
 /** The names the full prompt window shows on its Uses chips. */
 export function namesIn(steps: readonly ReaderStep[]): Record<string, string> {
@@ -399,8 +403,13 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
           ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
         }}
       >
-        {step.text}
+        <ChangedText text={step.text} changes={step.changes} />
       </p>
+      {step.changes?.length ? (
+        <p data-testid="changes-line" style={{ ...text(11.5, 400, t.label), margin: 0, paddingLeft: indent }}>
+          {changesLine(step.changes.length)}
+        </p>
+      ) : null}
       {long ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: indent }}>
           <ReadAll onRead={onRead} />
@@ -609,9 +618,29 @@ function Head({ children, detail, tool, model }: { children: ReactNode; detail?:
 const SETUP_INDENT = 28;
 
 /** A chat's head, with Setup at its end when the session has one: closed until asked, then its rows under the head. */
-function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }> }) {
+function ChatHead({ chat, copy }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }>; copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean } }) {
   const [open, setOpen] = useState(false);
   const setup = chat.setup;
+  // CA-05 P6: under two quiet labels, only when both have rows.
+  const grouped = groupByLoaded(setup.map((item) => ({ ...item, loaded: item.loaded ?? ("start" as const) })));
+  const setupRow = (item: (typeof setup)[number]) => (
+            <div key={item.id} data-testid="setup-row" data-not-shared={item.notShared ? "true" : undefined} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0, ...(item.notShared ? { borderBottom: `1px dashed ${t.line}` } : null) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <span style={text(12, 400, t.label)}>{item.notShared ? `${item.kindLabel} · not shared` : item.kindLabel}</span>
+          <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
+          {item.description ? <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
+        </div>
+        {item.download ? <DownloadButton href={item.download} name={item.name} /> : null}
+      </div>
+      {item.files.map((file) => (
+        <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12, minWidth: 0 }}>
+          <span style={{ ...text(12, 400, t.text2), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{file.name}</span>
+          {file.download ? <DownloadButton href={file.download} name={file.name} /> : null}
+        </div>
+      ))}
+    </div>
+  );
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -620,7 +649,7 @@ function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { k
             {chat.headline}
           </Head>
         </div>
-        {setup.length > 0 ? (
+        {setup.length > 0 || chat.startedWith ? (
           <span style={{ paddingTop: 8, flexShrink: 0 }} data-testid="setup-toggle">
             <ReadAll label="Setup" onRead={() => setOpen((value) => !value)} expanded={open} />
           </span>
@@ -633,26 +662,33 @@ function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { k
         </DotLine>
       ) : null}
       {chat.runsWhen ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
+      {chat.facts ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
+      {chat.together ? <DotLine testId="together-line">{chat.together}</DotLine> : null}
       {open ? (
         <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
-          {setup.map((item) => (
-            <div key={item.id} data-testid="setup-row" data-not-shared={item.notShared ? "true" : undefined} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0, ...(item.notShared ? { borderBottom: `1px dashed ${t.line}` } : null) }}>
+          {/* CA-05 P3: the command that opened the session, as written, and the settings it names in plain words. */}
+          {chat.startedWith ? (
+            <div data-testid="started-with" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-                  <span style={text(12, 400, t.label)}>{item.notShared ? `${item.kindLabel} · not shared` : item.kindLabel}</span>
-                  <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
-                  {item.description ? <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
-                </div>
-                {item.download ? <DownloadButton href={item.download} name={item.name} /> : null}
+                <span style={{ ...text(12, 400, t.label), flexGrow: 1 }}>Started with</span>
+                {copy ? <CopyButton what="the command" text={chat.startedWith.command} onCopy={copy.onCopy} announce={copy.announce} phone={copy.phone} /> : null}
               </div>
-              {item.files.map((file) => (
-                <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12, minWidth: 0 }}>
-                  <span style={{ ...text(12, 400, t.text2), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{file.name}</span>
-                  {file.download ? <DownloadButton href={file.download} name={file.name} /> : null}
-                </div>
+              <code style={{ ...text(12, 400, t.text), fontFamily: DM_MONO, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{chat.startedWith.command}</code>
+              {chat.startedWith.settings.map((line) => (
+                <span key={line} style={text(11.5, 400, t.label)}>
+                  {line}
+                </span>
               ))}
             </div>
-          ))}
+          ) : null}
+          {grouped
+            ? grouped.map((group) => (
+                <div key={group.loaded} role="group" aria-label={group.label} data-testid="setup-loaded" data-loaded={group.loaded} style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ ...text(11.5, 400, t.label), paddingTop: 8 }}>{group.label}</span>
+                  {group.items.map(setupRow)}
+                </div>
+              ))
+            : setup.map(setupRow)}
         </div>
       ) : null}
     </>
@@ -780,7 +816,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <h4 style={{ ...text(13.5, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0 }}>{entry.title}</h4>
           {!instructions && step.model ? <span style={text(12, 400, t.label)}>{modelOf(step)}</span> : null}
           <span style={{ flexGrow: 1 }} />
-          <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />
+          <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={bracketed(step.text, step.changes)} onCopy={view.onCopy} announce={announce} phone={phone} />
         </div>
         {/* CA-03 P3: how it ran, one quiet line under it; "When I asked" shows nothing. */}
         {repeats ? <DotLine testId="runs-line">{entry.runs}</DotLine> : null}
@@ -887,7 +923,15 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span style={text(11.5, 400, t.label)}>Result</span>
           {name}
+          {/* CA-05 P10: a trained model, said in one line, with the file it learned from. */}
+          {result.trained ? (
+            <span data-testid="trained-model-line" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
+              {result.trained.line}
+            </span>
+          ) : null}
+          {result.trained?.method ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>{result.trained.method}</span> : null}
         </div>
+        {result.trained?.file?.download ? <DownloadButton href={result.trained.file.download} name={result.trained.file.name} /> : null}
         {result.from ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>from step {result.from}</span> : null}
       </div>
       {result.mediaId ? <MediaFigure reference={result.mediaId} resolveMedia={view.resolveMedia} width={640} alt={result.title} /> : null}
@@ -904,7 +948,7 @@ interface Group {
   entries: ReaderStep[];
 }
 
-function groupsOf(steps: readonly ReaderStep[]): Group[] {
+function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }): Group[] {
   const groups: Group[] = [];
   for (const entry of steps) {
     const chat = entry.chat?.kind === "new" ? entry.chat : null;
@@ -912,7 +956,7 @@ function groupsOf(steps: readonly ReaderStep[]): Group[] {
       groups.push({
         key: `chat:${entry.step.id}`,
         // CA-04 P4: Setup at the head's end, when the session has one.
-        head: chat.setup?.length || chat.goal || chat.runsWhen ? <ChatHead chat={chat} /> : (
+        head: chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.together || chat.startedWith ? <ChatHead chat={chat} copy={copy} /> : (
           <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
             {chat.headline}
           </Head>
@@ -973,7 +1017,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
         </Suspense>
       ) : (
-        groupsOf(steps).map((group) => (
+        groupsOf(steps, { onCopy: view.onCopy, announce, phone }).map((group) => (
           <div key={group.key} style={column(8)}>
             {group.head}
             {group.entries.map((entry) =>

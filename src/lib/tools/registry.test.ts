@@ -7,8 +7,8 @@ import { LOGO_KEYS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, isPickable, projectFile
 const squash = (raw: string) => raw.toLowerCase().replace(/[\s._-]+/g, "");
 
 describe("tool registry", () => {
-  it("has 43 tools with unique ids", () => {
-    expect(TOOLS).toHaveLength(43);
+  it("has 45 tools with unique ids", () => {
+    expect(TOOLS).toHaveLength(45);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
   });
 
@@ -148,5 +148,20 @@ describe("tools that read content their maker doesn't control (CA-03 P7)", () =>
     expect(TOOLS.filter((tool) => tool.readsOutside).map((tool) => tool.id).sort()).toEqual(
       ["gmail", "notion", "perplexity", "chatgpt", "gemini", "claude", "grok", "manus", "openclaw", "hermes-agent", "muse", "n8n", "zapier", "make", "gemini-notebook"].sort(),
     );
+  });
+});
+
+describe("models run on your own computer (CA-05 P8)", () => {
+  it("adds Ollama and LM Studio: chat tools that take any model, with no suggested list", () => {
+    for (const id of ["ollama", "lm-studio"]) {
+      const tool = toolFor(id);
+      expect(tool, id).toMatchObject({ kind: "chat", group: "chat", local: true, status: "current", models: { mode: "any", suggested: [] } });
+      expect(tool?.steps, id).toEqual(["prompt", "session", "agent", "result", "manual"]);
+    }
+    expect(toolFor("LM Studio")?.id).toBe("lm-studio");
+    expect(toolFor("ollama.com")?.id).toBe("ollama");
+  });
+  it("marks only those two as local", () => {
+    expect(TOOLS.filter((tool) => tool.local).map((tool) => tool.id)).toEqual(["ollama", "lm-studio"]);
   });
 });

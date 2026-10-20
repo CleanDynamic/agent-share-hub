@@ -77,13 +77,15 @@ describe("Session Details › Setup", () => {
     const props = details({ view, onAddToSetup: vi.fn(), onNotShared: vi.fn(), onSelect: vi.fn() });
     const section = screen.getByTestId("session-setup");
     const rows = within(section).getAllByTestId("setup-row");
-    expect(rows.map((row) => row.textContent)).toEqual(["InstructionsCLAUDE.mdDon't share it", "Skillorder-formsOrder forms that add up.Not shared", "MCP servergithubDon't share it", "Rulenpm testDon't share it"]);
-    expect(rows[1].getAttribute("data-not-shared")).toBe("true");
+    expect(rows.map((row) => row.textContent)).toEqual(["InstructionsCLAUDE.mdDon't share it", "MCP servergithubDon't share it", "Rulenpm testDon't share it", "Skillorder-formsOrder forms that add up.Not shared"]);
+    // CA-05 P6: two quiet labels, because both have rows; a skill is read only when needed.
+    expect(within(section).getAllByTestId("setup-loaded").map((group) => group.getAttribute("aria-label"))).toEqual(["At the start", "Only when needed"]);
+    expect(rows[3].getAttribute("data-not-shared")).toBe("true");
     fireEvent.click(within(rows[0]).getByRole("button", { name: "Don't share it" }));
     expect(props.onNotShared).toHaveBeenCalledWith("x1");
     fireEvent.click(within(section).getByRole("button", { name: "Add to setup" }));
     expect(props.onAddToSetup).toHaveBeenCalledWith("typed-b");
-    fireEvent.click(within(rows[2]).getByRole("button", { name: /github/ }));
+    fireEvent.click(within(rows[1]).getByRole("button", { name: /github/ }));
     expect(props.onSelect).toHaveBeenCalledWith("x3");
   });
 
@@ -141,7 +143,8 @@ describe("the build page", () => {
     expect(screen.queryByTestId("session-setup")).toBeNull();
     fireEvent.click(buttons[0]);
     const rows = within(screen.getByTestId("session-setup")).getAllByTestId("setup-row");
-    expect(rows.map((row) => row.textContent)).toEqual(["InstructionsCLAUDE.md", "Skill · not sharedorder-formsOrder forms that add up.", "MCP servergithub", "RuleAfter a tool runs: npm test"]);
+    expect(rows.map((row) => row.textContent)).toEqual(["InstructionsCLAUDE.md", "MCP servergithub", "RuleAfter a tool runs: npm test", "Skill · not sharedorder-formsOrder forms that add up."]);
+    expect(within(screen.getByTestId("session-setup")).getAllByTestId("setup-loaded").map((group) => group.getAttribute("aria-label"))).toEqual(["At the start", "Only when needed"]);
     expect(screen.getByTestId("session-setup").style.marginLeft).toBe("28px");
   });
 

@@ -45,7 +45,7 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CS
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { groupKey, inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
+import { groupKey, inputRefusal, stepRunsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapBox, type MapPiece, type MapResult, type MapSuggestion, type MapWire } from "@/lib/build/mapLayout";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -504,13 +504,13 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
               <span style={{ ...eyebrow(), ...ellipsis }}>
                 Inside {word} {container.number} · {stepTitle(container)}
               </span>
-              {runsLabel(container.runs) ? (
+              {stepRunsLabel(container) ? (
                 <span
                   style={
                     { height: 20, padding: "0 6px", boxSizing: "border-box", borderRadius: 4, display: "inline-flex", alignItems: "center", background: t.tagFill, ...geist(11.5, 400, t.onTag), whiteSpace: "nowrap" }
                   }
                 >
-                  {runsLabel(container.runs)}
+                  {stepRunsLabel(container)}
                 </span>
               ) : null}
             </div>

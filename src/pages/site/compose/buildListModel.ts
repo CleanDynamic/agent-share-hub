@@ -4,6 +4,8 @@
    the parts that need more than one step to decide: where the session dividers
    fall, what an input chip says, and which steps go into a result. */
 
+import { modelRunLine } from "@/lib/build/modelRun";
+import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
 import { groupKey, shownGroups, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 
@@ -49,7 +51,7 @@ export function dividers(
   const out = new Map<string, SourceSession>();
   const shown = shownGroups(groups);
   // CA-04 P4, P6: a lone session keeps its head when it has something to say there: Setup {n}, Worked until, Runs when.
-  const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal);
+  const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal || sessionFactsLine({ extras: group.extras, words: group.longWords }, "maker") || togetherLine(group.extras, () => 0));
   if (shown.length === 0 || (shown.length === 1 && !says(shown[0]))) return out;
   const sessions = new Map(sourceSessions(groups, steps, [], {}, setupCounts, runsWhen).map((session) => [session.key, session]));
   for (const group of shown) {
@@ -70,7 +72,7 @@ export function inputLabel(use: Use, steps: readonly Step[], names: Readonly<Rec
 }
 
 /** The model as the card names it. */
-export const stepModel = (step: Pick<Step, "model">): string | null => (step.model ? modelLabel(step.model) : null);
+export const stepModel = (step: Pick<Step, "model"> & Partial<Pick<Step, "modelRun">>): string | null => (step.model ? modelRunLine(modelLabel(step.model), step.modelRun) : null);
 
 /** Whether text set in a clamped box is cut off: it needs more height than the box shows. */
 export function isClamped(box: { scrollHeight: number; clientHeight: number }): boolean {

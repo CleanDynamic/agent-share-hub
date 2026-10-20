@@ -27,18 +27,24 @@ import {
   madeByOf,
   promptNumbersOf,
   shownGroups,
-  runsLabel,
+  stepRunsLabel,
   untilClause,
   sessionGroups,
   stepTitle,
   toolConnectionOf,
+  trainedModelLine,
+  trainedModelOf,
   type SessionGroup,
   type Step,
 } from "./graph";
+import { bracketed } from "./changes";
 import { copyTogether } from "./copyTogether";
-import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupRule, type SetupServer } from "./setup";
+import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionsMetaOf, type Making } from "./making";
+import { modelRunLine } from "./modelRun";
 import { runsWhenLine } from "./runsFrom";
+import { sessionFactsLine, togetherLine } from "./sessionFacts";
+import { settingLines } from "./startedWith";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
 import type { MapPiece, MapResult } from "./mapLayout";
@@ -71,6 +77,12 @@ export type ReaderChat =
       goal?: { line: string; reached: boolean };
       /** CA-04 P6: "Runs when a pull request is opened", from a workflow in its setup. */
       runsWhen?: string;
+      /** CA-05 P2: length, cost and nobody watching, as a reader gets them: the cost only when the maker ticked Show readers. */
+      facts?: string;
+      /** CA-05 P3: the command that opened the session, as pasted, and the settings it names in plain words. */
+      startedWith?: { command: string; settings: string[] };
+      /** CA-05 P5: "At the same time as Session 3 · own copy: fix-totals". */
+      together?: string;
     }
   | {
       kind: "same";
@@ -99,6 +111,8 @@ export interface ReaderSetupItem {
   workflow: SetupItem["workflow"];
   /** Where it sat ("docs/CLAUDE.md"), when known. */
   path: string | null;
+  /** CA-05 P6: read at the start, or only when needed. Absent in older fixtures: read as at the start. */
+  loaded?: SetupLoaded;
 }
 
 export interface ReaderPasteIn {
@@ -196,6 +210,8 @@ export interface ReaderResult {
   mediaId: string | null;
   /** The step it came from, as a number, when known. */
   from: string | null;
+  /** CA-05 P10: a trained model: "A trained model, based on Muse Spark Open, trained on 1,200 rows of ratings.csv", how it was trained, and the file with its Download. */
+  trained?: { line: string; method: string; file: { id: string; name: string; size: string | null; download: string | null } | null };
 }
 
 /* ── words ── */
@@ -430,6 +446,7 @@ function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
       rule: item.rule,
       workflow: item.notShared ? null : item.workflow,
       path: item.path,
+      loaded: item.loaded,
     };
     out.set(item.session, [...(out.get(item.session) ?? []), entry]);
   }
@@ -481,7 +498,22 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     setup: context.setup.get(groupKey(group)) ?? [],
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
+    ...factsOfGroup(group),
+    ...togetherOfGroup(group, context.groups),
+    ...(group.extras?.startedWith ? { startedWith: { command: group.extras.startedWith, settings: settingLines(group.extras.startedWith) } } : null),
   };
+}
+
+/** CA-05 P2: the line under a session's head, as a reader gets it. */
+function factsOfGroup(group: SessionGroup): { facts?: string } {
+  const facts = sessionFactsLine({ extras: group.extras, words: group.longWords }, "reader");
+  return facts ? { facts } : {};
+}
+
+/** CA-05 P5: the sessions it ran beside and its own copy of the code. */
+function togetherOfGroup(group: SessionGroup, groups: readonly SessionGroup[]): { together?: string } {
+  const together = togetherLine(group.extras, (key) => groups.find((candidate) => groupKey(candidate) === key && !candidate.implicit)?.number);
+  return together ? { together } : {};
 }
 
 /** CA-04 P6: when a session runs, from the events its workflow files were read to run on. */
@@ -567,7 +599,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
       step.kind === "manual"
         ? { headline: `By hand in ${step.tool ?? "another tool"}`, line: step.text, mediaId: step.mediaId ?? null }
         : null,
-    runs: isContainer ? runsLabel(step.runs) : null,
+    runs: isContainer ? stepRunsLabel(step) : null,
     madeIn: isContainer && madeIn.length > 0 ? `made in ${stepList(madeIn, false)}` : null,
     runsByItself: lastRun ? `runs by itself · last run ${lastRun}` : null,
     outside: readsOutsideContent(step, context.tree),
@@ -604,12 +636,25 @@ export function readerResults(tree: readonly NodeTree[], media: ReadonlyMap<stri
       );
       const mediaId = text(node, "media_id");
       const found = mediaId ? media.get(mediaId) : undefined;
+      const trained = trainedModelOf(node);
+      const fileMedia = trained?.trainedOn ? media.get(text(node.children?.find((child) => child.id === trained.trainedOn?.id) ?? { payload: null }, "media_id") ?? "") : undefined;
       return {
         id: node.id,
         title: text(node, "summary") ?? text(node, "url") ?? "Result",
         url: text(node, "url") ?? (found ? mediaUrl(found, { width: "original" }) : null),
         mediaId,
         from: from ? (numberOf.get(from.node_id) ?? null) : null,
+        ...(trained
+          ? {
+              trained: {
+                line: trainedModelLine(trained, modelName),
+                method: trained.method,
+                file: trained.trainedOn
+                  ? { id: trained.trainedOn.id, name: trained.trainedOn.name, size: formatSize(fileMedia?.bytes ?? null), download: fileMedia ? mediaUrl(fileMedia, { width: "original" }) : null }
+                  : null,
+              },
+            }
+          : null),
       };
     });
 }
@@ -705,7 +750,8 @@ export function whatYouNeed(
   const byModel = new Map<string, string[]>();
   for (const step of context.all) {
     if (step.kind !== "agent" || !step.model) continue;
-    const label = modelName(step.model);
+    // CA-05 P8: an agent whose model was run on the maker's computer says how, so it is a row of its own.
+    const label = modelRunLine(modelName(step.model), step.modelRun);
     byModel.set(label, [...(byModel.get(label) ?? []), step.number]);
   }
   for (const [model, numbers] of byModel) tools.push({ title: model, detail: stepList(numbers) });
@@ -879,6 +925,11 @@ export function setupSentences(setup: readonly ReaderSetupItem[]): string[] {
   return out;
 }
 
+/** CA-05 P3: the command a session was started with, then the settings it names. */
+function startedSentences(started: { command: string; settings: string[] }): string[] {
+  return ["Started with:", fenced(started.command), ...started.settings.map((line) => `${line}.`)];
+}
+
 function inputSentences(entry: ReaderStep): string[] {
   const out: string[] = [];
   for (const paste of entry.pasteIns) out.push(`Paste in what step ${paste.number} gave you (${paste.title}).`);
@@ -902,12 +953,12 @@ function subSteps(entry: ReaderStep, lines: string[]): void {
   const children = entry.children;
   for (const child of children) {
     const instructions = child.step.id.endsWith(":instructions");
-    const model = !instructions && child.step.model ? ` · ${modelName(child.step.model)}` : "";
+    const model = !instructions && child.step.model ? ` · ${modelRunLine(modelName(child.step.model), child.step.modelRun)}` : "";
     lines.push(`### ${child.step.number} ${child.title}${model}`, "");
     if (child.runs && child.step.runs) lines.push(`${child.runs}.`, "");
     if (child.uses.length > 0) lines.push(`Uses ${join(child.uses)}.`, "");
     if (child.goesInto.length > 0) lines.push(`Goes into ${child.goesInto.join(", ")}.`, "");
-    if (child.step.text) lines.push(fenced(child.step.text), "");
+    if (child.step.text) lines.push(fenced(bracketed(child.step.text, child.step.changes)), "");
     const saves = saveSentences(child);
     if (saves.length > 0) lines.push(...saves, "");
     // An agent inside a team shows its instructions in its own row; what follows is its own prompts.
@@ -937,6 +988,7 @@ export function stepsMarkdown(
     if (entry.chat?.kind === "new" && step.kind !== "prompt") {
       lines.push(chatSentence(entry.chat), "");
       if (entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
+      if (entry.chat.startedWith) lines.push(...startedSentences(entry.chat.startedWith), "");
     }
 
     const saves = saveSentences(entry);
@@ -948,6 +1000,8 @@ export function stepsMarkdown(
     if (step.kind === "agent" || step.kind === "team") {
       const how = [entry.runs, entry.madeIn].filter(Boolean).join(" · ");
       if (how) lines.push(`${how}.`, "");
+      // CA-05 P8: a model run on the maker's own computer says how, because the same model answers differently at a smaller size.
+      if (step.kind === "agent" && step.model && step.modelRun) lines.push(`Model: ${modelRunLine(modelName(step.model), step.modelRun)}.`, "");
       if (entry.uses.length > 0) lines.push(`Uses ${join(entry.uses)}.`, "");
       if (saves.length > 0) lines.push(...saves, "");
       subSteps(entry, lines);
@@ -955,10 +1009,11 @@ export function stepsMarkdown(
     }
     if (entry.chat && step.kind === "prompt") lines.push(chatSentence(entry.chat), "");
     if (entry.chat?.kind === "new" && step.kind === "prompt" && entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
+    if (entry.chat?.kind === "new" && step.kind === "prompt" && entry.chat.startedWith) lines.push(...startedSentences(entry.chat.startedWith), "");
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
     // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.
-    const message = step.sentWith?.length ? copyTogether(step) : step.text;
+    const message = step.sentWith?.length ? copyTogether(step) : bracketed(step.text, step.changes);
     if (message) lines.push(fenced(message), "");
     if (saves.length > 0) lines.push(...saves, "");
   }
@@ -967,6 +1022,8 @@ export function stepsMarkdown(
   if (results.length === 0) lines.push(build.live_url ?? "No result is listed.", "");
   for (const result of results) {
     lines.push(`${result.url ?? result.title}${result.from ? ` (from step ${result.from})` : ""}`, "");
+    // CA-05 P10: a trained model says what it is based on and what it learned from.
+    if (result.trained) lines.push(`${result.trained.line}${result.trained.method ? `. ${result.trained.method}` : ""}.`.replace(/\.\.$/, "."), "");
   }
   return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;
 }
