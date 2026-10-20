@@ -40,7 +40,7 @@ import { copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionsMetaOf, type Making } from "./making";
 import { runsWhenLine } from "./runsFrom";
-import { sessionFactsLine } from "./sessionFacts";
+import { sessionFactsLine, togetherLine } from "./sessionFacts";
 import { settingLines } from "./startedWith";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
@@ -78,6 +78,8 @@ export type ReaderChat =
       facts?: string;
       /** CA-05 P3: the command that opened the session, as pasted, and the settings it names in plain words. */
       startedWith?: { command: string; settings: string[] };
+      /** CA-05 P5: "At the same time as Session 3 · own copy: fix-totals". */
+      together?: string;
     }
   | {
       kind: "same";
@@ -489,6 +491,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
     ...factsOfGroup(group),
+    ...togetherOfGroup(group, context.groups),
     ...(group.extras?.startedWith ? { startedWith: { command: group.extras.startedWith, settings: settingLines(group.extras.startedWith) } } : null),
   };
 }
@@ -497,6 +500,12 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
 function factsOfGroup(group: SessionGroup): { facts?: string } {
   const facts = sessionFactsLine({ extras: group.extras, words: group.longWords }, "reader");
   return facts ? { facts } : {};
+}
+
+/** CA-05 P5: the sessions it ran beside and its own copy of the code. */
+function togetherOfGroup(group: SessionGroup, groups: readonly SessionGroup[]): { together?: string } {
+  const together = togetherLine(group.extras, (key) => groups.find((candidate) => groupKey(candidate) === key && !candidate.implicit)?.number);
+  return together ? { together } : {};
 }
 
 /** CA-04 P6: when a session runs, from the events its workflow files were read to run on. */

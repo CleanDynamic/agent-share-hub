@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sessionsMetaOf } from "./making";
-import { extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
+import { togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
 
 describe("the line", () => {
   it("is absent when nothing is set", () => {
@@ -76,5 +76,23 @@ describe("in builds.making.sessions_meta", () => {
     const meta = sessionsMetaOf({ sessions_meta: { "typed-a": { tool: "claude-code", date: "2026-10-12", goal: { condition: "x" }, cost: 3.4, tokens: 12, background: true, junk: 1 } } });
     expect(meta["typed-a"]).toMatchObject({ cost: 3.4, currency: "GBP", tokens: 12, background: true, goal: { condition: "x" } });
     expect(meta["typed-a"]).not.toHaveProperty("junk");
+  });
+});
+
+describe("sessions at the same time", () => {
+  const numbers: Record<string, number> = { a: 1, b: 2, c: 3 };
+  const numberOf = (key: string) => numbers[key];
+  it("says the line from the parts that exist", () => {
+    expect(togetherLine(undefined, numberOf)).toBeNull();
+    expect(togetherLine({ parallelWith: ["c"], ownCopy: "fix-totals" }, numberOf)).toBe("At the same time as Session 3 · own copy: fix-totals");
+    expect(togetherLine({ parallelWith: ["c", "b"] }, numberOf)).toBe("At the same time as Session 2 and Session 3");
+    expect(togetherLine({ ownCopy: "fix-totals" }, numberOf)).toBe("Own copy: fix-totals");
+    expect(togetherLine({ parallelWith: ["gone"] }, numberOf)).toBeNull();
+  });
+  it("marks a pair both ways, and changes only the lists that change", () => {
+    expect(togetherChanges({}, "b", ["c"])).toEqual({ b: ["c"], c: ["b"] });
+    expect(togetherChanges({ b: ["c"], c: ["b"] }, "b", ["c"])).toEqual({});
+    expect(togetherChanges({ b: ["c"], c: ["b", "a"], a: ["c"] }, "b", [])).toEqual({ b: [], c: ["a"] });
+    expect(togetherChanges({ b: ["b", "c"] }, "b", ["b", "c"])).toEqual({ b: ["c"], c: ["b"] });
   });
 });

@@ -188,3 +188,44 @@ export function readResultFile(text: string): ResultFileFacts | null {
   if (cost === undefined && tokens === 0) return null;
   return { ...(cost !== undefined ? { cost: Math.round(cost * 100) / 100 } : null), ...(tokens > 0 ? { tokens } : null), ...(cached > 0 ? { cached } : null) };
 }
+
+/* ── sessions at the same time (CA-05 P5) ── */
+
+/**
+ * "At the same time as Session 3 · own copy: fix-totals", the parts that exist; null when there are none. `numberOf`
+ * gives a session's number from its key; a key that names no session of the build is left out.
+ */
+export function togetherLine(extras: SessionExtras | undefined, numberOf: (key: string) => number | undefined): string | null {
+  const numbers = (extras?.parallelWith ?? []).flatMap((key) => {
+    const number = numberOf(key);
+    return number === undefined ? [] : [number];
+  });
+  const parts: string[] = [];
+  if (numbers.length > 0) {
+    const names = [...new Set(numbers)].sort((a, b) => a - b).map((number) => `Session ${number}`);
+    parts.push(`At the same time as ${names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0]}`);
+  }
+  if (extras?.ownCopy) parts.push(parts.length > 0 ? `own copy: ${extras.ownCopy}` : `Own copy: ${extras.ownCopy}`);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/**
+ * Sessions that ran at the same time are a pair both ways: marking 2 against 3 marks 3 against 2. Given what is stored
+ * and the new list for one session, the lists that change: this session's own, and every other session whose list
+ * gains or loses it. Pure; a session whose list does not change is not in the result.
+ */
+export function togetherChanges(stored: Readonly<Record<string, readonly string[] | undefined>>, key: string, next: readonly string[]): Record<string, string[]> {
+  const wanted = [...new Set(next.filter((other) => other !== key))].slice(0, PARALLEL_MAX);
+  const out: Record<string, string[]> = {};
+  const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((value) => b.includes(value));
+  if (!same(stored[key] ?? [], wanted)) out[key] = wanted;
+  const others = new Set([...Object.keys(stored), ...wanted]);
+  others.delete(key);
+  for (const other of others) {
+    const has = stored[other] ?? [];
+    const should = wanted.includes(other);
+    if (should === has.includes(key)) continue;
+    out[other] = should ? [...has, key].slice(0, PARALLEL_MAX) : has.filter((value) => value !== key);
+  }
+  return out;
+}

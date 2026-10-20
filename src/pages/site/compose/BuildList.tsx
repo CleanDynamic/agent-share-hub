@@ -426,6 +426,8 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
     {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
     {/* CA-05 P2: how long, what it cost, and whether nobody was watching: one line, only the parts that exist. */}
     {session.facts ? <DotLine testId="facts-line">{session.facts}</DotLine> : null}
+    {/* CA-05 P5: the sessions it ran beside, and its own copy of the code. */}
+    {session.together ? <DotLine testId="together-line">{session.together}</DotLine> : null}
     </>
   );
 }

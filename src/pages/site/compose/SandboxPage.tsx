@@ -38,7 +38,7 @@ import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
 import { goalRefusal, type SessionGoal } from "@/lib/build/making";
-import { extrasRefusal, readResultFile, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
+import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
@@ -485,6 +485,29 @@ export function SandboxPage() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session facts not saved", cause);
+        toast.error("Couldn't save that. Try again.");
+      }
+    },
+    [claim, ensureBuild, groups, made, refreshRecord],
+  );
+
+  /** CA-05 P5: the sessions one ran at the same time as. The pairing is written on both sides, so the Map and the List agree. */
+  const onSessionTogether = useCallback(
+    async (key: string, next: string[]) => {
+      try {
+        const self = isLegacySession(key) ? await claim(key) : key;
+        if (!self) return;
+        const id = await ensureBuild();
+        const metas = sessionsMetaOf(made);
+        const changes = togetherChanges(Object.fromEntries(Object.entries(metas).map(([other, meta]) => [other, meta.parallelWith])), self, next);
+        for (const [other, list] of Object.entries(changes)) {
+          const group = groups.find((candidate) => groupKey(candidate) === other);
+          const before: SessionMeta = metas[other] ?? (groupKind(group ?? { sessionId: other }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
+          await setSessionMeta(id, other, withExtras(before, { ...extrasOf(before), parallelWith: list }));
+        }
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] sessions at the same time not saved", cause);
         toast.error("Couldn't save that. Try again.");
       }
     },
@@ -1124,6 +1147,7 @@ export function SandboxPage() {
             onSessionMeta={(key, change) => void onSessionMeta(key, change)}
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
+            onSessionTogether={(key, keys) => void onSessionTogether(key, keys)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}
             onAddPicture={(id, file) => void addPicture(id, file)}

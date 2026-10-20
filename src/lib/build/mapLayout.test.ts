@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { SessionGroup, Step } from "./graph";
-import { containsLine, joinedTo, layoutMap, layoutOpened, MAP_SIZES, sideBySideGroups, type MapLayout } from "./mapLayout";
+import { containsLine, joinedTo, layoutMap, layoutOpened, MAP_SIZES, sideBySideGroups, togetherSets, type MapLayout } from "./mapLayout";
 
 const step = (over: Partial<Step> & Pick<Step, "id" | "number">): Step => ({
   kind: "prompt",
@@ -546,5 +546,63 @@ describe("agents side by side in an opened team (CA-03 P4)", () => {
     const loop = layout.wires.find((wire) => wire.loop);
     expect(loop?.label).toBe("sent back until approved");
     expect(Number(loop?.d.match(/V (-?[\d.]+) H/)?.[1])).toBe(layout.boxes[0].y - MAP_SIZES.loopRise / 2);
+  });
+});
+
+describe("sessions at the same time (CA-05 P5)", () => {
+  /** A and B ran at the same time (A on the 3rd, B on the 4th, so apart by date), C came after and used both. */
+  function together(mark: boolean) {
+    const steps: Step[] = [
+      step({ id: "p1", number: "1", sessionId: "a" }),
+      step({ id: "p2", number: "2", sessionId: "a", uses: [out("p1")] }),
+      step({ id: "p3", number: "3", sessionId: "c" }),
+      step({ id: "p4", number: "4", sessionId: "b" }),
+      step({ id: "p5", number: "5", sessionId: "d", uses: [out("p2"), out("p4")] }),
+    ];
+    const extras = mark ? { parallelWith: ["b"] } : undefined;
+    const groups: SessionGroup[] = [
+      { sessionId: "a", number: 1, tool: "Claude Code", model: null, startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "2"], ...(extras ? { extras } : null) },
+      { sessionId: "c", number: 2, tool: "Claude", model: null, startedAt: "2026-03-03T11:00:00", stepNumbers: ["3"] },
+      { sessionId: "b", number: 3, tool: "Claude Code", model: null, startedAt: "2026-03-05T10:00:00", stepNumbers: ["4"] },
+      { sessionId: "d", number: 4, tool: "Claude", model: null, startedAt: "2026-03-06T10:00:00", stepNumbers: ["5"] },
+    ];
+    return { steps, groups, layout: layoutMap(steps, groups, [], [], []) };
+  }
+
+  it("changes nothing when no session is marked", () => {
+    const { layout } = together(false);
+    expect(layout.lanes.map((lane) => lane.label)).toEqual(["Session 1", "Session 2", "Session 3", "Session 4"]);
+    expect(layout.lanes.every((lane) => lane.together === undefined)).toBe(true);
+    expect(col(layout, "p1")).toBe(0);
+  });
+
+  it("puts the sessions next to each other, whatever order they came in", () => {
+    const { layout } = together(true);
+    expect(layout.lanes.map((lane) => lane.label)).toEqual(["Session 1", "Session 3", "Session 2", "Session 4"]);
+    expect(layout.lanes.map((lane) => lane.together)).toEqual([0, 0, undefined, undefined]);
+    expect(layout.lanes[0].sub).toContain("at the same time");
+  });
+
+  it("starts them in one column, stacked, and puts what uses both after both", () => {
+    const { layout } = together(true);
+    expect(col(layout, "p1")).toBe(col(layout, "p4"));
+    const [a, b] = [layout.boxes.find((box) => box.id === "p1"), layout.boxes.find((box) => box.id === "p4")];
+    expect(a?.y).toBeLessThan(b?.y ?? 0);
+    expect(col(layout, "p5")).toBeGreaterThan(Math.max(col(layout, "p2") ?? 0, col(layout, "p4") ?? 0));
+    expect(overlaps(layout)).toEqual([]);
+  });
+
+  it("joins their arrows where their work does", () => {
+    const { layout } = together(true);
+    const into = layout.wires.filter((wire) => wire.to === "p5");
+    expect(into.map((wire) => wire.from).sort()).toEqual(["p2", "p4"]);
+    expect(new Set(into.map((wire) => Math.round(wire.x2))).size).toBe(1);
+  });
+
+  it("reads a pairing named by either session, and ignores a key that is not in the build", () => {
+    const { groups } = together(true);
+    const named = groups.map((group) => (group.sessionId === "a" ? { ...group, extras: undefined } : group.sessionId === "b" ? { ...group, extras: { parallelWith: ["a", "gone"] } } : group));
+    expect([...togetherSets(named)].sort()).toEqual([["a", 0], ["b", 0]]);
+    expect(togetherSets(together(false).groups).size).toBe(0);
   });
 });

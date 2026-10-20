@@ -4,7 +4,7 @@
    the parts that need more than one step to decide: where the session dividers
    fall, what an input chip says, and which steps go into a result. */
 
-import { sessionFactsLine } from "@/lib/build/sessionFacts";
+import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
 import { groupKey, shownGroups, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 
@@ -50,7 +50,7 @@ export function dividers(
   const out = new Map<string, SourceSession>();
   const shown = shownGroups(groups);
   // CA-04 P4, P6: a lone session keeps its head when it has something to say there: Setup {n}, Worked until, Runs when.
-  const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal || sessionFactsLine({ extras: group.extras, words: group.longWords }, "maker"));
+  const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal || sessionFactsLine({ extras: group.extras, words: group.longWords }, "maker") || togetherLine(group.extras, () => 0));
   if (shown.length === 0 || (shown.length === 1 && !says(shown[0]))) return out;
   const sessions = new Map(sourceSessions(groups, steps, [], {}, setupCounts, runsWhen).map((session) => [session.key, session]));
   for (const group of shown) {

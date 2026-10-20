@@ -59,7 +59,7 @@ import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type Too
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
-import { SessionFactsFields, StartedWithField } from "./SessionExtrasFields";
+import { SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
 
@@ -134,6 +134,8 @@ export interface SessionView {
   goal?: SessionGoal | null;
   /** CA-05: what the session carries beyond its steps (cost, background, ...). Absent in older fixtures. */
   extras?: SessionExtras;
+  /** CA-05 P5: the build's other sessions, for Ran at the same time as. Absent or empty: the menu is not shown. */
+  others?: readonly OtherSession[];
 }
 
 /** CA-04 P4: one row of a session's setup. */
@@ -263,6 +265,8 @@ export interface DetailsHandlers {
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
   /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
   onSessionExtras?: (key: string, extras: SessionExtras) => void;
+  /** CA-05 P5: the sessions this one ran at the same time as; the pairing is written both ways. Absent: the menu is not shown. */
+  onSessionTogether?: (key: string, keys: string[]) => void;
   /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */
   onToolConnection?: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
   /** CA-04 P4: "Add to setup" opens the file picker for this session's setup. Absent: the button is not shown. */
@@ -1143,9 +1147,10 @@ function SessionDetails({
   onNotShared,
   onSessionGoal,
   onSessionExtras,
+  onSessionTogether,
 }: { view: SessionView; phone: boolean; inBuild: readonly string[]; focusSetup?: DetailsPanelProps["focusSetup"] } & Pick<
   DetailsHandlers,
-  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal" | "onSessionExtras"
+  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal" | "onSessionExtras" | "onSessionTogether"
 >) {
   const [goalAsked, setGoalAsked] = useState(false);
   const [all, setAll] = useState(false);
@@ -1210,6 +1215,7 @@ function SessionDetails({
         </span>
       ) : null}
       {onSessionExtras ? <StartedWithField key={`${view.key}:started`} id={view.key} extras={view.extras ?? {}} phone={phone} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
+      {onSessionExtras ? <TogetherFields id={view.key} extras={view.extras ?? {}} others={view.others ?? []} phone={phone} onTogether={onSessionTogether ? (keys) => onSessionTogether(view.key, keys) : undefined} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
       {onSessionExtras ? <SessionFactsFields id={view.key} extras={view.extras ?? {}} phone={phone} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
       <Section title="Prompts in the build">
         <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
@@ -1714,7 +1720,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} onSessionExtras={h.onSessionExtras} focusSetup={focusSetup} /> : null}
+      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} onSessionExtras={h.onSessionExtras} onSessionTogether={h.onSessionTogether} focusSetup={focusSetup} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}

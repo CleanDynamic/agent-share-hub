@@ -641,6 +641,7 @@ function ChatHead({ chat, copy }: { chat: Extract<NonNullable<ReaderStep["chat"]
       ) : null}
       {chat.runsWhen ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
       {chat.facts ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
+      {chat.together ? <DotLine testId="together-line">{chat.together}</DotLine> : null}
       {open ? (
         <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
           {/* CA-05 P3: the command that opened the session, as written, and the settings it names in plain words. */}
@@ -935,7 +936,7 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
       groups.push({
         key: `chat:${entry.step.id}`,
         // CA-04 P4: Setup at the head's end, when the session has one.
-        head: chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.startedWith ? <ChatHead chat={chat} copy={copy} /> : (
+        head: chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.together || chat.startedWith ? <ChatHead chat={chat} copy={copy} /> : (
           <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
             {chat.headline}
           </Head>

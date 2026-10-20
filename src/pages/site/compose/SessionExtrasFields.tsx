@@ -3,19 +3,23 @@
    well you type in or a choice row, and writes only when it is left. A session that never uses them shows only
    the fields, empty. PURE: values in, changes out. */
 
+import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useState, type KeyboardEvent } from "react";
 
 import { Checkbox } from "@/components/brand/Checkbox";
+import { Glyph } from "@/components/brand/Glyph";
+import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { COST_MAX, costField, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
+import { COST_MAX, costField, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { ChoiceRows } from "./ChoiceRows";
 import { Field } from "./composeControls";
-import { text, typedArea, typedField } from "./refinedStyles";
+import { menuItem, menuSurface, text, typedArea, typedField } from "./refinedStyles";
+import { FLOATING_Z } from "./ToolPicker";
 
 export const EXTRAS_COPY = {
   optional: "Optional",
@@ -31,6 +35,10 @@ export const EXTRAS_COPY = {
   background: "In the background",
   startedWith: "Started with",
   startedWithHint: "claude --model opus --permission-mode plan",
+  together: "Ran at the same time as",
+  togetherNone: "No other session",
+  ownCopy: "Own copy of the code",
+  ownCopyHint: "fix-totals",
 } as const;
 
 function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal"; onCommit: (value: string) => void }) {
@@ -153,5 +161,63 @@ export function StartedWithField({ id, extras, phone, onChange }: { id: string; 
         </ul>
       ) : null}
     </Field>
+  );
+}
+
+/** A session of the build the maker can name: its key and "Session 3 · Claude Code". */
+export interface OtherSession {
+  key: string;
+  label: string;
+}
+
+/** P5: Ran at the same time as (a menu, more than one allowed), and Own copy of the code (a branch or folder name). */
+export function TogetherFields({ id, extras, others, phone, onTogether, onChange }: { id: string; extras: SessionExtras; others: readonly OtherSession[]; phone: boolean; onTogether?: (keys: string[]) => void; onChange: (change: SessionExtras) => void }) {
+  const [open, setOpen] = useState(false);
+  const chosen = new Set(extras.parallelWith ?? []);
+  const shown = others.filter((other) => chosen.has(other.key)).map((other) => other.label.split(" · ")[0]);
+  return (
+    <>
+      {others.length > 0 && onTogether ? (
+        <Field id={`${id}-together`} label={EXTRAS_COPY.together} hint={EXTRAS_COPY.optional} group>
+          <Menu.Root open={open} onOpenChange={setOpen}>
+            <Menu.Trigger asChild>
+              <MenuButton aria-label={EXTRAS_COPY.together} label={shown.length > 0 ? "" : EXTRAS_COPY.togetherNone} value={shown.join(", ")} open={open} style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }} />
+            </Menu.Trigger>
+            <Menu.Portal>
+              <Menu.Content align="start" sideOffset={4} collisionPadding={16} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
+                {others.map((other) => (
+                  <Menu.CheckboxItem
+                    key={other.key}
+                    checked={chosen.has(other.key)}
+                    // The menu stays open, so more than one can be ticked.
+                    onSelect={(event) => event.preventDefault()}
+                    onCheckedChange={(on) => onTogether(on ? [...chosen, other.key] : [...chosen].filter((key) => key !== other.key))}
+                    style={{ ...menuItem(true, phone), gap: 6 }}
+                  >
+                    <span style={{ width: 14, display: "inline-flex" }}>
+                      <Menu.ItemIndicator>
+                        <Glyph name="check" size={14} />
+                      </Menu.ItemIndicator>
+                    </span>
+                    {other.label}
+                  </Menu.CheckboxItem>
+                ))}
+              </Menu.Content>
+            </Menu.Portal>
+          </Menu.Root>
+        </Field>
+      ) : null}
+      <Field id={`${id}-copy`} label={EXTRAS_COPY.ownCopy} hint={EXTRAS_COPY.optional}>
+        <ExtrasInput
+          key={`${id}:copy:${extras.ownCopy ?? ""}`}
+          label={EXTRAS_COPY.ownCopy}
+          value={extras.ownCopy ?? ""}
+          placeholder={EXTRAS_COPY.ownCopyHint}
+          max={OWN_COPY_MAX}
+          phone={phone}
+          onCommit={(value) => onChange({ ...extras, ownCopy: value.trim() || undefined })}
+        />
+      </Field>
+    </>
   );
 }
