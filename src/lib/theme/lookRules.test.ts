@@ -219,6 +219,15 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/threadEditor.ts",
   "src/lib/build/toGrids.test.ts",
   "src/pages/site/compose/PostTab.bars.test.tsx",
+  // CA-07 P3
+  "src/components/post/PostBody.tsx",
+  "src/components/post/post.test.tsx",
+  "src/components/post/media/GridTile.tsx",
+  "src/components/post/media/PostMediaGrid.test.tsx",
+  "src/components/post/media/PostMediaGrid.tsx",
+  "src/components/post/media/cropStyle.test.ts",
+  "src/components/post/media/cropStyle.ts",
+  "src/components/post/media/shade.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -427,6 +436,16 @@ function componentFindings(code: string, file: string): Finding[] {
   if (!/src\/lib\/theme\/partColour(\.test)?\.ts$/.test(file)) {
     for (const match of every(/\bborder(?:Top|Right|Bottom|Left|Block|Inline)?(?:Color)?\s*:\s*([^,}\n]+)/, code)) {
       if (/#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(|\bcolou?r\b|\bhex\b/i.test(match[1])) out.push(found("a border colour not from a token or partColour", code, match.index ?? 0));
+    }
+  }
+
+  // CA-07, THE ONE EXCEPTION FOR PICTURES: the controls drawn on a picture sit on PICTURE_SHADE with white ink in both
+  // themes, because the picture under them can be any colour. The shade, and the few raw values beside it, are written
+  // in src/components/post/media/shade.ts and nowhere else; every other file in the media folder names them from there.
+  if (!file.endsWith("src/components/post/media/shade.ts")) {
+    for (const match of every(/rgba\(\s*15\s*,\s*15\s*,\s*16\b/, code)) out.push(found("the picture shade outside shade.ts", code, match.index ?? 0));
+    if (/src\/components\/post\/media\//.test(file) && !/\.test\.tsx?$/.test(file)) {
+      for (const match of every(/["'`](?:#[0-9a-fA-F]{3,8}|(?:rgba?|hsla?)\([^"'`]*\))["'`]/, code)) out.push(found("a raw colour on a picture not from shade.ts", code, match.index ?? 0));
     }
   }
 
@@ -639,6 +658,13 @@ describe("the look rules, on snippets", () => {
     expect(rules("const s = { border: `1px solid ${colour}` };")).toEqual(["a border colour not from a token or partColour"]);
     expect(rules("const s = { borderLeft: \"2px solid #7FA7D9\" };")).toEqual(["a border colour not from a token or partColour"]);
     expect(rules("const s = { borderColor: hex };", "src/lib/theme/partColour.ts")).toEqual([]);
+  });
+
+  it("lets the picture shade be written only in shade.ts (CA-07)", () => {
+    expect(rules('export const PICTURE_SHADE = "rgba(15,15,16,0.72)";', "src/components/post/media/shade.ts")).toEqual([]);
+    expect(rules('const s = { background: "rgba(15,15,16,0.72)" };', "src/components/post/editor/GridView.tsx")).toEqual(["the picture shade outside shade.ts"]);
+    expect(rules('const s = { background: PICTURE_SHADE, color: PICTURE_INK };', "src/components/post/media/GridTile.tsx")).toEqual([]);
+    expect(rules('const s = { color: "#fff" };', "src/components/post/media/GridTile.tsx")).toEqual(["a raw colour on a picture not from shade.ts"]);
   });
 
   it("lets the map well's dot grid stay, and no other gradient", () => {

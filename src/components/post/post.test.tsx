@@ -13,8 +13,6 @@ import type { GalleryMedia } from "@/lib/build";
 import { splitThread, type Post, type PostBlock, type ThreadDoc } from "@/lib/build/thread";
 
 import { PostBody } from "./PostBody";
-import { PostMedia } from "./PostMedia";
-import { PostMediaRow, rowWidths } from "./PostMediaRow";
 import { PostThread, type PostThreadMode } from "./PostThread";
 
 /* ── fixtures ─────────────────────────────────────────────────────────────── */
@@ -134,122 +132,7 @@ describe("PostBody", () => {
 
 /* ── PostMedia ────────────────────────────────────────────────────────────── */
 
-describe("PostMedia", () => {
-  const box = (container: HTMLElement) => container.querySelector("[data-post-media-box]") as HTMLElement;
-
-  it("reserves its own shape from the node, and the media row when the node has none", () => {
-    const own = render(<PostMedia node={pic("a", 1600, 1000) as never} mediaById={MEDIA} srcByPath={NO_SRC} />);
-    expect(box(own.container).style.aspectRatio.replace(/\s/g, "")).toBe("1600/1000");
-    own.unmount();
-    const fallback = render(<PostMedia node={pic("c", null, null) as never} mediaById={new Map([["c", row("c", "image", 800, 600)]])} srcByPath={NO_SRC} />);
-    expect(box(fallback.container).style.aspectRatio.replace(/\s/g, "")).toBe("800/600");
-  });
-
-  it("is a tile at the reserved size, with no image and no spinner, until it is signed", () => {
-    const { container } = render(<PostMedia node={pic("a", 1600, 1000) as never} mediaById={MEDIA} srcByPath={NO_SRC} />);
-    expect(container.querySelector("img, video, [role='progressbar']")).toBeNull();
-    expect(box(container)).toHaveStyle({ background: "var(--tile)" });
-  });
-
-  it("takes the node's percent of the column and the creator's alt and caption", () => {
-    const src = new Map([["p/a", "https://signed.example/a.png"]]);
-    const { container } = render(
-      <PostMedia node={pic("a", 1600, 1000, { width: 40, alt: "A loaf", caption: "Fresh" }) as never} mediaById={MEDIA} srcByPath={src} />,
-    );
-    expect(container.querySelector("figure")).toHaveStyle({ width: "40%" });
-    expect(screen.getByRole("img", { name: "A loaf" })).toHaveAttribute("src", "https://signed.example/a.png");
-    expect(screen.getByText("Fresh").tagName).toBe("FIGCAPTION");
-  });
-
-  it("leaves alt empty only when there is a caption", () => {
-    const src = new Map([["p/a", "https://signed.example/a.png"]]);
-    const withCaption = render(<PostMedia node={pic("a", 10, 10, { caption: "Words" }) as never} mediaById={MEDIA} srcByPath={src} />);
-    expect(withCaption.container.querySelector("img")).toHaveAttribute("alt", "");
-    withCaption.unmount();
-    const without = render(<PostMedia node={pic("a", 10, 10) as never} mediaById={MEDIA} srcByPath={src} />);
-    expect(without.container.querySelector("img")?.getAttribute("alt")).not.toBe("");
-  });
-
-  it("draws a video with native controls, a poster, and no autoplay", () => {
-    const media = new Map([["v", { ...row("v", "video", 1920, 1080), poster_path: "p/v.jpg" }]]);
-    const src = new Map([["p/v.jpg", "https://signed.example/poster.jpg"]]);
-    const { container } = render(<PostMedia node={pic("v", 1920, 1080, { alt: "Demo" }) as never} mediaById={media} srcByPath={src} />);
-    const video = container.querySelector("video") as HTMLVideoElement;
-    expect(video).toHaveAttribute("controls");
-    expect(video).toHaveAttribute("poster", "https://signed.example/poster.jpg");
-    expect(video.autoplay).toBe(false);
-  });
-
-  describe("capTall", () => {
-    const tall = (w: number, h: number, capTall = true) =>
-      render(<PostMedia node={pic("a", w, h) as never} mediaById={MEDIA} srcByPath={NO_SRC} capTall={capTall} />);
-
-    it("caps a picture taller than 5:4 at 4:5 and says the real size", () => {
-      const { container } = tall(1170, 2532);
-      expect(box(container).style.aspectRatio.replace(/\s/g, "")).toBe("4/5");
-      expect(screen.getByRole("button", { name: "Show the whole picture" })).toBeInTheDocument();
-      expect(screen.getByText("1170 × 2532, the rest is below")).toBeInTheDocument();
-    });
-
-    it("does not cap 5:4 itself, a landscape, or a picture when capTall is off", () => {
-      for (const [w, h] of [[1000, 1250], [1600, 1000]] as const) {
-        const { container, unmount } = tall(w, h);
-        expect(screen.queryByRole("button")).toBeNull();
-        expect(box(container).style.aspectRatio.replace(/\s/g, "")).toBe(`${w}/${h}`);
-        unmount();
-      }
-      const off = tall(1170, 2532, false);
-      expect(screen.queryByRole("button")).toBeNull();
-      expect(box(off.container).style.aspectRatio.replace(/\s/g, "")).toBe("1170/2532");
-    });
-
-    it("uncaps in place when the button is pressed", () => {
-      const { container } = tall(1170, 2532);
-      fireEvent.click(screen.getByRole("button", { name: "Show the whole picture" }));
-      expect(screen.queryByRole("button")).toBeNull();
-      expect(box(container).style.aspectRatio.replace(/\s/g, "")).toBe("1170/2532");
-    });
-
-    it("shows the top of the capped picture", () => {
-      const src = new Map([["p/a", "https://signed.example/a.png"]]);
-      const { container } = render(<PostMedia node={pic("a", 1170, 2532) as never} mediaById={MEDIA} srcByPath={src} capTall />);
-      expect(container.querySelector("img")).toHaveStyle({ objectPosition: "top" });
-    });
-  });
-});
-
-/* ── PostMediaRow ─────────────────────────────────────────────────────────── */
-
-describe("PostMediaRow", () => {
-  it("gives each picture (100% minus the gaps) times its share of the ratios", () => {
-    const [one, three] = rowWidths([1, 0.75]);
-    expect(one).toBe(`calc((100% - 8px) * ${Math.round((1 / 1.75) * 1e6) / 1e6})`);
-    expect(three).toBe(`calc((100% - 8px) * ${Math.round((0.75 / 1.75) * 1e6) / 1e6})`);
-    expect(rowWidths([1, 1, 1])[0]).toContain("(100% - 16px)");
-  });
-
-  it("draws the slots at those widths, 8px apart, top-aligned, none shrinking", () => {
-    const node = { type: "postMediaRow", content: [pic("a", 1000, 1000), pic("b", 750, 1000)] } as never;
-    const { container } = render(<PostMediaRow node={node} mediaById={MEDIA} srcByPath={NO_SRC} />);
-    const wrap = container.querySelector("[data-post-media-row]") as HTMLElement;
-    expect(wrap).toHaveStyle({ display: "flex", gap: "8px", alignItems: "flex-start" });
-    const slots = [...container.querySelectorAll<HTMLElement>("[data-post-media-slot]")];
-    expect(slots).toHaveLength(2);
-    // `flex: none` is stored by the CSS parser as its expansion.
-    expect(slots.map((slot) => slot.style.flex)).toEqual(["0 0 auto", "0 0 auto"]);
-    // jsdom's CSS parser drops a calc() with a multiplier, so the length is read from the attribute the slot paints from.
-    expect(slots[0]).toHaveAttribute("data-row-width", "calc((100% - 8px) * 0.571429)");
-    expect(slots[1]).toHaveAttribute("data-row-width", "calc((100% - 8px) * 0.428571)");
-  });
-
-  it("never caps a picture in a row", () => {
-    const node = { type: "postMediaRow", content: [pic("a", 1000, 3000), pic("b", 1000, 3000)] } as never;
-    render(
-      <PostBody post={{ content: [node] }} mediaById={MEDIA} srcByPath={NO_SRC} capTall />,
-    );
-    expect(screen.queryByRole("button")).toBeNull();
-  });
-});
+// CA-07: PostMedia and PostMediaRow are gone; a post's pictures are one grid (media/PostMediaGrid.test.tsx).
 
 /* ── PostThread ───────────────────────────────────────────────────────────── */
 

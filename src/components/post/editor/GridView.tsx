@@ -7,8 +7,9 @@
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useSyncExternalStore } from "react";
 
-import { PostMedia } from "@/components/post/PostMedia";
-import type { ThreadPostMedia } from "@/lib/build/thread";
+import { GridTile } from "@/components/post/media/GridTile";
+import { GridFrame, gridLayout, sourcesOf } from "@/components/post/media/PostMediaGrid";
+import { mediaAttrsOf } from "@/lib/build/thread";
 
 import type { PictureHost } from "./pictures";
 
@@ -23,14 +24,34 @@ export function GridView(props: NodeViewProps) {
   const { node } = props;
   const { host, phone } = props.extension.options as PictureOptions;
   const snapshot = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot);
-  const pictures: ThreadPostMedia[] = [];
-  node.forEach((child) => pictures.push(child.toJSON() as ThreadPostMedia));
+  const pictures: { attrs: ReturnType<typeof mediaAttrsOf>; uploadId: string | null }[] = [];
+  node.forEach((child) => pictures.push({ attrs: mediaAttrsOf(child.toJSON()), uploadId: (child.attrs.uploadId as string | null) ?? null }));
+  const layout = gridLayout(sourcesOf(pictures.map((picture) => picture.attrs), snapshot.rows));
+  void phone;
 
   return (
-    <NodeViewWrapper data-post-media-grid="" contentEditable={false} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {pictures.map((picture, index) => (
-        <PostMedia key={index} node={picture} mediaById={snapshot.rows} srcByPath={snapshot.src} phone={phone} inRow />
-      ))}
+    <NodeViewWrapper data-grid-view="" contentEditable={false}>
+      <GridFrame
+        layout={layout}
+        count={pictures.length}
+        renderCell={(index, style, cell) => {
+          const { attrs, uploadId } = pictures[index];
+          return (
+            <div key={uploadId ?? `${attrs.mediaId}-${index}`} data-grid-tile={index} style={style}>
+              <GridTile
+                attrs={attrs}
+                media={snapshot.rows.get(attrs.mediaId)}
+                srcByPath={snapshot.src}
+                cellRatio={cell.ratio}
+                align={cell.align}
+                index={index}
+                count={pictures.length}
+                preview={uploadId ? (snapshot.previews.get(uploadId) ?? null) : null}
+              />
+            </div>
+          );
+        }}
+      />
     </NodeViewWrapper>
   );
 }

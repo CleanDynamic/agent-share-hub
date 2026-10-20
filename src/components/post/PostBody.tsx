@@ -10,6 +10,9 @@
 // CA-06: words that point at a part are a RefLink, drawn as one only inside a
 // PostRefsProvider (the build page); anywhere else they are plain words.
 //
+// PICTURES (CA-07) are one PostMediaGrid after the words; `toGrids` reads an old
+// post's pictures, between the lines or in rows, in that shape before drawing.
+//
 // HEADINGS ARE PARAGRAPHS. The page's own h1 stays the only h1, so a Title or
 // Heading in a post is a p with the heading style. `realHeadings` turns them
 // into h2 and h3 for a surface that wants an outline; it never emits an h1.
@@ -18,10 +21,9 @@ import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryMedia } from "@/lib/build";
-import { linkAllowed, parseRefTo, type Post, type ThreadPostMedia, type ThreadPostMediaRow } from "@/lib/build/thread";
+import { linkAllowed, parseRefTo, toGrids, type Post } from "@/lib/build/thread";
 
-import { PostMedia } from "./PostMedia";
-import { PostMediaRow } from "./PostMediaRow";
+import { PostMediaGrid } from "./media/PostMediaGrid";
 import { RefLink } from "./RefLinks";
 import { BLOCK_GAP, LIST_INDENT, LIST_ITEM_GAP, postType, type PostTypeScale } from "./postType";
 
@@ -187,21 +189,9 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number): ReactNo
     case "bulletList":
     case "orderedList":
       return renderList(node, ctx, key, false);
-    case "postMedia":
-      return (
-        <PostMedia
-          key={key}
-          node={node as unknown as ThreadPostMedia}
-          mediaById={props.mediaById}
-          srcByPath={props.srcByPath}
-          capTall={props.capTall}
-          phone={props.phone}
-        />
-      );
-    case "postMediaRow":
-      return (
-        <PostMediaRow key={key} node={node as unknown as ThreadPostMediaRow} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} />
-      );
+    case "postMediaGrid":
+      // CA-07: a post's pictures, one grid after its words. Captions stay in the saved data and are not drawn.
+      return <PostMediaGrid key={key} pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} />;
     default:
       // Unknown, or a postBreak that splitThread should have taken out.
       return null;
@@ -212,7 +202,9 @@ const TEXT_BLOCKS = new Set(["paragraph", "heading"]);
 
 export function PostBody(props: PostBodyProps) {
   const ctx: Ctx = { scale: postType(Boolean(props.phone)), props };
-  const blocks = (Array.isArray(props.post?.content) ? props.post.content : []).filter(isNode) as Loose[];
+  // CA-07: an old post's pictures, between the lines or in rows, are read as one grid at its end. Nothing is saved.
+  const content = Array.isArray(props.post?.content) ? props.post.content : [];
+  const blocks = toGrids({ type: "doc", content }).content.filter(isNode) as Loose[];
   const first = blocks[0];
 
   return (
