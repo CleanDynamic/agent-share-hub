@@ -4092,6 +4092,7 @@ export type Database = {
           bounty_solutions_submitted: number
           bounty_solver_acceptance_rate: number | null
           bounty_total_reward_earned: number
+          colour_swatches: Json
           created_at: string
           curator_application_status: string | null
           derived_bio: string | null
@@ -4130,6 +4131,7 @@ export type Database = {
           bounty_solutions_submitted?: number
           bounty_solver_acceptance_rate?: number | null
           bounty_total_reward_earned?: number
+          colour_swatches?: Json
           created_at?: string
           curator_application_status?: string | null
           derived_bio?: string | null
@@ -4168,6 +4170,7 @@ export type Database = {
           bounty_solutions_submitted?: number
           bounty_solver_acceptance_rate?: number | null
           bounty_total_reward_earned?: number
+          colour_swatches?: Json
           created_at?: string
           curator_application_status?: string | null
           derived_bio?: string | null
