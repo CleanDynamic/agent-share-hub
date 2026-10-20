@@ -109,12 +109,14 @@ describe("saving and reopening", () => {
     expect(JSON.parse(link as string)).toEqual({ href: "https://example.com/page" });
   });
 
-  it("keeps the pictures of a thread that already has them", () => {
+  it("keeps the pictures of a thread that already has them, opened as the post's grid (CA-07)", () => {
     const picture = { type: "postMedia", attrs: { mediaId: "m1", width: 100, w: 800, h: 600, alt: "", caption: "" } } as ThreadBlock;
-    const { editor } = mount(doc(p("above"), picture, brk, p("second")));
+    const { editor, thread } = mount(doc(p("above"), picture, p("below"), brk, p("second")));
     const back = tidyThread(json(editor));
     expect(JSON.stringify(back)).toContain('"mediaId":"m1"');
-    expect(back.content.map((block) => block.type)).toEqual(["paragraph", "postMedia", "postBreak", "paragraph"]);
+    expect(back.content.map((block) => block.type)).toEqual(["paragraph", "paragraph", "postMediaGrid", "postBreak", "paragraph"]);
+    // Opening it saves nothing: the new shape is written only when the maker changes something.
+    expect(thread.onDoc).not.toHaveBeenCalled();
   });
 
   it("reports an edit as the thread's JSON", () => {
@@ -131,19 +133,15 @@ describe("saving and reopening", () => {
 describe("the post break", () => {
   const three = doc(p("one"), brk, p("two"), brk, p("three"));
 
-  it("reads Post 2 with its note the first time, then just the number", () => {
+  // CA-07 P1: the words between posts went, deliberately; the break keeps its name for a screen reader.
+  it("names each post's start for a screen reader and draws no words", () => {
     mount(three);
     const rows = Array.from(document.querySelectorAll("[data-post-break]")) as HTMLElement[];
-    expect(rows.map((row) => row.textContent)).toEqual(["Post 2 · readers reach this with Show more", "Post 3"]);
+    expect(rows.map((row) => row.textContent)).toEqual(["", ""]);
     expect(rows[0].getAttribute("role")).toBe("separator");
-    expect(rows[0].getAttribute("aria-label")).toBe("Post 2 starts here");
-    // A quiet line, as X has between posts: no rule, the label alone, 11.5 in --label.
-    expect(rows[0].style.minHeight).toBe("20px");
-    expect(rows[0].querySelectorAll("span[aria-hidden]")).toHaveLength(0);
-    expect(rows[0].getAttribute("style")).not.toContain("dashed");
-    const label = rows[0].firstElementChild as HTMLElement;
-    expect(label.style.fontSize).toBe("11.5px");
-    expect(label.getAttribute("style")).toContain("color:var(--label)");
+    expect(rows.map((row) => row.getAttribute("aria-label"))).toEqual(["Post 2 starts here", "Post 3 starts here"]);
+    expect(rows[0].style.height).toBe("0px");
+    expect(rows[0].style.marginTop).toBe("-4px");
   });
 
   it("is removed by Backspace at the start of the post after it, and the two posts become one", () => {
@@ -197,14 +195,14 @@ describe("the thread rail", () => {
     const avatars = rail.querySelectorAll('[data-ui="avatar"]');
     expect(avatars).toHaveLength(3);
     expect(avatars[0].textContent).toBe("SR");
-    expect((avatars[0] as HTMLElement).style.width).toBe("36px");
+    expect((avatars[0] as HTMLElement).style.width).toBe("40px");
   });
 
-  it("is one avatar for a one-post thread, 32 on a phone", () => {
+  it("is one avatar for a one-post thread, 36 on a phone", () => {
     mount(doc(p("only")), { phone: true });
     const avatars = screen.getByTestId("thread-rail").querySelectorAll('[data-ui="avatar"]');
     expect(avatars).toHaveLength(1);
-    expect((avatars[0] as HTMLElement).style.width).toBe("32px");
+    expect((avatars[0] as HTMLElement).style.width).toBe("36px");
   });
 
   it("follows the posts as a break is added", () => {
@@ -222,11 +220,11 @@ describe("the layout", () => {
     const tab = screen.getByTestId("post-tab");
     expect(tab.style.flexDirection).toBe("column");
     const row = tab.firstElementChild as HTMLElement;
-    expect(row.style.gap).toBe("24px");
+    expect(row.style.gap).toBe("12px");
     expect(row.firstElementChild).toBe(screen.getByTestId("thread-rail"));
     expect(row.contains(document.querySelector('[contenteditable="true"]'))).toBe(true);
     const toolbar = screen.getByTestId("post-toolbar");
-    expect((toolbar.parentElement as HTMLElement).style.marginLeft).toBe("60px");
+    expect((toolbar.parentElement as HTMLElement).style.marginLeft).toBe("52px");
     expect(screen.queryByRole("navigation", { name: "Posts" })).toBeNull();
     expect(screen.queryByRole("region", { name: "Preview" })).toBeNull();
   });
@@ -237,12 +235,13 @@ describe("the layout", () => {
     expect((screen.getByTestId("post-toolbar").parentElement as HTMLElement).style.marginLeft).toBe("0px");
   });
 
-  it("draws text in the published post's type", () => {
+  it("draws a heading in the published post's type, and the words in the composer's own, 20 / 1.25", () => {
     mount(doc({ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Big" }] }, p("body text"), { type: "paragraph", attrs: { size: "small" }, content: [{ type: "text", text: "tiny" }] }));
     const title = document.querySelector('[data-heading="1"]') as HTMLElement;
     expect(title.style.fontSize).toBe("28px");
     expect(title.style.fontWeight).toBe("500");
-    expect((document.querySelector('[data-size="body"]') as HTMLElement).style.fontSize).toBe("16px");
+    const body = document.querySelector('[data-size="body"]') as HTMLElement;
+    expect([body.style.fontSize, body.style.lineHeight]).toEqual(["20px", "1.25"]);
     expect((document.querySelector('[data-size="small"]') as HTMLElement).style.fontSize).toBe("13px");
   });
 

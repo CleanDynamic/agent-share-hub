@@ -205,6 +205,50 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/profile/colourSwatches.ts",
   // CA-06 P7
   "e2e/audit/support/harness.ts",
+  // CA-07 P1
+  "src/components/post/postType.ts",
+  "src/pages/site/compose/PostTab.proportions.test.tsx",
+  "src/pages/site/compose/PostTab.test.tsx",
+  "src/pages/site/compose/PostTab.preview.test.tsx",
+  // CA-07 P2
+  "src/components/post/editor/BlockHandle.tsx",
+  "src/components/post/editor/GridView.tsx",
+  "src/components/post/editor/SlashMenu.tsx",
+  "src/components/post/editor/gridShape.test.tsx",
+  "src/components/post/editor/pictures.ts",
+  "src/lib/build/threadEditor.ts",
+  "src/lib/build/toGrids.test.ts",
+  "src/pages/site/compose/PostTab.bars.test.tsx",
+  // CA-07 P3
+  "src/components/post/PostBody.tsx",
+  "src/components/post/post.test.tsx",
+  "src/components/post/media/GridTile.tsx",
+  "src/components/post/media/PostMediaGrid.test.tsx",
+  "src/components/post/media/PostMediaGrid.tsx",
+  "src/components/post/media/cropStyle.test.ts",
+  "src/components/post/media/cropStyle.ts",
+  "src/components/post/media/shade.ts",
+  // CA-07 P4
+  "src/pages/site/compose/PostTab.grid.test.tsx",
+  // CA-07 P5
+  "src/components/brand/UnderlineTabs.tsx",
+  "src/components/post/media/EditMediaDialog.test.tsx",
+  "src/components/post/media/EditMediaDialog.tsx",
+  // CA-07 P6
+  "src/components/post/media/gridLinks.test.tsx",
+  "src/lib/build/gridSteps.ts",
+  // CA-07 P7
+  "src/components/gallery/FeedPost.tsx",
+  "src/components/post/PostThread.tsx",
+  "src/components/post/media/AltSheet.tsx",
+  "src/components/post/media/MediaViewer.tsx",
+  "src/components/post/media/readers.test.tsx",
+  // CA-07 P8
+  "src/lib/build/postMedia.ts",
+  "src/lib/build/postMedia.test.ts",
+  "src/pages/dev/PostThreadDemo.tsx",
+  // CA-07 P9
+  "e2e/tier1/post-thread.spec.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -380,6 +424,9 @@ function componentFindings(code: string, file: string): Finding[] {
     if (!hidden) out.push(found(`a visible ${match[1]} input`, code, at));
   }
 
+  // CA-07: the site has no slider of its own; a native range is allowed only where ALLOWED names it.
+  for (const match of every(/type=\{?["']range["']\}?/, code)) out.push(found("a native range input", code, match.index ?? 0));
+
   for (const match of every(/textTransform:\s*["']uppercase["']/, code)) {
     const at = match.index ?? 0;
     const owner = code.slice(0, at).lastIndexOf("export const ");
@@ -413,6 +460,16 @@ function componentFindings(code: string, file: string): Finding[] {
   if (!/src\/lib\/theme\/partColour(\.test)?\.ts$/.test(file)) {
     for (const match of every(/\bborder(?:Top|Right|Bottom|Left|Block|Inline)?(?:Color)?\s*:\s*([^,}\n]+)/, code)) {
       if (/#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(|\bcolou?r\b|\bhex\b/i.test(match[1])) out.push(found("a border colour not from a token or partColour", code, match.index ?? 0));
+    }
+  }
+
+  // CA-07, THE ONE EXCEPTION FOR PICTURES: the controls drawn on a picture sit on PICTURE_SHADE with white ink in both
+  // themes, because the picture under them can be any colour. The shade, and the few raw values beside it, are written
+  // in src/components/post/media/shade.ts and nowhere else; every other file in the media folder names them from there.
+  if (!file.endsWith("src/components/post/media/shade.ts")) {
+    for (const match of every(/rgba\(\s*15\s*,\s*15\s*,\s*16\b/, code)) out.push(found("the picture shade outside shade.ts", code, match.index ?? 0));
+    if (/src\/components\/post\/media\//.test(file) && !/\.test\.tsx?$/.test(file)) {
+      for (const match of every(/["'`](?:#[0-9a-fA-F]{3,8}|(?:rgba?|hsla?)\([^"'`]*\))["'`]/, code)) out.push(found("a raw colour on a picture not from shade.ts", code, match.index ?? 0));
     }
   }
 
@@ -504,6 +561,21 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 9 is not in SPACE_REFINED",
     text: "padding: \"12px 17px\", marginBottom: 9",
     why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "no cursor-following light",
+    text: "root.addEventListener(\"mousemove\", onMove);",
+    why: "The post editor's block handle (PT-06) finds the block level with the pointer to put its grip beside it; it draws no light. There before CA-07, which only stops it offering a picture.",
+  },
+  {
+    rule: "no cursor-following light",
+    text: "root.removeEventListener(\"mousemove\", onMove);",
+    why: "The post editor's block handle (PT-06) finds the block level with the pointer to put its grip beside it; it draws no light. There before CA-07, which only stops it offering a picture.",
+  },
+  {
+    rule: "a native range input",
+    text: 'type="range"',
+    why: "CA-07 P5: Crop media's zoom. The codebase has no slider, so the prompt allows a native range held to the refined look (accentColor --text, a Field label Zoom), in EditMediaDialog.tsx only.",
   },
 ];
 
@@ -615,6 +687,13 @@ describe("the look rules, on snippets", () => {
     expect(rules("const s = { border: `1px solid ${colour}` };")).toEqual(["a border colour not from a token or partColour"]);
     expect(rules("const s = { borderLeft: \"2px solid #7FA7D9\" };")).toEqual(["a border colour not from a token or partColour"]);
     expect(rules("const s = { borderColor: hex };", "src/lib/theme/partColour.ts")).toEqual([]);
+  });
+
+  it("lets the picture shade be written only in shade.ts (CA-07)", () => {
+    expect(rules('export const PICTURE_SHADE = "rgba(15,15,16,0.72)";', "src/components/post/media/shade.ts")).toEqual([]);
+    expect(rules('const s = { background: "rgba(15,15,16,0.72)" };', "src/components/post/editor/GridView.tsx")).toEqual(["the picture shade outside shade.ts"]);
+    expect(rules('const s = { background: PICTURE_SHADE, color: PICTURE_INK };', "src/components/post/media/GridTile.tsx")).toEqual([]);
+    expect(rules('const s = { color: "#fff" };', "src/components/post/media/GridTile.tsx")).toEqual(["a raw colour on a picture not from shade.ts"]);
   });
 
   it("lets the map well's dot grid stay, and no other gradient", () => {

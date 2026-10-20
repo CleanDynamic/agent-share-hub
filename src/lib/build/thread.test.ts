@@ -42,7 +42,7 @@ const p = (text: string): PostBlock => ({ type: "paragraph", content: text ? [{ 
 const br: ThreadBlock = { type: "postBreak" };
 const pic = (mediaId: string, attrs: Partial<PostMediaAttrs> = {}): PostBlock => ({
   type: "postMedia",
-  attrs: { mediaId, width: 100, w: null, h: null, alt: "", caption: "", ...attrs },
+  attrs: { mediaId, width: 100, w: null, h: null, alt: "", crop: null, aspect: null, zoom: null, warn: [], caption: "", ...attrs },
 });
 const row = (...ids: string[]): PostBlock => ({
   type: "postMediaRow",

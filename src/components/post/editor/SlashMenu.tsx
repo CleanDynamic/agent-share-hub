@@ -6,10 +6,10 @@
 // forwards (controls.slashKey), and a click on an item is a cancelled
 // mouse-down.
 //
-// THE PICTURE ITEMS NEED A WAY TO ADD A PICTURE. "Picture or video" and "Row of
-// pictures" are listed only when the caller gives `onInsertPicture` (PostTab
-// does, PT-06: it asks for the files and uploads them); without one they are
-// not in the list.
+// THE PICTURE ITEM NEEDS A WAY TO ADD A PICTURE. "Picture or video" is listed
+// only when the caller gives `onInsertPicture` (PostTab does: it asks for the
+// files and puts them in the post the caret is in); without one it is not in the
+// list. CA-07 took "Row of pictures" out: a post's pictures are one grid.
 
 import { useEditorState, type Editor } from "@tiptap/react";
 import { TextSelection } from "@tiptap/pm/state";
@@ -23,7 +23,7 @@ import { menuSurface, text } from "@/pages/site/compose/refinedStyles";
 
 import type { PostEditorControls } from "./extensions";
 
-export type SlashId = "picture" | "row" | "bullet" | "ordered" | "title" | "heading" | "code" | "newPost";
+export type SlashId = "picture" | "bullet" | "ordered" | "title" | "heading" | "code" | "newPost";
 
 export interface SlashItem {
   id: SlashId;
@@ -31,12 +31,11 @@ export interface SlashItem {
   line: string;
 }
 
-/** Called with the kind of picture block asked for: PostTab opens the file chooser (PT-06). */
-export type InsertPicture = (kind: "single" | "row", editor: Editor) => void;
+/** Asks for pictures for the post the caret is in: PostTab opens the file chooser (PT-06, CA-07). */
+export type InsertPicture = (editor: Editor) => void;
 
 const ITEMS: readonly SlashItem[] = [
-  { id: "picture", name: "Picture or video", line: "One picture or a short video" },
-  { id: "row", name: "Row of pictures", line: "Two or three side by side" },
+  { id: "picture", name: "Picture or video", line: "Up to 4 pictures or videos" },
   { id: "bullet", name: "Bulleted list", line: "A list with dots" },
   { id: "ordered", name: "Numbered list", line: "A list with numbers" },
   { id: "title", name: "Title", line: "Large text to open a post" },
@@ -48,7 +47,7 @@ const ITEMS: readonly SlashItem[] = [
 /** The items to list: the picture items only once there is a way to insert a picture. */
 export function slashItems(query: string, canInsertPicture: boolean): SlashItem[] {
   const needle = query.trim().toLowerCase();
-  return ITEMS.filter((item) => (canInsertPicture || (item.id !== "picture" && item.id !== "row")) && item.name.toLowerCase().includes(needle));
+  return ITEMS.filter((item) => (canInsertPicture || item.id !== "picture") && item.name.toLowerCase().includes(needle));
 }
 
 interface SlashState {
@@ -95,9 +94,8 @@ export function runSlash(editor: Editor, id: SlashId, at: SlashState, onInsertPi
       clear.setCodeBlock().run();
       return;
     case "picture":
-    case "row":
       clear.run();
-      onInsertPicture?.(id === "row" ? "row" : "single", editor);
+      onInsertPicture?.(editor);
       return;
     case "newPost": {
       if (!canStartPost(editor.getJSON() as ThreadDoc)) {
@@ -110,6 +108,23 @@ export function runSlash(editor: Editor, id: SlashId, at: SlashState, onInsertPi
       const block = state.doc.nodeAt(at.block);
       if (!block) return;
       const { postBreak, paragraph } = state.schema.nodes;
+      const after = state.doc.resolve(at.block + block.nodeSize).nodeAfter;
+      if (after?.type.name === "postMediaGrid") {
+        // CA-07: the last line of a post with pictures. The pictures stay in this post: the break goes after them, and
+        // the line the slash was typed on goes too, unless it is the post's only line.
+        const $at = state.doc.resolve(at.block);
+        const index = $at.index(0);
+        const previous = index > 0 ? state.doc.child(index - 1) : null;
+        const alone = !previous || previous.type.name === "postBreak";
+        const end = at.block + block.nodeSize + after.nodeSize;
+        const tr = state.tr.insert(end, [postBreak.create(), paragraph.create()]);
+        tr.setSelection(TextSelection.create(tr.doc, end + 2));
+        if (alone) tr.delete(at.from, at.to);
+        else tr.delete(at.block, at.block + block.nodeSize);
+        view.dispatch(tr.scrollIntoView());
+        view.focus();
+        return;
+      }
       const tr = state.tr.replaceWith(at.block, at.block + block.nodeSize, [postBreak.create(), paragraph.create()]);
       // The caret goes to the empty paragraph after the break.
       tr.setSelection(TextSelection.create(tr.doc, at.block + 2));

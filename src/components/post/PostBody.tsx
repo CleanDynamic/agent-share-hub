@@ -10,6 +10,9 @@
 // CA-06: words that point at a part are a RefLink, drawn as one only inside a
 // PostRefsProvider (the build page); anywhere else they are plain words.
 //
+// PICTURES (CA-07) are one PostMediaGrid after the words; `toGrids` reads an old
+// post's pictures, between the lines or in rows, in that shape before drawing.
+//
 // HEADINGS ARE PARAGRAPHS. The page's own h1 stays the only h1, so a Title or
 // Heading in a post is a p with the heading style. `realHeadings` turns them
 // into h2 and h3 for a surface that wants an outline; it never emits an h1.
@@ -18,18 +21,23 @@ import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryMedia } from "@/lib/build";
-import { linkAllowed, parseRefTo, type Post, type ThreadPostMedia, type ThreadPostMediaRow } from "@/lib/build/thread";
+import { linkAllowed, parseRefTo, toGrids, type Post } from "@/lib/build/thread";
 
-import { PostMedia } from "./PostMedia";
-import { PostMediaRow } from "./PostMediaRow";
-import { RefLink } from "./RefLinks";
+import { PostMediaGrid } from "./media/PostMediaGrid";
+import { Glyph } from "@/components/brand/Glyph";
+import { GRID_LINKS_COPY, linkedStep } from "@/lib/build/gridSteps";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
+
+import { RefLink, usePostRefs } from "./RefLinks";
 import { BLOCK_GAP, LIST_INDENT, LIST_ITEM_GAP, postType, type PostTypeScale } from "./postType";
 
 export interface PostBodyProps {
   post: Post;
   mediaById: ReadonlyMap<string, GalleryMedia>;
   srcByPath: MediaSrcMap;
-  capTall?: boolean;
   phone?: boolean;
   /** Draw Title and Heading as h2 and h3 instead of p. Never an h1. */
   realHeadings?: boolean;
@@ -187,20 +195,13 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number): ReactNo
     case "bulletList":
     case "orderedList":
       return renderList(node, ctx, key, false);
-    case "postMedia":
+    case "postMediaGrid":
+      // CA-07: a post's pictures, one grid after its words. Captions stay in the saved data and are not drawn.
       return (
-        <PostMedia
-          key={key}
-          node={node as unknown as ThreadPostMedia}
-          mediaById={props.mediaById}
-          srcByPath={props.srcByPath}
-          capTall={props.capTall}
-          phone={props.phone}
-        />
-      );
-    case "postMediaRow":
-      return (
-        <PostMediaRow key={key} node={node as unknown as ThreadPostMediaRow} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} />
+        <div key={key} data-post-pictures="" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          <PostMediaGrid pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} />
+          <StepLine step={attrsOf(node).step} phone={Boolean(props.phone)} />
+        </div>
       );
     default:
       // Unknown, or a postBreak that splitThread should have taken out.
@@ -208,11 +209,53 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number): ReactNo
   }
 }
 
+/**
+ * CA-07 P6: "From step 4.2 Build agent" under a grid whose pictures come from a step, linked to it through the build
+ * page's #node- address. Only on the build page (inside its PostRefsProvider), and only while the step is in the build.
+ */
+function StepLine({ step, phone }: { step: unknown; phone: boolean }) {
+  const refs = usePostRefs();
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const entry = linkedStep(step, refs?.lookup);
+  const target = entry ? parseRefTo(entry.to) : null;
+  if (!refs || !entry || !target) return null;
+  return (
+    <a
+      href={`#node-${target.id}`}
+      data-post-step=""
+      onClick={(event) => {
+        event.preventDefault();
+        refs.onGo(entry.to, event.currentTarget);
+      }}
+      {...handlers}
+      style={{
+        alignSelf: "flex-start",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        minHeight: phone ? 44 : 20,
+        fontFamily: FIGTREE,
+        fontSize: 13,
+        lineHeight: 1.4,
+        color: state.hovered ? t.text : t.text2,
+        textDecoration: "none",
+        borderRadius: 4,
+        ...ring(state.focusVisible),
+      }}
+    >
+      <Glyph name="step" size={15} />
+      {GRID_LINKS_COPY.from(entry)}
+    </a>
+  );
+}
+
 const TEXT_BLOCKS = new Set(["paragraph", "heading"]);
 
 export function PostBody(props: PostBodyProps) {
   const ctx: Ctx = { scale: postType(Boolean(props.phone)), props };
-  const blocks = (Array.isArray(props.post?.content) ? props.post.content : []).filter(isNode) as Loose[];
+  // CA-07: an old post's pictures, between the lines or in rows, are read as one grid at its end. Nothing is saved.
+  const content = Array.isArray(props.post?.content) ? props.post.content : [];
+  const blocks = toGrids({ type: "doc", content }).content.filter(isNode) as Loose[];
   const first = blocks[0];
 
   return (

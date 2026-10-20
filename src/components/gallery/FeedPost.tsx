@@ -28,6 +28,7 @@ import { Avatar } from "@/components/brand/Avatar";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { MadeWithMarks } from "@/components/brand/MadeWithMarks";
 import { Plaque, type PlaqueBuild } from "@/components/brand/Plaque";
+import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { PostThread } from "@/components/post/PostThread";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
@@ -116,6 +117,10 @@ export function FeedPost({
                     w: cover.width ?? null,
                     h: cover.height ?? null,
                     alt: mediaAlt(build, cover),
+                    crop: null,
+                    aspect: null,
+                    zoom: null,
+                    warn: [],
                     caption: "",
                   },
                 },
@@ -178,6 +183,20 @@ export function FeedPost({
 
   const age = shortAge(build.published_at, now);
 
+
+  const thread = (
+    <PostThread
+      posts={posts}
+      mediaById={mediaById}
+      srcByPath={srcAll}
+      mode={isOpen ? "open" : "closed"}
+      onOpen={threaded ? () => void open() : undefined}
+      onClose={close}
+      loading={phase === "loading"}
+      phone={phone}
+      resetKey={build.id}
+    />
+  );
   return (
     <article
       data-feed-post=""
@@ -237,18 +256,8 @@ export function FeedPost({
 
       {/* The post. */}
       <div data-feed-post-body="" style={{ ...column, gridColumn: 2, gridRow: 2 }}>
-        <PostThread
-          posts={posts}
-          mediaById={mediaById}
-          srcByPath={srcAll}
-          mode={isOpen ? "open" : "closed"}
-          onOpen={threaded ? () => void open() : undefined}
-          onClose={close}
-          loading={phase === "loading"}
-          capTall
-          phone={phone}
-          resetKey={build.id}
-        />
+        {/* CA-07: the draft's pictures open full screen in Preview; a Gallery card is a link to the build instead. */}
+        {preview ? <MediaViewerProvider>{thread}</MediaViewerProvider> : thread}
         {!threaded && !cover ? (
           <div style={{ marginTop: 12, aspectRatio: "3 / 2", borderRadius: 6, overflow: "hidden" }}>
             <CoverFallback seed={build.id} radius={0} />

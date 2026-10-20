@@ -46,6 +46,20 @@ export const GLYPHS = {
   grip: "M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01",
   /** CA-06 P2: "Link to a tile or session", drawn in its neighbours' style. */
   at: "M10.25 8a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zM10.25 5.75v3a1.5 1.5 0 0 0 3 0V8A5.25 5.25 0 1 0 11 12.3",
+  /** CA-07: crop, drawn in its neighbours' style. */
+  crop: "M4.5 1.5v10h10M1.5 4.5h10v10",
+  /** CA-07: flag, drawn in its neighbours' style. */
+  flag: "M3.5 14V2.5M3.5 3h8l-1.5 3 1.5 3h-8",
+  /** CA-07: zoomIn, drawn in its neighbours' style. */
+  zoomIn: "M10.25 10.25 13.5 13.5M11.25 7a4.25 4.25 0 1 1-8.5 0 4.25 4.25 0 0 1 8.5 0zM7 5v4M5 7h4",
+  /** CA-07: zoomOut, drawn in its neighbours' style. */
+  zoomOut: "M10.25 10.25 13.5 13.5M11.25 7a4.25 4.25 0 1 1-8.5 0 4.25 4.25 0 0 1 8.5 0zM5 7h4",
+  /** CA-07: shapeWide, drawn in its neighbours' style. */
+  shapeWide: "M1.5 4.5h13v7h-13z",
+  /** CA-07: shapeSquare, drawn in its neighbours' style. */
+  shapeSquare: "M3.5 3.5h9v9h-9z",
+  /** CA-07: step, drawn in its neighbours' style. */
+  step: "M2.5 2.5h11v11h-11zM7 6l1.25-1v6",
 } as const;
 
 export type GlyphName = keyof typeof GLYPHS;

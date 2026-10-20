@@ -189,6 +189,16 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "constants RULES §2 allows, written as named constants in the component. THE " +
       "CAP IS 26 BECAUSE THAT IS ALL THE BOARDS DRAW: a new value is a design decision.",
   },
+  "src/components/post/media/shade.ts": {
+    max: 5,
+    why:
+      "THE PICTURE SHADE (CA-07) — the Edit pill, the × on a picture, the badges and " +
+      "the full screen viewer's controls sit on top of a maker's picture, which can be " +
+      "any colour, so they use one fixed dark shade with white ink in both themes, as " +
+      "X draws them: PICTURE_SHADE, its ink, the viewer's scrim, an upload bar's track " +
+      "and Crop's thirds. lookRules.test.ts holds these values to this file. THE CAP IS " +
+      "5 BECAUSE THAT IS ALL A PICTURE'S CONTROLS NEED.",
+  },
   "src/pages/site/compose/mapArtwork.ts": {
     max: 11,
     why:

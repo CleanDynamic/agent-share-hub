@@ -17,6 +17,8 @@ import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { Glyph, type GlyphName } from "./Glyph";
+
 export type UnderlineTabsFontSize = 12 | 13 | 14;
 
 export interface UnderlineTab<V extends string = string> {
@@ -28,6 +30,11 @@ export interface UnderlineTab<V extends string = string> {
   controls?: string;
   /** Refined only: a count after the label, in `--label`. */
   count?: number | string;
+  /** CA-07: drawn in place of the words; the label is then the tab's accessible name. */
+  glyph?: GlyphName;
+  /** CA-07: a tab that cannot be chosen, with `title` saying why. */
+  disabled?: boolean;
+  title?: string;
 }
 
 export interface UnderlineTabsProps<V extends string = string> {
@@ -48,6 +55,9 @@ function Tab({
   count,
   children,
   tabIndex,
+  glyph,
+  disabled = false,
+  title,
 }: {
   current: boolean;
   id?: string;
@@ -57,6 +67,9 @@ function Tab({
   children: string;
   tabIndex: number;
   count?: number | string;
+  glyph?: GlyphName;
+  disabled?: boolean;
+  title?: string;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
 
@@ -69,8 +82,11 @@ function Tab({
       id={id}
       aria-selected={current}
       aria-controls={controls}
+      aria-label={glyph ? children : undefined}
+      aria-disabled={disabled || undefined}
+      title={title ?? (glyph ? children : undefined)}
       tabIndex={tabIndex}
-      onClick={onSelect}
+      onClick={disabled ? undefined : onSelect}
       onKeyDown={onKeyDown}
       {...handlers}
       style={{
@@ -85,13 +101,14 @@ function Tab({
         fontSize: 13,
         fontWeight: 500,
         lineHeight: "normal",
-        color: current ? t.text : t.text2,
+        color: disabled ? t.label : current ? t.text : t.text2,
         whiteSpace: "nowrap",
-        cursor: "pointer",
+        cursor: disabled ? "default" : "pointer",
+        ...(glyph ? { display: "inline-flex", alignItems: "center" } : null),
         ...ring(state.focusVisible),
       }}
     >
-      {children}
+      {glyph ? <Glyph name={glyph} size={16} /> : children}
       {count !== undefined ? (
         <>
           {" "}
@@ -114,11 +131,20 @@ export function UnderlineTabs<V extends string = string>({
 
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const last = tabs.length - 1;
+    const step = (from: number, by: 1 | -1) => {
+      // CA-07: a disabled tab is passed over.
+      let at = from;
+      for (let tries = 0; tries <= last; tries++) {
+        at = (at + by + tabs.length) % tabs.length;
+        if (!tabs[at].disabled) return at;
+      }
+      return from;
+    };
     const next =
-      event.key === "ArrowRight" ? (index === last ? 0 : index + 1)
-      : event.key === "ArrowLeft" ? (index === 0 ? last : index - 1)
-      : event.key === "Home" ? 0
-      : event.key === "End" ? last
+      event.key === "ArrowRight" ? step(index, 1)
+      : event.key === "ArrowLeft" ? step(index, -1)
+      : event.key === "Home" ? step(last, 1)
+      : event.key === "End" ? step(0, -1)
       : null;
     if (next === null) return;
     event.preventDefault();
@@ -143,8 +169,13 @@ export function UnderlineTabs<V extends string = string>({
           id={tab.id}
           controls={tab.controls}
           count={tab.count}
+          glyph={tab.glyph}
+          disabled={tab.disabled}
+          title={tab.title}
           tabIndex={tab.value === value ? 0 : -1}
-          onSelect={() => onChange(tab.value)}
+          onSelect={() => {
+            if (!tab.disabled) onChange(tab.value);
+          }}
           onKeyDown={(event) => move(event, index)}
         >
           {tab.label}

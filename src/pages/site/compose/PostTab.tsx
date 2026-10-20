@@ -9,30 +9,37 @@
    WHAT IS WRITTEN LIVES IN `useComposeThread` (in the page). This file is the editor, the rail, the toolbar, the
    preview sheet and the two things drawn over the text: the format bar (desktop) and the slash menu. */
 
-import { EditorContent, type Editor } from "@tiptap/react";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { EditorContent, useEditorState, type Editor } from "@tiptap/react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
+import { IconButton } from "@/components/brand/IconButton";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
-import { addPictures } from "@/components/post/editor/pictures";
-import { PostToolbar } from "@/components/post/editor/PostToolbar";
+import { addPictures, postAtCaret, type EditRequest } from "@/components/post/editor/pictures";
+import { EditMediaDialog } from "@/components/post/media/EditMediaDialog";
+import { withoutGoneSteps } from "@/lib/build/gridSteps";
+import { addPostAtEnd, PostToolbar, removePost } from "@/components/post/editor/PostToolbar";
 import { ReferencePicker } from "@/components/post/editor/ReferencePicker";
 import { applyRef, readRefSpot, removeRef, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
 import { SlashMenu, type InsertPicture } from "@/components/post/editor/SlashMenu";
 import { usePostEditor } from "@/components/post/editor/usePostEditor";
 import { PostPreview, type PreviewMaker } from "@/components/post/PostPreview";
-import { BLOCK_GAP } from "@/components/post/postType";
+import { BLOCK_GAP, postType } from "@/components/post/postType";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { PICTURE_ACCEPT } from "@/lib/build/postMedia";
-import { getThreadMedia, threadRefs, type ThreadDoc } from "@/lib/build/thread";
-import { repaintRefs } from "@/components/post/editor/extensions";
+import { getThreadMedia, MAX_THREAD_POSTS, threadRefs, type ThreadDoc } from "@/lib/build/thread";
+import { DIMMED_OPACITY, dimTransition, focusedPost, NEXT_PLACEHOLDER, repaintRefs } from "@/components/post/editor/extensions";
+import { useInteractive } from "@/lib/theme/interactive";
+import { ring } from "@/lib/theme/controls";
 import { RefCard, refPaint, useRefCard } from "@/components/post/RefLinks";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
 import type { Build } from "@/lib/build/types";
+import type { GalleryMedia } from "@/lib/build";
+import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -51,6 +58,8 @@ export interface PostTabProps {
   onPreviewOpenChange?: (open: boolean) => void;
   /** CA-06: what the post's words can link to. Absent: no @, and a typed @ is only an @. */
   references?: PostReferences;
+  /** Dev pages only (CA-07): the pictures' rows and files, put in the store as they are, with nothing fetched or signed. */
+  devMedia?: { rows: readonly GalleryMedia[]; src: MediaSrcMap; progress?: ReadonlyMap<string, number> };
 }
 
 /** CA-06: the build's tiles and sessions, as @ lists them. */
@@ -74,8 +83,80 @@ export interface PostDraft {
 const NO_DRAFT: PostDraft = { build: null, title: "", maker: null };
 
 /** The avatar beside each post, and the gap between it and the words. */
-export const RAIL_AVATAR = { desktop: 36, phone: 32 } as const;
-const RAIL_GAP = { desktop: 24, phone: 12 } as const;
+export const RAIL_AVATAR = { desktop: 40, phone: 36 } as const;
+export const RAIL_GAP = { desktop: 12, phone: 12 } as const;
+/** CA-07: a post's first line starts this far below the top of its avatar, as X sets it. */
+export const FIRST_LINE_DROP = 8;
+/** Room kept at the right of the words for the focused post's remove button. */
+const REMOVE_ROOM = 32;
+
+
+/** The remove button beside a post's first line. */
+const REMOVE_SIZE = 28;
+
+/** IconButton asks for a lucide icon as well as a glyph; the glyph is what is drawn, so this names a type only. */
+const NO_ICON = (() => null) as unknown as ComponentProps<typeof IconButton>["icon"];
+
+interface Writing {
+  /** The post the selection is in while the editor has focus, else -1. */
+  post: number;
+  /** Posts in the editor, empty ones included. */
+  posts: number;
+}
+
+const NOT_WRITING: Writing = { post: -1, posts: 1 };
+
+function readWriting(editor: Editor | null): Writing {
+  if (!editor || editor.isDestroyed) return NOT_WRITING;
+  let posts = 1;
+  editor.state.doc.forEach((node) => {
+    if (node.type.name === "postBreak") posts += 1;
+  });
+  return { post: focusedPost(editor.state), posts };
+}
+
+/** CA-07 P1: the row after the last post, as X ends a thread being written: the avatar at half strength, then the words. */
+function AddPostRow({ avatar, maker, phone, onAdd }: { avatar: number; maker: PreviewMaker | null; phone: boolean; onAdd: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      data-testid="add-post-row"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onAdd}
+      {...handlers}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: RAIL_GAP.desktop,
+        padding: 0,
+        border: 0,
+        borderRadius: 6,
+        background: "transparent",
+        cursor: "pointer",
+        textAlign: "left",
+        minWidth: 0,
+        minHeight: phone ? 44 : avatar,
+        ...ring(state.focusVisible),
+      }}
+    >
+      {/* Decorative: the maker's picture at half strength, or a plain circle, never initials too faint to read. */}
+      <span aria-hidden="true" data-ghost-avatar="" style={{ display: "inline-flex", opacity: DIMMED_OPACITY, flex: "none" }}>
+        {maker?.avatar ? (
+          <Avatar size={avatar} userId={maker.id ?? ""} name={maker.name ?? "You"} src={maker.avatar} />
+        ) : (
+          <span style={{ width: avatar, height: avatar, borderRadius: 999, background: t.avatarFill, display: "block" }} />
+        )}
+      </span>
+      <span data-ink={state.hovered ? "text2" : "label"} style={{ ...postType(phone).composer, color: state.hovered ? t.text2 : t.label }}>{NEXT_PLACEHOLDER}</span>
+    </button>
+  );
+}
+
+/** Whether a drag carries files. */
+function hasFiles(transfer: DataTransfer | null | undefined): boolean {
+  return Boolean(transfer && Array.from(transfer.types ?? []).includes("Files"));
+}
 
 /** The editor's element, or null before it is mounted (TipTap's view throws until then) and after it is destroyed. */
 function viewDom(editor: Editor | null): HTMLElement | null {
@@ -99,8 +180,13 @@ function postTops(editor: Editor | null): number[] {
 const same = (a: readonly number[], b: readonly number[]) => a.length === b.length && a.every((value, index) => value === b[index]);
 
 /** The maker's avatar beside every post, and the thread line that joins them, as X draws a thread being written. */
-function ThreadRail({ editor, maker, size }: { editor: Editor | null; maker: PreviewMaker | null; size: number }) {
+function ThreadRail({ editor, maker, size, focused, onTops }: { editor: Editor | null; maker: PreviewMaker | null; size: number; focused: number; onTops?: (tops: number[]) => void }) {
   const [tops, setTops] = useState<number[]>([0]);
+  const onTopsRef = useRef(onTops);
+  onTopsRef.current = onTops;
+  useEffect(() => onTopsRef.current?.(tops), [tops]);
+  // CA-07: a post's avatar and its part of the line fade with its words while another post is being written.
+  const fade = (index: number) => ({ opacity: focused >= 0 && index !== focused ? DIMMED_OPACITY : 1, transition: dimTransition() });
 
   useEffect(() => {
     if (!editor) return;
@@ -132,11 +218,11 @@ function ThreadRail({ editor, maker, size }: { editor: Editor | null; maker: Pre
         const from = tops[index] + size + 4;
         const to = top - 4;
         return to > from ? (
-          <span key={`line-${index}`} data-thread-line="" style={{ position: "absolute", left: size / 2 - 1, top: from, height: to - from, width: 2, borderRadius: 1, background: t.line }} />
+          <span key={`line-${index}`} data-thread-line="" style={{ position: "absolute", left: size / 2 - 1, top: from, height: to - from, width: 2, borderRadius: 1, background: t.line, ...fade(index) }} />
         ) : null;
       })}
       {tops.map((top, index) => (
-        <span key={`avatar-${index}`} style={{ position: "absolute", left: 0, top }}>
+        <span key={`avatar-${index}`} data-rail-avatar={index} style={{ position: "absolute", left: 0, top, ...fade(index) }}>
           <Avatar size={size} userId={maker?.id ?? ""} name={name} src={maker?.avatar ?? null} />
         </span>
       ))}
@@ -144,7 +230,7 @@ function ThreadRail({ editor, maker, size }: { editor: Editor | null; maker: Pre
   );
 }
 
-function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, onPreviewOpenChange, references }: PostTabProps) {
+function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, onPreviewOpenChange, references, devMedia }: PostTabProps) {
   const [notice, setNotice] = useState<string | null>(null);
   // The preview draws the document as the editor has it, on every change, not as it was last saved.
   const [liveDoc, setLiveDoc] = useState<ThreadDoc>(() => thread.readDoc());
@@ -162,10 +248,11 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   const { editor, controls } = usePostEditor({
     readDoc: thread.readDoc,
     phone,
-    onDoc: (doc) => {
-      setNotice(null);
+    onDoc: (doc, quiet) => {
+      // An edit clears the last sentence; an upload landing is not an edit.
+      if (!quiet) setNotice(null);
       setLiveDoc(doc);
-      thread.onDoc(doc);
+      thread.onDoc(references?.lookup ? withoutGoneSteps(doc, references.lookup) : doc);
       mentionsRef.current?.(threadRefs(doc));
     },
   });
@@ -174,7 +261,19 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   // Read at the moment an upload needs them, so a render never holds a stale one.
   host.ensureBuild.current = thread.ensureBuild;
   host.notice.current = setNotice;
+  // CA-07 P6: the build's tiles, for Link a step; a step since deleted is cleared from what is saved.
+  const stepLookup = references?.lookup;
+  const stepGroups = references?.groups;
+  useEffect(() => {
+    host.store.setSteps(stepLookup && stepGroups ? { groups: stepGroups, lookup: stepLookup } : null);
+  }, [host, stepLookup, stepGroups]);
+  // CA-07 P5: Edit on a picture opens Crop media.
+  const [editRequest, setEditRequest] = useState<EditRequest | null>(null);
+  host.openEdit.current = setEditRequest;
 
+  useEffect(() => {
+    if (devMedia) host.store.seed(devMedia.rows, devMedia.src, devMedia.progress);
+  }, [host, devMedia]);
   // The thread's pictures are in the store before the node views ask for them.
   const buildId = thread.buildId;
   useEffect(() => {
@@ -190,19 +289,12 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
     };
   }, [buildId, host]);
 
-  // "Picture or video" and "Row of pictures": ask for files, then put them after the block the caret is in.
+  // "Picture or video": ask for files (several at once), then put them in the post the caret is in.
   const chooser = useRef<HTMLInputElement>(null);
-  const wanted = useRef<{ kind: "single" | "row"; gap: number; replaceEmpty: boolean } | null>(null);
-  const chooseFiles: InsertPicture = useCallback((kind, current) => {
-    const { selection, doc: document_ } = current.state;
-    const index = selection.$from.index(0);
-    const block = document_.maybeChild(index);
-    const empty = Boolean(block && block.type.name === "paragraph" && block.content.size === 0);
-    wanted.current = { kind, gap: empty ? index : index + 1, replaceEmpty: empty };
-    const input = chooser.current;
-    if (!input) return;
-    input.multiple = kind === "row";
-    input.click();
+  const wanted = useRef<number | null>(null);
+  const chooseFiles: InsertPicture = useCallback((current) => {
+    wanted.current = postAtCaret(current);
+    chooser.current?.click();
   }, []);
 
   const insertPicture = onInsertPicture ?? chooseFiles;
@@ -283,30 +375,121 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   }, [editor]);
   const avatar = phone ? RAIL_AVATAR.phone : RAIL_AVATAR.desktop;
 
+  /* CA-07 P1: the post being written. The others fade; its first line carries a remove button. */
+  const writing = useEditorState({ editor, selector: ({ editor: current }) => readWriting(current) }) ?? NOT_WRITING;
+  const [tops, setTops] = useState<number[]>([0]);
+  const [removeHeld, setRemoveHeld] = useState(false);
+  const lastPost = useRef(0);
+  if (writing.post >= 0) lastPost.current = writing.post;
+  const removeFor = writing.post >= 0 ? writing.post : removeHeld ? lastPost.current : -1;
+  const showRemove = writing.posts >= 2 && removeFor >= 0 && removeFor < writing.posts;
+  const removeTop = (tops[removeFor] ?? 0) + FIRST_LINE_DROP + Math.round((postType(phone).firstLine.composer - REMOVE_SIZE) / 2);
+
+  /* CA-07 P4: files dragged over a post go into its grid; the post shows where they will land. Dropped anywhere else
+     on the page, nothing happens, and the browser does not open the file. */
+  const words = useRef<HTMLDivElement>(null);
+  const [dropPost, setDropPost] = useState<number | null>(null);
+  const postAtY = (clientY: number): number => {
+    const box = words.current?.getBoundingClientRect();
+    const y = clientY - (box?.top ?? 0);
+    let post = 0;
+    tops.forEach((top, index) => {
+      if (y >= top) post = index;
+    });
+    return post;
+  };
+  useEffect(() => {
+    const guard = (event: DragEvent) => {
+      if (hasFiles(event.dataTransfer)) event.preventDefault();
+    };
+    window.addEventListener("dragover", guard);
+    window.addEventListener("drop", guard);
+    return () => {
+      window.removeEventListener("dragover", guard);
+      window.removeEventListener("drop", guard);
+    };
+  }, []);
+  const editorHeight = words.current?.getBoundingClientRect().height ?? 0;
+  const dropBox =
+    dropPost === null
+      ? null
+      : { top: (tops[dropPost] ?? 0) + FIRST_LINE_DROP - 4, bottom: dropPost + 1 < tops.length ? tops[dropPost + 1] - BLOCK_GAP + 4 : Math.max(editorHeight, (tops[dropPost] ?? 0) + 40) + 4 };
+
   return (
     <div data-testid="post-tab" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "stretch", gap: phone ? RAIL_GAP.phone : RAIL_GAP.desktop, minWidth: 0 }}>
-        <ThreadRail editor={editor} maker={draft.maker} size={avatar} />
-        {/* The first line sits level with the middle of the avatar, as X's "What's happening?" does. */}
-        <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 12, position: "relative", paddingTop: Math.max(0, (avatar - 26) / 2) }}>
+        <ThreadRail editor={editor} maker={draft.maker} size={avatar} focused={writing.post} onTops={setTops} />
+        {/* The first line starts 8 below the avatar's top, as X sets it; room at the right for the remove button. */}
+        <div
+          ref={words}
+          data-testid="post-words"
+          onDragOverCapture={(event) => {
+            if (!hasFiles(event.dataTransfer)) return;
+            event.preventDefault();
+            setDropPost(postAtY(event.clientY));
+          }}
+          onDragLeave={(event) => {
+            if (!words.current?.contains(event.relatedTarget as Node | null)) setDropPost(null);
+          }}
+          onDropCapture={(event) => {
+            if (!hasFiles(event.dataTransfer)) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setDropPost(null);
+            const files = Array.from(event.dataTransfer.files ?? []);
+            if (files.length > 0) void addPictures(host, files, postAtY(event.clientY));
+          }}
+          style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 12, position: "relative", paddingTop: FIRST_LINE_DROP, paddingRight: REMOVE_ROOM }}
+        >
           <EditorContent editor={editor} />
+          {dropBox ? (
+            <span
+              aria-hidden="true"
+              data-testid="post-drop-target"
+              data-post={dropPost ?? undefined}
+              style={{ position: "absolute", left: -4, right: -4, top: dropBox.top, height: Math.max(0, dropBox.bottom - dropBox.top), border: `2px dashed ${t.label}`, borderRadius: 16, pointerEvents: "none", boxSizing: "border-box" }}
+            />
+          ) : null}
           <BlockHandle editor={editor} host={host} phone={phone} />
+          {showRemove && editor ? (
+            <IconButton
+              icon={NO_ICON}
+              glyph="x"
+              size={REMOVE_SIZE}
+              boxed={false}
+              label="Remove this post"
+              data-testid="remove-post"
+              // A cancelled mouse-down keeps the editor focused, so the post stays the one being written.
+              onMouseDown={(event) => event.preventDefault()}
+              onFocus={() => setRemoveHeld(true)}
+              onBlur={() => setRemoveHeld(false)}
+              onClick={() => {
+                setRemoveHeld(false);
+                removePost(editor, removeFor);
+              }}
+              style={{ position: "absolute", right: 0, top: removeTop }}
+            />
+          ) : null}
           <input
             ref={chooser}
             type="file"
             accept={PICTURE_ACCEPT}
+            multiple
             hidden
             data-testid="post-picture-file"
             onChange={(event) => {
               const files = Array.from(event.target.files ?? []);
               event.target.value = "";
-              const want = wanted.current;
+              const post = wanted.current;
               wanted.current = null;
-              if (files.length > 0 && want) void addPictures(host, files, { gap: want.gap, replaceEmpty: want.replaceEmpty }, want.kind);
+              if (files.length > 0 && post !== null) void addPictures(host, files, post);
             }}
           />
         </div>
       </div>
+      {editor && writing.posts < MAX_THREAD_POSTS ? (
+        <AddPostRow avatar={avatar} maker={draft.maker} phone={phone} onAdd={() => addPostAtEnd(editor, setNotice)} />
+      ) : null}
       {/* Under the words, not the avatar, as X lines its toolbar up; a phone gives the toolbar the whole width. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, marginLeft: phone ? 0 : avatar + RAIL_GAP.desktop }}>
         {notice ? (
@@ -361,6 +544,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           onClose={escapeRefs}
         />
       ) : null}
+      <EditMediaDialog request={editRequest} editor={editor} host={host} phone={phone} onClose={() => setEditRequest(null)} />
       <BottomSheet open={showPreview} onOpenChange={setPreview} title="Preview">
         {showPreview ? (
           <PostPreview doc={liveDoc} build={draft.build} title={draft.title} maker={draft.maker} media={pictures.rows} src={pictures.src} variant="sheet" />

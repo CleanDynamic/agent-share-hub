@@ -21,6 +21,7 @@ import {
   type PostBlock,
   type ThreadBlock,
   type ThreadDoc,
+  toGrids,
 } from "./thread";
 
 /** A post's character count is shown once it passes this. */
@@ -46,6 +47,25 @@ const childrenOf = (node: unknown): unknown[] => (isRecord(node) && Array.isArra
 /** An empty thread: one empty paragraph, which is what the editor opens on. */
 export function emptyThread(): ThreadDoc {
   return { type: "doc", content: [{ type: "paragraph" }] };
+}
+
+/**
+ * CA-07: a thread as the editor opens it: toGrids's shape (one grid per post, last), and an empty line before the
+ * pictures of a post that is only pictures, where its placeholder sits. Nothing is saved by opening it.
+ */
+export function editorShape(doc: ThreadDoc): ThreadDoc {
+  const grids = toGrids(doc);
+  const content: ThreadBlock[] = [];
+  let inPost = 0;
+  for (const block of grids.content) {
+    if (isRecord(block) && block.type === "postBreak") inPost = 0;
+    else {
+      if (isRecord(block) && block.type === "postMediaGrid" && inPost === 0) content.push({ type: "paragraph" });
+      inPost += 1;
+    }
+    content.push(block);
+  }
+  return content.length === grids.content.length ? grids : { ...grids, content };
 }
 
 /** The thread cut at its postBreaks, keeping every post, empty or not. Always at least one run. */
@@ -86,6 +106,8 @@ export function postLead(run: PostRun, words = 8): string {
     if (words_.length > 0) return words_.length > words ? `${words_.slice(0, words).join(" ")}…` : words_.join(" ");
     if (isRecord(block) && block.type === "postMedia") return "Picture";
     if (isRecord(block) && block.type === "postMediaRow") return "Pictures";
+    // CA-07: a post's block of pictures is named by its count.
+    if (isRecord(block) && block.type === "postMediaGrid") return childrenOf(block).length === 1 ? "Picture" : "Pictures";
   }
   return "";
 }
@@ -98,6 +120,23 @@ export function countLabel(length: number): string | null {
 /** "Post 3 is over 1,000 characters": what the status line says while a save waits. */
 export function overLimitSentence(index: number): string {
   return `Post ${index + 1} is over ${POST_BODY_MAX.toLocaleString("en-US")} characters`;
+}
+
+/** The sentence a save waits on while a picture did not upload (CA-07 P4). Post and picture count from 0. */
+export function failedSentence(picture: number, post: number): string {
+  return `Picture ${picture + 1} in post ${post + 1} did not upload. Retry it or remove it.`;
+}
+
+/** The first picture the editor marked as not uploaded, by the editor's numbering, or null. */
+export function firstFailedUpload(doc: ThreadDoc): { post: number; picture: number } | null {
+  for (const run of postRuns(doc)) {
+    for (const block of run.blocks) {
+      if (!isRecord(block) || block.type !== "postMediaGrid") continue;
+      const at = childrenOf(block).findIndex((child) => isRecord(child) && isRecord(child.attrs) && (child.attrs as Record<string, unknown>).failed === true);
+      if (at >= 0) return { post: run.index, picture: at };
+    }
+  }
+  return null;
 }
 
 /** The first post over its limit, or null. */
@@ -114,6 +153,8 @@ export function firstOverLimit(doc: ThreadDoc): { index: number; length: number 
  * named by the editor's own numbering; anything else is thread.ts's sentence.
  */
 export function holdSentence(doc: ThreadDoc): string | null {
+  const failed = firstFailedUpload(doc);
+  if (failed) return failedSentence(failed.picture, failed.post);
   const over = firstOverLimit(doc);
   if (over) return overLimitSentence(over.index);
   const [problem] = checkThread(doc);
@@ -145,8 +186,9 @@ export function movePost(doc: ThreadDoc, from: number, to: number): ThreadDoc {
 
 // --- comparing and tidying ----------------------------------------------------
 
-// uploadId is the editor's mark on a picture still uploading; null is its default and never stored.
-const DEFAULT_ATTRS: Record<string, unknown> = { size: "body", language: null, uploadId: null };
+// uploadId is the editor's mark on a picture still uploading, and failed (CA-07) its mark on one that did not upload;
+// their defaults are never stored.
+const DEFAULT_ATTRS: Record<string, unknown> = { size: "body", language: null, uploadId: null, failed: false };
 
 function tidyNode(node: unknown): unknown {
   if (!isRecord(node)) return node;

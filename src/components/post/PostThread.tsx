@@ -41,7 +41,6 @@ export interface PostThreadProps {
   mode: PostThreadMode;
   onOpen?: () => void;
   onClose?: () => void;
-  capTall?: boolean;
   /** Below 768px. */
   phone?: boolean;
   /** A different thread: an open one is closed. */
@@ -60,7 +59,6 @@ export function PostThread({
   mode,
   onOpen,
   onClose,
-  capTall = false,
   phone = false,
   resetKey,
   loading = false,
@@ -88,7 +86,7 @@ export function PostThread({
   const counters = open && total > 1;
 
   const body = (post: Post, inset: number) => (
-    <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} capTall={capTall} phone={phone} firstLineInset={inset} />
+    <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} phone={phone} firstLineInset={inset} />
   );
 
   const later = rest.map((post, index) => (

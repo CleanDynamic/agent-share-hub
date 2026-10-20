@@ -1,39 +1,41 @@
-// pictures: adding, replacing, removing and moving pictures in the composer's editor (PT-06).
+// pictures: adding, uploading, removing, reordering and editing the pictures in the composer's editor (PT-06, CA-07).
 //
-// Not React. The node views (PictureView, PictureRowView) and the handle (BlockHandle) read the store and call these;
-// the plugin at the bottom is what turns a drop or a paste into an upload.
+// Not React. The grid's node view (GridView) reads the store and calls these; the plugin at the bottom turns a paste
+// into an upload (a drop is the composer's, PostTab).
 //
-// A PICTURE UPLOADING IS A postMedia WITH NO mediaId AND AN uploadId. The save already waits on a picture with no
-// mediaId (thread.ts), so a half-finished picture is never written. The percent lives in the store, not in the
-// document: it changes many times a second and is nobody's to save or undo.
+// CA-07: A POST'S PICTURES ARE ONE postMediaGrid, ITS LAST BLOCK. Every picture added goes into the grid of the post it
+// is meant for, which is made at the post's end when there is none.
+//
+// A PICTURE UPLOADING IS A postMedia WITH NO mediaId AND AN uploadId; one that did not upload also carries `failed`,
+// which the hold sentence reads (threadEditor), so the save names it. The save already waits on a picture with no
+// mediaId (thread.ts), so a half-finished picture is never written. The percent, the file's own preview (an object URL)
+// and whether it failed live in the store, not in the document: they change many times a second, or hold a file, and
+// are nobody's to save or undo.
 //
 // THE FILE IS NEVER DELETED HERE. Removing a picture takes its node out; saveThread writes the post-media set from
 // what the document still shows, which clears the picture's place in the post. The build_media row and its object stay.
 
 import type { Editor } from "@tiptap/react";
 import type { Node as PMNode } from "@tiptap/pm/model";
-import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
-import type { EditorView } from "@tiptap/pm/view";
+import { NodeSelection, Plugin, PluginKey } from "@tiptap/pm/state";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { mediaKindFor, probeFile } from "@/lib/build/media";
-import {
-  moveBlock,
-  newPicture,
-  newRow,
-  pictureRejection,
-  roomAt,
-  signPostMedia,
-  uploadPostPicture,
-  ROW_COUNT_SENTENCE,
-  type BlockPath,
-  type Destination,
-} from "@/lib/build/postMedia";
+import { newPicture, pictureRejection, POST_FULL_SENTENCE, signPostMedia, THREAD_FULL_SENTENCE, uploadPostPicture } from "@/lib/build/postMedia";
 import type { GalleryMedia } from "@/lib/build";
-import type { ThreadDoc, ThreadPostMedia } from "@/lib/build/thread";
+import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
+import { MAX_POST_PICTURES, MAX_THREAD_MEDIA, type PostMediaAttrs, type ThreadPostMedia } from "@/lib/build/thread";
 import type { BuildMedia, MediaKind } from "@/lib/build/types";
 
 // --- the store ---------------------------------------------------------------------
+
+/** The file itself, shown while it uploads. */
+export interface UploadPreview {
+  /** An object URL for the file. Revoked when the tile goes or the real file is signed. */
+  url: string;
+  kind: "image" | "video";
+  gif: boolean;
+}
 
 export interface PictureSnapshot {
   /** The thread's media rows by id: what a node view needs to find its file. */
@@ -42,6 +44,10 @@ export interface PictureSnapshot {
   src: MediaSrcMap;
   /** uploadId -> percent, 0 to 100, while a picture uploads. */
   progress: ReadonlyMap<string, number>;
+  /** uploadId -> the file's own preview, from the moment it is accepted. */
+  previews: ReadonlyMap<string, UploadPreview>;
+  /** CA-07 P6: the build's steps a grid can link to, as the build page numbers them. Null: no Link a step. */
+  steps: StepRefs | null;
 }
 
 export interface PictureStore {
@@ -51,10 +57,28 @@ export interface PictureStore {
   addRows(rows: readonly BuildMedia[]): void;
   /** null clears the upload's entry. */
   setProgress(uploadId: string, percent: number | null): void;
+  /** null revokes the preview's URL and clears it. */
+  setPreview(uploadId: string, preview: UploadPreview | null): void;
+  /** An upload landed as `mediaId`: its preview is kept under the file's id until the real file is signed. */
+  handOff(uploadId: string, mediaId: string): void;
+  setSteps(steps: StepRefs | null): void;
+  /** Dev pages only: rows and their files as they are, with nothing signed. */
+  seed(rows: readonly GalleryMedia[], src: MediaSrcMap, progress?: ReadonlyMap<string, number>): void;
 }
 
+/** Where a landed upload's preview waits for its signed file. */
+export const landedKey = (mediaId: string) => `media:${mediaId}`;
+
+/** Object URLs, through the window's, so a test without them still runs. */
+const objectUrls = {
+  make: (file: File): string => (typeof URL !== "undefined" && typeof URL.createObjectURL === "function" ? URL.createObjectURL(file) : ""),
+  revoke: (url: string): void => {
+    if (url && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(url);
+  },
+};
+
 export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promise<Map<string, string>> = signPostMedia): PictureStore {
-  let snapshot: PictureSnapshot = { rows: new Map(), src: new Map(), progress: new Map() };
+  let snapshot: PictureSnapshot = { rows: new Map(), src: new Map(), progress: new Map(), previews: new Map(), steps: null };
   const listeners = new Set<() => void>();
   const set = (next: Partial<PictureSnapshot>) => {
     snapshot = { ...snapshot, ...next };
@@ -72,7 +96,17 @@ export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promis
       if (fresh.length === 0) return;
       set({ rows: new Map([...snapshot.rows, ...fresh.map((row) => [row.id, row as GalleryMedia] as const)]) });
       void sign(fresh).then((signed) => {
-        if (signed.size > 0) set({ src: new Map([...snapshot.src, ...signed]) });
+        if (signed.size === 0) return;
+        // The real file is signed: a landed upload's own preview is no longer needed.
+        const previews = new Map(snapshot.previews);
+        for (const row of fresh) {
+          const waiting = previews.get(landedKey(row.id));
+          if (waiting && signed.has(row.path)) {
+            objectUrls.revoke(waiting.url);
+            previews.delete(landedKey(row.id));
+          }
+        }
+        set({ src: new Map([...snapshot.src, ...signed]), previews });
       });
     },
     setProgress(uploadId, percent) {
@@ -80,6 +114,29 @@ export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promis
       if (percent === null) progress.delete(uploadId);
       else progress.set(uploadId, percent);
       set({ progress });
+    },
+    setPreview(uploadId, preview) {
+      const previews = new Map(snapshot.previews);
+      const old = previews.get(uploadId);
+      if (old && old.url !== preview?.url) objectUrls.revoke(old.url);
+      if (preview) previews.set(uploadId, preview);
+      else previews.delete(uploadId);
+      set({ previews });
+    },
+    seed(rows, src, progress) {
+      set({ rows: new Map([...snapshot.rows, ...rows.map((row) => [row.id, row] as const)]), src: new Map([...snapshot.src, ...src]), progress: new Map([...snapshot.progress, ...(progress ?? [])]) });
+    },
+    setSteps(steps) {
+      if (steps !== snapshot.steps) set({ steps });
+    },
+    handOff(uploadId, mediaId) {
+      const preview = snapshot.previews.get(uploadId);
+      if (!preview) return;
+      const previews = new Map(snapshot.previews);
+      previews.delete(uploadId);
+      if (snapshot.rows.get(mediaId) && snapshot.src.has(snapshot.rows.get(mediaId)?.path ?? "")) objectUrls.revoke(preview.url);
+      else previews.set(landedKey(mediaId), preview);
+      set({ previews });
     },
   };
 }
@@ -95,10 +152,32 @@ export interface PictureHost {
   ensureBuild: { current: (() => Promise<string>) | null };
   /** A sentence under the editor. Cleared by the next edit. */
   notice: { current: ((sentence: string) => void) | null };
+  /** uploadId -> the file, kept for Retry, and whether it was stopped. Not in the store: nothing draws it. */
+  files: Map<string, { file: File; stopped: boolean }>;
+  /** CA-07 P5: the Edit dialog, opened on a grid at a picture. Null while nothing can open it. */
+  openEdit: { current: ((request: EditRequest) => void) | null };
+}
+
+/** The build's tiles, grouped as the reference picker lists them, and each by its `node:<id>`. */
+export interface StepRefs {
+  groups: readonly RefGroup[];
+  lookup: ReadonlyMap<string, RefEntry>;
+}
+
+/** What opens Crop media (Part 5). */
+export interface EditRequest {
+  /** The grid's position in the document. */
+  gridPos: number;
+  /** The picture to start on. */
+  index: number;
+  /** The tab to open on. */
+  tab: "crop" | "alt" | "warn";
+  /** Where focus goes back to. */
+  returnTo: HTMLElement | null;
 }
 
 export function createPictureHost(): PictureHost {
-  return { store: createPictureStore(), editor: { current: null }, ensureBuild: { current: null }, notice: { current: null } };
+  return { store: createPictureStore(), editor: { current: null }, ensureBuild: { current: null }, notice: { current: null }, files: new Map(), openEdit: { current: null } };
 }
 
 function say(host: PictureHost, sentences: readonly (string | null)[]): void {
@@ -120,23 +199,52 @@ export function gapPos(doc: PMNode, gap: number): number {
   return pos;
 }
 
-/** A block's place from the position before it: top level, or in a row. Null anywhere else. */
-export function pathOf(doc: PMNode, pos: number): BlockPath | null {
-  if (pos < 0 || pos > doc.content.size) return null;
-  const $pos = doc.resolve(pos);
-  if ($pos.depth === 0) return $pos.index(0) < doc.childCount ? { top: $pos.index(0) } : null;
-  if ($pos.depth === 1 && $pos.parent.type.name === "postMediaRow") return { top: $pos.index(0), child: $pos.index(1) };
-  return null;
+/** One post as the editor holds it: where its blocks start and end, and its grid. */
+export interface PostSpan {
+  index: number;
+  /** Position before its first block (after the break before it). */
+  from: number;
+  /** Position after its last block. */
+  to: number;
+  grid: { pos: number; node: PMNode } | null;
 }
 
-/** The position before the block at a path. */
-export function posOfPath(doc: PMNode, path: BlockPath): number {
-  const start = gapPos(doc, path.top);
-  if (path.child === undefined) return start;
-  const row = doc.child(path.top);
-  let pos = start + 1;
-  for (let index = 0; index < path.child; index++) pos += row.child(index).nodeSize;
-  return pos;
+/** Every post of the document, in order, empty ones included. */
+export function postSpans(doc: PMNode): PostSpan[] {
+  const spans: PostSpan[] = [{ index: 0, from: 0, to: 0, grid: null }];
+  doc.forEach((node, pos) => {
+    if (node.type.name === "postBreak") {
+      spans.push({ index: spans.length, from: pos + node.nodeSize, to: pos + node.nodeSize, grid: null });
+      return;
+    }
+    const span = spans[spans.length - 1];
+    span.to = pos + node.nodeSize;
+    if (node.type.name === "postMediaGrid" && !span.grid) span.grid = { pos, node };
+  });
+  return spans;
+}
+
+/** The post the caret is in, or the last post when there is no caret. */
+export function postAtCaret(editor: Editor): number {
+  const { selection, doc } = editor.state;
+  const index = selection.$from.depth > 0 || selection instanceof NodeSelection ? selection.$from.index(0) : doc.childCount - 1;
+  let post = 0;
+  doc.forEach((node, _pos, at) => {
+    if (at < index && node.type.name === "postBreak") post += 1;
+  });
+  return post;
+}
+
+/** Pictures in each post, uploads in flight included. */
+export function picturesPerPost(doc: PMNode): number[] {
+  return postSpans(doc).map((span) => {
+    let count = 0;
+    doc.nodesBetween(span.from, span.to, (node) => {
+      if (node.type.name === "postMedia") count += 1;
+      return node.type.name !== "postMedia";
+    });
+    return count;
+  });
 }
 
 function findUpload(doc: PMNode, uploadId: string): number {
@@ -152,6 +260,13 @@ function findUpload(doc: PMNode, uploadId: string): number {
   return found;
 }
 
+/** The position of the grid's picture at `index`. */
+export function picturePos(grid: PMNode, gridPos: number, index: number): number {
+  let pos = gridPos + 1;
+  for (let at = 0; at < index; at++) pos += grid.child(at).nodeSize;
+  return pos;
+}
+
 // --- writing to the document ----------------------------------------------------------
 
 /** Change the attributes of the picture marked `uploadId`, out of the undo history. False when it is gone. */
@@ -165,74 +280,112 @@ function patchUpload(host: PictureHost, uploadId: string, attrs: Record<string, 
   return true;
 }
 
-/** Take the picture at `pos` out; a row left with one picture becomes that picture. The file stays. */
-export function removePictureAt(editor: Editor, pos: number): void {
+/** Take the grid's picture at `index` out, in one undoable step; the last one out takes the grid (and its link) with it. The file stays. */
+export function removePicture(editor: Editor, gridPos: number, index: number): void {
   const { state, view } = editor;
-  const node = state.doc.nodeAt(pos);
-  if (!node) return;
-  const $pos = state.doc.resolve(pos);
+  const grid = state.doc.nodeAt(gridPos);
+  if (!grid || grid.type.name !== "postMediaGrid" || index < 0 || index >= grid.childCount) return;
   const tr = state.tr;
-  if ($pos.depth === 1 && $pos.parent.type.name === "postMediaRow") {
-    const row = $pos.parent;
-    const rowStart = $pos.before(1);
-    if (row.childCount <= 2) {
-      const rest: PMNode[] = [];
-      row.forEach((child, _offset, index) => {
-        if (index !== $pos.index(1)) rest.push(child);
-      });
-      tr.replaceWith(rowStart, rowStart + row.nodeSize, rest);
-    } else {
-      tr.delete(pos, pos + node.nodeSize);
-    }
-  } else {
-    tr.delete(pos, pos + node.nodeSize);
+  if (grid.childCount === 1) tr.delete(gridPos, gridPos + grid.nodeSize);
+  else {
+    const pos = picturePos(grid, gridPos, index);
+    tr.delete(pos, pos + grid.child(index).nodeSize);
   }
-  view.dispatch(tr.scrollIntoView());
+  view.dispatch(tr);
 }
 
-/** Replace the document with `doc` and select the block at `at`. Pictures are NodeSelected, text gets a caret. */
-export function applyThread(editor: Editor, doc: ThreadDoc, at: BlockPath): void {
+/** Take the picture marked `uploadId` out, wherever it is. */
+function removeUpload(editor: Editor, uploadId: string, history = true): void {
+  const pos = findUpload(editor.state.doc, uploadId);
+  if (pos < 0) return;
+  const $pos = editor.state.doc.resolve(pos);
+  const gridPos = $pos.before($pos.depth);
+  const grid = editor.state.doc.nodeAt(gridPos) as PMNode;
+  const tr = editor.state.tr;
+  if (grid.childCount === 1) tr.delete(gridPos, gridPos + grid.nodeSize);
+  else tr.delete(pos, pos + (editor.state.doc.nodeAt(pos) as PMNode).nodeSize);
+  if (!history) tr.setMeta("addToHistory", false);
+  editor.view.dispatch(tr);
+}
+
+/** Move the grid's picture at `from` to place `to`, in one undoable step. */
+export function movePicture(editor: Editor, gridPos: number, from: number, to: number): boolean {
   const { state, view } = editor;
-  const tr = state.tr.replaceWith(0, state.doc.content.size, state.schema.nodeFromJSON(doc).content);
-  const pos = Math.min(posOfPath(tr.doc, at), tr.doc.content.size);
-  const node = tr.doc.nodeAt(pos);
-  if (node && (node.type.name === "postMedia" || node.type.name === "postMediaRow")) tr.setSelection(NodeSelection.create(tr.doc, pos));
-  else if (node?.isTextblock) tr.setSelection(TextSelection.near(tr.doc.resolve(pos + 1)));
-  view.dispatch(tr.scrollIntoView());
-}
-
-/** Move a block, or say why not. Returns whether the document changed. */
-export function moveBlockIn(host: PictureHost, editor: Editor, from: BlockPath, to: Destination): boolean {
-  const result = moveBlock(editor.getJSON() as ThreadDoc, from, to);
-  if (!result) return false;
-  if ("refused" in result) {
-    say(host, [result.refused]);
-    return false;
-  }
-  applyThread(editor, result.doc, result.at);
+  const grid = state.doc.nodeAt(gridPos);
+  if (!grid || grid.type.name !== "postMediaGrid" || from === to || from < 0 || to < 0 || from >= grid.childCount || to >= grid.childCount) return false;
+  const children: PMNode[] = [];
+  grid.forEach((child) => children.push(child));
+  const [moved] = children.splice(from, 1);
+  children.splice(to, 0, moved);
+  view.dispatch(state.tr.replaceWith(gridPos + 1, gridPos + grid.nodeSize - 1, children));
   return true;
 }
 
-function insertBlocks(editor: Editor, gap: number, blocks: readonly unknown[], replaceEmpty: boolean): void {
+/** Change several of a grid's pictures at once, in one transaction, so one Undo takes them all back (Part 5). */
+export function setPictureAttrs(editor: Editor, gridPos: number, patches: ReadonlyMap<number, Partial<PostMediaAttrs>>): void {
   const { state, view } = editor;
-  const nodes = blocks.map((block) => state.schema.nodeFromJSON(block));
-  const at = Math.max(0, Math.min(gap, state.doc.childCount));
-  const pos = gapPos(state.doc, at);
-  const existing = at < state.doc.childCount ? state.doc.child(at) : null;
+  const grid = state.doc.nodeAt(gridPos);
+  if (!grid || grid.type.name !== "postMediaGrid" || patches.size === 0) return;
   const tr = state.tr;
-  if (replaceEmpty && existing && existing.type.name === "paragraph" && existing.content.size === 0) tr.replaceWith(pos, pos + existing.nodeSize, nodes);
-  else tr.insert(pos, nodes);
+  for (const [index, patch] of patches) {
+    if (index < 0 || index >= grid.childCount) continue;
+    const child = grid.child(index);
+    tr.setNodeMarkup(picturePos(grid, gridPos, index), undefined, { ...child.attrs, ...patch });
+  }
+  if (tr.docChanged) view.dispatch(tr);
+}
+
+/** The step a grid's pictures come from: "node:<id>", or null for none (Part 6). */
+export function setGridStep(editor: Editor, gridPos: number, step: string | null): void {
+  const { state, view } = editor;
+  const grid = state.doc.nodeAt(gridPos);
+  if (!grid || grid.type.name !== "postMediaGrid" || grid.attrs.step === step) return;
+  view.dispatch(state.tr.setNodeMarkup(gridPos, undefined, { ...grid.attrs, step }));
+}
+
+/**
+ * Move a text block one place up (-1) or down (1). It never goes below its post's pictures: past them it starts the
+ * next post, and up past a break it ends the post before, above that post's pictures. False when it cannot move.
+ */
+export function moveTextBlock(editor: Editor, index: number, direction: -1 | 1): boolean {
+  const { state, view } = editor;
+  const { doc } = state;
+  const block = doc.maybeChild(index);
+  const name = (at: number) => doc.maybeChild(at)?.type.name;
+  if (!block || block.type.name === "postBreak" || block.type.name === "postMediaGrid") return false;
+  let gap: number;
+  if (direction === -1) {
+    if (index === 0) return false;
+    gap = name(index - 1) === "postBreak" && name(index - 2) === "postMediaGrid" ? index - 2 : index - 1;
+  } else {
+    const next = name(index + 1);
+    if (!next) return false;
+    if (next === "postMediaGrid") {
+      if (name(index + 2) !== "postBreak") return false;
+      gap = index + 3;
+    } else gap = index + 2;
+  }
+  const from = gapPos(doc, index);
+  const tr = state.tr.insert(gapPos(doc, gap), block.copy(block.content));
+  const start = tr.mapping.map(from, 1);
+  tr.delete(start, start + block.nodeSize);
   view.dispatch(tr.scrollIntoView());
+  return true;
+}
+
+/** Append pictures to the post's grid, making the grid at the post's end when it has none. */
+function insertIntoPost(editor: Editor, post: number, pictures: readonly ThreadPostMedia[]): void {
+  const { state, view } = editor;
+  const spans = postSpans(state.doc);
+  const span = spans[Math.max(0, Math.min(post, spans.length - 1))];
+  const nodes = pictures.map((picture) => state.schema.nodeFromJSON(picture));
+  const tr = state.tr;
+  if (span.grid) tr.insert(span.grid.pos + span.grid.node.nodeSize - 1, nodes);
+  else tr.insert(span.to, state.schema.nodes.postMediaGrid.create({ step: null }, nodes));
+  view.dispatch(tr);
 }
 
 // --- uploading ----------------------------------------------------------------------
-
-export interface InsertAt {
-  /** Before the top-level block at this index. */
-  gap: number;
-  /** The block there is an empty paragraph the pictures replace. */
-  replaceEmpty?: boolean;
-}
 
 interface Item {
   file: File;
@@ -243,37 +396,37 @@ interface Item {
 
 const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `up-${Math.random().toString(36).slice(2, 10)}`);
 
-function failure(file: File): string {
-  return `${file.name || "That file"} did not upload. Check your connection and try again.`;
-}
-
 async function probeAll(files: readonly File[]) {
   return Promise.all(files.map((file) => probeFile(file, (mediaKindFor(file.type) ?? "image") as MediaKind)));
 }
 
-/** Upload one item into its node. `restore` puts the old picture back when it fails (a replacement). */
-async function runUpload(host: PictureHost, buildId: string, item: Item, restore?: Record<string, unknown>): Promise<void> {
+function previewOf(file: File): UploadPreview {
+  return { url: objectUrls.make(file), kind: mediaKindFor(file.type) === "video" ? "video" : "image", gif: file.type === "image/gif" };
+}
+
+/** Upload one item into its node. A failure leaves the tile, marked failed, for Retry or Remove. */
+function setFailed(host: PictureHost, uploadId: string, failed: boolean): void {
+  patchUpload(host, uploadId, { failed });
+}
+
+async function runUpload(host: PictureHost, buildId: string, item: Item): Promise<void> {
+  setFailed(host, item.uploadId, false);
   try {
     const done = await uploadPostPicture(buildId, item.file, (percent) => host.store.setProgress(item.uploadId, percent), { w: item.w, h: item.h });
+    // Stopped while it uploaded: the result is ignored (uploadMedia cannot be aborted) and the row stays in build_media.
+    if (host.files.get(item.uploadId)?.stopped ?? true) return;
+    host.store.handOff(item.uploadId, done.media.id);
     host.store.addRows([done.media]);
-    patchUpload(host, item.uploadId, { mediaId: done.media.id, w: done.w, h: done.h, uploadId: null });
+    if (patchUpload(host, item.uploadId, { mediaId: done.media.id, w: done.w, h: done.h, uploadId: null, failed: false })) host.files.delete(item.uploadId);
   } catch (cause) {
     console.error("[Compose] picture upload failed", cause);
-    const editor = live(host);
-    if (editor) {
-      if (restore) patchUpload(host, item.uploadId, { ...restore, uploadId: null });
-      else {
-        const pos = findUpload(editor.state.doc, item.uploadId);
-        if (pos >= 0) removePictureAt(editor, pos);
-      }
-    }
-    say(host, [failure(item.file)]);
+    if (!(host.files.get(item.uploadId)?.stopped ?? true)) setFailed(host, item.uploadId, true);
   } finally {
     host.store.setProgress(item.uploadId, null);
   }
 }
 
-async function startUploads(host: PictureHost, items: readonly Item[], restore?: Record<string, unknown>): Promise<void> {
+async function startUploads(host: PictureHost, items: readonly Item[]): Promise<void> {
   let buildId: string;
   try {
     const ensure = host.ensureBuild.current;
@@ -281,28 +434,26 @@ async function startUploads(host: PictureHost, items: readonly Item[], restore?:
     buildId = await ensure();
   } catch (cause) {
     console.error("[Compose] could not start the picture upload", cause);
-    const editor = live(host);
-    for (const item of items) {
-      if (!editor) break;
-      if (restore) patchUpload(host, item.uploadId, { ...restore, uploadId: null });
-      else {
-        const pos = findUpload(editor.state.doc, item.uploadId);
-        if (pos >= 0) removePictureAt(editor, pos);
-      }
-    }
-    say(host, items.map((item) => failure(item.file)));
+    for (const item of items) setFailed(host, item.uploadId, true);
     return;
   }
-  await Promise.all(items.map((item) => runUpload(host, buildId, item, restore)));
+  await Promise.all(items.map((item) => runUpload(host, buildId, item)));
+}
+
+/** How many of `adding` fit in the post: its four and the thread's forty both count. */
+export function roomInPost(doc: PMNode, post: number, adding: number): { allowed: number; sentence: string | null } {
+  const counts = picturesPerPost(doc);
+  const postRoom = Math.max(0, MAX_POST_PICTURES - (counts[post] ?? 0));
+  const threadRoom = Math.max(0, MAX_THREAD_MEDIA - counts.reduce((total, count) => total + count, 0));
+  if (adding <= Math.min(postRoom, threadRoom)) return { allowed: adding, sentence: null };
+  return postRoom <= threadRoom ? { allowed: postRoom, sentence: POST_FULL_SENTENCE } : { allowed: threadRoom, sentence: THREAD_FULL_SENTENCE };
 }
 
 /**
- * Put files in the post at `at`: refuse the ones that cannot go (naming the file and the limit), refuse the ones that
- * do not fit (naming the post's four), insert a node for each at its probed size, then upload them.
- *
- * `kind` "row" inserts one postMediaRow of the files; it needs two or three to survive.
+ * Put files in the post's grid: refuse the ones that cannot go (pictureRejection's sentence), take the first ones that
+ * fit in the order chosen (the post's four, the thread's forty), show each at once from the file itself, then upload.
  */
-export async function addPictures(host: PictureHost, files: readonly File[], at: InsertAt, kind: "single" | "row" = "single"): Promise<void> {
+export async function addPictures(host: PictureHost, files: readonly File[], post: number): Promise<void> {
   if (files.length === 0) return;
   const refusals: string[] = [];
   let accepted: File[] = [];
@@ -311,137 +462,76 @@ export async function addPictures(host: PictureHost, files: readonly File[], at:
     if (reason) refusals.push(reason);
     else accepted.push(file);
   }
-  if (kind === "row" && files.length > 3) {
-    say(host, [ROW_COUNT_SENTENCE]);
-    return;
-  }
 
-  const probes = accepted.length > 0 ? await probeAll(accepted) : [];
   const editor = live(host);
   if (!editor) return;
-
   if (accepted.length > 0) {
-    const doc = editor.getJSON() as ThreadDoc;
-    const gap = Math.max(0, Math.min(at.gap, doc.content.length));
-    const room = roomAt(doc, gap, accepted.length);
+    const room = roomInPost(editor.state.doc, post, accepted.length);
     if (room.allowed < accepted.length) {
       refusals.push(room.sentence as string);
       accepted = accepted.slice(0, room.allowed);
     }
-  }
-
-  if (kind === "row" && accepted.length < 2) {
-    say(host, [...refusals, ROW_COUNT_SENTENCE]);
-    return;
   }
   if (accepted.length === 0) {
     say(host, refusals);
     return;
   }
 
+  const probes = await probeAll(accepted);
+  const current = live(host);
+  if (!current) return;
   const items: Item[] = accepted.map((file, index) => ({ file, uploadId: newId(), w: probes[index]?.width ?? null, h: probes[index]?.height ?? null }));
-  const pictures: ThreadPostMedia[] = items.map((item) => newPicture({ w: item.w, h: item.h, uploadId: item.uploadId }));
-  insertBlocks(editor, at.gap, kind === "row" ? [newRow(pictures)] : pictures, Boolean(at.replaceEmpty));
+  for (const item of items) {
+    host.files.set(item.uploadId, { file: item.file, stopped: false });
+    host.store.setPreview(item.uploadId, previewOf(item.file));
+  }
+  insertIntoPost(current, post, items.map((item) => newPicture({ w: item.w, h: item.h, uploadId: item.uploadId })));
   // The insert is an edit, which clears the last sentence; the refusals are said after it.
   say(host, refusals);
   await startUploads(host, items);
 }
 
-/** Put a new file in the picture at `pos`, keeping its width and caption. Its alt text described the old file, so it goes. */
-export async function replacePicture(host: PictureHost, pos: number, file: File): Promise<void> {
+/** Start a failed upload again with the same file. */
+export async function retryUpload(host: PictureHost, uploadId: string): Promise<void> {
+  const kept = host.files.get(uploadId);
   const editor = live(host);
-  if (!editor) return;
-  const reason = pictureRejection(file);
-  if (reason) {
-    say(host, [reason]);
-    return;
-  }
-  const [probe] = await probeAll([file]);
-  const node = editor.state.doc.nodeAt(pos);
-  if (!node || node.type.name !== "postMedia") return;
-
-  const uploadId = newId();
-  const previous = { mediaId: node.attrs.mediaId, w: node.attrs.w, h: node.attrs.h, alt: node.attrs.alt };
-  const item: Item = { file, uploadId, w: probe?.width ?? null, h: probe?.height ?? null };
-  editor.view.dispatch(
-    editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, mediaId: "", w: item.w, h: item.h, alt: "", uploadId }),
-  );
-  await startUploads(host, [item], previous);
+  if (!kept || !editor) return;
+  const pos = findUpload(editor.state.doc, uploadId);
+  if (pos < 0) return;
+  const node = editor.state.doc.nodeAt(pos) as PMNode;
+  host.store.setProgress(uploadId, 0);
+  await startUploads(host, [{ file: kept.file, uploadId, w: node.attrs.w, h: node.attrs.h }]);
 }
 
-// --- finding the drop -----------------------------------------------------------------
-
-export type DropTarget = { kind: "gap"; gap: number; replaceEmpty: boolean } | { kind: "beside"; beside: BlockPath; side: "left" | "right" };
-
-/** Where a drop at these coordinates goes: beside a picture when it is on its edge, else the nearest gap between blocks. */
-export function locateDrop(view: EditorView, x: number, y: number): DropTarget {
-  const { doc } = view.state;
-  const hit = view.posAtCoords({ left: x, top: y });
-  if (!hit) return { kind: "gap", gap: doc.childCount, replaceEmpty: false };
-
-  if (hit.inside >= 0) {
-    const inside = doc.nodeAt(hit.inside);
-    if (inside?.type.name === "postMedia") {
-      const path = pathOf(doc, hit.inside);
-      const dom = view.nodeDOM(hit.inside) as HTMLElement | null;
-      const box = (dom?.querySelector("[data-post-media-box]") as HTMLElement | null) ?? dom;
-      if (path && box) {
-        const rect = box.getBoundingClientRect();
-        const edge = rect.width * 0.25;
-        if (x - rect.left <= edge) return { kind: "beside", beside: path, side: "left" };
-        if (rect.right - x <= edge) return { kind: "beside", beside: path, side: "right" };
-      }
-    }
-  }
-
-  const $pos = doc.resolve(hit.pos);
-  if ($pos.depth === 0) return { kind: "gap", gap: $pos.index(0), replaceEmpty: false };
-  const index = $pos.index(0);
-  const block = doc.child(index);
-  if (block.type.name === "paragraph" && block.content.size === 0) return { kind: "gap", gap: index, replaceEmpty: true };
-  const dom = view.nodeDOM($pos.before(1)) as HTMLElement | null;
-  const rect = dom?.getBoundingClientRect();
-  const before = rect ? y < rect.top + rect.height / 2 : false;
-  return { kind: "gap", gap: before ? index : index + 1, replaceEmpty: false };
+/** Stop an upload: its result is ignored when it lands, and its tile goes. */
+export function stopUpload(host: PictureHost, uploadId: string): void {
+  const kept = host.files.get(uploadId);
+  if (kept) kept.stopped = true;
+  host.files.delete(uploadId);
+  host.store.setPreview(uploadId, null);
+  host.store.setProgress(uploadId, null);
+  const editor = live(host);
+  if (editor) removeUpload(editor, uploadId);
 }
 
 // --- the plugin ------------------------------------------------------------------------
 
-/** Files dropped or pasted become pictures; a picture or block dragged inside the editor is moved by moveBlock. */
+/** A pasted picture goes into the post holding the caret. A pasted link to a picture is text, and stays a link. */
 export function picturePlugin(host: PictureHost): Plugin {
   return new Plugin({
     key: new PluginKey("postPictures"),
     props: {
-      handleDrop(view, event, _slice, moved) {
-        const files = Array.from(event.dataTransfer?.files ?? []);
-        if (!moved && files.length > 0) {
-          event.preventDefault();
-          const where = locateDrop(view, event.clientX, event.clientY);
-          // Files dropped on a picture's edge go after or before that picture's block; only a move makes a row.
-          if (where.kind === "beside") void addPictures(host, files, { gap: where.beside.top + (where.side === "right" ? 1 : 0) });
-          else void addPictures(host, files, { gap: where.gap, replaceEmpty: where.replaceEmpty });
-          return true;
-        }
-        if (!moved || !(view.state.selection instanceof NodeSelection)) return false;
+      handlePaste(_view, event) {
+        const files = Array.from(event.clipboardData?.files ?? []);
         const editor = host.editor.current;
-        const from = pathOf(view.state.doc, view.state.selection.from);
-        if (!editor || !from) return false;
+        if (files.length === 0 || !editor) return false;
         event.preventDefault();
-        const where = locateDrop(view, event.clientX, event.clientY);
-        moveBlockIn(host, editor, from, where.kind === "beside" ? { beside: where.beside, side: where.side } : { gap: where.gap });
+        void addPictures(host, files, postAtCaret(editor));
         return true;
       },
-
-      handlePaste(view, event) {
-        const files = Array.from(event.clipboardData?.files ?? []);
-        if (files.length === 0) return false;
-        event.preventDefault();
-        const { selection, doc } = view.state;
-        const index = selection.$from.depth > 0 || selection instanceof NodeSelection ? selection.$from.index(0) : doc.childCount - 1;
-        const block = doc.maybeChild(index);
-        const empty = Boolean(block && block.type.name === "paragraph" && block.content.size === 0);
-        void addPictures(host, files, { gap: empty ? index : index + 1, replaceEmpty: empty });
-        return true;
+      // Files dropped on the words are the composer's (PostTab), which knows which post they were dropped on.
+      handleDrop(_view, event) {
+        return Boolean(event.dataTransfer?.files?.length);
       },
     },
   });

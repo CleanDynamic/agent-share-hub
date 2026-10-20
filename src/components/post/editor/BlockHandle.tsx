@@ -1,9 +1,9 @@
-// BlockHandle: the grip in the left margin that moves a block (PT-06).
+// BlockHandle: the grip in the left margin that moves a block of words (PT-06, CA-07).
 //
 // One handle for the whole editor, drawn beside the block under the pointer, or beside the block the caret is in while
-// the editor or the handle has focus. It is a real button: dragged, it carries the block (a text block, a picture or a
-// row) to a new place; focused, Alt with the up and down arrows move the block one place. Both go through
-// moveBlock, so a picture dropped beside another makes a row whichever way it got there.
+// the editor or the handle has focus. It is a real button: dragged, it carries the block to a new place; focused, Alt
+// with the up and down arrows move it one place (moveTextBlock). CA-07: a post's pictures are its grid, its last block,
+// so the handle offers no grid and no picture, and a block of words never goes below its post's pictures.
 //
 // The grip is the PT-02 glyph in t.label, 24px left of the block. A phone has no margin and no pointer to hover with,
 // so it has no handle; the arrow keys are for a keyboard, which a phone seldom has.
@@ -14,12 +14,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
-import { stepGap } from "@/lib/build/postMedia";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
-import { gapPos, moveBlockIn, type PictureHost } from "./pictures";
+import { gapPos, moveTextBlock, type PictureHost } from "./pictures";
 
 /** The grip's box is 24 square and starts 24px left of the block. */
 const MARGIN = 24;
@@ -38,7 +37,7 @@ function caretOf(editor: Editor | null): Caret {
   return { index, focused: editor.isFocused, count: doc.childCount };
 }
 
-export function BlockHandle({ editor, host, phone }: { editor: Editor | null; host: PictureHost; phone: boolean }) {
+export function BlockHandle({ editor, phone }: { editor: Editor | null; host?: PictureHost; phone: boolean }) {
   const layer = useRef<HTMLDivElement>(null);
   const caret = useEditorState({ editor, selector: ({ editor: current }) => caretOf(current) }) ?? { index: -1, focused: false, count: 0 };
   const [hover, setHover] = useState<number | null>(null);
@@ -49,7 +48,8 @@ export function BlockHandle({ editor, host, phone }: { editor: Editor | null; ho
 
   const index = hover ?? (caret.focused || held ? caret.index : -1);
   const block = editor && index >= 0 && index < caret.count ? editor.state.doc.child(index) : null;
-  const shown = !phone && Boolean(editor) && block !== null && block.type.name !== "postBreak";
+  // CA-07: the words move; a post's pictures stay its last block, and are moved inside their grid.
+  const shown = !phone && Boolean(editor) && block !== null && block.type.name !== "postBreak" && block.type.name !== "postMediaGrid";
 
   // Hover: whichever block the pointer is level with, over the editor or in the margin beside it.
   useEffect(() => {
@@ -86,11 +86,11 @@ export function BlockHandle({ editor, host, phone }: { editor: Editor | null; ho
     (direction: -1 | 1) => {
       if (!editor || index < 0) return;
       setHover(null);
-      if (moveBlockIn(host, editor, { top: index }, { gap: stepGap(index, direction) })) {
+      if (moveTextBlock(editor, index, direction)) {
         setSaid(`Moved ${direction === -1 ? "up" : "down"}, now block ${index + direction + 1} of ${caret.count}`);
       }
     },
-    [editor, host, index, caret.count],
+    [editor, index, caret.count],
   );
 
   return (

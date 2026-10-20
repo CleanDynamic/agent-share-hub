@@ -9,14 +9,17 @@ import { useEditor, type Editor } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 
 import type { ThreadDoc } from "@/lib/build/thread";
-import { emptyThread } from "@/lib/build/threadEditor";
+import { editorShape, emptyThread } from "@/lib/build/threadEditor";
 
 import { editorAttributes, postExtensions, type PostEditorControls } from "./extensions";
 import { createPictureHost } from "./pictures";
 
-/** A document the editor can open: a thread with no blocks opens on one empty paragraph. */
+/**
+ * A document the editor can open: a thread with no blocks opens on one empty paragraph, and (CA-07) an old thread's
+ * pictures, between the lines or in rows, open as each post's grid. Nothing is saved until the maker changes something.
+ */
 export function loadable(doc: ThreadDoc): ThreadDoc {
-  return Array.isArray(doc.content) && doc.content.length > 0 ? doc : emptyThread();
+  return Array.isArray(doc.content) && doc.content.length > 0 ? editorShape(doc) : emptyThread();
 }
 
 export interface UsePostEditorOptions {
@@ -24,7 +27,8 @@ export interface UsePostEditorOptions {
   readDoc: () => ThreadDoc;
   /** Below 768px. */
   phone: boolean;
-  onDoc: (doc: ThreadDoc) => void;
+  /** `quiet`: the change was the editor's own (an upload landing), not the maker's edit. */
+  onDoc: (doc: ThreadDoc, quiet: boolean) => void;
 }
 
 export function usePostEditor({ readDoc, phone, onDoc }: UsePostEditorOptions): { editor: Editor | null; controls: PostEditorControls } {
@@ -40,7 +44,7 @@ export function usePostEditor({ readDoc, phone, onDoc }: UsePostEditorOptions): 
       // box: a contenteditable is a Tab stop without it, and the caret says where the words go.
       enableCoreExtensions: { tabindex: false },
       editorProps: { attributes: editorAttributes() },
-      onUpdate: ({ editor: updated }) => onDocRef.current(updated.getJSON() as ThreadDoc),
+      onUpdate: ({ editor: updated, transaction }) => onDocRef.current(updated.getJSON() as ThreadDoc, transaction.getMeta("addToHistory") === false),
     },
     [phone],
   );
