@@ -449,11 +449,13 @@ function setupOf(file: ReaderFile, context: Context, stepToolIds: readonly strin
 /* ── the chat each prompt starts or joins ── */
 
 function chatFor(step: Step, context: Context): ReaderChat | null {
-  if (step.kind !== "prompt" || !isTop(step)) return null;
+  if (!isTop(step)) return null;
   const group = groupOfStep(context.groups, step);
   if (!group) return null;
-  // CA-04 P1: a session holds every kind of step; the chat is its prompts'.
+  // CA-04 P1: a session holds every kind of step; the chat is its prompts'. A session made here or imported that has
+  // no prompt before its first step still starts with its head, so its setup and its goal have somewhere to be.
   const prompts = promptNumbersOf(group, context.topSteps);
+  if (step.kind !== "prompt" && (groupKind(group) === "legacy" || group.stepNumbers[0] !== step.number || prompts.length > 0)) return null;
   const at = prompts.indexOf(step.number);
   if (at > 0) {
     const previous = prompts[at - 1];
@@ -931,6 +933,11 @@ export function stepsMarkdown(
   for (const entry of steps) {
     const { step } = entry;
     lines.push(`## Step ${step.number} · ${entry.title}`, "");
+    // CA-04 P4: a session that starts with an agent, a team or a manual step still starts with its setup.
+    if (entry.chat?.kind === "new" && step.kind !== "prompt") {
+      lines.push(chatSentence(entry.chat), "");
+      if (entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
+    }
 
     const saves = saveSentences(entry);
     if (entry.manual) {
@@ -946,8 +953,8 @@ export function stepsMarkdown(
       subSteps(entry, lines);
       continue;
     }
-    if (entry.chat) lines.push(chatSentence(entry.chat), "");
-    if (entry.chat?.kind === "new" && entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
+    if (entry.chat && step.kind === "prompt") lines.push(chatSentence(entry.chat), "");
+    if (entry.chat?.kind === "new" && step.kind === "prompt" && entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
     // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.

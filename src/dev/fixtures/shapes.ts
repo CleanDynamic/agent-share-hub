@@ -20,7 +20,10 @@
    so `/dev/kit/pages/sandbox?build=shape-<key>` draws them for a screenshot. */
 
 import type { Json } from "@/integrations/supabase/types";
-import { buildSteps, FILE_TYPE, madeFilesOf, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { sessionsMetaOf, type Making } from "@/lib/build/making";
+import { runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
+import { setupItemsOf } from "@/lib/build/setup";
+import { buildSteps, FILE_TYPE, madeFilesOf, nestRefusal, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import type { MapPiece, MapResult } from "@/lib/build/mapLayout";
 import type { NodeTree, NodeType } from "@/lib/build/types";
 import type { BuildListProps } from "@/pages/site/compose/BuildList";
@@ -28,11 +31,11 @@ import type { BuildMapProps } from "@/pages/site/compose/BuildMap";
 import type { DetailsPanelProps } from "@/pages/site/compose/DetailsPanel";
 import { dividers, type ListResult } from "@/pages/site/compose/buildListModel";
 import { pieces, resolveView } from "@/pages/site/compose/detailsView";
-import { sourceFiles } from "@/pages/site/compose/sourcesModel";
+import { sourceFiles, sourceSessions } from "@/pages/site/compose/sourcesModel";
 
-export type ShapeKey = "alone" | "retrieval" | "agent" | "team" | "code" | "team-checks";
+export type ShapeKey = "alone" | "retrieval" | "agent" | "team" | "code" | "team-checks" | "one-sitting" | "runs-on-github";
 
-export const SHAPE_KEYS: readonly ShapeKey[] = ["alone", "retrieval", "agent", "team", "code", "team-checks"];
+export const SHAPE_KEYS: readonly ShapeKey[] = ["alone", "retrieval", "agent", "team", "code", "team-checks", "one-sitting", "runs-on-github"];
 
 export interface Shape {
   key: ShapeKey;
@@ -40,6 +43,8 @@ export interface Shape {
   tree: NodeTree[];
   /** The node Details shows for a screenshot. */
   selected: string;
+  /** CA-04 P7: builds.making, for the sessions made in the composer and what they carry. */
+  making?: Making;
 }
 
 const BUILD = "shape-build";
@@ -257,6 +262,99 @@ const teamChecks: NodeTree[] = [
   node("k-r1", "result", { summary: "The bakery's order page, taking orders", uses: [out("k-c1")] }, 6),
 ];
 
+/* ── 7. one sitting, then agents (CA-04 P7) ──
+   Session 1 in Claude: three prompts, order-form.tsx sent with prompt 2 and menu.pdf sent with the code. Session 2 in
+   Claude Code: a setup (CLAUDE.md, the skill order-forms, the server github with two tools, the rule "After a tool
+   runs: npm test"), a goal reached in 12 turns, and a team. */
+
+const S1 = "typed-0b1c2d3e-0000-4000-8000-000000000001";
+const S2 = "typed-0b1c2d3e-0000-4000-8000-000000000002";
+
+const oneSittingMaking: Making = {
+  sessions: [],
+  excluded_models: [],
+  sessions_meta: {
+    [S1]: { tool: "claude", model: "Opus 5.5", date: "2026-10-12" },
+    [S2]: { tool: "claude-code", model: "Sonnet 5.5", date: "2026-10-14", goal: { condition: "the order form passes its tests", atMost: 40, reached: "reached", turns: 12 } },
+  },
+};
+
+const orderFile = node("o-f1", "document", { title: "menu.pdf", summary: "The bakery's menu, with prices" }, 1, { parent: "o-c1" });
+const orderCode = node(
+  "o-c1",
+  "code",
+  { source: "export function OrderForm() {\n  return <form>{/* loaves, a total */}</form>;\n}", language: "tsx", filename: "order-form.tsx" },
+  1,
+  { parent: "o-p2", children: [orderFile] },
+);
+
+const oneSitting: NodeTree[] = [
+  node("o-p1", "prompt", { text: "Plan an order page for a small bakery: what it asks for and what it shows.", tool: "claude", model: "Opus 5.5", session: S1 }, 1),
+  node("o-p2", "prompt", { text: "Build the form from this, with the prices on the menu.", tool: "claude", model: "Opus 5.5", session: S1 }, 2, { children: [orderCode] }),
+  node("o-p3", "prompt", { text: "Write the line under the total that says when the order is ready.", tool: "claude", model: "Opus 5.5", session: S1 }, 3),
+  node("o-x1", "document", { title: "CLAUDE.md", setup: { session: S2, kind: "instructions" } }, 4),
+  node("o-x2", "document", { title: "SKILL.md", path: "order-forms/SKILL.md", setup: { session: S2, kind: "skill" }, skill: { name: "order-forms", description: "Builds an order form for a small shop, with a total that always adds up." } }, 5),
+  node(
+    "o-x3",
+    "integration",
+    {
+      service: "github",
+      setup: { session: S2, kind: "server" },
+      server: { type: "http", url: "https://api.githubcopilot.com/mcp/", headers: { Authorization: "${Authorization}" } },
+      connection: "mcp",
+      runs_at: "web",
+      tools_used: { create_pull_request: 2, get_file_contents: 9 },
+    },
+    6,
+  ),
+  node("o-x4", "code", { source: "npm test", language: "bash", setup: { session: S2, kind: "rule" }, rule: { when: "After a tool runs" } }, 7),
+  node("o-team", "team", { session: S2 }, 8, {
+    title: "Order page team",
+    children: [
+      node("o-lead", "agent_config", { system_prompt: "Plan the order page work and hand it out.", model: "Sonnet 5.5", harness: "claude-code" }, 1, { parent: "o-team", title: "Lead" }),
+      node("o-build", "agent_config", { system_prompt: "Build what the lead hands you, with the tests passing.", model: "Sonnet 5.5", harness: "claude-code", uses: [out("o-lead")] }, 2, { parent: "o-team", title: "Build" }),
+    ],
+  }),
+  node("o-r1", "result", { summary: "The bakery's order page", uses: [out("o-team")] }, 9),
+];
+
+/* ── 8. runs on GitHub (CA-04 P7): a session from a workflow file, running when a pull request is opened. ── */
+
+const G1 = "typed-0b1c2d3e-0000-4000-8000-000000000003";
+
+const WORKFLOW = [
+  "name: Claude review",
+  "on:",
+  "  pull_request:",
+  "    types: [opened]",
+  "jobs:",
+  "  review:",
+  "    runs-on: ubuntu-latest",
+  "    steps:",
+  "      - uses: anthropics/claude-code-action@v1",
+  "        with:",
+  '          prompt: "Review this pull request for bugs and say what to fix."',
+  "",
+].join("\n");
+
+const onGithubMaking: Making = { sessions: [], excluded_models: [], sessions_meta: { [G1]: { tool: "claude-code", date: "2026-10-16" } } };
+
+const onGithub: NodeTree[] = [
+  node(
+    "w-x1",
+    "code",
+    {
+      source: WORKFLOW,
+      language: "yaml",
+      filename: "claude.yml",
+      setup: { session: G1, kind: "workflow" },
+      workflow: { events: [{ name: "pull_request", types: ["opened"] }], prompt: "Review this pull request for bugs and say what to fix." },
+    },
+    1,
+  ),
+  node("w-p1", "prompt", { text: "Review this pull request for bugs and say what to fix.", session: G1 }, 2),
+];
+
 export const SHAPES: Readonly<Record<ShapeKey, Shape>> = {
   alone: { key: "alone", title: "A fox postcard poem", tree: alone, selected: "a-p1" },
   retrieval: { key: "retrieval", title: "What the landlord must fix", tree: retrieval, selected: "r-p1" },
@@ -264,6 +362,8 @@ export const SHAPES: Readonly<Record<ShapeKey, Shape>> = {
   team: { key: "team", title: "A landing page by a team", tree: team, selected: "t-lead" },
   code: { key: "code", title: "A booking app", tree: code, selected: "c-c1" },
   "team-checks": { key: "team-checks", title: "A bakery order page that checks itself", tree: teamChecks, selected: "k-build" },
+  "one-sitting": { key: "one-sitting", title: "A bakery order page, one sitting then agents", tree: oneSitting, selected: S2, making: oneSittingMaking },
+  "runs-on-github": { key: "runs-on-github", title: "A pull request reviewer on GitHub", tree: onGithub, selected: G1, making: onGithubMaking },
 };
 
 /** Every node of a tree, parents first. */
@@ -347,18 +447,30 @@ function listFacts(tree: readonly NodeTree[], steps: readonly Step[]) {
 }
 
 const stepsOf = (key: ShapeKey) => {
-  const { tree } = SHAPES[key];
+  const { tree, making } = SHAPES[key];
   const steps = buildSteps(tree);
-  return { tree, steps, groups: sessionGroups(steps, [], {}) };
+  return { tree, steps, groups: sessionGroups(steps, making?.sessions ?? [], making?.session_tools ?? {}, sessionsMetaOf(making)) };
 };
+
+/** CA-04 P4, P6: each session's setup count and when it runs, as SandboxPage reads them. */
+export function sessionFacts(tree: readonly NodeTree[]) {
+  const counts: Record<string, number> = {};
+  const events = new Map<string, WorkflowEvent[]>();
+  for (const item of setupItemsOf(tree)) {
+    counts[item.session] = (counts[item.session] ?? 0) + 1;
+    if (item.workflow?.events) events.set(item.session, [...(events.get(item.session) ?? []), ...item.workflow.events]);
+  }
+  return { counts, runsWhen: Object.fromEntries([...events].map(([key, list]) => [key, runsWhenLine(list)])) };
+}
 
 export function shapeListProps(key: ShapeKey): BuildListProps {
   const { tree, steps, groups } = stepsOf(key);
   const facts = listFacts(tree, steps);
+  const { counts, runsWhen } = sessionFacts(tree);
   return {
     phone: false,
     steps,
-    dividers: dividers(steps, groups),
+    dividers: dividers(steps, groups, counts, runsWhen),
     names: facts.names,
     suggestions: [],
     intoResult: facts.intoResult,
@@ -374,6 +486,10 @@ export function shapeListProps(key: ShapeKey): BuildListProps {
     focusAdd: 0,
     onAddAgentPrompt: () => Promise.resolve(true),
     onAddAgentTo: noop,
+    // CA-04 P2: tiles move on the dev page as they do in the composer; nothing is written.
+    onNest: () => Promise.resolve(true),
+    canNest: (id, parentId) => nestRefusal(tree, id, parentId) === null,
+    onOpenSetup: noop,
   };
 }
 
@@ -392,12 +508,13 @@ export function shapeMapProps(key: ShapeKey): BuildMapProps {
 export function shapeDetailsProps(key: ShapeKey, selectedId: string = SHAPES[key].selected): DetailsPanelProps {
   const { tree, steps, groups } = stepsOf(key);
   const facts = listFacts(tree, steps);
+  const { counts, runsWhen } = sessionFacts(tree);
   const view = resolveView({
     selectedId,
     steps,
     groups,
     tree,
-    sources: [],
+    sources: sourceSessions(groups, steps, [], {}, counts, runsWhen),
     sourceFiles: sourceFiles(tree, groups, steps),
     promptsState: () => ({ prompts: [], error: false }),
     intoResult: facts.intoResult,
@@ -420,5 +537,11 @@ export function shapeDetailsProps(key: ShapeKey, selectedId: string = SHAPES[key
     onUseAsCover: noop,
     onAgentSetup: noop,
     onInstructions: noop,
+    // CA-04: the session, its setup, its goal and how a tool was connected are editable on the dev page; nothing is written.
+    onSessionMeta: noop,
+    onSessionGoal: noop,
+    onAddToSetup: noop,
+    onNotShared: noop,
+    onToolConnection: noop,
   };
 }

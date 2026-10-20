@@ -63,7 +63,7 @@ describe("Tool Details", () => {
     expect(onToolConnection).toHaveBeenCalledWith("t", "mcp", null);
     cleanup();
     const again = mount(view({ connection: "mcp" }));
-    fireEvent.click(screen.getByRole("radio", { name: "At a web address" }));
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Where it ran" })).getByRole("radio", { name: "At a web address" }));
     expect(again).toHaveBeenCalledWith("t", "mcp", "web");
   });
 

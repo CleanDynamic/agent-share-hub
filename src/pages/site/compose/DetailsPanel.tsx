@@ -1268,13 +1268,13 @@ function ConnectionBlock({ view, phone, onToolConnection }: { view: ToolView; ph
           />
           {view.connection === "mcp" ? (
             <div style={{ paddingLeft: 24 }}>
-              <Segmented<ToolRunsAt | "">
+              <ChoiceRows<ToolRunsAt>
                 label={CONNECTION_COPY.where}
-                semantics="radio"
-                size={phone ? 50 : 28}
-                value={view.runsAt ?? ""}
-                items={TOOL_RUNS_AT.map((value) => ({ value, label: CONNECTION_COPY[value] }))}
-                onChange={(next) => onToolConnection(view.id, "mcp", next === "web" || next === "local" ? next : null)}
+                name={`runs-at-${view.id}`}
+                phone={phone}
+                value={view.runsAt ?? ("" as ToolRunsAt)}
+                onChange={(next) => onToolConnection(view.id, "mcp", next)}
+                rows={TOOL_RUNS_AT.map((value) => ({ value, label: CONNECTION_COPY[value] }))}
               />
             </div>
           ) : null}

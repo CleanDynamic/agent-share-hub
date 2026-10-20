@@ -18,6 +18,7 @@ import { layoutMap, layoutOpened } from "@/lib/build/mapLayout";
 import { pairCheck } from "@/lib/tools/modelRules";
 
 import { buildSummary } from "./buildSummary";
+import { isSetupPayload } from "./setup";
 import { agentModelsOf, buildSteps, checkStatus, runsLabel, usesOf, type Step } from "./graph";
 import type { Build, NodeTree } from "./types";
 
@@ -45,6 +46,13 @@ const EXPECTED: Record<ShapeKey, unknown[]> = {
     ["k-c1", "code", "2", "Claude Code", "Sonnet 5.5", []],
     ["k-check", "check", "3", null, null, []],
   ],
+  "one-sitting": [
+    ["o-p1", "prompt", "1", "Claude", "Opus 5.5", []],
+    ["o-p2", "prompt", "2", "Claude", "Opus 5.5", []],
+    ["o-p3", "prompt", "3", "Claude", "Opus 5.5", []],
+    ["o-team", "team", "4", null, null, ["o-lead", "o-build"]],
+  ],
+  "runs-on-github": [["w-p1", "prompt", "1", null, null, []]],
 };
 
 describe.each(SHAPE_KEYS)("the %s shape", (key) => {
@@ -83,6 +91,8 @@ describe.each(SHAPE_KEYS)("the %s shape", (key) => {
     const build = { id: "shape-build", slug: `shape-${key}`, title: SHAPES[key].title } as Build;
     const types = new Map(SHAPE_NODE_TYPES.map((type) => [type.key, type]));
     for (const entry of allNodes(tree)) {
+      // CA-04 P4: a session's setup is drawn under its session's head, not as a part.
+      if (isSetupPayload(entry.payload)) continue;
       const { container } = render(
         createElement(NodeCard, { node: entry, nodeType: types.get(entry.type), build, resolveNode: (id: string) => byId.get(id), resolveMedia: () => null }),
       );
@@ -99,7 +109,8 @@ describe.each(SHAPE_KEYS)("the %s shape", (key) => {
       if (entry.type === "code") {
         expect(text, entry.id).toContain(String(payload.filename));
         const written = flatten(steps).find((step) => step.id === entry.id);
-        expect(text, entry.id).toContain(`Written with ${written?.tool} · ${written?.model}`);
+        // CA-04 P2: code sent with a prompt is written with that prompt; only a top-level code step names its own.
+        if (written) expect(text, entry.id).toContain(`Written with ${written.tool} · ${written.model}`);
       }
       if (entry.type === "manual_step") expect(text, entry.id).toContain(String(payload.tool));
       if (entry.type === "document") expect(text, entry.id).toContain(String(payload.title));
@@ -115,7 +126,7 @@ describe.each(SHAPE_KEYS)("the %s shape", (key) => {
     const layout = layoutMap(map.steps, map.groups, map.files, map.tools, map.results, map.suggestions);
     for (const step of steps) expect(layout.boxes.some((box) => box.id === step.id), step.id).toBe(true);
     const view = shapeDetailsProps(key).view;
-    expect(view && "id" in view ? view.id : null).toBe(SHAPES[key].selected);
+    expect(view && "id" in view ? view.id : view && "key" in view ? view.key : null).toBe(SHAPES[key].selected);
   });
 });
 
@@ -257,5 +268,80 @@ describe("a team that checks itself (CA-03 P9)", () => {
     const without = plaqueWith([]);
     expect(without).not.toBe("");
     expect(plaqueWith([{ ...checkNode, uses: undefined, payload: { ...(checkNode.payload as object), uses: [] } } as NodeTree])).toBe(without);
+  });
+});
+
+describe("CA-04 P7: one sitting, then agents; and a session that runs on GitHub", () => {
+  const making = (key: ShapeKey) => SHAPES[key].making ?? null;
+
+  it("reads one sitting back: two sessions, every top-level step in its session, the tiles inside prompt 2, the setup and the goal", async () => {
+    const { sessionGroups, groupKey } = await import("./graph");
+    const { sessionsMetaOf } = await import("./making");
+    const { setupItemsOf } = await import("./setup");
+    const { tree } = SHAPES["one-sitting"];
+    const steps = buildSteps(tree);
+    const groups = sessionGroups(steps, [], {}, sessionsMetaOf(making("one-sitting")));
+    expect(groups.map((group) => [group.kind, group.number, group.tool, group.startedAt, group.stepNumbers])).toEqual([
+      ["typed", 1, "Claude", "2026-10-12", ["1", "2", "3"]],
+      ["typed", 2, "Claude Code", "2026-10-14", ["4"]],
+    ]);
+    expect(groups[1].goal).toEqual({ condition: "the order form passes its tests", atMost: 40, reached: "reached", turns: 12 });
+    const [code] = steps[1].sentWith ?? [];
+    expect([code.id, code.inside?.label, code.sentWith?.[0].id, code.sentWith?.[0].inside?.label]).toEqual(["o-c1", "prompt 2", "o-f1", "order-form.tsx"]);
+    const setup = setupItemsOf(tree, groupKey(groups[1]));
+    expect(setup.map((item) => [item.kind, item.name])).toEqual([
+      ["instructions", "CLAUDE.md"],
+      ["skill", "order-forms"],
+      ["server", "github"],
+      ["rule", "npm test"],
+    ]);
+    expect(setup[3].rule?.when).toBe("After a tool runs");
+    expect(steps[3].children.map((child) => child.title)).toEqual(["Lead", "Build"]);
+  });
+
+  it("draws one sitting on the build page: both sessions, the tiles indented, Setup, the goal line, the team, and MCP in What you need", async () => {
+    const { readerSteps, readerResults, whatYouNeed, buildCounts, readerMap, stepsMarkdown } = await import("./readerSteps");
+    const { StepsList, NeedPanel } = await import("@/pages/site/build/BuildSteps");
+    const { tree } = SHAPES["one-sitting"];
+    const m = making("one-sitting");
+    const steps = readerSteps(tree, m);
+    const view = { steps, results: readerResults(tree), need: whatYouNeed(steps, tree, m), counts: buildCounts(steps), map: readerMap(tree, m), mapAvailable: true, onCopy: async () => true, resolveMedia: () => undefined, otherBody: () => null, focus: null };
+    const { container } = render(createElement(MemoryRouter, null, createElement("div", null, createElement(StepsList, { view, phone: false, announce: () => undefined }), createElement(NeedPanel, { view, onOpenOther: () => undefined }))));
+    const text = container.textContent ?? "";
+    for (const said of ["New chat in Claude", "New chat in Claude Code", "Sent with prompt 2", "Sent with order-form.tsx", "menu.pdf", "Setup", "Worked until the order form passes its tests · at most 40 turns · reached in 12", "Order page team", "MCP server · at a web address · sign in with your github account", "Before you connect"]) {
+      expect(text, said).toContain(said);
+    }
+    expect(container.querySelectorAll('[data-testid="sent-with-tile"]')).toHaveLength(2);
+    const md = stepsMarkdown({ title: "T" }, steps);
+    expect(md).toContain("Skills: order-forms.\nMCP servers: github.\nRules: After a tool runs: npm test.");
+    cleanup();
+  });
+
+  it("reads the GitHub session back: its workflow kept as written, its prompt, and when it runs", async () => {
+    const { readerSteps } = await import("./readerSteps");
+    const { StepsList } = await import("@/pages/site/build/BuildSteps");
+    const { setupItemsOf } = await import("./setup");
+    const { tree } = SHAPES["runs-on-github"];
+    const [workflow] = setupItemsOf(tree);
+    expect(workflow.kind).toBe("workflow");
+    expect(workflow.workflow?.source).toContain("anthropics/claude-code-action@v1");
+    const steps = readerSteps(tree, making("runs-on-github"));
+    expect(steps.map((entry) => entry.step.text)).toEqual(["Review this pull request for bugs and say what to fix."]);
+    const view = { steps, results: [], need: [], counts: "", map: { groups: [], files: [], tools: [], results: [] }, mapAvailable: false, onCopy: async () => true, resolveMedia: () => undefined, otherBody: () => null, focus: null };
+    const { container } = render(createElement(MemoryRouter, null, createElement(StepsList, { view, phone: false, announce: () => undefined })));
+    expect(container.querySelector('[data-testid="runs-when-line"]')?.textContent).toBe("Runs when a pull request is opened");
+    cleanup();
+  });
+
+  it("gives the List and Details what they draw for both", () => {
+    const list = shapeListProps("one-sitting");
+    expect([...list.dividers.values()].map((session) => [session.number, session.tool, session.setupCount ?? 0, session.goal?.reached ?? false])).toEqual([
+      [1, "Claude", 0, false],
+      [2, "Claude Code", 4, true],
+    ]);
+    const github = shapeListProps("runs-on-github");
+    expect([...github.dividers.values()].map((session) => session.runsWhen)).toEqual(["Runs when a pull request is opened"]);
+    const details = shapeDetailsProps("one-sitting").view;
+    expect(details && details.kind === "session" ? details.setup?.map((row) => row.name) : null).toEqual(["CLAUDE.md", "order-forms", "github", "npm test"]);
   });
 });

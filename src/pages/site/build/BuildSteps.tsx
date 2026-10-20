@@ -557,7 +557,7 @@ function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const name = step.kind === "file" || step.kind === "code" ? (step.filename ?? step.title ?? step.language ?? null) : step.title;
   return (
     <div id={stepDomId(step.id)} data-testid="sent-with-tile" data-kind={step.kind} style={{ ...tileStyle, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <Eyebrow style={{ padding: "4px 0" }}>{`Sent with ${step.inside?.label ?? "this step"}`}</Eyebrow>
+      <span style={{ ...text(12, 400, t.label), padding: "4px 0" }}>{`Sent with ${step.inside?.label ?? "this step"}`}</span>
       {step.kind === "file" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
           <span style={text(12.5, 400, t.text2)}>attach</span>
@@ -1045,7 +1045,7 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
       ))}
       {group.note ? (
         <div data-testid="need-note" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 0", borderBottom: `1px solid ${t.hairline}` }}>
-          <Eyebrow as="div">{group.note.title}</Eyebrow>
+          <span style={text(12.5, 500, t.text)}>{group.note.title}</span>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: t.catBreakage, flexShrink: 0, marginTop: 6 }} />
             <span style={{ ...text(12.5, 400, t.text), lineHeight: "18px" }}>{group.note.line}</span>
