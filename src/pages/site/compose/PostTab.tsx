@@ -18,7 +18,8 @@ import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
-import { addPictures, postAtCaret } from "@/components/post/editor/pictures";
+import { addPictures, postAtCaret, type EditRequest } from "@/components/post/editor/pictures";
+import { EditMediaDialog } from "@/components/post/media/EditMediaDialog";
 import { addPostAtEnd, PostToolbar, removePost } from "@/components/post/editor/PostToolbar";
 import { ReferencePicker } from "@/components/post/editor/ReferencePicker";
 import { applyRef, readRefSpot, removeRef, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
@@ -250,6 +251,9 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   // Read at the moment an upload needs them, so a render never holds a stale one.
   host.ensureBuild.current = thread.ensureBuild;
   host.notice.current = setNotice;
+  // CA-07 P5: Edit on a picture opens Crop media.
+  const [editRequest, setEditRequest] = useState<EditRequest | null>(null);
+  host.openEdit.current = setEditRequest;
 
   // The thread's pictures are in the store before the node views ask for them.
   const buildId = thread.buildId;
@@ -521,6 +525,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           onClose={escapeRefs}
         />
       ) : null}
+      <EditMediaDialog request={editRequest} editor={editor} host={host} phone={phone} onClose={() => setEditRequest(null)} />
       <BottomSheet open={showPreview} onOpenChange={setPreview} title="Preview">
         {showPreview ? (
           <PostPreview doc={liveDoc} build={draft.build} title={draft.title} maker={draft.maker} media={pictures.rows} src={pictures.src} variant="sheet" />

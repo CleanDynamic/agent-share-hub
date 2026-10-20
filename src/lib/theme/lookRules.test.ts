@@ -230,6 +230,10 @@ export const CA03_FILES: readonly string[] = [
   "src/components/post/media/shade.ts",
   // CA-07 P4
   "src/pages/site/compose/PostTab.grid.test.tsx",
+  // CA-07 P5
+  "src/components/brand/UnderlineTabs.tsx",
+  "src/components/post/media/EditMediaDialog.test.tsx",
+  "src/components/post/media/EditMediaDialog.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -405,6 +409,9 @@ function componentFindings(code: string, file: string): Finding[] {
     if (!hidden) out.push(found(`a visible ${match[1]} input`, code, at));
   }
 
+  // CA-07: the site has no slider of its own; a native range is allowed only where ALLOWED names it.
+  for (const match of every(/type=\{?["']range["']\}?/, code)) out.push(found("a native range input", code, match.index ?? 0));
+
   for (const match of every(/textTransform:\s*["']uppercase["']/, code)) {
     const at = match.index ?? 0;
     const owner = code.slice(0, at).lastIndexOf("export const ");
@@ -549,6 +556,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no cursor-following light",
     text: "root.removeEventListener(\"mousemove\", onMove);",
     why: "The post editor's block handle (PT-06) finds the block level with the pointer to put its grip beside it; it draws no light. There before CA-07, which only stops it offering a picture.",
+  },
+  {
+    rule: "a native range input",
+    text: 'type="range"',
+    why: "CA-07 P5: Crop media's zoom. The codebase has no slider, so the prompt allows a native range held to the refined look (accentColor --text, a Field label Zoom), in EditMediaDialog.tsx only.",
   },
 ];
 

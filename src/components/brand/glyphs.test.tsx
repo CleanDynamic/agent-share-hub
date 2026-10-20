@@ -50,6 +50,13 @@ const TABLE: Record<GlyphName, string> = {
   link: "M7 9a2.5 2.5 0 0 0 3.5 0l2-2A2.5 2.5 0 0 0 9 3.5l-.75.75M9 7a2.5 2.5 0 0 0-3.5 0l-2 2A2.5 2.5 0 0 0 7 12.5l.75-.75",
   grip: "M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01",
   at: "M10.25 8a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zM10.25 5.75v3a1.5 1.5 0 0 0 3 0V8A5.25 5.25 0 1 0 11 12.3",
+  crop: "M4.5 1.5v10h10M1.5 4.5h10v10",
+  flag: "M3.5 14V2.5M3.5 3h8l-1.5 3 1.5 3h-8",
+  zoomIn: "M10.25 10.25 13.5 13.5M11.25 7a4.25 4.25 0 1 1-8.5 0 4.25 4.25 0 0 1 8.5 0zM7 5v4M5 7h4",
+  zoomOut: "M10.25 10.25 13.5 13.5M11.25 7a4.25 4.25 0 1 1-8.5 0 4.25 4.25 0 0 1 8.5 0zM5 7h4",
+  shapeWide: "M1.5 4.5h13v7h-13z",
+  shapeSquare: "M3.5 3.5h9v9h-9z",
+  step: "M2.5 2.5h11v11h-11zM7 6l1.25-1v6",
 };
 
 const REFINED_URL = "/dev/kit/components";
@@ -59,7 +66,7 @@ const svgOf = (container: HTMLElement) => container.querySelector("svg") as SVGS
 
 describe("the glyph table", () => {
   it("is the 24 glyphs of the UI-P82 table, the ten added for posts and CA-06's @, in its order", () => {
-    expect(GLYPH_NAMES).toHaveLength(35);
+    expect(GLYPH_NAMES).toHaveLength(42);
     expect(GLYPH_NAMES).toEqual(Object.keys(TABLE));
   });
 
