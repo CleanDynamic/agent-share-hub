@@ -2,16 +2,35 @@
 //
 // The node view of postMediaGrid. ProseMirror draws none of the grid's children and hands it every event inside it
 // (extensions.ts), so the tiles, their buttons and their order are all React's. It reads the pictures from the node and
-// the files from the picture store, and changes the document only through pictures.ts.
+// the files from the picture store, and changes the document only through pictures.ts, one transaction per change, so
+// one Undo takes each back.
+//
+// EACH TILE: Edit at the top left once it has uploaded, × at the top right (Stop uploading while it uploads), the
+// file itself at 55% with a bar along the bottom while it uploads, 30% with Did not upload and Retry when it failed.
+// With two or more they are dragged to reorder (@dnd-kit/sortable, pointer and keyboard; press and hold on a phone),
+// or moved one place with Alt and an arrow. A focused tile opens Edit on Enter and goes on Backspace or Delete.
+//
+// ON A PHONE two or more are a strip that scrolls sideways while the maker writes; readers still get the grid.
 
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { horizontalListSortingStrategy, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
-import { GridTile } from "@/components/post/media/GridTile";
-import { GridFrame, gridLayout, sourcesOf } from "@/components/post/media/PostMediaGrid";
-import { mediaAttrsOf } from "@/lib/build/thread";
+import { Button } from "@/components/brand/Button";
+import { Glyph } from "@/components/brand/Glyph";
+import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
+import { GridTile, tileKind, tileLabel } from "@/components/post/media/GridTile";
+import { croppedRatio } from "@/components/post/media/cropStyle";
+import { GridFrame, gridLayout, GRID_RADIUS, sourcesOf, type GridCell } from "@/components/post/media/PostMediaGrid";
+import { PICTURE_INK, PICTURE_SHADE, PROGRESS_TRACK } from "@/components/post/media/shade";
+import { focusVisible } from "@/components/post/RefLinks";
+import { mediaAttrsOf, type PostMediaAttrs } from "@/lib/build/thread";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
-import type { PictureHost } from "./pictures";
+import { landedKey, movePicture, removePicture, retryUpload, stopUpload, type PictureHost } from "./pictures";
 
 /** What the extension hands its views. */
 export interface PictureOptions {
@@ -20,38 +39,383 @@ export interface PictureOptions {
   phone: boolean;
 }
 
-export function GridView(props: NodeViewProps) {
-  const { node } = props;
-  const { host, phone } = props.extension.options as PictureOptions;
+/** A picture uploading is drawn at this strength; one that failed at FAILED_OPACITY. */
+export const UPLOADING_OPACITY = 0.55;
+export const FAILED_OPACITY = 0.3;
+/** The phone's strip: each tile this tall, at most this share of the column wide, 8 apart. */
+export const STRIP_HEIGHT = 180;
+export const STRIP_MAX_WIDTH = "78%";
+/** The controls on a tile, 8 in from its corners. */
+const INSET = 8;
+const REMOVE_SIZE = 32;
+const EDIT_HEIGHT = 30;
+/** A phone's hit area round a 32 shape. */
+const TOUCH = 44;
+
+/** "Picture moved to 3 of 4." */
+export function movedSentence(to: number, count: number): string {
+  return `Picture moved to ${to + 1} of ${count}.`;
+}
+
+interface Picture {
+  attrs: PostMediaAttrs;
+  uploadId: string | null;
+  failed: boolean;
+  /** dnd-kit's id: stable while the picture is in the grid. */
+  key: string;
+}
+
+/** A round control drawn on a picture: the shade, white ink. On a phone it sits in a 44 hit area. */
+function ShadeButton({ label, phone, corner, onPress, children, style }: { label: string; phone: boolean; corner: "left" | "right"; onPress: (el: HTMLElement) => void; children: ReactNode; style?: CSSProperties }) {
+  const [ring, setRing] = useState(false);
+  const pad = phone ? (TOUCH - REMOVE_SIZE) / 2 : 0;
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onPress(event.currentTarget);
+      }}
+      onFocus={(event) => setRing(focusVisible(event.currentTarget))}
+      onBlur={() => setRing(false)}
+      style={{
+        position: "absolute",
+        top: INSET - pad,
+        [corner]: INSET - pad,
+        zIndex: 2,
+        padding: pad,
+        border: 0,
+        background: "transparent",
+        cursor: "pointer",
+        display: "flex",
+        ...style,
+      }}
+    >
+      <span
+        data-shape=""
+        style={{
+          boxSizing: "border-box",
+          minWidth: REMOVE_SIZE,
+          height: REMOVE_SIZE,
+          borderRadius: 999,
+          background: PICTURE_SHADE,
+          color: PICTURE_INK,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: ring ? `0 0 0 2px ${PICTURE_INK}` : undefined,
+        }}
+      >
+        {children}
+      </span>
+    </button>
+  );
+}
+
+function SortableTile({
+  picture,
+  index,
+  count,
+  cell,
+  style,
+  host,
+  phone,
+  gridPos,
+  onKey,
+  sortable,
+}: {
+  picture: Picture;
+  index: number;
+  count: number;
+  cell: GridCell;
+  style: CSSProperties;
+  host: PictureHost;
+  phone: boolean;
+  gridPos: () => number | null;
+  onKey: (event: KeyboardEvent<HTMLDivElement>, index: number, el: HTMLElement) => void;
+  sortable: boolean;
+}) {
   const snapshot = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot);
-  const pictures: { attrs: ReturnType<typeof mediaAttrsOf>; uploadId: string | null }[] = [];
-  node.forEach((child) => pictures.push({ attrs: mediaAttrsOf(child.toJSON()), uploadId: (child.attrs.uploadId as string | null) ?? null }));
-  const layout = gridLayout(sourcesOf(pictures.map((picture) => picture.attrs), snapshot.rows));
-  void phone;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: picture.key, disabled: !sortable });
+  const [ring, setRing] = useState(false);
+  const { attrs, uploadId, failed } = picture;
+  const media = snapshot.rows.get(attrs.mediaId);
+  // While it uploads, the file itself; once landed, still the file until its signed copy arrives.
+  const preview = uploadId ? (snapshot.previews.get(uploadId) ?? null) : media && snapshot.src.has(media.path) ? null : (snapshot.previews.get(landedKey(attrs.mediaId)) ?? null);
+  const kind = tileKind(media, preview);
+  const uploading = Boolean(uploadId) && !failed;
+  const percent = uploadId ? (snapshot.progress.get(uploadId) ?? 0) : 100;
+  const editor = host.editor.current;
+
+  const remove = () => {
+    if (uploadId) return stopUpload(host, uploadId);
+    const at = gridPos();
+    if (editor && at !== null) removePicture(editor, at, index);
+  };
+  const edit = (el: HTMLElement) => {
+    const at = gridPos();
+    if (at !== null) host.openEdit.current?.({ gridPos: at, index, tab: kind === "image" ? "crop" : "alt", returnTo: el });
+  };
 
   return (
-    <NodeViewWrapper data-grid-view="" contentEditable={false}>
-      <GridFrame
-        layout={layout}
-        count={pictures.length}
-        renderCell={(index, style, cell) => {
-          const { attrs, uploadId } = pictures[index];
-          return (
-            <div key={uploadId ?? `${attrs.mediaId}-${index}`} data-grid-tile={index} style={style}>
-              <GridTile
-                attrs={attrs}
-                media={snapshot.rows.get(attrs.mediaId)}
-                srcByPath={snapshot.src}
-                cellRatio={cell.ratio}
-                align={cell.align}
-                index={index}
-                count={pictures.length}
-                preview={uploadId ? (snapshot.previews.get(uploadId) ?? null) : null}
-              />
+    <div
+      ref={setNodeRef}
+      data-grid-tile={index}
+      data-uploading={uploading ? "" : undefined}
+      data-failed={failed ? "" : undefined}
+      {...attributes}
+      {...listeners}
+      aria-roledescription={sortable ? "sortable picture" : undefined}
+      aria-label={tileLabel(attrs.alt, kind, index, count)}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        onKey(event, index, event.currentTarget);
+        if (!event.defaultPrevented) listeners?.onKeyDown?.(event);
+      }}
+      onFocus={(event) => {
+        if (event.target === event.currentTarget) setRing(focusVisible(event.currentTarget));
+      }}
+      onBlur={() => setRing(false)}
+      style={{
+        ...style,
+        transform: CSS.Translate.toString(transform),
+        transition,
+        zIndex: isDragging ? 3 : undefined,
+        cursor: sortable ? "grab" : "default",
+        touchAction: sortable && phone ? "manipulation" : undefined,
+        boxShadow: ring ? `inset 0 0 0 2px ${t.text}` : undefined,
+      }}
+    >
+      <GridTile
+        attrs={attrs}
+        media={media}
+        srcByPath={snapshot.src}
+        cellRatio={cell.ratio}
+        align={cell.align}
+        index={index}
+        count={count}
+        preview={preview}
+        badges={!uploadId}
+        pictureStyle={uploadId ? { opacity: failed ? FAILED_OPACITY : UPLOADING_OPACITY } : undefined}
+      >
+        {!uploadId ? (
+          <button
+            type="button"
+            data-edit-pill=""
+            onPointerDown={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              edit(event.currentTarget);
+            }}
+            style={{
+              position: "absolute",
+              top: phone ? INSET - (TOUCH - EDIT_HEIGHT) / 2 : INSET,
+              left: INSET,
+              zIndex: 2,
+              boxSizing: "content-box",
+              height: EDIT_HEIGHT,
+              padding: phone ? `${(TOUCH - EDIT_HEIGHT) / 2}px 0` : 0,
+              border: 0,
+              background: "transparent",
+              cursor: "pointer",
+              display: "flex",
+            }}
+          >
+            <span
+              style={{
+                height: EDIT_HEIGHT,
+                padding: "0 12px",
+                borderRadius: 999,
+                background: PICTURE_SHADE,
+                color: PICTURE_INK,
+                fontFamily: FIGTREE,
+                fontSize: 13,
+                fontWeight: 600,
+                lineHeight: `${EDIT_HEIGHT}px`,
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              Edit
+            </span>
+          </button>
+        ) : null}
+        <ShadeButton label={uploading ? "Stop uploading" : "Remove"} phone={phone} corner="right" onPress={remove}>
+          <Glyph name="x" size={18} color="currentColor" />
+        </ShadeButton>
+        {uploading ? (
+          <span
+            role="progressbar"
+            aria-label="Uploading"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent}
+            data-upload-bar=""
+            style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 3, background: PROGRESS_TRACK, zIndex: 1 }}
+          >
+            <span data-upload-fill="" style={{ display: "block", height: 3, width: `${percent}%`, background: PICTURE_INK }} />
+          </span>
+        ) : null}
+        {failed ? (
+          <span style={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text }}>Did not upload</span>
+            <Button
+              variant="secondary"
+              size={phone ? 44 : 30}
+              fontSize={13}
+              onPointerDown={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (uploadId) void retryUpload(host, uploadId);
+              }}
+            >
+              Retry
+            </Button>
+          </span>
+        ) : null}
+      </GridTile>
+    </div>
+  );
+}
+
+export function GridView(props: NodeViewProps) {
+  const { node, getPos } = props;
+  const { host, phone } = props.extension.options as PictureOptions;
+  const snapshot = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot);
+  const [said, setSaid] = useState("");
+  const root = useRef<HTMLDivElement>(null);
+
+  // dnd-kit needs an id that follows a picture while it moves: its upload's, its file's, then its place.
+  const seen = new Map<string, number>();
+  const pictures: Picture[] = [];
+  node.forEach((child) => {
+    const attrs = mediaAttrsOf(child.toJSON());
+    const uploadId = (child.attrs.uploadId as string | null) ?? null;
+    const base = uploadId ?? (attrs.mediaId || "picture");
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    pictures.push({ attrs, uploadId, failed: child.attrs.failed === true, key: n ? `${base}#${n}` : base });
+  });
+  const count = pictures.length;
+  const sortable = count > 1;
+  const strip = phone && count > 1;
+
+  const gridPos = () => {
+    const at = getPos();
+    return typeof at === "number" ? at : null;
+  };
+  const editor = host.editor.current;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    // A phone: press and hold to drag, so a swipe still scrolls the strip.
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates, keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space"] } }),
+  );
+
+  const move = (from: number, to: number) => {
+    const at = gridPos();
+    if (!editor || at === null || to < 0 || to >= count) return false;
+    if (!movePicture(editor, at, from, to)) return false;
+    setSaid(movedSentence(to, count));
+    return true;
+  };
+
+  const focusTile = (index: number) => {
+    // The node view draws again after the move; focus the tile that is now there.
+    requestAnimationFrame(() => root.current?.querySelector<HTMLElement>(`[data-grid-tile="${index}"]`)?.focus());
+  };
+
+  const onKey = (event: KeyboardEvent<HTMLDivElement>, index: number, el: HTMLElement) => {
+    if (event.altKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      const to = index + (event.key === "ArrowLeft" ? -1 : 1);
+      if (move(index, to)) focusTile(to);
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const picture = pictures[index];
+      if (picture.uploadId) return;
+      const at = gridPos();
+      const kind = tileKind(snapshot.rows.get(picture.attrs.mediaId));
+      if (at !== null) host.openEdit.current?.({ gridPos: at, index, tab: kind === "image" ? "crop" : "alt", returnTo: el.querySelector<HTMLElement>("[data-edit-pill]") ?? el });
+      return;
+    }
+    if (event.key === "Backspace" || event.key === "Delete") {
+      event.preventDefault();
+      const picture = pictures[index];
+      if (picture.uploadId) stopUpload(host, picture.uploadId);
+      else {
+        const at = gridPos();
+        if (editor && at !== null) removePicture(editor, at, index);
+      }
+      editor?.commands.focus();
+    }
+  };
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const from = pictures.findIndex((picture) => picture.key === active.id);
+    const to = pictures.findIndex((picture) => picture.key === over.id);
+    if (from >= 0 && to >= 0) move(from, to);
+  };
+
+  const sources = sourcesOf(
+    pictures.map((picture) => picture.attrs),
+    snapshot.rows,
+  );
+  const layout = gridLayout(sources);
+  const tile = (picture: Picture, index: number, cell: GridCell, style: CSSProperties) => (
+    <SortableTile key={picture.key} picture={picture} index={index} count={count} cell={cell} style={style} host={host} phone={phone} gridPos={gridPos} onKey={onKey} sortable={sortable} />
+  );
+
+  return (
+    <NodeViewWrapper data-grid-view="" contentEditable={false} ref={root}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={pictures.map((picture) => picture.key)} strategy={strip ? horizontalListSortingStrategy : rectSortingStrategy}>
+          {strip ? (
+            <div
+              role="group"
+              aria-label={`${count} pictures`}
+              data-post-media-strip=""
+              style={{ display: "flex", gap: 8, overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+            >
+              {pictures.map((picture, index) => {
+                const ratio = croppedRatio(sources[index]);
+                return tile(picture, index, { ratio, align: "middle", area: {} }, {
+                  position: "relative",
+                  flex: "none",
+                  height: STRIP_HEIGHT,
+                  aspectRatio: String(Math.round(ratio * 1e4) / 1e4),
+                  maxWidth: STRIP_MAX_WIDTH,
+                  overflow: "hidden",
+                  boxSizing: "border-box",
+                  borderRadius: GRID_RADIUS,
+                  border: `1px solid ${t.hairline}`,
+                  background: t.tile,
+                  scrollSnapAlign: "start",
+                });
+              })}
             </div>
-          );
-        }}
-      />
+          ) : (
+            <GridFrame layout={layout} count={count} renderCell={(index, style, cell) => tile(pictures[index], index, cell, style)} />
+          )}
+        </SortableContext>
+      </DndContext>
+      <span role="status" aria-live="polite">
+        <VisuallyHidden>{said}</VisuallyHidden>
+      </span>
     </NodeViewWrapper>
   );
 }

@@ -228,6 +228,8 @@ export const CA03_FILES: readonly string[] = [
   "src/components/post/media/cropStyle.test.ts",
   "src/components/post/media/cropStyle.ts",
   "src/components/post/media/shade.ts",
+  // CA-07 P4
+  "src/pages/site/compose/PostTab.grid.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

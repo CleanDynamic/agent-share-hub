@@ -142,6 +142,11 @@ function AddPostRow({ avatar, maker, phone, onAdd }: { avatar: number; maker: Pr
   );
 }
 
+/** Whether a drag carries files. */
+function hasFiles(transfer: DataTransfer | null | undefined): boolean {
+  return Boolean(transfer && Array.from(transfer.types ?? []).includes("Files"));
+}
+
 /** The editor's element, or null before it is mounted (TipTap's view throws until then) and after it is destroyed. */
 function viewDom(editor: Editor | null): HTMLElement | null {
   if (!editor || editor.isDestroyed) return null;
@@ -232,8 +237,9 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   const { editor, controls } = usePostEditor({
     readDoc: thread.readDoc,
     phone,
-    onDoc: (doc) => {
-      setNotice(null);
+    onDoc: (doc, quiet) => {
+      // An edit clears the last sentence; an upload landing is not an edit.
+      if (!quiet) setNotice(null);
       setLiveDoc(doc);
       thread.onDoc(doc);
       mentionsRef.current?.(threadRefs(doc));
@@ -356,16 +362,71 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   const showRemove = writing.posts >= 2 && removeFor >= 0 && removeFor < writing.posts;
   const removeTop = (tops[removeFor] ?? 0) + FIRST_LINE_DROP + Math.round((postType(phone).firstLine.composer - REMOVE_SIZE) / 2);
 
+  /* CA-07 P4: files dragged over a post go into its grid; the post shows where they will land. Dropped anywhere else
+     on the page, nothing happens, and the browser does not open the file. */
+  const words = useRef<HTMLDivElement>(null);
+  const [dropPost, setDropPost] = useState<number | null>(null);
+  const postAtY = (clientY: number): number => {
+    const box = words.current?.getBoundingClientRect();
+    const y = clientY - (box?.top ?? 0);
+    let post = 0;
+    tops.forEach((top, index) => {
+      if (y >= top) post = index;
+    });
+    return post;
+  };
+  useEffect(() => {
+    const guard = (event: DragEvent) => {
+      if (hasFiles(event.dataTransfer)) event.preventDefault();
+    };
+    window.addEventListener("dragover", guard);
+    window.addEventListener("drop", guard);
+    return () => {
+      window.removeEventListener("dragover", guard);
+      window.removeEventListener("drop", guard);
+    };
+  }, []);
+  const editorHeight = words.current?.getBoundingClientRect().height ?? 0;
+  const dropBox =
+    dropPost === null
+      ? null
+      : { top: (tops[dropPost] ?? 0) + FIRST_LINE_DROP - 4, bottom: dropPost + 1 < tops.length ? tops[dropPost + 1] - BLOCK_GAP + 4 : Math.max(editorHeight, (tops[dropPost] ?? 0) + 40) + 4 };
+
   return (
     <div data-testid="post-tab" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "stretch", gap: phone ? RAIL_GAP.phone : RAIL_GAP.desktop, minWidth: 0 }}>
         <ThreadRail editor={editor} maker={draft.maker} size={avatar} focused={writing.post} onTops={setTops} />
         {/* The first line starts 8 below the avatar's top, as X sets it; room at the right for the remove button. */}
         <div
+          ref={words}
           data-testid="post-words"
+          onDragOverCapture={(event) => {
+            if (!hasFiles(event.dataTransfer)) return;
+            event.preventDefault();
+            setDropPost(postAtY(event.clientY));
+          }}
+          onDragLeave={(event) => {
+            if (!words.current?.contains(event.relatedTarget as Node | null)) setDropPost(null);
+          }}
+          onDropCapture={(event) => {
+            if (!hasFiles(event.dataTransfer)) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setDropPost(null);
+            const files = Array.from(event.dataTransfer.files ?? []);
+            if (files.length > 0) void addPictures(host, files, postAtY(event.clientY));
+          }}
           style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 12, position: "relative", paddingTop: FIRST_LINE_DROP, paddingRight: REMOVE_ROOM }}
         >
           <EditorContent editor={editor} />
+          {dropBox ? (
+            <span
+              aria-hidden="true"
+              data-testid="post-drop-target"
+              data-post={dropPost ?? undefined}
+              style={{ position: "absolute", left: -4, right: -4, top: dropBox.top, height: Math.max(0, dropBox.bottom - dropBox.top), border: `2px dashed ${t.label}`, borderRadius: 16, pointerEvents: "none", boxSizing: "border-box" }}
+            />
+          ) : null}
           <BlockHandle editor={editor} host={host} phone={phone} />
           {showRemove && editor ? (
             <IconButton

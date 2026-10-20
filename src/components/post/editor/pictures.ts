@@ -56,7 +56,12 @@ export interface PictureStore {
   setProgress(uploadId: string, percent: number | null): void;
   /** null revokes the preview's URL and clears it. */
   setPreview(uploadId: string, preview: UploadPreview | null): void;
+  /** An upload landed as `mediaId`: its preview is kept under the file's id until the real file is signed. */
+  handOff(uploadId: string, mediaId: string): void;
 }
+
+/** Where a landed upload's preview waits for its signed file. */
+export const landedKey = (mediaId: string) => `media:${mediaId}`;
 
 /** Object URLs, through the window's, so a test without them still runs. */
 const objectUrls = {
@@ -85,7 +90,17 @@ export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promis
       if (fresh.length === 0) return;
       set({ rows: new Map([...snapshot.rows, ...fresh.map((row) => [row.id, row as GalleryMedia] as const)]) });
       void sign(fresh).then((signed) => {
-        if (signed.size > 0) set({ src: new Map([...snapshot.src, ...signed]) });
+        if (signed.size === 0) return;
+        // The real file is signed: a landed upload's own preview is no longer needed.
+        const previews = new Map(snapshot.previews);
+        for (const row of fresh) {
+          const waiting = previews.get(landedKey(row.id));
+          if (waiting && signed.has(row.path)) {
+            objectUrls.revoke(waiting.url);
+            previews.delete(landedKey(row.id));
+          }
+        }
+        set({ src: new Map([...snapshot.src, ...signed]), previews });
       });
     },
     setProgress(uploadId, percent) {
@@ -100,6 +115,15 @@ export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promis
       if (old && old.url !== preview?.url) objectUrls.revoke(old.url);
       if (preview) previews.set(uploadId, preview);
       else previews.delete(uploadId);
+      set({ previews });
+    },
+    handOff(uploadId, mediaId) {
+      const preview = snapshot.previews.get(uploadId);
+      if (!preview) return;
+      const previews = new Map(snapshot.previews);
+      previews.delete(uploadId);
+      if (snapshot.rows.get(mediaId) && snapshot.src.has(snapshot.rows.get(mediaId)?.path ?? "")) objectUrls.revoke(preview.url);
+      else previews.set(landedKey(mediaId), preview);
       set({ previews });
     },
   };
@@ -373,11 +397,9 @@ async function runUpload(host: PictureHost, buildId: string, item: Item): Promis
     const done = await uploadPostPicture(buildId, item.file, (percent) => host.store.setProgress(item.uploadId, percent), { w: item.w, h: item.h });
     // Stopped while it uploaded: the result is ignored (uploadMedia cannot be aborted) and the row stays in build_media.
     if (host.files.get(item.uploadId)?.stopped ?? true) return;
+    host.store.handOff(item.uploadId, done.media.id);
     host.store.addRows([done.media]);
-    if (patchUpload(host, item.uploadId, { mediaId: done.media.id, w: done.w, h: done.h, uploadId: null, failed: false })) {
-      host.files.delete(item.uploadId);
-      host.store.setPreview(item.uploadId, null);
-    }
+    if (patchUpload(host, item.uploadId, { mediaId: done.media.id, w: done.w, h: done.h, uploadId: null, failed: false })) host.files.delete(item.uploadId);
   } catch (cause) {
     console.error("[Compose] picture upload failed", cause);
     if (!(host.files.get(item.uploadId)?.stopped ?? true)) setFailed(host, item.uploadId, true);
