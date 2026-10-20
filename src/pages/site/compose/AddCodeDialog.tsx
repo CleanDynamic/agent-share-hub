@@ -1,15 +1,16 @@
 /* CA-02 P7 — Add › "Code".
 
-   A Radix dialog, 420 wide, on the Card's surface tokens (a `BottomSheet` below 768), built like the manual step's:
+   A Radix dialog, 600 wide, on the Card's surface tokens (a `BottomSheet` below 768), built like the manual step's:
 
-   - The code: a monospace well (DM Mono 13/1.55, 12 rows, no spell check); Tab puts in two spaces.
-   - Language: a select over the code node type's enum, prefilled from the text (`codeLanguageFor`) until it is
-     chosen by hand; a .tsx, .jsx or .yml file name overrides the guess.
-   - File name, optional, 120 characters.
+   - Title, required: the name the step takes in the build list. It sits above the code.
+   - The code: an editable `CodeFileBlock` (the file name as a field in its header, a line-number gutter, highlighted
+     code, "+N" counted live). It grows as the text does; Tab puts in two spaces.
+   - Language: a select over the code node type's enum, prefilled from the file name's ending (else from the text, by
+     `codeLanguageFor`) until it is chosen by hand.
    - Written with, optional: a tool for code and its model, by the Typed here rules (`ModelPicker`).
-   - Upload files: text files only. Each becomes its own code step named by its file; a file that is not text, or
-     over 100,000 characters, is refused by name.
-   - "Add", the one primary, and "Cancel".
+   - Upload files: text files only. Each becomes its own step, with its own `CodeFileBlock` and a title that starts as
+     its file name; a file that is not text, or over 100,000 characters, is refused by name.
+   - "Add", the one primary (disabled until there is a title and code), and "Cancel".
 
    NOTHING HERE RUNS CODE.
 
@@ -19,30 +20,34 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useId, useRef, useState, type CSSProperties } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { IconButton } from "@/components/brand/IconButton";
+import { CodeFileBlock } from "@/components/code/CodeFileBlock";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, type CodeLanguage } from "@/lib/build/graph";
+import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, TITLE_MAX, type CodeLanguage } from "@/lib/build/graph";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } from "./codeModel";
 import { Field } from "./composeControls";
 import { ModelPicker } from "./ModelPicker";
 import { PickMenu } from "./PickMenu";
-import { dialogTitle, tnum, typedArea, typedField, windowStyle } from "./refinedStyles";
+import { dialogTitle, tnum, typedField, windowStyle } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const CODE_DIALOG_COPY = {
   title: "Add code",
+  titleField: "Title",
+  titleRequired: "Add a title.",
+  titleOf: (name: string) => `Title of ${name}`,
   code: "Code",
   placeholder: "Paste or type the code",
   language: "Language",
-  filename: "File name, optional",
+  filename: "File name",
   filenamePlaceholder: "app.ts",
   writtenWith: "Written with, optional",
   writtenWithTool: "Written with",
@@ -70,6 +75,8 @@ export const CODE_DIALOG_COPY = {
 
 /** One code step the dialog hands back. */
 export interface CodeStepInput {
+  /** What the step is called in the build list. */
+  title: string;
   source: string;
   language: CodeLanguage;
   filename: string | null;
@@ -92,48 +99,42 @@ export interface AddCodeDialogProps {
   seed?: string | null;
 }
 
-/** Two spaces in place of a tab, at the cursor. */
-const INDENT_TEXT = "  ";
+/** A file taken from the computer, on its way in as a step of its own. */
+interface UploadedFile extends CodeStepInput {
+  filename: string;
+}
 
 function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialogProps, "onAdd" | "inBuild" | "seed"> & { onCancel: () => void; phone: boolean }) {
+  const [title, setTitle] = useState("");
   const [source, setSource] = useState(seed ?? "");
   const [filename, setFilename] = useState("");
-  /** Null while the language follows the text and the file name. */
+  /** Null while the language follows the file name and the text. */
   const [chosen, setChosen] = useState<CodeLanguage | null>(null);
   const [tool, setTool] = useState<string | null>(null);
   const [model, setModel] = useState<string | null>(null);
-  const [files, setFiles] = useState<CodeStepInput[]>([]);
+  const [files, setFiles] = useState<UploadedFile[]>([]);
   const [refused, setRefused] = useState<string[]>([]);
   const picker = useRef<HTMLInputElement>(null);
   const uid = useId();
 
   const language = chosen ?? codeLanguageFor(source, filename);
   const typed = source.trim().length > 0;
+  const titled = title.trim().length > 0;
   const tooLong = source.length > CODE_MAX;
-  const ready = (typed || files.length > 0) && !tooLong && filename.length <= CODE_FILENAME_MAX;
+  /* The title and the code are both needed for what is typed; an uploaded file brings its own title (its name, to start). */
+  const ready = (typed || files.length > 0) && (!typed || titled) && files.every((file) => file.title.trim().length > 0) && !tooLong && filename.length <= CODE_FILENAME_MAX;
 
   const quiet: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
-  const count: CSSProperties = { fontFamily: FIGTREE, fontSize: 11.5, color: t.text2, ...tnum };
-
-  const onTab = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== "Tab" || event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) return;
-    event.preventDefault();
-    const box = event.currentTarget;
-    const { selectionStart: start, selectionEnd: end } = box;
-    const next = `${source.slice(0, start)}${INDENT_TEXT}${source.slice(end)}`;
-    setSource(next);
-    requestAnimationFrame(() => box.setSelectionRange(start + INDENT_TEXT.length, start + INDENT_TEXT.length));
-  };
 
   const take = async (picked: File[]) => {
     const read = await Promise.all(picked.map(readCodeFile));
-    setFiles((list) => [...list, ...read.flatMap((entry) => ("reason" in entry ? [] : [{ source: entry.source, language: entry.language, filename: entry.filename }]))]);
+    setFiles((list) => [...list, ...read.flatMap((entry) => ("reason" in entry ? [] : [{ title: entry.filename.slice(0, TITLE_MAX), source: entry.source, language: entry.language, filename: entry.filename }]))]);
     setRefused(read.flatMap((entry) => ("reason" in entry ? [`${entry.filename}: ${entry.reason}`] : [])));
   };
 
   const submit = () => {
     if (!ready) return;
-    const steps: CodeStepInput[] = [...(typed ? [{ source, language, filename: filename.trim() || null }] : []), ...files];
+    const steps: CodeStepInput[] = [...(typed ? [{ title: title.trim(), source, language, filename: filename.trim() || null }] : []), ...files.map((file) => ({ ...file, title: file.title.trim() }))];
     onAdd({ steps, tool, model });
   };
 
@@ -146,61 +147,62 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
       /* The global field rule makes a field inherit its size on a desktop, so the form sets the fields' 13 here. */
       style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
     >
-      <Field id={`${uid}-code`} label={CODE_DIALOG_COPY.code}>
-        <textarea
-          id={`${uid}-code`}
-          data-testid="code-well"
-          rows={12}
-          spellCheck={false}
-          autoCapitalize="off"
-          autoCorrect="off"
-          value={source}
-          placeholder={CODE_DIALOG_COPY.placeholder}
-          onChange={(event) => setSource(event.target.value)}
-          onKeyDown={onTab}
-          style={typedArea(phone, { padding: 8, fontFamily: DM_MONO, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", tabSize: 2 })}
+      <Field id={`${uid}-title`} label={CODE_DIALOG_COPY.titleField}>
+        <input
+          id={`${uid}-title`}
+          type="text"
+          value={title}
+          maxLength={TITLE_MAX}
+          autoComplete="off"
+          aria-required="true"
+          aria-invalid={typed && !titled ? true : undefined}
+          aria-describedby={typed && !titled ? `${uid}-title-needed` : undefined}
+          onChange={(event) => setTitle(event.target.value)}
+          style={typedField(phone)}
+        />
+        {typed && !titled ? (
+          <span id={`${uid}-title-needed`} role="alert" style={quiet}>
+            {CODE_DIALOG_COPY.titleRequired}
+          </span>
+        ) : null}
+      </Field>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+        <CodeFileBlock
+          data-testid="code-block"
+          filename={filename}
+          onFilenameChange={setFilename}
+          filenamePlaceholder={CODE_DIALOG_COPY.filenamePlaceholder}
+          filenameMax={CODE_FILENAME_MAX}
+          filenameLabel={CODE_DIALOG_COPY.filename}
+          source={source}
+          onSourceChange={setSource}
+          codeLabel={CODE_DIALOG_COPY.code}
+          codePlaceholder={CODE_DIALOG_COPY.placeholder}
+          language={language}
+          phone={phone}
         />
         {tooLong ? (
           <span role="alert" style={quiet}>
             {CODE_COPY.tooLong}
           </span>
-        ) : typed ? (
-          <span style={{ ...count, alignSelf: "flex-end" }}>{`${lineCount(source)} ${lineCount(source) === 1 ? "line" : "lines"}`}</span>
         ) : null}
-      </Field>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 120px", minWidth: 0 }}>
-          <Field id={`${uid}-language`} label={CODE_DIALOG_COPY.language}>
-            <span>
-              <PickMenu
-                id={`${uid}-language`}
-                label={CODE_DIALOG_COPY.language}
-                options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
-                value={language}
-                onChange={(next) => {
-                  if (isCodeLanguage(next)) setChosen(next);
-                }}
-                phone={phone}
-              />
-            </span>
-          </Field>
-        </div>
-        <div style={{ flex: "2 1 180px", minWidth: 0 }}>
-          <Field id={`${uid}-filename`} label={CODE_DIALOG_COPY.filename}>
-          <input
-            id={`${uid}-filename`}
-            type="text"
-            value={filename}
-            maxLength={CODE_FILENAME_MAX}
-            placeholder={CODE_DIALOG_COPY.filenamePlaceholder}
-            autoComplete="off"
-            onChange={(event) => setFilename(event.target.value)}
-            style={typedField(phone, { fontFamily: DM_MONO })}
-          />
-          </Field>
-        </div>
       </div>
+
+      <Field id={`${uid}-language`} label={CODE_DIALOG_COPY.language}>
+        <span>
+          <PickMenu
+            id={`${uid}-language`}
+            label={CODE_DIALOG_COPY.language}
+            options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
+            value={language}
+            onChange={(next) => {
+              if (isCodeLanguage(next)) setChosen(next);
+            }}
+            phone={phone}
+          />
+        </span>
+      </Field>
 
       <Field id={`${uid}-written`} label={CODE_DIALOG_COPY.writtenWith} group>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -241,20 +243,31 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
           <span style={quiet}>{CODE_DIALOG_COPY.uploadLine}</span>
         </div>
         {files.length > 0 ? (
-          <ul aria-label={CODE_DIALOG_COPY.upload} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+          <ul aria-label={CODE_DIALOG_COPY.upload} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
             {files.map((file, index) => (
-              <li key={`${file.filename}-${index}`} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 32 }}>
-                <span style={{ fontFamily: DM_MONO, fontSize: 12.5, color: t.text, overflowWrap: "anywhere", flexGrow: 1 }}>{file.filename}</span>
-                <span style={count}>{`${CODE_DIALOG_COPY.languages[file.language]} · ${lineCount(file.source)} lines`}</span>
-                <IconButton
-                  icon={X}
-                  glyph="x"
-                  boxed={false}
-                  size={26}
-                  label={CODE_DIALOG_COPY.remove(file.filename ?? "")}
-                  onClick={() => setFiles((list) => list.filter((_, i) => i !== index))}
-                  style={{ width: phone ? 44 : 26, height: phone ? 44 : 26, flexShrink: 0 }}
-                />
+              <li key={`${file.filename}-${index}`} data-testid="uploaded-step" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    type="text"
+                    aria-label={CODE_DIALOG_COPY.titleOf(file.filename)}
+                    aria-invalid={file.title.trim() ? undefined : true}
+                    value={file.title}
+                    maxLength={TITLE_MAX}
+                    autoComplete="off"
+                    onChange={(event) => setFiles((list) => list.map((entry, i) => (i === index ? { ...entry, title: event.target.value } : entry)))}
+                    style={{ ...typedField(phone), flexGrow: 1, minWidth: 0 }}
+                  />
+                  <IconButton
+                    icon={X}
+                    glyph="x"
+                    boxed={false}
+                    size={26}
+                    label={CODE_DIALOG_COPY.remove(file.filename)}
+                    onClick={() => setFiles((list) => list.filter((_, i) => i !== index))}
+                    style={{ width: phone ? 44 : 26, height: phone ? 44 : 26, flexShrink: 0 }}
+                  />
+                </div>
+                <CodeFileBlock filename={file.filename} source={file.source} language={file.language} codeLabel={file.filename} phone={phone} />
               </li>
             ))}
           </ul>
@@ -305,7 +318,7 @@ export function AddCodeDialog({ open, onOpenChange, onAdd, inBuild, seed = null 
         <Dialog.Content
           aria-describedby={undefined}
           data-testid="add-code-dialog"
-          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(420) }}
+          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(600) }}
         >
           <Dialog.Title style={dialogTitle}>{CODE_DIALOG_COPY.title}</Dialog.Title>
           <Form inBuild={inBuild} seed={seed} onAdd={add} onCancel={close} phone={false} />

@@ -273,23 +273,47 @@ describe("code (CA-02 P7)", () => {
     };
   };
 
-  it("shows Code, its file name, its line count and its first six lines in a mono well", () => {
+  it("shows only the title on one line, with the file name after it in small mono type, and no code", () => {
     const base = sandboxListProps("bakery");
     const step = codeStep();
     list({ steps: [...base.steps, step] });
     const card = screen.getByRole("group", { name: `Code ${step.number}: Code ${step.number}` });
     expect(card.getAttribute("data-kind")).toBe("code");
-    expect(within(card).getByTestId("code-eyebrow").textContent).toBe("Code · app.ts · 8 lines");
-    const well = within(card).getByTestId("code-lines");
-    expect(well.textContent).toBe("1\n2\n3\n4\n5\n6");
-    expect(well.style.fontFamily).toContain("--font-data");
+    expect(within(card).getByRole("button", { name: `Code ${step.number}` })).toBeTruthy();
+    const file = within(card).getByTestId("code-filename");
+    expect(file.textContent).toBe("app.ts");
+    expect(file.style.fontFamily).toContain("--font-data");
+    expect(within(card).queryByTestId("code-lines")).toBeNull();
+    expect(within(card).queryByTestId("code-eyebrow")).toBeNull();
+    expect(card.textContent).not.toContain("1\n2");
     expect(within(card).getByRole("button", { name: `Code ${step.number} options` })).toBeTruthy();
   });
 
-  it("names the language when the code has no file name", () => {
+  it("shows no file name when the code has none", () => {
     const base = sandboxListProps("bakery");
     list({ steps: [...base.steps, codeStep({ filename: null, language: "sql", text: "select 1;" })] });
-    expect(screen.getByTestId("code-eyebrow").textContent).toBe("Code · sql · 1 line");
+    expect(screen.queryByTestId("code-filename")).toBeNull();
+  });
+
+  it("opens the whole file, read-only, from the title; Copy copies all of it", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const base = sandboxListProps("bakery");
+    const text = Array.from({ length: 40 }, (_, i) => `const n${i} = ${i};`).join("\n");
+    const step = codeStep({ title: "Frames page", text });
+    const props = list({ steps: [...base.steps, step] });
+    fireEvent.click(screen.getByRole("button", { name: "Frames page" }));
+    const dialog = screen.getByRole("dialog", { name: "Frames page" });
+    expect(props.onSelect).not.toHaveBeenCalled();
+    expect(within(dialog).getByTestId("code-block-name").textContent).toBe("app.ts");
+    expect(within(dialog).getByTestId("code-block-count").textContent).toBe("+40");
+    expect(within(dialog).queryByRole("textbox")).toBeNull();
+    expect(within(dialog).getByTestId("code-block-gutter").textContent?.split("\n")).toHaveLength(30);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Show all 40 lines" }));
+    expect(within(dialog).getByTestId("code-block-gutter").textContent?.split("\n")).toHaveLength(40);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Copy" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(text));
+    vi.unstubAllGlobals();
   });
 });
 

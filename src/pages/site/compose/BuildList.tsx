@@ -67,7 +67,8 @@ import {
   type ListSuggestion,
 } from "./buildListModel";
 import { TextButton } from "./composeControls";
-import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
+import { CODE_COPY, looksLikeCode } from "./codeModel";
+import { CodeStepDialog } from "./CodeStepDialog";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
@@ -802,7 +803,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
   );
 }
 
-/** CA-02 P7: lines of code, as a module like a manual step's: "Code", its file name or language, its lines, and its first 6 in a mono well. */
+/** CA-02 P7: lines of code, as a module like a manual step's: its title on one line with its file name after it in small mono type. No code is on the page: the title opens the whole file in a window. */
 function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
   const selected = props.selectedId === step.id;
@@ -814,8 +815,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
   };
-  const lines = lineCount(step.text);
-  const named = step.filename ?? step.language ?? null;
+  const [viewing, setViewing] = useState(false);
   return (
     <div
       role="group"
@@ -836,15 +836,29 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span data-testid="code-eyebrow" style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>
-            {["Code", named, `${lines} ${lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}
-          </span>
           {renaming ? (
             <RenameField label={`Title of code ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
           ) : (
-            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
-              {stepTitle(step)}
-            </h3>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+              <h3 data-default-title={isDefault ? "true" : undefined} style={{ margin: 0, minWidth: 0, flexShrink: 1, ...text(14, 500, isDefault ? t.text2 : t.text) }}>
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setViewing(true);
+                  }}
+                  style={{ ...bareButton, ...text(14, 500, isDefault ? t.text2 : t.text), display: "block", maxWidth: "100%", ...ellipsis }}
+                >
+                  {stepTitle(step)}
+                </button>
+              </h3>
+              {step.filename ? (
+                <span data-testid="code-filename" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: 1.4, color: t.text2, flexShrink: 0, maxWidth: "45%", ...ellipsis }}>
+                  {step.filename}
+                </span>
+              ) : null}
+            </div>
           )}
         </div>
         <Menu.Root>
@@ -873,27 +887,13 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           </Menu.Portal>
         </Menu.Root>
       </div>
-      <pre
-        data-testid="code-lines"
-        style={{
-          ...wellField,
-          margin: 0,
-          marginLeft: INDENT,
-          width: "auto",
-          padding: "8px 12px",
-          fontFamily: DM_MONO,
-          fontSize: 12,
-          lineHeight: 1.55,
-          whiteSpace: "pre",
-          overflowX: "auto",
-          color: t.text,
-        }}
-      >
-        {firstLines(step.text)}
-      </pre>
       <MadeLine names={props.madeNames?.[step.id]} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
+      </div>
+      {/* The window is in a portal, but React events still climb to the card, which would select the step. */}
+      <div style={{ display: "contents" }} onClick={(event) => event.stopPropagation()}>
+        <CodeStepDialog open={viewing} onOpenChange={setViewing} title={stepTitle(step)} filename={step.filename ?? null} language={step.language ?? null} source={step.text} />
       </div>
     </div>
   );

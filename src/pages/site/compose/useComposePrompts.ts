@@ -188,7 +188,7 @@ export interface ComposePrompts {
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
   setManualPicture: (id: string, file: File) => Promise<boolean>;
   /** CA-02 P7: add code steps, one for each piece, in order, written with the tool and model given. Resolves the first one's id, or null if none was added. */
-  addCodeSteps: (input: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) => Promise<string | null>;
+  addCodeSteps: (input: { steps: readonly { source: string; language: string; filename: string | null; title?: string | null }[]; tool: string | null; model: string | null }) => Promise<string | null>;
   /** CA-03 P5: add a check, using the step it tested. Resolves its id, or null if it failed. */
   addCheckStep: (input: CheckInput) => Promise<string | null>;
 }
@@ -673,7 +673,7 @@ export function useComposePrompts({
         return null;
       });
 
-  const addCodeSteps = ({ steps, tool, model }: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) =>
+  const addCodeSteps = ({ steps, tool, model }: { steps: readonly { source: string; language: string; filename: string | null; title?: string | null }[]; tool: string | null; model: string | null }) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();

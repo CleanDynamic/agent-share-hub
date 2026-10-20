@@ -868,17 +868,19 @@ const CODE_TOOL_MAX = 40;
 
 /**
  * Lines of code the maker wrote or ran (CA-02 P7), top level and numbered like any step. Refuses empty source and
- * source over 100,000 characters; `language` is one of the schema's; `tool` and `model` ("Written with") follow a
- * typed prompt's rules and are optional. Nothing here, or anywhere in the composer, runs it.
+ * source over 100,000 characters; `language` is one of the schema's; `title` is the step's name (trimmed, at most 80
+ * characters, none saves as null); `tool` and `model` ("Written with") follow a typed prompt's rules and are optional. Nothing here, or anywhere in the composer, runs it.
  */
 export async function addCode(
   buildId: string,
   tree: readonly NodeTree[],
-  { source, language, filename, tool, model, entrypoint }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean },
+  { source, language, filename, title, tool, model, entrypoint }: { source: string; language: string; filename?: string | null; title?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean },
 ): Promise<BuildNode> {
   if (!source.trim()) throw refuse("addCode", "Code needs its lines.");
   if (source.length > CODE_MAX) throw refuse("addCode", "Code is at most 100,000 characters. Upload it as a file instead.");
   if (!(CODE_LANGUAGES as readonly string[]).includes(language)) throw refuse("addCode", "That is not a language the build knows.");
+  const titled = titleOrNull(title);
+  if (titled && titled.length > TITLE_MAX) throw refuse("addCode", `A title is at most ${TITLE_MAX} characters.`);
   const payload: Record<string, string | boolean> = { source, language };
   const name = filename?.trim();
   if (name) {
@@ -892,7 +894,7 @@ export async function addCode(
   }
   if (model?.trim()) payload.model = model.trim();
   if (entrypoint) payload.entrypoint = true;
-  return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload });
+  return placeTopNode(buildId, tree, { type: CODE_TYPE, title: titled, payload });
 }
 
 /** CA-03 P5: the longest answers a check takes, and its largest count of runs. */
