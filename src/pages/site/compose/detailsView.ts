@@ -284,7 +284,7 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
       ? { others: shownGroups(ctx.groups).filter((other) => groupKey(other) !== source.key && groupKind(other) !== "legacy").map((other) => ({ key: groupKey(other), label: `Session ${other.number}${other.tool ? ` · ${other.tool}` : ""}` })) }
       : null),
     // CA-04 P4: its setup, in the order it was added.
-    setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared })),
+    setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared, loaded: item.loaded })),
     // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.
     ...(group && !real
       ? { editable: { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: groupKind(group) === "typed" ? (group.startedAt ?? "") : "" } }

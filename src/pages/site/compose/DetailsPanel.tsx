@@ -59,6 +59,7 @@ import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type Too
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
+import { groupByLoaded, type SetupLoaded } from "@/lib/build/setup";
 import { SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
@@ -147,6 +148,8 @@ export interface SetupRow {
   /** A skill's description, word for word. */
   description: string | null;
   notShared: boolean;
+  /** CA-05 P6: read at the start, or only when needed. Absent in older fixtures: read as at the start. */
+  loaded?: SetupLoaded;
 }
 
 export interface FileView {
@@ -996,42 +999,52 @@ function SetupSection({ view, phone, focus, onSelect, onAddToSetup, onNotShared 
   const rows = view.setup ?? [];
   // Shown only once the session has a setup: a drop on Sources starts one.
   if (rows.length === 0) return null;
+  // CA-05 P6: under two quiet labels, only when both have rows.
+  const grouped = groupByLoaded(rows.map((entry) => ({ ...entry, loaded: entry.loaded ?? ("start" as const) })));
+  const row = (row: SetupRow) => (
+        <div
+      key={row.id}
+      data-testid="setup-row"
+      data-not-shared={row.notShared ? "true" : undefined}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        minHeight: phone ? 44 : 40,
+        padding: "6px 8px",
+        boxSizing: "border-box",
+        borderBottom: line,
+        ...(row.notShared ? { border: `1px dashed ${t.line}`, borderRadius: 6, marginTop: 4 } : null),
+      }}
+    >
+      <button type="button" onClick={() => onSelect?.(row.id)} style={{ ...bareButton, display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+        <span style={text(12, 400, t.label)}>{row.kind}</span>
+        <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.name}</span>
+        {row.description ? <span style={{ ...quiet(), overflowWrap: "anywhere" }}>{row.description}</span> : null}
+      </button>
+      {row.notShared ? (
+        <span style={quiet()}>{SETUP_COPY.notShared}</span>
+      ) : onNotShared ? (
+        <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => onNotShared(row.id)}>
+          {SETUP_COPY.keepToMyself}
+        </TextButton>
+      ) : null}
+    </div>
+  );
   return (
     <section ref={ref} aria-label={SETUP_COPY.title} data-testid="session-setup" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
         <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{SETUP_COPY.title}</h3>
         <span style={{ ...quiet(), ...tnum }}>{rows.length}</span>
       </div>
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          data-testid="setup-row"
-          data-not-shared={row.notShared ? "true" : undefined}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            minHeight: phone ? 44 : 40,
-            padding: "6px 8px",
-            boxSizing: "border-box",
-            borderBottom: line,
-            ...(row.notShared ? { border: `1px dashed ${t.line}`, borderRadius: 6, marginTop: 4 } : null),
-          }}
-        >
-          <button type="button" onClick={() => onSelect?.(row.id)} style={{ ...bareButton, display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-            <span style={text(12, 400, t.label)}>{row.kind}</span>
-            <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.name}</span>
-            {row.description ? <span style={{ ...quiet(), overflowWrap: "anywhere" }}>{row.description}</span> : null}
-          </button>
-          {row.notShared ? (
-            <span style={quiet()}>{SETUP_COPY.notShared}</span>
-          ) : onNotShared ? (
-            <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => onNotShared(row.id)}>
-              {SETUP_COPY.keepToMyself}
-            </TextButton>
-          ) : null}
-        </div>
-      ))}
+      {grouped
+        ? grouped.map((group) => (
+            <div key={group.loaded} role="group" aria-label={group.label} data-testid="setup-loaded" data-loaded={group.loaded} style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ ...text(11.5, 400, t.label), paddingTop: 12, paddingBottom: 4 }}>{group.label}</span>
+              {group.items.map(row)}
+            </div>
+          ))
+        : rows.map(row)}
       {onAddToSetup ? (
         <div style={{ paddingTop: 8 }}>
           <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onAddToSetup(view.key)}>

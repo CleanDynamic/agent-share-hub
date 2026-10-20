@@ -48,6 +48,7 @@ import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
+import { groupByLoaded } from "@/lib/build/setup";
 import { bracketed, changesLine } from "@/lib/build/changes";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { scrollBehavior } from "@/lib/theme/motion";
@@ -619,6 +620,26 @@ const SETUP_INDENT = 28;
 function ChatHead({ chat, copy }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }>; copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean } }) {
   const [open, setOpen] = useState(false);
   const setup = chat.setup;
+  // CA-05 P6: under two quiet labels, only when both have rows.
+  const grouped = groupByLoaded(setup.map((item) => ({ ...item, loaded: item.loaded ?? ("start" as const) })));
+  const setupRow = (item: (typeof setup)[number]) => (
+            <div key={item.id} data-testid="setup-row" data-not-shared={item.notShared ? "true" : undefined} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0, ...(item.notShared ? { borderBottom: `1px dashed ${t.line}` } : null) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <span style={text(12, 400, t.label)}>{item.notShared ? `${item.kindLabel} · not shared` : item.kindLabel}</span>
+          <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
+          {item.description ? <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
+        </div>
+        {item.download ? <DownloadButton href={item.download} name={item.name} /> : null}
+      </div>
+      {item.files.map((file) => (
+        <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12, minWidth: 0 }}>
+          <span style={{ ...text(12, 400, t.text2), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{file.name}</span>
+          {file.download ? <DownloadButton href={file.download} name={file.name} /> : null}
+        </div>
+      ))}
+    </div>
+  );
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -659,24 +680,14 @@ function ChatHead({ chat, copy }: { chat: Extract<NonNullable<ReaderStep["chat"]
               ))}
             </div>
           ) : null}
-          {setup.map((item) => (
-            <div key={item.id} data-testid="setup-row" data-not-shared={item.notShared ? "true" : undefined} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0, ...(item.notShared ? { borderBottom: `1px dashed ${t.line}` } : null) }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-                  <span style={text(12, 400, t.label)}>{item.notShared ? `${item.kindLabel} · not shared` : item.kindLabel}</span>
-                  <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
-                  {item.description ? <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
+          {grouped
+            ? grouped.map((group) => (
+                <div key={group.loaded} role="group" aria-label={group.label} data-testid="setup-loaded" data-loaded={group.loaded} style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ ...text(11.5, 400, t.label), paddingTop: 8 }}>{group.label}</span>
+                  {group.items.map(setupRow)}
                 </div>
-                {item.download ? <DownloadButton href={item.download} name={item.name} /> : null}
-              </div>
-              {item.files.map((file) => (
-                <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12, minWidth: 0 }}>
-                  <span style={{ ...text(12, 400, t.text2), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{file.name}</span>
-                  {file.download ? <DownloadButton href={file.download} name={file.name} /> : null}
-                </div>
-              ))}
-            </div>
-          ))}
+              ))
+            : setup.map(setupRow)}
         </div>
       ) : null}
     </>

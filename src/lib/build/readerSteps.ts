@@ -37,7 +37,7 @@ import {
 } from "./graph";
 import { bracketed } from "./changes";
 import { copyTogether } from "./copyTogether";
-import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupRule, type SetupServer } from "./setup";
+import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionsMetaOf, type Making } from "./making";
 import { runsWhenLine } from "./runsFrom";
 import { sessionFactsLine, togetherLine } from "./sessionFacts";
@@ -108,6 +108,8 @@ export interface ReaderSetupItem {
   workflow: SetupItem["workflow"];
   /** Where it sat ("docs/CLAUDE.md"), when known. */
   path: string | null;
+  /** CA-05 P6: read at the start, or only when needed. Absent in older fixtures: read as at the start. */
+  loaded?: SetupLoaded;
 }
 
 export interface ReaderPasteIn {
@@ -439,6 +441,7 @@ function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
       rule: item.rule,
       workflow: item.notShared ? null : item.workflow,
       path: item.path,
+      loaded: item.loaded,
     };
     out.set(item.session, [...(out.get(item.session) ?? []), entry]);
   }

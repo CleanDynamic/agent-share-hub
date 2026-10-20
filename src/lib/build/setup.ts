@@ -42,6 +42,35 @@ export const HOOK_EVENTS: Record<string, string> = {
   PreCompact: "Before the chat is summarised",
 };
 
+/** CA-05 P6: what the AI read at the start of the session, and what it read only when it needed it. */
+export type SetupLoaded = "start" | "when-needed";
+
+export const SETUP_LOADED: readonly SetupLoaded[] = ["start", "when-needed"];
+
+/**
+ * Where each kind of item is read from unless the item says otherwise. The AI sees a skill's description at the start
+ * and reads the rest when it uses the skill; instruction files, rules, servers and workflows are all there from the start.
+ */
+export const SETUP_LOADED_DEFAULT: Record<SetupKind, SetupLoaded> = {
+  instructions: "start",
+  rule: "start",
+  skill: "when-needed",
+  server: "start",
+  workflow: "start",
+};
+
+/** The two quiet labels over a session's setup, when both have rows. */
+export const SETUP_LOADED_LABEL: Record<SetupLoaded, string> = { start: "At the start", "when-needed": "Only when needed" };
+
+/**
+ * A setup split into what was read at the start and what only when needed, in the order each was added. Null when
+ * either side is empty: the setup is then one list with no labels, as it always was.
+ */
+export function groupByLoaded<T extends { loaded: SetupLoaded }>(items: readonly T[]): { loaded: SetupLoaded; label: string; items: T[] }[] | null {
+  const groups = SETUP_LOADED.map((loaded) => ({ loaded, label: SETUP_LOADED_LABEL[loaded], items: items.filter((item) => item.loaded === loaded) }));
+  return groups.every((group) => group.items.length > 0) ? groups : null;
+}
+
 export const whenOf = (event: string): string => HOOK_EVENTS[event] ?? event;
 
 export interface SetupServer {
@@ -82,6 +111,8 @@ export interface SetupItem {
   files: { id: string; name: string; path: string | null; mediaId: string | null }[];
   server: SetupServer | null;
   rule: SetupRule | null;
+  /** CA-05 P6: read at the start, or only when needed: what the item says, else what its kind is. */
+  loaded: SetupLoaded;
   /** CA-04 P6: a workflow file, as written, and what was read of it (null where the reader was not sure). */
   workflow: { filename: string; source: string; events: WorkflowEvent[] | null; prompt: string | null } | null;
 }
@@ -96,10 +127,10 @@ export function isSetupPayload(payload: unknown): boolean {
 }
 
 /** The setup a node belongs to, or null. */
-export function setupOfNode(node: Pick<BuildNode, "payload">): { session: string; kind: SetupKind } | null {
+export function setupOfNode(node: Pick<BuildNode, "payload">): { session: string; kind: SetupKind; loaded?: SetupLoaded } | null {
   if (!isSetupPayload(node.payload)) return null;
   const setup = (node.payload as Record<string, Record<string, string>>).setup;
-  return { session: setup.session, kind: setup.kind as SetupKind };
+  return { session: setup.session, kind: setup.kind as SetupKind, ...(SETUP_LOADED.includes(setup.loaded as SetupLoaded) ? { loaded: setup.loaded as SetupLoaded } : null) };
 }
 
 function readServer(payload: Record<string, unknown>, name: string): SetupServer | null {
@@ -158,6 +189,7 @@ export function setupItemsOf(tree: readonly NodeTree[], session?: string | null)
       mediaId: str(payload.media_id),
       url: str(payload.url),
       notShared: payload.not_shared === true,
+      loaded: SETUP_LOADED.includes(setup.loaded as SetupLoaded) ? (setup.loaded as SetupLoaded) : SETUP_LOADED_DEFAULT[setup.kind],
       files: (node.children ?? [])
         .filter((child) => child.type === FILE_TYPE)
         .map((child) => {
@@ -335,7 +367,7 @@ export const needsText = (path: string): boolean => isSkillFile(path) || isMcpJs
 
 /* ── writes ── */
 
-const setupKey = (session: string, kind: SetupKind) => ({ session, kind });
+const setupKey = (session: string, kind: SetupKind) => ({ session, kind, loaded: SETUP_LOADED_DEFAULT[kind] });
 
 function refuseIf(operation: string, why: string | null) {
   if (why) throw buildLayerError(operation, new Error(why));
