@@ -203,6 +203,8 @@ export const CA03_FILES: readonly string[] = [
   // CA-06 P6
   "src/lib/profile/colourSwatches.test.tsx",
   "src/lib/profile/colourSwatches.ts",
+  // CA-06 P7
+  "e2e/audit/support/harness.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -447,6 +449,21 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "an outline other than ring()",
     text: "outline: `1px solid ${t.selectedEdge}`, outlineOffset: 3",
     why: "A selected row of pictures in the post editor (PT-06), drawn by a ProseMirror decoration with the selected recipe's edge. It was there before CA-06, which only adds the reference mark to the file.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: "the audit cannot",
+    why: "The audit harness's own messages and sample rows, there before CA-06, which only adds its four link routes to the file. Not shown on any page.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: "Not yet — it is the open gap on the overnight build.",
+    why: "The audit harness's own messages and sample rows, there before CA-06, which only adds its four link routes to the file. Not shown on any page.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: "React throws on the",
+    why: "The audit harness's own messages and sample rows, there before CA-06, which only adds its four link routes to the file. Not shown on any page.",
   },
   {
     rule: "spacing 22 is not in SPACE_REFINED",

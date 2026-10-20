@@ -316,9 +316,12 @@ export function RefLink({ to, children }: { to: string; children: ReactNode }) {
       }}
       onFocus={(event) => setFocus(focusVisible(event.currentTarget))}
       onBlur={() => setFocus(false)}
-      style={{ ...refWordsStyle(paint, hover || focus), ...(focus ? { ...focusRing } : null) }}
+      style={{ cursor: "pointer", borderRadius: 4, ...(focus ? { ...focusRing } : null) }}
     >
-      {children}
+      {/* The words on the fill, then the number after it, on the page: as the editor draws them. */}
+      <span data-ref-words="" style={refWordsStyle(paint, hover || focus)}>
+        {children}
+      </span>
       <span aria-hidden="true" data-ref-number="" style={refNumberStyle}>
         {paint.number}
       </span>

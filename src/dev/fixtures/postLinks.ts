@@ -7,6 +7,7 @@ import { sessionsMetaOf, type Making } from "@/lib/build/making";
 import type { ThreadDoc } from "@/lib/build/thread";
 import type { Json } from "@/integrations/supabase/types";
 import type { NodeTree } from "@/lib/build/types";
+import { SUGGESTED_COLOURS } from "@/lib/theme/partColour";
 
 import { SHAPES } from "./shapes";
 
@@ -113,9 +114,29 @@ export const linksPost: ThreadDoc = {
   ],
 } as unknown as ThreadDoc;
 
-/** The build as the composer reads it. */
-export function linksBuild(): { tree: NodeTree[]; steps: Step[]; groups: SessionGroup[]; making: Making } {
-  const steps = buildSteps(linksTree);
-  const groups = sessionGroups(steps, linksMaking.sessions, linksMaking.session_tools ?? {}, sessionsMetaOf(linksMaking));
-  return { tree: linksTree, steps, groups, making: linksMaking };
+/**
+ * `&presets=1`: each of the six suggested colours on one of the six parts the post links to, so a contrast sweep
+ * measures every preset as a link's fill (CA-06 P7).
+ */
+function withPresets(tree: readonly NodeTree[], making: Making): { tree: NodeTree[]; making: Making } {
+  const [a, b, c, d, e, f] = SUGGESTED_COLOURS;
+  const nodes: Record<string, string> = { "o-p2": b, "o-c1": c, "o-build": e, "o-k1": f };
+  const paint = (list: readonly NodeTree[]): NodeTree[] =>
+    list.map((entry) => {
+      const own = { ...entry, children: entry.children ? paint(entry.children) : entry.children } as NodeTree;
+      return nodes[entry.id] ? colour(own, nodes[entry.id]) : own;
+    });
+  const meta = making.sessions_meta ?? {};
+  return {
+    tree: paint(tree),
+    making: { ...making, sessions_meta: { ...meta, [LINKS_S1]: { ...meta[LINKS_S1], colour: a }, [LINKS_S2]: { ...meta[LINKS_S2], colour: d } } },
+  };
+}
+
+/** The build as the composer reads it; with `presets`, every suggested colour on a linked part. */
+export function linksBuild(presets = false): { tree: NodeTree[]; steps: Step[]; groups: SessionGroup[]; making: Making } {
+  const { tree, making } = presets ? withPresets(linksTree, linksMaking) : { tree: linksTree, making: linksMaking };
+  const steps = buildSteps(tree);
+  const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(making));
+  return { tree, steps, groups, making };
 }

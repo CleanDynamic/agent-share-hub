@@ -11,7 +11,7 @@ import type { Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
 import { SHAPES } from "./shapes";
-import { linksMaking, linksTree } from "./postLinks";
+import { linksBuild, linksMaking, linksTree } from "./postLinks";
 
 /** CA-04 P7: "one-sitting" and "runs-on-github" are the shapes of the same names (src/dev/fixtures/shapes.ts). */
 export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links";
@@ -175,8 +175,10 @@ const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making
  * The steps for one of the boards. The Map is UI-P74, so `mapAvailable` only decides whether the switch shows.
  * `extra` adds placed nodes after the sample's own (CA-03 P5: a check).
  */
-export function buildStepsFixture(which: BuildStepsSample = "list", extra: readonly NodeTree[] = []): BuildStepsView & { title: string; outcome: string } {
-  const { tree: make, making, title, outcome } = SAMPLES[which];
+export function buildStepsFixture(which: BuildStepsSample = "list", extra: readonly NodeTree[] = [], presets = false): BuildStepsView & { title: string; outcome: string } {
+  const sample = SAMPLES[which];
+  // CA-06 P7: "A post with links" with every suggested colour on a linked part.
+  const { tree: make, making, title, outcome } = which === "links" && presets ? { ...sample, tree: () => linksBuild(true).tree, making: linksBuild(true).making } : sample;
   const tree = [...make(), ...extra];
   const steps = readerSteps(tree, making, media);
   return {

@@ -379,7 +379,8 @@ function PickerBody({ what, initial, session = false, swatches, onSwatches, onPr
     >
       <LiveRegion message={said} />
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <span style={text(13, 500, t.text)}>{COLOUR_PICKER_COPY.head}</span>
+        {/* On a phone the sheet's own title says "Colour". */}
+        {phone ? null : <span style={text(13, 500, t.text)}>{COLOUR_PICKER_COPY.head}</span>}
         <span style={text(12, 400, t.label)}>{what}</span>
       </div>
       <Wheel colour={colour} lightness={lightness} onPick={(hex) => apply(hex)} />

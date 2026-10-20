@@ -56,7 +56,8 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
   const filled = params.get("swatches") === "filled";
   useState(() => configureSwatchSaving(null, filled ? LINKS_SWATCHES : { recent: [], favourites: [] }));
   const phone = useIsPhone();
-  const fixture = useMemo(() => linksBuild(), []);
+  const presets = params.get("presets") === "1";
+  const fixture = useMemo(() => linksBuild(presets), [presets]);
   /* CA-06 P5: a colour Done keeps is laid over the fixture for the visit; nothing is written. */
   const [kept, setKept] = useState<Record<string, string | null>>({});
   const [preview, setPreview] = useState<ColourPreview | null>(null);

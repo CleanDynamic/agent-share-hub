@@ -11,7 +11,7 @@
    UI-P91: `&part=steps` is the Map board (`refined/{dusk,noon}/build-map.html`): no frame and no first
    screen, only the surface with the tabs, The build and What you need, laid out as that board crops them. */
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { EmptyState } from "@/components/brand/EmptyState";
@@ -22,7 +22,7 @@ import { NeedPanel } from "@/pages/site/build/BuildSteps";
 import { t } from "@/lib/theme/tokens";
 import { landTab, stepTabs, type BuildTabKey } from "@/pages/site/build/buildModel";
 
-import { linksMaking, linksPost, linksTree } from "@/dev/fixtures/postLinks";
+import { linksBuild, linksPost } from "@/dev/fixtures/postLinks";
 import { splitThread } from "@/lib/build/thread";
 import type { BuildThreadView } from "@/pages/site/build/buildModel";
 import { useReaderPostLinks, type ReaderFocus } from "@/pages/site/build/useReaderPostLinks";
@@ -38,11 +38,14 @@ export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const first = params.get("tab") as BuildTabKey | null;
   const [tab, setTab] = useState<BuildTabKey>(landTab(first && SAMPLE_TABS.includes(first) ? first : "anatomy", true));
 
-  const { title, outcome, ...fixtureSteps } = buildStepsFixture(which);
+  const { title, outcome, ...fixtureSteps } = buildStepsFixture(which, [], params.get("presets") === "1");
   const props = buildFixture(viewport);
   /* CA-06 P7: `?build=links` has the maker's thread over it, its links working as they do for a reader. */
   const [focus, setFocus] = useState<ReaderFocus | null>(null);
-  const links = useReaderPostLinks({ tree: linksTree, making: linksMaking, enabled: which === "links", onFocus: setFocus });
+  // `&presets=1`: every suggested colour on a linked part, for the contrast sweep.
+  const presets = params.get("presets") === "1";
+  const linked = useMemo(() => linksBuild(presets), [presets]);
+  const links = useReaderPostLinks({ tree: linked.tree, making: linked.making, enabled: which === "links", onFocus: setFocus });
   const steps = links ? { ...fixtureSteps, focus, onBackToPost: links.onBackToPost, groups: links.groups } : fixtureSteps;
   const thread: BuildThreadView | null = links
     ? {
