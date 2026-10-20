@@ -9,14 +9,17 @@ import { useEditor, type Editor } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 
 import type { ThreadDoc } from "@/lib/build/thread";
-import { emptyThread } from "@/lib/build/threadEditor";
+import { editorShape, emptyThread } from "@/lib/build/threadEditor";
 
 import { editorAttributes, postExtensions, type PostEditorControls } from "./extensions";
 import { createPictureHost } from "./pictures";
 
-/** A document the editor can open: a thread with no blocks opens on one empty paragraph. */
+/**
+ * A document the editor can open: a thread with no blocks opens on one empty paragraph, and (CA-07) an old thread's
+ * pictures, between the lines or in rows, open as each post's grid. Nothing is saved until the maker changes something.
+ */
 export function loadable(doc: ThreadDoc): ThreadDoc {
-  return Array.isArray(doc.content) && doc.content.length > 0 ? doc : emptyThread();
+  return Array.isArray(doc.content) && doc.content.length > 0 ? editorShape(doc) : emptyThread();
 }
 
 export interface UsePostEditorOptions {

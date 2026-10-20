@@ -2,7 +2,9 @@
 //
 // A thread is one TipTap document (ProseMirror JSON) stored on builds.post_doc.
 // It holds several posts, separated by postBreak nodes; each post is a run of
-// text blocks and pictures in any order.
+// text blocks, then (CA-07) one postMediaGrid of its pictures as its last block.
+// Older posts held pictures between the lines and in rows; `toGrids` reads them
+// in the new shape without writing anything.
 //
 // THE PICTURES STAY IN THE POST-MEDIA SET. saveThread writes the set in the
 // order the pictures appear in the document, so position 0 is the thread's
@@ -31,8 +33,19 @@ export const MAX_THREAD_MEDIA = 40;
 export const POST_BODY_MAX = 1000;
 /** Characters in a picture's caption. */
 export const CAPTION_MAX = 200;
-/** Characters in a picture's alt text. */
-export const ALT_MAX = 300;
+/** Characters in a picture's alt text (CA-07: 1,000, as X allows). */
+export const ALT_MAX = 1000;
+/** The smallest crop, as a fraction of the original, either way. */
+export const CROP_MIN = 0.01;
+/** What Crop media can set the shape to. */
+export const CROP_ASPECTS = ["original", "wide", "square"] as const;
+export type CropAspect = (typeof CROP_ASPECTS)[number];
+/** The warnings a maker can put on a picture. */
+export const MEDIA_WARNINGS = ["nudity", "violence", "sensitive"] as const;
+export type MediaWarning = (typeof MEDIA_WARNINGS)[number];
+/** Crop media's zoom, 1 to 3. */
+export const ZOOM_MIN = 1;
+export const ZOOM_MAX = 3;
 
 /** Widths a single picture may take, as a percent of the column. */
 export const POST_MEDIA_WIDTH_MIN = 25;
@@ -98,29 +111,56 @@ export interface ThreadOrderedList {
   content?: ThreadListItem[];
 }
 
+/** A crop rectangle, as fractions 0 to 1 of the original picture. */
+export interface MediaCrop {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface PostMediaAttrs {
   /** The build_media row this picture shows. */
   mediaId: string;
-  /** Percent of the column, 25 to 100, default 100. Ignored inside a postMediaRow. */
-  width: number;
   /** The picture's pixel width, copied from build_media when inserted. */
   w: number | null;
   /** The picture's pixel height, copied from build_media when inserted. */
   h: number | null;
-  /** May be empty. */
+  /** May be empty. Up to ALT_MAX. */
   alt: string;
-  /** May be empty. */
+  /** CA-07: the part of the original shown, or null for all of it. The file itself is never changed. */
+  crop: MediaCrop | null;
+  /** CA-07: what Crop was set to, to reopen it as it was left. */
+  aspect: CropAspect | null;
+  /** CA-07: Crop's zoom, 1 to 3, to reopen it as it was left. */
+  zoom: number | null;
+  /** CA-07: the warnings readers see before the picture; empty for none. */
+  warn: MediaWarning[];
+  /** Kept from PT-06; no longer used. */
+  width: number;
+  /** Kept from PT-06; no longer shown. */
   caption: string;
 }
+
+/** CA-07's attributes on a picture nobody has cropped, described or flagged. */
+export const NO_MEDIA_EDITS: Pick<PostMediaAttrs, "crop" | "aspect" | "zoom" | "warn"> = { crop: null, aspect: null, zoom: null, warn: [] };
 
 export interface ThreadPostMedia {
   type: "postMedia";
   attrs: PostMediaAttrs;
 }
 
-/** Two or three pictures side by side. */
+/** PT-06's two or three pictures side by side. Still read, so old posts load; `toGrids` turns it into a grid. */
 export interface ThreadPostMediaRow {
   type: "postMediaRow";
+  content: ThreadPostMedia[];
+}
+
+/** CA-07: a post's pictures, one block after its words: 1 to MAX_POST_PICTURES, drawn as X draws them. */
+export interface ThreadPostMediaGrid {
+  type: "postMediaGrid";
+  /** `step` is "node:<build_nodes id>", the step the pictures come from, or null. */
+  attrs: { step: string | null };
   content: ThreadPostMedia[];
 }
 
@@ -137,7 +177,8 @@ export type PostBlock =
   | ThreadBulletList
   | ThreadOrderedList
   | ThreadPostMedia
-  | ThreadPostMediaRow;
+  | ThreadPostMediaRow
+  | ThreadPostMediaGrid;
 
 export type ThreadBlock = PostBlock | ThreadPostBreak;
 
@@ -164,6 +205,7 @@ export const THREAD_NODE_TYPES: ReadonlySet<string> = new Set([
   "text",
   "postMedia",
   "postMediaRow",
+  "postMediaGrid",
   "postBreak",
 ]);
 
@@ -278,6 +320,107 @@ function mediaNodesOf(node: unknown): ThreadPostMedia[] {
   };
   walk(node);
   return out;
+}
+
+// --- one block of pictures per post (CA-07) ---------------------------------------
+
+const PICTURE_HOLDERS: ReadonlySet<string> = new Set(["postMedia", "postMediaRow", "postMediaGrid"]);
+
+/** A grid's step, read: "node:<id>" when it has that shape, else null. Whether the step is still in the build is not asked. */
+export function gridStepOf(grid: unknown): string | null {
+  const step = isRecord(grid) && isRecord(grid.attrs) ? grid.attrs.step : null;
+  const target = parseRefTo(step);
+  return target && target.kind === "node" ? (step as string) : null;
+}
+
+/** Whether one post's blocks are already in the new shape: no loose picture or row, at most one grid, and it is last. */
+function postInShape(blocks: readonly unknown[]): boolean {
+  let grids = 0;
+  for (let at = 0; at < blocks.length; at++) {
+    const block = blocks[at];
+    if (!isRecord(block)) continue;
+    if (block.type === "postMedia" || block.type === "postMediaRow") return false;
+    if (block.type === "postMediaGrid") {
+      grids += 1;
+      if (grids > 1 || at !== blocks.length - 1 || childrenOf(block).length === 0) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * The thread with each post's pictures in one postMediaGrid, the post's last block: every postMedia at the top level,
+ * in a row or in a grid, in document order, with the first step any grid named. A post with no pictures gets no grid;
+ * one with more than four keeps them all, and checkThread says so. Pure, and the same object comes back when every post
+ * is already in that shape, so a post saved in the new shape is never touched. Readers call it before drawing; the
+ * editor calls it as it opens a thread. Nothing is saved by it.
+ */
+export function toGrids(doc: ThreadDoc): ThreadDoc {
+  const content = childrenOf(doc);
+  const posts: unknown[][] = [[]];
+  for (const block of content) {
+    if (isRecord(block) && block.type === "postBreak") posts.push([]);
+    else posts[posts.length - 1].push(block);
+  }
+  if (posts.every(postInShape)) return doc;
+
+  const out: unknown[] = [];
+  posts.forEach((blocks, index) => {
+    if (index > 0) out.push({ type: "postBreak" });
+    const pictures: unknown[] = [];
+    let step: string | null = null;
+    for (const block of blocks) {
+      if (isRecord(block) && PICTURE_HOLDERS.has(block.type as string)) {
+        if (block.type === "postMedia") pictures.push(block);
+        else for (const child of childrenOf(block)) if (isRecord(child) && child.type === "postMedia") pictures.push(child);
+        if (block.type === "postMediaGrid") step ??= gridStepOf(block);
+      } else out.push(block);
+    }
+    if (pictures.length > 0) out.push({ type: "postMediaGrid", attrs: { step }, content: pictures });
+  });
+  return { ...doc, content: out as ThreadBlock[] };
+}
+
+/** A picture's attributes as readers draw them: whatever was stored, with CA-07's defaults where they are missing. */
+export function mediaAttrsOf(node: unknown): PostMediaAttrs {
+  const attrs = isRecord(node) && isRecord(node.attrs) ? node.attrs : {};
+  const number = (value: unknown) => (typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null);
+  const crop = cropOf(attrs.crop);
+  const aspect = CROP_ASPECTS.includes(attrs.aspect as CropAspect) ? (attrs.aspect as CropAspect) : null;
+  const zoom = typeof attrs.zoom === "number" && attrs.zoom >= ZOOM_MIN && attrs.zoom <= ZOOM_MAX ? attrs.zoom : null;
+  const warn = Array.isArray(attrs.warn) ? (attrs.warn.filter((value) => MEDIA_WARNINGS.includes(value as MediaWarning)) as MediaWarning[]) : [];
+  return {
+    mediaId: typeof attrs.mediaId === "string" ? attrs.mediaId : "",
+    w: number(attrs.w),
+    h: number(attrs.h),
+    alt: typeof attrs.alt === "string" ? attrs.alt : "",
+    crop,
+    aspect,
+    zoom,
+    warn,
+    width: typeof attrs.width === "number" ? attrs.width : POST_MEDIA_WIDTH_MAX,
+    caption: typeof attrs.caption === "string" ? attrs.caption : "",
+  };
+}
+
+/** A crop, read: four fractions inside 0 to 1, each side at least CROP_MIN; else null. */
+export function cropOf(value: unknown): MediaCrop | null {
+  if (!isRecord(value)) return null;
+  const { x, y, w, h } = value;
+  if (![x, y, w, h].every((part) => typeof part === "number" && Number.isFinite(part))) return null;
+  const crop = { x, y, w, h } as MediaCrop;
+  return cropProblem(crop as unknown as Record<string, unknown>) ? null : crop;
+}
+
+/** Why a crop cannot be kept, or null. */
+function cropProblem(crop: Record<string, unknown>): string | null {
+  const { x, y, w, h } = crop;
+  if (![x, y, w, h].every((part) => typeof part === "number" && Number.isFinite(part))) return "not four numbers";
+  const [cx, cy, cw, ch] = [x, y, w, h] as number[];
+  const EDGE = 1e-6;
+  if (cx < -EDGE || cy < -EDGE || cw < CROP_MIN - EDGE || ch < CROP_MIN - EDGE) return "outside";
+  if (cx + cw > 1 + EDGE || cy + ch > 1 + EDGE) return "outside";
+  return null;
 }
 
 function mediaIdOf(node: ThreadPostMedia): string | null {
@@ -428,6 +571,21 @@ function nodeProblems(node: unknown, post: number | null, out: ThreadProblem[]):
     }
   }
 
+  if (type === "postMediaGrid") {
+    if (childrenOf(node).length === 0) {
+      out.push({ code: "bad_picture", post, message: `${postLabel(post)} has an empty block of pictures. Add a picture or remove it.` });
+    }
+    for (const child of childrenOf(node)) {
+      if (!isRecord(child) || child.type !== "postMedia") {
+        out.push({ code: "bad_picture", post, message: `${postLabel(post)} has something other than a picture with its pictures. Move it out.` });
+      }
+    }
+    const step = isRecord(node.attrs) ? node.attrs.step : null;
+    if (step !== null && step !== undefined && !gridStepOf(node)) {
+      out.push({ code: "bad_ref", post, message: `The step a picture links to in ${postLabel(post).toLowerCase()} isn't in this build.` });
+    }
+  }
+
   if (type === "postMedia") mediaProblems(node, post, out);
 
   for (const child of childrenOf(node)) nodeProblems(child, post, out);
@@ -454,12 +612,18 @@ function mediaProblems(node: Record<string, unknown>, post: number | null, out: 
       message: `${postLabel(post)} has a caption of ${characters(caption)} characters. Captions are at most ${CAPTION_MAX}; shorten it.`,
     });
   }
+  if (attrs.warn !== undefined && (!Array.isArray(attrs.warn) || attrs.warn.some((value) => !MEDIA_WARNINGS.includes(value as MediaWarning)))) {
+    out.push({ code: "bad_picture", post, message: `${postLabel(post)} has a content warning a thread cannot keep. Choose Nudity, Violence or Sensitive.` });
+  }
+  if (attrs.crop !== undefined && attrs.crop !== null && (!isRecord(attrs.crop) || cropProblem(attrs.crop))) {
+    out.push({ code: "bad_picture", post, message: `${postLabel(post)} has a picture cropped outside itself. Crop it again.` });
+  }
   const alt = typeof attrs.alt === "string" ? attrs.alt : "";
   if (characters(alt) > ALT_MAX) {
     out.push({
       code: "alt_too_long",
       post,
-      message: `${postLabel(post)} has a picture description of ${characters(alt)} characters. Descriptions are at most ${ALT_MAX}; shorten it.`,
+      message: `${postLabel(post)} has a picture description of ${characters(alt)} characters. Descriptions are at most ${ALT_MAX.toLocaleString("en-US")}; shorten it.`,
     });
   }
 }
@@ -553,6 +717,10 @@ export function legacyThread(build: PostTextSource | null | undefined, media: re
         w: pixels(entry.media.width),
         h: pixels(entry.media.height),
         alt: "",
+        crop: null,
+        aspect: null,
+        zoom: null,
+        warn: [],
         caption: "",
       },
     });

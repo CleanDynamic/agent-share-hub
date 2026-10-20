@@ -18,7 +18,7 @@ import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
-import { addPictures } from "@/components/post/editor/pictures";
+import { addPictures, postAtCaret } from "@/components/post/editor/pictures";
 import { addPostAtEnd, PostToolbar, removePost } from "@/components/post/editor/PostToolbar";
 import { ReferencePicker } from "@/components/post/editor/ReferencePicker";
 import { applyRef, readRefSpot, removeRef, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
@@ -260,19 +260,12 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
     };
   }, [buildId, host]);
 
-  // "Picture or video" and "Row of pictures": ask for files, then put them after the block the caret is in.
+  // "Picture or video": ask for files (several at once), then put them in the post the caret is in.
   const chooser = useRef<HTMLInputElement>(null);
-  const wanted = useRef<{ kind: "single" | "row"; gap: number; replaceEmpty: boolean } | null>(null);
-  const chooseFiles: InsertPicture = useCallback((kind, current) => {
-    const { selection, doc: document_ } = current.state;
-    const index = selection.$from.index(0);
-    const block = document_.maybeChild(index);
-    const empty = Boolean(block && block.type.name === "paragraph" && block.content.size === 0);
-    wanted.current = { kind, gap: empty ? index : index + 1, replaceEmpty: empty };
-    const input = chooser.current;
-    if (!input) return;
-    input.multiple = kind === "row";
-    input.click();
+  const wanted = useRef<number | null>(null);
+  const chooseFiles: InsertPicture = useCallback((current) => {
+    wanted.current = postAtCaret(current);
+    chooser.current?.click();
   }, []);
 
   const insertPicture = onInsertPicture ?? chooseFiles;
@@ -397,14 +390,15 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
             ref={chooser}
             type="file"
             accept={PICTURE_ACCEPT}
+            multiple
             hidden
             data-testid="post-picture-file"
             onChange={(event) => {
               const files = Array.from(event.target.files ?? []);
               event.target.value = "";
-              const want = wanted.current;
+              const post = wanted.current;
               wanted.current = null;
-              if (files.length > 0 && want) void addPictures(host, files, { gap: want.gap, replaceEmpty: want.replaceEmpty }, want.kind);
+              if (files.length > 0 && post !== null) void addPictures(host, files, post);
             }}
           />
         </div>

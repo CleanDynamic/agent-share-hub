@@ -21,7 +21,7 @@ import {
 const p = (text: string): ThreadBlock => ({ type: "paragraph", content: text ? [{ type: "text", text }] : [] });
 const brk: ThreadBlock = { type: "postBreak" };
 const doc = (...content: ThreadBlock[]): ThreadDoc => ({ type: "doc", content });
-const picture = (id = "m1"): ThreadBlock => ({ type: "postMedia", attrs: { mediaId: id, width: 100, w: null, h: null, alt: "", caption: "" } });
+const picture = (id = "m1"): ThreadBlock => ({ type: "postMedia", attrs: { mediaId: id, width: 100, w: null, h: null, alt: "", crop: null, aspect: null, zoom: null, warn: [], caption: "" } });
 
 describe("postRuns", () => {
   it("cuts at breaks and keeps an empty post at either end", () => {

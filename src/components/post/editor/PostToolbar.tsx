@@ -12,14 +12,14 @@
 
 import { useEditorState, type Editor } from "@tiptap/react";
 import { NodeSelection, TextSelection } from "@tiptap/pm/state";
-import { Eye, GalleryHorizontal } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { Button } from "@/components/brand/Button";
 import { Icon } from "@/components/brand/Icon";
 import { postType } from "@/components/post/postType";
-import { linkAllowed, POST_BODY_MAX, type ThreadDoc } from "@/lib/build/thread";
+import { linkAllowed, MAX_POST_PICTURES, POST_BODY_MAX, type ThreadDoc } from "@/lib/build/thread";
 import { canStartPost, POST_LIMIT_SENTENCE, postRuns, runLength } from "@/lib/build/threadEditor";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { ring } from "@/lib/theme/controls";
@@ -30,9 +30,12 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { text, wellField } from "@/pages/site/compose/refinedStyles";
 
 import { currentStyle, LINK_SENTENCE, setTextStyle, TEXT_STYLES, type TextStyleName } from "./FormatBar";
-import { gapPos } from "./pictures";
+import { gapPos, picturesPerPost, postAtCaret } from "./pictures";
 import { REFERENCE_COPY } from "./ReferencePicker";
 import type { InsertPicture } from "./SlashMenu";
+
+/** The title "Picture or video" takes while the post holds its four. */
+export const POST_FULL_TITLE = `A post holds ${MAX_POST_PICTURES} pictures`;
 
 /** A phone's button is 44 square: the touch size. */
 export const TOOL_SIZE = 44;
@@ -62,9 +65,11 @@ interface Tools {
   canAdd: boolean;
   /** CA-07: characters left in the post the caret is in, counted as POST_BODY_MAX is. */
   left: number;
+  /** CA-07: the post the caret is in already holds four pictures. */
+  postFull: boolean;
 }
 
-const NONE: Tools = { style: "Body", bold: false, italic: false, underline: false, bullet: false, ordered: false, link: false, href: "", canAdd: false, left: POST_BODY_MAX };
+const NONE: Tools = { style: "Body", bold: false, italic: false, underline: false, bullet: false, ordered: false, link: false, href: "", canAdd: false, left: POST_BODY_MAX, postFull: false };
 
 function readTools(editor: Editor | null): Tools {
   if (!editor || !editor.isEditable) return NONE;
@@ -79,6 +84,7 @@ function readTools(editor: Editor | null): Tools {
     href: (editor.getAttributes("link").href as string | undefined) ?? "",
     canAdd: !postIsEmpty(editor),
     left: charactersLeft(editor),
+    postFull: (picturesPerPost(editor.state.doc)[postAtCaret(editor)] ?? 0) >= MAX_POST_PICTURES,
   };
 }
 
@@ -238,6 +244,7 @@ export function CharacterRing({ left }: { left: number }) {
 
 function ToolButton({
   label,
+  title,
   size,
   pressed,
   expanded,
@@ -247,6 +254,8 @@ function ToolButton({
   children,
 }: {
   label: string;
+  /** The tooltip, when it is not the label. */
+  title?: string;
   size: number;
   /** A toggle (Bold, a list): says so in aria-pressed. Absent: an action. */
   pressed?: boolean;
@@ -263,7 +272,7 @@ function ToolButton({
     <button
       type="button"
       aria-label={label}
-      title={label}
+      title={title ?? label}
       aria-pressed={expanded === undefined ? pressed : undefined}
       aria-expanded={expanded}
       disabled={disabled}
@@ -512,11 +521,14 @@ export function PostToolbar({
       {panel === "link" ? <LinkRow editor={editor} href={tools.href} hasLink={tools.link} onDone={() => setPanel(null)} /> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, borderTop: `1px solid ${t.hairline}`, minWidth: 0 }}>
         <div role="group" aria-label="Add to the post" style={{ display: "flex", alignItems: "center", gap: phone ? 0 : 2, flex: "1 1 auto", minWidth: 0, overflowX: "auto" }}>
-          <ToolButton label="Picture or video" size={size} onClick={run(() => onInsertPicture("single", editor))}>
+          <ToolButton
+            label="Picture or video"
+            title={tools.postFull ? POST_FULL_TITLE : undefined}
+            size={size}
+            disabled={tools.postFull}
+            onClick={run(() => onInsertPicture(editor))}
+          >
             <Tool glyph="image" />
-          </ToolButton>
-          <ToolButton label="Row of pictures" size={size} onClick={run(() => onInsertPicture("row", editor))}>
-            <Icon lucide={GalleryHorizontal} size={TOOL_GLYPH} />
           </ToolButton>
           <ToolButton label="Bulleted list" size={size} pressed={tools.bullet} onClick={run(() => editor.chain().focus().toggleBulletList().run())}>
             <Tool glyph="listBullet" />

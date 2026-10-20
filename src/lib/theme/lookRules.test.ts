@@ -210,6 +210,15 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/PostTab.proportions.test.tsx",
   "src/pages/site/compose/PostTab.test.tsx",
   "src/pages/site/compose/PostTab.preview.test.tsx",
+  // CA-07 P2
+  "src/components/post/editor/BlockHandle.tsx",
+  "src/components/post/editor/GridView.tsx",
+  "src/components/post/editor/SlashMenu.tsx",
+  "src/components/post/editor/gridShape.test.tsx",
+  "src/components/post/editor/pictures.ts",
+  "src/lib/build/threadEditor.ts",
+  "src/lib/build/toGrids.test.ts",
+  "src/pages/site/compose/PostTab.bars.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -509,6 +518,16 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 9 is not in SPACE_REFINED",
     text: "padding: \"12px 17px\", marginBottom: 9",
     why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "no cursor-following light",
+    text: "root.addEventListener(\"mousemove\", onMove);",
+    why: "The post editor's block handle (PT-06) finds the block level with the pointer to put its grip beside it; it draws no light. There before CA-07, which only stops it offering a picture.",
+  },
+  {
+    rule: "no cursor-following light",
+    text: "root.removeEventListener(\"mousemove\", onMove);",
+    why: "The post editor's block handle (PT-06) finds the block level with the pointer to put its grip beside it; it draws no light. There before CA-07, which only stops it offering a picture.",
   },
 ];
 

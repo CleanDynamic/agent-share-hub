@@ -12,6 +12,7 @@
 import { MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia, type MediaRef } from "./media";
 import {
   MAX_POST_PICTURES,
+  NO_MEDIA_EDITS,
   MAX_THREAD_MEDIA,
   POST_MEDIA_WIDTH_MAX,
   POST_MEDIA_WIDTH_MIN,
@@ -153,7 +154,7 @@ export type PictureAttrs = PostMediaAttrs & { uploadId?: string | null };
 
 /** A picture with nothing yet: no mediaId, full width, no alt or caption. */
 export function newPicture(over: Partial<PictureAttrs> = {}): ThreadPostMedia {
-  return { type: "postMedia", attrs: { mediaId: "", width: 100, w: null, h: null, alt: "", caption: "", ...over } };
+  return { type: "postMedia", attrs: { mediaId: "", width: 100, w: null, h: null, alt: "", ...NO_MEDIA_EDITS, caption: "", ...over } };
 }
 
 /** Two or three pictures side by side. */

@@ -21,7 +21,7 @@ vi.mock("@/lib/build/composeCover", () => ({ syncThreadCover }));
 import { useComposeThread, type UseComposeThreadInput } from "./useComposeThread";
 
 const p = (text: string): ThreadBlock => ({ type: "paragraph", content: text ? [{ type: "text", text }] : [] });
-const picture = (id: string): ThreadBlock => ({ type: "postMedia", attrs: { mediaId: id, width: 100, w: null, h: null, alt: "", caption: "" } });
+const picture = (id: string): ThreadBlock => ({ type: "postMedia", attrs: { mediaId: id, width: 100, w: null, h: null, alt: "", crop: null, aspect: null, zoom: null, warn: [], caption: "" } });
 const doc = (...content: ThreadBlock[]): ThreadDoc => ({ type: "doc", content });
 const build = (over: Record<string, unknown> = {}) => ({ id: "b1", outcome: null, post_doc: null, ...over }) as unknown as Build;
 

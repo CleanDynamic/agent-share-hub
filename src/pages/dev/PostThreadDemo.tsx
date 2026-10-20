@@ -28,7 +28,7 @@ const item = (...content: ThreadInline[]) => ({ type: "listItem" as const, conte
 
 const picture = (mediaId: string, w: number, h: number, width: number, alt: string, caption = ""): { type: "postMedia"; attrs: PostMediaAttrs } => ({
   type: "postMedia",
-  attrs: { mediaId, width, w, h, alt, caption },
+  attrs: { mediaId, width, w, h, alt, crop: null, aspect: null, zoom: null, warn: [], caption },
 });
 
 const BLOCKS: ThreadBlock[] = [

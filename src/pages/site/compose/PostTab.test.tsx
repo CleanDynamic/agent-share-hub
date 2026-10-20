@@ -109,12 +109,14 @@ describe("saving and reopening", () => {
     expect(JSON.parse(link as string)).toEqual({ href: "https://example.com/page" });
   });
 
-  it("keeps the pictures of a thread that already has them", () => {
+  it("keeps the pictures of a thread that already has them, opened as the post's grid (CA-07)", () => {
     const picture = { type: "postMedia", attrs: { mediaId: "m1", width: 100, w: 800, h: 600, alt: "", caption: "" } } as ThreadBlock;
-    const { editor } = mount(doc(p("above"), picture, brk, p("second")));
+    const { editor, thread } = mount(doc(p("above"), picture, p("below"), brk, p("second")));
     const back = tidyThread(json(editor));
     expect(JSON.stringify(back)).toContain('"mediaId":"m1"');
-    expect(back.content.map((block) => block.type)).toEqual(["paragraph", "postMedia", "postBreak", "paragraph"]);
+    expect(back.content.map((block) => block.type)).toEqual(["paragraph", "paragraph", "postMediaGrid", "postBreak", "paragraph"]);
+    // Opening it saves nothing: the new shape is written only when the maker changes something.
+    expect(thread.onDoc).not.toHaveBeenCalled();
   });
 
   it("reports an edit as the thread's JSON", () => {

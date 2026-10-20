@@ -20,18 +20,18 @@ import { Extension, Mark, mergeAttributes, Node as TipNode, ReactNodeViewRendere
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
-import { NodeSelection, Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
+import { NodeSelection, Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/pm/state";
+import type { Node as PMNode } from "@tiptap/pm/model";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 
-import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, ROW_GAP, postType } from "@/components/post/postType";
-import { stepWidth } from "@/lib/build/postMedia";
+import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, postType } from "@/components/post/postType";
 import { countLabel, COUNT_SHOWN_FROM } from "@/lib/build/threadEditor";
 import { linkAllowed, parseRefTo, POST_BODY_MAX } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
-import { PictureView, type PictureOptions } from "./PictureView";
+import { GridView, type PictureOptions } from "./GridView";
 import { picturePlugin, type PictureHost } from "./pictures";
 import { focusRing } from "@/lib/theme/focus";
 import { REF_COPY, refNumberStyle, refPaint, refWordsStyle, type RefPaint } from "@/components/post/RefLinks";
@@ -265,20 +265,18 @@ const PostFocus = Extension.create({
   },
 });
 
-// --- pictures (PT-06) ------------------------------------------------------------
+// --- pictures (PT-06, CA-07) ---------------------------------------------------------
 
 /**
- * A picture or video. An atom: its node view (PictureView) draws PostMedia with the editor's controls around it.
- * `uploadId` is the editor's mark on a picture still uploading, never drawn into HTML and never stored (tidyThread
- * drops it when it is null; the save waits while the picture has no mediaId).
+ * A picture or video. CA-07: only ever inside a postMediaGrid, which draws it; it has no view of its own. `uploadId` is
+ * the editor's mark on a picture still uploading, never drawn into HTML and never stored (tidyThread drops it when it
+ * is null; the save waits while the picture has no mediaId).
  */
 export const PostMediaNode = TipNode.create<PictureOptions>({
   name: "postMedia",
-  group: "block",
   atom: true,
-  selectable: true,
-  // Draggable from the picture itself (the node view marks it as the handle); the margin handle moves any block.
-  draggable: true,
+  selectable: false,
+  draggable: false,
 
   addOptions() {
     return { host: null as unknown as PictureHost, phone: false };
@@ -291,62 +289,124 @@ export const PostMediaNode = TipNode.create<PictureOptions>({
       w: { default: null },
       h: { default: null },
       alt: { default: "" },
+      crop: { default: null },
+      aspect: { default: null },
+      zoom: { default: null },
+      warn: { default: [] },
       caption: { default: "" },
       uploadId: { default: null, rendered: false },
+      failed: { default: false, rendered: false },
     };
   },
 
   parseHTML: () => [],
   renderHTML: ({ node }) => ["figure", { "data-post-media": String(node.attrs.mediaId ?? "") }],
-
-  addNodeView() {
-    return ReactNodeViewRenderer(PictureView);
-  },
-
-  // [ and ] step a selected picture through Small, Medium, Large and Full. Not inside a row: a row fills the column.
-  addKeyboardShortcuts() {
-    const step = (direction: 1 | -1) => () => {
-      const { state, view } = this.editor;
-      const { selection } = state;
-      if (!(selection instanceof NodeSelection) || selection.node.type.name !== "postMedia") return false;
-      if (selection.$from.parent.type.name === "postMediaRow") return false;
-      const width = stepWidth(Number(selection.node.attrs.width) || 100, direction);
-      view.dispatch(state.tr.setNodeMarkup(selection.from, undefined, { ...selection.node.attrs, width }));
-      return true;
-    };
-    return { "[": step(-1), "]": step(1) };
-  },
 });
 
-/** Two or three pictures side by side. The children size themselves (PictureView); a selected row gets the picture outline. */
-export const PostMediaRowNode = TipNode.create({
-  name: "postMediaRow",
+/**
+ * CA-07: a post's pictures, one block after its words. An atom the caret steps over, drawn whole by its React view
+ * (GridView), which owns every key, click and drag inside it: ProseMirror draws none of its children and ignores their
+ * events. `postMedia+`, not {1,4}, so an old post with five still opens; checkThread names the fifth.
+ */
+export const PostMediaGridNode = TipNode.create<PictureOptions>({
+  name: "postMediaGrid",
   group: "block",
-  content: "postMedia{2,3}",
+  content: "postMedia+",
+  atom: true,
   isolating: true,
-  selectable: true,
+  selectable: false,
   draggable: false,
 
+  addOptions() {
+    return { host: null as unknown as PictureHost, phone: false };
+  },
+
+  addAttributes() {
+    return { step: { default: null } };
+  },
+
   parseHTML: () => [],
-  renderHTML: () => ["div", { "data-post-media-row": "", style: styleString({ display: "flex", gap: ROW_GAP, alignItems: "flex-start" }) }, 0],
+  renderHTML: () => ["div", { "data-post-media-grid": "" }],
+
+  addNodeView() {
+    const make = ReactNodeViewRenderer(GridView, { stopEvent: () => true, ignoreMutation: () => true });
+    return (props) => {
+      const view = make(props) as unknown as Record<string, unknown>;
+      // The view draws the pictures itself; ProseMirror is given nowhere to draw them.
+      Object.defineProperty(view, "contentDOM", { get: () => null });
+      return view as never;
+    };
+  },
 
   addProseMirrorPlugins() {
-    return [
-      new Plugin({
-        key: new PluginKey("postMediaRowSelected"),
-        props: {
-          decorations: (state) => {
-            const { selection } = state;
-            if (!(selection instanceof NodeSelection) || selection.node.type.name !== "postMediaRow") return null;
-            return DecorationSet.create(state.doc, [
-              Decoration.node(selection.from, selection.to, { style: styleString({ outline: `1px solid ${t.selectedEdge}`, outlineOffset: 3, borderRadius: 6 }) }),
-            ]);
-          },
-        },
-      }),
-    ];
+    return [gridShapePlugin()];
   },
 });
+
+/**
+ * Keeps each post's pictures in one grid at its end: two grids in a post become one, words typed or pasted after the
+ * grid move before it, a grid with nothing in it goes, and a post that is only pictures gets an empty line before them
+ * (where its placeholder sits). One fix per pass, until there is nothing to fix.
+ */
+export function gridShapePlugin(): Plugin {
+  return new Plugin({
+    key: new PluginKey("postGridShape"),
+    appendTransaction: (transactions, _old, state) => {
+      if (!transactions.some((tr) => tr.docChanged)) return null;
+      const tr = state.tr;
+      for (let pass = 0; pass < 40; pass++) {
+        if (!fixGridShape(tr)) break;
+      }
+      // An appended transaction joins the history event of the one it follows, so Undo takes both back together.
+      return tr.docChanged ? tr : null;
+    },
+  });
+}
+
+/** One fix to the shape, or false when there is none. */
+export function fixGridShape(tr: Transaction): boolean {
+  const { doc } = tr;
+  const { schema } = doc.type;
+  type Slot = { node: PMNode; pos: number };
+  const posts: Slot[][] = [[]];
+  doc.forEach((node, pos) => {
+    if (node.type.name === "postBreak") posts.push([]);
+    else posts[posts.length - 1].push({ node, pos });
+  });
+  for (const blocks of posts) {
+    const grids = blocks.filter((slot) => slot.node.type.name === "postMediaGrid");
+    if (grids.length === 0) continue;
+    const empty = grids.find((slot) => slot.node.childCount === 0);
+    if (empty) {
+      tr.delete(empty.pos, empty.pos + empty.node.nodeSize);
+      return true;
+    }
+    if (grids.length > 1) {
+      const [first, second] = grids;
+      const children: PMNode[] = [];
+      second.node.forEach((child) => children.push(child));
+      const step = first.node.attrs.step ?? second.node.attrs.step ?? null;
+      tr.delete(second.pos, second.pos + second.node.nodeSize);
+      const at = tr.mapping.map(first.pos);
+      tr.insert(at + first.node.nodeSize - 1, children);
+      if (step !== first.node.attrs.step) tr.setNodeMarkup(at, undefined, { ...first.node.attrs, step });
+      return true;
+    }
+    const grid = grids[0];
+    const last = blocks[blocks.length - 1];
+    if (last !== grid) {
+      const end = last.pos + last.node.nodeSize;
+      tr.insert(end, grid.node.copy(grid.node.content));
+      tr.delete(grid.pos, grid.pos + grid.node.nodeSize);
+      return true;
+    }
+    if (blocks.length === 1) {
+      tr.insert(grid.pos, schema.nodes.paragraph.create());
+      return true;
+    }
+  }
+  return false;
+}
 
 /** Files dropped on the editor or pasted into it become pictures; a block dragged inside it is moved. */
 function postPictures(controls: PostEditorControls) {
@@ -738,6 +798,8 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
       code: false,
       gapcursor: false,
       heading: false,
+      // CA-07: a post ends with its pictures; the editor keeps no empty line after them.
+      trailingNode: { notAfter: ["postMediaGrid"] },
       link: false,
       codeBlock: { HTMLAttributes: { style: styleString(scale.code) } },
       bulletList: { HTMLAttributes: { style: list(false) } },
@@ -749,7 +811,7 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
     PostRef,
     PostBreak,
     PostMediaNode.configure({ host: controls.pictures, phone }),
-    PostMediaRowNode,
+    PostMediaGridNode.configure({ host: controls.pictures, phone }),
     postPictures(controls),
     PostChrome,
     PostFocus,

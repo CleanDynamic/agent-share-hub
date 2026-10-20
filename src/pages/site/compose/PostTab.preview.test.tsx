@@ -246,7 +246,7 @@ describe("the toolbar", () => {
 
   it("is X's row of buttons, in order, each named and 36 square on a desktop", () => {
     mountDesk();
-    expect(tools().map((button) => button.getAttribute("aria-label"))).toEqual(["Picture or video", "Row of pictures", "Bulleted list", "Numbered list", "Text size", "Preview", "Add another post"]);
+    expect(tools().map((button) => button.getAttribute("aria-label"))).toEqual(["Picture or video", "Bulleted list", "Numbered list", "Text size", "Preview", "Add another post"]);
     for (const button of tools()) {
       // CA-07: the + is round and 32; every other tool is 36.
       const side = button.getAttribute("aria-label") === "Add another post" ? 32 : DESKTOP_TOOL_SIZE;
@@ -259,7 +259,7 @@ describe("the toolbar", () => {
 
   it("is 44 square on a phone, with the same buttons", () => {
     mountPhone();
-    expect(tools().map((button) => button.getAttribute("aria-label"))).toEqual(["Picture or video", "Row of pictures", "Bulleted list", "Numbered list", "Text size", "Preview", "Add another post"]);
+    expect(tools().map((button) => button.getAttribute("aria-label"))).toEqual(["Picture or video", "Bulleted list", "Numbered list", "Text size", "Preview", "Add another post"]);
     for (const button of tools()) expect([button.style.width, button.style.height]).toEqual([`${TOOL_SIZE}px`, `${TOOL_SIZE}px`]);
     expect(TOOL_SIZE).toBe(44);
   });
@@ -273,13 +273,12 @@ describe("the toolbar", () => {
     expect(html).not.toContain("position:fixed");
   });
 
-  it("asks for files with Picture or video and Row of pictures", () => {
+  it("asks for files with Picture or video (CA-07: Row of pictures is gone)", () => {
     const onInsertPicture = vi.fn();
     const { editor } = mountDesk(doc(p("")), { onInsertPicture });
-    press("Row of pictures");
-    expect(onInsertPicture).toHaveBeenCalledWith("row", editor);
+    expect(within(toolbar()).queryByRole("button", { name: "Row of pictures" })).toBeNull();
     press("Picture or video");
-    expect(onInsertPicture).toHaveBeenCalledWith("single", editor);
+    expect(onInsertPicture).toHaveBeenCalledWith(editor);
   });
 
   it("makes a bulleted and a numbered list, and sinks the one that is on", () => {
