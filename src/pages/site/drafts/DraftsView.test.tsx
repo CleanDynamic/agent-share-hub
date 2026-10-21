@@ -23,7 +23,7 @@ beforeEach(() => {
 });
 
 function view(props: Partial<DraftsViewProps> = {}) {
-  const base = { ...draftsViewProps(), onRetry: vi.fn(), onToggleAttached: vi.fn(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onRemove: vi.fn(), onConnect: vi.fn(), ...props };
+  const base = { ...draftsViewProps(), onRetryDrafts: vi.fn(), onRetrySessions: vi.fn(), onToggleAttached: vi.fn(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onRemove: vi.fn(), onConnect: vi.fn(), ...props };
   render(
     <MemoryRouter>
       <DraftsView {...base} />
@@ -193,15 +193,24 @@ describe("DraftsView", () => {
     expect(p.onConnect).toHaveBeenCalled();
   });
 
-  it("an error says one sentence in each list and retries", () => {
-    const p = view({ status: "error" });
+  it("an error says one sentence in each list and retries that list", () => {
+    const p = view({ draftsStatus: "error", sessionsStatus: "error" });
     expect(screen.getAllByText("That didn't load.")).toHaveLength(2);
     fireEvent.click(screen.getAllByRole("button", { name: "Try again" })[0]);
-    expect(p.onRetry).toHaveBeenCalled();
+    expect(p.onRetryDrafts).toHaveBeenCalled();
+    expect(p.onRetrySessions).not.toHaveBeenCalled();
+  });
+
+  it("CA-10: a sessions failure stays in the Sessions panel, and the drafts show", () => {
+    view({ sessionsStatus: "error", sessionsError: { code: "57014", message: "canceling statement" } });
+    expect(screen.getAllByText("That didn't load.")).toHaveLength(1);
+    expect(screen.getByRole("status", { name: "Sessions" })).toBeInTheDocument();
+    expect(screen.getByText("Code 57014")).toBeInTheDocument();
+    expect(screen.getAllByTestId("draft-row").length).toBeGreaterThan(0);
   });
 
   it("loading draws skeleton rows, not content", () => {
-    view({ status: "loading" });
+    view({ draftsStatus: "loading", sessionsStatus: "loading" });
     expect(screen.queryByTestId("draft-row")).toBeNull();
     expect(screen.getAllByText(/^Loading/).length).toBeGreaterThan(0);
   });

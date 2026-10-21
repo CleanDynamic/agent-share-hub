@@ -51,8 +51,10 @@ const attachedFixture: SessionSummary[] = [
 export function draftsViewProps(state: DesignState = "populated"): DraftsViewProps {
   const base: DraftsViewProps = {
     now: DRAFTS_NOW,
-    status: "ready",
-    onRetry: () => undefined,
+    draftsStatus: "ready",
+    onRetryDrafts: () => undefined,
+    sessionsStatus: "ready",
+    onRetrySessions: () => undefined,
     drafts: draftsFixture,
     sessions: sessionsFixture,
     attached: attachedFixture,
@@ -63,8 +65,8 @@ export function draftsViewProps(state: DesignState = "populated"): DraftsViewPro
     onRemove: () => undefined,
     onConnect: () => undefined,
   };
-  if (state === "loading") return { ...base, status: "loading" };
-  if (state === "error") return { ...base, status: "error" };
+  if (state === "loading") return { ...base, draftsStatus: "loading", sessionsStatus: "loading" };
+  if (state === "error") return { ...base, draftsStatus: "error", sessionsStatus: "error" };
   if (state === "empty") return { ...base, drafts: [], sessions: [], attached: [] };
   return base;
 }

@@ -71,6 +71,7 @@ import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
+import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups } from "@/lib/build/postRefs";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
 import { allParts, PartWindow } from "@/components/build/PartWindow";
@@ -88,7 +89,9 @@ function makingSessions(making: unknown): MakingSession[] {
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
 export function SandboxPage() {
-  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions, prompts, compose, buildId } = useComposePage();
+  /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
+  const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
+  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const phone = useIsPhone();
@@ -1315,6 +1318,7 @@ export function SandboxPage() {
         addableSessions={libraryRows.filter((row) => !row.adding)}
         onAddSession={(id) => void onAddSession(id)}
         sources={
+          <div ref={sourcesAnchor} style={{ minWidth: 0 }}>
           <SourcesPanel
             phone={phone}
             fine={fine}
@@ -1331,6 +1335,7 @@ export function SandboxPage() {
             onPick={pick}
             connectHref="/connect"
           />
+          </div>
         }
         missing={missing.map((key) => ({ key, label: PUBLISH_WORDS[key] }))}
         counts={counts}

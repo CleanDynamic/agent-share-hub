@@ -85,6 +85,7 @@ export function useComposeSessions({
   canClaim,
   ensureBuild,
   recordMadeWith,
+  libraryActive = true,
 }: {
   buildId: string | undefined;
   /** The record has loaded and is the signed-in creator's. */
@@ -94,6 +95,8 @@ export function useComposeSessions({
   ensureBuild: () => Promise<string>;
   /** `builds.made_with` as the record holds it: what Made with shows before its own read lands. */
   recordMadeWith: readonly string[];
+  /** CA-10: the library's panel is on screen, so the library polls. */
+  libraryActive?: boolean;
 }): ComposeSessions {
   const queryClient = useQueryClient();
   const enabled = Boolean(buildId) && owner;
@@ -104,7 +107,7 @@ export function useComposeSessions({
     enabled,
     staleTime: STALE_MS,
   });
-  const library = useLibrarySessions();
+  const library = useLibrarySessions({ active: libraryActive });
   const madeWithQuery = useQuery({
     queryKey: madeWithKey(buildId),
     queryFn: () => getMadeWith(buildId as string),

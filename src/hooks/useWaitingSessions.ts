@@ -13,23 +13,36 @@
 
    It used to be cached for thirty seconds and read again only once older than
    that, so a session parked just after Drafts was read was missing from the
-   next panel opened, and from the open one until a reload. */
+   next panel opened, and from the open one until a reload.
+
+   CA-10 (CA-09 F10): EVERY 60 S, NOT 10, AND ONLY WHILE THE PANEL IS ON SCREEN.
+   The caller says whether it is (`active`, from useOnScreen or a panel's open
+   state); a hidden tab never polls. A read that is failing is asked again at
+   the same pace, one at a time (TanStack never runs two fetches of one key at
+   once). A return to the tab reads again only if the list is older than the
+   app's staleTime (`true`, not "always"); opening a panel still reads at once. */
 
 import { useQuery } from "@tanstack/react-query";
 
 import { listSessions } from "@/lib/build/sessions";
 
 /** How often an open panel asks again while its tab is visible. */
-export const WAITING_REFRESH_MS = 10_000;
+export const WAITING_REFRESH_MS = 60_000;
 
 export const waitingSessionsKey = ["build", "listSessions", false] as const;
 
-export function useWaitingSessions() {
+export interface SessionsPolling {
+  /** The panel that shows the list is on screen. Polls only while it is. */
+  active?: boolean;
+}
+
+export function useWaitingSessions({ active = true }: SessionsPolling = {}) {
   return useQuery({
     queryKey: waitingSessionsKey,
     queryFn: () => listSessions({ includeAttached: false }),
     refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
-    refetchInterval: WAITING_REFRESH_MS,
+    refetchOnWindowFocus: true,
+    refetchInterval: active ? WAITING_REFRESH_MS : false,
+    refetchIntervalInBackground: false,
   });
 }

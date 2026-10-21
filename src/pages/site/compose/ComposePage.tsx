@@ -63,7 +63,8 @@ const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", 
 
 const ACCEPT = coverMediaTypes(acceptedMediaTypes());
 
-export function useComposePage() {
+/** CA-10: `sessionsActive` says the panel listing the session library is on screen; the library polls only then. */
+export function useComposePage({ sessionsActive = true }: { sessionsActive?: boolean } = {}) {
   const { buildId } = useParams<{ buildId: string }>();
   const navigate = useNavigate();
   /* PT-05: the address keeps its query (?tab=post) when the first change swaps /compose/new for /compose/{id}. */
@@ -234,6 +235,7 @@ export function useComposePage() {
     canClaim: !build || build.status === "draft",
     ensureBuild,
     recordMadeWith: build?.made_with ?? [],
+    libraryActive: sessionsActive,
   });
   // Your sessions lists the library newest first and numbers it oldest first,
   // so a session keeps its number as new ones arrive, and a prompt's source

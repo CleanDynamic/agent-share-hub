@@ -15,6 +15,11 @@
 // truer sentence than the default and is passed as `line`; it is still words,
 // never the thrown thing.
 //
+// CA-10: THE CODE, ON REQUEST. A panel that passes `showCode` prints the code
+// alone ("Code 57014") in small `--label` print under the sentence, so a maker
+// can report what failed; never the message. `log` turns the console entry into
+// one line with the code: "[Drafts] drafts read failed 57014 <message>".
+//
 // THE FAILURE STAYS INSIDE THE PANEL THAT FAILED. The page's header, breadcrumb
 // and footer render around it, and so does every panel that did load: one
 // failing panel never blanks the page. Where a write fails after the screen has
@@ -28,6 +33,7 @@
 import { useEffect, useRef, type CSSProperties, type HTMLAttributes } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { errorCode, errorLine } from "@/lib/errors/code";
 import { t } from "@/lib/theme/tokens";
 
 import { Button } from "./Button";
@@ -53,23 +59,32 @@ export interface ErrorStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "c
   onRetry: () => void;
   /** The real error. Logged once, never shown. */
   error?: unknown;
+  /**
+   * CA-10: the log line's prefix, "[Drafts] drafts read failed". Given, the error is logged as one line with its code
+   * and message (`errorLine`) instead of "[panel] did not load" and the object.
+   */
+  log?: string;
+  /** CA-10: show the error's code in small print under the sentence ("Code 57014"), where it has one. */
+  showCode?: boolean;
   /** Spacing from the panel's head, where the panel needs it. */
   style?: CSSProperties;
 }
 
 /** Log `error` the first time it is seen, and not again when the panel re-renders. */
-function useLogOnce(error: unknown, panel: string) {
+function useLogOnce(error: unknown, panel: string, log?: string) {
   const logged = useRef<unknown>(undefined);
   useEffect(() => {
     if (error === undefined || logged.current === error) return;
     logged.current = error;
-    console.error(`[${panel}] did not load`, error);
-  }, [error, panel]);
+    if (log) console.error(errorLine(log, error));
+    else console.error(`[${panel}] did not load`, error);
+  }, [error, panel, log]);
 }
 
-export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, style, ...rest }: ErrorStateProps) {
+export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, log, showCode = false, style, ...rest }: ErrorStateProps) {
   const phone = useIsPhone();
-  useLogOnce(error, panel);
+  useLogOnce(error, panel, log);
+  const code = showCode ? errorCode(error) : undefined;
 
   /* UI-P97: one sentence and Try again (secondary). The panel's name is not drawn; it names the region for a screen
      reader instead, so a page with two failures still says which two. */
@@ -83,6 +98,11 @@ export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, s
       style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, ...style }}
     >
       <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", color: t.text }}>{line}</p>
+      {code ? (
+        <p data-testid="error-code" style={{ margin: "-8px 0 0", fontFamily: "var(--font-ui)", fontSize: 11.5, lineHeight: "16px", color: t.label }}>
+          Code {code}
+        </p>
+      ) : null}
       <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={onRetry}>
         Try again
       </Button>
