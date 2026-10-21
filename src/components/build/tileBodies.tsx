@@ -187,7 +187,7 @@ function SiteIcon({ host, size = 20 }: { host: string; size?: number }) {
     </span>
   ) : (
     <span data-testid="site-icon" style={box}>
-      <img src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`} alt="" width={size} height={size} onError={() => setFailed(true)} style={{ display: "block", width: "100%", height: "100%" }} />
+      <img src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`} alt={`Icon for ${host}`} width={size} height={size} onError={() => setFailed(true)} style={{ display: "block", width: "100%", height: "100%" }} />
     </span>
   );
 }
