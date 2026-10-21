@@ -89,7 +89,7 @@ describe("the model line elsewhere", () => {
   it("is in the List's agent card", () => {
     render(
       <MemoryRouter>
-        <BuildList phone={false} steps={buildSteps(tree())} dividers={new Map()} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} focusAdd={0} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} />
+        <BuildList phone={false} steps={buildSteps(tree())} dividers={new Map()} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} />
       </MemoryRouter>,
     );
     expect(screen.getByTestId("container-eyebrow").textContent).toContain("Muse Spark Open · 4-bit · on my own computer");

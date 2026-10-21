@@ -13,18 +13,28 @@
    THE WAITING SESSIONS ARE READ AGAIN while the page is open
    (`useWaitingSessions`), because a connector adds to them from outside the
    browser. A list already on screen therefore stays when one of those reads
-   fails; the error state is for a list that never loaded. */
+   fails; the error state is for a list that never loaded.
 
-import { useCallback, useMemo, useState } from "react";
+   CA-10 (CA-09 F3): EACH PANEL HAS ITS OWN STATUS. The drafts panel's comes
+   from the drafts read alone and the sessions panel's from the waiting read
+   alone, so drafts show the moment they arrive, whatever the sessions read is
+   doing, and a failure says so in its own panel with its code. Try again asks
+   again only for that panel's read. "Show N already in a build" stays
+   optional: if its read fails the line is absent, and the failure is logged.
+   The waiting read polls only while the Sessions panel is on screen. */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
+import { useOnScreen } from "@/hooks/useOnScreen";
 import { useWaitingSessions } from "@/hooks/useWaitingSessions";
 import { listDraftsWithSessions, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession, listSessions, removeSession } from "@/lib/build/sessions";
+import { errorLine } from "@/lib/errors/code";
 
 import { DraftsView } from "./DraftsView";
 import { draftTitle } from "./draftsModel";
@@ -42,12 +52,18 @@ export function DraftsPage() {
     queryFn: listDraftsWithSessions,
     staleTime: STALE_MS,
   });
-  const waitingQuery = useWaitingSessions();
+  const [sessionsAnchor, sessionsOnScreen] = useOnScreen<HTMLSpanElement>();
+  const waitingQuery = useWaitingSessions({ active: sessionsOnScreen });
   const allQuery = useQuery({
     queryKey: ["build", "listSessions", true],
     queryFn: () => listSessions({ includeAttached: true }),
     staleTime: STALE_MS,
   });
+
+  /* The optional read: absent from the page when it fails, but never silent. */
+  useEffect(() => {
+    if (allQuery.error) console.error(errorLine("[Drafts] attached sessions read failed", allQuery.error));
+  }, [allQuery.error]);
 
   const attached = useMemo(() => (allQuery.data ?? []).filter((session) => session.buildId !== null), [allQuery.data]);
 
@@ -108,20 +124,24 @@ export function DraftsPage() {
     [refresh],
   );
 
-  const status =
-    draftsQuery.isLoadingError || waitingQuery.isLoadingError ? "error" : draftsQuery.data && waitingQuery.data ? "ready" : "loading";
+  const draftsStatus = draftsQuery.data ? "ready" : draftsQuery.isLoadingError ? "error" : "loading";
+  const sessionsStatus = waitingQuery.data ? "ready" : waitingQuery.isLoadingError ? "error" : "loading";
 
   return (
     <>
       <SeoHead title="Drafts — buildgallery" description="Builds in progress, and the sessions waiting to join one." path="/drafts" noIndex />
       <DraftsView
         now={Date.now()}
-        status={status}
-        onRetry={() => {
-          void draftsQuery.refetch();
+        draftsStatus={draftsStatus}
+        draftsError={draftsQuery.isLoadingError ? draftsQuery.error : undefined}
+        onRetryDrafts={() => void draftsQuery.refetch()}
+        sessionsStatus={sessionsStatus}
+        sessionsError={waitingQuery.isLoadingError ? waitingQuery.error : undefined}
+        onRetrySessions={() => {
           void waitingQuery.refetch();
-          void allQuery.refetch();
+          if (allQuery.isError) void allQuery.refetch();
         }}
+        sessionsAnchor={sessionsAnchor}
         drafts={draftsQuery.data ?? []}
         sessions={waitingQuery.data ?? []}
         attached={attached}

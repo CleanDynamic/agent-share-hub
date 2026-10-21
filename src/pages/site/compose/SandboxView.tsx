@@ -35,6 +35,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
@@ -49,6 +50,9 @@ import type { CardField } from "./SandboxCard";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
+import { MenuContent, MenuSubContent } from "./ComposeMenu";
+import { ACTION_BAR_BOTTOM } from "./composeChrome";
+import type { SaveFailure } from "@/hooks/useComposeBuild";
 
 export type SandboxLens = "list" | "map";
 
@@ -71,6 +75,10 @@ export interface SandboxViewProps extends CardProps {
 
   save: SaveState;
   onRetrySave: () => void;
+  /** CA-10: a save that stopped: its reason and code, for "Not saved: {reason}. Code {code}." */
+  saveProblem?: SaveFailure | null;
+  /** CA-10: why the build did not load: logged once, its code shown under "This build didn't load." */
+  loadError?: unknown;
   missing: readonly SandboxMissingItem[];
   slug: string | null;
   published: ComposePublished | null;
@@ -86,8 +94,12 @@ export interface SandboxViewProps extends CardProps {
   mapHint: boolean;
   onUseResultPicture?: () => void;
 
-  /** Puts the cursor in the Build panel's add field: Add › Prompt, and the "a prompt" missing item. */
-  onAddPromptFocus?: () => void;
+  /**
+   * Puts the cursor in the Build panel's add field: Add › Prompt, and the "a prompt" missing item. CA-10: it runs
+   * inside the tap's own handler (so an iPhone raises the keyboard) and returns true once focus has moved, so the
+   * menu does not take it back.
+   */
+  onAddPromptFocus?: () => boolean | void;
 
   /** CA-04 P1: Add › New session asks for its tool. Absent, the item stays disabled. */
   onNewSession?: () => void;
@@ -158,7 +170,15 @@ export const ADD_COPY = {
   checkFirst: "Add an agent or code first",
 } as const;
 
+/** CA-10: "Not saved: a value isn't allowed. Code 23514." (the code left out when there is none: a network failure). */
+export function notSavedLine(problem: SaveFailure): string {
+  return `Not saved: ${problem.reason}.${problem.code ? ` Code ${problem.code}.` : ""}`;
+}
+
 export const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
+/** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. */
+export const LIST_HINT_PHONE = "Tap a prompt to see its details";
+export const listHint = (phone: boolean) => (phone ? LIST_HINT_PHONE : LIST_HINT);
 
 export const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
 
@@ -179,9 +199,11 @@ export interface AddEntry {
   name: string;
   line: string;
   enabled: boolean;
-  onSelect?: () => void;
+  onSelect?: () => unknown;
   /** Session only: the library's sessions that are in no build, at most six. */
   sessions?: readonly { id: string; label: string; line: string; onSelect: () => void }[];
+  /** CA-10: the item moves focus elsewhere itself (Prompt): the menu must not hand it back to Add as it closes. */
+  movesFocus?: boolean;
 }
 
 export function addEntries({ onNewSession, onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
@@ -197,7 +219,7 @@ export function addEntries({ onNewSession, onAddFile, addableSessions, onAddSess
         sessions: (addableSessions ?? []).slice(0, 6).map((session) => ({ ...session, onSelect: () => onAddSession?.(session.id) })),
       };
     }
-    const handlers: Partial<Record<AddKey, (() => void) | undefined>> = {
+    const handlers: Partial<Record<AddKey, (() => unknown) | undefined>> = {
       newSession: onNewSession,
       file: onAddFile,
       prompt: onAddPromptFocus,
@@ -209,7 +231,7 @@ export function addEntries({ onNewSession, onAddFile, addableSessions, onAddSess
     };
     const handler = handlers[item.key];
     const wired = item.key in handlers;
-    return { ...item, enabled: item.ready && (!wired || Boolean(handler)), onSelect: handler };
+    return { ...item, enabled: item.ready && (!wired || Boolean(handler)), onSelect: handler, movesFocus: item.key === "prompt" };
   });
 }
 
@@ -234,15 +256,89 @@ const addItem = (enabled: boolean): CSSProperties => ({
   padding: "6px 12px",
 });
 
+/**
+ * CA-10 (CA-09 F1, F2). On a computer, a dropdown that fits the screen (`MenuContent`, `menuSurface`) and is not
+ * modal: a modal menu traps focus while it closes, so a row that puts the caret in a field would have it taken
+ * straight back. A row that moves focus (Prompt) says so, and the menu then leaves focus where the row put it instead
+ * of returning it to Add. On a phone, the same rows in a bottom sheet, 44pt each, under "Add".
+ */
 function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  /** Set by a row that moved focus, read once as the menu closes. */
+  const moved = useRef(false);
+  const addButton = useRef<HTMLButtonElement>(null);
+  /* As the menu or sheet closes: focus stays where a row put it, or goes back to Add WITHOUT SCROLLING, so a row that
+     scrolled the page to what it added (Result, Session) is not undone. A tap does not focus a button on an iPhone,
+     so Add is named, not "whatever had focus before". */
+  const backToAdd = (event: Event) => {
+    event.preventDefault();
+    if (moved.current) {
+      moved.current = false;
+      return;
+    }
+    addButton.current?.focus({ preventScroll: true });
+  };
+  const entries = addEntries(props);
+
+  if (phone) {
+    const choose = (item: Pick<AddEntry, "onSelect" | "movesFocus">) => {
+      if (!item.movesFocus) {
+        // One render: the sheet shuts as the row's dialog or tile appears.
+        setOpen(false);
+        item.onSelect?.();
+        return;
+      }
+      // A row that moves focus shuts the sheet first, in this tap, so its focus trap is gone before the focus moves.
+      moved.current = true;
+      closeNow(setOpen);
+      if (item.onSelect?.() !== true) moved.current = false;
+    };
+    return (
+      <>
+        <MenuButton
+          ref={addButton}
+          label="Add"
+          value=""
+          data-testid="sandbox-add"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          style={{ height: 44 }}
+          onClick={() => {
+            setSessionsOpen(false);
+            setOpen(true);
+          }}
+        />
+        <BrandBottomSheet open={open} onOpenChange={setOpen} title="Add" onCloseAutoFocus={backToAdd} data-testid="add-sheet">
+          {entries.map((item) =>
+            item.sessions ? (
+              <div key={item.key} style={{ display: "flex", flexDirection: "column" }}>
+                <SheetRow name={item.name} line={item.line} disabled={!item.enabled} expanded={sessionsOpen} onSelect={() => setSessionsOpen((value) => !value)} />
+                {sessionsOpen ? (
+                  item.sessions.length === 0 ? (
+                    <SheetRow inset disabled name="No sessions waiting" line="Every session is already in a build" />
+                  ) : (
+                    item.sessions.map((session) => <SheetRow key={session.id} inset name={session.label} line={session.line} onSelect={() => choose({ onSelect: session.onSelect })} />)
+                  )
+                ) : null}
+              </div>
+            ) : (
+              <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
+            ),
+          )}
+        </BrandBottomSheet>
+      </>
+    );
+  }
+
   return (
-    <Menu.Root>
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
       <Menu.Trigger asChild>
-        <MenuButton label="Add" value="" data-testid="sandbox-add" style={phone ? { height: 44 } : undefined} />
+        <MenuButton ref={addButton} label="Add" value="" data-testid="sandbox-add" />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content align="end" sideOffset={6} style={menuSurface(280)}>
-          {addEntries(props).map((item) => {
+        <MenuContent align="end" sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={backToAdd}>
+          {entries.map((item) => {
             if (item.sessions) {
               return (
                 <Menu.Sub key={item.key}>
@@ -250,7 +346,7 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
                     <AddLabel name={item.name} line={item.line} />
                   </Menu.SubTrigger>
                   <Menu.Portal>
-                    <Menu.SubContent sideOffset={6} style={menuSurface(280)}>
+                    <MenuSubContent sideOffset={6} style={menuSurface(280)}>
                       {item.sessions.length === 0 ? (
                         <Menu.Item disabled style={addItem(false)}>
                           <AddLabel name="No sessions waiting" line="Every session is already in a build" />
@@ -262,18 +358,26 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
                           </Menu.Item>
                         ))
                       )}
-                    </Menu.SubContent>
+                    </MenuSubContent>
                   </Menu.Portal>
                 </Menu.Sub>
               );
             }
             return (
-              <Menu.Item key={item.key} disabled={!item.enabled} onSelect={item.onSelect} style={addItem(item.enabled)}>
+              <Menu.Item
+                key={item.key}
+                disabled={!item.enabled}
+                onSelect={() => {
+                  const result = item.onSelect?.();
+                  if (item.movesFocus && result === true) moved.current = true;
+                }}
+                style={addItem(item.enabled)}
+              >
                 <AddLabel name={item.name} line={item.line} />
               </Menu.Item>
             );
           })}
-        </Menu.Content>
+        </MenuContent>
       </Menu.Portal>
     </Menu.Root>
   );
@@ -494,7 +598,7 @@ export function SandboxView(props: SandboxViewProps) {
   if (status === "error") {
     return (
       <div style={moduleStyle()}>
-        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} />
+        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} error={props.loadError} log="[Compose] build read failed" showCode />
       </div>
     );
   }
@@ -526,7 +630,8 @@ export function SandboxView(props: SandboxViewProps) {
     if (key === "evidence") return openPost();
     if (key === "title") return openCard("title");
     if (key === "outcome") return openCard("summary");
-    props.onAddPromptFocus?.();
+    // CA-10: the field is focused in this tap; the Build panel takes focus only when there is no field to give it to.
+    if (props.onAddPromptFocus?.() === true) return;
     buildRef.current?.focus();
   };
 
@@ -536,7 +641,11 @@ export function SandboxView(props: SandboxViewProps) {
       {save !== "idle" ? (
         <>
           {" · "}
-          {SAVE_WORDS[save]}
+          {save === "error" && props.saveProblem ? (
+            <span data-testid="save-problem">{notSavedLine(props.saveProblem)}</span>
+          ) : (
+            SAVE_WORDS[save]
+          )}
           {save === "error" ? (
             <>
               {" "}
@@ -695,7 +804,7 @@ export function SandboxView(props: SandboxViewProps) {
         ) : null}
         {phone ? null : addMenu}
       </div>
-      {lens === "map" ? (props.map ?? null) : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_HINT}</p>)}
+      {lens === "map" ? (props.map ?? null) : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>)}
     </section>
   );
 
@@ -747,7 +856,7 @@ export function SandboxView(props: SandboxViewProps) {
           aria-label="Actions"
           style={{
             position: "sticky",
-            bottom: "calc(92px + env(safe-area-inset-bottom))",
+            bottom: `calc(${ACTION_BAR_BOTTOM}px + env(safe-area-inset-bottom))`,
             zIndex: 5,
             display: "flex",
             gap: 8,

@@ -1,0 +1,215 @@
+[
+  {
+    "scenario": "normal (120 ms)",
+    "profile": "desktop",
+    "firstDraftMs": 1350,
+    "errorShownMs": null,
+    "sessionsShownMs": 1350,
+    "reads": [
+      "44.1s waiting 200 162ms (5.53 MB of proposal)",
+      "44.2s drafts 200 123ms",
+      "44.1s all sessions 200 212ms (13.58 MB of proposal)",
+      "44.4s draft counts 200 125ms",
+      "54.4s waiting 200 148ms (5.53 MB of proposal)",
+      "64.7s waiting 200 147ms (5.53 MB of proposal)",
+      "75.0s waiting 200 148ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-desktop-normal-120-ms-.png"
+  },
+  {
+    "scenario": "slow (400 ms)",
+    "profile": "desktop",
+    "firstDraftMs": 2446,
+    "errorShownMs": null,
+    "sessionsShownMs": 2446,
+    "reads": [
+      "85.2s drafts 200 402ms",
+      "85.2s waiting 200 447ms (5.53 MB of proposal)",
+      "85.2s all sessions 200 485ms (13.58 MB of proposal)",
+      "86.0s draft counts 200 401ms",
+      "96.0s waiting 200 429ms (5.53 MB of proposal)",
+      "106.9s waiting 200 428ms (5.53 MB of proposal)",
+      "117.7s waiting 200 429ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-desktop-slow-400-ms-.png"
+  },
+  {
+    "scenario": "statement timeout when a returned proposal is over 1 MB (8 s, 57014)",
+    "profile": "desktop",
+    "firstDraftMs": null,
+    "errorShownMs": 19432,
+    "sessionsShownMs": null,
+    "reads": [
+      "126.0s drafts 200 402ms",
+      "126.8s draft counts 200 402ms",
+      "126.0s waiting 500 57014 8414ms (5.53 MB of proposal)",
+      "126.0s all sessions 500 57014 8425ms (13.58 MB of proposal)",
+      "135.8s waiting 500 57014 8406ms (5.53 MB of proposal)",
+      "135.8s all sessions 500 57014 8400ms (13.58 MB of proposal)",
+      "154.7s waiting 500 57014 8411ms (5.53 MB of proposal)"
+    ],
+    "shows": "a skeleton or nothing",
+    "screenshot": "measurements/screens/drafts-desktop-statement-timeout-when-a-returned-proposal-is-over-1-mb-8-s-57014-.png"
+  },
+  {
+    "scenario": "waiting sessions slow alone (+6 s)",
+    "profile": "desktop",
+    "firstDraftMs": 7051,
+    "errorShownMs": null,
+    "sessionsShownMs": 7051,
+    "reads": [
+      "166.4s all sessions 200 141ms (13.58 MB of proposal)",
+      "166.5s drafts 200 121ms",
+      "166.7s draft counts 200 123ms",
+      "166.4s waiting 200 6140ms (5.53 MB of proposal)",
+      "164.5s waiting 500 57014 8400ms (5.53 MB of proposal)",
+      "182.7s waiting 200 6125ms (5.53 MB of proposal)",
+      "199.0s waiting 200 6126ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-desktop-waiting-sessions-slow-alone-6-s-.png"
+  },
+  {
+    "scenario": "all sessions slow alone (+6 s)",
+    "profile": "desktop",
+    "firstDraftMs": 1153,
+    "errorShownMs": null,
+    "sessionsShownMs": 1153,
+    "reads": [
+      "206.9s waiting 200 134ms (5.53 MB of proposal)",
+      "206.9s drafts 200 121ms",
+      "207.2s draft counts 200 122ms",
+      "206.9s all sessions 200 6146ms (13.58 MB of proposal)",
+      "217.2s waiting 200 121ms (5.53 MB of proposal)",
+      "227.4s waiting 200 121ms (5.53 MB of proposal)",
+      "237.7s waiting 200 122ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-desktop-all-sessions-slow-alone-6-s-.png"
+  },
+  {
+    "scenario": "drafts slow alone (+6 s)",
+    "profile": "desktop",
+    "firstDraftMs": 7367,
+    "errorShownMs": null,
+    "sessionsShownMs": 7367,
+    "reads": [
+      "247.9s waiting 200 136ms (5.53 MB of proposal)",
+      "247.9s all sessions 200 199ms (13.58 MB of proposal)",
+      "248.0s drafts 200 6129ms",
+      "254.2s draft counts 200 122ms",
+      "258.2s waiting 200 122ms (5.53 MB of proposal)",
+      "268.4s waiting 200 121ms (5.53 MB of proposal)",
+      "278.7s waiting 200 121ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-desktop-drafts-slow-alone-6-s-.png"
+  },
+  {
+    "scenario": "waiting sessions fail alone (57014)",
+    "profile": "desktop",
+    "firstDraftMs": null,
+    "errorShownMs": 2332,
+    "sessionsShownMs": null,
+    "reads": [
+      "288.7s waiting 500 57014 190ms",
+      "288.7s all sessions 200 310ms (13.58 MB of proposal)",
+      "288.9s drafts 200 122ms",
+      "289.2s draft counts 200 121ms",
+      "290.1s waiting 500 57014 121ms",
+      "300.3s waiting 500 57014 121ms",
+      "301.6s waiting 500 57014 121ms",
+      "311.8s waiting 500 57014 121ms",
+      "313.1s waiting 500 57014 120ms",
+      "323.3s waiting 500 57014 120ms",
+      "324.6s waiting 500 57014 121ms"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-desktop-waiting-sessions-fail-alone-57014-.png"
+  },
+  {
+    "scenario": "all sessions fail alone (57014)",
+    "profile": "desktop",
+    "firstDraftMs": 1132,
+    "errorShownMs": null,
+    "sessionsShownMs": 1132,
+    "reads": [
+      "329.1s waiting 200 137ms (5.53 MB of proposal)",
+      "329.2s all sessions 500 57014 121ms",
+      "329.2s drafts 200 121ms",
+      "329.4s draft counts 200 121ms",
+      "330.4s all sessions 500 57014 120ms",
+      "339.4s waiting 200 121ms (5.53 MB of proposal)",
+      "349.7s waiting 200 121ms (5.53 MB of proposal)",
+      "359.9s waiting 200 122ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-desktop-all-sessions-fail-alone-57014-.png"
+  },
+  {
+    "scenario": "drafts fail alone (57014)",
+    "profile": "desktop",
+    "firstDraftMs": null,
+    "errorShownMs": 2117,
+    "sessionsShownMs": null,
+    "reads": [
+      "369.8s waiting 200 130ms (5.53 MB of proposal)",
+      "369.8s all sessions 200 138ms (13.58 MB of proposal)",
+      "369.8s drafts 500 57014 121ms",
+      "371.1s drafts 500 57014 120ms",
+      "380.1s waiting 200 121ms (5.53 MB of proposal)",
+      "390.3s waiting 200 121ms (5.53 MB of proposal)",
+      "400.6s waiting 200 121ms (5.53 MB of proposal)"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-desktop-drafts-fail-alone-57014-.png"
+  },
+  {
+    "scenario": "both session reads fail",
+    "profile": "desktop",
+    "firstDraftMs": null,
+    "errorShownMs": 2075,
+    "sessionsShownMs": null,
+    "reads": [
+      "410.4s waiting 500 57014 121ms",
+      "410.4s all sessions 500 57014 121ms",
+      "410.4s drafts 200 121ms",
+      "410.7s draft counts 200 122ms",
+      "411.7s waiting 500 57014 122ms",
+      "411.7s all sessions 500 57014 121ms",
+      "421.9s waiting 500 57014 121ms",
+      "423.2s waiting 500 57014 121ms",
+      "433.4s waiting 500 57014 121ms",
+      "434.7s waiting 500 57014 120ms",
+      "444.9s waiting 500 57014 121ms",
+      "446.2s waiting 500 57014 120ms"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-desktop-both-session-reads-fail.png"
+  },
+  {
+    "scenario": "everything fails",
+    "profile": "desktop",
+    "firstDraftMs": null,
+    "errorShownMs": 2090,
+    "sessionsShownMs": null,
+    "reads": [
+      "451.0s waiting 500 57014 120ms",
+      "451.0s all sessions 500 57014 120ms",
+      "451.0s drafts 500 57014 120ms",
+      "452.3s waiting 500 57014 121ms",
+      "452.3s all sessions 500 57014 121ms",
+      "452.3s drafts 500 57014 120ms",
+      "462.5s waiting 500 57014 121ms",
+      "463.8s waiting 500 57014 121ms",
+      "474.0s waiting 500 57014 120ms",
+      "475.3s waiting 500 57014 121ms",
+      "485.5s waiting 500 57014 121ms",
+      "486.8s waiting 500 57014 120ms"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-desktop-everything-fails.png"
+  }
+]

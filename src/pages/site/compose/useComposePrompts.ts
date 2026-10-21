@@ -90,6 +90,7 @@ import type { ChangeRange } from "@/lib/build/changes";
 import type { ModelRun } from "@/lib/build/modelRun";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { showMadeWithIn } from "./useComposeSessions";
+import { sayFailed } from "./draftStart";
 
 /** The key a prompt written on this page carries until it is saved. */
 const LOCAL = "local-";
@@ -114,7 +115,7 @@ const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
 /** Log a failed write with its cause, and say so in one line. */
 const failed = (line: string) => (cause: unknown) => {
   console.error("[Compose] prompt write failed", cause);
-  toast.error(line);
+  sayFailed(cause, line);
 };
 
 /** A code for the log, and only a code. */

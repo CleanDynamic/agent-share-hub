@@ -28,6 +28,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowUp, MoreHorizontal } from "lucide-react";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -35,7 +36,9 @@ import {
   type CSSProperties,
   type DragEvent,
   type KeyboardEvent,
+  type MutableRefObject,
   type ReactNode,
+  type Ref,
   useLayoutEffect,
 } from "react";
 
@@ -101,9 +104,15 @@ import {
   wellField,
 } from "./refinedStyles";
 import type { SourceSession } from "./sourcesModel";
+import { MenuContent } from "./ComposeMenu";
+
+/** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
+export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
   hint: "Click a prompt to see its details · double-click to read all of it",
+  /** CA-10 (CA-09 F12): a phone has no double-click (the card's onDoubleClick is off there) and taps, not clicks. */
+  hintPhone: "Tap a prompt to see its details",
   placeholder: "Paste or type a prompt…",
   showFull: "Show full prompt",
   /** CA-03 P5: a check's eyebrow. */
@@ -142,8 +151,20 @@ export interface BuildListProps {
   onKeepAsCode?: (text: string) => Promise<boolean>;
   /** The tools the build already uses, first in the tool picker. */
   inBuild?: readonly string[];
-  /** Changes to put the cursor in the add field ("Add › Prompt"). */
-  focusAdd: number;
+  /**
+   * CA-10 (CA-09 F2): the add field itself, so Add › Prompt can focus it inside the tap that chose it (a counter read
+   * by an effect focused it a render later, and the closing menu took it back).
+   */
+  addPromptRef?: Ref<HTMLTextAreaElement>;
+  /** Changes each time the add field is reached from Add › Prompt: it is ringed for `ADD_FLASH_MS`. */
+  addPromptFlash?: number;
+  /**
+   * CA-10: Add › Result or Add › Session is writing (on a new post, making the draft first): a tile stands in at the
+   * end of the list, where the new one lands, saying so, at once.
+   */
+  pendingAdd?: PendingAdd | null;
+  /** CA-10: the tile just added, ringed once as the build page rings a `#node-` step. */
+  ringedId?: string | null;
   /** UI-P69: "Add a prompt to this agent". Resolves true once it is saved. */
   onAddAgentPrompt: (agentId: string, text: string) => Promise<boolean>;
   /** UI-P69: "Add an agent to this team". */
@@ -713,6 +734,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   /* Rename starts once the menu has closed: closing returns focus to the menu's button, which would blur a field
      opened any earlier and end the edit. */
   const renameNext = useRef(false);
+  const nameNext = useRef(false);
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
@@ -783,12 +805,20 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
               <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Prompt ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
             </Menu.Trigger>
             <Menu.Portal>
-              <Menu.Content
+              <MenuContent
                 align="end"
                 sideOffset={4}
                 style={menuSurface()}
                 onClick={(event) => event.stopPropagation()}
                 onCloseAutoFocus={(event) => {
+                  /* CA-10: "Name a file it makes" opens a field in Details; the closing menu must not take focus
+                     back to its trigger after the field has it, so the ask runs once the menu has let go. */
+                  if (nameNext.current) {
+                    event.preventDefault();
+                    nameNext.current = false;
+                    props.onNameMade?.(step.id);
+                    return;
+                  }
                   if (!renameNext.current) return;
                   event.preventDefault();
                   renameNext.current = false;
@@ -800,12 +830,12 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 <MenuRow phone={phone} disabled={!open} onSelect={open}>Read all of it</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
-                {props.onNameMade ? <MenuRow phone={phone} onSelect={() => props.onNameMade?.(step.id)}>Name a file it makes</MenuRow> : null}
+                {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
                 <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
                 <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
-              </Menu.Content>
+              </MenuContent>
             </Menu.Portal>
           </Menu.Root>
         ) : null}
@@ -1153,7 +1183,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
             <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Manual step ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
           </Menu.Trigger>
           <Menu.Portal>
-            <Menu.Content
+            <MenuContent
               align="end"
               sideOffset={4}
               style={menuSurface()}
@@ -1172,7 +1202,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
               <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
-            </Menu.Content>
+            </MenuContent>
           </Menu.Portal>
         </Menu.Root>
       </div>
@@ -1249,7 +1279,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
             <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Code ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
           </Menu.Trigger>
           <Menu.Portal>
-            <Menu.Content
+            <MenuContent
               align="end"
               sideOffset={4}
               style={menuSurface()}
@@ -1268,7 +1298,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
               <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
-            </Menu.Content>
+            </MenuContent>
           </Menu.Portal>
         </Menu.Root>
       </div>
@@ -1355,7 +1385,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
             <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Check ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
           </Menu.Trigger>
           <Menu.Portal>
-            <Menu.Content
+            <MenuContent
               align="end"
               sideOffset={4}
               style={menuSurface()}
@@ -1374,7 +1404,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
               <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
-            </Menu.Content>
+            </MenuContent>
           </Menu.Portal>
         </Menu.Root>
       </div>
@@ -1395,10 +1425,35 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   );
 }
 
-function ResultCard({ result, selected, onSelect }: { result: ListResult; selected: boolean; onSelect: (id: string) => void }) {
+/** CA-10: what stands in for a Result or a session while Add writes it. */
+export type PendingAdd = "result" | "session";
+export const PENDING_ADD_COPY: Record<PendingAdd, { eyebrow: string; adding: string }> = {
+  result: { eyebrow: "Result", adding: "Adding a result…" },
+  session: { eyebrow: "Session", adding: "Adding a session…" },
+};
+
+function PendingAddCard({ kind }: { kind: PendingAdd }) {
+  return (
+    <div data-testid="add-pending" data-kind={kind} aria-busy="true" style={{ ...moduleStyle(false), display: "flex", alignItems: "center", gap: 12 }}>
+      <span
+        aria-hidden="true"
+        style={{ width: 24, height: 24, borderRadius: 6, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+      >
+        <Glyph name="check" size={14} />
+      </span>
+      <div role="status" style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <Quiet>{PENDING_ADD_COPY[kind].eyebrow}</Quiet>
+        <span style={text(14, 500, t.text2)}>{PENDING_ADD_COPY[kind].adding}</span>
+      </div>
+    </div>
+  );
+}
+
+function ResultCard({ result, selected, ringed = false, onSelect }: { result: ListResult; selected: boolean; ringed?: boolean; onSelect: (id: string) => void }) {
   return (
     <div
       data-testid="result-card"
+      data-tile-id={result.id}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
@@ -1409,7 +1464,7 @@ function ResultCard({ result, selected, onSelect }: { result: ListResult; select
           onSelect(result.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", alignItems: "center", gap: 12, outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected), display: "flex", alignItems: "center", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
     >
       <span
         aria-hidden="true"
@@ -1477,7 +1532,7 @@ function SessionMenu({ phone, choices, current, onCurrent, onNew }: { phone: boo
         />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content align="start" sideOffset={4} collisionPadding={16} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
+        <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
           <Menu.RadioGroup value={current ?? ""} onValueChange={(key) => onCurrent?.(key)}>
             {choices.map((choice) => (
               <Menu.RadioItem key={choice.key} value={choice.key} style={{ ...menuItem(true, phone), gap: 6 }}>
@@ -1496,7 +1551,7 @@ function SessionMenu({ phone, choices, current, onCurrent, onNew }: { phone: boo
             </span>
             {SESSION_MENU_COPY.newSession}
           </Menu.Item>
-        </Menu.Content>
+        </MenuContent>
       </Menu.Portal>
     </Menu.Root>
   );
@@ -1507,13 +1562,14 @@ function AddPrompt({
   onAddPrompt,
   onAddAsAgent,
   onKeepAsCode,
-  focusAdd,
+  addPromptRef,
+  addPromptFlash = 0,
   inBuild = [],
   sessionChoices,
   currentSession = null,
   onCurrentSession,
   onNewSession,
-}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "focusAdd" | "inBuild" | "sessionChoices" | "currentSession" | "onCurrentSession" | "onNewSession">) {
+}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "addPromptRef" | "addPromptFlash" | "inBuild" | "sessionChoices" | "currentSession" | "onCurrentSession" | "onNewSession">) {
   const [value, setValue] = useState("");
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
@@ -1521,11 +1577,25 @@ function AddPrompt({
   const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cleared, setCleared] = useState<string | null>(null);
-  const field = useRef<HTMLTextAreaElement>(null);
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  const setField = useCallback(
+    (element: HTMLTextAreaElement | null) => {
+      field.current = element;
+      if (typeof addPromptRef === "function") addPromptRef(element);
+      else if (addPromptRef) (addPromptRef as MutableRefObject<HTMLTextAreaElement | null>).current = element;
+    },
+    [addPromptRef],
+  );
 
+  /* CA-10: reached from Add › Prompt, the block is ringed for a moment so the eye finds it. The focus itself was
+     given in the tap; this only draws. */
+  const [lit, setLit] = useState(false);
   useEffect(() => {
-    if (focusAdd > 0) field.current?.focus();
-  }, [focusAdd]);
+    if (addPromptFlash === 0) return;
+    setLit(true);
+    const timer = window.setTimeout(() => setLit(false), ADD_FLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [addPromptFlash]);
 
   /* CA-04 P1: choosing a session puts its tool in the field; the maker can still change it. */
   const sessionTool = sessionChoices?.find((choice) => choice.key === currentSession)?.tool ?? null;
@@ -1588,14 +1658,14 @@ function AddPrompt({
   };
 
   return (
-    <div data-testid="add-prompt" style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5 }}>
+    <div data-testid="add-prompt" data-lit={lit || undefined} style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5, ...ring(lit) }}>
       {sessionChoices && sessionChoices.length > 0 ? (
         <div>
           <SessionMenu phone={phone} choices={sessionChoices} current={currentSession} onCurrent={onCurrentSession} onNew={onNewSession} />
         </div>
       ) : null}
       <textarea
-        ref={field}
+        ref={setField}
         aria-label="Add a prompt"
         rows={2}
         value={value}
@@ -1760,7 +1830,7 @@ export function BuildList(props: BuildListProps) {
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
     <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
-      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hint}</p>
+      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {runsOf(steps, props.dividers).map((run) => (
         <SessionRun key={run.key} head={run.head} phone={props.phone}>
           {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} /> : null}
@@ -1769,8 +1839,9 @@ export function BuildList(props: BuildListProps) {
         </SessionRun>
       ))}
       {props.results.map((result) => (
-        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
+        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} />
       ))}
+      {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
       {nestOn ? (
         <div aria-live="polite" data-testid="nest-said">
           {said ? <Quiet>{said}</Quiet> : null}
@@ -1781,7 +1852,8 @@ export function BuildList(props: BuildListProps) {
         onAddPrompt={props.onAddPrompt}
         onAddAsAgent={props.onAddAsAgent}
         onKeepAsCode={props.onKeepAsCode}
-        focusAdd={props.focusAdd}
+        addPromptRef={props.addPromptRef}
+        addPromptFlash={props.addPromptFlash}
         inBuild={props.inBuild}
         sessionChoices={props.sessionChoices}
         currentSession={props.currentSession}

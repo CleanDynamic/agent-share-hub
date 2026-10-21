@@ -45,6 +45,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { Breadcrumb } from "./Breadcrumb";
+import { HEADER_HEIGHT } from "./chromeSize";
 import { Dock } from "./Dock";
 import { MobileHeader } from "./MobileHeader";
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
@@ -173,7 +174,7 @@ export function SiteFrameView({
       <SkipLink phone={phone} />
       <div
         data-slot={phone ? "mobile-header" : "header"}
-        style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 48, background: t.frame }}
+        style={{ position: "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
       >
         {phone ? mobileHeader : header}
       </div>

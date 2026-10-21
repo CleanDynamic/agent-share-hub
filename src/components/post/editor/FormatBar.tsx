@@ -25,6 +25,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { menuItem, menuSurface, text, wellField } from "@/pages/site/compose/refinedStyles";
 
 import type { PostEditorControls } from "./extensions";
+import { MenuContent } from "@/pages/site/compose/ComposeMenu";
 
 export type TextStyleName = "Title" | "Heading" | "Body" | "Small" | "Code";
 
@@ -170,7 +171,7 @@ function StyleMenu({ editor, current, onOpenChange }: { editor: Editor; current:
         <MenuButton tone="inverse" label="" value={current} open={open} aria-label="Text style" onMouseDown={(event) => event.preventDefault()} />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content
+        <MenuContent
           side="bottom"
           align="start"
           sideOffset={8}
@@ -191,7 +192,7 @@ function StyleMenu({ editor, current, onOpenChange }: { editor: Editor; current:
               {name === current ? <Glyph name="check" size={16} color={t.text2} /> : null}
             </Menu.Item>
           ))}
-        </Menu.Content>
+        </MenuContent>
       </Menu.Portal>
     </Menu.Root>
   );

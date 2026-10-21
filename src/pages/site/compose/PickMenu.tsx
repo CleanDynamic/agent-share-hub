@@ -12,6 +12,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 
 import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface } from "./refinedStyles";
+import { MenuContent } from "./ComposeMenu";
 
 export interface PickOption<V extends string> {
   value: V;
@@ -49,10 +50,10 @@ export function PickMenu<V extends string>({ label, options, value, onChange, ph
         />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content
+        <MenuContent
           align="start"
           sideOffset={4}
-          collisionPadding={16}
+         
           style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}
         >
           <Menu.RadioGroup value={value ?? ""} onValueChange={(next) => onChange(next as V)}>
@@ -67,7 +68,7 @@ export function PickMenu<V extends string>({ label, options, value, onChange, ph
               </Menu.RadioItem>
             ))}
           </Menu.RadioGroup>
-        </Menu.Content>
+        </MenuContent>
       </Menu.Portal>
     </Menu.Root>
   );

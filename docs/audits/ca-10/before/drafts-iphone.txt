@@ -1,0 +1,11 @@
+iphone normal (120 ms)                                                        drafts   7569  error   null  after 40 s: the drafts  reads 7
+iphone slow (400 ms)                                                          drafts   7697  error   null  after 40 s: the drafts  reads 7
+iphone statement timeout when a returned proposal is over 1 MB (8 s, 57014)   drafts   null  error  23992  after 40 s: a skeleton or nothing  reads 6
+iphone waiting sessions slow alone (+6 s)                                     drafts  12104  error   null  after 40 s: the drafts  reads 6
+iphone all sessions slow alone (+6 s)                                         drafts   7103  error   null  after 40 s: the drafts  reads 8
+iphone drafts slow alone (+6 s)                                               drafts  12537  error   null  after 40 s: the drafts  reads 7
+iphone waiting sessions fail alone (57014)                                    drafts   null  error   7858  after 40 s: That didn't load.  reads 9
+iphone all sessions fail alone (57014)                                        drafts   6963  error   null  after 40 s: the drafts  reads 8
+iphone drafts fail alone (57014)                                              drafts   null  error   8362  after 40 s: That didn't load.  reads 7
+iphone both session reads fail                                                drafts   null  error   7983  after 40 s: That didn't load.  reads 10
+iphone everything fails                                                       drafts   null  error   7917  after 40 s: That didn't load.  reads 10

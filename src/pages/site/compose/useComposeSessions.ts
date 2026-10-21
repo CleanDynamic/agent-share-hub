@@ -39,6 +39,7 @@ import {
 } from "@/lib/build/sessions";
 
 import type { MadeWithChip } from "./composeModel";
+import { sayFailed } from "./draftStart";
 
 const STALE_MS = 30_000;
 const NO_SESSIONS: SessionSummary[] = [];
@@ -85,6 +86,7 @@ export function useComposeSessions({
   canClaim,
   ensureBuild,
   recordMadeWith,
+  libraryActive = true,
 }: {
   buildId: string | undefined;
   /** The record has loaded and is the signed-in creator's. */
@@ -94,6 +96,8 @@ export function useComposeSessions({
   ensureBuild: () => Promise<string>;
   /** `builds.made_with` as the record holds it: what Made with shows before its own read lands. */
   recordMadeWith: readonly string[];
+  /** CA-10: the library's panel is on screen, so the library polls. */
+  libraryActive?: boolean;
 }): ComposeSessions {
   const queryClient = useQueryClient();
   const enabled = Boolean(buildId) && owner;
@@ -104,7 +108,7 @@ export function useComposeSessions({
     enabled,
     staleTime: STALE_MS,
   });
-  const library = useLibrarySessions();
+  const library = useLibrarySessions({ active: libraryActive });
   const madeWithQuery = useQuery({
     queryKey: madeWithKey(buildId),
     queryFn: () => getMadeWith(buildId as string),
@@ -183,7 +187,7 @@ export function useComposeSessions({
       return { id, state, value: undefined };
     }).catch((cause) => {
       console.error("[Compose] Made with not changed", cause);
-      toast.error("Couldn't change Made with. Try again.");
+      sayFailed(cause, "Couldn't change Made with. Try again.");
       void settleMadeWith(id);
     });
   };
@@ -195,7 +199,7 @@ export function useComposeSessions({
       return { id, state, value: undefined };
     }).catch((cause) => {
       console.error("[Compose] Made with entry not added", cause);
-      toast.error("Couldn't add that to Made with. Try again.");
+      sayFailed(cause, "Couldn't add that to Made with. Try again.");
     });
   };
 
@@ -247,7 +251,7 @@ export function useComposeSessions({
     })
       .catch((cause) => {
         console.error("[Compose] setSessionModel failed", cause);
-        toast.error("Couldn't save that model. Try again.");
+        sayFailed(cause, "Couldn't save that model. Try again.");
         return false;
       })
       .finally(() => {
@@ -265,7 +269,7 @@ export function useComposeSessions({
     })
       .catch((cause) => {
         console.error("[Compose] setSessionTool failed", cause);
-        toast.error("Couldn't save that tool. Try again.");
+        sayFailed(cause, "Couldn't save that tool. Try again.");
         return false;
       })
       .finally(() => {

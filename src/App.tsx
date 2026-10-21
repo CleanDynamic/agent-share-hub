@@ -175,9 +175,11 @@ const WideDemo = import.meta.env.DEV ? lazy(() => import("./pages/dev/WideDemo")
 /* UI-P37: one retry, not three. TanStack's default backs off for about seven
    seconds before a panel may say "That didn't load.", seven seconds of skeleton;
    one retry is about one. A refusal is never retried: asking again changes nothing. */
+/* CA-10 (CA-09 F10): a default staleTime of 30 s, so coming back to the tab re-reads only what is older than that,
+   not every query on screen. */
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: (count, error) => count < 1 && !isPermissionError(error) },
+    queries: { retry: (count, error) => count < 1 && !isPermissionError(error), staleTime: 30_000 },
   },
 });
 

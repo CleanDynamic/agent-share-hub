@@ -68,6 +68,7 @@ import { asksHowRun, type ModelRun } from "@/lib/build/modelRun";
 import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
+import { MenuContent } from "./ComposeMenu";
 
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
@@ -575,7 +576,7 @@ function AddInput({ id, options, phone, onAddUse, onAttach }: { id: string; opti
         </button>
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content align="start" sideOffset={6} style={{ ...menuSurface(260), maxHeight: 360, overflowY: "auto" }}>
+        <MenuContent align="start" sideOffset={6} style={{ ...menuSurface(260), maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))" }}>
           {onAttach ? (
             <Menu.Item onSelect={() => onAttach(id)} style={menuItem(true, phone)}>
               A file from your computer
@@ -598,7 +599,7 @@ function AddInput({ id, options, phone, onAddUse, onAttach }: { id: string; opti
               Show {menu.hidden} more
             </Menu.Item>
           ) : null}
-        </Menu.Content>
+        </MenuContent>
       </Menu.Portal>
     </Menu.Root>
   );

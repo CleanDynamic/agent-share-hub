@@ -143,6 +143,8 @@ function composeFixture(): ComposeBuild {
     isOwner: true,
     loadError: null,
     saveError: null,
+    saveFailure: null,
+    retrySave: () => undefined,
   };
 }
 

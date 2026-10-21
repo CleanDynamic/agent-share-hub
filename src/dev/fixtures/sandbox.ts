@@ -172,7 +172,6 @@ export function sandboxListProps(which: SandboxFixture = "fox"): BuildListProps 
     onAccept: noop,
     onDismiss: noop,
     onAddPrompt: () => Promise.resolve(true),
-    focusAdd: 0,
     onAddAgentPrompt: () => Promise.resolve(true),
     onAddAgentTo: noop,
   };
@@ -318,7 +317,6 @@ export function sandboxTeamFixture(): { list: BuildListProps; map: BuildMapProps
     onAccept: noop,
     onDismiss: noop,
     onAddPrompt: () => Promise.resolve(true),
-    focusAdd: 0,
     onAddAgentPrompt: () => Promise.resolve(true),
     onAddAgentTo: noop,
   };
@@ -370,7 +368,6 @@ export function sandboxManualFixture(): { list: BuildListProps; map: BuildMapPro
     onAccept: noop,
     onDismiss: noop,
     onAddPrompt: () => Promise.resolve(true),
-    focusAdd: 0,
     onAddAgentPrompt: () => Promise.resolve(true),
     onAddAgentTo: noop,
   };

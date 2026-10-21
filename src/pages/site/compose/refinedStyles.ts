@@ -122,10 +122,16 @@ export const tagStyle: CSSProperties = {
   textOverflow: "ellipsis",
 };
 
-/** A menu: the window recipe, radius 8, no blur. */
+/**
+ * A menu: the window recipe, radius 8, no blur. CA-10 (CA-09 F1): never taller than the room Radix leaves it (the
+ * viewport less the collision padding), scrolling inside itself, and a scroll that reaches its end stays in it.
+ */
 export const menuSurface = (width?: number): CSSProperties => ({
   zIndex: 50,
   ...(width ? { width, maxWidth: "calc(100vw - 32px)" } : { minWidth: 180 }),
+  maxHeight: "var(--radix-dropdown-menu-content-available-height)",
+  overflowY: "auto",
+  overscrollBehavior: "contain",
   padding: 4,
   borderRadius: 8,
   background: t.window,

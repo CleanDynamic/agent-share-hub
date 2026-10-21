@@ -14,17 +14,17 @@ vi.mock("@/lib/build/sessions", () => ({
 
 import { useWaitingSessions, WAITING_REFRESH_MS } from "./useWaitingSessions";
 
-function Panel() {
-  const { data } = useWaitingSessions();
+function Panel({ active = true }: { active?: boolean }) {
+  const { data } = useWaitingSessions({ active });
   return <span data-testid="count">{data === undefined ? "loading" : data.length}</span>;
 }
 
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
-function open(queryClient: QueryClient) {
+function open(queryClient: QueryClient, active = true) {
   return render(
     <QueryClientProvider client={queryClient}>
-      <Panel />
+      <Panel active={active} />
     </QueryClientProvider>,
   );
 }
@@ -85,5 +85,15 @@ describe("useWaitingSessions", () => {
     await act(() => vi.advanceTimersByTimeAsync(10));
     expect(listSessions).toHaveBeenCalledTimes(2);
     expect(count(panel)).toBe("1");
+  });
+
+  it("CA-10: polls every 60 s, and not at all while the panel is off screen", async () => {
+    vi.useFakeTimers();
+    expect(WAITING_REFRESH_MS).toBe(60_000);
+    listSessions.mockResolvedValue([]);
+    open(client(), false);
+    await act(() => vi.advanceTimersByTimeAsync(10));
+    await act(() => vi.advanceTimersByTimeAsync(3 * WAITING_REFRESH_MS));
+    expect(listSessions).toHaveBeenCalledTimes(1);
   });
 });

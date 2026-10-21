@@ -8,22 +8,24 @@
    A CONNECTOR WRITES TO IT FROM OUTSIDE THE BROWSER, so it is read again the
    way useWaitingSessions is: whenever the panel opens, whenever the reader
    comes back to the tab, and every WAITING_REFRESH_MS while it is on screen.
-   The cached list shows at once meanwhile. */
+   The cached list shows at once meanwhile. CA-10: every 60 s, and only while
+   the panel is on screen (`active`), as useWaitingSessions. */
 
 import { useQuery } from "@tanstack/react-query";
 
 import { listLibrarySessions } from "@/lib/build/sessions";
 
-import { WAITING_REFRESH_MS } from "./useWaitingSessions";
+import { WAITING_REFRESH_MS, type SessionsPolling } from "./useWaitingSessions";
 
 export const librarySessionsKey = ["build", "listLibrarySessions"] as const;
 
-export function useLibrarySessions() {
+export function useLibrarySessions({ active = true }: SessionsPolling = {}) {
   return useQuery({
     queryKey: librarySessionsKey,
     queryFn: () => listLibrarySessions(),
     refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
-    refetchInterval: WAITING_REFRESH_MS,
+    refetchOnWindowFocus: true,
+    refetchInterval: active ? WAITING_REFRESH_MS : false,
+    refetchIntervalInBackground: false,
   });
 }

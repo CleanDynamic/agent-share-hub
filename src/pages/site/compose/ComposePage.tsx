@@ -58,12 +58,15 @@ import { useComposeDetails } from "./useComposeDetails";
 import { useComposeNodes } from "./useComposeNodes";
 import { useComposePrompts } from "./useComposePrompts";
 import { useComposeSessions } from "./useComposeSessions";
+import { DraftNotStartedError } from "./draftStart";
+import { errorLine } from "@/lib/errors/code";
 
 const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", buildId] as const;
 
 const ACCEPT = coverMediaTypes(acceptedMediaTypes());
 
-export function useComposePage() {
+/** CA-10: `sessionsActive` says the panel listing the session library is on screen; the library polls only then. */
+export function useComposePage({ sessionsActive = true }: { sessionsActive?: boolean } = {}) {
   const { buildId } = useParams<{ buildId: string }>();
   const navigate = useNavigate();
   /* PT-05: the address keeps its query (?tab=post) when the first change swaps /compose/new for /compose/{id}. */
@@ -123,9 +126,10 @@ export function useComposePage() {
         })
         .catch((cause: unknown) => {
           creating.current = null;
-          console.error("[Compose] createBuild failed", cause);
+          console.error(errorLine("[Compose] createBuild failed", cause));
           toast.error("Couldn't start your draft. Try again.");
-          throw cause;
+          // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
+          throw new DraftNotStartedError(cause);
         });
     }
     return creating.current;
@@ -234,6 +238,7 @@ export function useComposePage() {
     canClaim: !build || build.status === "draft",
     ensureBuild,
     recordMadeWith: build?.made_with ?? [],
+    libraryActive: sessionsActive,
   });
   // Your sessions lists the library newest first and numbers it oldest first,
   // so a session keeps its number as new ones arrive, and a prompt's source
@@ -336,8 +341,10 @@ export function useComposePage() {
     audience,
     onAudience,
     audienceOptions,
-    save: saveState({ isSaving: compose.isSaving, saveError: compose.saveError, lastSavedAt: compose.lastSavedAt }),
-    onRetrySave: () => compose.patchBuild({ title: title.trim() || UNTITLED }),
+    /* CA-10: while a failed save is being tried again it reads as saving; it reads as not saved once it has stopped,
+       with the reason and the code, and Try again sends it again. */
+    save: saveState({ isSaving: compose.isSaving || Boolean(compose.saveError && !compose.saveFailure), saveError: compose.saveFailure, lastSavedAt: compose.lastSavedAt }),
+    onRetrySave: () => (compose.saveFailure ? compose.retrySave() : compose.patchBuild({ title: title.trim() || UNTITLED })),
     missing: missing.map((key) => PUBLISH_WORDS[key]),
     intakeHref: buildId ? null : "/compose/start",
     slug: build?.slug ?? null,

@@ -26,7 +26,7 @@
    the phone's sheet rows held at 44, the touch target. The brand pieces
    (Button, IconButton, Panel, display()) take the drawn size and map it. */
 
-import { useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { useState, type CSSProperties, type DragEvent, type ReactNode, type Ref } from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { ChevronRight, GripVertical, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -76,8 +76,17 @@ export interface DraftsViewProps {
   /** The page's fit (UI-P16). Drafts is a list page: it grows with its rows either way. */
   fit?: "board" | "content";
   now: number;
-  status: DraftsStatus;
-  onRetry: () => void;
+  /** CA-10: each panel has its own status. The drafts panel's comes from the drafts read alone. */
+  draftsStatus: DraftsStatus;
+  onRetryDrafts: () => void;
+  /** The drafts read's error, logged once and its code shown. */
+  draftsError?: unknown;
+  /** CA-10: the sessions panel's, from the waiting-sessions read alone. */
+  sessionsStatus: DraftsStatus;
+  onRetrySessions: () => void;
+  sessionsError?: unknown;
+  /** CA-10: a marker over the Sessions panel, so the page polls only while the panel is on screen. */
+  sessionsAnchor?: Ref<HTMLSpanElement>;
   drafts: readonly DraftListItem[];
   /** Sessions not in a build, newest first. */
   sessions: readonly SessionSummary[];
@@ -522,6 +531,11 @@ function RemoveDialog({ session, onCancel, onConfirm }: { session: SessionSummar
 
 const rows: CSSProperties = { margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 };
 
+/** CA-10: the sessions skeleton's rows, as a typical list draws them. */
+const SESSION_SKELETON_ROWS = 5;
+const SESSION_ROW = 43;
+const SESSION_ROW_PHONE = 46;
+
 function RowSkeletons({ count, height, what }: { count: number; height: number; what: string }) {
   return (
     <LoadingRegion what={what} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -534,8 +548,13 @@ function RowSkeletons({ count, height, what }: { count: number; height: number; 
 
 export function DraftsView({
   now,
-  status,
-  onRetry,
+  draftsStatus,
+  onRetryDrafts,
+  draftsError,
+  sessionsStatus,
+  onRetrySessions,
+  sessionsError,
+  sessionsAnchor,
   drafts,
   sessions,
   attached,
@@ -551,8 +570,10 @@ export function DraftsView({
   const canDrag = !phone && fine;
   const [dragging, setDragging] = useState<string | null>(null);
   const [removing, setRemoving] = useState<SessionSummary | null>(null);
-  const loading = status === "loading";
-  const failed = status === "error";
+  const loading = draftsStatus === "loading";
+  const failed = draftsStatus === "error";
+  const sessionsLoading = sessionsStatus === "loading";
+  const sessionsFailed = sessionsStatus === "error";
 
   const pick = (session: SessionSummary) => (item: MenuItem) => {
     if (item.kind === "target" || item.kind === "draft") {
@@ -587,7 +608,7 @@ export function DraftsView({
         <RowSkeletons count={3} height={phone ? 46 : 52} what="your drafts" />
       ) : failed ? (
         <div style={{ padding: "6px 9px 9px" }}>
-          <ErrorState panel="Continue editing" onRetry={onRetry} />
+          <ErrorState panel="Continue editing" onRetry={onRetryDrafts} error={draftsError} log="[Drafts] drafts read failed" showCode />
         </div>
       ) : drafts.length === 0 ? (
         /* UI-P97: under refined, the empty line is the 13 `--text` line; the start row above it is the one action. */
@@ -604,16 +625,19 @@ export function DraftsView({
 
   const sessionsPanel = (
     <Panel surface="plain" padding="8px" style={{ minWidth: 0 }}>
+      {/* Out of the flow and over the whole panel, so it adds no space and the page can tell when any of it shows. */}
+      <span ref={sessionsAnchor} aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
       <ListHead
         title="Sessions"
-        count={failed || loading ? 0 : sessions.length}
+        count={sessionsFailed || sessionsLoading ? 0 : sessions.length}
         right={phone ? undefined : <TextButton onClick={onConnect}>How they get here</TextButton>}
       />
-      {loading ? (
-        <RowSkeletons count={4} height={phone ? 46 : 43} what="your sessions" />
-      ) : failed ? (
+      {sessionsLoading ? (
+        /* CA-10 (CA-09 F15, CLS 0.305 on a phone): the height of a typical list, its rows and the "Show N" line. */
+        <RowSkeletons count={SESSION_SKELETON_ROWS} height={phone ? SESSION_ROW_PHONE : SESSION_ROW} what="your sessions" />
+      ) : sessionsFailed ? (
         <div style={{ padding: "6px 9px 9px" }}>
-          <ErrorState panel="Sessions" onRetry={onRetry} />
+          <ErrorState panel="Sessions" onRetry={onRetrySessions} error={sessionsError} log="[Drafts] sessions read failed" showCode />
         </div>
       ) : (
         <>

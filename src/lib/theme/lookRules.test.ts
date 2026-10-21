@@ -249,6 +249,52 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/dev/PostThreadDemo.tsx",
   // CA-07 P9
   "e2e/tier1/post-thread.spec.ts",
+  // CA-10 P1
+  "src/App.tsx",
+  "src/components/brand/ErrorState.tsx",
+  "src/dev/fixtures/drafts.ts",
+  "src/hooks/useLibrarySessions.ts",
+  "src/hooks/useWaitingSessions.test.tsx",
+  "src/hooks/useWaitingSessions.ts",
+  "src/lib/build/__audit__/fakeSupabase.ts",
+  "src/pages/site/compose/ComposePage.tsx",
+  "src/pages/site/compose/useComposeSessions.ts",
+  "src/pages/site/drafts/DraftsPage.tsx",
+  "src/pages/site/drafts/DraftsView.test.tsx",
+  "src/pages/site/drafts/DraftsView.tsx",
+  "src/pages/site/drafts/__audit__/DraftsPage.ca09.audit.test.tsx",
+  "src/hooks/useOnScreen.ts",
+  "src/lib/errors/code.ts",
+  "src/pages/site/drafts/DraftsPage.test.tsx",
+  // CA-10 P2
+  "src/components/brand/MenuButton.tsx",
+  "src/components/post/editor/FormatBar.tsx",
+  "src/components/shell/Dock.tsx",
+  "src/components/shell/MobileHeader.tsx",
+  "src/components/shell/SiteFrame.tsx",
+  "src/components/shell/SiteHeader.tsx",
+  "src/components/brand/BottomSheet.tsx",
+  "src/components/shell/chromeSize.ts",
+  "src/pages/site/compose/ComposeMenu.tsx",
+  "src/pages/site/compose/composeChrome.ts",
+  // CA-10 P3
+  "src/dev/fixtures/sandbox.ts",
+  "src/pages/site/compose/SessionsPanel.tsx",
+  // CA-10 P3
+  "src/pages/site/compose/SandboxPage.add.test.tsx",
+  "src/pages/site/compose/draftStart.ts",
+  "src/pages/site/compose/useComposeDetails.ts",
+  // CA-10 P4
+  "src/hooks/useComposeBuild.ts",
+  "src/hooks/useComposeBuild.save.test.tsx",
+  "src/lib/build/builds.ts",
+  "src/components/compose/SequenceView.test.tsx",
+  "src/components/compose/TrayDrop.test.tsx",
+  // CA-10 P4
+  "src/components/compose/Publish.test.tsx",
+  // CA-10 P5
+  "src/hooks/usePresence.ts",
+  "src/hooks/usePresence.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -576,6 +622,166 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "a native range input",
     text: 'type="range"',
     why: "CA-07 P5: Crop media's zoom. The codebase has no slider, so the prompt allows a native range held to the refined look (accentColor --text, a Field label Zoom), in EditMediaDialog.tsx only.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: "import { Toaster as Sonner } from \"@/components/ui/sonner\";",
+    why: "The app root (App.tsx) mounts these providers; there before CA-10, which only adds a default staleTime.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: "import { Toaster } from \"@/components/ui/toaster\";",
+    why: "The app root (App.tsx) mounts these providers; there before CA-10, which only adds a default staleTime.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: "import { TooltipProvider } from \"@/components/ui/tooltip\";",
+    why: "The app root (App.tsx) mounts these providers; there before CA-10, which only adds a default staleTime.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: " — buildgallery\"",
+    why: "The page title convention \"Page — buildgallery\" in the tab, there before CA-10; not drawn on the page.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "const observer = new IntersectionObserver((entries) => {",
+    why: "CA-10: polling only while a panel is on screen (useOnScreen). It reads whether an element shows; it fades nothing in.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: "} from \"@/components/ui/dropdown-menu\";",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "justifyContent: \"space-between\", gap: 9, padding: \"9px 9px 6px\"",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9, 9 is not in SPACE_REFINED",
+    text: "justifyContent: \"space-between\", gap: 9, padding: \"9px 9px 6px\"",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "gap: 9,",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: "padding: \"0 10px\",",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7, 10 is not in SPACE_REFINED",
+    text: "padding: \"7px 10px\",",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "padding: \"0 9px\",",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "gap: 7,",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 10, 7 is not in SPACE_REFINED",
+    text: "padding: phone ? \"4px 4px 4px 10px\" : \"4px 4px 4px 7px\",",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "justifyContent: \"flex-end\", gap: 7 }}>",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9, 9 is not in SPACE_REFINED",
+    text: "<div style={{ padding: \"6px 9px 9px\" }}>",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "style={{ margin: \"4px 9px 6px\", display: \"block\" }}>",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 17 is not in SPACE_REFINED",
+    text: "marginTop: 17,",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 17 is not in SPACE_REFINED",
+    text: "gap: 17,",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 17 is not in SPACE_REFINED",
+    text: "<div style={{ marginTop: 17, display: \"flex\" }}>{older}</div>",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "the lucide icon ChevronRight drawn on its own",
+    text: "<ChevronRight size={16} strokeWidth={1.6} color=\"var(--text2)\"",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "the lucide icon GripVertical drawn on its own",
+    text: "<GripVertical size={14} strokeWidth={1.6} color=\"var(--text2)\"",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "the lucide icon Plus drawn on its own",
+    text: "<Plus size={16} strokeWidth={1.8} aria-hidden=\"true\" style={{ flexShrink: 0 }} />",
+    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 3 is not in SPACE_REFINED",
+    text: "padding: \"0 3px\",",
+    why: "The unread badge (UI-P87), 12 high with 3 of padding, there before CA-10, which only names the shell's heights in this file.",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "padding: 9,",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "height: phone ? 44 : 33, padding: \"0 7px\", fontSize: phone ? 16 : 14 };",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "padding: \"4px 6px 7px\", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>No prompts in this session.",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "<div style={{ marginTop: 9 }}>",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "gap: phone ? 4 : 7, marginTop: 10 }}>",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: "gap: phone ? 4 : 7, marginTop: 10 }}>",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "a native <select>",
+    text: "<select id={`${id}-model`} value={choice}",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "the lucide icon ChevronDown drawn on its own",
+    text: "<ChevronDown",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
   },
 ];
 

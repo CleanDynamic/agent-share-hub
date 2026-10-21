@@ -1,0 +1,11 @@
+desktop normal (120 ms)                                                        drafts   1350  error   null  after 40 s: the drafts  reads 7
+desktop slow (400 ms)                                                          drafts   2446  error   null  after 40 s: the drafts  reads 7
+desktop statement timeout when a returned proposal is over 1 MB (8 s, 57014)   drafts   null  error  19432  after 40 s: a skeleton or nothing  reads 7
+desktop waiting sessions slow alone (+6 s)                                     drafts   7051  error   null  after 40 s: the drafts  reads 7
+desktop all sessions slow alone (+6 s)                                         drafts   1153  error   null  after 40 s: the drafts  reads 7
+desktop drafts slow alone (+6 s)                                               drafts   7367  error   null  after 40 s: the drafts  reads 7
+desktop waiting sessions fail alone (57014)                                    drafts   null  error   2332  after 40 s: That didn't load.  reads 11
+desktop all sessions fail alone (57014)                                        drafts   1132  error   null  after 40 s: the drafts  reads 8
+desktop drafts fail alone (57014)                                              drafts   null  error   2117  after 40 s: That didn't load.  reads 7
+desktop both session reads fail                                                drafts   null  error   2075  after 40 s: That didn't load.  reads 12
+desktop everything fails                                                       drafts   null  error   2090  after 40 s: That didn't load.  reads 12

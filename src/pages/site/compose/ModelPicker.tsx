@@ -27,6 +27,7 @@ import { t } from "@/lib/theme/tokens";
 import { TextButton } from "./composeControls";
 import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
+import { MenuContent } from "./ComposeMenu";
 
 /** The longest model name a maker can type. */
 export const MODEL_TYPED_MAX = 40;
@@ -130,10 +131,10 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
         <MenuButton aria-label={value ? `${word} ${value}` : word} label={value ? "" : placeholder} value={value ?? ""} open={open} style={buttonStyle} />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content
+        <MenuContent
           align="start"
           sideOffset={4}
-          collisionPadding={16}
+         
           style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}
         >
           {typing ? (
@@ -199,7 +200,7 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
               ) : null}
             </>
           )}
-        </Menu.Content>
+        </MenuContent>
       </Menu.Portal>
     </Menu.Root>
   );

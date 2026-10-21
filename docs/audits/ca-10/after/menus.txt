@@ -1,0 +1,109 @@
+1280x600 draft Add                        @top    rows 16  all on screen
+1280x600 draft Add                        @middle rows 16  all on screen
+1280x600 draft Add                        @bottom rows 16  all on screen
+1280x600 draft Prompt 1 options           @top    rows  8  all on screen
+1280x600 draft Prompt 1 options           @middle rows  8  all on screen
+1280x600 draft Prompt 1 options           @bottom rows  8  all on screen
+1280x600 draft Prompt 2 options           @top    rows  8  all on screen
+1280x600 draft Prompt 2 options           @middle rows  8  all on screen
+1280x600 draft Prompt 2 options           @bottom rows  8  all on screen
+1280x600 draft Code 3 options             @top    rows  5  all on screen
+1280x600 draft Code 3 options             @middle rows  5  all on screen
+1280x600 draft Code 3 options             @bottom rows  5  all on screen
+1280x600 draft Manual step 4 options      @top    rows  5  all on screen
+1280x600 draft Manual step 4 options      @middle rows  5  all on screen
+1280x600 draft Manual step 4 options      @bottom rows  5  all on screen
+1280x600 draft Prompt 5 options           @top    rows  8  all on screen
+1280x600 draft Prompt 5 options           @middle rows  8  all on screen
+1280x600 draft Prompt 5 options           @bottom rows  8  all on screen
+1280x600 draft Adding to Session 2 · Claude @top    rows  3  all on screen
+1280x600 draft Adding to Session 2 · Claude @middle rows  3  all on screen
+1280x600 draft Adding to Session 2 · Claude @bottom rows  3  all on screen
+1280x600 draft model                      @top    rows 11  all on screen
+1280x600 draft model                      @middle rows 11  all on screen
+1280x600 draft model                      @bottom rows 11  all on screen
+1280x600 new   Add                        @top    rows 16  all on screen
+1280x600 new   Add                        @middle rows 16  all on screen
+1280x600 new   Add                        @bottom rows 16  all on screen
+1280x900 draft Add                        @top    rows 16  all on screen
+1280x900 draft Add                        @middle rows 16  all on screen
+1280x900 draft Add                        @bottom rows 16  all on screen
+1280x900 draft Prompt 1 options           @top    rows  8  all on screen
+1280x900 draft Prompt 1 options           @middle rows  8  all on screen
+1280x900 draft Prompt 1 options           @bottom rows  8  all on screen
+1280x900 draft Prompt 2 options           @top    rows  8  all on screen
+1280x900 draft Prompt 2 options           @middle rows  8  all on screen
+1280x900 draft Prompt 2 options           @bottom rows  8  all on screen
+1280x900 draft Code 3 options             @top    rows  5  all on screen
+1280x900 draft Code 3 options             @middle rows  5  all on screen
+1280x900 draft Code 3 options             @bottom rows  5  all on screen
+1280x900 draft Manual step 4 options      @top    rows  5  all on screen
+1280x900 draft Manual step 4 options      @middle rows  5  all on screen
+1280x900 draft Manual step 4 options      @bottom rows  5  all on screen
+1280x900 draft Prompt 5 options           @top    rows  8  all on screen
+1280x900 draft Prompt 5 options           @middle rows  8  all on screen
+1280x900 draft Prompt 5 options           @bottom rows  8  all on screen
+1280x900 draft Adding to Session 2 · Claude @top    rows  3  all on screen
+1280x900 draft Adding to Session 2 · Claude @middle rows  3  all on screen
+1280x900 draft Adding to Session 2 · Claude @bottom rows  3  all on screen
+1280x900 draft model                      @top    rows 11  all on screen
+1280x900 draft model                      @middle rows 11  all on screen
+1280x900 draft model                      @bottom rows 11  all on screen
+1280x900 new   Add                        @top    rows 16  all on screen
+1280x900 new   Add                        @middle rows 16  all on screen
+1280x900 new   Add                        @bottom rows 16  all on screen
+390x664  draft Add                        @top    rows 10  all on screen
+390x664  draft Add                        @middle rows 10  all on screen
+390x664  draft Add                        @bottom rows 10  all on screen
+390x664  draft Prompt 1 options           @top    rows  9  all on screen
+390x664  draft Prompt 1 options           @middle rows  9  all on screen
+390x664  draft Prompt 1 options           @bottom rows  9  all on screen
+390x664  draft Prompt 2 options           @top    rows  9  all on screen
+390x664  draft Prompt 2 options           @middle rows  9  all on screen
+390x664  draft Prompt 2 options           @bottom rows  9  all on screen
+390x664  draft Code 3 options             @top    rows  6  all on screen
+390x664  draft Code 3 options             @middle rows  6  all on screen
+390x664  draft Code 3 options             @bottom rows  6  all on screen
+390x664  draft Manual step 4 options      @top    rows  6  all on screen
+390x664  draft Manual step 4 options      @middle rows  6  all on screen
+390x664  draft Manual step 4 options      @bottom rows  6  all on screen
+390x664  draft Prompt 5 options           @top    rows  9  all on screen
+390x664  draft Prompt 5 options           @middle rows  9  all on screen
+390x664  draft Prompt 5 options           @bottom rows  9  all on screen
+390x664  draft Adding to Session 2 · Claude @top    rows  3  all on screen
+390x664  draft Adding to Session 2 · Claude @middle rows  3  all on screen
+390x664  draft Adding to Session 2 · Claude @bottom rows  3  all on screen
+390x664  draft model                      @top    rows 11  all on screen
+390x664  draft model                      @middle rows 11  all on screen
+390x664  draft model                      @bottom rows 11  all on screen
+390x664  new   Add                        @top    rows 10  all on screen
+390x664  new   Add                        @middle rows 10  all on screen
+390x664  new   Add                        @bottom rows 10  all on screen
+430x739  draft Add                        @top    rows 10  all on screen
+430x739  draft Add                        @middle rows 10  all on screen
+430x739  draft Add                        @bottom rows 10  all on screen
+430x739  draft Prompt 1 options           @top    rows  9  all on screen
+430x739  draft Prompt 1 options           @middle rows  9  all on screen
+430x739  draft Prompt 1 options           @bottom rows  9  all on screen
+430x739  draft Prompt 2 options           @top    rows  9  all on screen
+430x739  draft Prompt 2 options           @middle rows  9  all on screen
+430x739  draft Prompt 2 options           @bottom rows  9  all on screen
+430x739  draft Code 3 options             @top    rows  6  all on screen
+430x739  draft Code 3 options             @middle rows  6  all on screen
+430x739  draft Code 3 options             @bottom rows  6  all on screen
+430x739  draft Manual step 4 options      @top    rows  6  all on screen
+430x739  draft Manual step 4 options      @middle rows  6  all on screen
+430x739  draft Manual step 4 options      @bottom rows  6  all on screen
+430x739  draft Prompt 5 options           @top    rows  9  all on screen
+430x739  draft Prompt 5 options           @middle rows  9  all on screen
+430x739  draft Prompt 5 options           @bottom rows  9  all on screen
+430x739  draft Adding to Session 2 · Claude @top    rows  3  all on screen
+430x739  draft Adding to Session 2 · Claude @middle rows  3  all on screen
+430x739  draft Adding to Session 2 · Claude @bottom rows  3  all on screen
+430x739  draft model                      @top    rows 11  all on screen
+430x739  draft model                      @middle rows 11  all on screen
+430x739  draft model                      @bottom rows 11  all on screen
+430x739  new   Add                        @top    rows 10  all on screen
+430x739  new   Add                        @middle rows 10  all on screen
+430x739  new   Add                        @bottom rows 10  all on screen
+PASS: every row of every composer menu is on screen or reachable inside its menu

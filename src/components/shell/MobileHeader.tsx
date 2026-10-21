@@ -32,6 +32,7 @@ import { BottomSheet } from "./BottomSheet";
 import type { FrameViewer } from "./frameTypes";
 import { RoutedHeaderSearch } from "./HeaderSearch";
 import { SITE_NAV } from "./siteNav";
+import { HEADER_HEIGHT } from "./chromeSize";
 
 export interface MobileHeaderViewProps {
   viewer: FrameViewer | null;
@@ -82,7 +83,7 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
         position: "sticky",
         top: 0,
         zIndex: 20,
-        height: 48,
+        height: HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
