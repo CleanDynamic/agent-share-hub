@@ -1,0 +1,55 @@
+{
+  "compression": "pglz",
+  "server": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit",
+  "table": "189 MB",
+  "milesProposals": {
+    "avg_stored": "714837",
+    "max_stored": 5110088,
+    "avg_text": "706588",
+    "max_text": 5052337
+  },
+  "reads": {
+    "Drafts: waiting sessions (listSessions, parsed)": {
+      "medianMs": 4.7,
+      "minMs": 4.2,
+      "maxMs": 5.5,
+      "rows": 7,
+      "responseBytes": 11535,
+      "plan": "Aggregate  (cost=8.36..8.37 rows=1 width=48) (actual time=3.624..3.626 rows=1 loops=1)\n  Buffers: shared hit=2205\n  ->  Limit  (cost=8.35..8.35 rows=1 width=191) (actual time=3.559..3.562 rows=7 loops=1)\n        Buffers: shared hit=2205\n        InitPlan 1 (returns $0)\n          ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=1)\n        ->  Sort  (cost=8.33..8.33 rows=1 width=191) (actual time=3.558..3.559 rows=7 loops=1)\n              Sort Key: import_sessions.created_at DESC\n              Sort Method: quicksort  Memory: 39kB\n              Buffers: shared hit=2205\n              ->  Index Scan using idx_import_sessions_user_status_created on import_sessions  (cost=0.28..8.32 rows=1 width=191) (actual time=0.055..3.548 rows=7 loops=1)\n                    Index Cond: (user_id = $0)\n                    Filter: (status = ANY ('{parsed}'::text[]))\n                    Rows Removed by Filter: 13\n                    Buffers: shared hit=2205\nPlanning Time: 0.136 ms\nExecution Time: 3.657 ms"
+    },
+    "Drafts: all sessions (listSessions, parsed+claimed)": {
+      "medianMs": 12.7,
+      "minMs": 11.7,
+      "maxMs": 14,
+      "rows": 17,
+      "responseBytes": 28213,
+      "plan": "Aggregate  (cost=8.36..8.38 rows=1 width=48) (actual time=11.249..11.251 rows=1 loops=1)\n  Buffers: shared hit=5400\n  ->  Limit  (cost=8.35..8.35 rows=1 width=191) (actual time=11.106..11.111 rows=17 loops=1)\n        Buffers: shared hit=5400\n        InitPlan 1 (returns $0)\n          ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.006..0.006 rows=1 loops=1)\n        ->  Sort  (cost=8.33..8.33 rows=1 width=191) (actual time=11.105..11.106 rows=17 loops=1)\n              Sort Key: import_sessions.created_at DESC\n              Sort Method: quicksort  Memory: 59kB\n              Buffers: shared hit=5400\n              ->  Index Scan using idx_import_sessions_user_status_created on import_sessions  (cost=0.28..8.32 rows=1 width=191) (actual time=0.102..11.080 rows=17 loops=1)\n                    Index Cond: (user_id = $0)\n                    Filter: (status = ANY ('{parsed,claimed}'::text[]))\n                    Rows Removed by Filter: 3\n                    Buffers: shared hit=5400\nPlanning Time: 0.195 ms\nExecution Time: 11.294 ms"
+    },
+    "Composer: library (listLibrarySessions)": {
+      "medianMs": 13.7,
+      "minMs": 13.1,
+      "maxMs": 15.4,
+      "rows": 20,
+      "responseBytes": 33693,
+      "plan": "Aggregate  (cost=8.36..8.38 rows=1 width=48) (actual time=13.343..13.346 rows=1 loops=1)\n  Buffers: shared hit=5586\n  ->  Limit  (cost=8.35..8.35 rows=1 width=198) (actual time=13.157..13.162 rows=20 loops=1)\n        Buffers: shared hit=5586\n        InitPlan 1 (returns $0)\n          ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.007..0.007 rows=1 loops=1)\n        ->  Sort  (cost=8.33..8.33 rows=1 width=198) (actual time=13.155..13.157 rows=20 loops=1)\n              Sort Key: import_sessions.created_at DESC\n              Sort Method: quicksort  Memory: 65kB\n              Buffers: shared hit=5586\n              ->  Index Scan using idx_import_sessions_user_status_created on import_sessions  (cost=0.28..8.32 rows=1 width=198) (actual time=0.202..13.126 rows=20 loops=1)\n                    Index Cond: (user_id = $0)\n                    Filter: ((proposal IS NOT NULL) AND (status = ANY ('{parsed,claimed,expired}'::text[])))\n                    Buffers: shared hit=5586\nPlanning Time: 0.274 ms\nExecution Time: 13.424 ms"
+    },
+    "Control: same rows, no proposal paths": {
+      "medianMs": 0.5,
+      "minMs": 0.4,
+      "maxMs": 0.7,
+      "rows": 20,
+      "responseBytes": 3810,
+      "plan": "Aggregate  (cost=8.34..8.36 rows=1 width=48) (actual time=0.060..0.061 rows=1 loops=1)\n  Buffers: shared hit=3\n  ->  Limit  (cost=8.33..8.33 rows=1 width=102) (actual time=0.022..0.025 rows=20 loops=1)\n        Buffers: shared hit=3\n        InitPlan 1 (returns $0)\n          ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=1)\n        ->  Sort  (cost=8.31..8.31 rows=1 width=102) (actual time=0.022..0.023 rows=20 loops=1)\n              Sort Key: import_sessions.created_at DESC\n              Sort Method: quicksort  Memory: 26kB\n              Buffers: shared hit=3\n              ->  Index Scan using idx_import_sessions_user_status_created on import_sessions  (cost=0.28..8.30 rows=1 width=102) (actual time=0.010..0.015 rows=20 loops=1)\n                    Index Cond: (user_id = $0)\n                    Filter: ((proposal IS NOT NULL) AND (status = ANY ('{parsed,claimed,expired}'::text[])))\n                    Buffers: shared hit=3\nPlanning Time: 0.092 ms\nExecution Time: 0.079 ms"
+    },
+    "Fix A: one detoast per row (paths from one jsonb)": {
+      "medianMs": 13.5,
+      "minMs": 12.7,
+      "maxMs": 19.6,
+      "rows": 20,
+      "responseBytes": 33693,
+      "plan": "Aggregate  (cost=8.38..8.40 rows=1 width=48) (actual time=14.033..14.036 rows=1 loops=1)\n  Buffers: shared hit=5586\n  ->  Limit  (cost=8.37..8.37 rows=1 width=198) (actual time=13.862..13.867 rows=20 loops=1)\n        Buffers: shared hit=5586\n        InitPlan 1 (returns $0)\n          ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.006..0.007 rows=1 loops=1)\n        ->  Sort  (cost=8.35..8.35 rows=1 width=198) (actual time=13.861..13.863 rows=20 loops=1)\n              Sort Key: import_sessions.created_at DESC\n              Sort Method: quicksort  Memory: 65kB\n              Buffers: shared hit=5586\n              ->  Nested Loop  (cost=0.28..8.34 rows=1 width=198) (actual time=0.102..13.832 rows=20 loops=1)\n                    Buffers: shared hit=5586\n                    ->  Index Scan using idx_import_sessions_user_status_created on import_sessions  (cost=0.28..8.30 rows=1 width=120) (actual time=0.019..0.041 rows=20 loops=1)\n                          Index Cond: (user_id = $0)\n                          Filter: ((proposal IS NOT NULL) AND (status = ANY ('{parsed,claimed,expired}'::text[])))\n                          Buffers: shared hit=3\n                    ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.000 rows=1 loops=20)\nPlanning Time: 0.246 ms\nExecution Time: 14.080 ms"
+    }
+  },
+  "libraryProposalMb": 14.13,
+  "msPerMbPerPath": 0.31
+}

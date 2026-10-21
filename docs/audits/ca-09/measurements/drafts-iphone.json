@@ -1,0 +1,208 @@
+[
+  {
+    "scenario": "normal (120 ms)",
+    "profile": "iphone",
+    "firstDraftMs": 6971,
+    "errorShownMs": null,
+    "sessionsShownMs": 6971,
+    "reads": [
+      "2734.0s drafts 200 124ms",
+      "2733.9s waiting 200 161ms (5.53 MB of proposal)",
+      "2734.0s all sessions 200 204ms (13.58 MB of proposal)",
+      "2734.7s draft counts 200 124ms",
+      "2744.7s waiting 200 147ms (5.53 MB of proposal)",
+      "2755.4s waiting 200 148ms (5.53 MB of proposal)",
+      "2766.1s waiting 200 147ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-iphone-normal-120-ms-.png"
+  },
+  {
+    "scenario": "slow (400 ms)",
+    "profile": "iphone",
+    "firstDraftMs": 7612,
+    "errorShownMs": null,
+    "sessionsShownMs": 7612,
+    "reads": [
+      "2775.1s drafts 200 401ms",
+      "2775.0s waiting 200 438ms (5.53 MB of proposal)",
+      "2775.1s all sessions 200 485ms (13.58 MB of proposal)",
+      "2776.1s draft counts 200 402ms",
+      "2786.1s waiting 200 427ms (5.53 MB of proposal)",
+      "2797.1s waiting 200 428ms (5.53 MB of proposal)",
+      "2808.0s waiting 200 428ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-iphone-slow-400-ms-.png"
+  },
+  {
+    "scenario": "statement timeout when a returned proposal is over 1 MB (8 s, 57014)",
+    "profile": "iphone",
+    "firstDraftMs": null,
+    "errorShownMs": 23746,
+    "sessionsShownMs": null,
+    "reads": [
+      "2815.5s drafts 200 402ms",
+      "2816.5s draft counts 200 404ms",
+      "2815.5s waiting 500 57014 8411ms (5.53 MB of proposal)",
+      "2815.5s all sessions 500 57014 8415ms (13.58 MB of proposal)",
+      "2825.3s waiting 500 57014 8404ms (5.53 MB of proposal)",
+      "2825.3s all sessions 500 57014 8403ms (13.58 MB of proposal)"
+    ],
+    "shows": "a skeleton or nothing",
+    "screenshot": "measurements/screens/drafts-iphone-statement-timeout-when-a-returned-proposal-is-over-1-mb-8-s-57014-.png"
+  },
+  {
+    "scenario": "waiting sessions slow alone (+6 s)",
+    "profile": "iphone",
+    "firstDraftMs": 11826,
+    "errorShownMs": null,
+    "sessionsShownMs": 11826,
+    "reads": [
+      "2844.2s waiting 500 57014 8401ms (5.53 MB of proposal)",
+      "2856.3s all sessions 200 136ms (13.58 MB of proposal)",
+      "2856.3s drafts 200 122ms",
+      "2857.0s draft counts 200 121ms",
+      "2856.3s waiting 200 6135ms (5.53 MB of proposal)",
+      "2872.6s waiting 200 6126ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-iphone-waiting-sessions-slow-alone-6-s-.png"
+  },
+  {
+    "scenario": "all sessions slow alone (+6 s)",
+    "profile": "iphone",
+    "firstDraftMs": 6838,
+    "errorShownMs": null,
+    "sessionsShownMs": 6838,
+    "reads": [
+      "2888.9s waiting 200 6123ms (5.53 MB of proposal)",
+      "2896.9s waiting 200 129ms (5.53 MB of proposal)",
+      "2896.9s drafts 200 121ms",
+      "2897.7s draft counts 200 123ms",
+      "2896.9s all sessions 200 6136ms (13.58 MB of proposal)",
+      "2907.6s waiting 200 121ms (5.53 MB of proposal)",
+      "2918.3s waiting 200 121ms (5.53 MB of proposal)",
+      "2929.1s waiting 200 121ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-iphone-all-sessions-slow-alone-6-s-.png"
+  },
+  {
+    "scenario": "drafts slow alone (+6 s)",
+    "profile": "iphone",
+    "firstDraftMs": 12381,
+    "errorShownMs": null,
+    "sessionsShownMs": 12381,
+    "reads": [
+      "2937.6s waiting 200 130ms (5.53 MB of proposal)",
+      "2937.7s all sessions 200 136ms (13.58 MB of proposal)",
+      "2937.7s drafts 200 6123ms",
+      "2944.0s draft counts 200 122ms",
+      "2948.4s waiting 200 121ms (5.53 MB of proposal)",
+      "2959.1s waiting 200 121ms (5.53 MB of proposal)",
+      "2969.8s waiting 200 121ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-iphone-drafts-slow-alone-6-s-.png"
+  },
+  {
+    "scenario": "waiting sessions fail alone (57014)",
+    "profile": "iphone",
+    "firstDraftMs": null,
+    "errorShownMs": 8030,
+    "sessionsShownMs": null,
+    "reads": [
+      "2978.8s waiting 500 57014 120ms",
+      "2978.8s all sessions 200 147ms (13.58 MB of proposal)",
+      "2978.8s drafts 200 122ms",
+      "2979.6s draft counts 200 121ms",
+      "2980.5s waiting 500 57014 121ms",
+      "2991.3s waiting 500 57014 121ms",
+      "2993.0s waiting 500 57014 121ms",
+      "3003.7s waiting 500 57014 121ms",
+      "3005.4s waiting 500 57014 121ms"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-iphone-waiting-sessions-fail-alone-57014-.png"
+  },
+  {
+    "scenario": "all sessions fail alone (57014)",
+    "profile": "iphone",
+    "firstDraftMs": 6785,
+    "errorShownMs": null,
+    "sessionsShownMs": 6785,
+    "reads": [
+      "3019.1s waiting 200 131ms (5.53 MB of proposal)",
+      "3019.1s all sessions 500 57014 121ms",
+      "3019.1s drafts 200 120ms",
+      "3019.9s draft counts 200 122ms",
+      "3020.9s all sessions 500 57014 120ms",
+      "3029.8s waiting 200 122ms (5.53 MB of proposal)",
+      "3040.5s waiting 200 121ms (5.53 MB of proposal)",
+      "3051.3s waiting 200 121ms (5.53 MB of proposal)"
+    ],
+    "shows": "the drafts",
+    "screenshot": "measurements/screens/drafts-iphone-all-sessions-fail-alone-57014-.png"
+  },
+  {
+    "scenario": "drafts fail alone (57014)",
+    "profile": "iphone",
+    "firstDraftMs": null,
+    "errorShownMs": 7658,
+    "sessionsShownMs": null,
+    "reads": [
+      "3059.8s waiting 200 134ms (5.53 MB of proposal)",
+      "3059.8s all sessions 200 136ms (13.58 MB of proposal)",
+      "3059.9s drafts 500 57014 122ms",
+      "3061.6s drafts 500 57014 121ms",
+      "3070.5s waiting 200 121ms (5.53 MB of proposal)",
+      "3081.2s waiting 200 120ms (5.53 MB of proposal)",
+      "3091.9s waiting 200 120ms (5.53 MB of proposal)"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-iphone-drafts-fail-alone-57014-.png"
+  },
+  {
+    "scenario": "both session reads fail",
+    "profile": "iphone",
+    "firstDraftMs": null,
+    "errorShownMs": 7905,
+    "sessionsShownMs": null,
+    "reads": [
+      "3100.9s waiting 500 57014 120ms",
+      "3100.9s all sessions 500 57014 120ms",
+      "3100.9s drafts 200 125ms",
+      "3101.6s draft counts 200 121ms",
+      "3102.6s waiting 500 57014 121ms",
+      "3102.6s all sessions 500 57014 120ms",
+      "3113.4s waiting 500 57014 120ms",
+      "3115.1s waiting 500 57014 121ms",
+      "3125.8s waiting 500 57014 121ms",
+      "3127.5s waiting 500 57014 120ms"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-iphone-both-session-reads-fail.png"
+  },
+  {
+    "scenario": "everything fails",
+    "profile": "iphone",
+    "firstDraftMs": null,
+    "errorShownMs": 8053,
+    "sessionsShownMs": null,
+    "reads": [
+      "3141.8s waiting 500 57014 120ms",
+      "3141.8s all sessions 500 57014 120ms",
+      "3141.8s drafts 500 57014 121ms",
+      "3143.5s waiting 500 57014 120ms",
+      "3143.5s all sessions 500 57014 121ms",
+      "3143.5s drafts 500 57014 120ms",
+      "3154.3s waiting 500 57014 121ms",
+      "3156.0s waiting 500 57014 121ms",
+      "3166.7s waiting 500 57014 121ms",
+      "3168.4s waiting 500 57014 121ms"
+    ],
+    "shows": "That didn't load.",
+    "screenshot": "measurements/screens/drafts-iphone-everything-fails.png"
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "profile": "desktop",
+  "add-prompt field": {
+    "letters": 20,
+    "ms": 3741,
+    "commits": 20,
+    "rendersPerLetter": {
+      "SourcesPanel": 1,
+      "PostTab": 1,
+      "DetailsPanel": 1
+    },
+    "worstKeyEventMs": 16,
+    "keyEventsOver50ms": 0
+  },
+  "post editor": {
+    "letters": 20,
+    "ms": 3835,
+    "commits": 33,
+    "rendersPerLetter": {
+      "SandboxPage": 0.1,
+      "SandboxView": 0.2,
+      "SourcesPanel": 1.6,
+      "PostTab": 0.2,
+      "BuildList": 1.6,
+      "DetailsPanel": 1.6
+    },
+    "worstKeyEventMs": 32,
+    "keyEventsOver50ms": 0
+  }
+}

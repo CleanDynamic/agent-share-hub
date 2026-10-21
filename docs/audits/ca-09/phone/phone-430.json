@@ -1,0 +1,1795 @@
+[
+  {
+    "route": "home",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 634,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 0,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 3,
+    "inline100vh": [],
+    "fullHeightBoxes": [],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 37,
+    "targetsUnder44": 10,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "button:Following 80×22",
+      "button:Everyone 78×22",
+      "button:Enter the gallery 135×32",
+      "button:All 41×36",
+      "button:Builds 61×36",
+      "button:Rebuilds 75×36",
+      "button:Notes 60×36",
+      "button:Asks 53×36"
+    ],
+    "desktopWords": [],
+    "spacing": {
+      "textElements": 145,
+      "textOffScale": 123,
+      "textOffScaleTop": [
+        [
+          "10.5px",
+          42
+        ],
+        [
+          "12px",
+          28
+        ],
+        [
+          "12.5px",
+          23
+        ],
+        [
+          "11.5px",
+          23
+        ],
+        [
+          "13.5px",
+          3
+        ],
+        [
+          "24px",
+          2
+        ],
+        [
+          "14px",
+          1
+        ],
+        [
+          "32px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "23",
+          52
+        ],
+        [
+          "53",
+          20
+        ],
+        [
+          "103",
+          20
+        ],
+        [
+          "115",
+          2
+        ],
+        [
+          "119",
+          2
+        ],
+        [
+          "124",
+          2
+        ],
+        [
+          "125",
+          2
+        ],
+        [
+          "133",
+          2
+        ],
+        [
+          "135",
+          2
+        ],
+        [
+          "137",
+          2
+        ]
+      ],
+      "leftEdgesNot16": 124,
+      "gapsOffScale": 176,
+      "gapsOffScaleTop": [
+        [
+          "6",
+          104
+        ],
+        [
+          "12",
+          50
+        ],
+        [
+          "2",
+          18
+        ],
+        [
+          "24",
+          4
+        ]
+      ],
+      "paddingsOffScale": 157,
+      "paddingsOffScaleTop": [
+        [
+          "6",
+          82
+        ],
+        [
+          "12",
+          63
+        ],
+        [
+          "2",
+          4
+        ],
+        [
+          "10",
+          4
+        ],
+        [
+          "24",
+          3
+        ],
+        [
+          "80",
+          1
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "36",
+          5
+        ],
+        [
+          "22",
+          2
+        ],
+        [
+          "30",
+          1
+        ],
+        [
+          "32",
+          1
+        ],
+        [
+          "44",
+          1
+        ]
+      ],
+      "buttonsAt36": 5,
+      "buttons": 10,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "gallery",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 634,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 0,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 3,
+    "inline100vh": [],
+    "fullHeightBoxes": [
+      "site-frame"
+    ],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 15,
+    "targetsUnder44": 7,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "Search the gallery 340×25",
+      "feed-menu-model 91×36",
+      "feed-menu-tool 114×36",
+      "feed-menu-for 135×36",
+      "feed-menu-sort 101×36"
+    ],
+    "desktopWords": [],
+    "spacing": {
+      "textElements": 9,
+      "textOffScale": 7,
+      "textOffScaleTop": [
+        [
+          "12px",
+          5
+        ],
+        [
+          "14px",
+          1
+        ],
+        [
+          "20px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "23",
+          4
+        ],
+        [
+          "12",
+          1
+        ],
+        [
+          "38",
+          1
+        ],
+        [
+          "118",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 7,
+      "gapsOffScale": 26,
+      "gapsOffScaleTop": [
+        [
+          "2",
+          10
+        ],
+        [
+          "6",
+          10
+        ],
+        [
+          "12",
+          6
+        ]
+      ],
+      "paddingsOffScale": 21,
+      "paddingsOffScaleTop": [
+        [
+          "12",
+          13
+        ],
+        [
+          "10",
+          4
+        ],
+        [
+          "6",
+          3
+        ],
+        [
+          "80",
+          1
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "36",
+          4
+        ],
+        [
+          "44",
+          2
+        ],
+        [
+          "30",
+          1
+        ]
+      ],
+      "buttonsAt36": 4,
+      "buttons": 7,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "build",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 634,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 0,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 3,
+    "inline100vh": [],
+    "fullHeightBoxes": [],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 81,
+    "targetsUnder44": 11,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "button:The build 77×36",
+      "button:Watch it get built 121×36",
+      "button:Understand it 102×36",
+      "button:Where it broke 108×36",
+      "button:Read all of it 73×24",
+      "button:Read all of it 73×24",
+      "button:Read all of it 73×24",
+      "button:Read all of it 73×24",
+      "button:code 384×17"
+    ],
+    "desktopWords": [],
+    "spacing": {
+      "textElements": 129,
+      "textOffScale": 97,
+      "textOffScaleTop": [
+        [
+          "12.5px",
+          23
+        ],
+        [
+          "12px",
+          19
+        ],
+        [
+          "14px",
+          14
+        ],
+        [
+          "11.5px",
+          12
+        ],
+        [
+          "16px",
+          10
+        ],
+        [
+          "13.5px",
+          10
+        ],
+        [
+          "10.5px",
+          7
+        ],
+        [
+          "20px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "23",
+          26
+        ],
+        [
+          "40",
+          17
+        ],
+        [
+          "76",
+          16
+        ],
+        [
+          "75",
+          11
+        ],
+        [
+          "161",
+          4
+        ],
+        [
+          "51",
+          3
+        ],
+        [
+          "177",
+          3
+        ],
+        [
+          "37",
+          2
+        ],
+        [
+          "63",
+          2
+        ],
+        [
+          "12",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 97,
+      "gapsOffScale": 166,
+      "gapsOffScaleTop": [
+        [
+          "12",
+          98
+        ],
+        [
+          "2",
+          46
+        ],
+        [
+          "6",
+          16
+        ],
+        [
+          "9",
+          2
+        ],
+        [
+          "17",
+          2
+        ],
+        [
+          "20",
+          2
+        ]
+      ],
+      "paddingsOffScale": 112,
+      "paddingsOffScaleTop": [
+        [
+          "12",
+          37
+        ],
+        [
+          "6",
+          20
+        ],
+        [
+          "36",
+          15
+        ],
+        [
+          "5",
+          10
+        ],
+        [
+          "24",
+          9
+        ],
+        [
+          "48",
+          9
+        ],
+        [
+          "10",
+          4
+        ],
+        [
+          "7",
+          2
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "91",
+          40
+        ],
+        [
+          "44",
+          19
+        ],
+        [
+          "24",
+          4
+        ],
+        [
+          "36",
+          4
+        ],
+        [
+          "17",
+          1
+        ],
+        [
+          "30",
+          1
+        ],
+        [
+          "48",
+          1
+        ]
+      ],
+      "buttonsAt36": 4,
+      "buttons": 70,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "drafts",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 634,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 0,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 3,
+    "inline100vh": [],
+    "fullHeightBoxes": [],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 36,
+    "targetsUnder44": 11,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "Add “The group item batch and of the by the lost s 30×30",
+      "Add “It lines arrives then each next date photo wh 30×30",
+      "Add “Up the group item batch and of the by the los 30×30",
+      "Add “Plan it lines arrives then each next date pho 30×30",
+      "Add “By up the group item batch and of the by the  30×30",
+      "Add “Was by up the group item batch and of the by  30×30",
+      "Add “Its was by up the group item batch and of the 30×30",
+      "button:Show 10 already in a bui 142×19",
+      "a:Older post drafts 93×19"
+    ],
+    "desktopWords": [],
+    "spacing": {
+      "textElements": 57,
+      "textOffScale": 26,
+      "textOffScaleTop": [
+        [
+          "12px",
+          21
+        ],
+        [
+          "14px",
+          4
+        ],
+        [
+          "24px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "43",
+          32
+        ],
+        [
+          "67",
+          10
+        ],
+        [
+          "49",
+          4
+        ],
+        [
+          "23",
+          3
+        ],
+        [
+          "41",
+          3
+        ],
+        [
+          "12",
+          1
+        ],
+        [
+          "38",
+          1
+        ],
+        [
+          "68",
+          1
+        ],
+        [
+          "108",
+          1
+        ],
+        [
+          "157",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 57,
+      "gapsOffScale": 122,
+      "gapsOffScaleTop": [
+        [
+          "2",
+          46
+        ],
+        [
+          "9",
+          38
+        ],
+        [
+          "1",
+          14
+        ],
+        [
+          "7",
+          14
+        ],
+        [
+          "6",
+          8
+        ],
+        [
+          "12",
+          2
+        ]
+      ],
+      "paddingsOffScale": 88,
+      "paddingsOffScaleTop": [
+        [
+          "10",
+          43
+        ],
+        [
+          "7",
+          32
+        ],
+        [
+          "9",
+          6
+        ],
+        [
+          "6",
+          4
+        ],
+        [
+          "12",
+          2
+        ],
+        [
+          "80",
+          1
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "30",
+          8
+        ],
+        [
+          "19",
+          1
+        ],
+        [
+          "44",
+          1
+        ],
+        [
+          "48",
+          1
+        ]
+      ],
+      "buttonsAt36": 0,
+      "buttons": 11,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "compose-new",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "floating",
+        "position": "sticky",
+        "top": 581,
+        "height": 66,
+        "name": "Actions"
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 568,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 66,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 4,
+    "inline100vh": [],
+    "fullHeightBoxes": [],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 30,
+    "targetsUnder44": 3,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "button:a title 40×44"
+    ],
+    "desktopWords": [
+      "Click a prompt to see its details · double-click to read all of it"
+    ],
+    "spacing": {
+      "textElements": 24,
+      "textOffScale": 16,
+      "textOffScaleTop": [
+        [
+          "12.5px",
+          10
+        ],
+        [
+          "12px",
+          2
+        ],
+        [
+          "14px",
+          1
+        ],
+        [
+          "20px",
+          1
+        ],
+        [
+          "13.5px",
+          1
+        ],
+        [
+          "11.5px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "23",
+          6
+        ],
+        [
+          "12",
+          1
+        ],
+        [
+          "19",
+          1
+        ],
+        [
+          "32",
+          1
+        ],
+        [
+          "36",
+          1
+        ],
+        [
+          "38",
+          1
+        ],
+        [
+          "71",
+          1
+        ],
+        [
+          "103",
+          1
+        ],
+        [
+          "108",
+          1
+        ],
+        [
+          "115",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 19,
+      "gapsOffScale": 42,
+      "gapsOffScaleTop": [
+        [
+          "12",
+          20
+        ],
+        [
+          "2",
+          10
+        ],
+        [
+          "6",
+          8
+        ],
+        [
+          "20",
+          4
+        ]
+      ],
+      "paddingsOffScale": 27,
+      "paddingsOffScaleTop": [
+        [
+          "12",
+          20
+        ],
+        [
+          "10",
+          4
+        ],
+        [
+          "6",
+          2
+        ],
+        [
+          "80",
+          1
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "44",
+          19
+        ],
+        [
+          "48",
+          2
+        ],
+        [
+          "30",
+          1
+        ]
+      ],
+      "buttonsAt36": 0,
+      "buttons": 22,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "compose-7step",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "floating",
+        "position": "sticky",
+        "top": 581,
+        "height": 66,
+        "name": "Actions"
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 568,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 66,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 4,
+    "inline100vh": [],
+    "fullHeightBoxes": [],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 51,
+    "targetsUnder44": 15,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "drag-handle 18×44",
+      "Prompt 1 options 26×26",
+      "button:Show full prompt 97×40",
+      "drag-handle 18×44",
+      "Prompt 2 options 26×26",
+      "button:Show full prompt 97×40",
+      "drag-handle 18×44",
+      "Code 3 options 26×26",
+      "drag-handle 18×44",
+      "Manual step 4 options 26×26",
+      "drag-handle 18×44",
+      "Prompt 5 options 26×26",
+      "button:Show full prompt 97×40"
+    ],
+    "desktopWords": [
+      "Click a prompt to see its details · double-click to read all of it"
+    ],
+    "spacing": {
+      "textElements": 51,
+      "textOffScale": 40,
+      "textOffScaleTop": [
+        [
+          "12px",
+          13
+        ],
+        [
+          "11.5px",
+          8
+        ],
+        [
+          "14px",
+          7
+        ],
+        [
+          "12.5px",
+          6
+        ],
+        [
+          "13.5px",
+          5
+        ],
+        [
+          "20px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "106",
+          7
+        ],
+        [
+          "23",
+          5
+        ],
+        [
+          "40",
+          4
+        ],
+        [
+          "72",
+          4
+        ],
+        [
+          "76",
+          4
+        ],
+        [
+          "36",
+          2
+        ],
+        [
+          "51",
+          2
+        ],
+        [
+          "71",
+          2
+        ],
+        [
+          "12",
+          1
+        ],
+        [
+          "32",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 44,
+      "gapsOffScale": 62,
+      "gapsOffScaleTop": [
+        [
+          "12",
+          32
+        ],
+        [
+          "2",
+          16
+        ],
+        [
+          "6",
+          10
+        ],
+        [
+          "20",
+          4
+        ]
+      ],
+      "paddingsOffScale": 45,
+      "paddingsOffScaleTop": [
+        [
+          "12",
+          29
+        ],
+        [
+          "36",
+          9
+        ],
+        [
+          "10",
+          4
+        ],
+        [
+          "6",
+          2
+        ],
+        [
+          "80",
+          1
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "44",
+          25
+        ],
+        [
+          "26",
+          5
+        ],
+        [
+          "40",
+          3
+        ],
+        [
+          "48",
+          2
+        ],
+        [
+          "30",
+          1
+        ],
+        [
+          "104",
+          1
+        ]
+      ],
+      "buttonsAt36": 0,
+      "buttons": 37,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "compose-thread",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "floating",
+        "position": "sticky",
+        "top": 581,
+        "height": 66,
+        "name": "Actions"
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 568,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 66,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 4,
+    "inline100vh": [],
+    "fullHeightBoxes": [],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 168,
+    "targetsUnder44": 2,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30"
+    ],
+    "desktopWords": [
+      "Click a prompt to see its details · double-click to read all of it"
+    ],
+    "spacing": {
+      "textElements": 89,
+      "textOffScale": 12,
+      "textOffScaleTop": [
+        [
+          "12.5px",
+          6
+        ],
+        [
+          "12px",
+          2
+        ],
+        [
+          "14px",
+          1
+        ],
+        [
+          "20px",
+          1
+        ],
+        [
+          "13.5px",
+          1
+        ],
+        [
+          "11.5px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "71",
+          20
+        ],
+        [
+          "80",
+          10
+        ],
+        [
+          "174",
+          10
+        ],
+        [
+          "23",
+          5
+        ],
+        [
+          "12",
+          1
+        ],
+        [
+          "32",
+          1
+        ],
+        [
+          "36",
+          1
+        ],
+        [
+          "38",
+          1
+        ],
+        [
+          "103",
+          1
+        ],
+        [
+          "108",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 56,
+      "gapsOffScale": 80,
+      "gapsOffScaleTop": [
+        [
+          "6",
+          48
+        ],
+        [
+          "12",
+          18
+        ],
+        [
+          "2",
+          10
+        ],
+        [
+          "20",
+          4
+        ]
+      ],
+      "paddingsOffScale": 343,
+      "paddingsOffScaleTop": [
+        [
+          "6",
+          162
+        ],
+        [
+          "12",
+          96
+        ],
+        [
+          "7",
+          80
+        ],
+        [
+          "10",
+          4
+        ],
+        [
+          "80",
+          1
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "44",
+          116
+        ],
+        [
+          "180",
+          40
+        ],
+        [
+          "48",
+          2
+        ],
+        [
+          "30",
+          1
+        ]
+      ],
+      "buttonsAt36": 0,
+      "buttons": 159,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "profile",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 634,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 0,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 3,
+    "inline100vh": [],
+    "fullHeightBoxes": [],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 40,
+    "targetsUnder44": 10,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "button:Architect 77×36",
+      "button:Curator 68×36",
+      "button:Mentor 66×36",
+      "button:Explorer 73×36",
+      "button:Builds 61×36",
+      "button:Rebuilds 0 86×36",
+      "button:Reproduced 0 105×36",
+      "button:Collections 0 100×36"
+    ],
+    "desktopWords": [],
+    "spacing": {
+      "textElements": 54,
+      "textOffScale": 48,
+      "textOffScaleTop": [
+        [
+          "12px",
+          16
+        ],
+        [
+          "11.5px",
+          12
+        ],
+        [
+          "10.5px",
+          7
+        ],
+        [
+          "10px",
+          5
+        ],
+        [
+          "16px",
+          5
+        ],
+        [
+          "13.5px",
+          2
+        ],
+        [
+          "14px",
+          1
+        ]
+      ],
+      "leftEdges": [
+        [
+          "34",
+          14
+        ],
+        [
+          "40",
+          7
+        ],
+        [
+          "120",
+          3
+        ],
+        [
+          "143",
+          3
+        ],
+        [
+          "23",
+          2
+        ],
+        [
+          "38",
+          2
+        ],
+        [
+          "12",
+          1
+        ],
+        [
+          "88",
+          1
+        ],
+        [
+          "119",
+          1
+        ],
+        [
+          "138",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 38,
+      "gapsOffScale": 129,
+      "gapsOffScaleTop": [
+        [
+          "3",
+          46
+        ],
+        [
+          "6",
+          46
+        ],
+        [
+          "2",
+          10
+        ],
+        [
+          "5",
+          10
+        ],
+        [
+          "12",
+          8
+        ],
+        [
+          "9",
+          6
+        ],
+        [
+          "10",
+          2
+        ],
+        [
+          "7",
+          1
+        ]
+      ],
+      "paddingsOffScale": 180,
+      "paddingsOffScaleTop": [
+        [
+          "5",
+          65
+        ],
+        [
+          "12",
+          52
+        ],
+        [
+          "6",
+          36
+        ],
+        [
+          "2",
+          10
+        ],
+        [
+          "10",
+          8
+        ],
+        [
+          "14",
+          4
+        ],
+        [
+          "9",
+          2
+        ],
+        [
+          "24",
+          2
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "44",
+          17
+        ],
+        [
+          "36",
+          8
+        ],
+        [
+          "48",
+          2
+        ],
+        [
+          "30",
+          1
+        ]
+      ],
+      "buttonsAt36": 8,
+      "buttons": 28,
+      "mainLeft": 7
+    }
+  },
+  {
+    "route": "messages",
+    "viewport": {
+      "w": 430,
+      "h": 739
+    },
+    "bars": [
+      {
+        "edge": "top",
+        "position": "fixed",
+        "top": 0,
+        "height": 32,
+        "name": "ol:"
+      },
+      {
+        "edge": "top",
+        "position": "sticky",
+        "top": 0,
+        "height": 48,
+        "name": "div:buildgalleryM("
+      },
+      {
+        "edge": "bottom",
+        "position": "fixed",
+        "top": 682,
+        "height": 57,
+        "name": "dock"
+      }
+    ],
+    "pointsLeft": 634,
+    "coveredTop": 48,
+    "coveredBottom": 57,
+    "floatingBars": 0,
+    "vh100Rules": 7,
+    "dynamicViewportRules": 5,
+    "safeAreaRules": 3,
+    "inline100vh": [],
+    "fullHeightBoxes": [
+      "site-frame"
+    ],
+    "fieldsUnder16": [],
+    "horizontalScroll": 0,
+    "tooWide": [],
+    "controls": 17,
+    "targetsUnder44": 6,
+    "targetsUnder44List": [
+      "buildgallery home 102×18",
+      "Search 30×30",
+      "button: 28×28",
+      "button:Primary 110×39",
+      "button:Requests3 110×39",
+      "input: 220×27"
+    ],
+    "desktopWords": [],
+    "spacing": {
+      "textElements": 20,
+      "textOffScale": 13,
+      "textOffScaleTop": [
+        [
+          "12px",
+          5
+        ],
+        [
+          "9px",
+          4
+        ],
+        [
+          "14px",
+          2
+        ],
+        [
+          "10px",
+          2
+        ]
+      ],
+      "leftEdges": [
+        [
+          "79",
+          5
+        ],
+        [
+          "212",
+          3
+        ],
+        [
+          "37",
+          2
+        ],
+        [
+          "12",
+          1
+        ],
+        [
+          "23",
+          1
+        ],
+        [
+          "38",
+          1
+        ],
+        [
+          "133",
+          1
+        ]
+      ],
+      "leftEdgesNot16": 14,
+      "gapsOffScale": 20,
+      "gapsOffScaleTop": [
+        [
+          "2",
+          10
+        ],
+        [
+          "6",
+          6
+        ],
+        [
+          "9",
+          2
+        ],
+        [
+          "12",
+          2
+        ]
+      ],
+      "paddingsOffScale": 41,
+      "paddingsOffScaleTop": [
+        [
+          "14",
+          12
+        ],
+        [
+          "10",
+          10
+        ],
+        [
+          "6",
+          6
+        ],
+        [
+          "12",
+          6
+        ],
+        [
+          "40",
+          3
+        ],
+        [
+          "24",
+          2
+        ],
+        [
+          "9",
+          1
+        ],
+        [
+          "80",
+          1
+        ]
+      ],
+      "buttonHeights": [
+        [
+          "72",
+          3
+        ],
+        [
+          "39",
+          2
+        ],
+        [
+          "28",
+          1
+        ],
+        [
+          "30",
+          1
+        ],
+        [
+          "44",
+          1
+        ],
+        [
+          "46",
+          1
+        ]
+      ],
+      "buttonsAt36": 0,
+      "buttons": 9,
+      "mainLeft": 7
+    }
+  }
+]
