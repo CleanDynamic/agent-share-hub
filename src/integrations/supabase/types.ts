@@ -854,6 +854,48 @@ export type Database = {
           },
         ]
       }
+      build_sessions: {
+        Row: {
+          build_id: string
+          collapsed: boolean
+          created_at: string
+          import_id: string | null
+          position: number
+          session_key: string
+        }
+        Insert: {
+          build_id: string
+          collapsed?: boolean
+          created_at?: string
+          import_id?: string | null
+          position: number
+          session_key: string
+        }
+        Update: {
+          build_id?: string
+          collapsed?: boolean
+          created_at?: string
+          import_id?: string | null
+          position?: number
+          session_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_sessions_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_sessions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "import_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       builds: {
         Row: {
           ai_turn_count: number
