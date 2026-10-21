@@ -266,6 +266,20 @@ export const CA03_FILES: readonly string[] = [
   "src/hooks/useOnScreen.ts",
   "src/lib/errors/code.ts",
   "src/pages/site/drafts/DraftsPage.test.tsx",
+  // CA-10 P2
+  "src/components/brand/MenuButton.tsx",
+  "src/components/post/editor/FormatBar.tsx",
+  "src/components/shell/Dock.tsx",
+  "src/components/shell/MobileHeader.tsx",
+  "src/components/shell/SiteFrame.tsx",
+  "src/components/shell/SiteHeader.tsx",
+  "src/components/brand/BottomSheet.tsx",
+  "src/components/shell/chromeSize.ts",
+  "src/pages/site/compose/ComposeMenu.tsx",
+  "src/pages/site/compose/composeChrome.ts",
+  // CA-10 P3
+  "src/dev/fixtures/sandbox.ts",
+  "src/pages/site/compose/SessionsPanel.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -708,6 +722,51 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "the lucide icon Plus drawn on its own",
     text: "<Plus size={16} strokeWidth={1.8} aria-hidden=\"true\" style={{ flexShrink: 0 }} />",
     why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 3 is not in SPACE_REFINED",
+    text: "padding: \"0 3px\",",
+    why: "The unread badge (UI-P87), 12 high with 3 of padding, there before CA-10, which only names the shell's heights in this file.",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "padding: 9,",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "height: phone ? 44 : 33, padding: \"0 7px\", fontSize: phone ? 16 : 14 };",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "padding: \"4px 6px 7px\", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>No prompts in this session.",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "<div style={{ marginTop: 9 }}>",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "gap: phone ? 4 : 7, marginTop: 10 }}>",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: "gap: phone ? 4 : 7, marginTop: 10 }}>",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "a native <select>",
+    text: "<select id={`${id}-model`} value={choice}",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "the lucide icon ChevronDown drawn on its own",
+    text: "<ChevronDown",
+    why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
   },
 ];
 

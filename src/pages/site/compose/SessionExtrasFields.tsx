@@ -25,6 +25,7 @@ import { ChoiceRows } from "./ChoiceRows";
 import { Field, TextButton } from "./composeControls";
 import { menuItem, menuSurface, text, typedArea, typedField } from "./refinedStyles";
 import { FLOATING_Z } from "./ToolPicker";
+import { MenuContent } from "./ComposeMenu";
 
 export const EXTRAS_COPY = {
   optional: "Optional",
@@ -189,7 +190,7 @@ export function TogetherFields({ id, extras, others, phone, onTogether, onChange
               <MenuButton aria-label={EXTRAS_COPY.together} label={shown.length > 0 ? "" : EXTRAS_COPY.togetherNone} value={shown.join(", ")} open={open} style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }} />
             </Menu.Trigger>
             <Menu.Portal>
-              <Menu.Content align="start" sideOffset={4} collisionPadding={16} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
+              <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
                 {others.map((other) => (
                   <Menu.CheckboxItem
                     key={other.key}
@@ -207,7 +208,7 @@ export function TogetherFields({ id, extras, others, phone, onTogether, onChange
                     {other.label}
                   </Menu.CheckboxItem>
                 ))}
-              </Menu.Content>
+              </MenuContent>
             </Menu.Portal>
           </Menu.Root>
         </Field>

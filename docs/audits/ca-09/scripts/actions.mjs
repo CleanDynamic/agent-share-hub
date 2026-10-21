@@ -115,17 +115,20 @@ const WATCH = () => {
 
 const byName = (page, role, name) => page.getByRole(role, { name, exact: false }).filter({ visible: true }).first();
 const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-/** A menu row by the name it starts with ("Tool", not "New session · One sitting with one tool"). */
-const menuItem = (page, name) => page.getByRole("menuitem").filter({ hasText: new RegExp(`^\\s*${esc(name)}`) }).filter({ visible: true }).first();
+/** A menu row by the name it starts with ("Tool", not "New session · One sitting with one tool"). CA-10: on a phone
+    Add is a bottom sheet of buttons (data-testid add-sheet), so a row there counts too. */
+const menuItem = (page, name) => page.locator("[role=menuitem], [data-testid=add-sheet] [role=group] button").filter({ hasText: new RegExp(`^\\s*${esc(name)}`) }).filter({ visible: true }).first();
 const openAdd = async (page) => {
   await page.getByTestId("sandbox-add").filter({ visible: true }).first().click();
-  await page.getByRole("menu").first().waitFor({ state: "visible", timeout: 5000 });
+  await page.locator("[role=menu], [data-testid=add-sheet]").first().waitFor({ state: "visible", timeout: 5000 });
 };
+/** CA-10: the Add menu, or on a phone the Add sheet, is open. */
+const addOpen = (r) => r.menus > 0 || r.dialogs.some((d) => /^Add/.test(d));
 
 /** screen, name, what it should do, how to reach it (setup), how to press it, and what counts as done. */
 const ACTIONS = [
   // the composer, on the 7-step draft
-  { screen: SEVEN, area: "Composer", name: "Add (open the menu)", should: "open the Add menu", press: (p) => p.getByTestId("sandbox-add").filter({ visible: true }).first(), expect: (r) => r.menus > 0 },
+  { screen: SEVEN, area: "Composer", name: "Add (open the menu)", should: "open the Add menu", press: (p) => p.getByTestId("sandbox-add").filter({ visible: true }).first(), expect: addOpen },
   ...[
     ["New session", "open the New session dialog", (r) => r.dialogs.length > 0],
     ["Prompt", "put the cursor in the add-prompt field, on screen, keyboard up", (r) => r.active?.label?.includes("prompt") && r.active.visible],
@@ -137,7 +140,7 @@ const ACTIONS = [
     ["Check", "open the check dialog (or be shown disabled)", (r) => r.dialogs.length > 0 || r.disabledBefore],
     ["Result", "add a Result step and select it", (r) => r.seen.some((s) => s.kind === "appeared" && /result/i.test(s.detail))],
   ].map(([item, should, expect]) => ({ screen: SEVEN, area: "Composer › Add", name: item, should, setup: openAdd, press: (p) => menuItem(p, item), expect })),
-  { screen: SEVEN, area: "Composer › Add", name: "Session (submenu)", should: "open the list of waiting sessions", setup: openAdd, press: (p) => menuItem(p, "Session"), hover: true, expect: (r) => r.menus > 1 },
+  { screen: SEVEN, area: "Composer › Add", name: "Session (submenu)", should: "open the list of waiting sessions", setup: openAdd, press: (p) => menuItem(p, "Session"), hover: !phone, expect: (r) => r.menus > 1 || r.seen.some((s) => s.kind === "state" && /aria-expanded=true/.test(s.detail)) },
   { screen: "/compose/new", area: "Composer › Add (new post)", name: "Prompt", should: "put the cursor in the add-prompt field, on screen", setup: openAdd, press: (p) => menuItem(p, "Prompt"), expect: (r) => r.active?.label?.includes("prompt") && r.active.visible },
   { screen: "/compose/new", area: "Composer › Add (new post)", name: "Result", should: "make the draft, add a Result step", setup: openAdd, press: (p) => menuItem(p, "Result"), expect: (r) => r.seen.some((s) => s.kind === "appeared" && /result/i.test(s.detail)) },
   { screen: "/compose/new", area: "Composer › Add (new post)", name: "New session", should: "open the New session dialog", setup: openAdd, press: (p) => menuItem(p, "New session"), expect: (r) => r.dialogs.length > 0 },

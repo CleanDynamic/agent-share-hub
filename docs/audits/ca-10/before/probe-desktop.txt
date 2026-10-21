@@ -1,0 +1,16 @@
+New sessionOne sitting with on | -59--13 | disabled=false | hit=false 
+PromptA message you sent | -13-33 | disabled=false | hit=true 
+SessionA chat from your source | 33-79 | disabled=false | hit=true 
+Agent or teamPrompts that run  | 79-125 | disabled=false | hit=true 
+FileSomething the AI read | 125-171 | disabled=false | hit=true 
+ToolAn app or connector it use | 171-217 | disabled=false | hit=true 
+Manual stepWork done outside A | 217-263 | disabled=false | hit=true 
+CodeLines of code you wrote or | 263-309 | disabled=false | hit=true 
+CheckHow it tested its own wor | 309-355 | disabled=false | hit=true 
+ResultThe finished thing | 355-401 | disabled=false | hit=true 
+New session trial: locator.click: Timeout 3000ms exceeded. | Call log: | [2m  - waiting for getByRole('menuitem').filter({ hasText: /^\s*New session/ }).first()[22m | [2m    - locator resolved to <div tabindex="-1" role="menuitem" data-orientation="vertical" data-radix-collection-item="">…</div>[22m | [2m  - attempting click action (trial run)[22m | [2m    2 × waiting for element to be visible, enabled and stable[22m | [2m      - element is visible, enabled and stable[22m | [2m      - scrolling into view if needed[22m | [2m      - done scrolling[22m | [2m      - element is outside of the viewport[22m | [2m    - retrying click action (trial run)[22m | [2m    - waiting 20ms[22m
+after +0ms BUTTON sandbox-add Add top=412 bottom=440 vh=800 scrollY=0 under=BUTTON:sandbox-add
+after +50ms BUTTON sandbox-add Add top=412 bottom=440 vh=800 scrollY=0 under=BUTTON:sandbox-add
+after +200ms BUTTON sandbox-add Add top=412 bottom=440 vh=800 scrollY=0 under=BUTTON:sandbox-add
+after +600ms BUTTON sandbox-add Add top=412 bottom=440 vh=800 scrollY=0 under=BUTTON:sandbox-add
+after +1500ms BUTTON sandbox-add Add top=412 bottom=440 vh=800 scrollY=0 under=BUTTON:sandbox-add

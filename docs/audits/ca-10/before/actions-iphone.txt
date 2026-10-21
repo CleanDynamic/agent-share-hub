@@ -1,0 +1,49 @@
+iphone  Slow          436 ms  Composer › Add (open the menu)                       state: aria-expanded=true
+iphone  Works         115 ms  Composer › Add › New session                         focus: div top=317 bottom=363 vh=739
+iphone  Broken        104 ms  Composer › Add › Prompt                              focus: div top=-34 bottom=12 vh=739
+iphone  Slow          122 ms  Composer › Add › Agent or team                       focus: div top=58 bottom=104 vh=739
+iphone  Works         103 ms  Composer › Add › File                                focus: div top=104 bottom=150 vh=739
+iphone  Works         105 ms  Composer › Add › Tool                                focus: div top=150 bottom=196 vh=739
+iphone  Works          87 ms  Composer › Add › Manual step                         focus: div top=196 bottom=242 vh=739
+iphone  Works          83 ms  Composer › Add › Code                                focus: div top=242 bottom=288 vh=739
+iphone  Slow          129 ms  Composer › Add › Check                               focus: div top=288 bottom=334 vh=739
+iphone  Silent         82 ms  Composer › Add › Result                              focus: div top=731 bottom=777 vh=739
+iphone  Works          67 ms  Composer › Add › Session (submenu)                   focus: div top=409 bottom=455 vh=739
+iphone  Broken         92 ms  Composer › Add (new post) › Prompt                   focus: div top=-11 bottom=35 vh=739
+iphone  Slow          110 ms  Composer › Add (new post) › Result                   focus: div top=357 bottom=403 vh=739
+iphone  Broken          - ms  Composer › Add (new post) › New session              cannot be pressed: the row is outside the screen
+iphone  Not reached     - ms  Composer › List / Map: Map                           locator.waitFor: Timeout 8000ms exceeded.
+iphone  Works          67 ms  Composer › Select a prompt (tap the card)            focus: button top=590 bottom=638 vh=739
+iphone  Works         256 ms  Composer › Step menu (…)                             state: aria-expanded=true
+iphone  Slow          121 ms  Composer › Step menu › Read all of it                focus: div top=47 bottom=91 vh=739
+iphone  Slow          122 ms  Composer › Step menu › Rename                        focus: div top=3 bottom=47 vh=739
+iphone  Works         245 ms  Composer › Sources                                   appeared: div:M(What did you build?Add another postAa
+iphone  Slow          115 ms  Composer › Details                                   focus: button top=391 bottom=435 vh=739
+iphone  Works          67 ms  Composer › Card                                      appeared: p:Draft · saving… · 3 prompts · 1 code file · 1 manual step
+iphone  Slow          445 ms  Composer › Preview                                   appeared: div:
+iphone  Works         103 ms  Composer › Publish                                   appeared: p:Draft · saving… · 3 prompts · 1 code file · 1 manual step
+iphone  Works         105 ms  Composer › Missing: a cover picture (link)           focus: button top=85 bottom=129 vh=739
+iphone  Slow          563 ms  Post editor › Type in post 1                         text: Sort on nothing thxe it label to the with plan it lines arri
+iphone  Works         120 ms  Post editor › What did you build? (first post)       focus: div[The thread] top=159 bottom=207 vh=739
+iphone  Works         145 ms  Post editor › Add another post                       focus: div[The thread] top=159 bottom=207 vh=739
+iphone  Works           - ms  Post editor › toolbar › Picture                      nothing
+iphone  Works         204 ms  Post editor › toolbar › Bulleted list                appeared: ul:
+iphone  Works         174 ms  Post editor › toolbar › Text size (Aa)               appeared: group:TitleHeadingBodySmallCode
+iphone  Slow          269 ms  Post editor › toolbar › @ (reference)                focus: input[Find a tile or session][Find a tile or session] top=400 bottom=444 vh=739
+iphone  Works         183 ms  Post editor › toolbar › Add to the post (+)          focus: div[The thread] top=159 bottom=207 vh=739
+iphone  Works         106 ms  Drafts › Open a draft                                focus: a top=197 bottom=257 vh=739
+iphone  Works         123 ms  Drafts › Start a new build                           focus: a top=147 bottom=193 vh=739
+iphone  Works         131 ms  Drafts › Connect a tool                              focus: button top=616 bottom=664 vh=739
+iphone  Slow          127 ms  Drafts › Session › its menu                          focus: button[Add “The group item batch and of the by the lost sort on nothing…” to a build] top=355 bottom=385 vh=739
+iphone  Works         122 ms  Drafts › Show N already in a build                   focus: button top=528 bottom=547 vh=739
+iphone  Works         252 ms  Build page › Copy for AI                             focus: button top=402 bottom=446 vh=739
+iphone  Works         125 ms  Build page › Rebuild                                 focus: button top=402 bottom=446 vh=739
+iphone  Works         131 ms  Build page › Second tab                              focus: button top=351 bottom=387 vh=739
+iphone  Works          88 ms  Build page › Like / me too                           focus: button[Like] top=347 bottom=391 vh=739
+iphone  Works          88 ms  Header › Search                                      focus: button[Search] top=9 bottom=39 vh=739
+iphone  Slow          135 ms  Header › Account (avatar)                            focus: button[Account] top=2 bottom=46 vh=739
+iphone  Works         120 ms  Bottom tabs › Home                                   focus: a[Home] top=689 bottom=733 vh=739
+iphone  Works         107 ms  Bottom tabs › Gallery                                focus: a[Gallery] top=689 bottom=733 vh=739
+iphone  Works          94 ms  Bottom tabs › New                                    focus: a[New] top=689 bottom=733 vh=739
+iphone  Works          76 ms  Bottom tabs › Bounties                               focus: a[Bounties] top=689 bottom=733 vh=739
+iphone  Works         115 ms  Bottom tabs › Activity                               focus: a[Activity, 4 unread] top=689 bottom=733 vh=739

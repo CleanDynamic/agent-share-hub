@@ -26,6 +26,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { FrameLink } from "./FrameLink";
 import { isActivityPath, SITE_NAV, sectionForPath } from "./siteNav";
+import { DOCK_PAD, DOCK_TILE_HEIGHT } from "./chromeSize";
 
 export type DockTileName = "home" | "gallery" | "new" | "bounties" | "activity";
 
@@ -65,7 +66,7 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
         zIndex: 30,
         display: "flex",
         gap: 6,
-        padding: "6px 8px calc(6px + env(safe-area-inset-bottom))",
+        padding: `${DOCK_PAD}px 8px calc(${DOCK_PAD}px + env(safe-area-inset-bottom))`,
         boxSizing: "border-box",
         background: t.surface,
         borderTop: `1px solid ${t.surfaceBorder}`,
@@ -85,7 +86,7 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
               position: "relative",
               flex: 1,
               minWidth: 0,
-              height: 44,
+              height: DOCK_TILE_HEIGHT,
               boxSizing: "border-box",
               borderRadius: 6,
               display: "flex",

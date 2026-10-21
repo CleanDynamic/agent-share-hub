@@ -1,0 +1,48 @@
+desktop Works          68 ms  Composer › Add (open the menu)                       state: aria-expanded=true
+desktop Broken          - ms  Composer › Add › New session                         cannot be pressed: the row is outside the screen
+desktop Broken         50 ms  Composer › Add › Prompt                              focus: div top=-13 bottom=33 vh=800
+desktop Works          80 ms  Composer › Add › Agent or team                       appeared: div:
+desktop Works          66 ms  Composer › Add › File                                state: aria-expanded=false
+desktop Works          59 ms  Composer › Add › Tool                                appeared: div:
+desktop Works          64 ms  Composer › Add › Manual step                         appeared: div:
+desktop Works          89 ms  Composer › Add › Code                                appeared: div:
+desktop Works          62 ms  Composer › Add › Check                               appeared: div:
+desktop Slow           81 ms  Composer › Add › Result                              state: aria-expanded=false
+desktop Works           - ms  Composer › Add › Session (submenu)                   nothing
+desktop Broken         37 ms  Composer › Add (new post) › Prompt                   focus: div top=-13 bottom=33 vh=800
+desktop Slow           49 ms  Composer › Add (new post) › Result                   state: aria-expanded=false
+desktop Broken          - ms  Composer › Add (new post) › New session              cannot be pressed: the row is outside the screen
+desktop Works          21 ms  Composer › List / Map: Map                           focus: button top=119 bottom=141 vh=800
+desktop Works          40 ms  Composer › Select a prompt (tap the card)            focus: div[Prompt 1: Prompt 1] top=516 bottom=658 vh=800
+desktop Works         102 ms  Composer › Step menu (…)                             state: aria-expanded=true
+desktop Works          68 ms  Composer › Step menu › Read all of it                appeared: div:
+desktop Works          70 ms  Composer › Step menu › Rename                        state: aria-expanded=false
+desktop Works          35 ms  Composer › Card                                      focus: button top=118 bottom=148 vh=800
+desktop Works          91 ms  Composer › Preview                                   appeared: div:
+desktop Works          44 ms  Composer › Publish                                   focus: button top=118 bottom=148 vh=800
+desktop Works          31 ms  Composer › Missing: a cover picture (link)           focus: button top=148 bottom=165 vh=800
+desktop Silent          - ms  Post editor › Type in post 1                         focus (hidden): div[The thread] top=-1 bottom=25 vh=800 covered by a
+desktop Works          29 ms  Post editor › What did you build? (first post)       focus: div[The thread] top=218 bottom=266 vh=800
+desktop Works          39 ms  Post editor › Add another post                       focus: div[The thread] top=218 bottom=266 vh=800
+desktop Works           - ms  Post editor › toolbar › Picture                      nothing
+desktop Works          35 ms  Post editor › toolbar › Bulleted list                appeared: ul:
+desktop Works          32 ms  Post editor › toolbar › Text size (Aa)               appeared: group:TitleHeadingBodySmallCode
+desktop Works          38 ms  Post editor › toolbar › @ (reference)                focus: input[Find a tile or session][Find a tile or session] top=252 bottom=282 vh=800
+desktop Works          34 ms  Post editor › toolbar › Add to the post (+)          focus: div[The thread] top=218 bottom=266 vh=800
+desktop Works          30 ms  Drafts › Open a draft                                focus: a top=290 bottom=350 vh=800
+desktop Works          97 ms  Drafts › Start a new build                           focus: a top=240 bottom=286 vh=800
+desktop Works          30 ms  Drafts › Connect a tool                              focus: button top=141 bottom=177 vh=800
+desktop Works          74 ms  Drafts › Session › its menu                          state: aria-expanded=true
+desktop Works          30 ms  Drafts › Show N already in a build                   focus: button top=586 bottom=605 vh=800
+desktop Works          47 ms  Build page › Copy for AI                             focus: button top=125 bottom=155 vh=800
+desktop Works          26 ms  Build page › Rebuild                                 focus: button top=125 bottom=155 vh=800
+desktop Works          20 ms  Build page › Second tab                              focus: button top=380 bottom=420 vh=800
+desktop Works          49 ms  Build page › Like / me too                           focus: button[Like] top=382 bottom=418 vh=800
+desktop Works          30 ms  Header › Home                                        focus: a top=0 bottom=48 vh=800
+desktop Works          32 ms  Header › Gallery                                     focus: a top=0 bottom=48 vh=800
+desktop Works          31 ms  Header › Bounties                                    focus: a top=0 bottom=48 vh=800
+desktop Works          30 ms  Header › Library                                     focus: a top=0 bottom=48 vh=800
+desktop Works          37 ms  Header › Drafts                                      focus: a top=0 bottom=48 vh=800
+desktop Works          30 ms  Header › New build                                   focus: button top=9 bottom=39 vh=800
+desktop Works          32 ms  Header › Search                                      focus: input[Search builds][Search builds, makers, tools] top=14 bottom=34 vh=800
+desktop Works          65 ms  Header › Account (avatar)                            state: aria-expanded=true

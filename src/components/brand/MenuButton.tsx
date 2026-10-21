@@ -6,7 +6,7 @@
 // `tone="inverse"` (PT-05) draws it on a `--inverse` bar: no fill at rest, the value in `--on-inverse`, the label and
 // the chevron in `--on-inverse-2`, 30 high; hover is a colour step.
 
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, Ref } from "react";
 
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -25,6 +25,8 @@ export interface MenuButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   open?: boolean;
   /** On a light ground (default) or on an `--inverse` bar. */
   tone?: "default" | "inverse";
+  /** CA-10: the button itself, so a sheet it opens can hand focus back to it (a React 19 prop, passed through). */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function MenuButton({

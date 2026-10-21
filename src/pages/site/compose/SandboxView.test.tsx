@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
 import { SandboxView as SandboxView } from "./SandboxView";
-import { ADD_ITEMS, addEntries, countsLine, type SandboxViewProps } from "./SandboxView";
+import { ADD_ITEMS, LIST_HINT, addEntries, countsLine, listHint, type SandboxViewProps } from "./SandboxView";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -414,5 +414,141 @@ describe("the post on a phone", () => {
     expect(screen.queryByRole("group", { name: "Upload steps" })).toBeNull();
     expect(screen.getByRole("group", { name: "Actions" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();
+  });
+});
+
+/* ── CA-10: menus fit the screen; every Add item visibly does something ── */
+
+describe("CA-10 · the Add menu fits the screen and keeps the focus a row gives", () => {
+  it("draws the menu no taller than Radix's available height, scrolling inside itself", async () => {
+    view({ onAddFile: vi.fn() });
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    const menu = await screen.findByRole("menu");
+    expect(menu.style.maxHeight).toBe("var(--radix-dropdown-menu-content-available-height)");
+    expect(menu.style.overflowY).toBe("auto");
+    expect(menu.style.overscrollBehavior).toBe("contain");
+  });
+
+  it("Add › Prompt leaves the caret in the field the row focused, not on Add", async () => {
+    const field = document.createElement("textarea");
+    document.body.appendChild(field);
+    const onAddPromptFocus = vi.fn(() => {
+      field.focus({ preventScroll: true });
+      return true;
+    });
+    view({ onAddPromptFocus });
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /^Prompt/ }));
+    expect(onAddPromptFocus).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(field);
+    // Radix hands focus back on a timer as the menu closes: it must not.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(field);
+    field.remove();
+  });
+
+  it("a row that moves no focus leaves focus with Add as before", async () => {
+    const onAddManual = vi.fn();
+    view({ onAddManual });
+    const add = screen.getByTestId("sandbox-add");
+    add.focus();
+    fireEvent.keyDown(add, { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Manual step/ }));
+    expect(onAddManual).toHaveBeenCalled();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.activeElement).toBe(add);
+  });
+});
+
+describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
+  const all = () => ({
+    onNewSession: vi.fn(),
+    onAddCheck: vi.fn(),
+    checkable: true,
+    onAddFile: vi.fn(),
+    onAddTool: vi.fn(),
+    onAddResult: vi.fn(),
+    onAddAgent: vi.fn(),
+    onAddManual: vi.fn(),
+    onAddCode: vi.fn(),
+    onAddSession: vi.fn(),
+    addableSessions: [{ id: "x", label: "A chat", line: "today" }],
+  });
+
+  it("holds the same ten items as 44pt rows under a plain Add heading, with a grab line", () => {
+    stubWidth(390);
+    view({ ...all(), onAddPromptFocus: vi.fn() });
+    expect(screen.queryByRole("menu")).toBeNull();
+    fireEvent.click(screen.getByTestId("sandbox-add"));
+    const sheet = screen.getByRole("dialog", { name: "Add" });
+    expect(within(sheet).getByRole("heading", { name: "Add" }).textContent).toBe("Add");
+    expect(within(sheet).getByTestId("sheet-grab-line")).toBeTruthy();
+    const rows = within(within(sheet).getByRole("group", { name: "Add" })).getAllByRole("button");
+    expect(rows.map((row) => row.firstChild?.textContent)).toEqual(ADD_ITEMS.map((item) => item.name));
+    for (const row of rows) expect(row.style.minHeight).toBe("44px");
+  });
+
+  it("Prompt shuts the sheet and focuses the field in the same tap", async () => {
+    stubWidth(390);
+    const field = document.createElement("textarea");
+    document.body.appendChild(field);
+    let sheetOpenAtFocus: boolean | null = null;
+    const onAddPromptFocus = vi.fn(() => {
+      sheetOpenAtFocus = screen.queryByRole("dialog", { name: "Add" }) !== null;
+      field.focus({ preventScroll: true });
+      return true;
+    });
+    view({ ...all(), onAddPromptFocus });
+    fireEvent.click(screen.getByTestId("sandbox-add"));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add" })).getByRole("button", { name: /^Prompt/ }));
+    expect(sheetOpenAtFocus).toBe(false);
+    expect(screen.queryByRole("dialog", { name: "Add" })).toBeNull();
+    expect(document.activeElement).toBe(field);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.activeElement).toBe(field);
+    field.remove();
+  });
+
+  it("any other row shuts the sheet, runs once, and gives focus back to Add", async () => {
+    stubWidth(390);
+    const props = all();
+    view({ ...props, onAddPromptFocus: vi.fn() });
+    fireEvent.click(screen.getByTestId("sandbox-add"));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add" })).getByRole("button", { name: /^Tool/ }));
+    expect(props.onAddTool).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog", { name: "Add" })).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.activeElement).toBe(screen.getByTestId("sandbox-add"));
+  });
+
+  it("opens Session's waiting sessions under it", () => {
+    stubWidth(390);
+    const props = all();
+    view({ ...props, onAddPromptFocus: vi.fn() });
+    fireEvent.click(screen.getByTestId("sandbox-add"));
+    const sheet = screen.getByRole("dialog", { name: "Add" });
+    fireEvent.click(within(sheet).getByRole("button", { name: /^Session/ }));
+    fireEvent.click(within(sheet).getByRole("button", { name: /^A chat/ }));
+    expect(props.onAddSession).toHaveBeenCalledWith("x");
+  });
+
+  it("Escape closes it", () => {
+    stubWidth(390);
+    view({ ...all(), onAddPromptFocus: vi.fn() });
+    fireEvent.click(screen.getByTestId("sandbox-add"));
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Add" }), { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Add" })).toBeNull();
+  });
+});
+
+describe("CA-10 · words on a phone (CA-09 F12)", () => {
+  it("never says click or double-click on a phone", () => {
+    expect(listHint(true)).toBe("Tap a prompt to see its details");
+    expect(listHint(false)).toBe(LIST_HINT);
+    stubWidth(390);
+    view({ list: undefined, lens: "list" });
+    expect(screen.getByText("Tap a prompt to see its details")).toBeTruthy();
+    expect(screen.queryByText(/click/i)).toBeNull();
   });
 });

@@ -1,0 +1,3 @@
+drafts         visible/min   7  hidden 30s   2  return 5s  10  {"GET import_sessions ?status":6,"POST dm_presence ?on_conflict":1}
+compose-new    visible/min   7  hidden 30s   2  return 5s   7  {"GET import_sessions ?status&proposal":6,"POST dm_presence ?on_conflict":1}
+compose-7step  visible/min   7  hidden 30s   2  return 5s   8  {"GET import_sessions ?status&proposal":6,"POST dm_presence ?on_conflict":1}

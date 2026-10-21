@@ -47,6 +47,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { BottomSheet } from "./BottomSheet";
+import { HEADER_HEIGHT } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
@@ -176,7 +177,7 @@ function AccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: FrameView
 
 const refinedLink: CSSProperties = {
   position: "relative",
-  height: 48,
+  height: HEADER_HEIGHT,
   display: "flex",
   alignItems: "center",
   gap: 6,
@@ -239,7 +240,7 @@ function RefinedSiteHeaderView({
         width: "100%",
         maxWidth: 1440,
         margin: "0 auto",
-        height: 48,
+        height: HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
         gap: 8,
@@ -252,7 +253,7 @@ function RefinedSiteHeaderView({
       </span>
       <span aria-hidden="true" style={{ width: 1, height: 16, background: t.line, flexShrink: 0 }} />
 
-      <nav aria-label="Primary" style={{ display: "flex", alignItems: "stretch", height: 48, paddingLeft: 4 }}>
+      <nav aria-label="Primary" style={{ display: "flex", alignItems: "stretch", height: HEADER_HEIGHT, paddingLeft: 4 }}>
         {PRIMARY_LINKS.filter((link) => !link.authOnly || signedIn).map((link) => {
           const isCurrent = link.key === current;
           return (
