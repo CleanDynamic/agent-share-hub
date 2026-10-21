@@ -10,9 +10,14 @@
 // where it goes, so a maker who types "hermes" on a prompt learns it is an agent. Only that kind of row, a tool that
 // runs prompts by itself, can be picked on a prompt: the field then offers to add it as an agent. A retired tool is
 // never shown.
+//
+// CA-12 P13: TWO LISTS. `list: "ai"` offers the AI tools (sessions, prompts, an agent's "Runs in"); `list: "app"` offers the
+// apps and services (a Tool tile, a manual step's "Where was it done?", an agent's tools). The app list is not fitted to a
+// step: an app is an app wherever it is named. Typing a name that is only in the other list says so, plainly, in a note row
+// ("GitHub Copilot is an AI tool. Add it to a session or a prompt."); any other typed name still has its Use "{query}" row.
 
 import { fitsStep } from "@/lib/tools/modelRules";
-import { SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, isPickable, toolFor, type StepKey, type Tool } from "@/lib/tools/registry";
+import { AI_TOOLS, APPS, APP_GROUP_LABEL, SUGGESTED_APPS, SUGGESTED_TOOLS, TOOL_GROUPS, TOOLS, isPickable, toolFor, type StepKey, type Tool, type ToolList } from "@/lib/tools/registry";
 
 /** The Add item each step is named on (SandboxView's ADD_ITEMS), for the line under an unavailable row. */
 const ADD_NAME: Record<StepKey, string> = {
@@ -46,6 +51,8 @@ export type PickerRow =
   | { kind: "heading"; label: string }
   /** `line` is a quiet line under the name; `unavailable` draws the row as one that does not fit, and `pickable` says whether it can still be picked. */
   | { kind: "tool"; tool: Tool; line?: string; unavailable?: boolean; pickable?: boolean }
+  /** CA-12 P13: a plain sentence, not a choice: the name typed is in the other list. */
+  | { kind: "note"; text: string }
   | { kind: "showAll"; count: number }
   | { kind: "showMore"; count: number }
   | { kind: "use"; name: string };
@@ -58,6 +65,8 @@ export interface PickerInput {
   allowNone: boolean;
   /** The Add item the tool is being named on. */
   step: StepKey;
+  /** CA-12 P13: the list offered. AI tools when absent. */
+  list?: ToolList;
 }
 
 /** Whether a tool runs prompts by itself and is never named on a prompt (Hermes Agent, Manus). */
@@ -96,11 +105,11 @@ function buildTools(inBuild: readonly string[]): Tool[] {
   return out;
 }
 
-function matches(query: string): Tool[] {
+function matches(query: string, from: readonly Tool[]): Tool[] {
   const wanted = squash(query);
   const starts: Tool[] = [];
   const contains: Tool[] = [];
-  for (const tool of TOOLS) {
+  for (const tool of from) {
     const all = spellings(tool);
     if (all.some((spelling) => spelling.startsWith(wanted))) starts.push(tool);
     else if (all.some((spelling) => spelling.includes(wanted))) contains.push(tool);
@@ -108,50 +117,74 @@ function matches(query: string): Tool[] {
   return [...starts, ...contains];
 }
 
-const fits = (step: StepKey) => (tool: Tool): boolean => isPickable(tool) && fitsStep(tool.id, step);
+const fits = (step: StepKey, list: ToolList = "ai") => (tool: Tool): boolean => isPickable(tool) && (list === "app" || fitsStep(tool.id, step));
 
 /** The tools that can be picked for this step, in list order: what "Show all {n} tools" counts. */
-export const toolsForStep = (step: StepKey): Tool[] => TOOLS.filter(fits(step));
+export const toolsForStep = (step: StepKey, list: ToolList = "ai"): Tool[] => (list === "app" ? APPS : AI_TOOLS).filter(fits(step, list));
 
-function allGrouped(step: StepKey): PickerRow[] {
+/** CA-12 P13: the note a name typed in one list earns when it is only in the other. */
+export const OTHER_LIST_COPY = {
+  isAiTool: (name: string) => `${name} is an AI tool. Add it to a session or a prompt.`,
+  isApp: (name: string) => `${name} is an app. Add it with Add › Tool.`,
+} as const;
+
+/** Notes for the tools typed that are in the other list only, at most two. */
+function otherListNotes(query: string, list: ToolList): PickerRow[] {
+  const other = list === "ai" ? "app" : "ai";
+  const here = (list === "ai" ? AI_TOOLS : APPS).map((tool) => tool.id);
+  return matches(query, TOOLS.filter((tool) => tool.lists.includes(other) && !here.includes(tool.id)))
+    .filter(isPickable)
+    .slice(0, 2)
+    .map((tool): PickerRow => ({ kind: "note", text: list === "ai" ? OTHER_LIST_COPY.isApp(tool.name) : OTHER_LIST_COPY.isAiTool(tool.name) }));
+}
+
+function allGrouped(step: StepKey, list: ToolList): PickerRow[] {
+  if (list === "app") {
+    const tools = toolsForStep(step, list);
+    return tools.length ? [{ kind: "heading", label: APP_GROUP_LABEL } as PickerRow, ...tools.map((tool) => fittingRow(tool, step))] : [];
+  }
   return TOOL_GROUPS.flatMap((group) => {
-    const tools = toolsForStep(step).filter((tool) => tool.group === group.key);
+    const tools = toolsForStep(step, list).filter((tool) => tool.group === group.key);
     return tools.length ? [{ kind: "heading", label: group.label } as PickerRow, ...tools.map((tool) => fittingRow(tool, step))] : [];
   });
 }
 
-export function pickerRows({ query, inBuild, expanded, allowNone, step }: PickerInput): PickerRow[] {
-  const ok = fits(step);
+export function pickerRows({ query, inBuild, expanded, allowNone, step, list = "ai" }: PickerInput): PickerRow[] {
+  const ok = fits(step, list);
+  const inList = (tool: Tool) => tool.lists.includes(list);
   const toolRows = (tools: readonly Tool[]): PickerRow[] => tools.map((tool) => fittingRow(tool, step));
   const rows: PickerRow[] = allowNone ? [{ kind: "none" }] : [];
   const typed = query.trim();
 
   if (!typed) {
-    if (expanded) return [...rows, ...allGrouped(step)];
-    const used = buildTools(inBuild).filter(ok).slice(0, PICKER_LIMIT);
+    if (expanded) return [...rows, ...allGrouped(step, list)];
+    const used = buildTools(inBuild).filter((tool) => inList(tool) && ok(tool)).slice(0, PICKER_LIMIT);
     const taken = new Set(used.map((tool) => tool.id));
     const suggested: Tool[] = [];
-    for (const id of SUGGESTED_TOOLS) {
+    for (const id of list === "app" ? SUGGESTED_APPS : SUGGESTED_TOOLS) {
       const tool = toolFor(id);
-      if (!tool || !ok(tool) || taken.has(tool.id) || used.length + suggested.length >= PICKER_LIMIT) continue;
+      if (!tool || !inList(tool) || !ok(tool) || taken.has(tool.id) || used.length + suggested.length >= PICKER_LIMIT) continue;
       taken.add(tool.id);
       suggested.push(tool);
     }
     if (used.length) rows.push({ kind: "heading", label: "In this build" }, ...toolRows(used));
     if (suggested.length) rows.push({ kind: "heading", label: "Suggested" }, ...toolRows(suggested));
-    rows.push({ kind: "showAll", count: toolsForStep(step).length });
+    rows.push({ kind: "showAll", count: toolsForStep(step, list).length });
     return rows;
   }
 
-  const matched = matches(typed).filter(isPickable);
+  const matched = matches(typed, list === "app" ? APPS : AI_TOOLS).filter(isPickable);
   const found = matched.filter(ok);
   const shown = expanded ? found : found.slice(0, PICKER_LIMIT);
   rows.push(...toolRows(shown));
   if (shown.length < found.length) rows.push({ kind: "showMore", count: found.length - shown.length });
-  for (const tool of matched.filter((candidate) => !ok(candidate))) {
-    const row = unavailableRow(tool, step);
-    if (row) rows.push(row);
+  if (list === "ai") {
+    for (const tool of matched.filter((candidate) => !ok(candidate))) {
+      const row = unavailableRow(tool, step);
+      if (row) rows.push(row);
+    }
   }
+  rows.push(...otherListNotes(typed, list));
   if (typed.length <= TYPED_TOOL_MAX && !toolFor(typed)) rows.push({ kind: "use", name: typed });
   return rows;
 }

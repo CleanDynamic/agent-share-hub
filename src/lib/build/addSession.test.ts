@@ -37,7 +37,7 @@ describe("the rules, as pure functions", () => {
   it("takes the prompts of a proposal in order, one per user turn, and gives each a tile row after the last position", () => {
     const proposal = {
       events: [
-        { ordinal: 2, kind: "prompt", payload: { text: "Second" }, source_ref: { source: "transcript", session_id: "x", index: 3 } },
+        { ordinal: 2, kind: "prompt", payload: { text: "Second", response_summary: "Here is the second answer." }, source_ref: { source: "transcript", session_id: "x", index: 3 } },
         { ordinal: 1, kind: "prompt", payload: { text: "First" }, source_ref: { source: "transcript", session_id: "x", index: 1 } },
         { ordinal: 3, kind: "note", payload: { text: "Not a prompt" }, source_ref: { source: "transcript", session_id: "x", index: 4 } },
       ],
@@ -47,6 +47,8 @@ describe("the rules, as pure functions", () => {
     const rows = tileRows("b", "imp", "Opus 5.5", prompts, 7);
     expect(rows.map((r) => [r.position, r.type, r.parent_id])).toEqual([[7, "prompt", null], [8, "prompt", null]]);
     expect(rows[0].payload).toEqual({ text: "First", model: "Opus 5.5" });
+    // What came back rides on the tile when the event has it.
+    expect(rows[1].payload).toEqual({ text: "Second", model: "Opus 5.5", reply: "Here is the second answer." });
     expect(rows[0].source_ref).toEqual({ source: "transcript", session_id: "x", index: 1, import_session_id: "imp" });
     expect(tileRows("b", "imp", null, prompts, 1)[0].payload).toEqual({ text: "First" });
   });

@@ -189,6 +189,20 @@ export async function setPromptModel(node: BuildNode, model: string | null): Pro
   return upsertNode({ ...nodeRow(node), payload: payload as Json });
 }
 
+/** CA-12 P12: the longest "What came back". */
+export const REPLY_MAX = 4000;
+
+/** CA-12 P12: record what came back (`payload.reply`), up to 4,000 characters; empty takes it off. */
+export async function setPromptReply(node: BuildNode, reply: string | null): Promise<BuildNode> {
+  if (node.type !== PROMPT_TYPE) throw buildLayerError("setPromptReply", new Error("Only a prompt has something that came back."));
+  const said = (reply ?? "").trim();
+  if (said.length > REPLY_MAX) throw buildLayerError("setPromptReply", new Error(`What came back is at most ${REPLY_MAX} characters.`));
+  const payload = { ...payloadOf(node) };
+  if (said) payload.reply = said;
+  else delete payload.reply;
+  return upsertNode({ ...nodeRow(node), payload: payload as Json });
+}
+
 /** The two moves that swap prompt `index` with the one before or after it; none at either end. */
 export function swapMoves(prompts: readonly Pick<BuildNode, "id" | "position">[], index: number, direction: -1 | 1): NodeMove[] {
   const here = prompts[index];

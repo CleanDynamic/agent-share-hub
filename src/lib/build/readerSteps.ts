@@ -31,6 +31,8 @@ import {
   untilClause,
   sessionGroups,
   stepTitle,
+  CONNECTION_LABEL,
+  siteNameOf,
   toolConnectionOf,
   trainedModelLine,
   trainedModelOf,
@@ -165,8 +167,8 @@ export interface ReaderStep {
   tools: ReaderTool[];
   /** Inside an agent or a team, and for an agent or a team itself: the same inputs read as "Uses", in the order listed. Never "Paste in". */
   uses: string[];
-  /** "By hand in {tool}", its line and its picture. Nothing to copy. */
-  manual: { headline: string; line: string; mediaId: string | null } | null;
+  /** "By hand in {tool}", its line and its picture. Nothing to copy. CA-12 P10: with where it was done and its numbered lines. */
+  manual: { headline: string; line: string; lines: string[]; mediaId: string | null } | null;
   /** "On a schedule · Mondays 07:00", for an agent or a team; empty when it ran when asked (CA-03). */
   runs: string | null;
   /** "made in steps 1 and 2", from an agent's or a team's output uses. */
@@ -533,6 +535,22 @@ function publicStep(step: Step): Step {
   return { ...rest, children: step.children.map(publicStep), ...(step.sentWith ? { sentWith: step.sentWith.map(publicStep) } : null) };
 }
 
+/** CA-12 P10: "By hand in Figma", "By hand in a terminal", "By hand on a phone", "By hand, offline, in person". */
+export function manualHeadline(step: Pick<Step, "tool" | "where">): string {
+  switch (step.where?.kind) {
+    case "terminal":
+      return "By hand in a terminal";
+    case "phone":
+      return "By hand on a phone";
+    case "offline":
+      return "By hand, offline, in person";
+    case "site":
+      return `By hand on ${step.where.name ?? siteNameOf(step.where.url) ?? "another website"}`;
+    default:
+      return `By hand in ${step.where?.name ?? step.tool ?? "another tool"}`;
+  }
+}
+
 function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
   const container = inside || step.kind === "agent" || step.kind === "team";
   const here = context.index.get(step.id) ?? -1;
@@ -600,7 +618,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     uses: container ? uses : [],
     manual:
       step.kind === "manual"
-        ? { headline: `By hand in ${step.tool ?? "another tool"}`, line: step.text, mediaId: step.mediaId ?? null }
+        ? { headline: manualHeadline(step), line: step.text, lines: step.lines ?? [step.text], mediaId: step.mediaId ?? null }
         : null,
     runs: isContainer ? stepRunsLabel(step) : null,
     madeIn: isContainer && madeIn.length > 0 ? `made in ${stepList(madeIn, false)}` : null,
@@ -996,8 +1014,20 @@ export function stepsMarkdown(
 
     const saves = saveSentences(entry);
     if (entry.manual) {
-      lines.push(`${entry.manual.headline}: ${entry.manual.line}`.replace(/\.?$/, "."), "");
+      // CA-12 P10: more than one line is a numbered list under the place it was done.
+      if (entry.manual.lines.length > 1) lines.push(`${entry.manual.headline}:`, "", ...entry.manual.lines.map((line, at) => `${at + 1}. ${line}`), "");
+      else lines.push(`${entry.manual.headline}: ${entry.manual.line}`.replace(/\.?$/, "."), "");
       if (saves.length > 0) lines.push(...saves, "");
+      continue;
+    }
+    // CA-12 P7, P8: a tool tile and a file tile say what to connect and what to attach.
+    if (step.kind === "tool") {
+      const how = [step.app?.connection ? CONNECTION_LABEL[step.app.connection] : null, step.app?.scopes].filter(Boolean).join(" · ");
+      lines.push(`${`Use ${step.tool ?? entry.title}${how ? ` (${how})` : ""}`.replace(/\.?$/, ".")}`, "");
+      continue;
+    }
+    if (step.kind === "file") {
+      lines.push(`Attach ${step.fileFacts?.name ?? entry.title}.`, "");
       continue;
     }
     if (step.kind === "agent" || step.kind === "team") {

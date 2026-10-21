@@ -90,7 +90,7 @@ function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<A
 
       <Field id={`${uid}-tool`} label="Tool" group>
         <div>
-          <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" />
+          <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Pick an app" />
         </div>
       </Field>
 

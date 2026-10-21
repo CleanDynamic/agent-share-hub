@@ -43,6 +43,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { AgentTileBody, CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -896,6 +897,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       >
         <ChangedText text={step.text} changes={step.changes} />
       </p>
+      {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={open} /> : null}
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1169,7 +1171,11 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
 }
 
 /** Work done outside AI (UI-P70): a module like a prompt's, its eyebrow saying so; no new colour. */
-function ManualCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+/**
+ * CA-12: a tile that is a module with a head (grip, number, eyebrow and title, colour, options) and a body of its own: a
+ * manual step, a tool, a file. The body is the shared one (`tileBodies`), so the maker sees what readers see.
+ */
+function PlainCard({ step, index, last, props, noun, eyebrow, body, foot }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; eyebrow: ReactNode; body: ReactNode; foot?: ReactNode }) {
   const { phone } = props;
   const selected = props.selectedId === step.id;
   const isDefault = step.title === null;
@@ -1186,9 +1192,10 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
     <div
       ref={cardRef}
       role="group"
-      aria-label={`Manual step ${step.number}: ${stepTitle(step)}`}
+      aria-label={`${noun} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
-      data-kind="manual"
+      data-kind={step.kind}
+      data-tile-id={step.id}
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
@@ -1198,29 +1205,17 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...ring(props.ringedId === step.id) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span data-testid="manual-eyebrow" style={text(11.5, 400, t.label)}>
-            Manual step
-            {step.tool ? (
-              <>
-                {" · "}
-                {markFor({ tool: step.tool }) !== null ? (
-                  <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 6 }}>
-                    <ToolMark tool={step.tool} size={14} />
-                  </span>
-                ) : null}
-                {step.tool}
-              </>
-            ) : null}
-            {" · added by maker"}
+          <span data-testid={`${step.kind}-eyebrow`} style={text(11.5, 400, t.label)}>
+            {eyebrow}
           </span>
           {renaming ? (
-            <RenameField label={`Title of manual step ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
+            <RenameField label={`Title of ${noun.toLowerCase()} ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
           ) : (
             <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
               {stepTitle(step)}
@@ -1230,7 +1225,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
         <CardColour step={step} phone={phone} inMenu />
         <Menu.Root>
           <Menu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Manual step ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`${noun} ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
           </Menu.Trigger>
           <Menu.Portal>
             <MenuContent
@@ -1256,22 +1251,49 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           </Menu.Portal>
         </Menu.Root>
       </div>
-      <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
+      <div style={{ paddingLeft: INDENT, minWidth: 0 }}>{body}</div>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
         <NestButtons step={step} phone={phone} />
-        {step.mediaId ? (
+        {foot}
+      </div>
+    </div>
+  );
+}
+
+function ManualCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return (
+    <PlainCard
+      step={step}
+      index={index}
+      last={last}
+      props={props}
+      noun="Manual step"
+      eyebrow="Manual step · added by maker"
+      body={<ManualTileBody step={step} picture={false} />}
+      foot={
+        step.mediaId ? (
           <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 }}>
             <Quiet>1 screenshot</Quiet>
             <ManualThumb mediaId={step.mediaId} />
           </span>
-        ) : null}
-      </div>
-    </div>
+        ) : null
+      }
+    />
   );
+}
+
+/** CA-12 P7: a tool as a tile: its app's mark and name, how it was connected, what it did. */
+function ToolCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Tool" eyebrow="Tool · added by maker" body={<ToolTileBody step={step} />} />;
+}
+
+/** CA-12 P8: a file as a tile: its type, name and size, and a preview. */
+function FileCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="File" eyebrow="File · added by maker" body={<FileTileBody step={step} />} />;
 }
 
 /** CA-02 P7: lines of code, as a module like a manual step's: "Code", its file name or language, its lines, and its first 6 in a mono well. */
@@ -1829,6 +1851,10 @@ export function BuildList(props: BuildListProps) {
       <StepCard key={step.id} step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
     ) : step.kind === "manual" ? (
       <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "tool" ? (
+      <ToolCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "file" ? (
+      <FileCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "code" ? (
       <CodeCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "check" ? (

@@ -47,6 +47,7 @@ import {
   addTeam,
   addMadeFile as writeMadeFile,
   addTool,
+  addToolTile as addToolStep,
   addUse,
   dismissSuggestion,
   madeFileNamesOf,
@@ -200,6 +201,8 @@ export interface ComposePrompts {
   removeMadeFile: (fileId: string) => void;
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). CA-02 P6: a tool comes named. */
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
+  /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
+  addToolTile: (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
   /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
@@ -623,6 +626,19 @@ export function useComposePrompts({
         return null;
       });
 
+  const addToolTile = (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await addToolStep(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that tool. Try again.")(cause);
+        return null;
+      });
+
   /** The build's integration node for each tool, made when there is none yet (CA-02 P5). Runs inside the queue. */
   const toolRefsFor = async (build: string, tools: readonly string[]): Promise<string[]> => {
     const refs: string[] = [];
@@ -850,5 +866,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setCheckRuns: setCheckRunsOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setCheckRuns: setCheckRunsOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addToolTile, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

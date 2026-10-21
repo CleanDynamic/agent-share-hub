@@ -251,6 +251,7 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
             inBuild={inBuild}
             phone={phone}
             step="tool"
+            list="app"
           />
         </div>
       </Field>

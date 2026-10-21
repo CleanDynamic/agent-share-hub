@@ -34,7 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, canCheck, TRAINED_MODEL, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, fileKindOf, previewOf, canCheck, TRAINED_MODEL, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -56,7 +56,7 @@ import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
-import { AddToolDialog } from "./AddToolDialog";
+import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
@@ -88,6 +88,16 @@ import { sayFailed } from "./draftStart";
 function makingSessions(making: unknown): MakingSession[] {
   const list = (making as { sessions?: unknown } | null)?.sessions;
   return Array.isArray(list) ? (list as MakingSession[]) : [];
+}
+
+/** CA-12 P8: the first 4 lines of a text or code file, for its tile; empty for anything else, and for a file too big to read here. */
+async function previewOfFile(file: File): Promise<string[]> {
+  if (file.size > 512 * 1024 || fileKindOf(file.name, file.type) === "picture" || fileKindOf(file.name, file.type) === "pdf" || fileKindOf(file.name, file.type) === "other") return [];
+  try {
+    return previewOf(await file.slice(0, 4096).text());
+  } catch {
+    return [];
+  }
 }
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
@@ -379,6 +389,14 @@ export function SandboxPage() {
   const pickFor = useRef<string | null>(null);
   const pick = useCallback(() => {
     pickFor.current = null;
+    tileNext.current = false;
+    picker.current?.click();
+  }, []);
+  /** CA-12 P8: Add › File places a File tile at the end of the current session, as well as listing the file under Sources. */
+  const tileNext = useRef(false);
+  const pickTile = useCallback(() => {
+    pickFor.current = null;
+    tileNext.current = true;
     picker.current?.click();
   }, []);
   const pickForStep = useCallback((stepId: string) => {
@@ -896,6 +914,19 @@ export function SandboxPage() {
     return () => window.clearTimeout(timer);
   }, [ringed]);
 
+  /** CA-12 P7: Add › Tool places a Tool tile at the end of the current session and selects it. */
+  const onAddTool = useCallback(
+    async (input: AddToolInput) => {
+      const session = await sessionToWrite();
+      const id = await prompts.addToolTile({ service: input.service, connection: input.connection, scopes: input.scopes, session });
+      if (id) {
+        setSelectedId(id);
+        setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+      }
+    },
+    [prompts, sessionToWrite],
+  );
+
   const download = useCallback(
     async (nodeId: string) => {
       const node = tree.find((candidate) => candidate.id === nodeId);
@@ -985,7 +1016,7 @@ export function SandboxPage() {
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
   const addOneFile = useCallback(
-    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null): Promise<BuildNode | null> => {
+    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null, tile = false): Promise<BuildNode | null> => {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
@@ -1000,7 +1031,8 @@ export function SandboxPage() {
         const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
           const media = await uploadMedia({ buildId: id, file });
-          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows });
+          const tileFacts = tile && !parentId ? { tile: true, session: await sessionToWrite(), size: file.size, mime: file.type || null, preview: await previewOfFile(file) } : null;
+          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows, ...tileFacts });
           nodes.record(node.id, node);
           added.node = node;
         });
@@ -1012,7 +1044,7 @@ export function SandboxPage() {
         return null;
       }
     },
-    [ensureBuild, nodes, queryClient],
+    [ensureBuild, nodes, queryClient, sessionToWrite],
   );
 
   /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
@@ -1241,8 +1273,11 @@ export function SandboxPage() {
 
   /** The picker is an explicit choice of files, so nothing is taken for an export; setup files still go to the setup. */
   const onPicked = useCallback(
-    async (files: File[]) => {
-      for (const file of await addSetup(await takeResultFiles(files), undefined)) void addOneFile(file);
+    async (files: File[], tile = false) => {
+      for (const file of await addSetup(await takeResultFiles(files), undefined)) {
+        const added = await addOneFile(file, "add", null, null, tile);
+        if (added && tile) setSelectedId(added.id);
+      }
     },
     [addOneFile, addSetup, takeResultFiles],
   );
@@ -1266,7 +1301,11 @@ export function SandboxPage() {
           if (files.length === 0) return;
           if (setupKey) void addSetup(files, undefined, { session: setupKey, all: true });
           else if (stepId) void attach(stepId, files);
-          else void onPicked(files);
+          else {
+            const tile = tileNext.current;
+            tileNext.current = false;
+            void onPicked(files, tile);
+          }
         }}
       />
       <PartRegistryProvider registry={registry}>
@@ -1286,7 +1325,7 @@ export function SandboxPage() {
           />
         }
         threadNote={thread.hold}
-        onAddFile={pick}
+        onAddFile={pickTile}
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => setAddToolOpen(true)}
         onAddResult={onAddResult}
@@ -1522,7 +1561,7 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
-      <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
+      <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void onAddTool(input)} />
       <FullPromptWindow
         steps={steps}
         groups={groups}

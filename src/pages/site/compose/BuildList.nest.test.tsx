@@ -199,3 +199,18 @@ describe("Details (CA-04 P2)", () => {
     expect(resolveView({ ...ctx, selectedId: "f1" })).toMatchObject({ kind: "file", id: "f1", name: "menu.pdf", sentWithLine: "Sent with order-form.tsx" });
   });
 });
+
+describe("CA-12 P12: what came back", () => {
+  it("shows a prompt's reply under it, indented under a hairline, with Read all when there is more", () => {
+    const steps = buildSteps([node("p1", "prompt", { text: "Plan the page.", reply: "First line\nSecond line\nThird line" }, 1)]);
+    list(steps, { onOpenPrompt: vi.fn() });
+    const reply = screen.getByTestId("prompt-reply");
+    expect(reply.textContent).toContain("First line");
+    expect(within(reply).getByRole("button", { name: "Read all" })).toBeTruthy();
+  });
+
+  it("shows nothing when nothing came back", () => {
+    list(buildSteps([node("p1", "prompt", { text: "Plan the page." }, 1)]));
+    expect(screen.queryByTestId("prompt-reply")).toBeNull();
+  });
+});

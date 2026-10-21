@@ -315,6 +315,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/buildListModel.ts",
   "src/pages/site/compose/useComposeSessions.ts",
   "src/pages/site/compose/SandboxView.test.tsx",
+  // CA-12 P6 to P13
+  "src/components/build/tileBodies.tsx",
+  "src/pages/site/compose/AddToolDialog.tsx",
+  "src/pages/site/compose/AddToolDialog.test.tsx",
+  "src/pages/site/compose/AddManualStepDialog.tsx",
+  "src/pages/site/compose/AgentSetupFields.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

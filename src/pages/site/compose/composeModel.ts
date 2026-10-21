@@ -52,12 +52,18 @@ export const isUntitled = (title: string | null | undefined): boolean => {
 export function missingForPublish(input: {
   title: string | null | undefined;
   completeness: Pick<Completeness, "missing"> | null;
+  /**
+   * CA-12 P8: whether the build holds a prompt or an agent. A file never satisfies "a prompt", whatever category the
+   * registry gives it. Absent: the completeness decides, as before.
+   */
+  hasPrompt?: boolean;
 }): PublishKey[] {
   const open = new Set<RequirementKey>(
     input.completeness
       ? input.completeness.missing.map((item) => item.key)
       : (MINIMUM_PUBLISHABLE_KEYS as readonly RequirementKey[]),
   );
+  if (input.hasPrompt === false) open.add("instruction_or_artefact");
   return PUBLISH_ORDER.filter((key) => (key === "title" ? isUntitled(input.title) : open.has(key)));
 }
 

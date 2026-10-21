@@ -194,3 +194,11 @@ describe("parseAmount", () => {
     expect(parseAmount("12.6", { whole: true })).toBe(13);
   });
 });
+
+describe("CA-12 P8: a file never satisfies 'a prompt'", () => {
+  it("lists a prompt as missing when the build holds no prompt, agent or team, whatever the completeness says", () => {
+    expect(missingForPublish({ title: "T", completeness: { missing: [] }, hasPrompt: false })).toEqual(["instruction_or_artefact"]);
+    expect(missingForPublish({ title: "T", completeness: { missing: [] }, hasPrompt: true })).toEqual([]);
+    expect(missingForPublish({ title: "T", completeness: { missing: [] } })).toEqual([]);
+  });
+});

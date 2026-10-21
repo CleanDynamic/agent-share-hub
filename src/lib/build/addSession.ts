@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { modelLabel } from "@/lib/models/registry";
 import { COLLAPSE_OVER, deleteBuildSession, insertBuildSession, isMissingTable, listBuildSessionRows, nextSessionPosition, type BuildSessionRow } from "./buildSessions";
 import { createBuild, getBuildHeader } from "./builds";
+import { REPLY_MAX } from "./composePrompts";
 import { nextTopPosition } from "./composeCover";
 import { loadImportProposal } from "./imports";
 import type { TranscriptProposal, TranscriptSourceRef } from "./intake";
@@ -47,6 +48,8 @@ export interface AddSessionResult {
 
 export interface PromptTile {
   text: string;
+  /** CA-12 P12: what came back, as the parser stored it on the event (`response_summary`: the first 240 characters of the next turn). */
+  reply: string | null;
   sourceRef: TranscriptSourceRef;
 }
 
@@ -55,7 +58,7 @@ export function promptsOfProposal(proposal: TranscriptProposal): PromptTile[] {
   return proposal.events
     .filter((event) => event.kind === "prompt")
     .sort((a, b) => a.ordinal - b.ordinal)
-    .map((event) => ({ text: event.payload.text, sourceRef: event.source_ref }));
+    .map((event) => ({ text: event.payload.text, reply: event.payload.response_summary?.trim() || null, sourceRef: event.source_ref }));
 }
 
 /** A session with more prompts than `COLLAPSE_OVER` is added collapsed. */
@@ -98,7 +101,7 @@ export function tileRows(buildId: string, importId: string, model: string | null
     position: from + at,
     type: "prompt",
     title: null,
-    payload: (model ? { text: prompt.text, model } : { text: prompt.text }) as Json,
+    payload: { text: prompt.text, ...(model ? { model } : null), ...(prompt.reply ? { reply: prompt.reply.slice(0, REPLY_MAX) } : null) } as Json,
     source_ref: { ...prompt.sourceRef, import_session_id: importId } as unknown as Json,
   }));
 }

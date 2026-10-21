@@ -21,7 +21,8 @@ import { IconButton } from "@/components/brand/IconButton";
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { REF_COPY } from "@/components/post/RefLinks";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { groupKey, groupKind, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
+import { groupKey, groupKind, stepRunsLabel, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
+import { FileTileBody, ManualTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import { modelLabel } from "@/lib/models/registry";
@@ -45,6 +46,8 @@ export const PART_WINDOW_COPY = {
   passing: "What counts as passing",
   onFail: "When it failed",
   runs: "Runs",
+  starts: "How it starts",
+  cases: "Cases",
   tiles: "Its tiles",
   setup: (n: number) => `Setup · ${n} ${n === 1 ? "item" : "items"}`,
   nothing: "Nothing written yet",
@@ -211,6 +214,9 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           <Section label={PART_WINDOW_COPY.instructions}>
             <TextWell label={PART_WINDOW_COPY.instructions}>{step.text}</TextWell>
           </Section>
+          <Section label={PART_WINDOW_COPY.starts}>
+            <p style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px" }}>{startsLine(stepRunsLabel(step))}</p>
+          </Section>
           {models.length ? (
             <Section label={PART_WINDOW_COPY.models}>
               <Facts facts={models} />
@@ -256,11 +262,15 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
         </>
       );
     }
+    case "tool":
+      // CA-12 P7: the app, how it was connected, what it did.
+      return <ToolTileBody step={step} />;
     case "file":
       return (
         <>
-          <Facts facts={[step.filename, step.rows ? `${step.rows} cases` : null].filter((fact): fact is string => Boolean(fact))} />
-          {step.text ? <TextWell label="About the file">{step.text}</TextWell> : null}
+          {/* CA-12 P8: its type, name and size, and a preview; a file sent with a step reads as before. */}
+          {step.fileFacts && !step.inside ? <FileTileBody step={step} /> : <Facts facts={[step.filename, step.rows ? `${step.rows} cases` : null].filter((fact): fact is string => Boolean(fact))} />}
+          {step.text && step.inside ? <TextWell label="About the file">{step.text}</TextWell> : null}
           {props.onDownload ? (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <Button variant="secondary" size={28} fontSize={12} onClick={() => props.onDownload?.(step.id)}>
@@ -270,11 +280,14 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           ) : null}
         </>
       );
+    case "manual":
+      // CA-12 P10: where it was done, then its steps, then its picture.
+      return <ManualTileBody step={step} />;
     default:
-      // A manual step, and a prompt sent with another step: their own words.
+      // A prompt sent with another step: its own words.
       return (
         <>
-          <Facts facts={[step.tool ? (step.kind === "manual" ? `By hand in ${step.tool}` : step.tool) : null, step.model ? modelLabel(step.model) || step.model : null].filter((fact): fact is string => Boolean(fact))} />
+          <Facts facts={[step.tool, step.model ? modelLabel(step.model) || step.model : null].filter((fact): fact is string => Boolean(fact))} />
           <TextWell label={`${kind} text`}>{step.text}</TextWell>
         </>
       );

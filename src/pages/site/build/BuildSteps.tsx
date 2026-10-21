@@ -36,6 +36,7 @@ import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
 import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
 import { PartWindow } from "@/components/build/PartWindow";
+import { FileTileBody, ManualTileBody, ReplyBlock, ToolTileBody } from "@/components/build/tileBodies";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
@@ -553,7 +554,7 @@ function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; i
 /* ── tiles sent with a step (CA-04 P2) ── */
 
 /** A tile's kind as its row says it. */
-const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team" };
+const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team", tool: "Tool" };
 
 /** What is sent with a step, indented 36 under its text as the paste-ins are, each able to hold more, indented again. */
 function SentWith({ entries, ctx }: { entries: readonly ReaderStep[]; ctx: Ctx }) {
@@ -753,6 +754,29 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     );
   }
 
+  if (step.kind === "tool" || (step.kind === "file" && !step.inside)) {
+    /* CA-12 P7, P8: a tool or a file the maker put in the session: what it is, drawn as the composer draws it. */
+    const file = entry.file ?? null;
+    return (
+      <article
+        id={stepDomId(step.id)}
+        data-testid="step-card"
+        data-step={step.number}
+        data-kind={step.kind}
+        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
+      >
+        <Title entry={entry} right={null} />
+        {step.kind === "tool" ? <ToolTileBody step={step} indent={INDENT} /> : <FileTileBody step={step} indent={INDENT} />}
+        {step.kind === "file" && file ? (
+          <div style={{ paddingLeft: INDENT }}>
+            <AttachDownload file={file} />
+          </div>
+        ) : null}
+        <SentWith entries={entry.sentWith} ctx={ctx} />
+      </article>
+    );
+  }
+
   if (entry.manual) {
     /* Done by hand: nothing to copy. The tile's fill tells it from a prompt. */
     return (
@@ -763,15 +787,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
-        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>
-          {markFor({ tool: step.tool }) !== null ? (
-            <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 6, color: t.text }}>
-              <ModelMark tool={step.tool} size={16} />
-            </span>
-          ) : null}
-          {entry.manual.headline}
-        </div>
-        <p style={{ ...text(13.5, 400, t.text), margin: 0, paddingLeft: INDENT, lineHeight: "22px" }}>{entry.manual.line}</p>
+        <ManualTileBody step={step} indent={INDENT} picture={false} />
         <SaveLines files={entry.makes} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
         {entry.manual.mediaId ? (
@@ -787,6 +803,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
       <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
+      {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
       <SaveLines files={entry.makes} />
       <SentWith entries={entry.sentWith} ctx={ctx} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />

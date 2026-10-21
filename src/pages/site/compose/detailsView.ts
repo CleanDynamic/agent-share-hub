@@ -393,6 +393,11 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
     const node = findNode(ctx.tree, id);
     return node ? { ...fileView(node, ctx), ...insideOf(step) } : null;
   }
+  if (step?.kind === "tool") {
+    // CA-12 P7: a tool tile opens as the tool it is.
+    const node = findNode(ctx.tree, id);
+    return node ? { ...toolView(node, ctx), ...insideOf(step) } : null;
+  }
   if (step) {
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);

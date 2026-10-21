@@ -22,8 +22,8 @@ function open(over: Partial<AddManualStepDialogProps> = {}) {
 const toolButton = () => screen.getByRole("button", { name: "Tool" });
 const pickTool = (name: string) => {
   fireEvent.click(toolButton());
-  fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: name } });
-  fireEvent.keyDown(screen.getByRole("combobox", { name: "Find a tool" }), { key: "Enter" });
+  fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: name } });
+  fireEvent.keyDown(screen.getByRole("combobox", { name: "Find an app" }), { key: "Enter" });
 };
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const line = () => screen.getByLabelText("What was done") as HTMLInputElement;
@@ -43,25 +43,25 @@ describe("the Add manual step dialog", () => {
   });
 
   it("has one tool picker with no default tool, and the build's tools first", () => {
-    open({ inBuild: ["Midjourney"] });
+    open({ inBuild: ["GitHub"] });
     expect(screen.queryByRole("combobox")).toBeNull();
-    expect(toolButton().textContent).toBe("Pick a tool");
+    expect(toolButton().textContent).toBe("Pick an app");
     fireEvent.click(toolButton());
-    expect(screen.getAllByRole("option")[0].textContent).toBe("Midjourney");
+    expect(screen.getAllByRole("option")[0].textContent).toBe("GitHub");
   });
 
   it("keeps Add disabled until a tool is picked", () => {
     open();
     fireEvent.change(line(), { target: { value: "Laid out the hero" } });
     expect(add().disabled).toBe(true);
-    pickTool("Midjourney");
-    expect(toolButton().textContent).toBe("Midjourney");
+    pickTool("GitHub");
+    expect(toolButton().textContent).toBe("GitHub");
     expect(add().disabled).toBe(false);
   });
 
   it("needs a line before Add is enabled, and counts it out of 140 in DM Mono", () => {
     open();
-    pickTool("Midjourney");
+    pickTool("GitHub");
     expect(add().disabled).toBe(true);
     expect(screen.getByTestId("manual-counter").textContent).toBe("0 / 140");
     fireEvent.change(line(), { target: { value: "Laid out the hero" } });
@@ -72,10 +72,10 @@ describe("the Add manual step dialog", () => {
 
   it("adds a listed tool by its id and the line trimmed", () => {
     const props = open();
-    pickTool("Midjourney");
+    pickTool("GitHub");
     fireEvent.change(line(), { target: { value: "  Laid out the hero " } });
     fireEvent.click(add());
-    expect(props.onAdd).toHaveBeenCalledWith({ tool: "midjourney", text: "Laid out the hero", file: null });
+    expect(props.onAdd).toHaveBeenCalledWith({ tool: "github", text: "Laid out the hero", file: null });
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -136,10 +136,11 @@ describe("the manual step's tool picker fits a manual step (CA-02 P6)", () => {
     fireEvent.click(toolButton());
     fireEvent.click(screen.getByRole("option", { name: /^Show all/ }));
     const names = screen.getAllByRole("option").map((option) => option.textContent);
-    expect(names).toContain("Hermes Agent");
+    // CA-12 P13: the apps list, not the AI tools.
+    expect(names).toContain("GitHub");
     expect(names).toContain("Gmail");
-    expect(names).toContain("Claude");
-    expect(names).not.toContain("Sora");
+    expect(names).not.toContain("Claude");
+    expect(names).not.toContain("Hermes Agent");
     expect(names.every((name) => !name?.includes("Add it with"))).toBe(true);
     expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
   });

@@ -204,7 +204,7 @@ describe("what the agent runs in, its models and its tools (CA-02 P5)", () => {
     const props = open();
     const pickTool = (query: string, row: string | RegExp) => {
       fireEvent.click(screen.getByRole("button", { name: "Tools it can use" }));
-      fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
+      fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: query } });
       fireEvent.click(screen.getByRole("option", { name: row }));
     };
     pickTool("gmail", "Gmail");

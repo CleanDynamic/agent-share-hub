@@ -31,7 +31,7 @@ import { useMediaSrc } from "@/components/build/MediaFigure";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { useComposeBuild, composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { computeCompleteness, createBuild, galleryShortfall, getGalleryFacets, inGallery, MEDIA_MAX_BYTES, mediaKindFor, acceptedMediaTypes } from "@/lib/build";
-import type { BuildMedia, BuildPatch } from "@/lib/build";
+import type { BuildMedia, BuildPatch, NodeTree } from "@/lib/build";
 import {
   addComposerCover,
   coverMediaTypes,
@@ -282,13 +282,18 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
 
   /* ── publish ── */
 
-  const missing = useMemo(() => missingForPublish({ title, completeness: compose.completeness }), [title, compose.completeness]);
+  /* CA-12 P8: only a prompt, an agent or a team is "a prompt"; a file, a tool or a result is not. */
+  const hasPrompt = useMemo(() => {
+    const some = (list: readonly NodeTree[]): boolean => list.some((node) => ["prompt", "agent_config", "team"].includes(node.type) || some(node.children ?? []));
+    return some(nodes.tree);
+  }, [nodes.tree]);
+  const missing = useMemo(() => missingForPublish({ title, completeness: compose.completeness, hasPrompt }), [title, compose.completeness, hasPrompt]);
 
   const onPublish = async () => {
     // What is still waiting to be written goes first, and is counted.
     await Promise.all([prompts.flush(), details.flush()]);
     const counted = compose.build ? computeCompleteness(compose.build, nodes.current(), compose.nodeTypes) : null;
-    const needed = missingForPublish({ title, completeness: counted ?? compose.completeness });
+    const needed = missingForPublish({ title, completeness: counted ?? compose.completeness, hasPrompt });
     if (needed.length > 0) {
       toast(publishToast(needed));
       return;

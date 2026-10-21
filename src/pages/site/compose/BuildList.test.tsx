@@ -506,11 +506,12 @@ describe("a manual step (UI-P70)", () => {
   };
   const card = () => screen.getByRole("group", { name: /^Manual step 3:/ });
 
-  it("is its own kind of card, headed 'Manual step · {tool} · added by maker'", () => {
+  it("is its own kind of card, headed 'Manual step · added by maker', with where it was done under it (CA-12 P10)", () => {
     manualList();
     // The colours resolve in a browser, not here: the tier-3 spec reads them.
     expect(card().getAttribute("data-kind")).toBe("manual");
-    expect(screen.getByTestId("manual-eyebrow").textContent).toBe("Manual step · Figma · added by maker");
+    expect(screen.getByTestId("manual-eyebrow").textContent).toBe("Manual step · added by maker");
+    expect(within(card()).getByTestId("manual-where").textContent).toContain("Figma");
     expect(within(card()).getByRole("heading", { level: 3 }).textContent).toBe("Manual step 3");
     expect(within(card()).getByRole("heading", { level: 3 }).getAttribute("data-default-title")).toBe("true");
   });

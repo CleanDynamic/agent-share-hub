@@ -20,6 +20,7 @@ import {
   addAgentPrompt,
   addCode,
   addManualStep,
+  addToolTile,
   addTeam,
   setAgentSetup,
   setInstructions,
@@ -615,7 +616,7 @@ describe("a manual step (UI-P70)", () => {
     await expect(addManualStep(BUILD, [], { tool: "x".repeat(41), text: "ok" })).rejects.toThrow(/40/);
     await expect(addManualStep(BUILD, [], { tool: "Figma", text: "x".repeat(141) })).rejects.toThrow(/140/);
     await expect(addManualStep(BUILD, [], { tool: " ", text: "ok" })).rejects.toThrow(/1 to 40/);
-    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "  " })).rejects.toThrow(/1 to 140/);
+    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "  " })).rejects.toThrow(/lines of up to 140/);
   });
 
   it("changes its tool, line and picture within the limits, and takes the picture off with null", async () => {
@@ -627,7 +628,7 @@ describe("a manual step (UI-P70)", () => {
     expect(payloadWritten()).toEqual({ tool: "Figma", text: "Old" });
     await expect(setManualFields(step, { tool: "x".repeat(41) })).rejects.toThrow(/40/);
     await expect(setManualFields(step, { text: "x".repeat(141) })).rejects.toThrow(/140/);
-    await expect(setManualFields(step, { text: "" })).rejects.toThrow(/1 to 140/);
+    await expect(setManualFields(step, { text: "" })).rejects.toThrow(/lines of up to 140/);
     await expect(setManualFields(node({}) as BuildNode, { text: "x" })).rejects.toThrow(/not a manual step/);
   });
 
@@ -967,12 +968,14 @@ describe("a check is a step (CA-03 P5)", () => {
     expect(checkStatus({ passed: null, total: 14, runAt: null })).toBeNull();
   });
 
-  it("is offered once there is an agent, a team or code, and tests the selected step or the last of those", () => {
+  it("is offered once there is any step but a check (CA-12 P12: a prompt will do), and tests the selected step or the last that is not a check", () => {
     const steps = buildSteps([work, node({ id: "p2", type: "prompt", position: 2, payload: { text: "x" } })] as NodeTree[]);
     expect(canCheck(steps)).toBe(true);
-    expect(canCheck(buildSteps([node({ id: "p1", type: "prompt", position: 1, payload: { text: "x" } })] as NodeTree[]))).toBe(false);
+    expect(canCheck(buildSteps([node({ id: "p1", type: "prompt", position: 1, payload: { text: "x" } })] as NodeTree[]))).toBe(true);
+    expect(canCheck([])).toBe(false);
+    expect(canCheck(buildSteps([node({ id: "k", type: "eval_run", position: 1, payload: { tested: "It loads", passing: "No errors", passed: 1, total: 1 } })] as NodeTree[]))).toBe(false);
     expect(testedStepOf(steps, "p2")).toBe("p2");
-    expect(testedStepOf(steps, null)).toBe("c1");
+    expect(testedStepOf(steps, null)).toBe("p2");
   });
 });
 
@@ -1026,5 +1029,49 @@ describe("an old build is read, never written (CA-04 P1)", () => {
     const { setStepSession } = await import("./graph");
     const row = node({ position: 1 });
     await expect(setStepSession(row, "typed-legacy-1")).rejects.toThrow(/not saved yet/);
+  });
+});
+
+describe("CA-12 P7, P8: tool and file tiles", () => {
+  const toolNode = (id: string, position: number, payload: Record<string, unknown>) => node({ id, type: "integration", position, payload: payload as never });
+
+  it("a tool added from Add is a step with its app, how it was connected and what it did", () => {
+    const steps = buildSteps([node({ id: "p", position: 1, payload: { text: "Plan" } }), toolNode("t", 2, { service: "GitHub", connection: "mcp", scopes: "read issues", step: true })]);
+    expect(steps.map((s) => [s.kind, s.number, s.defaultTitle])).toEqual([["prompt", "1", "Plan"], ["tool", "2", "GitHub"]]);
+    expect(steps[1]).toMatchObject({ tool: "GitHub", text: "read issues", app: { connection: "mcp", runsAt: null, scopes: "read issues" } });
+  });
+
+  it("a tool an agent names, or one saved before CA-12, is not a tile and shifts no number", () => {
+    const steps = buildSteps([toolNode("t", 1, { service: "Gmail" }), node({ id: "p", position: 2, payload: { text: "Plan" } })]);
+    expect(steps.map((s) => [s.kind, s.number])).toEqual([["prompt", "1"]]);
+  });
+
+  it("a file is a tile only when added from Add (step: true); a file dropped into Sources is not", () => {
+    const file = (id: string, position: number, payload: Record<string, unknown>) => node({ id, type: "document", position, payload: payload as never });
+    const steps = buildSteps([file("a", 1, { title: "notes.md" }), file("b", 2, { title: "logo.png", step: true, mime: "image/png", size: 2048, media_id: "m" }), file("c", 3, { title: "app.ts", step: true, preview: ["a", "b"] })]);
+    expect(steps.map((s) => [s.kind, s.number, s.defaultTitle])).toEqual([["file", "1", "logo.png"], ["file", "2", "app.ts"]]);
+    expect(steps[0].fileFacts).toMatchObject({ kind: "picture", size: 2048, mediaId: "m" });
+    expect(steps[1].fileFacts).toMatchObject({ kind: "code", preview: ["a", "b"] });
+  });
+
+  it("addToolTile writes step: true with the connection and what it did, and refuses a bad one", async () => {
+    await addToolTile(BUILD, [], { service: " GitHub ", connection: "mcp", scopes: " read issues ", session: "s1" });
+    expect(payloadWritten()).toEqual({ service: "GitHub", step: true, connection: "mcp", scopes: "read issues", session: "s1" });
+    await expect(addToolTile(BUILD, [], { service: " " })).rejects.toThrow(/needs its app/);
+    await expect(addToolTile(BUILD, [], { service: "x", connection: "nope" as never })).rejects.toThrow(/way to connect/);
+  });
+
+  it("a manual step keeps its lines and where it was done; one saved before reads as one line", async () => {
+    await addManualStep(BUILD, [], { where: { kind: "terminal", name: null, url: null }, lines: ["cd app", "npm test"] });
+    expect(payloadWritten()).toEqual({ tool: "Terminal", text: "cd app\nnpm test", where: { kind: "terminal" } });
+    const [step] = buildSteps([node({ id: "m", type: "manual_step", position: 1, payload: { tool: "Figma", text: "Draw it" } })]);
+    expect(step).toMatchObject({ lines: ["Draw it"], where: { kind: "app", name: "Figma" } });
+    await expect(addManualStep(BUILD, [], { where: { kind: "offline", name: null, url: null }, lines: Array(13).fill("x") })).rejects.toThrow(/at most 12/);
+  });
+
+  it("a check's total is worked out from its cases", () => {
+    const [check] = buildSteps([node({ id: "k", type: "eval_run", position: 1, payload: { tested: "Login", passing: "ok", passed: 9, total: 9, cases: [{ input: "a", expected: "b", actual: "b", passed: true }, { input: "c", expected: "d", actual: "x", passed: false }] } })]);
+    expect(check.check).toMatchObject({ passed: 1, total: 2 });
+    expect(check.cases).toHaveLength(2);
   });
 });

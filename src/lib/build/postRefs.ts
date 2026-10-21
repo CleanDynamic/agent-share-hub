@@ -52,6 +52,7 @@ export const REF_KIND: Record<Step["kind"], string> = {
   code: "Code",
   check: "Check",
   file: "File",
+  tool: "Tool",
 } as Record<Step["kind"], string>;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS } from "@/lib/tools/registry";
+import { AI_TOOLS, APPS, SUGGESTED_APPS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS } from "@/lib/tools/registry";
 
-import { TOOL_PICKER_COPY, pickerRows, toolsForStep, type PickerRow } from "./toolPickerModel";
+import { OTHER_LIST_COPY, TOOL_PICKER_COPY, pickerRows, toolsForStep, type PickerRow } from "./toolPickerModel";
 
 /** A manual step: every tool but the retired one fits it, so these rows are the whole list. */
 const base = { query: "", inBuild: [], expanded: false, allowNone: false, step: "manual" as const };
-const PICKABLE = TOOLS.filter((tool) => tool.status !== "retired");
+const PICKABLE = AI_TOOLS.filter((tool) => tool.status !== "retired");
 const ids = (rows: PickerRow[]) => rows.flatMap((row) => (row.kind === "tool" ? [row.tool.id] : []));
 
 describe("pickerRows", () => {
@@ -42,7 +42,8 @@ describe("pickerRows", () => {
     expect(ids(rows)).toHaveLength(PICKABLE.length);
     expect(ids(rows)).not.toContain("sora");
     const headings = rows.flatMap((row) => (row.kind === "heading" ? [row.label] : []));
-    expect(headings).toEqual(TOOL_GROUPS.map((group) => group.label));
+    // "Other apps" held only Vercel and Gmail, which are apps now, so the AI list has no such heading.
+    expect(headings).toEqual(TOOL_GROUPS.filter((group) => group.key !== "other").map((group) => group.label));
     expect(rows.some((row) => row.kind === "showAll")).toBe(false);
   });
 
@@ -108,7 +109,6 @@ describe("pickerRows for a step (CA-02)", () => {
   });
 
   it("shows any other tool that does not fit as unavailable, and not pickable", () => {
-    expect(row(pickerRows({ ...prompt, query: "gmail" }), "gmail")).toMatchObject({ unavailable: true, pickable: false, line: "Add it with Add › Tool" });
     expect(row(pickerRows({ ...base, step: "tool", query: "claude" }), "claude")).toMatchObject({ unavailable: true, pickable: false, line: "Add it with Add › Prompt" });
   });
 
@@ -134,5 +134,70 @@ describe("pickerRows for a step (CA-02)", () => {
     expect(all).toContain("hermes-agent");
     expect(all).toContain("claude-code");
     expect(all).not.toContain("gemini");
+  });
+});
+
+
+describe("CA-12 P13 · two lists", () => {
+  const apps = { query: "", inBuild: [], expanded: false, allowNone: false, step: "tool" as const, list: "app" as const };
+
+  it("splits the registry: GitHub, Stripe and the rest of the 24 are apps; ChatGPT, Claude Code and Cursor are AI tools; a few are both", () => {
+    const appIds = APPS.map((tool) => tool.id);
+    for (const id of ["github", "gitlab", "stripe", "supabase", "postgres", "vercel", "netlify", "cloudflare", "slack", "gmail", "google-drive", "google-sheets", "notion", "linear", "jira", "figma", "airtable", "shopify", "twilio", "resend", "n8n", "zapier", "make", "elevenlabs"]) {
+      expect(appIds, id).toContain(id);
+    }
+    expect(APPS).toHaveLength(24);
+    const aiIds = AI_TOOLS.map((tool) => tool.id);
+    for (const id of ["chatgpt", "claude", "claude-code", "cursor", "lovable", "github-copilot", "midjourney", "suno"]) expect(aiIds, id).toContain(id);
+    for (const id of ["github", "stripe", "vercel", "gmail"]) expect(aiIds, id).not.toContain(id);
+    for (const id of ["chatgpt", "claude-code", "cursor", "lovable"]) expect(appIds, id).not.toContain(id);
+    expect(aiIds.filter((id) => appIds.includes(id)).sort()).toEqual(["elevenlabs", "figma", "make", "n8n", "notion", "zapier"]);
+    expect(TOOLS).toHaveLength(new Set([...aiIds, ...appIds]).size);
+  });
+
+  it("offers apps first suggested, and every app under one heading, never an AI tool", () => {
+    const rows = pickerRows(apps);
+    expect(rows[0]).toEqual({ kind: "heading", label: "Suggested" });
+    expect(ids(rows)).toEqual([...SUGGESTED_APPS]);
+    expect(rows[rows.length - 1]).toEqual({ kind: "showAll", count: APPS.length });
+    const all = pickerRows({ ...apps, expanded: true });
+    expect(all[0]).toEqual({ kind: "heading", label: "Apps and services" });
+    expect(ids(all)).toHaveLength(24);
+    expect(ids(all)).not.toContain("chatgpt");
+  });
+
+  it("the AI list offers no app", () => {
+    const all = pickerRows({ ...base, expanded: true });
+    expect(ids(all)).not.toContain("github");
+    expect(ids(all)).not.toContain("vercel");
+    expect(ids(all)).toContain("n8n");
+  });
+
+  it("typing GitHub in the apps list finds GitHub and says plainly that GitHub Copilot is an AI tool", () => {
+    const rows = pickerRows({ ...apps, query: "github" });
+    expect(ids(rows)).toEqual(["github"]);
+    expect(rows.find((row) => row.kind === "note")).toEqual({ kind: "note", text: "GitHub Copilot is an AI tool. Add it to a session or a prompt." });
+    expect(OTHER_LIST_COPY.isAiTool("GitHub Copilot")).toBe("GitHub Copilot is an AI tool. Add it to a session or a prompt.");
+    // GitHub is a known name, so there is no Use row for it.
+    expect(rows.some((row) => row.kind === "use")).toBe(false);
+  });
+
+  it("typing Supabase in the AI list says it is an app", () => {
+    const rows = pickerRows({ ...base, step: "prompt", query: "supabase" });
+    expect(rows.find((row) => row.kind === "note")).toEqual({ kind: "note", text: "Supabase is an app. Add it with Add › Tool." });
+    expect(ids(rows)).toEqual([]);
+  });
+
+  it("says nothing about a tool that is in both lists, and free text still works in either", () => {
+    expect(pickerRows({ ...apps, query: "n8n" }).some((row) => row.kind === "note")).toBe(false);
+    expect(pickerRows({ ...base, step: "prompt", query: "n8n" }).some((row) => row.kind === "note")).toBe(false);
+    expect(pickerRows({ ...apps, query: "Acme CRM" }).slice(-1)[0]).toEqual({ kind: "use", name: "Acme CRM" });
+    expect(pickerRows({ ...base, step: "prompt", query: "My local thing" }).slice(-1)[0]).toEqual({ kind: "use", name: "My local thing" });
+  });
+
+  it("an app does not run itself, and an app can be named on a Tool tile, a manual step and an agent", () => {
+    expect(toolsForStep("tool", "app")).toHaveLength(24);
+    expect(toolsForStep("manual", "app")).toHaveLength(24);
+    expect(toolsForStep("agent", "app")).toHaveLength(24);
   });
 });

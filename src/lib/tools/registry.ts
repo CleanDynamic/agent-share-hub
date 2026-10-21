@@ -10,6 +10,12 @@
 //
 // CA-03 P7: `readsOutside` marks a tool that reads content its maker does not control. The list is held by a test, so a
 // change to it is deliberate.
+//
+// CA-12 P13: TWO LISTS, USED CONSISTENTLY. An AI TOOL is where the AI work was done (ChatGPT, Claude Code, Cursor,
+// Lovable ...): sessions, prompts, an agent's "Runs in" and code's "Written with" name one. An APP OR SERVICE is what the AI
+// or the maker worked with (GitHub, Stripe, Supabase, Slack ...): a Tool tile, a manual step's "Where was it done?" and an
+// agent's "Tools it can use" name one. A few are both (n8n, Notion, Figma): an AI workflow, and a place work happens.
+// `TOOLS` is every entry, for looking a name up; `AI_TOOLS` and `APPS` are the two lists the pickers offer.
 
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 
@@ -59,7 +65,10 @@ export const LOGO_KEYS = [
 
 export type LogoKey = (typeof LOGO_KEYS)[number];
 
-export type ToolGroupKey = "chat" | "coding" | "builders" | "agents" | "automation" | "image" | "video" | "audio" | "notes" | "design" | "other";
+export type ToolGroupKey = "chat" | "coding" | "builders" | "agents" | "automation" | "image" | "video" | "audio" | "notes" | "design" | "other" | "services";
+
+/** CA-12 P13: which picker lists a tool. */
+export type ToolList = "ai" | "app";
 
 export type ToolKind =
   | "chat" | "coding" | "builder" | "agent" | "automation"
@@ -75,6 +84,8 @@ export type ToolModels =
 export type StepKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "result" | "code";
 
 export interface Tool {
+  /** CA-12 P13: the lists it is offered in. */
+  lists: readonly ToolList[];
   /** What a payload stores: "claude-code". */
   id: string;
   /** What a page shows: "Claude Code". */
@@ -134,7 +145,7 @@ export const TOOL_GROUPS: readonly { key: ToolGroupKey; label: string }[] = [
   { key: "other", label: "Other apps" },
 ];
 
-export const TOOLS: readonly Tool[] = [
+const ENTRIES: readonly Omit<Tool, "lists">[] = [
   {
     id: "chatgpt", name: "ChatGPT", group: "chat", logo: "openai", aliases: ["chat gpt", "chatgpt.com"], client: "chatgpt",
     kind: "chat",
@@ -575,6 +586,65 @@ export const TOOLS: readonly Tool[] = [
     checked: null,
   },
 ];
+
+/** CA-12 P13: an app or service with no model, named on a Tool tile, a manual step or an agent's tools. */
+const app = (id: string, name: string, aliases: string[], logo: LogoKey | null = null, readsOutside = false): Omit<Tool, "lists"> => ({
+  id,
+  name,
+  group: "services",
+  logo,
+  aliases,
+  kind: "app",
+  models: { mode: "none" },
+  steps: ["tool", "manual"],
+  ...(readsOutside ? { readsOutside: true as const } : null),
+  status: "current",
+  source: null,
+  checked: null,
+});
+
+/** CA-12 P13: apps and services that are not AI tools. A mark where one is already in the project, else the neutral square. */
+const APP_ENTRIES: readonly Omit<Tool, "lists">[] = [
+  app("github", "GitHub", ["github.com", "git hub"], null, true),
+  app("gitlab", "GitLab", ["gitlab.com"], null, true),
+  app("stripe", "Stripe", ["stripe.com"]),
+  app("supabase", "Supabase", ["supabase.com"]),
+  app("postgres", "Postgres", ["postgresql", "pg"]),
+  app("netlify", "Netlify", ["netlify.com"]),
+  app("cloudflare", "Cloudflare", ["cloudflare.com", "workers"]),
+  app("slack", "Slack", ["slack.com"], null, true),
+  app("google-drive", "Google Drive", ["gdrive", "drive"], null, true),
+  app("google-sheets", "Google Sheets", ["gsheets", "sheets"]),
+  app("linear", "Linear", ["linear.app"], null, true),
+  app("jira", "Jira", ["atlassian jira"], null, true),
+  app("airtable", "Airtable", ["airtable.com"]),
+  app("shopify", "Shopify", ["shopify.com"]),
+  app("twilio", "Twilio", ["twilio.com"]),
+  app("resend", "Resend", ["resend.com"]),
+];
+
+/** CA-12 P13: in both lists: an AI workflow or a place work happens. Everything else in the original list is an AI tool, bar the two apps. */
+const IN_BOTH = new Set(["n8n", "zapier", "make", "elevenlabs", "notion", "figma"]);
+const APP_ONLY = new Set(["vercel", "gmail"]);
+
+const listsOf = (id: string): readonly ToolList[] => (APP_ONLY.has(id) ? ["app"] : IN_BOTH.has(id) ? ["ai", "app"] : ["ai"]);
+
+/** Every entry, AI tool or app, for looking a name up. */
+export const TOOLS: readonly Tool[] = [
+  ...ENTRIES.map((entry): Tool => ({ ...entry, lists: listsOf(entry.id) })),
+  ...APP_ENTRIES.map((entry): Tool => ({ ...entry, lists: ["app"] })),
+];
+
+/** CA-12 P13: where the AI work was done. Sessions, prompts, an agent's "Runs in" and code's "Written with" pick from this. */
+export const AI_TOOLS: readonly Tool[] = TOOLS.filter((tool) => tool.lists.includes("ai"));
+
+/** CA-12 P13: what the AI or the maker worked with. A Tool tile, a manual step's "Where was it done?" and an agent's tools pick from this. */
+export const APPS: readonly Tool[] = TOOLS.filter((tool) => tool.lists.includes("app"));
+
+export const APP_GROUP_LABEL = "Apps and services";
+
+/** CA-12 P13: the apps the picker offers first. */
+export const SUGGESTED_APPS: readonly string[] = ["github", "supabase", "stripe", "slack", "gmail", "google-drive"];
 
 /** The picker's first rows. Never a retired tool. */
 export const SUGGESTED_TOOLS: readonly string[] = ["chatgpt", "claude", "claude-code", "gemini", "cursor", "lovable"];
