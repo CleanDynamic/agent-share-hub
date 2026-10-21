@@ -163,6 +163,8 @@ function Harness({ selectedNodeId = null }: { selectedNodeId?: string | null }) 
         isOwner: true,
         loadError: null,
         saveError: null,
+        saveFailure: null,
+        retrySave: () => undefined,
       }) as ComposeBuild,
     [data, selectedNodeId]
   );

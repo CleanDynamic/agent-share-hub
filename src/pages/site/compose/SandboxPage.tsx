@@ -1181,6 +1181,8 @@ export function SandboxPage() {
       <PartRegistryProvider registry={registry}>
       <SandboxView
         {...viewProps}
+        saveProblem={compose.saveFailure}
+        loadError={compose.loadError ?? undefined}
         save={mergeSave(viewProps.save, thread.save)}
         onRetrySave={onRetrySave}
         onPublish={() => void onPublish()}

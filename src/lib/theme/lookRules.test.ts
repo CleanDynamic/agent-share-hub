@@ -284,6 +284,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SandboxPage.add.test.tsx",
   "src/pages/site/compose/draftStart.ts",
   "src/pages/site/compose/useComposeDetails.ts",
+  // CA-10 P4
+  "src/hooks/useComposeBuild.ts",
+  "src/hooks/useComposeBuild.save.test.tsx",
+  "src/lib/build/builds.ts",
+  "src/components/compose/SequenceView.test.tsx",
+  "src/components/compose/TrayDrop.test.tsx",
+  // CA-10 P4
+  "src/components/compose/Publish.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

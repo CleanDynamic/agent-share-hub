@@ -205,13 +205,10 @@ describe("the publish action", () => {
     // The same record the button just accepted scores 60 of an app's 100 — the
     // three core rules and none of the other six. Publication is ungated, and
     // this is the number that proves it was not quietly gated on the score.
-    await waitFor(() =>
-      expect(
-        updateBuild.mock.calls.some(
-          ([, patch]) => (patch as Record<string, unknown>).completeness === 60
-        )
-      ).toBe(true)
-    );
+    // CA-10: opening writes nothing, so the score goes out with the publish.
+    await pressPublish();
+    await waitFor(() => expect(publishPatches()).toHaveLength(1));
+    expect(publishPatches()[0].completeness).toBe(60);
   });
 
   it("refuses a short record, for the same reason, on the control that publishes", async () => {

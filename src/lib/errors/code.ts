@@ -53,3 +53,52 @@ export function errorMessage(error: unknown): string {
 export function errorLine(prefix: string, error: unknown): string {
   return `${prefix} ${errorCode(error) ?? "no-code"} ${errorMessage(error)}`;
 }
+
+/* ── CA-10: a save the database refuses ── */
+
+/** HTTP answers a later try can get past. */
+const RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504, 520]);
+/** Codes PostgREST answers those with (a statement timeout, a busy or unreachable database). */
+const RETRY_CODES = new Set(["57014", "40001", "40P01", "53300", "53400", "08000", "08003", "08006", "PGRST000", "PGRST001", "PGRST002", "PGRST003"]);
+
+/** A failure that can succeed later: the network, or 408, 429, 500, 502, 503, 504 or 520. Anything else will not. */
+export function canSucceedLater(error: unknown): boolean {
+  const status = errorStatus(error);
+  if (status !== undefined) return RETRY_STATUSES.has(status);
+  const code = errorCode(error);
+  if (code === undefined) return true;
+  return RETRY_CODES.has(code);
+}
+
+/** What went wrong, in a few plain words, for "Not saved: {reason}. Code {code}." */
+export function shortReason(error: unknown): string {
+  const code = errorCode(error);
+  const status = errorStatus(error);
+  if (code === undefined && status === undefined) return "no connection";
+  switch (code) {
+    case "23514":
+      return "a value isn't allowed";
+    case "23502":
+      return "something required is missing";
+    case "23505":
+      return "it clashes with another build";
+    case "23503":
+      return "it points at something that's gone";
+    case "22001":
+      return "a field is too long";
+    case "42501":
+    case "PGRST301":
+    case "PGRST302":
+      return "you don't have access to this build";
+    case "PGRST116":
+      return "the build wasn't found";
+    case "42703":
+    case "PGRST204":
+      return "the site and the database disagree";
+    case "57014":
+      return "the database took too long";
+  }
+  if (status === 401 || status === 403) return "you don't have access to this build";
+  if (status !== undefined && status >= 500) return "the database didn't answer";
+  return "the database refused it";
+}

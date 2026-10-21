@@ -52,6 +52,7 @@ import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
+import type { SaveFailure } from "@/hooks/useComposeBuild";
 
 export type SandboxLens = "list" | "map";
 
@@ -74,6 +75,10 @@ export interface SandboxViewProps extends CardProps {
 
   save: SaveState;
   onRetrySave: () => void;
+  /** CA-10: a save that stopped: its reason and code, for "Not saved: {reason}. Code {code}." */
+  saveProblem?: SaveFailure | null;
+  /** CA-10: why the build did not load: logged once, its code shown under "This build didn't load." */
+  loadError?: unknown;
   missing: readonly SandboxMissingItem[];
   slug: string | null;
   published: ComposePublished | null;
@@ -164,6 +169,11 @@ export const ADD_COPY = {
   /** Check, while the build has nothing a check could test. */
   checkFirst: "Add an agent or code first",
 } as const;
+
+/** CA-10: "Not saved: a value isn't allowed. Code 23514." (the code left out when there is none: a network failure). */
+export function notSavedLine(problem: SaveFailure): string {
+  return `Not saved: ${problem.reason}.${problem.code ? ` Code ${problem.code}.` : ""}`;
+}
 
 export const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
 /** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. */
@@ -583,7 +593,7 @@ export function SandboxView(props: SandboxViewProps) {
   if (status === "error") {
     return (
       <div style={moduleStyle()}>
-        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} />
+        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} error={props.loadError} log="[Compose] build read failed" showCode />
       </div>
     );
   }
@@ -626,7 +636,11 @@ export function SandboxView(props: SandboxViewProps) {
       {save !== "idle" ? (
         <>
           {" · "}
-          {SAVE_WORDS[save]}
+          {save === "error" && props.saveProblem ? (
+            <span data-testid="save-problem">{notSavedLine(props.saveProblem)}</span>
+          ) : (
+            SAVE_WORDS[save]
+          )}
           {save === "error" ? (
             <>
               {" "}

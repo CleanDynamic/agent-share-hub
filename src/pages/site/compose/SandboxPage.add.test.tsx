@@ -14,7 +14,8 @@ vi.mock("@/integrations/supabase/client", async () => (await import("@/lib/build
 
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { REPO_SCHEMA, startAuditBackend } from "@/lib/build/__audit__/fakeSupabase";
+import { PG, REPO_SCHEMA, startAuditBackend, type Fault } from "@/lib/build/__audit__/fakeSupabase";
+import { toast } from "sonner";
 
 import { SandboxPage } from "./SandboxPage";
 
@@ -45,8 +46,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function mount(path: string) {
-  startAuditBackend({ schema: REPO_SCHEMA });
+function mount(path: string, faults: Fault[] = []) {
+  startAuditBackend({ schema: REPO_SCHEMA, faults });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -193,3 +194,26 @@ describe.each([
     await waitFor(() => expect(screen.queryByTestId("add-pending")).toBeNull(), { timeout: 10_000 });
   });
 });
+
+describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)", () => {
+  it.each([
+    ["Result", /^Result/],
+    ["Session", /^Session/],
+  ])("Add › %s on /compose/new, with the draft refused: exactly one toast", async (_name, item) => {
+    stubWidth(1280);
+    const said = vi.spyOn(toast, "error");
+    mount("/compose/new", [{ method: "POST", path: /^\/rest\/v1\/builds(\?|$)/, answer: PG.rlsInsert("builds") }]);
+    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    if (item.source === "^Session") {
+      fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
+      fireEvent.keyDown(await screen.findByRole("menuitem", { name: item }), { key: "ArrowRight" });
+      fireEvent.click(await screen.findByRole("menuitem", { name: /\d+ prompts?$/ }, { timeout: 5_000 }));
+    } else {
+      await choose(false, item);
+    }
+    await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
+    expect(said.mock.calls.map(([line]) => line)).toEqual(["Couldn't start your draft. Try again."]);
+  });
+});
+

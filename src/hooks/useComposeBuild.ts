@@ -10,9 +10,17 @@
 // COMPLETENESS IS COMPUTED HERE AND WRITTEN LIKE ANY OTHER COLUMN. It is not a
 // database trigger, and it cannot be: the rules are shape-relative and read the
 // node type registry, so they live in TypeScript where the shapes are defined.
-// The effect below recomputes on every change to the record and pushes the
-// result through patchBuild, which means it is debounced by the same 800ms as a
-// title and lands in the same row update rather than in a second one.
+// CA-10 (CA-09 F11, CA-08 F5): OPENING A DRAFT WRITES NOTHING. The score is
+// worked out for display at once, and written only with the maker's next real
+// edit: a header save carries it when it differs from the stored one, and a
+// change to the score after opening (the maker added a part) is written then.
+//
+// CA-10: A SAVE THE DATABASE REFUSES STOPS. Only a failure that can succeed
+// later (the network, 408, 429, 500, 502, 503, 504, 520) is tried again, three
+// times, after 1 s, 3 s and 9 s. Any other answer, or the third retry failing,
+// stops: the change stays in memory, `saveFailure` says what failed and its
+// code ("Not saved: a value isn't allowed. Code 23514."), it is logged once,
+// and `retrySave` (Try again) or the maker's next edit sends it again.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,11 +42,23 @@ import type {
   NodeTree,
   NodeType,
 } from "@/lib/build";
+import { canSucceedLater, errorCode, errorLine, shortReason } from "@/lib/errors/code";
 import { composeBuildQueryKey } from "./composeBuildQueryKey";
 
 /** Quiet enough that a sentence of typing is one write, short enough that the
  *  indicator settles while the creator is still looking at the field. */
 export const SAVE_DEBOUNCE_MS = 800;
+
+/** CA-10: how long to wait before each retry of a save that can succeed later; three, then stop. */
+export const SAVE_RETRY_DELAYS_MS = [1_000, 3_000, 9_000] as const;
+
+/** CA-10: a save that stopped, in the maker's words. */
+export interface SaveFailure {
+  /** "a value isn't allowed". */
+  reason: string;
+  /** "23514"; absent for a network failure. */
+  code?: string;
+}
 
 /** Stable identities, so a consumer's useMemo/useEffect on an empty tree does
  *  not re-run on every render of this hook. */
@@ -89,6 +109,10 @@ export interface ComposeBuild {
   isOwner: boolean;
   loadError: Error | null;
   saveError: Error | null;
+  /** CA-10: set once a save has stopped (refused, or out of retries); the change it held is still pending. */
+  saveFailure: SaveFailure | null;
+  /** CA-10: Try again: send what is pending now. */
+  retrySave: () => void;
 }
 
 export function useComposeBuild(buildId: string | undefined): ComposeBuild {
@@ -118,6 +142,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<Error | null>(null);
+  const [saveFailure, setSaveFailure] = useState<SaveFailure | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishError, setPublishError] = useState<Error | null>(null);
 
@@ -130,6 +155,13 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
   const mountedRef = useRef(true);
   const buildIdRef = useRef<string | undefined>(buildId);
   buildIdRef.current = buildId;
+  /** CA-10: retries spent on the failure now open; reset by a save that lands, an edit, or Try again. */
+  const attemptRef = useRef(0);
+  /** CA-10: a save has stopped; nothing is sent until the maker edits or presses Try again. */
+  const stoppedRef = useRef(false);
+  /** CA-10: the score as worked out now, and as the stored row has it, for the next real write. */
+  const completenessRef = useRef<number | null>(null);
+  const storedCompletenessRef = useRef<number | null>(null);
 
   /** A write is only ever issued for a build the session user owns. The RLS
    *  policy says the same thing; this keeps a non-owner's editor from even
@@ -141,13 +173,15 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
   isOwnerRef.current = isOwner;
 
   const flushRef = useRef<() => Promise<void>>(async () => {});
+  /** CA-10: set by a failed save that will be tried again: how long to wait first. */
+  const retryInRef = useRef<number | null>(null);
 
-  const schedule = useCallback(() => {
+  const schedule = useCallback((delay: number = SAVE_DEBOUNCE_MS) => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null;
       settleRef.current = flushRef.current();
-    }, SAVE_DEBOUNCE_MS);
+    }, delay);
   }, []);
 
   const flush = useCallback(async () => {
@@ -156,8 +190,14 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     if (inFlightRef.current) return;
 
     const id = buildIdRef.current;
-    const patch = pendingRef.current;
-    if (!id || !isOwnerRef.current || Object.keys(patch).length === 0) return;
+    if (stoppedRef.current) return;
+    if (!id || !isOwnerRef.current || Object.keys(pendingRef.current).length === 0) return;
+    // A real edit carries the score with it, when it differs from the stored one.
+    const score = completenessRef.current;
+    const patch: BuildPatch =
+      score !== null && score !== storedCompletenessRef.current && !("completeness" in pendingRef.current)
+        ? { ...pendingRef.current, completeness: score }
+        : pendingRef.current;
 
     pendingRef.current = {};
     inFlightRef.current = true;
@@ -180,19 +220,32 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
         }
         return next;
       });
+      attemptRef.current = 0;
       setSaveError(null);
+      setSaveFailure(null);
       setLastSavedAt(new Date());
     } catch (cause) {
       if (!mountedRef.current || buildIdRef.current !== id) return;
-      // Put the failed keys back so the next flush retries them, without
-      // overwriting anything the creator has typed since.
+      // Put the failed keys back, in memory, without overwriting anything the
+      // creator has typed since.
       pendingRef.current = { ...patch, ...pendingRef.current };
       setSaveError(cause instanceof Error ? cause : new Error(String(cause)));
+      // CA-10: try again only what can succeed later, three times; otherwise stop and say so, once.
+      if (canSucceedLater(cause) && attemptRef.current < SAVE_RETRY_DELAYS_MS.length) {
+        retryInRef.current = SAVE_RETRY_DELAYS_MS[attemptRef.current];
+        attemptRef.current += 1;
+      } else {
+        stoppedRef.current = true;
+        setSaveFailure({ reason: shortReason(cause), code: errorCode(cause) });
+        console.error(errorLine("[Compose] header save failed", cause));
+      }
     } finally {
       inFlightRef.current = false;
       if (mountedRef.current && buildIdRef.current === id) {
         setIsSaving(false);
-        if (Object.keys(pendingRef.current).length > 0) schedule();
+        const retryIn = retryInRef.current;
+        retryInRef.current = null;
+        if (!stoppedRef.current && Object.keys(pendingRef.current).length > 0) schedule(retryIn ?? SAVE_DEBOUNCE_MS);
       }
     }
   }, [queryClient, schedule]);
@@ -207,10 +260,21 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       if (Object.keys(patch).length === 0) return;
       setOverlay((current) => ({ ...current, ...patch }));
       pendingRef.current = { ...pendingRef.current, ...patch };
+      // A real edit is a fresh try, even after a save stopped: it may be the change that fixes it.
+      stoppedRef.current = false;
+      attemptRef.current = 0;
       schedule();
     },
     [schedule]
   );
+
+  /** CA-10: Try again. Sends what is pending now, with three retries again if it can succeed later. */
+  const retrySave = useCallback(() => {
+    stoppedRef.current = false;
+    attemptRef.current = 0;
+    setSaveFailure(null);
+    if (Object.keys(pendingRef.current).length > 0) schedule(0);
+  }, [schedule]);
 
   // A different build is a different record: drop the previous one's unsaved
   // edits and selection rather than laying them over the new row.
@@ -219,8 +283,12 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     setSelectedNodeId(null);
     setLastSavedAt(null);
     setSaveError(null);
+    setSaveFailure(null);
     setPublishError(null);
     pendingRef.current = {};
+    stoppedRef.current = false;
+    attemptRef.current = 0;
+    openedScoreRef.current = null;
   }, [buildId]);
 
   useEffect(() => {
@@ -260,11 +328,19 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     [build, nodeTypes, tree]
   );
 
-  // Writing it back converges: patchBuild puts the new number in the overlay,
-  // which is what `build` is read through, so the next run of this effect finds
-  // the column already equal to the computed value and does nothing.
+  completenessRef.current = completeness?.score ?? null;
+  storedCompletenessRef.current = query.data?.build?.completeness ?? null;
+
+  /* CA-10: the score as the draft opened. Opening writes nothing; a score that changes after that, because the
+     maker changed the build, is written (it converges: patchBuild puts it in the overlay `build` is read through). */
+  const openedScoreRef = useRef<number | null>(null);
   useEffect(() => {
     if (!build || !completeness) return;
+    if (openedScoreRef.current === null) {
+      openedScoreRef.current = completeness.score;
+      return;
+    }
+    if (completeness.score === openedScoreRef.current) return;
     if (build.completeness === completeness.score) return;
     patchBuild({ completeness: completeness.score });
   }, [build, completeness, patchBuild]);
@@ -303,7 +379,10 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
 
       const pending = pendingRef.current;
       pendingRef.current = {};
-      const patch: BuildPatch = { ...pending, ...publishPatch(current) };
+      // CA-10: publishing is a real edit, so it carries the score when the stored one is out of date.
+      const score = completenessRef.current;
+      const scored = score !== null && score !== storedCompletenessRef.current ? { completeness: score } : {};
+      const patch: BuildPatch = { ...scored, ...pending, ...publishPatch(current) };
 
       /**
        * A rebuild publishes through rebuild.ts, and cannot take the fold.
@@ -398,5 +477,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     isOwner,
     loadError: (query.error as Error | null) ?? null,
     saveError,
+    saveFailure,
+    retrySave,
   };
 }

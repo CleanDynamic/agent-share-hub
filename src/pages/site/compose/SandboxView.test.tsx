@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
 import { SandboxView as SandboxView } from "./SandboxView";
-import { ADD_ITEMS, LIST_HINT, addEntries, countsLine, listHint, type SandboxViewProps } from "./SandboxView";
+import { ADD_ITEMS, LIST_HINT, addEntries, countsLine, listHint, notSavedLine, type SandboxViewProps } from "./SandboxView";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -552,3 +552,23 @@ describe("CA-10 · words on a phone (CA-09 F12)", () => {
     expect(screen.queryByText(/click/i)).toBeNull();
   });
 });
+
+describe("CA-10 · a save that stopped says what failed", () => {
+  it("reads 'Not saved: {reason}. Code {code}.' with Try again", () => {
+    const onRetrySave = vi.fn();
+    view({ save: "error", saveProblem: { reason: "a value isn't allowed", code: "23514" }, onRetrySave });
+    expect(screen.getByTestId("save-problem").textContent).toBe("Not saved: a value isn't allowed. Code 23514.");
+    fireEvent.click(within(screen.getByTestId("sandbox-status")).getByRole("button", { name: "Try again" }));
+    expect(onRetrySave).toHaveBeenCalled();
+    expect(notSavedLine({ reason: "no connection" })).toBe("Not saved: no connection.");
+  });
+
+  it("shows the code under 'This build didn't load.'", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    view({ status: "error", loadError: { code: "57014", message: "canceling statement due to statement timeout" } });
+    expect(screen.getByText("This build didn't load.")).toBeTruthy();
+    expect(screen.getByText("Code 57014")).toBeTruthy();
+    expect(console.error).toHaveBeenCalledWith("[Compose] build read failed 57014 canceling statement due to statement timeout");
+  });
+});
+

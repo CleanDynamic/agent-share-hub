@@ -205,14 +205,15 @@ export async function updateBuild(
   id: string,
   patch: BuildPatch
 ): Promise<Build> {
-  const { data, error } = await supabase
+  const { data, error, status } = await supabase
     .from("builds")
     .update(patch)
     .eq("id", id)
     .select(BUILD_COLUMNS)
     .single();
 
-  if (error) throw buildLayerError("updateBuild", error);
+  // CA-10: the HTTP status rides with the error, so a save can tell a refusal from a failure that may pass later.
+  if (error) throw buildLayerError("updateBuild", { code: error.code, details: error.details, hint: error.hint, message: error.message, status });
   return data as unknown as Build;
 }
 
