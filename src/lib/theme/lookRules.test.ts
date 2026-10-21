@@ -106,6 +106,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/copyTogether.ts",
   "src/lib/build/nest.test.ts",
   "src/lib/build/sentWithSuggest.ts",
+  "src/pages/site/compose/BuildList.nest.test.tsx",
   "src/pages/site/compose/composeModel.ts",
   "src/pages/site/compose/listNest.tsx",
   // CA-04 P4
@@ -173,6 +174,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/PostTab.tsx",
   // CA-06 P3
   "e2e/tier3/post-links.spec.ts",
+  "src/components/build/PartWindow.tsx",
   "src/components/build/partNav.tsx",
   "src/components/post/PostBody.tsx",
   "src/components/post/RefLinks.test.tsx",
@@ -298,6 +300,7 @@ export const CA03_FILES: readonly string[] = [
   "src/components/code/CodeEditorField.test.tsx",
   "src/components/code/CodeEditorField.tsx",
   "src/components/code/CodeGutter.tsx",
+  "src/components/code/CodeLines.tsx",
   "src/components/code/lineModel.ts",
   "src/pages/site/compose/BuildList.nest.test.tsx",
 ];

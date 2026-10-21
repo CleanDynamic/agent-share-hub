@@ -23,6 +23,7 @@ import { ColourButton, ColourDot } from "@/components/brand/ColourButton";
 
 import { Button } from "@/components/brand/Button";
 import { CodeEditorField } from "@/components/code/CodeEditorField";
+import { CodeLines } from "@/components/code/CodeLines";
 import { ChangedText } from "@/components/build/ChangedText";
 import { changesLine, type ChangeRange } from "@/lib/build/changes";
 import { Checkbox } from "@/components/brand/Checkbox";
@@ -966,12 +967,7 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
           <KeyValue label={CODE_DETAILS_COPY.writtenWith}>{written}</KeyValue>
         </div>
       ) : null}
-      <pre
-        data-testid="details-code"
-        style={{ ...wellField, margin: 0, padding: 12, fontFamily: DM_MONO, fontSize: 12.5, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", maxHeight: 480, overflowY: "auto" }}
-      >
-        {view.source}
-      </pre>
+      <CodeLines text={view.source} compact testId="details-code" label="Code" />
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void copy()} style={phone ? undefined : { height: 26 }}>
           {CODE_DETAILS_COPY.copy}
