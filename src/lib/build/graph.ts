@@ -15,7 +15,7 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
-import { PROMPT_TYPE, swapMoves } from "./composePrompts";
+import { PROMPT_TYPE, REPLY_MAX, swapMoves } from "./composePrompts";
 import { toolFor, toolName } from "@/lib/tools/registry";
 import { goalOf, LEGACY_SESSION_PREFIX, TYPED_SESSION_PREFIX, toolLabel, type MakingSession, type SessionGoal, type SessionMeta } from "./making";
 import { getNodeType } from "./nodeTypes";
@@ -42,7 +42,7 @@ export const CODE_TYPE = "code";
 export const CHECK_TYPE = "eval_run";
 
 /** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -130,6 +130,56 @@ export interface Step {
   inside?: { id: string; label: string };
   /** CA-06 P4: the maker's colour for this tile (`payload.colour`, "#RRGGBB"). Absent when it has none; never its parent's. */
   colour?: string;
+  /** CA-12 P7, a tool tile only: how it was connected and what it did. Its app is `tool`. */
+  app?: ToolTileFacts;
+  /** CA-12 P8, a file tile only: what kind of file it is, its size and a short preview. */
+  fileFacts?: FileTileFacts;
+  /** CA-12 P10, a manual step only: where it was done, and its lines (`text` is the same lines joined by line breaks). */
+  where?: ManualWhere;
+  lines?: string[];
+  /** CA-12 P12, a prompt only: what came back (`payload.reply`). */
+  reply?: string;
+  /** CA-12 P12, a check only: its cases, when it has any. */
+  cases?: CheckCase[];
+}
+
+/** CA-12 P7: a tool tile's facts. */
+export interface ToolTileFacts {
+  connection: ToolConnection | null;
+  runsAt: ToolRunsAt | null;
+  /** What it was allowed or used to do: "read issues, open pull requests". */
+  scopes: string | null;
+}
+
+/** CA-12 P8: the kinds of file a tile draws a mark for. */
+export type FileKind = "text" | "code" | "pdf" | "picture" | "spreadsheet" | "other";
+
+export interface FileTileFacts {
+  kind: FileKind;
+  name: string;
+  /** Bytes, when known. */
+  size: number | null;
+  /** The first lines of a text or code file; empty for the rest. */
+  preview: string[];
+  mediaId: string | null;
+}
+
+/** CA-12 P10: where a manual step was done. */
+export type WhereKind = "app" | "terminal" | "phone" | "offline" | "site";
+export interface ManualWhere {
+  kind: WhereKind;
+  /** The app's name, or the site's. */
+  name: string | null;
+  /** The site's link, for "another website". */
+  url: string | null;
+}
+
+/** CA-12 P12: one case of a check: what went in, what was expected, what came out, and whether it passed. */
+export interface CheckCase {
+  input: string;
+  expected: string;
+  actual: string;
+  passed: boolean;
 }
 
 /** CA-03 P5: what a check says, read from its payload. */
@@ -145,6 +195,8 @@ export interface CheckFacts {
   runs?: CheckRun[];
   /** CA-05 P7: how many cases the test files sent with it hold, when every file could be counted exactly. */
   cases?: number;
+  /** CA-12 P12: the cases the maker wrote down, in order. Absent when there are none. */
+  caseList?: CheckCase[];
 }
 
 /** CA-05 P7: one run of a check: the day and how many passed of how many. */
@@ -185,6 +237,11 @@ export interface SessionGroup {
   longWords?: number;
   /** CA-06 P4: the maker's colour for the session (`sessions_meta[key].colour`). Absent when it has none. */
   colour?: string;
+  /**
+   * CA-12: the session has an entry in `sessions_meta`. A session added the CA-12 way is given one, so its head is always
+   * drawn; an old build's lone imported session has none and is drawn as it was, without a head.
+   */
+  marked?: boolean;
 }
 
 /** Where the date would be, for prompts written by hand. */
@@ -387,6 +444,7 @@ const KIND_NAME: Record<StepKind, string> = {
   code: "Code",
   check: "Check",
   file: "File",
+  tool: "Tool",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -395,8 +453,20 @@ const isCheckPayload = (payload: unknown): boolean => isRecord(payload) && typeo
 /** CA-04 P4: part of a session's setup (setup.ts): never a step, though a rule is code. */
 const isSetupNode = (payload: unknown): boolean => isRecord(payload) && isRecord(payload.setup);
 
+/**
+ * CA-12 P7, P8: a tool or a file is a step (a tile in a session) only when it was added from Add: its payload says
+ * `step: true`. Tools an agent names (`toolRefsFor`), a file dropped into Sources and every tool and file saved before CA-12
+ * have no such key, so they are not tiles and nothing numbered moves.
+ */
+export const isStepTile = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
+  (node.type === TOOL_TYPE || node.type === FILE_TYPE) && isRecord(node.payload) && node.payload.step === true && !isSetupNode(node.payload);
+
+/** The kind a node is drawn as: a step tile's own, else the kind of its type; undefined for a node that is not a step. */
+const kindOfNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): StepKind | undefined =>
+  node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : KIND_OF_TYPE[node.type];
+
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
-  node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload);
+  (node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload)) || isStepTile(node);
 
 const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
@@ -430,16 +500,19 @@ export function checkHistoryLine(runs: readonly CheckRun[] | undefined): string 
 }
 
 /** A check's facts, read defensively. */
-function checkFacts(payload: Payload): CheckFacts {
+function checkFacts(payload: Payload, cases: readonly CheckCase[] = []): CheckFacts {
   const runs = checkRunsOf(payload.runs);
+  // CA-12 P12: when cases are given, "passed of total" is worked out from them.
+  const counted = cases.length > 0 ? casesTotals(cases) : null;
   return {
     tested: stringOf(payload.tested)?.trim() ?? "",
     passing: stringOf(payload.passing)?.trim() ?? "",
     onFail: stringOf(payload.on_fail)?.trim() || null,
-    passed: numberOf(payload.passed),
-    total: numberOf(payload.total),
+    passed: counted ? counted.passed : numberOf(payload.passed),
+    total: counted ? counted.total : numberOf(payload.total),
     runAt: stringOf(payload.run_at)?.trim() || null,
     ...(runs.length > 0 ? { runs } : null),
+    ...(cases.length > 0 ? { caseList: [...cases] } : null),
   };
 }
 
@@ -493,6 +566,144 @@ function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRe
 const dismissedOf = (payload: Payload): string[] =>
   Array.isArray(payload.dismissed) ? payload.dismissed.filter((key): key is string => typeof key === "string") : [];
 
+/** CA-12 P6: the first words of a text, whitespace folded, "…" after them when there were more. */
+export function firstWords(value: string, count: number): string {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  return words.length > count ? `${words.slice(0, count).join(" ")}…` : words.join(" ");
+}
+
+/** CA-12 P6: the first line with something on it, trimmed and cut at `max` characters. */
+export function firstLineOf(value: string, max = TITLE_MAX): string {
+  const line = value.split(/\r?\n/).map((l) => l.trim()).find(Boolean) ?? "";
+  return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line;
+}
+
+/** CA-12 P6/P9: the site's name for a link: "github.com" for "https://www.github.com/a/b". Null when it is not a link. */
+export function siteNameOf(url: string | null | undefined): string | null {
+  const raw = (url ?? "").trim();
+  if (!raw) return null;
+  try {
+    const host = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`).hostname.replace(/^www\./i, "");
+    return host.includes(".") ? host : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * CA-12 P6: what a tile is called when its maker has not named it: what it holds, never its number (the badge has it).
+ * A prompt: its first 8 words. Code: its file name, else its first line. A manual step: its first line. An agent: the first
+ * line of its instructions (its name is its title, which always wins). A tool: the app. A file: its name. A result: what
+ * it is, else its link's site, else "Result". A check: what it tested. Nothing to go on: the kind's name.
+ */
+export function defaultTitleFor(kind: StepKind, payload: Payload): string {
+  const str = (key: string) => stringOf(payload[key])?.trim() ?? "";
+  const named = (value: string) => value || KIND_NAME[kind];
+  switch (kind) {
+    case "prompt":
+      return named(firstWords(str("text"), 8));
+    case "code":
+      return named(str("filename") || firstLineOf(str("source")));
+    case "manual":
+      return named(firstLineOf(Array.isArray(payload.lines) ? String(payload.lines.find((l) => typeof l === "string" && l.trim()) ?? "") : str("text")));
+    case "agent":
+      return named(firstLineOf(str("system_prompt")));
+    case "tool":
+      return named(str("service"));
+    case "file":
+      return named(str("title"));
+    case "check":
+      return named(firstLineOf(str("tested")));
+    default:
+      return KIND_NAME[kind];
+  }
+}
+
+/** CA-12 P7: the connection words a Tool tile and its window say. */
+export const CONNECTION_LABEL: Record<ToolConnection, string> = { mcp: "MCP server", app: "Built into the app", code: "My own code" };
+
+/** The most lines a manual step has, and the longest each is. */
+export const MANUAL_LINES_MAX = 12;
+
+/** CA-12 P10: a manual step's lines: its text split on line breaks, blanks dropped. One line for a step saved before. */
+export const manualLinesOf = (text: string): string[] =>
+  text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+/** CA-12 P10: where a manual step was done, read defensively; a step saved before has only its `tool`, which is an app or a site by name. */
+export function manualWhereOf(payload: Payload): ManualWhere | null {
+  const raw = payload.where;
+  if (isRecord(raw) && ["app", "terminal", "phone", "offline", "site"].includes(raw.kind as string)) {
+    return { kind: raw.kind as WhereKind, name: stringOf(raw.name)?.trim() ?? null, url: stringOf(raw.url)?.trim() ?? null };
+  }
+  const tool = stringOf(payload.tool)?.trim();
+  return tool ? { kind: "app", name: toolName(tool) ?? tool, url: null } : null;
+}
+
+/** "Terminal", "On a phone", "Offline, in person", the app's or site's name. */
+export function manualWhereLabel(where: ManualWhere | null): string {
+  if (!where) return "Another tool";
+  if (where.kind === "terminal") return "Terminal";
+  if (where.kind === "phone") return "On a phone";
+  if (where.kind === "offline") return "Offline, in person";
+  if (where.kind === "site") return where.name ?? siteNameOf(where.url) ?? "Another website";
+  return where.name ?? "Another tool";
+}
+
+/** The most of a check's case text, and its most cases. */
+export const CASE_TEXT_MAX = 280;
+export const CASES_MAX = 50;
+
+/** A check's cases, read defensively. */
+export function checkCasesOf(value: unknown): CheckCase[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!isRecord(entry) || typeof entry.passed !== "boolean") return [];
+    const text = (key: string) => (typeof entry[key] === "string" ? (entry[key] as string).trim().slice(0, CASE_TEXT_MAX) : "");
+    const input = text("input");
+    const expected = text("expected");
+    if (!input && !expected) return [];
+    return [{ input, expected, actual: text("actual"), passed: entry.passed }];
+  }).slice(0, CASES_MAX);
+}
+
+/** CA-12 P12: when cases are given, "Runs … passed of …" is worked out from them. */
+export const casesTotals = (cases: readonly CheckCase[]): { passed: number; total: number } => ({ passed: cases.filter((c) => c.passed).length, total: cases.length });
+
+/** CA-12 P8: the kind of file a name says it is. */
+export function fileKindOf(name: string, mime?: string | null): FileKind {
+  const type = (mime ?? "").toLowerCase();
+  const ext = (/\.([a-z0-9]+)$/i.exec(name)?.[1] ?? "").toLowerCase();
+  if (type.startsWith("image/") || ["png", "jpg", "jpeg", "gif", "webp", "svg", "avif"].includes(ext)) return "picture";
+  if (type === "application/pdf" || ext === "pdf") return "pdf";
+  if (["csv", "tsv", "xls", "xlsx", "ods"].includes(ext) || type.includes("spreadsheet") || type === "text/csv") return "spreadsheet";
+  if (["ts", "tsx", "js", "jsx", "mjs", "py", "sql", "json", "yaml", "yml", "sh", "bash", "html", "css", "rb", "go", "rs", "java", "php", "toml"].includes(ext)) return "code";
+  if (type.startsWith("text/") || ["txt", "md", "markdown", "log", "rtf"].includes(ext)) return "text";
+  return "other";
+}
+
+/** CA-12 P8: the first `count` lines of a file's text, trimmed of trailing space, empty lines at the end dropped. */
+export function previewOf(textValue: string, count = 4): string[] {
+  const lines = textValue.split(/\r?\n/).slice(0, count).map((line) => line.replace(/\s+$/, "").slice(0, 160));
+  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  return lines;
+}
+
+/** CA-12 P8: a file tile's facts, from its payload. */
+function fileFactsOf(payload: Payload): FileTileFacts {
+  const name = stringOf(payload.title)?.trim() ?? "Untitled file";
+  const preview = Array.isArray(payload.preview) ? payload.preview.filter((line): line is string => typeof line === "string").slice(0, 4) : [];
+  return {
+    kind: fileKindOf(name, stringOf(payload.mime)),
+    name,
+    size: typeof payload.size === "number" && Number.isFinite(payload.size) && payload.size >= 0 ? payload.size : null,
+    preview,
+    mediaId: stringOf(payload.media_id),
+  };
+}
+
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
   const text =
@@ -504,12 +715,15 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
           ? (stringOf(payload.tested) ?? "")
           : kind === "file"
             ? (stringOf(payload.summary) ?? "")
-            : (stringOf(payload.text) ?? "");
-  // CA-04 P2: a tile inside another has no number; it is named by its kind, or by its file name.
-  const named = kind === "file" ? stringOf(payload.title)?.trim() : kind === "code" ? stringOf(payload.filename)?.trim() : null;
-  const defaultTitle = number ? `${KIND_NAME[kind]} ${number}` : (named || KIND_NAME[kind]);
+            : kind === "tool"
+              ? (stringOf(payload.scopes) ?? "")
+              : (stringOf(payload.text) ?? "");
+  // CA-12 P6: named from what it holds, never by repeating its number.
+  const defaultTitle = defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
-  const tool = stringOf(payload.tool);
+  const tool = kind === "tool" ? stringOf(payload.service) : stringOf(payload.tool);
+  const where = kind === "manual" ? manualWhereOf(payload) : null;
+  const cases = kind === "check" ? checkCasesOf(payload.cases) : [];
   return {
     id: node.id,
     kind,
@@ -526,12 +740,16 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     uses: usesOf(node),
     dismissed: dismissedOf(payload),
     children,
-    ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
+    ...(kind === "manual" ? { mediaId: stringOf(payload.media_id), lines: manualLinesOf(text), ...(where ? { where } : null) } : null),
     ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
     ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
-    ...(kind === "check" ? { check: checkFacts(payload) } : null),
+    ...(kind === "check" ? { check: checkFacts(payload, cases) } : null),
+    ...(kind === "check" && cases.length > 0 ? { cases } : null),
+    ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
+    ...(kind === "tool" ? { app: { ...toolConnectionOf(node), scopes: stringOf(payload.scopes)?.trim() ?? null } } : null),
+    ...(kind === "file" ? { fileFacts: fileFactsOf(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
     // CA-06 P4: the maker's colour, when it reads as one.
@@ -600,7 +818,7 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
   if (depth >= NEST_DEPTH_MAX) return step;
   const label = sentWithLabel(step);
   const sent = byPosition((node.children ?? []).filter(isSentWithNode)).map((child) => ({
-    ...readStep(child, "", child.type === FILE_TYPE ? "file" : KIND_OF_TYPE[child.type], depth + 1),
+    ...readStep(child, "", kindOfNode(child) as StepKind, depth + 1),
     inside: { id: step.id, label },
   }));
   if (sent.length === 0) return step;
@@ -620,7 +838,7 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return top.map((node, index) => readStep(node, String(index + 1), KIND_OF_TYPE[node.type], 0));
+  return top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0));
 }
 
 /** CA-04 P2: a step and every tile sent with it, depth first, in order. */
@@ -652,13 +870,15 @@ function chosenTool(raw: string | undefined): string | null {
  * `sessions` is builds.making.sessions; an entry without an id cannot be matched, and its prompts keep the model they
  * name. `sessionTools` is builds.making.session_tools (TF-13): a session whose client names no tool takes the tool the
  * maker gave it, by `toolName` or as typed. A client's own tool always wins. `meta` is builds.making.sessions_meta: a
- * session made here takes its tool, model and day from it, and one with no steps yet follows the others.
+ * session made here takes its tool, model and day from it, and one with no steps yet follows the others. `order` (CA-12) is
+ * the keys of `build_sessions` in position order; see where it is applied.
  */
 export function sessionGroups(
   steps: readonly Step[],
   sessions: readonly MakingSession[],
   sessionTools: Readonly<Record<string, string>>,
   meta: Readonly<Record<string, SessionMeta>> = {},
+  order: readonly string[] = [],
 ): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
@@ -732,6 +952,20 @@ export function sessionGroups(
     if (byKey.has(key) || !key.startsWith(TYPED_SESSION_PREFIX) || key.startsWith(LEGACY_SESSION_PREFIX) || !own.date) continue;
     open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
   }
+  // CA-12 P5: sessions are numbered by `build_sessions.position`, the order they were added. `order` lists the keys of a
+  // draft that has rows, in position order. Only the places those sessions already hold are refilled, in that order:
+  // a session that has no row (an old draft's, or an old build's run of typed prompts) keeps its own place, so a draft
+  // with no rows, or rows that agree with where its steps sit, reads exactly as it did.
+  if (order.length > 0) {
+    const rank = new Map(order.map((key, at) => [key, at]));
+    const slots = groups.flatMap((group, at) => (!group.implicit && rank.has(groupKey(group)) ? [at] : []));
+    const sorted = slots.map((at) => groups[at]).sort((a, b) => (rank.get(groupKey(a)) as number) - (rank.get(groupKey(b)) as number));
+    slots.forEach((at, n) => {
+      groups[at] = sorted[n];
+    });
+    let numberedAgain = 0;
+    for (const group of groups) if (!group.implicit) group.number = ++numberedAgain;
+  }
   // CA-04 P6: what each session worked until, from its entry.
   for (const [key, group] of byKey) {
     const goal = goalOf(meta[key]?.goal);
@@ -740,6 +974,7 @@ export function sessionGroups(
     const extras = extrasOf(meta[key]);
     if (Object.keys(extras).length > 0) group.extras = extras;
     if (meta[key]?.colour) group.colour = meta[key].colour;
+    if (meta[key]) group.marked = true;
     const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
     if (words > LONG_SESSION_WORDS) group.longWords = words;
   }
@@ -926,27 +1161,31 @@ export async function setRuns(node: BuildNode, runs: Runs | null): Promise<Build
   if (node.type !== AGENT_TYPE && node.type !== TEAM_TYPE) throw refuse("setRuns", "Only an agent or a team has a way it runs.");
   const payload = { ...payloadOf(node) };
   delete payload.runs;
-
-  if (runs && runs.how !== "once") {
-    if (!RUNS_HOWS.includes(runs.how)) throw refuse("setRuns", "That is not a way to run.");
-    const next: Runs = { how: runs.how };
-    if (runs.how === "parallel") {
-      const count = runs.count;
-      if (typeof count !== "number" || !Number.isInteger(count) || count < RUNS_COUNT_MIN || count > RUNS_COUNT_MAX) {
-        throw refuse("setRuns", `Several at the same time is ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
-      }
-      next.count = count;
-    } else if (runs.how === "goal") {
-      // The goal is the session's (making.sessions_meta), never repeated here.
-    } else {
-      const detail = (runs.detail ?? "").trim();
-      const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : WHEN_DETAIL_MAX;
-      if (detail.length > max) throw refuse("setRuns", `That line is at most ${max} characters.`);
-      if (detail) next.detail = detail;
-    }
-    payload.runs = next as unknown as Json;
-  }
+  const next = runsPayload("setRuns", runs);
+  if (next) payload.runs = next;
   return upsertNode(withPayload(node, payload));
+}
+
+/** The `runs` value to store, checked; null for "When I asked", which is no `runs` at all. */
+function runsPayload(operation: string, runs: Runs | null | undefined): Json | null {
+  if (!runs || runs.how === "once") return null;
+  if (!RUNS_HOWS.includes(runs.how)) throw refuse(operation, "That is not a way to run.");
+  const next: Runs = { how: runs.how };
+  if (runs.how === "parallel") {
+    const count = runs.count;
+    if (typeof count !== "number" || !Number.isInteger(count) || count < RUNS_COUNT_MIN || count > RUNS_COUNT_MAX) {
+      throw refuse(operation, `Several at the same time is ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
+    }
+    next.count = count;
+  } else if (runs.how === "goal") {
+    // The goal is the session's (making.sessions_meta), never repeated here.
+  } else {
+    const detail = (runs.detail ?? "").trim();
+    const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : WHEN_DETAIL_MAX;
+    if (detail.length > max) throw refuse(operation, `That line is at most ${max} characters.`);
+    if (detail) next.detail = detail;
+  }
+  return next as unknown as Json;
 }
 
 /** Say once that the type is not in the registry yet, then stop. */
@@ -1026,12 +1265,13 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, parentId, instructions, session, ...setup }: { name?: string | null; model: string; parentId?: string | null; instructions?: string; session?: string | null } & AgentSetup,
+  { name, model, parentId, instructions, session, runs, ...setup }: { name?: string | null; model: string; parentId?: string | null; instructions?: string; session?: string | null; runs?: Runs | null } & AgentSetup,
 ): Promise<BuildNode> {
   const keys = setupPayload("addAgent", model, setup);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys, ...(session && !parentId ? { session } : null) } as Json };
+  const start = runsPayload("addAgent", runs);
+  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys, ...(start ? { runs: start } : null), ...(session && !parentId ? { session } : null) } as Json };
   return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
 }
 
@@ -1039,13 +1279,14 @@ export async function addAgent(
 export async function addTeam(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, instructions, session, ...setup }: { name?: string | null; model: string; instructions?: string; session?: string | null } & AgentSetup,
+  { name, model, instructions, session, runs, ...setup }: { name?: string | null; model: string; instructions?: string; session?: string | null; runs?: Runs | null } & AgentSetup,
 ): Promise<{ team: BuildNode; agent: BuildNode }> {
   await requireLiveType("addTeam", TEAM_TYPE);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
   const keys = setupPayload("addTeam", model, setup);
-  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: session ? { session } : {} });
+  const start = runsPayload("addTeam", runs);
+  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: { ...(session ? { session } : null), ...(start ? { runs: start } : null) } as Json });
   const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: instructions ?? "", ...keys } as Json });
   return { team, agent };
 }
@@ -1150,41 +1391,69 @@ export async function addAgentPrompt(agent: BuildNode, tree: readonly NodeTree[]
   return placeChildNode(agent.build_id, tree, agent.id, { type: PROMPT_TYPE, title: null, payload: { text }, source_ref: null });
 }
 
+/**
+ * CA-12 P10: the lines and place of a manual step, checked. `lines` is 1 to 12 lines of at most 140 characters; a step saved
+ * before this gave one line as `text`. Where it was done is an app (from the apps list), a terminal, a phone, offline or
+ * another website with a link; the old `tool` key keeps its name so a reader of an older page still sees where.
+ */
+function manualKeys(operation: string, input: { tool?: string; text?: string; lines?: readonly string[]; where?: ManualWhere | null }): { tool: string; text: string; where: ManualWhere | null } {
+  const lines = (input.lines ?? manualLinesOf(input.text ?? "")).map((line) => line.trim()).filter(Boolean);
+  if (lines.length === 0) throw refuse(operation, `A manual step is 1 to ${MANUAL_LINES_MAX} lines of up to ${MANUAL_TEXT_MAX} characters.`);
+  if (lines.length > MANUAL_LINES_MAX) throw refuse(operation, `A manual step is at most ${MANUAL_LINES_MAX} lines.`);
+  if (lines.some((line) => line.length > MANUAL_TEXT_MAX)) throw refuse(operation, `Each line is at most ${MANUAL_TEXT_MAX} characters.`);
+  let where: ManualWhere | null = null;
+  if (input.where) {
+    const name = input.where.name?.trim() || null;
+    const url = input.where.url?.trim() || null;
+    if (name && name.length > MANUAL_TOOL_MAX) throw refuse(operation, `A name is 1 to ${MANUAL_TOOL_MAX} characters.`);
+    if (input.where.kind === "app" && !name) throw refuse(operation, "Say which app it was done in.");
+    if (input.where.kind === "site" && !name && !url) throw refuse(operation, "Say which website it was done on.");
+    where = { kind: input.where.kind, name: input.where.kind === "app" || input.where.kind === "site" ? name : null, url: input.where.kind === "site" ? url : null };
+  }
+  const tool = where ? manualWhereLabel(where) : (input.tool ?? "").trim();
+  if (!tool || tool.length > MANUAL_TOOL_MAX) throw refuse(operation, `A tool is 1 to ${MANUAL_TOOL_MAX} characters.`);
+  return { tool, text: lines.join("\n"), where };
+}
+
+const wherePayload = (where: ManualWhere): Json => ({ kind: where.kind, ...(where.name ? { name: where.name } : null), ...(where.url ? { url: where.url } : null) }) as Json;
+
 export async function addManualStep(
   buildId: string,
   tree: readonly NodeTree[],
-  { tool, text, media_id, session }: { tool: string; text: string; media_id?: string | null; session?: string | null },
+  input: { tool?: string; text?: string; lines?: readonly string[]; where?: ManualWhere | null; media_id?: string | null; session?: string | null },
 ): Promise<BuildNode> {
   await requireLiveType("addManualStep", MANUAL_STEP_TYPE);
-  const name = tool.trim();
-  const line = text.trim();
-  if (!name || name.length > MANUAL_TOOL_MAX) throw refuse("addManualStep", `A tool is 1 to ${MANUAL_TOOL_MAX} characters.`);
-  if (!line || line.length > MANUAL_TEXT_MAX) throw refuse("addManualStep", `A manual step is 1 to ${MANUAL_TEXT_MAX} characters.`);
-  const payload: Record<string, string> = { tool: name, text: line };
-  if (media_id) payload.media_id = media_id;
-  if (session) payload.session = session;
-  return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload });
+  const { tool, text, where } = manualKeys("addManualStep", input);
+  const payload: Payload = { tool, text };
+  if (where) payload.where = wherePayload(where);
+  if (input.media_id) payload.media_id = input.media_id;
+  if (input.session) payload.session = input.session;
+  return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload: payload as Json });
 }
 
 /**
- * Change a manual step's tool, its line or its picture (DATA §2). The tool is
- * 1 to 40 characters and the line 1 to 140; `media_id: null` takes the picture off.
+ * Change a manual step's place, its lines or its picture (DATA §2). `tool` stays for a step edited the old way; `where`
+ * and `lines` are CA-12 P10's. `media_id: null` takes the picture off.
  */
 export async function setManualFields(
   node: BuildNode,
-  fields: { tool?: string; text?: string; media_id?: string | null },
+  fields: { tool?: string; text?: string; lines?: readonly string[]; where?: ManualWhere | null; media_id?: string | null },
 ): Promise<BuildNode> {
   if (node.type !== MANUAL_STEP_TYPE) throw refuse("setManualFields", "That is not a manual step.");
   const payload = { ...payloadOf(node) };
-  if (fields.tool !== undefined) {
-    const tool = fields.tool.trim();
-    if (!tool || tool.length > MANUAL_TOOL_MAX) throw refuse("setManualFields", `A tool is 1 to ${MANUAL_TOOL_MAX} characters.`);
-    payload.tool = tool;
-  }
-  if (fields.text !== undefined) {
-    const text = fields.text.trim();
-    if (!text || text.length > MANUAL_TEXT_MAX) throw refuse("setManualFields", `A manual step is 1 to ${MANUAL_TEXT_MAX} characters.`);
-    payload.text = text;
+  const current = manualWhereOf(payload);
+  const touches = fields.tool !== undefined || fields.text !== undefined || fields.lines !== undefined || fields.where !== undefined;
+  if (touches) {
+    const keys = manualKeys("setManualFields", {
+      tool: fields.tool ?? stringOf(payload.tool) ?? undefined,
+      text: fields.text ?? (fields.lines ? undefined : (stringOf(payload.text) ?? undefined)),
+      lines: fields.lines,
+      where: fields.where !== undefined ? fields.where : fields.tool !== undefined ? null : current,
+    });
+    payload.tool = keys.tool;
+    payload.text = keys.text;
+    if (keys.where) payload.where = wherePayload(keys.where);
+    else if (fields.where === null || fields.tool !== undefined) delete payload.where;
   }
   if (fields.media_id !== undefined) {
     if (fields.media_id) payload.media_id = fields.media_id;
@@ -1265,6 +1534,27 @@ export interface CheckInput {
   testedStep?: string | null;
   /** CA-04 P1: the session it was added to. */
   session?: string | null;
+  /** CA-12 P12: individual cases. When there are any, `passed` and `total` are worked out from them. */
+  cases?: readonly CheckCase[];
+}
+
+/**
+ * CA-12 P12: replace a check's cases (none takes them off). With cases, "passed of total" is worked out from them and
+ * written beside them, so a reader of an older page sees the same numbers.
+ */
+export async function setCheckCases(node: BuildNode, cases: readonly CheckCase[]): Promise<BuildNode> {
+  if (node.type !== CHECK_TYPE) throw refuse("setCheckCases", "Only a check has cases.");
+  const why = casesRefusal(cases);
+  if (why) throw refuse("setCheckCases", why);
+  const payload = { ...payloadOf(node) };
+  const kept = checkCasesOf(cases);
+  if (kept.length > 0) {
+    const { passed, total } = casesTotals(kept);
+    payload.cases = kept as unknown as Json;
+    payload.passed = passed;
+    payload.total = total;
+  } else delete payload.cases;
+  return upsertNode(withPayload(node, payload));
 }
 
 /**
@@ -1281,6 +1571,17 @@ export async function addCheck(buildId: string, tree: readonly NodeTree[], input
 }
 
 /** A check's payload, checked; exported for the dialog, which says the same refusals before anything is written. */
+/** CA-12 P12: why a check's cases cannot be saved, or null. A case says what went in or what was expected. */
+export function casesRefusal(cases: readonly CheckCase[] | undefined): string | null {
+  if (!cases || cases.length === 0) return null;
+  if (cases.length > CASES_MAX) return `A check has at most ${CASES_MAX} cases.`;
+  for (const c of cases) {
+    if (!c.input.trim() && !c.expected.trim()) return "Each case says what went in or what was expected.";
+    for (const value of [c.input, c.expected, c.actual]) if (value.trim().length > CASE_TEXT_MAX) return `A case's text is at most ${CASE_TEXT_MAX} characters.`;
+  }
+  return null;
+}
+
 export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | null {
   const tested = input.tested.trim();
   const passing = input.passing.trim();
@@ -1289,10 +1590,12 @@ export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | nu
   if (!passing) return "Say what counts as passing.";
   if (passing.length > CHECK_TEXT_MAX) return `What counts as passing is at most ${CHECK_TEXT_MAX} characters.`;
   if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `When it failed is at most ${CHECK_FAIL_MAX} characters.`;
-  for (const n of [input.passed, input.total]) {
+  const why = casesRefusal(input.cases);
+  if (why) return why;
+  for (const n of input.cases?.length ? [] : [input.passed, input.total]) {
     if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs are whole numbers from 0 to 10,000.";
   }
-  if (input.passed > input.total) return "Passed can't be more than the total.";
+  if (!input.cases?.length && input.passed > input.total) return "Passed can't be more than the total.";
   const day = (input.runAt ?? "").trim();
   if (day && !isIsoDay(day)) return "Last run is a date, written as 2026-10-12.";
   return null;
@@ -1347,13 +1650,13 @@ export function checkStatus(check: Pick<CheckFacts, "passed" | "total" | "runAt"
   return { allPassed: check.passed === check.total, line: `Passed ${check.passed} of ${check.total} ${check.total === 1 ? "run" : "runs"}${since}` };
 }
 
-/** CA-03 P5: what a check can test: an agent, a team or code. */
-const CHECKABLE: ReadonlySet<StepKind> = new Set(["agent", "team", "code"]);
+/** CA-12 P12: what a check can test: any step but another check. It no longer needs an agent or code. */
+const CHECKABLE: ReadonlySet<StepKind> = new Set(["prompt", "agent", "team", "manual", "code", "file", "tool"]);
 
 /** Whether the build has something a check can test, so Add › Check is offered. */
 export const canCheck = (steps: readonly Pick<Step, "kind">[]): boolean => steps.some((step) => CHECKABLE.has(step.kind));
 
-/** The step a new check tested: the selected top-level step when it is work (not a check), else the last agent, team or code. */
+/** The step a new check tested: the selected top-level step when it is work (not a check), else the last step that is not a check. */
 export function testedStepOf(steps: readonly Step[], selectedTopId: string | null): string | null {
   const selected = steps.find((step) => step.id === selectedTopId);
   if (selected && selected.kind !== "check") return selected.id;
@@ -1363,7 +1666,10 @@ export function testedStepOf(steps: readonly Step[], selectedTopId: string | nul
 function checkPayload(operation: string, input: CheckInput, tree: readonly NodeTree[]): Json {
   const why = checkRefusal(input);
   if (why) throw refuse(operation, why);
-  const out: Payload = { tested: input.tested.trim(), passing: input.passing.trim(), passed: input.passed, total: input.total };
+  const given = input.cases && input.cases.length > 0 ? checkCasesOf(input.cases) : [];
+  const counted = given.length > 0 ? casesTotals(given) : null;
+  const out: Payload = { tested: input.tested.trim(), passing: input.passing.trim(), passed: counted ? counted.passed : input.passed, total: counted ? counted.total : input.total };
+  if (given.length > 0) out.cases = given as unknown as Json;
   const onFail = (input.onFail ?? "").trim();
   if (onFail) out.on_fail = onFail;
   const day = (input.runAt ?? "").trim();
@@ -1549,12 +1855,46 @@ export async function nestStep(buildId: string, tree: readonly NodeTree[], id: s
 export async function addFile(
   buildId: string,
   tree: readonly NodeTree[],
-  { title, url, summary, media_id, parentId, rows }: { title: string; url?: string; summary?: string; media_id?: string; parentId?: string | null; rows?: number | null },
+  {
+    title,
+    url,
+    summary,
+    media_id,
+    parentId,
+    rows,
+    tile,
+    session,
+    size,
+    mime,
+    preview,
+  }: {
+    title: string;
+    url?: string;
+    summary?: string;
+    media_id?: string;
+    parentId?: string | null;
+    rows?: number | null;
+    /** CA-12 P8: the file is also a tile in a session (`step: true`), with its type, size and a short preview. */
+    tile?: boolean;
+    session?: string | null;
+    size?: number | null;
+    mime?: string | null;
+    preview?: readonly string[];
+  },
 ): Promise<BuildNode> {
   if (!title.trim()) throw refuse("addFile", "A file needs its name.");
   // CA-05 P7: a test file kept with the cases it holds, when they were counted exactly.
   const counted = typeof rows === "number" && Number.isInteger(rows) && rows > 0 ? { rows } : null;
-  const node = { type: FILE_TYPE, title: null, payload: { ...(compact({ title: title.trim(), url, summary, media_id }) as Record<string, Json>), ...counted } as Json };
+  const tileKeys: Record<string, Json> = {};
+  if (tile && !parentId) {
+    tileKeys.step = true;
+    if (session) tileKeys.session = session;
+    if (typeof size === "number" && Number.isFinite(size) && size >= 0) tileKeys.size = size;
+    if (mime?.trim()) tileKeys.mime = mime.trim();
+    const lines = (preview ?? []).slice(0, 4).map((line) => line.slice(0, 160));
+    if (lines.length > 0) tileKeys.preview = lines;
+  }
+  const node = { type: FILE_TYPE, title: null, payload: { ...(compact({ title: title.trim(), url, summary, media_id }) as Record<string, Json>), ...counted, ...tileKeys } as Json };
   if (parentId) {
     const why = nestHomeRefusal(tree, parentId);
     if (why) throw refuse("addFile", why);
@@ -1600,6 +1940,30 @@ export async function addTool(
   return placeTopNode(buildId, tree, { type: TOOL_TYPE, title: null, payload: compact({ service: service.trim(), scopes, notes }) });
 }
 
+/** CA-12 P7: the longest "What did it do?". */
+export const TOOL_SCOPES_MAX = 200;
+
+/**
+ * CA-12 P7: a tool as a tile in a session: the app, how it was connected and what it did. `step: true` is what makes it a
+ * tile; a tool an agent names (`toolRefsFor`) is added with `addTool` and never is one.
+ */
+export async function addToolTile(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { service, connection, scopes, session }: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null },
+): Promise<BuildNode> {
+  const name = service.trim();
+  if (!name) throw refuse("addToolTile", "A tool needs its app.");
+  if (connection && !TOOL_CONNECTIONS.includes(connection)) throw refuse("addToolTile", "That is not a way to connect a tool.");
+  const did = (scopes ?? "").trim();
+  if (did.length > TOOL_SCOPES_MAX) throw refuse("addToolTile", `What it did is at most ${TOOL_SCOPES_MAX} characters.`);
+  const payload: Payload = { service: name, step: true };
+  if (connection) payload.connection = connection;
+  if (did) payload.scopes = did;
+  if (session) payload.session = session;
+  return placeTopNode(buildId, tree, { type: TOOL_TYPE, title: null, payload: payload as Json });
+}
+
 /** The finished thing. */
 export async function addResult(
   buildId: string,
@@ -1608,6 +1972,119 @@ export async function addResult(
 ): Promise<BuildNode> {
   if (!summary.trim()) throw refuse("addResult", "A result needs a line saying what it is.");
   return placeTopNode(buildId, tree, { type: RESULT_TYPE, title: null, payload: compact({ summary: summary.trim(), media_id, url }) });
+}
+
+/* ── what a result holds (CA-12 P9) ── */
+
+/** The most pictures a result holds, and the most its tile shows. */
+export const RESULT_MEDIA_MAX = 12;
+export const RESULT_THUMBS = 4;
+
+/** A result's link, split for its card: the site's name, the path under it, and the host a favicon service is asked for. */
+export interface ResultLink {
+  url: string;
+  site: string;
+  path: string;
+  host: string;
+}
+
+/** What a result holds, read from its payload; at most one of `link`, `mediaIds`, `file` and `model` is set. Nothing set reads "Nothing added yet". */
+export interface ResultFacts {
+  link: ResultLink | null;
+  /** Pictures or video, in order. */
+  mediaIds: string[];
+  file: { name: string; kind: FileKind; size: number | null; mediaId: string } | null;
+  model: { baseModel: string; method: string } | null;
+}
+
+/** A link split for its card, or null when it is not an address. */
+export function resultLinkOf(url: string | null | undefined): ResultLink | null {
+  const raw = (url ?? "").trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`);
+    if (!/^https?:$/.test(parsed.protocol)) return null;
+    const host = parsed.hostname.replace(/^www\./i, "");
+    const path = `${parsed.pathname === "/" ? "" : parsed.pathname}${parsed.search}`;
+    return { url: parsed.toString(), site: host, path, host };
+  } catch {
+    return null;
+  }
+}
+
+/** What a result holds. A model is read from `kind`; a file from `file_name`; pictures from `media_ids` (or the one `media_id` older results keep). */
+export function resultFactsOf(node: Pick<BuildNode, "payload">): ResultFacts {
+  const payload = payloadOf(node);
+  const ids = Array.isArray(payload.media_ids) ? payload.media_ids.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
+  const one = stringOf(payload.media_id)?.trim() || null;
+  const fileName = stringOf(payload.file_name)?.trim() || null;
+  const model = payload.kind === TRAINED_MODEL;
+  const mediaIds = ids.length > 0 ? ids.slice(0, RESULT_MEDIA_MAX) : one && !fileName ? [one] : [];
+  return {
+    link: model ? null : resultLinkOf(stringOf(payload.url)),
+    mediaIds: model || fileName ? [] : mediaIds,
+    file: !model && fileName && one ? { name: fileName, kind: fileKindOf(fileName, stringOf(payload.file_mime)), size: numberOf(payload.file_size), mediaId: one } : null,
+    model: model ? { baseModel: stringOf(payload.base_model)?.trim() ?? "", method: stringOf(payload.method)?.trim() ?? "" } : null,
+  };
+}
+
+/** Whether a result holds something to show. */
+export const resultHolds = (facts: ResultFacts): boolean => Boolean(facts.link || facts.mediaIds.length > 0 || facts.file || facts.model);
+
+/** One line for what a result holds, for the rows that name it: never "text". */
+export function resultHoldsWord(facts: ResultFacts): string {
+  if (facts.model) return "a trained model";
+  if (facts.link) return "a link";
+  if (facts.file) return "a file";
+  if (facts.mediaIds.length > 1) return `${facts.mediaIds.length} pictures`;
+  if (facts.mediaIds.length === 1) return "a picture";
+  return "Nothing added yet";
+}
+
+export type ResultInput =
+  | { kind: "link"; url: string }
+  | { kind: "media"; mediaIds: readonly string[]; names: readonly string[] }
+  | { kind: "file"; mediaId: string; name: string; size: number | null; mime: string | null }
+  | { kind: "model"; baseModel: string; method: string };
+
+/** What a new result is called until its maker names it: the site, the file's name, "Trained model". */
+export function resultSummaryOf(input: ResultInput): string {
+  if (input.kind === "link") return resultLinkOf(input.url)?.site ?? input.url.trim();
+  if (input.kind === "media") return input.names.length > 1 ? `${input.names[0]} and ${input.names.length - 1} more` : (input.names[0] ?? "Picture");
+  if (input.kind === "file") return input.name;
+  return "Trained model";
+}
+
+/** Why a result cannot be added, or null. */
+export function resultRefusal(input: ResultInput): string | null {
+  if (input.kind === "link") return resultLinkOf(input.url) ? null : "Add a web address, like example.com/page.";
+  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add a picture or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `A result holds at most ${RESULT_MEDIA_MAX} pictures.` : null;
+  if (input.kind === "file") return input.name.trim() && input.mediaId ? null : "Add a file.";
+  if (input.baseModel.trim().length > BASE_MODEL_MAX) return `The base model is at most ${BASE_MODEL_MAX} characters.`;
+  if (input.method.trim().length > TRAINED_METHOD_MAX) return `How it was trained is at most ${TRAINED_METHOD_MAX} characters.`;
+  return input.baseModel.trim() || input.method.trim() ? null : "Say what it is based on, or how it was trained.";
+}
+
+/** CA-12 P9: add a result that holds the thing itself: a link, pictures or video, a file, or a model. */
+export async function addResultTile(buildId: string, tree: readonly NodeTree[], input: ResultInput): Promise<BuildNode> {
+  const why = resultRefusal(input);
+  if (why) throw refuse("addResultTile", why);
+  const out: Record<string, Json> = { summary: resultSummaryOf(input) };
+  if (input.kind === "link") out.url = resultLinkOf(input.url)?.url ?? input.url.trim();
+  else if (input.kind === "media") {
+    out.media_id = input.mediaIds[0];
+    out.media_ids = [...input.mediaIds];
+  } else if (input.kind === "file") {
+    out.media_id = input.mediaId;
+    out.file_name = input.name.trim();
+    if (input.size !== null) out.file_size = input.size;
+    if (input.mime) out.file_mime = input.mime;
+  } else {
+    out.kind = TRAINED_MODEL;
+    if (input.baseModel.trim()) out.base_model = input.baseModel.trim();
+    if (input.method.trim()) out.method = input.method.trim();
+  }
+  return placeTopNode(buildId, tree, { type: RESULT_TYPE, title: null, payload: out as Json });
 }
 
 /** The payload without the fields left blank. */

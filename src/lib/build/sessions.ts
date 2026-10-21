@@ -17,7 +17,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { modelLabel } from "@/lib/models/registry";
-import { discardImport, claimImport, loadImportProposal } from "./imports";
+import { addSessionToBuild } from "./addSession";
+import { draftsOfImports, listBuildSessionRows } from "./buildSessions";
+import { discardImport, loadImportProposal } from "./imports";
 import type { TranscriptSourceRef } from "./intake";
 import { refreshMakingStats } from "./making";
 import { buildLayerError } from "./types";
@@ -30,8 +32,14 @@ const MODEL_MAX = 64;
 
 const DEFAULT_LIST_LIMIT = 50;
 
-/** The composer's Your sessions: a creator's whole library. A ceiling, not a page. */
-const LIBRARY_LIMIT = 100;
+/** CA-12: a page of the composer's Your sessions. "Show more" reads the next. */
+export const LIBRARY_PAGE = 100;
+
+/** CA-12: the most imports that did not finish that Sources lists. */
+const UNFINISHED_LIMIT = 50;
+
+/** CA-12: the characters of a failed import's reason that are shown. */
+const REASON_MAX = 120;
 
 /** More sessions than one build can plausibly be made from. A ceiling, not a page. */
 const BUILD_SESSIONS_LIMIT = 100;
@@ -59,6 +67,19 @@ export interface SessionSummary {
   buildId: string | null;
   /** parsed | claimed | expired, when the read asked for it (listLibrarySessions does). */
   status?: string | null;
+  /** CA-12: the drafts this session is in (`build_sessions`, and the one an old claim named). Absent when the read did not ask. */
+  draftIds?: string[];
+}
+
+/** CA-12: an import that did not finish arriving, or did not parse. */
+export interface UnfinishedSession {
+  id: string;
+  /** open | assembling | failed | duplicate */
+  status: string;
+  client: string | null;
+  createdAt: string;
+  /** One line: why it did not finish. Absent for one still arriving. */
+  reason?: string;
 }
 
 export interface SessionPrompt {
@@ -116,6 +137,7 @@ interface Query<Row> extends PromiseLike<{ data: Row[] | null; error: unknown }>
   not: (column: string, operator: string, value: null) => Query<Row>;
   order: (column: string, options: { ascending: boolean }) => Query<Row>;
   limit: (count: number) => Query<Row>;
+  range: (from: number, to: number) => Query<Row>;
   maybeSingle: () => PromiseLike<{ data: Row | null; error: unknown }>;
 }
 
@@ -171,36 +193,100 @@ export async function listSessions({
 }
 
 /**
- * Every session the signed-in creator can still use, newest first: the
- * composer's Your sessions. A session is the creator's, not a build's, so this
- * is not filtered by build: it holds the ones waiting (`parsed`), the ones
- * already in a build, this one or another (`claimed`), and the ones marked
- * `expired`. Its prompts are read from `proposal`, which no status change
- * clears, so an expired session is as usable as the others. A row with no
- * proposal never finished parsing (or failed, or was a duplicate) and has no
- * prompts to offer, so it is left out.
+ * CA-12: every finished session the signed-in creator has sent, newest first, in pages of `LIBRARY_PAGE`. Nothing
+ * finished is hidden: waiting (`parsed`), in a draft (`claimed`) and `expired` ones all come back, each with the drafts
+ * it is in (`draftIds`). A session is the creator's, not a draft's, so this is not filtered by draft. Its prompts are
+ * read from `proposal`, which no status change clears, so an expired session is as usable as the others. A row with no
+ * proposal never finished parsing and is read by `listUnfinishedSessions` instead.
+ *
+ * One more row than the page is asked for, to say whether there is a next page: `hasMore`.
  */
-export async function listLibrarySessions({ limit = LIBRARY_LIMIT }: { limit?: number } = {}): Promise<SessionSummary[]> {
+export async function listLibrarySessions({ limit = LIBRARY_PAGE, offset = 0 }: { limit?: number; offset?: number } = {}): Promise<{ sessions: SessionSummary[]; hasMore: boolean }> {
   const { data, error } = await sessionsTable()
     .select<SessionRow>(`${SESSION_COLUMNS}, status`)
     .in("status", [STATUS_PARSED, STATUS_CLAIMED, STATUS_EXPIRED])
     .not("proposal", "is", null)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit);
   if (error) throw buildLayerError("listLibrarySessions", error);
-  return (data ?? []).map(toSummary);
+  const rows = data ?? [];
+  const page = rows.slice(0, limit).map(toSummary);
+  const drafts = await draftsOfImports(page.map((session) => session.id));
+  const sessions = page.map((session) => {
+    // An import claimed before CA-12 names its one draft on the row; the table holds it too once backfilled.
+    const ids = new Set(drafts.get(session.id) ?? []);
+    if (session.buildId) ids.add(session.buildId);
+    return { ...session, draftIds: [...ids] };
+  });
+  return { sessions, hasMore: rows.length > limit };
 }
 
-/** The sessions a build was made from, oldest first, so the composer can number them 1, 2, 3. */
-export async function listBuildSessions(buildId: string): Promise<SessionSummary[]> {
+/** CA-12: the line a failed or duplicate import is listed with. Never a stack: the first line, short. */
+export function unfinishedReason(status: string, error: unknown): string | undefined {
+  if (status === "duplicate") return "You had already sent this one.";
+  if (status !== "failed") return undefined;
+  const line = typeof error === "string" ? error.split("\n")[0].trim().slice(0, REASON_MAX).trimEnd() : "";
+  return line || "It couldn't be read.";
+}
+
+/**
+ * CA-12: the imports that are not sessions yet: still arriving (`open`, `assembling`) and the ones that did not finish
+ * (`failed`, `duplicate`). Newest first.
+ */
+export async function listUnfinishedSessions({ limit = UNFINISHED_LIMIT }: { limit?: number } = {}): Promise<UnfinishedSession[]> {
+  interface Row {
+    id: string;
+    status: string;
+    client: string | null;
+    created_at: string;
+    error: unknown;
+  }
   const { data, error } = await sessionsTable()
-    .select<SessionRow>(SESSION_COLUMNS)
-    .eq("build_id", buildId)
-    .eq("status", STATUS_CLAIMED)
-    .order("created_at", { ascending: true })
-    .limit(BUILD_SESSIONS_LIMIT);
-  if (error) throw buildLayerError("listBuildSessions", error);
-  return (data ?? []).map(toSummary);
+    .select<Row>("id, status, client, created_at, error")
+    .in("status", ["open", "assembling", "failed", "duplicate"])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw buildLayerError("listUnfinishedSessions", error);
+  return (data ?? []).map((row) => {
+    const reason = unfinishedReason(row.status, row.error);
+    return { id: row.id, status: row.status, client: row.client ?? null, createdAt: row.created_at, ...(reason ? { reason } : null) };
+  });
+}
+
+/**
+ * The sessions a draft holds, in its order, so the composer can number them 1, 2, 3. A session is in a draft when
+ * `build_sessions` says so, or, for a draft that has none of those rows yet, when the import was claimed into it
+ * (the way every session was joined before CA-12). The table not being there is the second case alone.
+ */
+export async function listBuildSessions(buildId: string): Promise<SessionSummary[]> {
+  const [linked, claimed] = await Promise.all([
+    listBuildSessionRows(buildId),
+    sessionsTable()
+      .select<SessionRow>(SESSION_COLUMNS)
+      .eq("build_id", buildId)
+      .eq("status", STATUS_CLAIMED)
+      .order("created_at", { ascending: true })
+      .limit(BUILD_SESSIONS_LIMIT),
+  ]);
+  if (claimed.error) throw buildLayerError("listBuildSessions", claimed.error);
+  const byId = new Map<string, SessionSummary>((claimed.data ?? []).map(toSummary).map((session) => [session.id, session]));
+
+  const linkedIds = linked.map((row) => row.importId).filter((id): id is string => Boolean(id) && !byId.has(id as string));
+  if (linkedIds.length > 0) {
+    const { data, error } = await sessionsTable().select<SessionRow>(`${SESSION_COLUMNS}, status`).in("id", linkedIds).limit(BUILD_SESSIONS_LIMIT);
+    if (error) throw buildLayerError("listBuildSessions", error);
+    for (const row of data ?? []) byId.set(row.id, toSummary(row));
+  }
+
+  const position = new Map(linked.map((row) => [row.importId ?? row.sessionKey, row.position]));
+  return [...byId.values()].sort((a, b) => {
+    const left = position.get(a.id);
+    const right = position.get(b.id);
+    if (left !== undefined && right !== undefined) return left - right;
+    if (left !== undefined) return -1;
+    if (right !== undefined) return 1;
+    return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0;
+  });
 }
 
 /**
@@ -245,47 +331,12 @@ export async function countDraftBuilds(): Promise<number> {
 // -----------------------------------------------------------------------------
 
 /**
- * Tie a waiting session to a build, writing nothing from the conversation.
- *
- * The selections keep no events and no nodes and no outcome; the title is kept
- * only for a new draft. A NEW draft is created by claimImport, which needs a
- * title: the proposal's own, else "Untitled build". materialiseProposal accepts
- * empty selections (it reads, writes nothing, and only patches a kept title),
- * so claimImport is used unchanged and nothing is marked claimed by hand.
- *
- * The status is read first so a session that is gone (RLS) or already claimed
- * is refused BEFORE claimImport can create a new draft for it, which would
- * leave an empty draft behind. Two tabs racing past that read still end in
- * claimImport's own conditional update refusing the second.
+ * CA-12: add a session to a draft (or a new one): every prompt becomes a tile, and the session joins the draft's sessions
+ * (`build_sessions`). The import is not marked claimed and does not leave the library: it can be in any number of drafts,
+ * and each draft has its own tiles. See addSession.ts. Resolves with the draft's id.
  */
 export async function attachSession(importId: string, target: AttachTarget): Promise<string> {
-  const { data: row, error } = await sessionsTable()
-    .select<StatusRow>("id, status, build_id")
-    .eq("id", importId)
-    .maybeSingle();
-  if (error) throw buildLayerError("attachSession", error);
-  if (!row) {
-    throw buildLayerError("attachSession", new Error("That session is no longer available."));
-  }
-  if (row.status !== STATUS_PARSED) {
-    throw buildLayerError("attachSession", new Error("That session is already in a build."));
-  }
-
-  const proposal = await loadImportProposal(importId);
-  const isNew = target.kind === "new";
-  const destination = isNew
-    ? { kind: "new" as const, title: proposal.summary.proposed_title?.value?.trim() || UNTITLED }
-    : { kind: "existing" as const, buildId: target.buildId };
-
-  const { buildId } = await claimImport(
-    importId,
-    proposal,
-    { eventOrdinals: [], nodeLocalIds: [], title: isNew, outcome: false },
-    destination,
-  );
-
-  await refreshMakingStats(buildId);
-  return buildId;
+  return (await addSessionToBuild(importId, target)).buildId;
 }
 
 /**

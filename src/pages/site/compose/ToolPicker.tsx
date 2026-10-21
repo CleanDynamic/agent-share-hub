@@ -20,7 +20,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, CONTROL_HOVER, SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { toolFor, type StepKey } from "@/lib/tools/registry";
+import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 
 import { menuSurface, text, wellField } from "./refinedStyles";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
@@ -39,35 +39,43 @@ export interface ToolPickerProps {
   step: StepKey;
   /** CA-02 P5: what the "No tool" row says, and the trigger while nothing is picked ("My own code (API)"). */
   noneLabel?: string;
+  /** CA-12: what the trigger says while nothing is picked and there is no "none" row to name; "Pick a tool" by default. */
+  placeholder?: string;
+  /** CA-12 P13: the list offered: AI tools (the default) or apps and services. */
+  list?: ToolList;
+  /** CA-12 P11: nothing has been chosen yet, even though "none" is a choice: the trigger shows the placeholder, not the none row's words. */
+  unpicked?: boolean;
 }
 
-const isPickable = (row: PickerRow): boolean => row.kind !== "heading";
+const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.kind !== "note";
 
 /** Over the Add dialogs, whose content sits at 51 over a scrim at 50. */
 export const FLOATING_Z = 52;
 
 /** The words a row reads as. */
-function rowName(row: PickerRow, noneLabel = "No tool"): string {
+function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): string {
   switch (row.kind) {
     case "none":
       return noneLabel;
     case "tool":
       return row.tool.name;
     case "showAll":
-      return `Show all ${row.count} tools`;
+      return `Show all ${row.count} ${list === "app" ? "apps" : "tools"}`;
     case "showMore":
       return `Show ${row.count} more`;
     case "use":
       return `Use "${row.name}"`;
     case "heading":
       return row.label;
+    case "note":
+      return row.text;
   }
 }
 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai", unpicked = false }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -78,9 +86,9 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
 
   const chosen = toolFor(value);
   const typedValue = value && !chosen ? value.trim() : null;
-  const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel ? noneLabel : "Pick a tool");
+  const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel && !unpicked ? noneLabel : placeholder);
 
-  const rows = pickerRows({ query, inBuild, expanded, allowNone, step });
+  const rows = pickerRows({ query, inBuild, expanded, allowNone, step, list });
   const pickable = rows.filter(isPickable);
   const current = Math.min(active, Math.max(pickable.length - 1, 0));
   const rowId = (row: PickerRow) => `${uid}-row-${pickable.indexOf(row)}`;
@@ -97,7 +105,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     if (!next) return;
     setQuery("");
     setExpanded(false);
-    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone, step }).filter(isPickable);
+    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone, step, list }).filter(isPickable);
     setActive(Math.max(0, first.findIndex(isChosen)));
   };
 
@@ -195,13 +203,13 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
             ref={field}
             type="text"
             role="combobox"
-            aria-label="Find a tool"
+            aria-label={list === "app" ? "Find an app" : "Find a tool"}
             aria-expanded="true"
             aria-controls={`${uid}-list`}
             aria-activedescendant={pickable.length ? `${uid}-row-${current}` : undefined}
             aria-autocomplete="list"
             autoComplete="off"
-            placeholder="Find a tool"
+            placeholder={list === "app" ? "Find an app" : "Find a tool"}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -213,7 +221,11 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
           />
           <div id={`${uid}-list`} role="listbox" aria-label={label} style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
             {rows.map((row, index) =>
-              row.kind === "heading" ? (
+              row.kind === "note" ? (
+                <div key={`n-${row.text}`} role="note" style={{ ...text(12, 400, t.text2), padding: "6px 8px", overflowWrap: "anywhere" }}>
+                  {row.text}
+                </div>
+              ) : row.kind === "heading" ? (
                 <div key={`h-${row.label}`} role="presentation" style={{ ...text(11.5, 400, t.label), padding: index === 0 ? "4px 10px" : "8px 10px 4px" }}>
                   {row.label}
                 </div>
@@ -232,16 +244,16 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                   {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={16} /> : null}
                   {row.kind === "tool" && row.line ? (
                     <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, padding: "4px 0" }}>
-                      <span>{rowName(row, noneLabel)}</span>
+                      <span>{rowName(row, noneLabel, list)}</span>
                       <span style={text(11.5, 400, t.label)}>{row.line}</span>
                     </span>
                   ) : (
-                    <span style={{ minWidth: 0 }}>{rowName(row, noneLabel)}</span>
+                    <span style={{ minWidth: 0 }}>{rowName(row, noneLabel, list)}</span>
                   )}
                 </div>
               ),
             )}
-            {pickable.length === 0 ? <span style={VISUALLY_HIDDEN}>No tools match</span> : null}
+            {pickable.length === 0 ? <span style={VISUALLY_HIDDEN}>{list === "app" ? "No apps match" : "No tools match"}</span> : null}
           </div>
         </Popover.Content>
       </Popover.Portal>

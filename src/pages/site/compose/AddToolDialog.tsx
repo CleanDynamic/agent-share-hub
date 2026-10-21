@@ -1,59 +1,102 @@
-/* CA-02 P6 — Add › "Tool".
+/* CA-02 P6, CA-12 P7 — Add › "Tool".
 
-   A Radix dialog, 420 wide, on the Card's surface tokens (a `BottomSheet` below 768), built like the manual step's:
-   the tool picker for a tool (`step: "tool"`), with the build's own tools first. A listed tool is stored by its name,
-   any other name as typed (at most 40). There is no default: Add waits until one is picked. "Add" is the one primary.
-
-   It replaces the "Untitled tool" row Add › Tool used to make: the tool is named before it is made. */
+   A Radix dialog, 420 wide, on the Card's surface tokens (a `BottomSheet` below 768), built like the manual step's. It asks
+   three things:
+   - Tool: the app, from the apps and services list (GitHub, Stripe, Supabase ...), with the build's own first. A listed app
+     is stored by its name, any other name as typed (at most 40). There is no default: Add waits until one is picked.
+   - How was it connected?: an MCP server, built into the app, or my own code. Optional.
+   - What did it do?: one line, optional ("read issues, open pull requests").
+   The tool then stands in the session as a tile that shows exactly this. "Add" is the one primary. */
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { useState, type CSSProperties } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { CONNECTION_LABEL, TOOL_SCOPES_MAX, type ToolConnection } from "@/lib/build/graph";
 import { toolName } from "@/lib/tools/registry";
-import { r } from "@/lib/theme/radius";
-import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { Field } from "./composeControls";
+import { dialogTitle, text as type, tnum, typedField, windowStyle } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
+import { t } from "@/lib/theme/tokens";
 
 export const TOOL_DIALOG_COPY = {
   title: "Add a tool",
   tool: "Tool",
+  connected: "How was it connected?",
+  did: "What did it do?",
+  didPlaceholder: "Read issues, open pull requests",
   add: "Add",
   cancel: "Cancel",
 } as const;
 
+/** The three ways a tool was connected, in the words the tile uses. */
+export const CONNECTION_CHOICES: readonly { value: ToolConnection; label: string }[] = [
+  { value: "mcp", label: CONNECTION_LABEL.mcp },
+  { value: "app", label: CONNECTION_LABEL.app },
+  { value: "code", label: CONNECTION_LABEL.code },
+];
+
+export interface AddToolInput {
+  /** The app's name, as the integration node's `service`: a listed app's name, or as typed. */
+  service: string;
+  connection: ToolConnection | null;
+  /** What it did: one line, or empty. */
+  scopes: string;
+}
+
 export interface AddToolDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** The tool's name, as the integration node's `service`: a listed tool's name, or as typed. */
-  onAdd: (service: string) => void;
+  onAdd: (input: AddToolInput) => void;
   /** The tools the build already uses, first in the tool picker. */
   inBuild?: readonly string[];
 }
 
 function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddToolDialogProps, "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
   const [picked, setPicked] = useState<string | null>(null);
+  const [connection, setConnection] = useState<ToolConnection | null>(null);
+  const [did, setDid] = useState("");
+  const uid = useId();
   const service = picked ? (toolName(picked) ?? picked.trim()) : "";
-  const label: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        if (service) onAdd(service);
+        if (service) onAdd({ service, connection, scopes: did.trim() });
       }}
-      style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={label}>{TOOL_DIALOG_COPY.tool}</span>
+      <Field id={`${uid}-tool`} label={TOOL_DIALOG_COPY.tool} group>
         <div>
-          <ToolPicker label={TOOL_DIALOG_COPY.tool} value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="tool" />
+          <ToolPicker label={TOOL_DIALOG_COPY.tool} value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="tool" list="app" placeholder="Pick an app" />
         </div>
-      </div>
+      </Field>
+
+      <Field id={`${uid}-how`} label={TOOL_DIALOG_COPY.connected} hint="Optional" group>
+        <div>
+          <Segmented
+            label={TOOL_DIALOG_COPY.connected}
+            size={phone ? 50 : 32}
+            fontSize={13}
+            items={CONNECTION_CHOICES.map((choice) => ({ value: choice.value, label: choice.label }))}
+            value={connection ?? ("" as ToolConnection)}
+            onChange={(next) => setConnection((current) => (current === next ? null : next))}
+          />
+        </div>
+      </Field>
+
+      <Field id={`${uid}-did`} label={TOOL_DIALOG_COPY.did} hint="Optional">
+        <input id={`${uid}-did`} type="text" value={did} maxLength={TOOL_SCOPES_MAX} placeholder={TOOL_DIALOG_COPY.didPlaceholder} onChange={(event) => setDid(event.target.value)} style={typedField(phone)} />
+        <span style={{ ...type(11.5, 400, t.text2), ...tnum, alignSelf: "flex-end" }}>
+          {did.length} / {TOOL_SCOPES_MAX}
+        </span>
+      </Field>
+
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
         <Button variant="secondary" size={phone ? 44 : 36} onClick={onCancel}>
           {TOOL_DIALOG_COPY.cancel}
@@ -69,8 +112,8 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddToolDialogProps,
 export function AddToolDialog({ open, onOpenChange, onAdd, inBuild }: AddToolDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
-  const add = (service: string) => {
-    onAdd(service);
+  const add = (input: AddToolInput) => {
+    onAdd(input);
     close();
   };
 
@@ -89,27 +132,9 @@ export function AddToolDialog({ open, onOpenChange, onAdd, inBuild }: AddToolDia
         <Dialog.Content
           aria-describedby={undefined}
           data-testid="add-tool-dialog"
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 51,
-            width: 420,
-            maxWidth: "calc(100vw - 32px)",
-            maxHeight: "90dvh",
-            overflowY: "auto",
-            boxSizing: "border-box",
-            padding: 20,
-            borderRadius: r.panel,
-            background: t.solid,
-            border: `1px solid ${t.line}`,
-            boxShadow: t.shadowFloat,
-            color: t.text,
-            fontFamily: FIGTREE,
-          }}
+          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(420) }}
         >
-          <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{TOOL_DIALOG_COPY.title}</Dialog.Title>
+          <Dialog.Title style={dialogTitle}>{TOOL_DIALOG_COPY.title}</Dialog.Title>
           <Form inBuild={inBuild} onAdd={add} onCancel={close} phone={false} />
         </Dialog.Content>
       </Dialog.Portal>

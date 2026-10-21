@@ -3,17 +3,17 @@
    PURE. `buildSteps` and `sessionGroups` (UI-P62) give the sessions and their
    numbers; this shapes them into rows. A session's number is the one the build
    page and the Build panel use (DATA §5), so "Session 2" means the same thing
-   everywhere. Prompts written by hand form a group of their own, "typed here".
+   everywhere. Prompts written by hand form a group of their own.
 
    A file's note is "opened in session {n}" when its node names a session that
    is in the build, and "added by you" otherwise. A file a step makes is noted
    "made in step {n}". */
 
 import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
-import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
+import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
 import { goalLine, toolLabel } from "@/lib/build/making";
-import type { SessionSummary } from "@/lib/build/sessions";
+import type { SessionSummary, UnfinishedSession } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
 import { isSetupPayload } from "@/lib/build/setup";
 import type { BuildNode } from "@/lib/build/types";
@@ -34,7 +34,7 @@ export interface SourceSession {
   key: string;
   number: number;
   tool: string;
-  /** "{model} · {d MMM}", or "typed here". */
+  /** "{model} · {d MMM}". */
   detail: string;
   prompts: SourcePrompt[];
   /** TF-13: set for a session whose client names no tool. `value` is the tool the maker gave it, or null. */
@@ -65,7 +65,30 @@ export interface SourceLibraryItem {
   /** "{d MMM} · {n} prompts". */
   line: string;
   adding: boolean;
+  /** CA-12: the session is already in this draft: "In this draft" stands where the + button was. */
+  inThisDraft: boolean;
+  /** CA-12: "Also in 2 drafts", for a session in other drafts; null for none. */
+  alsoIn: string | null;
+  /** CA-12: the first prompt, for the Add a session list's search. */
+  firstPrompt: string | null;
+  /** CA-12: the date as the line shows it, and the prompt count. */
+  date: string;
+  promptCount: number;
 }
+
+/** CA-12: an import that is not a session yet. */
+export interface SourceUnfinishedItem {
+  id: string;
+  label: string;
+  /** "Sent 3 Oct" for one still arriving; the reason for one that did not finish. */
+  line: string;
+}
+
+/** CA-12 P3: what a session with no app reads as. "Unknown tool" and "typed here" are not shown anywhere. */
+export const NO_APP = "No app chosen";
+
+/** CA-12 P3: Session 1 of a post whose draft is not made yet. The draft makes the real one; this stands in until then. */
+export const FIRST_SESSION_KEY = "typed-first-session";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -91,7 +114,7 @@ const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [ste
  * under them, numbered on from the last.
  *
  * A session's tool is its client's tool, else the one the maker gave it
- * (`sessionTools`, TF-13), else "Unknown tool". Only a session whose client
+ * (`sessionTools`, TF-13), else "No app chosen". Only a session whose client
  * names no tool can be given one, so only it carries `pickTool`.
  */
 export function sourceSessions(
@@ -113,11 +136,11 @@ export function sourceSessions(
     const mine = prompts.filter((step) => group.stepNumbers.includes(step.number) || (kind === "import" && step.sessionId === group.sessionId));
     // `sessionGroups` has already turned the client and the model into their labels.
     const model = group.model;
-    const when = kind === "legacy" ? TYPED_HERE : shortDate(group.startedAt);
+    const when = kind === "legacy" ? "" : shortDate(group.startedAt);
     return {
       key,
       number: group.number,
-      tool: group.tool ?? (kind === "typed" ? "Typed here" : "Unknown tool"),
+      tool: group.tool ?? NO_APP,
       detail: [model, when].filter(Boolean).join(" · "),
       ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
@@ -140,7 +163,7 @@ export function sourceSessions(
     .map((session, at): SourceSession => ({
       key: session.id,
       number: grouped.length + at + 1,
-      tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : "Unknown tool"),
+      tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : NO_APP),
       detail: [session.modelName, shortDate(session.createdAt)].filter(Boolean).join(" · "),
       pickTool: pickTool(session.id),
       prompts: [],
@@ -195,16 +218,46 @@ export function projectFileReminders(sessions: readonly Pick<SourceSession, "too
   return out;
 }
 
-/** The library's sessions that are in no build, newest first as the library lists them. */
-export function librarySources(library: readonly SessionSummary[], adding: ReadonlySet<string>, now: number): SourceLibraryItem[] {
-  return library
-    .filter((session) => session.status === "parsed" && session.buildId === null)
-    .map((session) => ({
+/** "Also in 2 drafts", from the drafts a session is in other than this one; null for none. */
+export function alsoInLine(draftIds: readonly string[], buildId: string | null | undefined): string | null {
+  const others = draftIds.filter((id) => id !== buildId).length;
+  return others === 0 ? null : `Also in ${others} ${others === 1 ? "draft" : "drafts"}`;
+}
+
+/**
+ * CA-12: every finished session, newest first as the library lists them: waiting, in this draft, in other drafts, and
+ * ones marked expired. None is hidden and "expired" is never shown. One already in this draft says so; one in other
+ * drafts keeps its + button and says where else it is.
+ */
+export function librarySources(library: readonly SessionSummary[], adding: ReadonlySet<string>, now: number, buildId: string | null = null): SourceLibraryItem[] {
+  return library.map((session) => {
+    const ids = session.draftIds ?? (session.buildId ? [session.buildId] : []);
+    const date = shortDate(session.createdAt) || sessionDate(session.createdAt, now);
+    return {
       id: session.id,
       label: sessionSource(session),
-      line: `${shortDate(session.createdAt) || sessionDate(session.createdAt, now)} · ${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`,
+      line: `${date} · ${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`,
       adding: adding.has(session.id),
-    }));
+      inThisDraft: buildId !== null && ids.includes(buildId),
+      alsoIn: alsoInLine(ids, buildId),
+      firstPrompt: session.firstPrompt,
+      date,
+      promptCount: session.promptCount,
+    };
+  });
+}
+
+/** CA-12: the imports still arriving, and the ones that did not finish, for the two small groups at the bottom of Sources. */
+export function unfinishedSources(list: readonly UnfinishedSession[], now: number): { arriving: SourceUnfinishedItem[]; didntFinish: SourceUnfinishedItem[] } {
+  const arriving: SourceUnfinishedItem[] = [];
+  const didntFinish: SourceUnfinishedItem[] = [];
+  for (const item of list) {
+    const label = sessionSource({ modelName: null, client: item.client });
+    const sent = shortDate(item.createdAt) || sessionDate(item.createdAt, now);
+    if (item.status === "open" || item.status === "assembling") arriving.push({ id: item.id, label, line: sent ? `Sent ${sent}` : "Sent" });
+    else didntFinish.push({ id: item.id, label, line: item.reason ?? "It didn't finish." });
+  }
+  return { arriving, didntFinish };
 }
 
 const CHAT_EXPORT_CHARS = 400_000;

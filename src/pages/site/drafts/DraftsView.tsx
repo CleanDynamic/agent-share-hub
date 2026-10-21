@@ -27,7 +27,6 @@
    (Button, IconButton, Panel, display()) take the drawn size and map it. */
 
 import { useState, type CSSProperties, type DragEvent, type ReactNode, type Ref } from "react";
-import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { ChevronRight, GripVertical, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -44,7 +43,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { DraftListItem } from "@/lib/build/drafts";
@@ -57,8 +55,6 @@ import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
 import {
   addLabel,
-  attachedMenuItems,
-  attachedTitle,
   draftMeta,
   draftTitle,
   isUntitled,
@@ -88,18 +84,14 @@ export interface DraftsViewProps {
   /** CA-10: a marker over the Sessions panel, so the page polls only while the panel is on screen. */
   sessionsAnchor?: Ref<HTMLSpanElement>;
   drafts: readonly DraftListItem[];
-  /** Sessions not in a build, newest first. */
+  /** CA-12: every finished session, newest first: waiting, in a draft, in several, or expired. None is hidden. */
   sessions: readonly SessionSummary[];
-  /** Sessions already in a build, newest first. */
-  attached: readonly SessionSummary[];
-  showAttached: boolean;
-  onToggleAttached: () => void;
+  /** CA-12: the list has another page; "Show more" asks for it. */
+  moreSessions?: { loading: boolean; onMore: () => void };
   /** A session dropped on the start row, or "Start a new build" in its menu. */
   onAddToNew: (sessionId: string) => void;
   /** A session dropped on a draft, or "Add to …" in its menu. */
   onAddToDraft: (sessionId: string, draft: Pick<DraftListItem, "id" | "title">) => void;
-  /** Confirmed in the alert dialog. */
-  onRemove: (sessionId: string) => void;
   /** "Connect a tool" and "How they get here" open the connector dialog. */
   onConnect: () => void;
 }
@@ -117,10 +109,10 @@ const underlined: CSSProperties = {
   cursor: "pointer",
 };
 
-function TextButton({ onClick, style, children }: { onClick: () => void; style?: CSSProperties; children: ReactNode }) {
+function TextButton({ onClick, style, children, disabled }: { onClick: () => void; style?: CSSProperties; children: ReactNode; disabled?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <button type="button" data-hit="" onClick={onClick} {...handlers} style={{ ...underlined, borderRadius: 6, ...ring(state.focusVisible), ...style }}>
+    <button type="button" data-hit="" disabled={disabled} onClick={onClick} {...handlers} style={{ ...underlined, borderRadius: 6, ...ring(state.focusVisible), ...style }}>
       {children}
     </button>
   );
@@ -343,8 +335,7 @@ function AddMenu({
         </span>
         <BottomSheet open={sheet} onOpenChange={setSheet} title="Add to a build">
           {items.map((item) => {
-            const danger = item.kind === "remove";
-            const style = { ...sheetRow, color: danger ? t.catBreakage : t.text };
+            const style = { ...sheetRow, color: t.text };
             return item.kind === "open" ? (
               <Link key={item.key} to={`/compose/${item.buildId}`} style={style} onClick={() => setSheet(false)}>
                 {item.label}
@@ -380,16 +371,6 @@ function AddMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6} style={menuContent}>
         {items.map((item) => {
-          if (item.kind === "remove") {
-            return (
-              <span key={item.key}>
-                <DropdownMenuSeparator style={{ height: 1, margin: "4px 4px", background: t.line }} />
-                <DropdownMenuItem className={MENU_ITEM_CLASS} style={{ ...menuItem, color: t.catBreakage }} onSelect={() => onPick(item)}>
-                  {item.label}
-                </DropdownMenuItem>
-              </span>
-            );
-          }
           if (item.kind === "open") {
             return (
               <DropdownMenuItem key={item.key} asChild className={MENU_ITEM_CLASS} style={menuItem}>
@@ -415,7 +396,6 @@ function SessionRow({
   session,
   meta,
   items,
-  attached,
   phone,
   draggable,
   dragging,
@@ -426,7 +406,6 @@ function SessionRow({
   session: SessionSummary;
   meta: string;
   items: MenuItem[];
-  attached: boolean;
   phone: boolean;
   draggable: boolean;
   dragging: boolean;
@@ -438,7 +417,7 @@ function SessionRow({
   const [focus, setFocus] = useState(false);
   return (
     <li
-      data-testid={attached ? "session-row-attached" : "session-row"}
+      data-testid="session-row"
       draggable={draggable || undefined}
       onDragStart={draggable ? onDragStart : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
@@ -470,7 +449,7 @@ function SessionRow({
           style={{
             fontFamily: FIGTREE,
             fontSize: 13,
-            color: attached ? t.text2 : t.text,
+            color: t.text,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -482,48 +461,6 @@ function SessionRow({
       </span>
       <AddMenu session={session} items={items} phone={phone} visible={hover || focus} onPick={onPick} />
     </li>
-  );
-}
-
-function RemoveDialog({ session, onCancel, onConfirm }: { session: SessionSummary | null; onCancel: () => void; onConfirm: (id: string) => void }) {
-  return (
-    <AlertDialog.Root open={session !== null} onOpenChange={(open) => (open ? undefined : onCancel())}>
-      <AlertDialog.Portal>
-        <AlertDialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 60 }} />
-        <AlertDialog.Content
-          style={{
-            position: "fixed",
-            zIndex: 61,
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "min(420px, calc(100vw - 32px))",
-            boxSizing: "border-box",
-            ...{ padding: 16, borderRadius: 12, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow },
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <AlertDialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>
-              Remove this session?
-            </AlertDialog.Title>
-            <AlertDialog.Description style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
-              It disappears from Drafts. This can&apos;t be undone.
-            </AlertDialog.Description>
-          </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
-            <AlertDialog.Cancel asChild>
-              <Button variant="secondary" size={38} fontSize={13}>Cancel</Button>
-            </AlertDialog.Cancel>
-            <AlertDialog.Action asChild>
-              <Button variant="primary" size={38} fontSize={13} onClick={() => session && onConfirm(session.id)}>Remove</Button>
-            </AlertDialog.Action>
-          </div>
-        </AlertDialog.Content>
-      </AlertDialog.Portal>
-    </AlertDialog.Root>
   );
 }
 
@@ -557,19 +494,15 @@ export function DraftsView({
   sessionsAnchor,
   drafts,
   sessions,
-  attached,
-  showAttached,
-  onToggleAttached,
+  moreSessions,
   onAddToNew,
   onAddToDraft,
-  onRemove,
   onConnect,
 }: DraftsViewProps) {
   const phone = useIsPhone();
   const fine = useFinePointer();
   const canDrag = !phone && fine;
   const [dragging, setDragging] = useState<string | null>(null);
-  const [removing, setRemoving] = useState<SessionSummary | null>(null);
   const loading = draftsStatus === "loading";
   const failed = draftsStatus === "error";
   const sessionsLoading = sessionsStatus === "loading";
@@ -580,7 +513,6 @@ export function DraftsView({
       const draft = drafts.find((d) => d.id === item.buildId);
       if (draft) onAddToDraft(session.id, draft);
     } else if (item.kind === "new") onAddToNew(session.id);
-    else if (item.kind === "remove") setRemoving(session);
   };
 
   const dragStart = (session: SessionSummary) => (event: DragEvent) => {
@@ -651,7 +583,6 @@ export function DraftsView({
                   session={session}
                   meta={sessionMeta(session, drafts, now)}
                   items={menuItems(session, drafts)}
-                  attached={false}
                   phone={phone}
                   draggable={canDrag}
                   dragging={dragging === session.id}
@@ -662,31 +593,10 @@ export function DraftsView({
               ))}
             </ul>
           )}
-          {attached.length > 0 ? (
-            <>
-              <TextButton onClick={onToggleAttached} style={{ margin: "4px 9px 6px", display: "block" }}>
-                {showAttached ? "Hide sessions already in a build" : `Show ${attached.length} already in a build`}
-              </TextButton>
-              {showAttached ? (
-                <ul style={rows}>
-                  {attached.map((session) => (
-                    <SessionRow
-                      key={session.id}
-                      session={session}
-                      meta={`In ${attachedTitle(session, drafts)}`}
-                      items={attachedMenuItems(session, drafts)}
-                      attached
-                      phone={phone}
-                      draggable={false}
-                      dragging={false}
-                      onDragStart={() => undefined}
-                      onDragEnd={() => undefined}
-                      onPick={() => undefined}
-                    />
-                  ))}
-                </ul>
-              ) : null}
-            </>
+          {moreSessions ? (
+            <TextButton onClick={moreSessions.onMore} disabled={moreSessions.loading} style={{ margin: "4px 9px 6px", display: "block" }}>
+              {moreSessions.loading ? "Loading…" : "Show more sessions"}
+            </TextButton>
           ) : null}
         </>
       )}
@@ -713,7 +623,6 @@ export function DraftsView({
           Connect a tool
         </Button>
         {older}
-        <RemoveDialog session={removing} onCancel={() => setRemoving(null)} onConfirm={(id) => { setRemoving(null); onRemove(id); }} />
       </div>
     );
   }
@@ -739,7 +648,6 @@ export function DraftsView({
         {sessionsPanel}
       </div>
       <div style={{ marginTop: 17, display: "flex" }}>{older}</div>
-      <RemoveDialog session={removing} onCancel={() => setRemoving(null)} onConfirm={(id) => { setRemoving(null); onRemove(id); }} />
     </div>
   );
 }

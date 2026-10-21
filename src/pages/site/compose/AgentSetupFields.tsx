@@ -20,7 +20,7 @@
    characters, saved as `payload.memory`. It hands its words over when the field is left, not on every key. */
 
 import { X } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
 import { AGENT_MODELS_MAX, MEMORY_MAX, type AgentModel } from "@/lib/build/graph";
@@ -37,6 +37,7 @@ import { ToolPicker } from "./ToolPicker";
 export const AGENT_SETUP_COPY = {
   runsIn: "Runs in",
   ownCode: "My own code (API)",
+  notSure: "Not sure",
   models: "Models",
   addModel: "Add a model",
   tools: "Tools it can use",
@@ -115,12 +116,19 @@ export interface AgentSetupFieldsProps {
   inBuild: readonly string[];
   /** CA-02 P8: opens the main model's menu each time it changes ("Change the model"). */
   openMainModel?: number;
+  /**
+   * CA-12 P11: the Add dialog's order: Model, Tools it can use, `between` (How does it start?), Runs in, Memory. "Runs in"
+   * has no default there: it says "Pick a tool" until chosen, and "Not sure" is a choice. Details keeps its own order.
+   */
+  dialog?: boolean;
+  between?: ReactNode;
 }
 
 /** One row to three, as the words need: a line per 32 characters (the Details column is the narrowest) or line break. */
 export const memoryRows = (text: string): number => Math.min(3, Math.max(1, text.split("\n").reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 32)), 0)));
 
-export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel }: AgentSetupFieldsProps) {
+export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel, dialog = false, between }: AgentSetupFieldsProps) {
+  const [runsChosen, setRunsChosen] = useState(!dialog);
   const [cleared, setCleared] = useState<string | null>(null);
   const [memory, setMemory] = useState(value.memory ?? "");
   const uid = useId();
@@ -139,8 +147,7 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
   const setRow = (index: number, row: Partial<SetupModelRow>) =>
     onChange({ ...value, models: value.models.map((entry, i) => (i === index ? { ...entry, ...row } : entry)) });
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+  const runsInField = (
       <Field id={`${uid}-runs-in`} label={AGENT_SETUP_COPY.runsIn} group>
         <span>
           <ToolPicker
@@ -149,16 +156,23 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
             onChange={(next) => {
               const result = withHarness(value, next);
               setCleared(result.cleared);
+              setRunsChosen(true);
               onChange(result.value);
             }}
             inBuild={inBuild}
             allowNone
-            noneLabel={AGENT_SETUP_COPY.ownCode}
+            noneLabel={dialog ? AGENT_SETUP_COPY.notSure : AGENT_SETUP_COPY.ownCode}
+            unpicked={dialog && !runsChosen}
             phone={phone}
             step="agent"
           />
         </span>
       </Field>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {dialog ? null : runsInField}
 
       <Field id={`${uid}-models`} label={AGENT_SETUP_COPY.models} group>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -251,9 +265,14 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
             inBuild={inBuild}
             phone={phone}
             step="tool"
+            list="app"
           />
         </div>
       </Field>
+
+      {between}
+
+      {dialog ? runsInField : null}
 
       <Field id={`${uid}-memory`} label={AGENT_SETUP_COPY.memory} hint={AGENT_SETUP_COPY.memoryHint}>
         <textarea

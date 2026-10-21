@@ -34,9 +34,8 @@ const appQueryClient = () => new QueryClient({ defaultOptions: { queries: { retr
 /** What PostgREST answers when Postgres cancels a statement at statement_timeout (the authenticated role's 8 s). */
 const TIMEOUT: FaultAnswer = { status: 500, body: { code: "57014", details: null, hint: null, message: "canceling statement due to statement timeout" } };
 
-/** The three reads, by their requests (sessions.ts:159-171 with and without claimed; builds.ts:245-260). */
-const WAITING = /^\/rest\/v1\/import_sessions\?.*status=in\.\(parsed\)(&|$)/;
-const ALL = /^\/rest\/v1\/import_sessions\?.*status=in\.\(parsed,claimed\)/;
+/** The two reads, by their requests (CA-12: one session library read; builds.ts:245-260). CA-12 removed the separate read of sessions already in a build. */
+const WAITING = /^\/rest\/v1\/import_sessions\?.*status=in\.\(parsed,claimed,expired\)(&|$)/;
 const DRAFTS = /^\/rest\/v1\/builds\?select=id,creator_id/;
 
 function mount(faults: Fault[] = []) {
@@ -88,7 +87,7 @@ describe("CA-09 · the Drafts page on tonight's schema", () => {
     expect(sent(DRAFTS)).toEqual(["200"]);
     // 57014 is not a permission error, so App's one retry sends it again: two 8 s statements on the live database.
     expect(sent(WAITING)).toEqual(["500 57014", "500 57014"]);
-    expect(appLines(logged)).toEqual(["[Drafts] sessions read failed 57014 listSessions failed: canceling statement due to statement timeout"]);
+    expect(appLines(logged)).toEqual(["[Drafts] sessions read failed 57014 listLibrarySessions failed: canceling statement due to statement timeout"]);
   });
 
   it("the drafts read times out (57014): only the drafts panel fails, the sessions show", async () => {
@@ -100,28 +99,9 @@ describe("CA-09 · the Drafts page on tonight's schema", () => {
     expect(sent(WAITING)[0]).toBe("200");
   });
 
-  it("only the all-sessions read times out: the page shows, 'Show N already in a build' is simply missing, and it is logged", async () => {
-    const logged = mount([{ method: "GET", path: ALL, answer: TIMEOUT }]);
-    expect(await screen.findByText("Draft 1")).toBeTruthy();
-    expect(screen.queryByText("That didn't load.")).toBeNull();
-    // TanStack waits a second before its retry.
-    await waitFor(() => expect(sent(ALL)).toEqual(["500 57014", "500 57014"]), { timeout: 5_000 });
-    expect(screen.queryByText(/already in a build/)).toBeNull();
-    await waitFor(() => expect(appLines(logged)).toContain("[Drafts] attached sessions read failed 57014 listSessions failed: canceling statement due to statement timeout"));
-  });
-
-  it("both session reads time out: the Sessions panel fails, the drafts show", async () => {
+  it("both reads time out: both panels fail", async () => {
     mount([
       { method: "GET", path: WAITING, answer: TIMEOUT },
-      { method: "GET", path: ALL, answer: TIMEOUT },
-    ]);
-    await sessionsPanelFailed();
-  });
-
-  it("all three reads time out: both panels fail", async () => {
-    mount([
-      { method: "GET", path: WAITING, answer: TIMEOUT },
-      { method: "GET", path: ALL, answer: TIMEOUT },
       { method: "GET", path: DRAFTS, answer: TIMEOUT },
     ]);
     await bothPanelsFailed();

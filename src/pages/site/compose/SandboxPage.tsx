@@ -34,7 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, canCheck, TRAINED_MODEL, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -42,9 +42,11 @@ import { goalRefusal, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
-import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
-import { attachSession } from "@/lib/build/sessions";
+import { addSessionToBuild, emptyFirstSession } from "@/lib/build/addSession";
+import { buildSessionRowsKey } from "./useComposeSessions";
+import { insertBuildSessionIfTable, nextSessionPosition, orderOf, setSessionCollapsed } from "@/lib/build/buildSessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -54,8 +56,8 @@ import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
-import { AddToolDialog } from "./AddToolDialog";
-import { AddSessionDialog } from "./AddSessionDialog";
+import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
+import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
@@ -71,7 +73,7 @@ import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
+import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups } from "@/lib/build/postRefs";
@@ -89,12 +91,22 @@ function makingSessions(making: unknown): MakingSession[] {
   return Array.isArray(list) ? (list as MakingSession[]) : [];
 }
 
+/** CA-12 P8: the first 4 lines of a text or code file, for its tile; empty for anything else, and for a file too big to read here. */
+async function previewOfFile(file: File): Promise<string[]> {
+  if (file.size > 512 * 1024 || fileKindOf(file.name, file.type) === "picture" || fileKindOf(file.name, file.type) === "pdf" || fileKindOf(file.name, file.type) === "other") return [];
+  try {
+    return previewOf(await file.slice(0, 4096).text());
+  } catch {
+    return [];
+  }
+}
+
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
 export function SandboxPage() {
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
-  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
+  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const phone = useIsPhone();
@@ -138,12 +150,14 @@ export function SandboxPage() {
   }, []);
 
   const made = (build as { making?: unknown } | null)?.making;
+  /* CA-12 P5: sessions are numbered by `build_sessions.position`; a draft with no rows is numbered by its steps, as before. */
+  const order = useMemo(() => orderOf(sessions.rows), [sessions.rows]);
   /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
   const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
   const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
     const steps = buildSteps(tree);
     // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
-    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made));
+    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made), order);
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
@@ -151,7 +165,7 @@ export function SandboxPage() {
       files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
-  }, [tree, made]);
+  }, [tree, made, order]);
   const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview), [savedSteps, savedGroups, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
@@ -293,7 +307,8 @@ export function SandboxPage() {
         results.push({
           id: node.id,
           title: str("summary") ?? str("url") ?? "Result",
-          holds: payload.kind === TRAINED_MODEL ? "a trained model" : payload.media_id ? "a picture" : payload.url ? "a link" : "text",
+          holds: resultHoldsWord(resultFactsOf(node)),
+          facts: resultFactsOf(node),
           from: from ? (numberOf.get(from.node_id) ?? null) : null,
         });
       }
@@ -376,6 +391,14 @@ export function SandboxPage() {
   const pickFor = useRef<string | null>(null);
   const pick = useCallback(() => {
     pickFor.current = null;
+    tileNext.current = false;
+    picker.current?.click();
+  }, []);
+  /** CA-12 P8: Add › File places a File tile at the end of the current session, as well as listing the file under Sources. */
+  const tileNext = useRef(false);
+  const pickTile = useCallback(() => {
+    pickFor.current = null;
+    tileNext.current = true;
     picker.current?.click();
   }, []);
   const pickForStep = useCallback((stepId: string) => {
@@ -415,11 +438,17 @@ export function SandboxPage() {
   const sessionChoices = useMemo(
     () =>
       shown.length > 1 || shown.some((group) => groupKind(group) !== "legacy")
-        ? sourceSessionRows.map((row) => ({ key: row.key, label: `Session ${row.number} · ${row.tool}`, tool: row.tool === "Typed here" || row.tool === "Unknown tool" ? null : row.tool }))
+        ? sourceSessionRows.map((row) => ({ key: row.key, label: `Session ${row.number} · ${row.tool}`, tool: row.tool === NO_APP ? null : row.tool }))
         : undefined,
     [shown, sourceSessionRows],
   );
-  const [addSessionOpen, setAddSessionOpen] = useState(false);
+  /* CA-12 P3: a session with no tile yet is still drawn, as its head. A post whose draft is not made has Session 1 already. */
+  const emptySessions = useMemo<SourceSession[]>(() => {
+    const withTiles = new Set(shown.filter((group) => group.stepNumbers.length > 0).map((group) => groupKey(group)));
+    const empties = sourceSessionRows.filter((row) => !withTiles.has(row.key) && isTypedSession(row.key));
+    if (empties.length === 0 && !buildId && shown.length === 0) return [{ key: FIRST_SESSION_KEY, number: 1, tool: NO_APP, detail: "", prompts: [] }];
+    return empties;
+  }, [shown, sourceSessionRows, buildId]);
   const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
 
   /** An old build's run of typed prompts, saved as a session made here so it can change. Resolves its new key. */
@@ -442,27 +471,83 @@ export function SandboxPage() {
    */
   const sessionToWrite = useCallback(async (): Promise<string | null> => {
     const key = currentSession;
-    if (!key) return null;
+    // CA-12 P3: a new post's first change makes the draft and its Session 1, and goes into it.
+    if (!key) {
+      if (!buildId) await ensureBuild();
+      return firstSession.current;
+    }
     if (!isLegacySession(key)) return key;
     const last = shown[shown.length - 1];
     if (last && groupKey(last) === key) return null;
     return claim(key);
-  }, [currentSession, shown, claim]);
+  }, [currentSession, shown, claim, buildId, ensureBuild, firstSession]);
 
-  const onNewSession = useCallback(
-    async (tool: string | null) => {
+  /* CA-12 P4/P5: the session just added is scrolled to and outlined once; the row says "Adding…" until the write lands. */
+  const [ringedSession, setRingedSession] = useState<{ key: string; n: number } | null>(null);
+  const [startingSession, setStartingSession] = useState(false);
+  useEffect(() => {
+    if (!ringedSession) return;
+    document.querySelector(`[data-session-key="${ringedSession.key}"]`)?.scrollIntoView?.({ block: "center" });
+    const timer = window.setTimeout(() => setRingedSession(null), ADD_FLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [ringedSession]);
+
+  /**
+   * CA-12 P4: "Start a new one here": an empty session with the app picked. If Session 1 is still empty and has no app,
+   * the app goes there instead and the session stays Session 1; otherwise the new session is the next one in order.
+   */
+  const onStartSession = useCallback(
+    async (tool: string) => {
+      setStartingSession(true);
       try {
         const id = await ensureBuild();
-        const key = newSessionKey();
-        await setSessionMeta(id, key, { tool, date: todayDay() });
-        await refreshRecord(id);
+        const empty = buildId ? emptyFirstSession(sessions.rows, made, tree) : firstSession.current;
+        let key: string;
+        if (empty) {
+          key = empty;
+          const before = sessionsMetaOf(made)[key] ?? { tool: null, date: todayDay() };
+          await setSessionMeta(id, key, { ...before, tool });
+        } else {
+          key = newSessionKey();
+          await setSessionMeta(id, key, { tool, date: todayDay() });
+          await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
+        }
+        await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
         setChosenSession(key);
+        setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
       } catch (cause) {
         console.error("[Sandbox] session not made", cause);
         sayFailed(cause, "Couldn't make that session. Try again.");
+      } finally {
+        setStartingSession(false);
       }
     },
-    [ensureBuild, refreshRecord],
+    [ensureBuild, buildId, sessions.rows, made, tree, firstSession, refreshRecord, queryClient],
+  );
+
+  /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
+  const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
+  const collapsedKeys = useMemo(() => {
+    const out = new Set(sessions.rows.filter((row) => row.collapsed).map((row) => row.sessionKey));
+    for (const [key, closed] of Object.entries(collapseOverride)) {
+      if (closed) out.add(key);
+      else out.delete(key);
+    }
+    return out;
+  }, [sessions.rows, collapseOverride]);
+  const onToggleCollapsed = useCallback(
+    (key: string, closed: boolean) => {
+      setCollapseOverride((previous) => ({ ...previous, [key]: closed }));
+      if (!buildId) return;
+      void setSessionCollapsed(buildId, key, closed)
+        .then(() => queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }))
+        .catch((cause) => {
+          console.error("[Sandbox] collapse not saved", cause);
+          setCollapseOverride((previous) => ({ ...previous, [key]: !closed }));
+          sayFailed(cause, "Couldn't save that. Try again.");
+        });
+    },
+    [buildId, queryClient],
   );
 
   const onSessionMeta = useCallback(
@@ -581,12 +666,31 @@ export function SandboxPage() {
     [ensureBuild, groups, made, refreshRecord],
   );
 
+  /** CA-12 P3: "Pick an app" on a session made here. On a post with no draft yet, the draft and its Session 1 are made first. */
+  const onPickApp = useCallback(
+    async (key: string, tool: string | null) => {
+      try {
+        const id = await ensureBuild();
+        const real = key === FIRST_SESSION_KEY ? firstSession.current : key;
+        if (!real) return;
+        const before = sessionsMetaOf(made)[real] ?? { tool: null, date: todayDay() };
+        await setSessionMeta(id, real, { ...before, tool });
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] app not saved", cause);
+        sayFailed(cause, "Couldn't save that app. Try again.");
+      }
+    },
+    [ensureBuild, firstSession, made, refreshRecord],
+  );
+
   const onAddPrompt = useCallback(
     async (input: { text: string; tool: string | null; model: string | null }) => prompts.addNow({ ...input, session: await sessionToWrite() }),
     [prompts, sessionToWrite],
   );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
-  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
+  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now(), buildId ?? null), [sessions.library, adding, buildId]);
+  const unfinishedRows = useMemo(() => unfinishedSources(sessions.unfinished, Date.now()), [sessions.unfinished]);
 
   /* ── Details (UI-P66) ── */
 
@@ -798,19 +902,58 @@ export function SandboxPage() {
     },
     [lens],
   );
-  const onAddResult = useCallback(() => {
-    showPending("result");
-    void addPiece("result").then((id) => {
-      setPendingAdd(null);
-      if (id) setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
-    });
-  }, [addPiece, showPending]);
+  const [addResultOpen, setAddResultOpen] = useState(false);
+  /** CA-12 P9: Add › Result asks what the result is first; the files it holds are stored, then the tile stands at the end of the List. */
+  const onAddResultInput = useCallback(
+    async (input: AddResultInput) => {
+      showPending("result");
+      try {
+        let made: ResultInput;
+        if (input.kind === "link") made = { kind: "link", url: input.url };
+        else if (input.kind === "model") made = { kind: "model", baseModel: input.baseModel, method: input.method };
+        else {
+          const build = await ensureBuild();
+          const stored = [];
+          for (const file of input.kind === "file" ? [input.file] : input.files) stored.push({ file, media: await nodes.run(() => uploadMedia({ buildId: build, file })) });
+          made =
+            input.kind === "file"
+              ? { kind: "file", mediaId: stored[0].media.id, name: stored[0].file.name, size: stored[0].file.size, mime: stored[0].file.type || null }
+              : { kind: "media", mediaIds: stored.map((one) => one.media.id), names: stored.map((one) => one.file.name) };
+        }
+        const id = await prompts.addResultOf(made);
+        if (id) {
+          setSelectedId(id);
+          setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+        }
+      } catch (cause) {
+        console.error("[Sandbox] result not added", cause);
+        sayFailed(cause, "Couldn't add that result. Try again.");
+      } finally {
+        setPendingAdd(null);
+      }
+    },
+    [ensureBuild, nodes, prompts, showPending],
+  );
+  const onAddResult = useCallback(() => setAddResultOpen(true), []);
   useEffect(() => {
     if (!ringed) return;
     document.querySelector(`[data-tile-id="${ringed.id}"]`)?.scrollIntoView?.({ block: "center" });
     const timer = window.setTimeout(() => setRinged(null), ADD_FLASH_MS);
     return () => window.clearTimeout(timer);
   }, [ringed]);
+
+  /** CA-12 P7: Add › Tool places a Tool tile at the end of the current session and selects it. */
+  const onAddTool = useCallback(
+    async (input: AddToolInput) => {
+      const session = await sessionToWrite();
+      const id = await prompts.addToolTile({ service: input.service, connection: input.connection, scopes: input.scopes, session });
+      if (id) {
+        setSelectedId(id);
+        setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+      }
+    },
+    [prompts, sessionToWrite],
+  );
 
   const download = useCallback(
     async (nodeId: string) => {
@@ -866,18 +1009,25 @@ export function SandboxPage() {
     [viewProps],
   );
 
+  /**
+   * CA-12 P5: a finished session added to this draft, every prompt a tile. On a new post the draft (and its Session 1,
+   * which the added session then replaces) is made first. The row says "Adding…" until it lands; the new session's head
+   * is scrolled to and outlined once.
+   */
   const onAddSession = useCallback(
     async (importId: string) => {
       setAdding((previous) => new Set(previous).add(importId));
       try {
         const id = await ensureBuild();
-        await attachSession(importId, { kind: "existing", buildId: id });
+        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id });
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }),
           queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
           queryClient.invalidateQueries({ queryKey: ["build", "getMadeWith"] }),
           queryClient.invalidateQueries({ queryKey: librarySessionsKey }),
         ]);
+        setChosenSession(added.sessionKey);
+        setRingedSession((current) => ({ key: added.sessionKey, n: (current?.n ?? 0) + 1 }));
       } catch (cause) {
         console.error("[Sandbox] session not added", cause);
         sayFailed(cause, "Couldn't add that session. Try again.");
@@ -894,7 +1044,7 @@ export function SandboxPage() {
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
   const addOneFile = useCallback(
-    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null): Promise<BuildNode | null> => {
+    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null, tile = false): Promise<BuildNode | null> => {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
@@ -909,7 +1059,8 @@ export function SandboxPage() {
         const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
           const media = await uploadMedia({ buildId: id, file });
-          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows });
+          const tileFacts = tile && !parentId ? { tile: true, session: await sessionToWrite(), size: file.size, mime: file.type || null, preview: await previewOfFile(file) } : null;
+          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows, ...tileFacts });
           nodes.record(node.id, node);
           added.node = node;
         });
@@ -921,7 +1072,7 @@ export function SandboxPage() {
         return null;
       }
     },
-    [ensureBuild, nodes, queryClient],
+    [ensureBuild, nodes, queryClient, sessionToWrite],
   );
 
   /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
@@ -1150,8 +1301,11 @@ export function SandboxPage() {
 
   /** The picker is an explicit choice of files, so nothing is taken for an export; setup files still go to the setup. */
   const onPicked = useCallback(
-    async (files: File[]) => {
-      for (const file of await addSetup(await takeResultFiles(files), undefined)) void addOneFile(file);
+    async (files: File[], tile = false) => {
+      for (const file of await addSetup(await takeResultFiles(files), undefined)) {
+        const added = await addOneFile(file, "add", null, null, tile);
+        if (added && tile) setSelectedId(added.id);
+      }
     },
     [addOneFile, addSetup, takeResultFiles],
   );
@@ -1175,7 +1329,11 @@ export function SandboxPage() {
           if (files.length === 0) return;
           if (setupKey) void addSetup(files, undefined, { session: setupKey, all: true });
           else if (stepId) void attach(stepId, files);
-          else void onPicked(files);
+          else {
+            const tile = tileNext.current;
+            tileNext.current = false;
+            void onPicked(files, tile);
+          }
         }}
       />
       <PartRegistryProvider registry={registry}>
@@ -1195,8 +1353,7 @@ export function SandboxPage() {
           />
         }
         threadNote={thread.hold}
-        onNewSession={() => setAddSessionOpen(true)}
-        onAddFile={pick}
+        onAddFile={pickTile}
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => setAddToolOpen(true)}
         onAddResult={onAddResult}
@@ -1301,6 +1458,7 @@ export function SandboxPage() {
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
             onCheckRuns={prompts.setCheckRuns}
+            onCheckCases={prompts.setCheckCases}
             onModelRun={prompts.setModelRun}
             onTrainedOn={(id, file) => void onTrainedOn(id, file)}
             onAgentNotes={prompts.setAgentNotes}
@@ -1321,6 +1479,8 @@ export function SandboxPage() {
             phone={phone}
             steps={steps}
             dividers={dividerRows}
+            emptySessions={emptySessions}
+            onPickApp={(key, tool) => void onPickApp(key, tool)}
             names={listFacts.names}
             suggestions={suggestions}
             intoResult={listFacts.intoResult}
@@ -1357,21 +1517,27 @@ export function SandboxPage() {
             sessionChoices={sessionChoices}
             currentSession={currentSession}
             onCurrentSession={setChosenSession}
-            onNewSession={() => setAddSessionOpen(true)}
-            onAddAsAgent={onAddAsAgent}
+                onAddAsAgent={onAddAsAgent}
             onKeepAsCode={onKeepAsCode}
             inBuild={inBuild}
             addPromptRef={addPromptField}
             addPromptFlash={addPromptFlash}
             pendingAdd={pendingAdd}
             ringedId={ringed?.id ?? null}
+            addSession={{
+              library: libraryRows,
+              hasMore: sessions.libraryHasMore,
+              loadingMore: sessions.libraryLoadingMore,
+              onMore: sessions.libraryMore,
+              adding: adding.size > 0 || startingSession,
+              onAdd: (importId) => void onAddSession(importId),
+              onStartNew: (tool) => void onStartSession(tool),
+            }}
+            collapsed={collapsedKeys}
+            onToggleCollapsed={onToggleCollapsed}
+            ringedSession={ringedSession}
           />
         }
-        addableSessions={libraryRows.filter((row) => !row.adding)}
-        onAddSession={(id) => {
-          showPending("session");
-          void onAddSession(id).finally(() => setPendingAdd(null));
-        }}
         sources={
           <div ref={sourcesAnchor} style={{ minWidth: 0 }}>
           <SourcesPanel
@@ -1382,6 +1548,11 @@ export function SandboxPage() {
             sessions={sourceSessionRows}
             files={sourceFileRows}
             library={libraryRows}
+            libraryHasMore={sessions.libraryHasMore}
+            libraryLoadingMore={sessions.libraryLoadingMore}
+            onLibraryMore={sessions.libraryMore}
+            arriving={unfinishedRows.arriving}
+            didntFinish={unfinishedRows.didntFinish}
             reminders={reminderRows}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -1419,8 +1590,8 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
-      <AddSessionDialog open={addSessionOpen} onOpenChange={setAddSessionOpen} inBuild={inBuild} onAdd={(tool) => void onNewSession(tool)} />
-      <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
+      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} onAdd={(input) => void onAddResultInput(input)} />
+      <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void onAddTool(input)} />
       <FullPromptWindow
         steps={steps}
         groups={groups}
@@ -1429,6 +1600,7 @@ export function SandboxPage() {
         mode="maker"
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
+        onReply={prompts.setReply}
         onNavigate={setOpenPromptId}
         onClose={() => {
           setOpenPromptId(null);

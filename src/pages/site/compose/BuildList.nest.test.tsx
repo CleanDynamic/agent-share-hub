@@ -76,6 +76,24 @@ describe("the List (CA-04 P2)", () => {
     expect(within(tiles[0]).queryAllByText("1").filter((node) => !node.closest('[data-testid="code-gutter"]'))).toHaveLength(0);
   });
 
+  it("CA-12 P6: 'Send with the step above' is a button with a join glyph; on a computer it shows while its tile is hovered or focused, on a phone always", () => {
+    list(buildSteps(tree()));
+    const second = screen.getByRole("group", { name: /^Prompt 2/ });
+    const control = within(second).getAllByTestId("nest-control").find((c) => c.textContent === NEST_LIST_COPY.sendWithAbove) as HTMLElement;
+    const button = within(control).getByRole("button", { name: NEST_LIST_COPY.sendWithAbove });
+    expect(button.querySelector("svg")).toBeTruthy();
+    expect(control.style.opacity).toBe("0");
+    fireEvent.pointerEnter(second);
+    expect(control.style.opacity).toBe("1");
+    fireEvent.pointerLeave(second);
+    expect(control.style.opacity).toBe("0");
+    fireEvent.focusIn(second);
+    expect(control.style.opacity).toBe("1");
+    cleanup();
+    list(buildSteps(tree()), { phone: true });
+    expect((within(screen.getByRole("group", { name: /^Prompt 2/ })).getAllByTestId("nest-control").find((c) => c.textContent === NEST_LIST_COPY.sendWithAbove) as HTMLElement).style.opacity).toBe("1");
+  });
+
   it("gives each tile a grip handle at its left, the only drag start", () => {
     list(buildSteps(tree()));
     expect(screen.getAllByTestId("drag-handle").map((handle) => handle.getAttribute("aria-label"))).toEqual(["Move prompt 1", "Move prompt 2", "Move order-form.tsx", "Move menu.pdf"]);
@@ -179,5 +197,20 @@ describe("Details (CA-04 P2)", () => {
     const ctx = { steps, groups: [], tree: t, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined };
     expect(resolveView({ ...ctx, selectedId: "c1" })).toMatchObject({ kind: "code", id: "c1", sentWithLine: "Sent with prompt 2", filename: "order-form.tsx" });
     expect(resolveView({ ...ctx, selectedId: "f1" })).toMatchObject({ kind: "file", id: "f1", name: "menu.pdf", sentWithLine: "Sent with order-form.tsx" });
+  });
+});
+
+describe("CA-12 P12: what came back", () => {
+  it("shows a prompt's reply under it, indented under a hairline, with Read all when there is more", () => {
+    const steps = buildSteps([node("p1", "prompt", { text: "Plan the page.", reply: "First line\nSecond line\nThird line" }, 1)]);
+    list(steps, { onOpenPrompt: vi.fn() });
+    const reply = screen.getByTestId("prompt-reply");
+    expect(reply.textContent).toContain("First line");
+    expect(within(reply).getByRole("button", { name: "Read all" })).toBeTruthy();
+  });
+
+  it("shows nothing when nothing came back", () => {
+    list(buildSteps([node("p1", "prompt", { text: "Plan the page." }, 1)]));
+    expect(screen.queryByTestId("prompt-reply")).toBeNull();
   });
 });

@@ -25,7 +25,7 @@
    CA-03 P7: an agent that can use a tool reading content it doesn't control has the warning module under it. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ArrowUp, MoreHorizontal } from "lucide-react";
+import { ArrowUp, Link as JoinIcon, MoreHorizontal, Unlink as SplitIcon } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -43,6 +43,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -55,7 +56,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { checkStatus, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkStatus, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -88,6 +89,7 @@ import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, CheckExtraLines, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestGap, NestList, TAKES, useNestSession, useNestTile, type NestTarget } from "./listNest";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
@@ -104,7 +106,9 @@ import {
   tnum,
   wellField,
 } from "./refinedStyles";
-import type { SourceSession } from "./sourcesModel";
+import { COLLAPSE_OVER, COLLAPSED_TILES } from "@/lib/build/buildSessions";
+import { isTypedSession } from "@/lib/build/making";
+import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent } from "./ComposeMenu";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
@@ -116,6 +120,9 @@ export const LIST_COPY = {
   hintPhone: "Tap a prompt to see its details",
   placeholder: "Paste or type a prompt…",
   showFull: "Show full prompt",
+  /** CA-12 P5: a collapsed session's toggle, and the one that closes it again. */
+  showAll: (count: number) => `Show all ${count} prompts`,
+  showFewer: "Show fewer",
   /** CA-03 P5: a check's eyebrow. */
   check: CHECK_COPY.eyebrow,
   /** CA-03 P6. */
@@ -129,6 +136,10 @@ export interface BuildListProps {
   steps: readonly Step[];
   /** The divider that goes before a step, keyed by its number. */
   dividers: ReadonlyMap<string, SourceSession>;
+  /** CA-12 P3: sessions that hold no tile yet (Session 1 of a new post), each drawn as its head, after the others. */
+  emptySessions?: readonly SourceSession[];
+  /** CA-12 P3: "Pick an app" on the head of a session made here that has none. The tool is an id or a typed name; null clears it. */
+  onPickApp?: (sessionKey: string, tool: string | null) => void;
   /** File and tool names, by node id, for the input chips. */
   names: Readonly<Record<string, string>>;
   suggestions: readonly ListSuggestion[];
@@ -160,8 +171,8 @@ export interface BuildListProps {
   /** Changes each time the add field is reached from Add › Prompt: it is ringed for `ADD_FLASH_MS`. */
   addPromptFlash?: number;
   /**
-   * CA-10: Add › Result or Add › Session is writing (on a new post, making the draft first): a tile stands in at the
-   * end of the list, where the new one lands, saying so, at once.
+   * CA-10: Add › Result is writing (on a new post, making the draft first): a tile stands in at the end of the list,
+   * where the new one lands, saying so, at once. (A session is added from its own row, which says "Adding…".)
    */
   pendingAdd?: PendingAdd | null;
   /** CA-10: the tile just added, ringed once as the build page rings a `#node-` step. */
@@ -187,8 +198,14 @@ export interface BuildListProps {
   /** CA-04 P1: the key of the session a new prompt goes into. */
   currentSession?: string | null;
   onCurrentSession?: (key: string) => void;
-  /** CA-04 P1: "New session" at the end of the menu: asks for its tool, then it is the current session. */
-  onNewSession?: () => void;
+  /** CA-12 P4: "+ Add a session", the full-width row under the last session. Absent: no row. */
+  addSession?: Omit<AddSessionRowProps, "phone" | "inBuild">;
+  /** CA-12 P5: the sessions that are collapsed (their head, their first tiles, and "Show all n prompts"), by key. */
+  collapsed?: ReadonlySet<string>;
+  /** CA-12 P5: opening or closing a long session. Absent: no toggle. */
+  onToggleCollapsed?: (sessionKey: string, collapsed: boolean) => void;
+  /** CA-12 P5: the session just added is scrolled to and outlined once. `n` changes on every add. */
+  ringedSession?: { key: string; n: number } | null;
   /**
    * CA-04 P2: put a tile inside a step, sent with it, at `index` among what it holds, or (null) make it its own step at
    * `index` among the top-level steps. Resolves true once written. Absent: no handles, no drops, no buttons.
@@ -232,6 +249,7 @@ export function useClamped<T extends HTMLElement>(text: string) {
   return { ref, clamped };
 }
 
+export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
 export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
 /* ── small pieces ── */
@@ -347,29 +365,60 @@ interface ListNest {
 
 const ListNestContext = createContext<ListNest | null>(null);
 
+/**
+ * CA-12 P6: whether the tile around `ref` is hovered or holds focus. "Send with the step above" is a control, so it is drawn
+ * as one (a text button with a small join glyph); on a computer it shows while the tile is hovered or focused, and on a phone
+ * (no hover) always.
+ */
+function useTileHover(phone: boolean) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"]');
+    if (!tile || phone) return;
+    const on = () => setNear(true);
+    const off = (event: Event) => {
+      if (event.type === "focusout" && tile.contains((event as FocusEvent).relatedTarget as Node | null)) return;
+      setNear(false);
+    };
+    tile.addEventListener("pointerenter", on);
+    tile.addEventListener("pointerleave", off);
+    tile.addEventListener("focusin", on);
+    tile.addEventListener("focusout", off);
+    return () => {
+      tile.removeEventListener("pointerenter", on);
+      tile.removeEventListener("pointerleave", off);
+      tile.removeEventListener("focusin", on);
+      tile.removeEventListener("focusout", off);
+    };
+  }, [phone]);
+  return { ref, shown: phone || near };
+}
+
 /** "Send with the step above" on a top-level tile after the first; "Make it its own step" on a tile inside one. */
 function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
   const nest = useContext(ListNestContext);
+  const { ref, shown } = useTileHover(phone);
   if (!nest) return null;
-  if (step.inside) {
-    return (
-      <TextButton target={phone} style={text(12, 500, t.text2)} onClick={(event) => {
-        event.stopPropagation();
-        nest.move(step.id, null, nest.after(step.id));
-      }}>
-        {NEST_LIST_COPY.ownStep}
-      </TextButton>
-    );
-  }
-  const above = nest.above(step.id);
-  if (!above || !nest.canNest(step.id, above.id)) return null;
+  const above = step.inside ? null : nest.above(step.id);
+  if (!step.inside && (!above || !nest.canNest(step.id, above.id))) return null;
+  const own = Boolean(step.inside);
+  const Icon = own ? SplitIcon : JoinIcon;
   return (
-    <TextButton target={phone} style={text(12, 500, t.text2)} onClick={(event) => {
-      event.stopPropagation();
-      nest.move(step.id, above.id, Number.MAX_SAFE_INTEGER);
-    }}>
-      {NEST_LIST_COPY.sendWithAbove}
-    </TextButton>
+    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0, transition: "opacity 120ms" }}>
+      <TextButton
+        target={phone}
+        style={{ ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: 4 }}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (own) nest.move(step.id, null, nest.after(step.id));
+          else if (above) nest.move(step.id, above.id, Number.MAX_SAFE_INTEGER);
+        }}
+      >
+        <Icon size={12} strokeWidth={1.6} aria-hidden="true" />
+        {own ? NEST_LIST_COPY.ownStep : NEST_LIST_COPY.sendWithAbove}
+      </TextButton>
+    </span>
   );
 }
 
@@ -505,7 +554,7 @@ const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 
 /* ── a session's head ── */
 
-function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; phone: boolean; onOpenSetup?: (key: string) => void }) {
+function SessionHead({ session, phone, onOpenSetup, onPickApp, inBuild = [], count }: { session: SourceSession; phone: boolean; onOpenSetup?: (key: string) => void; onPickApp?: (key: string, tool: string | null) => void; inBuild?: readonly string[]; count?: number }) {
   /* CA-04 P2: a tile dropped on a session's head goes into that session. */
   const drop = useNestSession(session.key);
   return (
@@ -528,7 +577,11 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
       <span style={{ ...text(13, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
         Session {session.number} · {session.tool}
       </span>
-      <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{session.detail}</span>
+      <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{[session.detail, count ? `${count} prompts` : ""].filter(Boolean).join(" · ")}</span>
+      {/* CA-12 P3: a session made here with no app offers to pick one. */}
+      {onPickApp && session.tool === NO_APP && isTypedSession(session.key) ? (
+        <ToolPicker label={`Pick an app for session ${session.number}`} placeholder="Pick an app" value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
+      ) : null}
       <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
       <SessionColour session={session} phone={phone} />
       {session.setupCount && onOpenSetup ? (
@@ -845,6 +898,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       >
         <ChangedText text={step.text} changes={step.changes} />
       </p>
+      {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={open} /> : null}
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -900,7 +954,11 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
       {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
       {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
       {step.kind === "agent" && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
-      <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
+      {step.id.endsWith(":instructions") && !step.text.trim() ? (
+        <span data-testid="agent-instructions" style={text(12.5, 400, t.label)}>{TILE_COPY.noInstructions}</span>
+      ) : (
+        <p data-testid={step.id.endsWith(":instructions") ? "agent-instructions" : undefined} style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", whiteSpace: step.id.endsWith(":instructions") ? "pre-wrap" : undefined, ...(step.id.endsWith(":instructions") ? clamp3 : clamp2) }}>{step.text}</p>
+      )}
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
       <OutsideWarning names={outside} />
       {to ? <MentionedLine to={to} phone={phone} /> : null}
@@ -1033,7 +1091,17 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
           <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
-          {stepRunsLabel(step) ? <DotLine testId="runs-line">{stepRunsLabel(step)}</DotLine> : null}
+          {isTeam ? (stepRunsLabel(step) ? <DotLine testId="runs-line">{stepRunsLabel(step)}</DotLine> : null) : <DotLine testId="runs-line">{startsLine(stepRunsLabel(step))}</DotLine>}
+          {!isTeam && (step.toolRefs ?? []).length > 0 ? (
+            <span data-testid="agent-tools" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+              {(step.toolRefs ?? []).map((id) => props.names[id]).filter(Boolean).map((name) => (
+                <span key={name} title={name} style={{ display: "inline-flex", alignItems: "center", gap: 4, ...text(11.5, 400, t.text2) }}>
+                  <ToolMark tool={name} size={14} />
+                  {name}
+                </span>
+              ))}
+            </span>
+          ) : null}
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
           {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
@@ -1118,7 +1186,11 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
 }
 
 /** Work done outside AI (UI-P70): a module like a prompt's, its eyebrow saying so; no new colour. */
-function ManualCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+/**
+ * CA-12: a tile that is a module with a head (grip, number, eyebrow and title, colour, options) and a body of its own: a
+ * manual step, a tool, a file. The body is the shared one (`tileBodies`), so the maker sees what readers see.
+ */
+function PlainCard({ step, index, last, props, noun, eyebrow, body, foot }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; eyebrow: ReactNode; body: ReactNode; foot?: ReactNode }) {
   const { phone } = props;
   const selected = props.selectedId === step.id;
   const isDefault = step.title === null;
@@ -1135,9 +1207,10 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
     <div
       ref={cardRef}
       role="group"
-      aria-label={`Manual step ${step.number}: ${stepTitle(step)}`}
+      aria-label={`${noun} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
-      data-kind="manual"
+      data-kind={step.kind}
+      data-tile-id={step.id}
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
@@ -1147,29 +1220,17 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...ring(props.ringedId === step.id) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span data-testid="manual-eyebrow" style={text(11.5, 400, t.label)}>
-            Manual step
-            {step.tool ? (
-              <>
-                {" · "}
-                {markFor({ tool: step.tool }) !== null ? (
-                  <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 6 }}>
-                    <ToolMark tool={step.tool} size={14} />
-                  </span>
-                ) : null}
-                {step.tool}
-              </>
-            ) : null}
-            {" · added by maker"}
+          <span data-testid={`${step.kind}-eyebrow`} style={text(11.5, 400, t.label)}>
+            {eyebrow}
           </span>
           {renaming ? (
-            <RenameField label={`Title of manual step ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
+            <RenameField label={`Title of ${noun.toLowerCase()} ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
           ) : (
             <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
               {stepTitle(step)}
@@ -1179,7 +1240,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
         <CardColour step={step} phone={phone} inMenu />
         <Menu.Root>
           <Menu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Manual step ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`${noun} ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
           </Menu.Trigger>
           <Menu.Portal>
             <MenuContent
@@ -1205,22 +1266,49 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           </Menu.Portal>
         </Menu.Root>
       </div>
-      <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
+      <div style={{ paddingLeft: INDENT, minWidth: 0 }}>{body}</div>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
         <NestButtons step={step} phone={phone} />
-        {step.mediaId ? (
+        {foot}
+      </div>
+    </div>
+  );
+}
+
+function ManualCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return (
+    <PlainCard
+      step={step}
+      index={index}
+      last={last}
+      props={props}
+      noun="Manual step"
+      eyebrow="Manual step · added by maker"
+      body={<ManualTileBody step={step} picture={false} />}
+      foot={
+        step.mediaId ? (
           <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 }}>
             <Quiet>1 screenshot</Quiet>
             <ManualThumb mediaId={step.mediaId} />
           </span>
-        ) : null}
-      </div>
-    </div>
+        ) : null
+      }
+    />
   );
+}
+
+/** CA-12 P7: a tool as a tile: its app's mark and name, how it was connected, what it did. */
+function ToolCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Tool" eyebrow="Tool · added by maker" body={<ToolTileBody step={step} />} />;
+}
+
+/** CA-12 P8: a file as a tile: its type, name and size, and a preview. */
+function FileCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="File" eyebrow="File · added by maker" body={<FileTileBody step={step} />} />;
 }
 
 /** CA-02 P7: lines of code, as a module like a manual step's: "Code", its file name or language, its lines, and its first 6 in a mono well. */
@@ -1397,6 +1485,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         </DotLine>
       ) : null}
       {step.check ? <CheckExtraLines check={step.check} style={{ paddingLeft: INDENT }} /> : null}
+      <CheckCasesBody cases={step.check?.caseList} indent={INDENT} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
@@ -1407,11 +1496,10 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   );
 }
 
-/** CA-10: what stands in for a Result or a session while Add writes it. */
-export type PendingAdd = "result" | "session";
+/** CA-10: what stands in for a Result while Add writes it. */
+export type PendingAdd = "result";
 export const PENDING_ADD_COPY: Record<PendingAdd, { eyebrow: string; adding: string }> = {
   result: { eyebrow: "Result", adding: "Adding a result…" },
-  session: { eyebrow: "Session", adding: "Adding a session…" },
 };
 
 function PendingAddCard({ kind }: { kind: PendingAdd }) {
@@ -1446,7 +1534,7 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
           onSelect(result.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", alignItems: "center", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
+      style={{ ...moduleStyle(selected), display: "flex", alignItems: "flex-start", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
     >
       <span
         aria-hidden="true"
@@ -1457,10 +1545,13 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <Quiet>Result</Quiet>
         <span style={{ ...text(14, 500, t.text), overflowWrap: "anywhere" }}>{result.title}</span>
-        <Quiet>
-          {result.holds}
-          {result.from ? ` · from prompt ${result.from}` : ""}
-        </Quiet>
+        <ResultTileBody facts={result.facts} />
+        {resultHolds(result.facts) || result.from ? (
+          <Quiet>
+            {resultHolds(result.facts) ? result.holds : ""}
+            {result.from ? `${resultHolds(result.facts) ? " · " : ""}from prompt ${result.from}` : ""}
+          </Quiet>
+        ) : null}
       </div>
     </div>
   );
@@ -1494,11 +1585,10 @@ export interface SessionChoice {
 
 export const SESSION_MENU_COPY = {
   adding: "Adding to",
-  newSession: "New session",
 } as const;
 
-/** CA-04 P1: "Adding to Session 2 · Claude Code": where a new prompt goes. The menu lists the sessions, then New session. */
-function SessionMenu({ phone, choices, current, onCurrent, onNew }: { phone: boolean; choices: readonly SessionChoice[]; current: string | null; onCurrent?: (key: string) => void; onNew?: () => void }) {
+/** CA-04 P1: "Adding to Session 2 · Claude Code": where a new prompt goes. The menu lists the sessions (CA-12: a session is added from its own row). */
+function SessionMenu({ phone, choices, current, onCurrent }: { phone: boolean; choices: readonly SessionChoice[]; current: string | null; onCurrent?: (key: string) => void }) {
   const [open, setOpen] = useState(false);
   const chosen = choices.find((choice) => choice.key === current);
   return (
@@ -1506,7 +1596,7 @@ function SessionMenu({ phone, choices, current, onCurrent, onNew }: { phone: boo
       <Menu.Trigger asChild>
         <MenuButton
           data-testid="adding-to"
-          aria-label={`${SESSION_MENU_COPY.adding} ${chosen?.label ?? SESSION_MENU_COPY.newSession}`}
+          aria-label={`${SESSION_MENU_COPY.adding} ${chosen?.label ?? ""}`}
           label={SESSION_MENU_COPY.adding}
           value={chosen?.label ?? ""}
           open={open}
@@ -1527,12 +1617,6 @@ function SessionMenu({ phone, choices, current, onCurrent, onNew }: { phone: boo
               </Menu.RadioItem>
             ))}
           </Menu.RadioGroup>
-          <Menu.Item disabled={!onNew} onSelect={onNew} style={{ ...menuItem(Boolean(onNew), phone), gap: 6 }}>
-            <span style={{ width: 14, display: "inline-flex" }}>
-              <Glyph name="plus" size={14} />
-            </span>
-            {SESSION_MENU_COPY.newSession}
-          </Menu.Item>
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
@@ -1550,8 +1634,7 @@ function AddPrompt({
   sessionChoices,
   currentSession = null,
   onCurrentSession,
-  onNewSession,
-}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "addPromptRef" | "addPromptFlash" | "inBuild" | "sessionChoices" | "currentSession" | "onCurrentSession" | "onNewSession">) {
+}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "addPromptRef" | "addPromptFlash" | "inBuild" | "sessionChoices" | "currentSession" | "onCurrentSession">) {
   const [value, setValue] = useState("");
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
@@ -1643,7 +1726,7 @@ function AddPrompt({
     <div data-testid="add-prompt" data-lit={lit || undefined} style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5, ...ring(lit) }}>
       {sessionChoices && sessionChoices.length > 0 ? (
         <div>
-          <SessionMenu phone={phone} choices={sessionChoices} current={currentSession} onCurrent={onCurrentSession} onNew={onNewSession} />
+          <SessionMenu phone={phone} choices={sessionChoices} current={currentSession} onCurrent={onCurrentSession} />
         </div>
       ) : null}
       <textarea
@@ -1674,9 +1757,8 @@ function AddPrompt({
         </div>
       ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-        <Quiet>Typed here ·</Quiet>
-        <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {/* CA-03: Typed here has no field label, so its menu keeps the word "model" while empty. */}
+        <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
+        {/* CA-03: this row has no field label, so the model menu keeps the word "model" while empty. */}
         {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.model} />}
         <span style={{ flexGrow: 1 }} />
         <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy || redirect} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
@@ -1706,12 +1788,12 @@ interface Run {
 }
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
-function SessionRun({ head, phone: _phone, children }: { head: SourceSession | null; phone: boolean; children: ReactNode }) {
+function SessionRun({ head, phone: _phone, lit = false, children }: { head: SourceSession | null; phone: boolean; lit?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
   const colour = head?.colour;
   return (
-    <div ref={part} data-session-colour={colour} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, ...(colour ? { ...outlineFor(colour), padding: 12 } : null) }}>
+    <div ref={part} data-session-key={head?.key} data-lit={lit || undefined} data-session-colour={colour} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null) }}>
       {children}
     </div>
   );
@@ -1788,6 +1870,10 @@ export function BuildList(props: BuildListProps) {
       <StepCard key={step.id} step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
     ) : step.kind === "manual" ? (
       <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "tool" ? (
+      <ToolCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "file" ? (
+      <FileCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "code" ? (
       <CodeCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "check" ? (
@@ -1813,13 +1899,34 @@ export function BuildList(props: BuildListProps) {
      fields' type is set here, where they inherit it. */
     <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
-      {runsOf(steps, props.dividers).map((run) => (
-        <SessionRun key={run.key} head={run.head} phone={props.phone}>
-          {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} /> : null}
-          {run.head ? <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} /> : null}
-          {run.steps.map(placed)}
-        </SessionRun>
-      ))}
+      {[...runsOf(steps, props.dividers), ...(props.emptySessions ?? []).map((head): Run => ({ key: `empty:${head.key}`, head, steps: [] }))].map((run) => {
+        const key = run.head?.key ?? null;
+        const total = run.head?.prompts.length ?? 0;
+        // CA-12 P5: a long session can be collapsed to its head and first tiles; the rest are not drawn until it is opened.
+        const long = key !== null && total > COLLAPSE_OVER && Boolean(props.onToggleCollapsed);
+        const closed = long && Boolean(key && props.collapsed?.has(key));
+        const shown = closed ? run.steps.slice(0, COLLAPSED_TILES) : run.steps;
+        return (
+          <SessionRun key={run.key} head={run.head} phone={props.phone} lit={Boolean(key && props.ringedSession?.key === key)}>
+            {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} onPickApp={props.onPickApp} inBuild={props.inBuild} count={long ? total : undefined} /> : null}
+            {run.head ? <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} /> : null}
+            {shown.map(placed)}
+            {long && key ? (
+              <div>
+                <TextButton
+                  target={props.phone}
+                  underline
+                  aria-expanded={!closed}
+                  style={text(12.5, 500, t.text2)}
+                  onClick={() => props.onToggleCollapsed?.(key, !closed)}
+                >
+                  {closed ? LIST_COPY.showAll(total) : LIST_COPY.showFewer}
+                </TextButton>
+              </div>
+            ) : null}
+          </SessionRun>
+        );
+      })}
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} />
       ))}
@@ -1840,8 +1947,8 @@ export function BuildList(props: BuildListProps) {
         sessionChoices={props.sessionChoices}
         currentSession={props.currentSession}
         onCurrentSession={props.onCurrentSession}
-        onNewSession={props.onNewSession}
       />
+      {props.addSession ? <AddSessionRow phone={props.phone} inBuild={props.inBuild} {...props.addSession} /> : null}
     </div>
   );
   const refs: ListRefs = { mentioned: props.mentioned ?? NO_MENTIONS, onBack: props.onBackToPost, reveal: props.reveal ?? null, onColour: props.onColour };

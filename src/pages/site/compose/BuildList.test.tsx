@@ -145,7 +145,7 @@ describe("step cards", () => {
 describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
   const openMenu = (name: string | RegExp) => fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
   const pickTool = (query: string, row: string | RegExp) => {
-    fireEvent.click(screen.getByRole("button", { name: /^Typed here · / }));
+    fireEvent.click(screen.getByRole("button", { name: /^Prompt tool · / }));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
     fireEvent.click(screen.getByRole("option", { name: row }));
   };
@@ -506,11 +506,12 @@ describe("a manual step (UI-P70)", () => {
   };
   const card = () => screen.getByRole("group", { name: /^Manual step 3:/ });
 
-  it("is its own kind of card, headed 'Manual step · {tool} · added by maker'", () => {
+  it("is its own kind of card, headed 'Manual step · added by maker', with where it was done under it (CA-12 P10)", () => {
     manualList();
     // The colours resolve in a browser, not here: the tier-3 spec reads them.
     expect(card().getAttribute("data-kind")).toBe("manual");
-    expect(screen.getByTestId("manual-eyebrow").textContent).toBe("Manual step · Figma · added by maker");
+    expect(screen.getByTestId("manual-eyebrow").textContent).toBe("Manual step · added by maker");
+    expect(within(card()).getByTestId("manual-where").textContent).toContain("Figma");
     expect(within(card()).getByRole("heading", { level: 3 }).textContent).toBe("Manual step 3");
     expect(within(card()).getByRole("heading", { level: 3 }).getAttribute("data-default-title")).toBe("true");
   });
@@ -763,10 +764,9 @@ describe("sessions are sittings (CA-04 P1)", () => {
     { key: "typed-b", label: "Session 2 · Claude Code", tool: "Claude Code" },
   ];
 
-  it("says where a new prompt goes, and its menu lists the sessions and New session", async () => {
+  it("says where a new prompt goes, and its menu lists the sessions (a session is added from its own row)", async () => {
     const onCurrentSession = vi.fn();
-    const onNewSession = vi.fn();
-    list({ sessionChoices: choices, currentSession: "typed-b", onCurrentSession, onNewSession });
+    list({ sessionChoices: choices, currentSession: "typed-b", onCurrentSession });
     const trigger = screen.getByTestId("adding-to");
     expect(trigger.textContent).toContain("Adding to");
     expect(trigger.textContent).toContain("Session 2 · Claude Code");
@@ -777,13 +777,12 @@ describe("sessions are sittings (CA-04 P1)", () => {
     fireEvent.click(radios[0]);
     expect(onCurrentSession).toHaveBeenCalledWith("typed-legacy-1");
     fireEvent.keyDown(screen.getByTestId("adding-to"), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "New session" }));
-    expect(onNewSession).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("menuitem", { name: "New session" })).toBeNull();
   });
 
   it("puts the current session's tool in the field", () => {
     list({ sessionChoices: choices, currentSession: "typed-b" });
-    expect(within(screen.getByTestId("add-prompt")).getByRole("button", { name: /Typed here · Claude Code/ })).toBeTruthy();
+    expect(within(screen.getByTestId("add-prompt")).getByRole("button", { name: /Prompt tool · Claude Code/ })).toBeTruthy();
   });
 
   it("says nothing about sessions while the build has only the one its typed prompts make", () => {

@@ -30,13 +30,13 @@ function panel(over: Partial<SourcesPanelProps> = {}) {
 
 const sessionRows = (n: number): SourceSession[] => many(n, (at) => ({ key: `s${at}`, number: at, tool: "Claude", detail: "Opus 5.5 · 3 Mar", prompts: [] }));
 const fileRows = (n: number): SourceFile[] => many(n, (at) => ({ id: `f${at}`, name: `file-${at}.pdf`, note: "added by you" }));
-const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `l${at}`, label: "Claude", line: "1 Mar · 2 prompts", adding: false }));
+const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `l${at}`, label: "Claude", line: "1 Mar · 2 prompts", adding: false, inThisDraft: false, alsoIn: null, firstPrompt: null, date: "1 Mar", promptCount: 2 }));
 
 describe("Sources' choice budgets", () => {
   it.each([
     ["Sessions in this build", { sessions: sessionRows(9) }, 9],
     ["Files in this build", { files: fileRows(8) }, 8],
-    ["Not in a build", { library: libraryRows(10) }, 10],
+    ["Your sessions", { library: libraryRows(10) }, 10],
   ] as const)("shows at most six rows in %s, then one Show more", (name, over, total) => {
     panel({ sessions: [], files: [], library: [], ...over });
     const group = screen.getByRole("region", { name });
@@ -52,7 +52,7 @@ describe("Sources' choice budgets", () => {
   it("leaves out a group with nothing in it", () => {
     panel({ files: [], library: [] });
     expect(screen.queryByRole("region", { name: "Files in this build" })).toBeNull();
-    expect(screen.queryByRole("region", { name: "Not in a build" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Your sessions" })).toBeNull();
   });
 
   it("has no filled button and one add route per library session", () => {

@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 
-import { LOGO_KEYS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, isPickable, projectFileOf, toolFor, toolName, toolsInGroup } from "./registry";
+import { AI_TOOLS, APPS, LOGO_KEYS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, isPickable, projectFileOf, toolFor, toolName, toolsInGroup } from "./registry";
 
 const squash = (raw: string) => raw.toLowerCase().replace(/[\s._-]+/g, "");
 
 describe("tool registry", () => {
-  it("has 45 tools with unique ids", () => {
-    expect(TOOLS).toHaveLength(45);
+  it("has 43 AI tools and 24 apps (6 are both), 61 entries with unique ids (CA-12 P13)", () => {
+    expect(AI_TOOLS).toHaveLength(43);
+    expect(APPS).toHaveLength(24);
+    expect(TOOLS).toHaveLength(61);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
   });
 
@@ -25,7 +27,7 @@ describe("tool registry", () => {
   it("uses only exported logo keys, and only known groups", () => {
     for (const tool of TOOLS) {
       if (tool.logo !== null) expect(LOGO_KEYS, tool.id).toContain(tool.logo);
-      expect(TOOL_GROUPS.map((g) => g.key), tool.id).toContain(tool.group);
+      expect([...TOOL_GROUPS.map((g) => g.key), "services"], tool.id).toContain(tool.group);
     }
   });
 
@@ -146,7 +148,7 @@ describe("projectFileOf", () => {
 describe("tools that read content their maker doesn't control (CA-03 P7)", () => {
   it("are exactly these, so a change to the list is deliberate", () => {
     expect(TOOLS.filter((tool) => tool.readsOutside).map((tool) => tool.id).sort()).toEqual(
-      ["gmail", "notion", "perplexity", "chatgpt", "gemini", "claude", "grok", "manus", "openclaw", "hermes-agent", "muse", "n8n", "zapier", "make", "gemini-notebook"].sort(),
+      ["gmail", "notion", "perplexity", "chatgpt", "gemini", "claude", "grok", "manus", "openclaw", "hermes-agent", "muse", "n8n", "zapier", "make", "gemini-notebook", "github", "gitlab", "slack", "google-drive", "linear", "jira"].sort(),
     );
   });
 });

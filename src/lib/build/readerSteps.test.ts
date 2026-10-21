@@ -187,7 +187,7 @@ describe("readerSteps · B1 the bakery", () => {
       Build the homepage. Follow CLAUDE.md.
       \`\`\`
 
-      ## Step 5 · Prompt 5
+      ## Step 5 · Deploy it to Vercel.
 
       Send in the same chat as step 4.
 
@@ -313,7 +313,7 @@ describe("readerSteps · B4 and the edges", () => {
   it("a manual step reads 'By hand in {tool}' with nothing to copy", () => {
     const tree = [node("m1", { position: 1, type: "manual_step", payload: { tool: "Figma", text: "Draw the logo", media_id: "m-x" } })];
     const [step] = readerSteps(tree, null);
-    expect(step.manual).toEqual({ headline: "By hand in Figma", line: "Draw the logo", mediaId: "m-x" });
+    expect(step.manual).toEqual({ headline: "By hand in Figma", line: "Draw the logo", lines: ["Draw the logo"], mediaId: "m-x" });
     expect(step.chat).toBeNull();
     expect(stepsMarkdown({ title: "T" }, [step])).toContain("By hand in Figma: Draw the logo.");
   });

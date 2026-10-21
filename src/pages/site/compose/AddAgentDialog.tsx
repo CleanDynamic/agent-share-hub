@@ -27,14 +27,14 @@ import { Button } from "@/components/brand/Button";
 import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { TITLE_MAX, type AgentModel } from "@/lib/build/graph";
+import { TITLE_MAX, WHEN_DETAIL_MAX, type AgentModel, type Runs } from "@/lib/build/graph";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { startingModel } from "@/lib/tools/modelRules";
 import { t } from "@/lib/theme/tokens";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { Field } from "./composeControls";
-import { dialogTitle, text, typedField, windowStyle } from "./refinedStyles";
+import { dialogTitle, text, typedArea, typedField, windowStyle } from "./refinedStyles";
 
 export const AGENT_DIALOG_COPY = {
   title: "Add an agent or a team",
@@ -47,7 +47,19 @@ export const AGENT_DIALOG_COPY = {
   teamsMissing: "Teams need the Deploy queue item from UI-P61.",
   add: "Add",
   cancel: "Cancel",
+  /** CA-12 P11. */
+  instructions: "Instructions",
+  instructionsPlaceholder: "What this agent is told to do",
+  starts: "How does it start?",
+  startsDetail: "When, in a few words",
 } as const;
+
+/** CA-12 P11: how an agent starts, in the words the dialog asks it. */
+export const START_CHOICES: readonly { value: "ask" | "schedule" | "event"; label: string }[] = [
+  { value: "ask", label: "When I ask" },
+  { value: "schedule", label: "On a schedule" },
+  { value: "event", label: "When something happens" },
+];
 
 export interface AddAgentInput {
   kind: "agent" | "team";
@@ -64,6 +76,8 @@ export interface AddAgentInput {
   tools: string[];
   /** CA-03 P6: what it remembers; only when it says. */
   memory?: string;
+  /** CA-12 P11: how it starts; absent for "When I ask". */
+  runs?: Runs;
 }
 
 /** CA-02 P4: what "Add as an agent" opens the dialog with. */
@@ -108,6 +122,9 @@ function Form({
   const [kind, setKind] = useState<"agent" | "team">("agent");
   const [name, setName] = useState("");
   const [setup, setSetup] = useState<AgentSetupValue>(() => firstSetup(seed));
+  const [instructions, setInstructions] = useState(seed?.instructions ?? "");
+  const [start, setStart] = useState<"ask" | "schedule" | "event">("ask");
+  const [startDetail, setStartDetail] = useState("");
   const uid = useId();
   const ready = setupReady(setup);
 
@@ -123,7 +140,8 @@ function Form({
       ...savedModels(setup),
       harness: setup.harness,
       tools: setup.tools,
-      ...(seed?.instructions ? { instructions: seed.instructions } : null),
+      ...(instructions.trim() ? { instructions } : null),
+      ...(start !== "ask" ? { runs: { how: start, ...(startDetail.trim() ? { detail: startDetail.trim() } : null) } as Runs } : null),
       ...(setup.memory?.trim() ? { memory: setup.memory.trim() } : null),
     });
   };
@@ -165,7 +183,40 @@ function Form({
         />
       </Field>
 
-      <AgentSetupFields value={setup} onChange={setSetup} phone={phone} inBuild={inBuild} />
+      <Field id={`${uid}-instructions`} label={AGENT_DIALOG_COPY.instructions}>
+        <textarea
+          id={`${uid}-instructions`}
+          rows={6}
+          value={instructions}
+          placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder}
+          onChange={(event) => setInstructions(event.target.value)}
+          style={typedArea(phone, { resize: "vertical" })}
+        />
+      </Field>
+
+      <AgentSetupFields
+        dialog
+        value={setup}
+        onChange={setSetup}
+        phone={phone}
+        inBuild={inBuild}
+        between={
+          <Field id={`${uid}-starts`} label={AGENT_DIALOG_COPY.starts} group>
+            <Segmented
+              label={AGENT_DIALOG_COPY.starts}
+              semantics="radio"
+              size={phone ? 50 : 30}
+              fullWidth
+              value={start}
+              onChange={(next) => setStart(next)}
+              items={START_CHOICES.map((choice) => ({ value: choice.value, label: choice.label }))}
+            />
+            {start !== "ask" ? (
+              <input type="text" aria-label={AGENT_DIALOG_COPY.startsDetail} value={startDetail} maxLength={WHEN_DETAIL_MAX} placeholder={AGENT_DIALOG_COPY.startsDetail} onChange={(event) => setStartDetail(event.target.value)} style={typedField(phone)} />
+            ) : null}
+          </Field>
+        }
+      />
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
         <Button variant="secondary" size={phone ? 44 : 36} onClick={onCancel}>

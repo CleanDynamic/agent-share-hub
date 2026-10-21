@@ -23,7 +23,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { sessionsMetaOf, type Making } from "@/lib/build/making";
 import { runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { setupItemsOf } from "@/lib/build/setup";
-import { buildSteps, FILE_TYPE, madeFilesOf, nestRefusal, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { buildSteps, FILE_TYPE, madeFilesOf, nestRefusal, RESULT_TYPE, resultFactsOf, resultHoldsWord, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import type { MapPiece, MapResult } from "@/lib/build/mapLayout";
 import type { NodeTree, NodeType } from "@/lib/build/types";
 import type { BuildListProps } from "@/pages/site/compose/BuildList";
@@ -581,7 +581,8 @@ function listFacts(tree: readonly NodeTree[], steps: readonly Step[]) {
       results.push({
         id: entry.id,
         title: strOf(entry.payload, "summary") ?? strOf(entry.payload, "url") ?? "Result",
-        holds: strOf(entry.payload, "kind") === "trained-model" ? "a trained model" : strOf(entry.payload, "media_id") ? "a picture" : strOf(entry.payload, "url") ? "a link" : "text",
+        holds: resultHoldsWord(resultFactsOf(entry)),
+        facts: resultFactsOf(entry),
         from: outputs[0] ? (numberOf.get(outputs[0].node_id) ?? null) : null,
       });
     }

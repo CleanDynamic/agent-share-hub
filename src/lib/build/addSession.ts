@@ -1,0 +1,269 @@
+// CA-12 P5: adding a session to a draft.
+//
+// A SESSION IS A GROUP OF TILES. Adding one writes every prompt of it as a placed, top-level prompt tile, in order, at the
+// end of the draft, and records the session in `build_sessions` (its place in the order, and whether it starts collapsed).
+// The import is NOT marked claimed: it stays the maker's, and can be in any number of drafts, each with its own copy.
+//
+// NOTHING MORE OF THE CONVERSATION IS COPIED. A tile is the prompt's text and the model, with the same source_ref a prompt
+// picked one at a time has (addSessionPrompt): the answers and the rest of the verbatim session stay in the import, and no
+// event is written, so nothing reaches the public timeline that the maker did not choose.
+//
+// ONE GO. supabase-js has no transaction, so the tiles are written in batches and, if anything after them fails, taken away
+// again: a failure leaves nothing half-added. The session's row is written last, once the tiles are in.
+//
+// IF SESSION 1 IS STILL EMPTY (a session made here, no app, no tile) the added session replaces it and becomes Session 1.
+
+import type { Json } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
+import { modelLabel } from "@/lib/models/registry";
+import { COLLAPSE_OVER, deleteBuildSession, insertBuildSession, isMissingTable, listBuildSessionRows, nextSessionPosition, type BuildSessionRow } from "./buildSessions";
+import { createBuild, getBuildHeader } from "./builds";
+import { REPLY_MAX } from "./composePrompts";
+import { nextTopPosition } from "./composeCover";
+import { loadImportProposal } from "./imports";
+import type { TranscriptProposal, TranscriptSourceRef } from "./intake";
+import { isTypedSession, refreshMakingStats, sessionsMetaOf, setSessionMeta } from "./making";
+import { getNodeTree } from "./nodes";
+import { recordCreatedVia } from "./provenance";
+import { buildLayerError, type BuildNodeInsert, type NodeTree } from "./types";
+
+/** Tiles written in one request. */
+export const TILE_BATCH = 100;
+
+const UNTITLED = "Untitled build";
+
+export type AddTarget = { kind: "new" } | { kind: "existing"; buildId: string };
+
+export interface AddSessionResult {
+  buildId: string;
+  /** The key the session has in the draft: the import's id. */
+  sessionKey: string;
+  /** How many tiles were written. */
+  tiles: number;
+  /** The session started collapsed. */
+  collapsed: boolean;
+  /** The key of the empty Session 1 it replaced, when it did. */
+  replaced: string | null;
+}
+
+export interface PromptTile {
+  text: string;
+  /** CA-12 P12: what came back, as the parser stored it on the event (`response_summary`: the first 240 characters of the next turn). */
+  reply: string | null;
+  sourceRef: TranscriptSourceRef;
+}
+
+/** The prompts of a proposal, in order: one per user turn. */
+export function promptsOfProposal(proposal: TranscriptProposal): PromptTile[] {
+  return proposal.events
+    .filter((event) => event.kind === "prompt")
+    .sort((a, b) => a.ordinal - b.ordinal)
+    .map((event) => ({ text: event.payload.text, reply: event.payload.response_summary?.trim() || null, sourceRef: event.source_ref }));
+}
+
+/** A session with more prompts than `COLLAPSE_OVER` is added collapsed. */
+export const startsCollapsed = (promptCount: number): boolean => promptCount > COLLAPSE_OVER;
+
+const hasSession = (tree: readonly NodeTree[], key: string): boolean =>
+  tree.some((node) => {
+    const payload = (node.payload ?? {}) as { session?: unknown };
+    const ref = (node.source_ref ?? {}) as { import_session_id?: unknown };
+    return payload.session === key || ref.import_session_id === key || hasSession(node.children ?? [], key);
+  });
+
+/**
+ * The empty Session 1 a session replaces: the first of the draft's sessions, when it was made here, has no app and holds no
+ * tile. Null otherwise (including a draft with no rows: an old draft is never touched).
+ */
+export function emptyFirstSession(
+  rows: readonly Pick<BuildSessionRow, "sessionKey" | "position">[],
+  making: unknown,
+  tree: readonly NodeTree[],
+): string | null {
+  const first = [...rows].sort((a, b) => a.position - b.position)[0];
+  if (!first || !isTypedSession(first.sessionKey)) return null;
+  const meta = sessionsMetaOf(making)[first.sessionKey];
+  if (meta?.tool || hasSession(tree, first.sessionKey)) return null;
+  return first.sessionKey;
+}
+
+/** Where the added session goes: the replaced one's place, else the end. */
+export function placeSession(rows: readonly Pick<BuildSessionRow, "sessionKey" | "position">[], replaced: string | null): number {
+  const old = replaced ? rows.find((row) => row.sessionKey === replaced) : undefined;
+  return old ? old.position : nextSessionPosition(rows);
+}
+
+/** The tiles' rows: a prompt per row, placed one after another from `from`. */
+export function tileRows(buildId: string, importId: string, model: string | null, prompts: readonly PromptTile[], from: number): BuildNodeInsert[] {
+  return prompts.map((prompt, at) => ({
+    build_id: buildId,
+    parent_id: null,
+    position: from + at,
+    type: "prompt",
+    title: null,
+    payload: { text: prompt.text, ...(model ? { model } : null), ...(prompt.reply ? { reply: prompt.reply.slice(0, REPLY_MAX) } : null) } as Json,
+    source_ref: { ...prompt.sourceRef, import_session_id: importId } as unknown as Json,
+  }));
+}
+
+interface ImportRow {
+  id: string;
+  status: string;
+  client: string | null;
+  model: string | null;
+}
+
+async function readImport(importId: string): Promise<ImportRow | null> {
+  const { data, error } = await (supabase as unknown as {
+    from: (table: string) => { select: (columns: string) => { eq: (column: string, value: string) => { maybeSingle: () => PromiseLike<{ data: ImportRow | null; error: unknown }> } } };
+  })
+    .from("import_sessions")
+    .select("id, status, client, model")
+    .eq("id", importId)
+    .maybeSingle();
+  if (error) throw buildLayerError("addSessionToBuild", error);
+  return data;
+}
+
+/** The draft an add is about to write into: it must exist, be the signed-in maker's own, and still be a draft. */
+async function verifyDraft(buildId: string): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  const maker = data.session?.user?.id;
+  const build = await getBuildHeader(buildId);
+  if (!build || !maker || build.creator_id !== maker) throw buildLayerError("addSessionToBuild", new Error("That draft isn't available."));
+  if (build.status !== "draft") throw buildLayerError("addSessionToBuild", new Error("That build is already published."));
+  return build.id;
+}
+
+const isUniqueViolation = (error: unknown): boolean => Boolean(error) && typeof error === "object" && (error as { code?: unknown }).code === "23505";
+
+async function insertTiles(rows: BuildNodeInsert[]): Promise<string[]> {
+  const ids: string[] = [];
+  for (let at = 0; at < rows.length; at += TILE_BATCH) {
+    const { data, error } = await supabase.from("build_nodes").insert(rows.slice(at, at + TILE_BATCH)).select("id");
+    if (error) {
+      await removeTiles(ids);
+      throw error;
+    }
+    for (const row of data ?? []) ids.push(row.id);
+  }
+  return ids;
+}
+
+async function removeTiles(ids: readonly string[]): Promise<void> {
+  for (let at = 0; at < ids.length; at += TILE_BATCH) {
+    const { error } = await supabase.from("build_nodes").delete().in("id", ids.slice(at, at + TILE_BATCH));
+    if (error) console.error("[addSession] tiles not taken back", error);
+  }
+}
+
+/**
+ * Add a session to a draft (or to a new one), every prompt a tile. Refuses a session that is already in the draft and one
+ * that never finished arriving. Resolves with where it went.
+ */
+export async function addSessionToBuild(importId: string, target: AddTarget): Promise<AddSessionResult> {
+  const row = await readImport(importId);
+  if (!row) throw buildLayerError("addSessionToBuild", new Error("That session is no longer available."));
+  if (!["parsed", "claimed", "expired"].includes(row.status)) throw buildLayerError("addSessionToBuild", new Error("That session hasn't finished arriving."));
+
+  const proposal = await loadImportProposal(importId);
+  const prompts = promptsOfProposal(proposal);
+  const model = row.model?.trim() ? modelLabel(row.model) : null;
+
+  const isNew = target.kind === "new";
+  const buildId = isNew
+    ? (await createBuild({ title: proposal.summary.proposed_title?.value?.trim() || UNTITLED })).id
+    : await verifyDraft(target.buildId);
+
+  const written: string[] = [];
+  let oldRow: BuildSessionRow | undefined;
+  let oldMeta: ReturnType<typeof sessionsMetaOf>[string] | undefined;
+  let marked = false;
+  try {
+    const [rows, tree, making] = await Promise.all([
+      listBuildSessionRows(buildId),
+      isNew ? Promise.resolve([] as NodeTree[]) : getNodeTree(buildId),
+      isNew ? Promise.resolve({}) : readMaking(buildId),
+    ]);
+    if (rows.some((existing) => existing.sessionKey === importId) || hasSession(tree, importId)) {
+      throw buildLayerError("addSessionToBuild", new Error("That session is already in this draft."));
+    }
+    const replaced = emptyFirstSession(rows, making, tree);
+    const place = placeSession(rows, replaced);
+
+    // The tiles, at the end of the draft. A second writer taking the position first is read again and tried once more.
+    let ids: string[];
+    try {
+      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(tree)));
+    } catch (cause) {
+      if (!isUniqueViolation(cause)) throw buildLayerError("addSessionToBuild (tiles)", cause);
+      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(await getNodeTree(buildId)))).catch((again) => {
+        throw buildLayerError("addSessionToBuild (tiles)", again);
+      });
+    }
+    written.push(...ids);
+
+    // Session 1 is replaced, not kept beside it.
+    if (replaced) {
+      oldRow = rows.find((existing) => existing.sessionKey === replaced);
+      oldMeta = sessionsMetaOf(making)[replaced];
+      await deleteBuildSession(buildId, replaced);
+      await setSessionMeta(buildId, replaced, null);
+    }
+    // CA-12: an entry in sessions_meta marks a session added this way, so its head is drawn even when it is the only one.
+    if (!sessionsMetaOf(making)[importId]) {
+      await setSessionMeta(buildId, importId, { tool: null, date: "" });
+      marked = true;
+    }
+    const collapsed = startsCollapsed(prompts.length);
+    try {
+      await insertBuildSession({ buildId, sessionKey: importId, importId, position: place, collapsed });
+    } catch (cause) {
+      // The table is not applied yet: the tiles alone make the session (the group is read from them), without an order.
+      if (!isMissingTable((cause as { cause?: unknown } | null)?.cause ?? cause)) throw cause;
+      console.warn("[addSession] build_sessions is not applied; the session is in the draft by its tiles");
+    }
+
+    if (isNew) {
+      await recordCreatedVia(buildId, { destination: "new", importId, client: row.client, readerId: null });
+    }
+    await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
+    return { buildId, sessionKey: importId, tiles: prompts.length, collapsed, replaced };
+  } catch (cause) {
+    // Leave nothing half-added: the tiles go, and an empty Session 1 that was taken down comes back.
+    await removeTiles(written);
+    if (marked) await setSessionMeta(buildId, importId, null).catch(() => undefined);
+    if (oldRow) {
+      await insertBuildSession({ ...oldRow, collapsed: oldRow.collapsed }).catch(() => undefined);
+      if (oldMeta) await setSessionMeta(buildId, oldRow.sessionKey, oldMeta).catch(() => undefined);
+    }
+    throw cause;
+  }
+}
+
+async function readMaking(buildId: string): Promise<unknown> {
+  const { data, error } = await (supabase as unknown as {
+    from: (table: string) => { select: (columns: string) => { eq: (column: string, value: string) => { maybeSingle: () => PromiseLike<{ data: { making: unknown } | null; error: unknown }> } } };
+  })
+    .from("builds")
+    .select("making")
+    .eq("id", buildId)
+    .maybeSingle();
+  if (error) throw buildLayerError("addSessionToBuild", error);
+  return data?.making ?? {};
+}
+
+/**
+ * Link a session to a draft without writing its tiles: one of its prompts was added by hand, so the session belongs here
+ * from now on (its model and tool join Made with). Nothing happens when it is already linked.
+ */
+export async function linkSessionToBuild(importId: string, buildId: string): Promise<void> {
+  const rows = await listBuildSessionRows(buildId);
+  if (rows.some((existing) => existing.sessionKey === importId)) return;
+  try {
+    await insertBuildSession({ buildId, sessionKey: importId, importId, position: nextSessionPosition(rows) });
+  } catch (cause) {
+    if (!isMissingTable((cause as { cause?: unknown } | null)?.cause ?? cause)) throw cause;
+  }
+  await refreshMakingStats(buildId);
+}

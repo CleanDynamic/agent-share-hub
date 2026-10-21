@@ -4,7 +4,7 @@ import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { SessionSummary } from "@/lib/build/sessions";
 import type { BuildNode } from "@/lib/build/types";
 
-import { isChatExport, looksLikeChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
+import { alsoInLine, isChatExport, looksLikeChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources } from "./sourcesModel";
 
 const step = (over: Partial<Step>): Step => ({
   id: "n1", kind: "prompt", number: "1", title: null, defaultTitle: "Prompt 1", text: "x", words: 1, model: null, sessionId: null, tool: null, runs: null, uses: [], children: [], ...over,
@@ -22,9 +22,9 @@ describe("sourceSessions", () => {
     expect(rows[0].prompts.map((p) => [p.number, p.title, p.isDefault])).toEqual([["1", "Prompt 1", true], ["2", "Copy", false]]);
   });
 
-  it("draws prompts written here as one 'typed here' session", () => {
+  it("draws prompts written here as one session with no app chosen", () => {
     const rows = sourceSessions([group({ sessionId: null, tool: null, model: null, startedAt: "typed here", stepNumbers: ["1"] })], [step({})]);
-    expect(rows[0]).toMatchObject({ key: "typed-1", tool: "Unknown tool", detail: "typed here" });
+    expect(rows[0]).toMatchObject({ key: "typed-1", tool: "No app chosen", detail: "" });
     expect(rows[0].prompts).toHaveLength(1);
   });
 
@@ -42,9 +42,9 @@ describe("sourceSessions — a session given its tool (TF-13)", () => {
     expect(rows[0]).toMatchObject({ tool: "Perplexity", pickTool: { value: "perplexity" } });
   });
 
-  it("reads 'Unknown tool' until one is chosen, and offers the picker", () => {
+  it("reads 'No app chosen' until one is chosen, and offers the picker", () => {
     const rows = sourceSessions([group({ tool: null })], steps, [summary({ id: "a", client: "web" })]);
-    expect(rows[0]).toMatchObject({ tool: "Unknown tool", pickTool: { value: null } });
+    expect(rows[0]).toMatchObject({ tool: "No app chosen", pickTool: { value: null } });
   });
 
   it("offers no picker when the client names the tool", () => {
@@ -78,9 +78,53 @@ describe("sourceFiles and librarySources", () => {
     expect(rows.map((r) => r.note)).toEqual(["made in step 2", "added by you"]);
   });
 
-  it("lists only parsed sessions that are in no build", () => {
-    const rows = librarySources([summary({ id: "1" }), summary({ id: "2", buildId: "b" }), summary({ id: "3", status: "claimed" })], new Set(["1"]), Date.now());
-    expect(rows).toEqual([{ id: "1", label: "Opus 5.5", line: "1 Mar · 2 prompts", adding: true }]);
+  it("lists every finished session: waiting, in this draft, in other drafts and expired, none hidden", () => {
+    const rows = librarySources(
+      [
+        summary({ id: "1", status: "parsed", draftIds: [] }),
+        summary({ id: "2", status: "claimed", buildId: "b", draftIds: ["b"] }),
+        summary({ id: "3", status: "expired", draftIds: ["x", "y"] }),
+        summary({ id: "4", status: "claimed", buildId: "other", draftIds: ["other"] }),
+      ],
+      new Set(["1"]),
+      Date.now(),
+      "b",
+    );
+    expect(rows.map((r) => [r.id, r.inThisDraft, r.alsoIn, r.adding])).toEqual([
+      ["1", false, null, true],
+      ["2", true, null, false],
+      ["3", false, "Also in 2 drafts", false],
+      ["4", false, "Also in 1 draft", false],
+    ]);
+    expect(rows[0]).toMatchObject({ label: "Opus 5.5", line: "1 Mar · 2 prompts" });
+    expect(JSON.stringify(rows)).not.toMatch(/expired/i);
+  });
+
+  it("counts a session claimed before CA-12 as in the draft it names, when the read gave no draft list", () => {
+    const rows = librarySources([summary({ id: "1", status: "claimed", buildId: "b" })], new Set(), Date.now(), "b");
+    expect(rows[0]).toMatchObject({ inThisDraft: true, alsoIn: null });
+  });
+
+  it("says where else a session is, not counting this draft", () => {
+    expect(alsoInLine(["b"], "b")).toBeNull();
+    expect(alsoInLine(["b", "c"], "b")).toBe("Also in 1 draft");
+    expect(alsoInLine(["b", "c", "d"], "b")).toBe("Also in 2 drafts");
+    expect(alsoInLine(["c"], null)).toBe("Also in 1 draft");
+  });
+
+  it("splits imports that are not sessions yet into Still arriving and Didn't finish", () => {
+    const groups = unfinishedSources(
+      [
+        { id: "a", status: "open", client: "claude", createdAt: "2026-03-04T10:00:00Z" },
+        { id: "b", status: "assembling", client: null, createdAt: "2026-03-05T10:00:00Z" },
+        { id: "c", status: "failed", client: "chatgpt", createdAt: "2026-03-06T10:00:00Z", reason: "It couldn't be read." },
+        { id: "d", status: "duplicate", client: null, createdAt: "2026-03-07T10:00:00Z", reason: "You had already sent this one." },
+      ],
+      Date.now(),
+    );
+    expect(groups.arriving.map((i) => [i.id, i.line])).toEqual([["a", "Sent 4 Mar"], ["b", "Sent 5 Mar"]]);
+    expect(groups.didntFinish.map((i) => [i.id, i.line])).toEqual([["c", "It couldn't be read."], ["d", "You had already sent this one."]]);
+    expect(unfinishedSources([], Date.now())).toEqual({ arriving: [], didntFinish: [] });
   });
 });
 
@@ -126,7 +170,7 @@ describe("projectFileReminders", () => {
   });
 
   it("says nothing for a chat tool, an unknown tool, or a tool with its file in the build", () => {
-    expect(projectFileReminders(tools("ChatGPT", "Unknown tool"), [])).toEqual([]);
+    expect(projectFileReminders(tools("ChatGPT", "No app chosen"), [])).toEqual([]);
     expect(projectFileReminders(tools("Claude Code"), files("docs/claude.md"))).toEqual([]);
     // SKILL.md is a second file: it does not stand in for the first.
     expect(projectFileReminders(tools("Claude Code"), files("SKILL.md"))).toHaveLength(1);

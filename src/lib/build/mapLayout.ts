@@ -313,7 +313,7 @@ export function layoutMap(
   const lanes: MapLane[] = groups.map((group) => ({
     key: groupKey(group),
     kind: groupKind(group) === "legacy" ? "typed" : "session",
-    label: groupKind(group) === "legacy" ? "Typed here" : `Session ${group.number}`,
+    label: groupKind(group) === "legacy" ? "Written here" : `Session ${group.number}`,
     sub: [group.tool, group.model, sets.has(groupKey(group)) ? "at the same time" : null].filter(Boolean).join(" · "),
     dashed: false,
     y: 0,
@@ -349,7 +349,7 @@ export function layoutMap(
       lane = next ? laneOfNumber.get(next.number) : undefined;
     }
     if (lane === undefined) {
-      lanes.push({ key: "typed-0", kind: "typed", label: "Typed here", sub: "", dashed: false, y: 0, h: 0 });
+      lanes.push({ key: "typed-0", kind: "typed", label: "Written here", sub: "", dashed: false, y: 0, h: 0 });
       lane = lanes.length - 1;
     }
     stepLane.push(lane);

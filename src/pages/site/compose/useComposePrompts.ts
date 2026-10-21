@@ -33,6 +33,7 @@ import {
   promptText,
   savePromptText,
   setPromptChanges,
+  setPromptReply,
   setPromptModel,
 } from "@/lib/build/composePrompts";
 import {
@@ -47,6 +48,7 @@ import {
   addTeam,
   addMadeFile as writeMadeFile,
   addTool,
+  addToolTile as addToolStep,
   addUse,
   dismissSuggestion,
   madeFileNamesOf,
@@ -71,16 +73,22 @@ import {
   dismissSentWith,
   setToolConnection,
   type ToolConnection,
+  type ManualWhere,
   type ToolRunsAt,
   toolNodeFor,
   usesOf,
   type AgentModel,
+  setCheckCases,
+  addResultTile,
+  type ResultInput,
+  type CheckCase,
   type CheckInput,
   type Runs,
   type Step,
   type CheckRun,
   type Use,
 } from "@/lib/build/graph";
+import { keptCases } from "@/pages/site/compose/CheckCasesField";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
 import type { CodeSuggestion } from "@/lib/build/sentWithSuggest";
 
@@ -146,6 +154,8 @@ export interface AgentInput extends AgentSetupInput {
   kind: "agent" | "team";
   name: string | null;
   instructions?: string;
+  /** CA-12 P11: how it starts; absent for "When I ask". */
+  runs?: Runs;
   /** CA-04 P1: the session it was added to. */
   session?: string | null;
 }
@@ -178,6 +188,8 @@ export interface ComposePrompts {
   setCheckRuns: (id: string, runs: readonly CheckRun[]) => void;
   /** CA-05 P1: say which words of a prompt a reader changes. */
   setChanges: (id: string, ranges: readonly ChangeRange[]) => void;
+  setReply: (id: string, reply: string) => void;
+  setCheckCases: (id: string, cases: readonly CheckCase[]) => void;
   /** UI-P65: take a suggested input. */
   accept: (id: string, use: Use, steps: readonly Step[]) => void;
   /** UI-P65: keep a suggestion from coming back; `key` is "<kind>:<node_id>". */
@@ -199,7 +211,11 @@ export interface ComposePrompts {
   /** TF-08: take a made file out of the build and out of the steps that use it. */
   removeMadeFile: (fileId: string) => void;
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). CA-02 P6: a tool comes named. */
+  /** CA-12 P9: a result that holds the thing itself. Resolves its id, or null if it failed. */
+  addResultOf: (input: ResultInput) => Promise<string | null>;
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
+  /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
+  addToolTile: (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
   /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
@@ -211,7 +227,7 @@ export interface ComposePrompts {
   /** UI-P69: an agent's instructions (its system prompt). */
   setInstructions: (agentId: string, text: string) => void;
   /** UI-P70: add a manual step, with its picture if given, straight after step `afterId` (the end when null). Resolves its id, or null if it failed. */
-  addManual: (input: { tool: string; text: string; file: File | null; afterId: string | null; session?: string | null }) => Promise<string | null>;
+  addManual: (input: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null }) => Promise<string | null>;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
   setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
@@ -554,6 +570,10 @@ export function useComposePrompts({
   const rename = (id: string, title: string) => void writeStep(id, "Couldn't rename that. Try again.", (node) => setStepTitle(node, title));
   const setChanges = (id: string, ranges: readonly ChangeRange[]) =>
     void writeStep(id, "Couldn't save those words. Try again.", (node) => setPromptChanges(node, ranges));
+  const setReply = (id: string, reply: string) =>
+    void writeStep(id, "Couldn't save that. Try again.", (node) => setPromptReply(node, reply.trim() || null));
+  const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
+    void writeStep(id, "Couldn't save those cases. Try again.", (node) => setCheckCases(node, keptCases(cases)));
   const setAgentNotesOf = (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) =>
     void writeStep(id, "Couldn't save that. Try again.", (node) => setAgentNotes(node, notes));
   const setModelRunOf = (id: string, run: ModelRun | null) =>
@@ -623,6 +643,32 @@ export function useComposePrompts({
         return null;
       });
 
+  const addResultOf = (input: ResultInput) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await addResultTile(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that result. Try again.")(cause);
+        return null;
+      });
+
+  const addToolTile = (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await addToolStep(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that tool. Try again.")(cause);
+        return null;
+      });
+
   /** The build's integration node for each tool, made when there is none yet (CA-02 P5). Runs inside the queue. */
   const toolRefsFor = async (build: string, tools: readonly string[]): Promise<string[]> => {
     const refs: string[] = [];
@@ -639,7 +685,7 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, session }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
@@ -651,6 +697,7 @@ export function useComposePrompts({
           ...(models && models.length > 1 ? { models } : null),
           ...(toolRefs.length ? { toolRefs } : null),
           ...(memory?.trim() ? { memory } : null),
+          ...(runs ? { runs } : null),
           ...(session ? { session } : null),
         };
         if (kind === "agent") {
@@ -708,16 +755,17 @@ export function useComposePrompts({
   const setInstructionsOf = (agentId: string, text: string) =>
     void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
 
-  const addManual = ({ tool, text, file, afterId, session }: { tool: string; text: string; file: File | null; afterId: string | null; session?: string | null }) =>
+  const addManual = ({ tool, text, where, lines, file, afterId, session }: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null }) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         let mediaId: string | undefined;
         if (file) mediaId = (await uploadMedia({ buildId: build, file })).id;
         // `addManualStep` places it last; then it moves straight after the selected step.
-        const created = await addManualStep(build, nodes.current(), { tool, text, media_id: mediaId, session });
+        const created = await addManualStep(build, nodes.current(), { tool, text, where, lines, media_id: mediaId, session });
         nodes.record(created.id, created);
-        noteTool(build, tool);
+        if (where?.kind === "app" && where.name) noteTool(build, where.name);
+        else if (tool) noteTool(build, tool);
         if (afterId) {
           for (const step of await placeStepAfter(build, nodes.current(), created.id, afterId)) {
             const node = findTop(nodes.current(), step.id);
@@ -850,5 +898,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setCheckRuns: setCheckRunsOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

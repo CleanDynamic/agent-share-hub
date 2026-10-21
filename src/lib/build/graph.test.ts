@@ -20,6 +20,7 @@ import {
   addAgentPrompt,
   addCode,
   addManualStep,
+  addToolTile,
   addTeam,
   setAgentSetup,
   setInstructions,
@@ -46,6 +47,8 @@ import {
   untilDetail,
   untilParts,
   sessionGroups,
+  defaultTitleFor,
+  siteNameOf,
   shownGroups,
   setNodeFields,
   setRuns,
@@ -100,8 +103,8 @@ describe("buildSteps", () => {
       node({ id: "b", position: 4, type: "manual_step", payload: { tool: "Figma", text: "Exported" } }),
     ]);
     expect(steps.map((s) => [s.id, s.number, s.kind, s.defaultTitle])).toEqual([
-      ["a", "1", "prompt", "Prompt 1"],
-      ["b", "2", "manual", "Manual step 2"],
+      ["a", "1", "prompt", "one two three"],
+      ["b", "2", "manual", "Exported"],
     ]);
     expect(steps[0]).toMatchObject({ text: "one two three", words: 3, title: null });
   });
@@ -117,11 +120,11 @@ describe("buildSteps", () => {
       ],
     });
     const [step] = buildSteps([agent]);
-    expect(step).toMatchObject({ kind: "agent", number: "1", defaultTitle: "Agent 1", model: "claude-sonnet-5-5" });
+    expect(step).toMatchObject({ kind: "agent", number: "1", defaultTitle: "Be brief now", model: "claude-sonnet-5-5" });
     expect(step.children.map((c) => [c.id, c.number, c.kind, stepTitle(c), c.text])).toEqual([
       ["ag:instructions", "1.1", "prompt", "Instructions", "Be brief now"],
       ["p1", "1.2", "prompt", "Kick off", "first"],
-      ["p2", "1.3", "prompt", "Prompt 1.3", "second"],
+      ["p2", "1.3", "prompt", "second", "second"],
     ]);
   });
 
@@ -141,12 +144,12 @@ describe("buildSteps", () => {
       node({ id: "tm", type: "team", position: 2, payload: {}, children: agents }),
     ]);
     expect(lead.number).toBe("1");
-    expect(team).toMatchObject({ kind: "team", number: "2", defaultTitle: "Team 2" });
+    expect(team).toMatchObject({ kind: "team", number: "2", defaultTitle: "Team" });
     expect(team.children.map((c) => c.number)).toEqual(["2.1", "2.2", "2.3", "2.4"]);
     expect(team.children[0]).toMatchObject({ kind: "agent", text: "Agent 1 brief" });
     expect(team.children[0].children.map((c) => [c.number, c.defaultTitle, c.text])).toEqual([
       ["2.1.1", "Instructions", "Agent 1 brief"],
-      ["2.1.2", "Prompt 2.1.2", "hidden until opened"],
+      ["2.1.2", "hidden until opened", "hidden until opened"],
     ]);
   });
 
@@ -159,7 +162,52 @@ describe("buildSteps", () => {
 
   it("trims a typed title and falls back to the default for a blank one", () => {
     const [a, b] = buildSteps([node({ position: 1, title: "  Draft  " }), node({ position: 2, title: "   " })]);
-    expect([stepTitle(a), stepTitle(b)]).toEqual(["Draft", "Prompt 2"]);
+    expect([stepTitle(a), stepTitle(b)]).toEqual(["Draft", "one two three"]);
+  });
+});
+
+describe("CA-12 P6: tiles are named from what they hold", () => {
+  const title = (kind: Parameters<typeof defaultTitleFor>[0], payload: Record<string, unknown>) => defaultTitleFor(kind, payload as never);
+
+  it("a prompt: its first 8 words, with … when there were more; the kind's name when empty", () => {
+    expect(title("prompt", { text: "Write me a launch email for the new bakery app today please" })).toBe("Write me a launch email for the new…");
+    expect(title("prompt", { text: "  Short   one " })).toBe("Short one");
+    expect(title("prompt", { text: "" })).toBe("Prompt");
+  });
+
+  it("code: the file name, else the first line with something on it", () => {
+    expect(title("code", { source: "x", filename: "order-form.tsx" })).toBe("order-form.tsx");
+    expect(title("code", { source: "\n\n  select 1;\nselect 2;" })).toBe("select 1;");
+    expect(title("code", { source: "" })).toBe("Code");
+  });
+
+  it("a manual step: its first line; an agent: the first line of its instructions; a check: what it tested", () => {
+    expect(title("manual", { text: "Exported the logo\nthen resized it" })).toBe("Exported the logo");
+    expect(title("agent", { system_prompt: "\nYou triage the inbox.\nBe brief." })).toBe("You triage the inbox.");
+    expect(title("agent", { system_prompt: "" })).toBe("Agent");
+    expect(title("check", { tested: "Places a test order" })).toBe("Places a test order");
+    expect(title("check", {})).toBe("Check");
+  });
+
+  it("a tool: the app; a file: its name; nothing to go on: the kind", () => {
+    expect(title("tool", { service: "GitHub" })).toBe("GitHub");
+    expect(title("file", { title: "brand-guide.md" })).toBe("brand-guide.md");
+    expect(title("file", {})).toBe("File");
+    expect(title("team", {})).toBe("Team");
+  });
+
+  it("never repeats the number, and a title the maker typed wins", () => {
+    const [step, typed] = buildSteps([node({ position: 1, payload: { text: "Plan the app" } }), node({ position: 2, title: "Mine", payload: { text: "Plan the app" } })]);
+    expect(step.defaultTitle).toBe("Plan the app");
+    expect(step.defaultTitle).not.toMatch(/\d/);
+    expect(stepTitle(typed)).toBe("Mine");
+  });
+
+  it("names a link's site", () => {
+    expect(siteNameOf("https://www.github.com/a/b?c=1")).toBe("github.com");
+    expect(siteNameOf("example.org/page")).toBe("example.org");
+    expect(siteNameOf("not a link")).toBeNull();
+    expect(siteNameOf("")).toBeNull();
   });
 });
 
@@ -181,6 +229,41 @@ describe("sessionGroups", () => {
       { key: "typed-legacy-1", kind: "legacy", sessionId: null, number: 2, tool: "Claude Code", model: null, startedAt: "typed here", stepNumbers: ["3"] },
       { key: "s2", kind: "import", sessionId: "s2", number: 3, tool: "ChatGPT", model: "GPT-6 Luna", startedAt: "2026-10-05T09:00:00Z", stepNumbers: ["4"] },
     ]);
+  });
+
+  describe("CA-12 P5: numbered by build_sessions.position", () => {
+    const three = () =>
+      buildSteps([
+        fromSession("s1", { position: 1 }),
+        node({ position: 2, payload: { text: "typed", tool: "claude-code" } }),
+        fromSession("s2", { position: 3 }),
+      ]);
+    const meta = { "typed-new": { tool: null, date: "2026-10-06" } };
+
+    it("changes nothing for a draft with no rows", () => {
+      expect(sessionGroups(three(), sessions, {}, {}, []).map((g) => [g.key, g.number])).toEqual([["s1", 1], ["typed-legacy-1", 2], ["s2", 3]]);
+    });
+
+    it("changes nothing when the rows agree with where the steps sit", () => {
+      expect(sessionGroups(three(), sessions, {}, {}, ["s1", "s2"]).map((g) => [g.key, g.number])).toEqual([["s1", 1], ["typed-legacy-1", 2], ["s2", 3]]);
+    });
+
+    it("refills only the places the rows hold: a session with no row keeps its own place, the others follow their positions", () => {
+      expect(sessionGroups(three(), sessions, {}, {}, ["s2", "s1"]).map((g) => [g.key, g.number])).toEqual([["s2", 1], ["typed-legacy-1", 2], ["s1", 3]]);
+    });
+
+    it("numbers a session with no tile yet by its position, not by its date", () => {
+      const steps = buildSteps([fromSession("s1", { position: 1 })]);
+      const groups = sessionGroups(steps, sessions, {}, { "typed-a": { tool: null, date: "2026-10-09" }, "typed-b": { tool: null, date: "2026-10-01" } }, ["s1", "typed-a", "typed-b"]);
+      expect(groups.map((g) => [g.key, g.number])).toEqual([["s1", 1], ["typed-a", 2], ["typed-b", 3]]);
+    });
+
+    it("marks a session that has an entry in sessions_meta, so a lone one keeps its head", () => {
+      const steps = buildSteps([fromSession("s1", { position: 1 })]);
+      expect(sessionGroups(steps, sessions, {}, {})[0].marked).toBeUndefined();
+      expect(sessionGroups(steps, sessions, {}, { s1: { tool: null, date: "" } })[0].marked).toBe(true);
+      expect(Object.keys(meta)).toEqual(["typed-new"]);
+    });
   });
 
   it("reads an old entry with no id or date without failing", () => {
@@ -514,7 +597,7 @@ describe("a manual step (UI-P70)", () => {
       ["m", "3", "manual"],
       ["p3", "4", "prompt"],
     ]);
-    expect(after[2]).toMatchObject({ defaultTitle: "Manual step 3", title: null, tool: "Figma", text: "Laid out the hero", model: null, runs: null, mediaId: null });
+    expect(after[2]).toMatchObject({ defaultTitle: "Laid out the hero", title: null, tool: "Figma", text: "Laid out the hero", model: null, runs: null, mediaId: null });
   });
 
   it("does not number files, tools or results that sit between steps", () => {
@@ -533,7 +616,7 @@ describe("a manual step (UI-P70)", () => {
     await expect(addManualStep(BUILD, [], { tool: "x".repeat(41), text: "ok" })).rejects.toThrow(/40/);
     await expect(addManualStep(BUILD, [], { tool: "Figma", text: "x".repeat(141) })).rejects.toThrow(/140/);
     await expect(addManualStep(BUILD, [], { tool: " ", text: "ok" })).rejects.toThrow(/1 to 40/);
-    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "  " })).rejects.toThrow(/1 to 140/);
+    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "  " })).rejects.toThrow(/lines of up to 140/);
   });
 
   it("changes its tool, line and picture within the limits, and takes the picture off with null", async () => {
@@ -545,7 +628,7 @@ describe("a manual step (UI-P70)", () => {
     expect(payloadWritten()).toEqual({ tool: "Figma", text: "Old" });
     await expect(setManualFields(step, { tool: "x".repeat(41) })).rejects.toThrow(/40/);
     await expect(setManualFields(step, { text: "x".repeat(141) })).rejects.toThrow(/140/);
-    await expect(setManualFields(step, { text: "" })).rejects.toThrow(/1 to 140/);
+    await expect(setManualFields(step, { text: "" })).rejects.toThrow(/lines of up to 140/);
     await expect(setManualFields(node({}) as BuildNode, { text: "x" })).rejects.toThrow(/not a manual step/);
   });
 
@@ -792,9 +875,9 @@ describe("code is a step (CA-02 P7)", () => {
     ];
     const steps = buildSteps(tree);
     expect(steps.map((step) => [step.id, step.kind, step.number, step.defaultTitle])).toEqual([
-      ["p1", "prompt", "1", "Prompt 1"],
-      ["c1", "code", "2", "Code 2"],
-      ["c2", "code", "3", "Code 3"],
+      ["p1", "prompt", "1", "Plan the app"],
+      ["c1", "code", "2", "app.ts"],
+      ["c2", "code", "3", "select 1;"],
     ]);
     expect(steps[1]).toMatchObject({ text: "a\nb", words: 2, language: "ts", filename: "app.ts", entrypoint: true, tool: "Cursor", model: "Opus 5", uses: [{ kind: "output", node_id: "p1" }] });
     expect(steps[2]).toMatchObject({ filename: null, entrypoint: false });
@@ -865,7 +948,7 @@ describe("a check is a step (CA-03 P5)", () => {
       id: "k1",
       kind: "check",
       number: "2",
-      defaultTitle: "Check 2",
+      defaultTitle: "Places a test order",
       text: "Places a test order",
       uses: [{ kind: "output", node_id: "c1" }],
       check: { tested: "Places a test order", passing: "The total shows £9.00", onFail: null, passed: 13, total: 14, runAt: "2026-10-12" },
@@ -885,12 +968,14 @@ describe("a check is a step (CA-03 P5)", () => {
     expect(checkStatus({ passed: null, total: 14, runAt: null })).toBeNull();
   });
 
-  it("is offered once there is an agent, a team or code, and tests the selected step or the last of those", () => {
+  it("is offered once there is any step but a check (CA-12 P12: a prompt will do), and tests the selected step or the last that is not a check", () => {
     const steps = buildSteps([work, node({ id: "p2", type: "prompt", position: 2, payload: { text: "x" } })] as NodeTree[]);
     expect(canCheck(steps)).toBe(true);
-    expect(canCheck(buildSteps([node({ id: "p1", type: "prompt", position: 1, payload: { text: "x" } })] as NodeTree[]))).toBe(false);
+    expect(canCheck(buildSteps([node({ id: "p1", type: "prompt", position: 1, payload: { text: "x" } })] as NodeTree[]))).toBe(true);
+    expect(canCheck([])).toBe(false);
+    expect(canCheck(buildSteps([node({ id: "k", type: "eval_run", position: 1, payload: { tested: "It loads", passing: "No errors", passed: 1, total: 1 } })] as NodeTree[]))).toBe(false);
     expect(testedStepOf(steps, "p2")).toBe("p2");
-    expect(testedStepOf(steps, null)).toBe("c1");
+    expect(testedStepOf(steps, null)).toBe("p2");
   });
 });
 
@@ -944,5 +1029,49 @@ describe("an old build is read, never written (CA-04 P1)", () => {
     const { setStepSession } = await import("./graph");
     const row = node({ position: 1 });
     await expect(setStepSession(row, "typed-legacy-1")).rejects.toThrow(/not saved yet/);
+  });
+});
+
+describe("CA-12 P7, P8: tool and file tiles", () => {
+  const toolNode = (id: string, position: number, payload: Record<string, unknown>) => node({ id, type: "integration", position, payload: payload as never });
+
+  it("a tool added from Add is a step with its app, how it was connected and what it did", () => {
+    const steps = buildSteps([node({ id: "p", position: 1, payload: { text: "Plan" } }), toolNode("t", 2, { service: "GitHub", connection: "mcp", scopes: "read issues", step: true })]);
+    expect(steps.map((s) => [s.kind, s.number, s.defaultTitle])).toEqual([["prompt", "1", "Plan"], ["tool", "2", "GitHub"]]);
+    expect(steps[1]).toMatchObject({ tool: "GitHub", text: "read issues", app: { connection: "mcp", runsAt: null, scopes: "read issues" } });
+  });
+
+  it("a tool an agent names, or one saved before CA-12, is not a tile and shifts no number", () => {
+    const steps = buildSteps([toolNode("t", 1, { service: "Gmail" }), node({ id: "p", position: 2, payload: { text: "Plan" } })]);
+    expect(steps.map((s) => [s.kind, s.number])).toEqual([["prompt", "1"]]);
+  });
+
+  it("a file is a tile only when added from Add (step: true); a file dropped into Sources is not", () => {
+    const file = (id: string, position: number, payload: Record<string, unknown>) => node({ id, type: "document", position, payload: payload as never });
+    const steps = buildSteps([file("a", 1, { title: "notes.md" }), file("b", 2, { title: "logo.png", step: true, mime: "image/png", size: 2048, media_id: "m" }), file("c", 3, { title: "app.ts", step: true, preview: ["a", "b"] })]);
+    expect(steps.map((s) => [s.kind, s.number, s.defaultTitle])).toEqual([["file", "1", "logo.png"], ["file", "2", "app.ts"]]);
+    expect(steps[0].fileFacts).toMatchObject({ kind: "picture", size: 2048, mediaId: "m" });
+    expect(steps[1].fileFacts).toMatchObject({ kind: "code", preview: ["a", "b"] });
+  });
+
+  it("addToolTile writes step: true with the connection and what it did, and refuses a bad one", async () => {
+    await addToolTile(BUILD, [], { service: " GitHub ", connection: "mcp", scopes: " read issues ", session: "s1" });
+    expect(payloadWritten()).toEqual({ service: "GitHub", step: true, connection: "mcp", scopes: "read issues", session: "s1" });
+    await expect(addToolTile(BUILD, [], { service: " " })).rejects.toThrow(/needs its app/);
+    await expect(addToolTile(BUILD, [], { service: "x", connection: "nope" as never })).rejects.toThrow(/way to connect/);
+  });
+
+  it("a manual step keeps its lines and where it was done; one saved before reads as one line", async () => {
+    await addManualStep(BUILD, [], { where: { kind: "terminal", name: null, url: null }, lines: ["cd app", "npm test"] });
+    expect(payloadWritten()).toEqual({ tool: "Terminal", text: "cd app\nnpm test", where: { kind: "terminal" } });
+    const [step] = buildSteps([node({ id: "m", type: "manual_step", position: 1, payload: { tool: "Figma", text: "Draw it" } })]);
+    expect(step).toMatchObject({ lines: ["Draw it"], where: { kind: "app", name: "Figma" } });
+    await expect(addManualStep(BUILD, [], { where: { kind: "offline", name: null, url: null }, lines: Array(13).fill("x") })).rejects.toThrow(/at most 12/);
+  });
+
+  it("a check's total is worked out from its cases", () => {
+    const [check] = buildSteps([node({ id: "k", type: "eval_run", position: 1, payload: { tested: "Login", passing: "ok", passed: 9, total: 9, cases: [{ input: "a", expected: "b", actual: "b", passed: true }, { input: "c", expected: "d", actual: "x", passed: false }] } })]);
+    expect(check.check).toMatchObject({ passed: 1, total: 2 });
+    expect(check.cases).toHaveLength(2);
   });
 });

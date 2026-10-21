@@ -99,8 +99,6 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/making.test.ts",
   "src/lib/build/making.ts",
   "src/lib/build/onePrompt.snapshot.test.tsx",
-  "src/pages/site/compose/AddSessionDialog.test.tsx",
-  "src/pages/site/compose/AddSessionDialog.tsx",
   "src/pages/site/compose/sourcesModel.ts",
   // CA-04 P2
   "src/lib/build/copyTogether.ts",
@@ -304,6 +302,36 @@ export const CA03_FILES: readonly string[] = [
   "src/components/code/CodeLines.tsx",
   "src/components/code/lineModel.ts",
   "src/pages/site/compose/BuildList.nest.test.tsx",
+  // CA-12 P2
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/SourcesPanel.test.tsx",
+  "src/pages/site/drafts/DraftsPage.tsx",
+  // CA-12 P3
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/ToolPicker.tsx",
+  "src/pages/site/compose/SandboxPage.sessions.test.tsx",
+  // CA-12 P4, P5
+  "src/pages/site/compose/AddSessionRow.tsx",
+  "src/pages/site/compose/buildListModel.ts",
+  "src/pages/site/compose/useComposeSessions.ts",
+  "src/pages/site/compose/SandboxView.test.tsx",
+  // CA-12 P6 to P13
+  "src/components/build/tileBodies.tsx",
+  "src/pages/site/compose/AddToolDialog.tsx",
+  "src/pages/site/compose/AddToolDialog.test.tsx",
+  "src/pages/site/compose/AddManualStepDialog.tsx",
+  "src/pages/site/compose/AgentSetupFields.tsx",
+  "src/components/build/FullPromptWindow.tsx",
+  "src/pages/site/build/BuildSteps.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AddCheckDialog.tsx",
+  "src/pages/site/compose/BuildList.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/CheckCasesField.tsx",
+  "src/pages/site/compose/CheckCasesField.test.tsx",
+  // CA-12 P9
+  "src/pages/site/compose/AddResultDialog.tsx",
+  "src/pages/site/compose/AddResultDialog.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

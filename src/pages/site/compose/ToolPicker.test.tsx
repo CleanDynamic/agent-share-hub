@@ -83,13 +83,13 @@ describe("ToolPicker", () => {
 
   it("draws a tool that does not fit the step as unavailable, with where it goes (CA-02)", () => {
     const onChange = vi.fn();
-    render(<Harness onChange={onChange} step="prompt" />);
+    render(<Harness onChange={onChange} step="tool" />);
     fireEvent.click(trigger());
-    fireEvent.change(find(), { target: { value: "gmail" } });
-    const gmail = screen.getByRole("option", { name: /Gmail/ });
-    expect(gmail.getAttribute("aria-disabled")).toBe("true");
-    expect(gmail.textContent).toContain("Add it with Add › Tool");
-    fireEvent.click(gmail);
+    fireEvent.change(find(), { target: { value: "claude code" } });
+    const claude = screen.getByRole("option", { name: /Claude Code/ });
+    expect(claude.getAttribute("aria-disabled")).toBe("true");
+    expect(claude.textContent).toContain("Add it with Add › Prompt");
+    fireEvent.click(claude);
     expect(onChange).not.toHaveBeenCalled();
   });
 

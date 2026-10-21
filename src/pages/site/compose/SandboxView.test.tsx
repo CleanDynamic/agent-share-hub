@@ -95,9 +95,9 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the ten Add items in order, New session first (CA-04 P1), Code after Manual step and Check after Code; all are live (UI-P64 to UI-P70, CA-02 P7, CA-03 P5)", () => {
-    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["New session", "Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["newSession", "prompt", "session", "agent", "file", "tool", "manual", "code", "check", "result"]);
+  it("lists the eight Add items in order, with no session in them (CA-12 P4), Code after Manual step and Check after Code; all are live (UI-P64 to UI-P70, CA-02 P7, CA-03 P5)", () => {
+    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent or team", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "agent", "file", "tool", "manual", "code", "check", "result"]);
     expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Lines of code you wrote or ran");
     expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "How it tested its own work", ready: true });
   });
@@ -184,10 +184,9 @@ describe("the Build panel's head when an agent or a team is opened (UI-P69)", ()
   });
 });
 
-describe("the Add menu holds exactly 10 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-04 P1)", () => {
+describe("the Add menu holds exactly 8 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4)", () => {
   it("enables every item once each has something to open", async () => {
     view({
-      onNewSession: vi.fn(),
       onAddCheck: vi.fn(),
       checkable: true,
       onAddFile: vi.fn(),
@@ -197,14 +196,13 @@ describe("the Add menu holds exactly 10 items, all enabled (UI-P70, CA-02 P7, CA
       onAddAgent: vi.fn(),
       onAddManual: vi.fn(),
       onAddCode: vi.fn(),
-      onAddSession: vi.fn(),
-      addableSessions: [{ id: "x", label: "A chat", line: "today" }],
     });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items).toHaveLength(10);
-    expect(items[0].textContent).toBe("New sessionOne sitting with one tool");
-    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(10).fill(null));
+    expect(items).toHaveLength(8);
+    expect(items[0].textContent).toBe("PromptA message you sent");
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(8).fill(null));
+    expect(items.map((item) => item.textContent).join(" ")).not.toMatch(/session/i);
   });
 
   it("lists Check disabled, saying why, when the build has nothing to check (CA-03 P5)", async () => {
@@ -463,7 +461,6 @@ describe("CA-10 · the Add menu fits the screen and keeps the focus a row gives"
 
 describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
   const all = () => ({
-    onNewSession: vi.fn(),
     onAddCheck: vi.fn(),
     checkable: true,
     onAddFile: vi.fn(),
@@ -472,11 +469,9 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     onAddAgent: vi.fn(),
     onAddManual: vi.fn(),
     onAddCode: vi.fn(),
-    onAddSession: vi.fn(),
-    addableSessions: [{ id: "x", label: "A chat", line: "today" }],
   });
 
-  it("holds the same ten items as 44pt rows under a plain Add heading, with a grab line", () => {
+  it("holds the same eight items as 44pt rows under a plain Add heading, with a grab line", () => {
     stubWidth(390);
     view({ ...all(), onAddPromptFocus: vi.fn() });
     expect(screen.queryByRole("menu")).toBeNull();
@@ -520,17 +515,6 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     expect(screen.queryByRole("dialog", { name: "Add" })).toBeNull();
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(document.activeElement).toBe(screen.getByTestId("sandbox-add"));
-  });
-
-  it("opens Session's waiting sessions under it", () => {
-    stubWidth(390);
-    const props = all();
-    view({ ...props, onAddPromptFocus: vi.fn() });
-    fireEvent.click(screen.getByTestId("sandbox-add"));
-    const sheet = screen.getByRole("dialog", { name: "Add" });
-    fireEvent.click(within(sheet).getByRole("button", { name: /^Session/ }));
-    fireEvent.click(within(sheet).getByRole("button", { name: /^A chat/ }));
-    expect(props.onAddSession).toHaveBeenCalledWith("x");
   });
 
   it("Escape closes it", () => {

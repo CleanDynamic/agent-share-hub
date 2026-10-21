@@ -125,7 +125,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     title: step.title,
     defaultTitle: step.defaultTitle,
     editable: !instructions,
-    sessionLine: instructions ? "Instructions" : typed && !inSession ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
+    sessionLine: instructions ? "Instructions" : typed && !inSession ? (tool ?? "Prompt") : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
     detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun) : null, when, place].filter(Boolean).join(" · "),
     typed,
     model,
@@ -392,6 +392,11 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
   if (step?.kind === "file") {
     const node = findNode(ctx.tree, id);
     return node ? { ...fileView(node, ctx), ...insideOf(step) } : null;
+  }
+  if (step?.kind === "tool") {
+    // CA-12 P7: a tool tile opens as the tool it is.
+    const node = findNode(ctx.tree, id);
+    return node ? { ...toolView(node, ctx), ...insideOf(step) } : null;
   }
   if (step) {
     if (step.kind === "prompt") return promptView(step, ctx, all);

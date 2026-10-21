@@ -59,7 +59,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TRAINED_METHOD_MAX, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { isIsoDay, TRAINED_METHOD_MAX, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -67,6 +67,7 @@ import { groupByLoaded, type SetupLoaded } from "@/lib/build/setup";
 import { ChangesEachRoundField, MemoryTidyField } from "./AgentNotesFields";
 import { ModelRunFields } from "./ModelRunFields";
 import { asksHowRun, type ModelRun } from "@/lib/build/modelRun";
+import { CheckCasesField } from "./CheckCasesField";
 import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
@@ -298,6 +299,8 @@ export interface DetailsHandlers {
   onModelRun?: (id: string, run: ModelRun | null) => void;
   /** CA-05 P7: the runs of a check, newest first. Absent: Runs is not shown. */
   onCheckRuns?: (id: string, runs: CheckRun[]) => void;
+  /** CA-12 P12: a check's cases, saved when the field loses focus or a case is ticked or removed. */
+  onCheckCases?: (id: string, cases: CheckCase[]) => void;
   /** CA-05 P5: the sessions this one ran at the same time as; the pairing is written both ways. Absent: the menu is not shown. */
   onSessionTogether?: (key: string, keys: string[]) => void;
   /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */
@@ -824,7 +827,7 @@ function PairNote({ tool, model, phone, onChange, onRemove }: { tool: string | n
 
 /* ── a prompt ── */
 
-/** The tool, from the session line: "Session 2 · Claude Code" and "Typed here · ChatGPT" both end in it. */
+/** The tool, from the session line: "Session 2 · Claude Code" ends in it. */
 const toolOf = (sessionLine: string): string => sessionLine.split(" · ").pop() ?? "";
 
 /** The Makes list of a step; only where the panel can write it. */
@@ -992,6 +995,7 @@ function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean }
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of check ${view.number}`} phone={phone} onRename={h.onRename} />
       </Head>
       <CheckBlock check={view.check} />
+      {h.onCheckCases ? <CheckCasesField key={`${view.id}:cases:${(view.check.caseList ?? []).length}`} id={view.id} cases={view.check.caseList ?? []} phone={phone} onBlurOnly onChange={(cases) => h.onCheckCases?.(view.id, cases)} /> : null}
       {h.onCheckRuns ? <CheckRunsField key={`${view.id}:${(view.check.runs ?? []).map((run) => `${run.at}${run.passed}${run.total}`).join(",")}`} id={view.id} runs={view.check.runs ?? []} phone={phone} onChange={(runs) => h.onCheckRuns?.(view.id, runs)} /> : null}
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
@@ -1004,7 +1008,7 @@ function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean }
 export const SESSION_DETAILS_COPY = {
   tool: "Tool",
   date: "Date",
-  typedHere: "Typed here",
+  typedHere: "No app chosen",
   dateHint: "2026-10-12",
   badDate: "Write the day as 2026-10-12.",
 } as const;
@@ -1264,7 +1268,7 @@ function SessionDetails({
           </div>
         ) : null}
         <KeyValue label="Model">{view.model || "Not named"}</KeyValue>
-        <KeyValue label="Date">{view.date || "Typed here"}</KeyValue>
+        <KeyValue label="Date">{view.date || "Not dated"}</KeyValue>
       </div>
       )}
       <SetupSection view={view} phone={phone} focus={focusSetup ?? null} onSelect={onSelect} onAddToSetup={onAddToSetup} onNotShared={onNotShared} />

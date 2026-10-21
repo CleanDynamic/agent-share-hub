@@ -113,10 +113,10 @@ describe("what the agent runs in, its models and its tools (CA-02 P5)", () => {
   };
   const openModel = (name: string | RegExp) => fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
 
-  it("runs in the maker's own code to start, which takes any model", () => {
+  it("has no default for Runs in (it asks), and an unchosen harness takes any model", () => {
     open();
     const runsIn = screen.getByRole("button", { name: "Runs in" });
-    expect(runsIn.textContent).toBe("My own code (API)");
+    expect(runsIn.textContent).toBe("Pick a tool");
     openModel(`model ${DEFAULT_AGENT_MODEL}`);
     expect(screen.getByRole("menuitem", { name: "Other model…" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Grok 4.7" })).toBeTruthy();
@@ -204,7 +204,7 @@ describe("what the agent runs in, its models and its tools (CA-02 P5)", () => {
     const props = open();
     const pickTool = (query: string, row: string | RegExp) => {
       fireEvent.click(screen.getByRole("button", { name: "Tools it can use" }));
-      fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
+      fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: query } });
       fireEvent.click(screen.getByRole("option", { name: row }));
     };
     pickTool("gmail", "Gmail");
@@ -257,5 +257,42 @@ describe("what it remembers (CA-03 P6)", () => {
     const again = open();
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
     expect(vi.mocked(again.onAdd).mock.calls[0][0]).not.toHaveProperty("memory");
+  });
+});
+
+
+describe("CA-12 P11: the dialog's order and what it asks", () => {
+  it("asks in this order: Name, Instructions, Models, Tools it can use, How does it start?, Runs in, What it remembers", () => {
+    open();
+    const labels = ["Name", "Instructions", "Models", "Tools it can use", "How does it start?", "Runs in", "What it remembers"];
+    const at = labels.map((label) => {
+      const node = screen.getAllByText(label).find((el) => el.tagName === "LABEL" || el.tagName === "SPAN");
+      return node as HTMLElement;
+    });
+    for (let i = 1; i < at.length; i += 1) expect(at[i - 1].compareDocumentPosition(at[i]) & Node.DOCUMENT_POSITION_FOLLOWING, labels[i]).toBeTruthy();
+  });
+
+  it("Instructions is the largest field, 6 lines, asking what the agent is told to do", () => {
+    open();
+    const box = screen.getByPlaceholderText("What this agent is told to do") as HTMLTextAreaElement;
+    expect(box.rows).toBe(6);
+  });
+
+  it("hands back the instructions and how it starts, and Not sure leaves Runs in empty", () => {
+    const props = open();
+    fireEvent.change(screen.getByPlaceholderText("What this agent is told to do"), { target: { value: "Triage my inbox" } });
+    fireEvent.click(screen.getByRole("radio", { name: "On a schedule" }));
+    fireEvent.change(screen.getByLabelText("When, in a few words"), { target: { value: "Mondays 07:00" } });
+    fireEvent.click(screen.getByRole("button", { name: "Runs in" }));
+    fireEvent.click(screen.getByRole("option", { name: "Not sure" }));
+    expect(screen.getByRole("button", { name: "Runs in" }).textContent).toBe("Not sure");
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ instructions: "Triage my inbox", harness: null, runs: { how: "schedule", detail: "Mondays 07:00" } }));
+  });
+
+  it("an agent that starts when asked has no runs", () => {
+    const props = open();
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(vi.mocked(props.onAdd).mock.calls[0][0]).not.toHaveProperty("runs");
   });
 });

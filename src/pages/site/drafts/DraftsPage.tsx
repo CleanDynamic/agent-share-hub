@@ -23,7 +23,7 @@
    optional: if its read fails the line is absent, and the failure is logged.
    The waiting read polls only while the Sessions panel is on screen. */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -31,10 +31,9 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { useOnScreen } from "@/hooks/useOnScreen";
-import { useWaitingSessions } from "@/hooks/useWaitingSessions";
+import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { listDraftsWithSessions, type DraftListItem } from "@/lib/build/drafts";
-import { attachSession, listSessions, removeSession } from "@/lib/build/sessions";
-import { errorLine } from "@/lib/errors/code";
+import { attachSession } from "@/lib/build/sessions";
 
 import { DraftsView } from "./DraftsView";
 import { draftTitle } from "./draftsModel";
@@ -45,7 +44,6 @@ export function DraftsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const connector = useConnectorDialog();
-  const [showAttached, setShowAttached] = useState(false);
 
   const draftsQuery = useQuery({
     queryKey: ["build", "listDraftsWithSessions"],
@@ -53,25 +51,16 @@ export function DraftsPage() {
     staleTime: STALE_MS,
   });
   const [sessionsAnchor, sessionsOnScreen] = useOnScreen<HTMLSpanElement>();
-  const waitingQuery = useWaitingSessions({ active: sessionsOnScreen });
-  const allQuery = useQuery({
-    queryKey: ["build", "listSessions", true],
-    queryFn: () => listSessions({ includeAttached: true }),
-    staleTime: STALE_MS,
-  });
-
-  /* The optional read: absent from the page when it fails, but never silent. */
-  useEffect(() => {
-    if (allQuery.error) console.error(errorLine("[Drafts] attached sessions read failed", allQuery.error));
-  }, [allQuery.error]);
-
-  const attached = useMemo(() => (allQuery.data ?? []).filter((session) => session.buildId !== null), [allQuery.data]);
+  /* CA-12: every finished session, newest first, in pages of 100. Waiting, in a draft, in several, or expired: none is
+     hidden and none expires, so there is no second list of "already in a build". */
+  const library = useLibrarySessions({ active: sessionsOnScreen, withUnfinished: false });
 
   const refresh = useCallback(
     () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] }),
-        qc.invalidateQueries({ queryKey: ["build", "listSessions"] }),
+        qc.invalidateQueries({ queryKey: librarySessionsKey }),
+        qc.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
         qc.invalidateQueries({ queryKey: ["build", "countDraftBuilds"] }),
       ]),
     [qc],
@@ -109,47 +98,26 @@ export function DraftsPage() {
     [refresh],
   );
 
-  const remove = useCallback(
-    async (sessionId: string) => {
-      try {
-        await removeSession(sessionId);
-        void refresh();
-        toast("Session removed.");
-      } catch (error) {
-        console.error("[Drafts] removeSession failed", error);
-        void refresh();
-        failed("Couldn't remove that session.");
-      }
-    },
-    [refresh],
-  );
-
   const draftsStatus = draftsQuery.data ? "ready" : draftsQuery.isLoadingError ? "error" : "loading";
-  const sessionsStatus = waitingQuery.data ? "ready" : waitingQuery.isLoadingError ? "error" : "loading";
+  const sessionsStatus = library.data ? "ready" : library.isLoadingError ? "error" : "loading";
 
   return (
     <>
-      <SeoHead title="Drafts — buildgallery" description="Builds in progress, and the sessions waiting to join one." path="/drafts" noIndex />
+      <SeoHead title="Drafts — buildgallery" description="Builds in progress, and every session you have sent." path="/drafts" noIndex />
       <DraftsView
         now={Date.now()}
         draftsStatus={draftsStatus}
         draftsError={draftsQuery.isLoadingError ? draftsQuery.error : undefined}
         onRetryDrafts={() => void draftsQuery.refetch()}
         sessionsStatus={sessionsStatus}
-        sessionsError={waitingQuery.isLoadingError ? waitingQuery.error : undefined}
-        onRetrySessions={() => {
-          void waitingQuery.refetch();
-          if (allQuery.isError) void allQuery.refetch();
-        }}
+        sessionsError={library.isLoadingError ? library.error : undefined}
+        onRetrySessions={() => void library.refetch()}
         sessionsAnchor={sessionsAnchor}
         drafts={draftsQuery.data ?? []}
-        sessions={waitingQuery.data ?? []}
-        attached={attached}
-        showAttached={showAttached}
-        onToggleAttached={() => setShowAttached((value) => !value)}
+        sessions={library.data ?? []}
+        moreSessions={library.hasMore ? { loading: library.loadingMore, onMore: library.fetchMore } : undefined}
         onAddToNew={addToNew}
         onAddToDraft={addToDraft}
-        onRemove={remove}
         onConnect={connector.open}
       />
     </>

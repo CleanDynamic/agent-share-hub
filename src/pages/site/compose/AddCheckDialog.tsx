@@ -19,9 +19,10 @@ import { useId, useState, type CSSProperties } from "react";
 import { Button } from "@/components/brand/Button";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { CHECK_FAIL_MAX, CHECK_TEXT_MAX, checkRefusal, type CheckInput } from "@/lib/build/graph";
+import { CHECK_FAIL_MAX, CHECK_TEXT_MAX, checkRefusal, type CheckCase, type CheckInput } from "@/lib/build/graph";
 import { t } from "@/lib/theme/tokens";
 
+import { CheckCasesField, keptCases } from "./CheckCasesField";
 import { Field } from "./composeControls";
 import { dialogTitle, text, tnum, typedArea, typedField, windowStyle } from "./refinedStyles";
 
@@ -62,12 +63,14 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
   const [passed, setPassed] = useState("");
   const [total, setTotal] = useState("");
   const [runAt, setRunAt] = useState("");
+  const [cases, setCases] = useState<CheckCase[]>([]);
   const [tried, setTried] = useState(false);
   const uid = useId();
 
-  const input: AddCheckInput = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt };
+  const given = keptCases(cases);
+  const input: AddCheckInput = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt, ...(given.length > 0 ? { cases: given } : null) };
   const why = checkRefusal(input);
-  const ready = tested.trim().length > 0 && passing.trim().length > 0 && passed.trim() !== "" && total.trim() !== "";
+  const ready = tested.trim().length > 0 && passing.trim().length > 0 && (given.length > 0 || (passed.trim() !== "" && total.trim() !== ""));
   const count: CSSProperties = { ...text(11.5, 400, t.text2), ...tnum, alignSelf: "flex-end" };
   const small = (value: string, set: (next: string) => void, label: string) => (
     <input
@@ -107,13 +110,17 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
         <textarea id={`${uid}-failed`} rows={3} maxLength={CHECK_FAIL_MAX} value={failed} placeholder={CHECK_DIALOG_COPY.failedPlaceholder} onChange={(event) => setFailed(event.target.value)} style={typedArea(phone)} />
       </Field>
 
-      <Field id={`${uid}-runs`} label={CHECK_DIALOG_COPY.runs} group>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {small(passed, setPassed, CHECK_DIALOG_COPY.passed)}
-          <span style={text(13, 400, t.text2)}>{CHECK_DIALOG_COPY.passedOf}</span>
-          {small(total, setTotal, CHECK_DIALOG_COPY.total)}
-        </div>
-      </Field>
+      <CheckCasesField id={uid} cases={cases} phone={phone} onChange={setCases} />
+
+      {given.length === 0 ? (
+        <Field id={`${uid}-runs`} label={CHECK_DIALOG_COPY.runs} group>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {small(passed, setPassed, CHECK_DIALOG_COPY.passed)}
+            <span style={text(13, 400, t.text2)}>{CHECK_DIALOG_COPY.passedOf}</span>
+            {small(total, setTotal, CHECK_DIALOG_COPY.total)}
+          </div>
+        </Field>
+      ) : null}
 
       <Field id={`${uid}-last`} label={CHECK_DIALOG_COPY.lastRun} hint={CHECK_DIALOG_COPY.optional}>
         <input

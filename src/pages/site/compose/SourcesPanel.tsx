@@ -28,7 +28,7 @@ import { TextButton } from "./composeControls";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, text, tnum } from "./refinedStyles";
-import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession } from "./sourcesModel";
+import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
@@ -36,7 +36,11 @@ export const GROUP_ROWS = 6;
 export const SOURCES_COPY = {
   inBuild: "Sessions in this build",
   files: "Files in this build",
-  notInBuild: "Not in a build",
+  yourSessions: "Your sessions",
+  stillArriving: "Still arriving",
+  didntFinish: "Didn't finish",
+  inThisDraft: "In this draft",
+  showMoreSessions: "Show more sessions",
   drop: "Drop sessions or files",
   noSessions: "No sessions yet.",
   noFiles: "No files yet.",
@@ -51,6 +55,13 @@ export interface SourcesPanelProps {
   sessions: readonly SourceSession[];
   files: readonly SourceFile[];
   library: readonly SourceLibraryItem[];
+  /** CA-12: the library has another page, and whether it is being read. */
+  libraryHasMore?: boolean;
+  libraryLoadingMore?: boolean;
+  onLibraryMore?: () => void;
+  /** CA-12: imports still arriving, and ones that did not finish; each group is drawn only when it has something. */
+  arriving?: readonly SourceUnfinishedItem[];
+  didntFinish?: readonly SourceUnfinishedItem[];
   /** Setup files a coding tool in the build reads and the build does not have yet. */
   reminders?: readonly SourceReminder[];
   /** The selected session's key, or the selected step's id. */
@@ -257,8 +268,26 @@ function LibraryRow({ item, phone, onAdd }: { item: SourceLibraryItem; phone: bo
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
         <span style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
         <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
+        {item.alsoIn ? <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
       </span>
-      <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
+      {item.inThisDraft ? (
+        <span style={{ ...text(11.5, 400, t.label), flexShrink: 0 }}>{SOURCES_COPY.inThisDraft}</span>
+      ) : (
+        <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
+      )}
+    </div>
+  );
+}
+
+/** CA-12: an import that is not a session yet; nothing to press. */
+function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boolean }) {
+  return (
+    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+      <ToolMark tool={item.label} size={20} />
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+        <span style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
+        <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.line}</span>
+      </span>
     </div>
   );
 }
@@ -389,9 +418,30 @@ export function SourcesPanel(props: SourcesPanelProps) {
       ) : null}
 
       {library.length > 0 ? (
-        <section aria-label={SOURCES_COPY.notInBuild} style={group}>
-          <GroupHead name={SOURCES_COPY.notInBuild} count={library.length} hollow />
+        <section aria-label={SOURCES_COPY.yourSessions} style={group}>
+          <GroupHead name={SOURCES_COPY.yourSessions} count={library.length} hollow />
           <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} />} />
+          {props.libraryHasMore ? (
+            <div style={{ ...rowLine, paddingTop: 8 }}>
+              <TextButton onClick={() => props.onLibraryMore?.()} target={phone} disabled={props.libraryLoadingMore} style={text(12.5, 500, t.text2)}>
+                {props.libraryLoadingMore ? "Loading…" : SOURCES_COPY.showMoreSessions}
+              </TextButton>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {(props.arriving ?? []).length > 0 ? (
+        <section aria-label={SOURCES_COPY.stillArriving} style={group}>
+          <GroupHead name={SOURCES_COPY.stillArriving} count={(props.arriving ?? []).length} hollow />
+          <Capped rows={props.arriving ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
+        </section>
+      ) : null}
+
+      {(props.didntFinish ?? []).length > 0 ? (
+        <section aria-label={SOURCES_COPY.didntFinish} style={group}>
+          <GroupHead name={SOURCES_COPY.didntFinish} count={(props.didntFinish ?? []).length} hollow />
+          <Capped rows={props.didntFinish ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
         </section>
       ) : null}
 

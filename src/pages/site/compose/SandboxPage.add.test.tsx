@@ -116,7 +116,6 @@ describe.each([
   { device: "a phone", width: 390, phone: true },
 ])("CA-10 · every other Add item visibly does something, on $device", ({ width, phone }) => {
   const dialogs: [RegExp, RegExp][] = [
-    [/^New session/, /session/i],
     [/^Agent or team/, /agent/i],
     [/^Tool/, /tool/i],
     [/^Manual step/, /manual|step/i],
@@ -137,6 +136,8 @@ describe.each([
     await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
     const before = screen.queryAllByTestId("result-card").length;
     await choose(phone, /^Result/);
+    fireEvent.change(await screen.findByLabelText("Web address"), { target: { value: "plumandrye.example" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
     // In the tap: the stand-in tile, scrolled to.
     const pending = screen.getByTestId("add-pending");
     expect(pending.textContent).toContain("Adding a result");
@@ -172,45 +173,19 @@ describe.each([
       expect(await screen.findByRole("dialog", { name: /check/i })).toBeTruthy();
     }
   });
-
-  it("Session offers the waiting sessions, and choosing it draws a tile at once, scrolled to", async () => {
-    stubWidth(width);
-    mount(`/compose/${DRAFT}`);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
-    const sheet = await openAdd(phone);
-    let waiting: HTMLElement;
-    if (sheet) {
-      fireEvent.click(sheet.getByRole("button", { name: /^Session/ }));
-      waiting = await waitFor(() => sheet.getByRole("button", { name: /\d+ prompts?$/ }));
-    } else {
-      const trigger = await screen.findByRole("menuitem", { name: /^Session/ });
-      fireEvent.keyDown(trigger, { key: "ArrowRight" });
-      waiting = await screen.findByRole("menuitem", { name: /\d+ prompts?$/ }, { timeout: 5_000 });
-    }
-    fireEvent.click(waiting);
-    const pending = screen.getByTestId("add-pending");
-    expect(pending.textContent).toContain("Adding a session");
-    expect(scrolled.some((call) => call.element === pending)).toBe(true);
-    await waitFor(() => expect(screen.queryByTestId("add-pending")).toBeNull(), { timeout: 10_000 });
-  });
 });
 
 describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)", () => {
   it.each([
     ["Result", /^Result/],
-    ["Session", /^Session/],
   ])("Add › %s on /compose/new, with the draft refused: exactly one toast", async (_name, item) => {
     stubWidth(1280);
     const said = vi.spyOn(toast, "error");
     mount("/compose/new", [{ method: "POST", path: /^\/rest\/v1\/builds(\?|$)/, answer: PG.rlsInsert("builds") }]);
     await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
-    if (item.source === "^Session") {
-      fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
-      fireEvent.keyDown(await screen.findByRole("menuitem", { name: item }), { key: "ArrowRight" });
-      fireEvent.click(await screen.findByRole("menuitem", { name: /\d+ prompts?$/ }, { timeout: 5_000 }));
-    } else {
-      await choose(false, item);
-    }
+    await choose(false, item);
+    fireEvent.change(await screen.findByLabelText("Web address"), { target: { value: "plumandrye.example" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
     await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
     expect(said.mock.calls.map(([line]) => line)).toEqual(["Couldn't start your draft. Try again."]);
