@@ -28,9 +28,10 @@ import { toast } from "sonner";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import type { BuildRecord } from "@/lib/build";
+import { listBuildSessionRows, type BuildSessionRow } from "@/lib/build/buildSessions";
 import { getMadeWith, nextMadeWith, setMadeWithEntry, setMadeWithModel, setSessionTool, type MadeWithState } from "@/lib/build/making";
+import { linkSessionToBuild } from "@/lib/build/addSession";
 import {
-  attachSession,
   getSessionPrompts,
   listBuildSessions,
   setSessionModel,
@@ -44,8 +45,11 @@ import { sayFailed } from "./draftStart";
 
 const STALE_MS = 30_000;
 const NO_SESSIONS: SessionSummary[] = [];
+const NO_ROWS: BuildSessionRow[] = [];
 
 export const buildSessionsKey = (buildId: string | undefined) => ["build", "listBuildSessions", buildId] as const;
+/** CA-12: the draft's rows in `build_sessions`. Under the list's key, so whatever refreshes the sessions refreshes these. */
+export const buildSessionRowsKey = (buildId: string | undefined) => ["build", "listBuildSessions", "rows", buildId] as const;
 export const sessionPromptsKey = (sessionId: string) => ["build", "getSessionPrompts", sessionId] as const;
 export const madeWithKey = (buildId: string | undefined) => ["build", "getMadeWith", buildId] as const;
 
@@ -60,6 +64,8 @@ export function showMadeWithIn(queryClient: QueryClient, id: string, state: Made
 export interface ComposeSessions {
   /** This build's own sessions, oldest first: what Made with is drawn from. */
   sessions: SessionSummary[];
+  /** CA-12: this draft's rows in `build_sessions`, in order; empty for an old draft. */
+  rows: BuildSessionRow[];
   /** Every finished session on the account, newest first: what Your sessions lists. */
   library: SessionSummary[];
   /** CA-12: the library has another page. */
@@ -113,6 +119,12 @@ export function useComposeSessions({
     queryKey: buildSessionsKey(buildId),
     queryFn: () => listBuildSessions(buildId as string),
     enabled,
+    staleTime: STALE_MS,
+  });
+  const rows = useQuery({
+    queryKey: buildSessionRowsKey(buildId),
+    queryFn: () => listBuildSessionRows(buildId as string),
+    enabled: Boolean(buildId),
     staleTime: STALE_MS,
   });
   const library = useLibrarySessions({ active: libraryActive });
@@ -233,11 +245,11 @@ export function useComposeSessions({
   const claimForBuild = (sessionId: string) => {
     if (!canClaim || claiming.current.has(sessionId)) return;
     const session = (library.data ?? []).find((candidate) => candidate.id === sessionId);
-    if (!session || session.status !== "parsed" || session.buildId) return;
+    if (!session || (session.draftIds ?? []).includes(latest.current.buildId ?? "")) return;
     claiming.current.add(sessionId);
     enqueue(async () => {
       const id = await latest.current.ensureBuild();
-      await attachSession(sessionId, { kind: "existing", buildId: id });
+      await linkSessionToBuild(sessionId, id);
       const state = await getMadeWith(id).catch(() => null);
       return { id, state, value: undefined };
     })
@@ -289,6 +301,7 @@ export function useComposeSessions({
 
   return {
     sessions: buildSessions.data ?? NO_SESSIONS,
+    rows: rows.data ?? NO_ROWS,
     library: library.data ?? NO_SESSIONS,
     libraryHasMore: library.hasMore,
     libraryLoadingMore: library.loadingMore,

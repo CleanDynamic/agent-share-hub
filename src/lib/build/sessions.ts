@@ -17,8 +17,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { modelLabel } from "@/lib/models/registry";
+import { addSessionToBuild } from "./addSession";
 import { draftsOfImports, listBuildSessionRows } from "./buildSessions";
-import { discardImport, claimImport, loadImportProposal } from "./imports";
+import { discardImport, loadImportProposal } from "./imports";
 import type { TranscriptSourceRef } from "./intake";
 import { refreshMakingStats } from "./making";
 import { buildLayerError } from "./types";
@@ -330,47 +331,12 @@ export async function countDraftBuilds(): Promise<number> {
 // -----------------------------------------------------------------------------
 
 /**
- * Tie a waiting session to a build, writing nothing from the conversation.
- *
- * The selections keep no events and no nodes and no outcome; the title is kept
- * only for a new draft. A NEW draft is created by claimImport, which needs a
- * title: the proposal's own, else "Untitled build". materialiseProposal accepts
- * empty selections (it reads, writes nothing, and only patches a kept title),
- * so claimImport is used unchanged and nothing is marked claimed by hand.
- *
- * The status is read first so a session that is gone (RLS) or already claimed
- * is refused BEFORE claimImport can create a new draft for it, which would
- * leave an empty draft behind. Two tabs racing past that read still end in
- * claimImport's own conditional update refusing the second.
+ * CA-12: add a session to a draft (or a new one): every prompt becomes a tile, and the session joins the draft's sessions
+ * (`build_sessions`). The import is not marked claimed and does not leave the library: it can be in any number of drafts,
+ * and each draft has its own tiles. See addSession.ts. Resolves with the draft's id.
  */
 export async function attachSession(importId: string, target: AttachTarget): Promise<string> {
-  const { data: row, error } = await sessionsTable()
-    .select<StatusRow>("id, status, build_id")
-    .eq("id", importId)
-    .maybeSingle();
-  if (error) throw buildLayerError("attachSession", error);
-  if (!row) {
-    throw buildLayerError("attachSession", new Error("That session is no longer available."));
-  }
-  if (row.status !== STATUS_PARSED) {
-    throw buildLayerError("attachSession", new Error("That session is already in a build."));
-  }
-
-  const proposal = await loadImportProposal(importId);
-  const isNew = target.kind === "new";
-  const destination = isNew
-    ? { kind: "new" as const, title: proposal.summary.proposed_title?.value?.trim() || UNTITLED }
-    : { kind: "existing" as const, buildId: target.buildId };
-
-  const { buildId } = await claimImport(
-    importId,
-    proposal,
-    { eventOrdinals: [], nodeLocalIds: [], title: isNew, outcome: false },
-    destination,
-  );
-
-  await refreshMakingStats(buildId);
-  return buildId;
+  return (await addSessionToBuild(importId, target)).buildId;
 }
 
 /**

@@ -185,6 +185,11 @@ export interface SessionGroup {
   longWords?: number;
   /** CA-06 P4: the maker's colour for the session (`sessions_meta[key].colour`). Absent when it has none. */
   colour?: string;
+  /**
+   * CA-12: the session has an entry in `sessions_meta`. A session added the CA-12 way is given one, so its head is always
+   * drawn; an old build's lone imported session has none and is drawn as it was, without a head.
+   */
+  marked?: boolean;
 }
 
 /** Where the date would be, for prompts written by hand. */
@@ -652,13 +657,15 @@ function chosenTool(raw: string | undefined): string | null {
  * `sessions` is builds.making.sessions; an entry without an id cannot be matched, and its prompts keep the model they
  * name. `sessionTools` is builds.making.session_tools (TF-13): a session whose client names no tool takes the tool the
  * maker gave it, by `toolName` or as typed. A client's own tool always wins. `meta` is builds.making.sessions_meta: a
- * session made here takes its tool, model and day from it, and one with no steps yet follows the others.
+ * session made here takes its tool, model and day from it, and one with no steps yet follows the others. `order` (CA-12) is
+ * the keys of `build_sessions` in position order; see where it is applied.
  */
 export function sessionGroups(
   steps: readonly Step[],
   sessions: readonly MakingSession[],
   sessionTools: Readonly<Record<string, string>>,
   meta: Readonly<Record<string, SessionMeta>> = {},
+  order: readonly string[] = [],
 ): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
@@ -732,6 +739,20 @@ export function sessionGroups(
     if (byKey.has(key) || !key.startsWith(TYPED_SESSION_PREFIX) || key.startsWith(LEGACY_SESSION_PREFIX) || !own.date) continue;
     open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
   }
+  // CA-12 P5: sessions are numbered by `build_sessions.position`, the order they were added. `order` lists the keys of a
+  // draft that has rows, in position order. Only the places those sessions already hold are refilled, in that order:
+  // a session that has no row (an old draft's, or an old build's run of typed prompts) keeps its own place, so a draft
+  // with no rows, or rows that agree with where its steps sit, reads exactly as it did.
+  if (order.length > 0) {
+    const rank = new Map(order.map((key, at) => [key, at]));
+    const slots = groups.flatMap((group, at) => (!group.implicit && rank.has(groupKey(group)) ? [at] : []));
+    const sorted = slots.map((at) => groups[at]).sort((a, b) => (rank.get(groupKey(a)) as number) - (rank.get(groupKey(b)) as number));
+    slots.forEach((at, n) => {
+      groups[at] = sorted[n];
+    });
+    let numberedAgain = 0;
+    for (const group of groups) if (!group.implicit) group.number = ++numberedAgain;
+  }
   // CA-04 P6: what each session worked until, from its entry.
   for (const [key, group] of byKey) {
     const goal = goalOf(meta[key]?.goal);
@@ -740,6 +761,7 @@ export function sessionGroups(
     const extras = extrasOf(meta[key]);
     if (Object.keys(extras).length > 0) group.extras = extras;
     if (meta[key]?.colour) group.colour = meta[key].colour;
+    if (meta[key]) group.marked = true;
     const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
     if (words > LONG_SESSION_WORDS) group.longWords = words;
   }

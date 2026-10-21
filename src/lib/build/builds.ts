@@ -25,8 +25,12 @@ import {
 // a header that did not select them was a row lying about its own shape, and
 // startRebuild would have written the attribution snapshot and handed back a
 // build with no sign of it.
+//
+// CA-12: `making` is on the end because the composer and the build page both read the build's sessions from it
+// (`sessions`, `sessions_meta`: the sessions made here, their app and their day, and which were added the CA-12 way), and a
+// record without it showed none of them after a reload.
 export const BUILD_COLUMNS =
-  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at, rebuild_note, rebuild_count, source_title_at_fork, source_handle_at_fork, solves_node_id, post_doc";
+  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at, rebuild_note, rebuild_count, source_title_at_fork, source_handle_at_fork, solves_node_id, post_doc, making";
 
 const CREATOR_LIST_LIMIT = 50;
 

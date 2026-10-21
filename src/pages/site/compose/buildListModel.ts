@@ -53,7 +53,7 @@ export function dividers(
   // CA-04 P4, P6: a lone session keeps its head when it has something to say there: Setup {n}, Worked until, Runs when.
   const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal || sessionFactsLine({ extras: group.extras, words: group.longWords }, "maker") || togetherLine(group.extras, () => 0));
   // CA-12 P3: a session made here (Session 1 of a new post) always has its head, with its app or "No app chosen".
-  if (shown.length === 0 || (shown.length === 1 && !says(shown[0]) && groupKind(shown[0]) !== "typed")) return out;
+  if (shown.length === 0 || (shown.length === 1 && !says(shown[0]) && groupKind(shown[0]) !== "typed" && !shown[0].marked)) return out;
   const sessions = new Map(sourceSessions(groups, steps, [], {}, setupCounts, runsWhen).map((session) => [session.key, session]));
   for (const group of shown) {
     const first = group.stepNumbers[0];

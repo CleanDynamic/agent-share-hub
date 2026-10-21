@@ -101,13 +101,8 @@ export interface SandboxViewProps extends CardProps {
    */
   onAddPromptFocus?: () => boolean | void;
 
-  /** CA-04 P1: Add › New session asks for its tool. Absent, the item stays disabled. */
-  onNewSession?: () => void;
   /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
   onAddFile?: () => void;
-  /** Add › Session: the library's sessions that are in no build. Absent, the item stays disabled. */
-  addableSessions?: readonly { id: string; label: string; line: string }[];
-  onAddSession?: (id: string) => void;
 
   /** Add › Tool and Add › Result: make the row and select it in Details. Absent, the item stays disabled. */
   onAddTool?: () => void;
@@ -143,7 +138,7 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
 }
 
-export type AddKey = "newSession" | "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "code" | "check" | "result";
+export type AddKey = "prompt" | "agent" | "file" | "tool" | "manual" | "code" | "check" | "result";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -151,10 +146,8 @@ export type AddKey = "newSession" | "prompt" | "session" | "agent" | "file" | "t
  * disabled. UI-P76 turns the switch on only once they are all true.
  */
 export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; ready: boolean }[] = [
-  /* CA-04 P1: first, because what is added next goes into it. */
-  { key: "newSession", name: "New session", line: "One sitting with one tool", ready: true },
+  /* CA-12 P4: sessions are not in this menu: a session is a group of tiles, added with "+ Add a session" under the last one. */
   { key: "prompt", name: "Prompt", line: "A message you sent", ready: true },
-  { key: "session", name: "Session", line: "A chat from your sources", ready: true },
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: true },
   { key: "file", name: "File", line: "Something the AI read", ready: true },
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
@@ -191,36 +184,26 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onNewSession" | "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
 
-/** One item of the Add menu, wired: what it calls, whether it is enabled. Session carries its submenu's rows. Shared with the refined fork (UI-P93). */
+/** One item of the Add menu, wired: what it calls, whether it is enabled. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
   key: AddKey;
   name: string;
   line: string;
   enabled: boolean;
   onSelect?: () => unknown;
-  /** Session only: the library's sessions that are in no build, at most six. */
-  sessions?: readonly { id: string; label: string; line: string; onSelect: () => void }[];
   /** CA-10: the item moves focus elsewhere itself (Prompt): the menu must not hand it back to Add as it closes. */
   movesFocus?: boolean;
 }
 
-export function addEntries({ onNewSession, onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
+export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
     if (item.key === "check") {
       // Listed always; offered once the build has an agent, a team or code to check.
       return { ...item, line: checkable ? item.line : ADD_COPY.checkFirst, enabled: item.ready && checkable && Boolean(onAddCheck), onSelect: onAddCheck };
     }
-    if (item.key === "session") {
-      return {
-        ...item,
-        enabled: item.ready && Boolean(onAddSession),
-        sessions: (addableSessions ?? []).slice(0, 6).map((session) => ({ ...session, onSelect: () => onAddSession?.(session.id) })),
-      };
-    }
     const handlers: Partial<Record<AddKey, (() => unknown) | undefined>> = {
-      newSession: onNewSession,
       file: onAddFile,
       prompt: onAddPromptFocus,
       tool: onAddTool,
@@ -264,7 +247,6 @@ const addItem = (enabled: boolean): CSSProperties => ({
  */
 function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
   const [open, setOpen] = useState(false);
-  const [sessionsOpen, setSessionsOpen] = useState(false);
   /** Set by a row that moved focus, read once as the menu closes. */
   const moved = useRef(false);
   const addButton = useRef<HTMLButtonElement>(null);
@@ -304,28 +286,12 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
           aria-haspopup="dialog"
           aria-expanded={open}
           style={{ height: 44 }}
-          onClick={() => {
-            setSessionsOpen(false);
-            setOpen(true);
-          }}
+          onClick={() => setOpen(true)}
         />
         <BrandBottomSheet open={open} onOpenChange={setOpen} title="Add" onCloseAutoFocus={backToAdd} data-testid="add-sheet">
-          {entries.map((item) =>
-            item.sessions ? (
-              <div key={item.key} style={{ display: "flex", flexDirection: "column" }}>
-                <SheetRow name={item.name} line={item.line} disabled={!item.enabled} expanded={sessionsOpen} onSelect={() => setSessionsOpen((value) => !value)} />
-                {sessionsOpen ? (
-                  item.sessions.length === 0 ? (
-                    <SheetRow inset disabled name="No sessions waiting" line="Every session is already in a build" />
-                  ) : (
-                    item.sessions.map((session) => <SheetRow key={session.id} inset name={session.label} line={session.line} onSelect={() => choose({ onSelect: session.onSelect })} />)
-                  )
-                ) : null}
-              </div>
-            ) : (
-              <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
-            ),
-          )}
+          {entries.map((item) => (
+            <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
+          ))}
         </BrandBottomSheet>
       </>
     );
@@ -339,30 +305,6 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
       <Menu.Portal>
         <MenuContent align="end" sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={backToAdd}>
           {entries.map((item) => {
-            if (item.sessions) {
-              return (
-                <Menu.Sub key={item.key}>
-                  <Menu.SubTrigger disabled={!item.enabled} style={addItem(item.enabled)}>
-                    <AddLabel name={item.name} line={item.line} />
-                  </Menu.SubTrigger>
-                  <Menu.Portal>
-                    <MenuSubContent sideOffset={6} style={menuSurface(280)}>
-                      {item.sessions.length === 0 ? (
-                        <Menu.Item disabled style={addItem(false)}>
-                          <AddLabel name="No sessions waiting" line="Every session is already in a build" />
-                        </Menu.Item>
-                      ) : (
-                        item.sessions.map((session) => (
-                          <Menu.Item key={session.id} onSelect={session.onSelect} style={addItem(true)}>
-                            <AddLabel name={session.label} line={session.line} />
-                          </Menu.Item>
-                        ))
-                      )}
-                    </MenuSubContent>
-                  </Menu.Portal>
-                </Menu.Sub>
-              );
-            }
             return (
               <Menu.Item
                 key={item.key}
@@ -727,10 +669,7 @@ export function SandboxView(props: SandboxViewProps) {
   const addMenu = (
     <AddMenu
       phone={phone}
-      onNewSession={props.onNewSession}
       onAddFile={props.onAddFile}
-      addableSessions={props.addableSessions}
-      onAddSession={props.onAddSession}
       onAddPromptFocus={props.onAddPromptFocus}
       onAddTool={props.onAddTool}
       onAddResult={props.onAddResult}

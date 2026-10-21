@@ -99,8 +99,6 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/making.test.ts",
   "src/lib/build/making.ts",
   "src/lib/build/onePrompt.snapshot.test.tsx",
-  "src/pages/site/compose/AddSessionDialog.test.tsx",
-  "src/pages/site/compose/AddSessionDialog.tsx",
   "src/pages/site/compose/sourcesModel.ts",
   // CA-04 P2
   "src/lib/build/copyTogether.ts",
@@ -312,6 +310,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SandboxPage.tsx",
   "src/pages/site/compose/ToolPicker.tsx",
   "src/pages/site/compose/SandboxPage.sessions.test.tsx",
+  // CA-12 P4, P5
+  "src/pages/site/compose/AddSessionRow.tsx",
+  "src/pages/site/compose/buildListModel.ts",
+  "src/pages/site/compose/useComposeSessions.ts",
+  "src/pages/site/compose/SandboxView.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

@@ -183,6 +183,41 @@ describe("sessionGroups", () => {
     ]);
   });
 
+  describe("CA-12 P5: numbered by build_sessions.position", () => {
+    const three = () =>
+      buildSteps([
+        fromSession("s1", { position: 1 }),
+        node({ position: 2, payload: { text: "typed", tool: "claude-code" } }),
+        fromSession("s2", { position: 3 }),
+      ]);
+    const meta = { "typed-new": { tool: null, date: "2026-10-06" } };
+
+    it("changes nothing for a draft with no rows", () => {
+      expect(sessionGroups(three(), sessions, {}, {}, []).map((g) => [g.key, g.number])).toEqual([["s1", 1], ["typed-legacy-1", 2], ["s2", 3]]);
+    });
+
+    it("changes nothing when the rows agree with where the steps sit", () => {
+      expect(sessionGroups(three(), sessions, {}, {}, ["s1", "s2"]).map((g) => [g.key, g.number])).toEqual([["s1", 1], ["typed-legacy-1", 2], ["s2", 3]]);
+    });
+
+    it("refills only the places the rows hold: a session with no row keeps its own place, the others follow their positions", () => {
+      expect(sessionGroups(three(), sessions, {}, {}, ["s2", "s1"]).map((g) => [g.key, g.number])).toEqual([["s2", 1], ["typed-legacy-1", 2], ["s1", 3]]);
+    });
+
+    it("numbers a session with no tile yet by its position, not by its date", () => {
+      const steps = buildSteps([fromSession("s1", { position: 1 })]);
+      const groups = sessionGroups(steps, sessions, {}, { "typed-a": { tool: null, date: "2026-10-09" }, "typed-b": { tool: null, date: "2026-10-01" } }, ["s1", "typed-a", "typed-b"]);
+      expect(groups.map((g) => [g.key, g.number])).toEqual([["s1", 1], ["typed-a", 2], ["typed-b", 3]]);
+    });
+
+    it("marks a session that has an entry in sessions_meta, so a lone one keeps its head", () => {
+      const steps = buildSteps([fromSession("s1", { position: 1 })]);
+      expect(sessionGroups(steps, sessions, {}, {})[0].marked).toBeUndefined();
+      expect(sessionGroups(steps, sessions, {}, { s1: { tool: null, date: "" } })[0].marked).toBe(true);
+      expect(Object.keys(meta)).toEqual(["typed-new"]);
+    });
+  });
+
   it("reads an old entry with no id or date without failing", () => {
     const steps = buildSteps([fromSession("s1")]);
     const [group] = sessionGroups(steps, [{ client: "claude-code", model: "Sonnet 5.5", prompts: 1, turns: 1 }], {});

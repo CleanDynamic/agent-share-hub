@@ -172,16 +172,22 @@ function seedRows(): Record<string, Row[]> {
     "2026-08-26T18:32:04Z", "2026-08-26T14:07:51Z", "2026-08-25T16:50:03Z", "2026-08-25T13:49:03Z", "2026-08-25T13:40:52Z",
   ];
   const builds = touched.map((at, index) => buildRow({ id: `0d0d0d0d-0000-4000-8000-${String(index + 1).padStart(12, "0")}`, title: `Draft ${index + 1}`, created_at: at, updated_at: at }));
-  const proposal = (text: string) => ({ events: [{ kind: "prompt", ordinal: 0, payload: { text }, source_ref: { index: 0 } }], summary: { user_turn_count: 1, assistant_turn_count: 1 } });
+  const proposal = (text: string, id: string) => ({
+    events: [{ kind: "prompt", ordinal: 1, visibility: "public", occurred_at: null, payload: { text }, source_ref: { source: "transcript", session_id: id, index: 1 } }],
+    nodes: [],
+    warnings: [],
+    summary: { session_id: id, user_turn_count: 1, assistant_turn_count: 1 },
+  });
   /** CA-12: a long session, for the collapse rule: `count` prompts, one per user turn. */
   const longProposal = (count: number) => ({
     events: Array.from({ length: count }, (_, at) => ({ kind: "prompt", ordinal: at + 1, visibility: "public", occurred_at: null, payload: { text: `Prompt ${at + 1} of the long session.` }, source_ref: { source: "transcript", session_id: "0e0e0e0e-0000-4000-8000-000000000003", index: at * 2 + 1 } })),
     nodes: [],
+    warnings: [],
     summary: { session_id: "0e0e0e0e-0000-4000-8000-000000000003", user_turn_count: count, assistant_turn_count: count },
   });
   const sessions: Row[] = [
-    { id: "0e0e0e0e-0000-4000-8000-000000000001", user_id: MAKER_ID, client: "claude-code", model: null, status: "parsed", build_id: null, target_build_id: null, created_at: "2026-10-09T10:00:00Z", updated_at: "2026-10-09T10:00:00Z", proposal: proposal("A waiting session.") },
-    { id: "0e0e0e0e-0000-4000-8000-000000000002", user_id: MAKER_ID, client: "claude", model: null, status: "claimed", build_id: builds[0].id, target_build_id: null, created_at: "2026-10-08T10:00:00Z", updated_at: "2026-10-08T10:00:00Z", proposal: proposal("A session in a draft.") },
+    { id: "0e0e0e0e-0000-4000-8000-000000000001", user_id: MAKER_ID, client: "claude-code", model: null, status: "parsed", build_id: null, target_build_id: null, created_at: "2026-10-09T10:00:00Z", updated_at: "2026-10-09T10:00:00Z", proposal: proposal("A waiting session.", "0e0e0e0e-0000-4000-8000-000000000001") },
+    { id: "0e0e0e0e-0000-4000-8000-000000000002", user_id: MAKER_ID, client: "claude", model: null, status: "claimed", build_id: builds[0].id, target_build_id: null, created_at: "2026-10-08T10:00:00Z", updated_at: "2026-10-08T10:00:00Z", proposal: proposal("A session in a draft.", "0e0e0e0e-0000-4000-8000-000000000002") },
     { id: "0e0e0e0e-0000-4000-8000-000000000003", user_id: MAKER_ID, client: "claude-code", model: null, status: "expired", build_id: null, target_build_id: null, created_at: "2026-10-01T10:00:00Z", updated_at: "2026-10-01T10:00:00Z", proposal: longProposal(66) },
   ];
   const nodeTypes = ["prompt", "agent_config", "team", "manual_step", "document", "integration", "result", "code", "eval_run", "breakage", "gap", "recording", "screenshot"].map((key, sort) => ({

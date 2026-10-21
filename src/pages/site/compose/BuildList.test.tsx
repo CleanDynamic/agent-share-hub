@@ -763,10 +763,9 @@ describe("sessions are sittings (CA-04 P1)", () => {
     { key: "typed-b", label: "Session 2 · Claude Code", tool: "Claude Code" },
   ];
 
-  it("says where a new prompt goes, and its menu lists the sessions and New session", async () => {
+  it("says where a new prompt goes, and its menu lists the sessions (a session is added from its own row)", async () => {
     const onCurrentSession = vi.fn();
-    const onNewSession = vi.fn();
-    list({ sessionChoices: choices, currentSession: "typed-b", onCurrentSession, onNewSession });
+    list({ sessionChoices: choices, currentSession: "typed-b", onCurrentSession });
     const trigger = screen.getByTestId("adding-to");
     expect(trigger.textContent).toContain("Adding to");
     expect(trigger.textContent).toContain("Session 2 · Claude Code");
@@ -777,8 +776,7 @@ describe("sessions are sittings (CA-04 P1)", () => {
     fireEvent.click(radios[0]);
     expect(onCurrentSession).toHaveBeenCalledWith("typed-legacy-1");
     fireEvent.keyDown(screen.getByTestId("adding-to"), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "New session" }));
-    expect(onNewSession).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("menuitem", { name: "New session" })).toBeNull();
   });
 
   it("puts the current session's tool in the field", () => {

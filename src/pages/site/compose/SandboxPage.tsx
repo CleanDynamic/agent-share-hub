@@ -44,7 +44,9 @@ import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, t
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
-import { attachSession } from "@/lib/build/sessions";
+import { addSessionToBuild, emptyFirstSession } from "@/lib/build/addSession";
+import { buildSessionRowsKey } from "./useComposeSessions";
+import { insertBuildSessionIfTable, nextSessionPosition, orderOf, setSessionCollapsed } from "@/lib/build/buildSessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -55,7 +57,6 @@ import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddToolDialog } from "./AddToolDialog";
-import { AddSessionDialog } from "./AddSessionDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
@@ -138,12 +139,14 @@ export function SandboxPage() {
   }, []);
 
   const made = (build as { making?: unknown } | null)?.making;
+  /* CA-12 P5: sessions are numbered by `build_sessions.position`; a draft with no rows is numbered by its steps, as before. */
+  const order = useMemo(() => orderOf(sessions.rows), [sessions.rows]);
   /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
   const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
   const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
     const steps = buildSteps(tree);
     // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
-    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made));
+    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made), order);
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
@@ -151,7 +154,7 @@ export function SandboxPage() {
       files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
-  }, [tree, made]);
+  }, [tree, made, order]);
   const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview), [savedSteps, savedGroups, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
@@ -426,7 +429,6 @@ export function SandboxPage() {
     if (empties.length === 0 && !buildId && shown.length === 0) return [{ key: FIRST_SESSION_KEY, number: 1, tool: NO_APP, detail: "", prompts: [] }];
     return empties;
   }, [shown, sourceSessionRows, buildId]);
-  const [addSessionOpen, setAddSessionOpen] = useState(false);
   const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
 
   /** An old build's run of typed prompts, saved as a session made here so it can change. Resolves its new key. */
@@ -460,20 +462,72 @@ export function SandboxPage() {
     return claim(key);
   }, [currentSession, shown, claim, buildId, ensureBuild, firstSession]);
 
-  const onNewSession = useCallback(
-    async (tool: string | null) => {
+  /* CA-12 P4/P5: the session just added is scrolled to and outlined once; the row says "Adding…" until the write lands. */
+  const [ringedSession, setRingedSession] = useState<{ key: string; n: number } | null>(null);
+  const [startingSession, setStartingSession] = useState(false);
+  useEffect(() => {
+    if (!ringedSession) return;
+    document.querySelector(`[data-session-key="${ringedSession.key}"]`)?.scrollIntoView?.({ block: "center" });
+    const timer = window.setTimeout(() => setRingedSession(null), ADD_FLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [ringedSession]);
+
+  /**
+   * CA-12 P4: "Start a new one here": an empty session with the app picked. If Session 1 is still empty and has no app,
+   * the app goes there instead and the session stays Session 1; otherwise the new session is the next one in order.
+   */
+  const onStartSession = useCallback(
+    async (tool: string) => {
+      setStartingSession(true);
       try {
         const id = await ensureBuild();
-        const key = newSessionKey();
-        await setSessionMeta(id, key, { tool, date: todayDay() });
-        await refreshRecord(id);
+        const empty = buildId ? emptyFirstSession(sessions.rows, made, tree) : firstSession.current;
+        let key: string;
+        if (empty) {
+          key = empty;
+          const before = sessionsMetaOf(made)[key] ?? { tool: null, date: todayDay() };
+          await setSessionMeta(id, key, { ...before, tool });
+        } else {
+          key = newSessionKey();
+          await setSessionMeta(id, key, { tool, date: todayDay() });
+          await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
+        }
+        await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
         setChosenSession(key);
+        setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
       } catch (cause) {
         console.error("[Sandbox] session not made", cause);
         sayFailed(cause, "Couldn't make that session. Try again.");
+      } finally {
+        setStartingSession(false);
       }
     },
-    [ensureBuild, refreshRecord],
+    [ensureBuild, buildId, sessions.rows, made, tree, firstSession, refreshRecord, queryClient],
+  );
+
+  /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
+  const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
+  const collapsedKeys = useMemo(() => {
+    const out = new Set(sessions.rows.filter((row) => row.collapsed).map((row) => row.sessionKey));
+    for (const [key, closed] of Object.entries(collapseOverride)) {
+      if (closed) out.add(key);
+      else out.delete(key);
+    }
+    return out;
+  }, [sessions.rows, collapseOverride]);
+  const onToggleCollapsed = useCallback(
+    (key: string, closed: boolean) => {
+      setCollapseOverride((previous) => ({ ...previous, [key]: closed }));
+      if (!buildId) return;
+      void setSessionCollapsed(buildId, key, closed)
+        .then(() => queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }))
+        .catch((cause) => {
+          console.error("[Sandbox] collapse not saved", cause);
+          setCollapseOverride((previous) => ({ ...previous, [key]: !closed }));
+          sayFailed(cause, "Couldn't save that. Try again.");
+        });
+    },
+    [buildId, queryClient],
   );
 
   const onSessionMeta = useCallback(
@@ -896,18 +950,25 @@ export function SandboxPage() {
     [viewProps],
   );
 
+  /**
+   * CA-12 P5: a finished session added to this draft, every prompt a tile. On a new post the draft (and its Session 1,
+   * which the added session then replaces) is made first. The row says "Adding…" until it lands; the new session's head
+   * is scrolled to and outlined once.
+   */
   const onAddSession = useCallback(
     async (importId: string) => {
       setAdding((previous) => new Set(previous).add(importId));
       try {
         const id = await ensureBuild();
-        await attachSession(importId, { kind: "existing", buildId: id });
+        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id });
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }),
           queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
           queryClient.invalidateQueries({ queryKey: ["build", "getMadeWith"] }),
           queryClient.invalidateQueries({ queryKey: librarySessionsKey }),
         ]);
+        setChosenSession(added.sessionKey);
+        setRingedSession((current) => ({ key: added.sessionKey, n: (current?.n ?? 0) + 1 }));
       } catch (cause) {
         console.error("[Sandbox] session not added", cause);
         sayFailed(cause, "Couldn't add that session. Try again.");
@@ -1225,7 +1286,6 @@ export function SandboxPage() {
           />
         }
         threadNote={thread.hold}
-        onNewSession={() => setAddSessionOpen(true)}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => setAddToolOpen(true)}
@@ -1389,21 +1449,27 @@ export function SandboxPage() {
             sessionChoices={sessionChoices}
             currentSession={currentSession}
             onCurrentSession={setChosenSession}
-            onNewSession={() => setAddSessionOpen(true)}
-            onAddAsAgent={onAddAsAgent}
+                onAddAsAgent={onAddAsAgent}
             onKeepAsCode={onKeepAsCode}
             inBuild={inBuild}
             addPromptRef={addPromptField}
             addPromptFlash={addPromptFlash}
             pendingAdd={pendingAdd}
             ringedId={ringed?.id ?? null}
+            addSession={{
+              library: libraryRows,
+              hasMore: sessions.libraryHasMore,
+              loadingMore: sessions.libraryLoadingMore,
+              onMore: sessions.libraryMore,
+              adding: adding.size > 0 || startingSession,
+              onAdd: (importId) => void onAddSession(importId),
+              onStartNew: (tool) => void onStartSession(tool),
+            }}
+            collapsed={collapsedKeys}
+            onToggleCollapsed={onToggleCollapsed}
+            ringedSession={ringedSession}
           />
         }
-        addableSessions={libraryRows.filter((row) => !row.adding && !row.inThisDraft)}
-        onAddSession={(id) => {
-          showPending("session");
-          void onAddSession(id).finally(() => setPendingAdd(null));
-        }}
         sources={
           <div ref={sourcesAnchor} style={{ minWidth: 0 }}>
           <SourcesPanel
@@ -1456,7 +1522,6 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
-      <AddSessionDialog open={addSessionOpen} onOpenChange={setAddSessionOpen} inBuild={inBuild} onAdd={(tool) => void onNewSession(tool)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
       <FullPromptWindow
         steps={steps}

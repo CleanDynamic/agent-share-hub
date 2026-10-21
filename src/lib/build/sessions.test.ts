@@ -41,6 +41,9 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+const addSessionToBuild = vi.fn();
+vi.mock("./addSession", () => ({ addSessionToBuild: (...a: unknown[]) => addSessionToBuild(...a) }));
+
 const claimImport = vi.fn();
 const discardImport = vi.fn();
 const loadImportProposal = vi.fn();
@@ -342,55 +345,19 @@ describe("getSessionPrompts", () => {
 });
 
 describe("attachSession", () => {
-  it("claims into a new draft titled from the proposal, with nothing from the conversation kept", async () => {
-    answer({ data: { id: IMPORT_ID, status: "parsed", build_id: null } });
-    const id = await attachSession(IMPORT_ID, { kind: "new" });
-
-    expect(id).toBe(BUILD_ID);
-    const [importId, passed, selections, destination] = claimImport.mock.calls[0];
-    expect(importId).toBe(IMPORT_ID);
-    expect(passed).toEqual(proposal());
-    expect([...selections.eventOrdinals]).toEqual([]);
-    expect([...selections.nodeLocalIds]).toEqual([]);
-    expect(selections.outcome).toBe(false);
-    expect(selections.title).toBe(true);
-    expect(destination).toEqual({ kind: "new", title: "Inbox triage agent" });
-    expect(refreshMakingStats).toHaveBeenCalledWith(BUILD_ID);
-  });
-
-  it("titles a new draft Untitled build when the proposal has no title", async () => {
-    loadImportProposal.mockResolvedValue(proposal(null));
-    answer({ data: { id: IMPORT_ID, status: "parsed", build_id: null } });
-    await attachSession(IMPORT_ID, { kind: "new" });
-    expect(claimImport.mock.calls[0][3]).toEqual({ kind: "new", title: "Untitled build" });
-  });
-
-  it("claims into an existing draft without keeping the title", async () => {
-    answer({ data: { id: IMPORT_ID, status: "parsed", build_id: null } });
+  it("adds the session with addSessionToBuild (every prompt a tile, the import not claimed) and hands back the draft's id", async () => {
+    addSessionToBuild.mockResolvedValue({ buildId: BUILD_ID, sessionKey: IMPORT_ID, tiles: 2, collapsed: false, replaced: null });
+    expect(await attachSession(IMPORT_ID, { kind: "new" })).toBe(BUILD_ID);
+    expect(addSessionToBuild).toHaveBeenCalledWith(IMPORT_ID, { kind: "new" });
     await attachSession(IMPORT_ID, { kind: "existing", buildId: BUILD_ID });
-    const [, , selections, destination] = claimImport.mock.calls[0];
-    expect(selections.title).toBe(false);
-    expect(destination).toEqual({ kind: "existing", buildId: BUILD_ID });
-  });
-
-  it("refuses a session that is already claimed, before any draft is created", async () => {
-    answer({ data: { id: IMPORT_ID, status: "claimed", build_id: BUILD_ID } });
-    await expect(attachSession(IMPORT_ID, { kind: "new" })).rejects.toThrow(/already in a build/);
-    expect(claimImport).not.toHaveBeenCalled();
-    expect(refreshMakingStats).not.toHaveBeenCalled();
-  });
-
-  it("refuses a session RLS hides or that is gone", async () => {
-    answer({ data: null });
-    await expect(attachSession(IMPORT_ID, { kind: "new" })).rejects.toThrow(/no longer available/);
+    expect(addSessionToBuild).toHaveBeenLastCalledWith(IMPORT_ID, { kind: "existing", buildId: BUILD_ID });
+    // The import row is not written: nothing here marks it claimed.
     expect(claimImport).not.toHaveBeenCalled();
   });
 
-  it("does not refresh stats when the claim itself fails (a second tab won the race)", async () => {
-    answer({ data: { id: IMPORT_ID, status: "parsed", build_id: null } });
-    claimImport.mockRejectedValue(new Error("already claimed"));
-    await expect(attachSession(IMPORT_ID, { kind: "new" })).rejects.toThrow(/already claimed/);
-    expect(refreshMakingStats).not.toHaveBeenCalled();
+  it("lets the error through when the session cannot be added", async () => {
+    addSessionToBuild.mockRejectedValue(new Error("That session is already in this draft."));
+    await expect(attachSession(IMPORT_ID, { kind: "existing", buildId: BUILD_ID })).rejects.toThrow(/already in this draft/);
   });
 });
 
