@@ -652,8 +652,9 @@ const runtime = (id: string, name: string, group: ToolGroupKey, aliases: string[
   logo: null,
   aliases,
   kind: "runtime",
-  models: { mode: "none" },
-  steps: [],
+  // An agent framework runs whatever model it is given; every other runtime model is not a place a prompt is run.
+  models: group === "runtime-frameworks" ? { mode: "any", suggested: [] } : { mode: "none" },
+  steps: group === "runtime-frameworks" ? ["agent"] : [],
   status: "current",
   source: null,
   checked: null,

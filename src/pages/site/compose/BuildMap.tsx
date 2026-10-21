@@ -384,6 +384,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
           )}
         </>
       )}
+      {box.helperMarks?.length ? <HelperMarks marks={box.helperMarks} id={box.id} /> : null}
       {box.outputs?.length ? (
         <span data-testid={`map-outputs-${box.id}`} style={{ position: "absolute", right: 0, top: MAP_SIZES.head + 1, width: "55%", pointerEvents: "none" }}>
           {box.outputs.map((output, at) => (
@@ -401,6 +402,39 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
     </button>
   );
 });
+
+/**
+ * CA-13 P6: an agent's helpers as small marks along the bottom edge of its box, one for each (12 across at most). Each is
+ * named on hover and on focus. They are never separate boxes and have no wires.
+ */
+function HelperMarks({ marks, id }: { marks: readonly { label: string; job: string; provider: string }[]; id: string }) {
+  const [shown, setShown] = useState<number | null>(null);
+  return (
+    <span data-testid={`map-helper-marks-${id}`} role="list" aria-label="Helpers it used" style={{ position: "absolute", left: 12, bottom: 4, display: "flex", gap: 4, alignItems: "flex-end" }}>
+      {marks.map((mark, index) => (
+        <span
+          key={index}
+          role="listitem"
+          tabIndex={0}
+          data-testid="map-helper-mark"
+          aria-label={mark.label}
+          title={mark.label}
+          onMouseEnter={() => setShown(index)}
+          onMouseLeave={() => setShown((current) => (current === index ? null : current))}
+          onFocus={() => setShown(index)}
+          onBlur={() => setShown((current) => (current === index ? null : current))}
+          onClick={(event) => event.stopPropagation()}
+          style={{ width: 8, height: 8, borderRadius: 2, background: shown === index ? t.text : t.text2, outline: "none", boxShadow: shown === index ? `0 0 0 1px ${t.surface}, 0 0 0 2px ${t.text}` : undefined }}
+        />
+      ))}
+      {shown !== null ? (
+        <span data-testid="map-helper-label" style={{ position: "absolute", left: 0, bottom: 12, whiteSpace: "nowrap", padding: "2px 6px", borderRadius: 4, background: t.tagFill, ...geist(11, 500, t.onTag), pointerEvents: "none" }}>
+          {marks[shown].label}
+        </span>
+      ) : null}
+    </span>
+  );
+}
 
 /* ── the wires ── */
 

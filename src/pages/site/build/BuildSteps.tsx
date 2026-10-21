@@ -38,7 +38,9 @@ import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWi
 import { PartWindow } from "@/components/build/PartWindow";
 import { drawBranches } from "@/components/build/BranchRows";
 import { LinkLines } from "@/components/build/LinkLines";
+import { HelperChips, ShapeChip, TraceLink } from "@/components/build/RuntimeChips";
 import { callsOf } from "@/lib/build/decisionCopy";
+import { definesOf } from "@/lib/build/agentCode";
 import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, ToolTileBody, DecisionTileBody } from "@/components/build/tileBodies";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
@@ -826,7 +828,8 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
-      {step.kind === "code" ? <LinkLines lines={callsOf(step.id, view.steps.map((candidate) => candidate.step))} onOpen={ctx.go} indent={INDENT} /> : null}
+      {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+      {step.kind === "code" ? <LinkLines lines={[...callsOf(step.id, view.steps.map((candidate) => candidate.step)), ...definesOf(step.id, view.steps.map((candidate) => candidate.step))]} onOpen={ctx.go} indent={INDENT} /> : null}
       <SaveLines files={entry.makes} />
       <SentWith entries={entry.sentWith} ctx={ctx} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />
@@ -923,6 +926,9 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       </div>
       <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
       {entry.runs ? <DotLine testId="runs-line" style={{ paddingLeft: INDENT }}>{entry.runs}</DotLine> : null}
+      {step.helpers?.length ? <HelperChips helpers={step.helpers} indent={INDENT} decisionName={(id) => ctx.view.steps.map((candidate) => candidate.step).find((candidate) => candidate.id === id)?.title ?? undefined} /> : null}
+      {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+      {step.traceUrl ? <span style={{ paddingLeft: INDENT }}><TraceLink url={step.traceUrl} /></span> : null}
       <OutsideWarning names={entry.outside} style={{ marginLeft: INDENT }} />
       <SaveLines files={entry.makes} />
       <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>

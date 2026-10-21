@@ -30,10 +30,13 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TITLE_MAX, WHEN_DETAIL_MAX, type AgentModel, type Runs } from "@/lib/build/graph";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { startingModel } from "@/lib/tools/modelRules";
+import { toolName } from "@/lib/tools/registry";
+import type { Helper } from "@/lib/build/helpers";
 import { t } from "@/lib/theme/tokens";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { Field } from "./composeControls";
+import { HelpersField } from "./HelpersField";
 import { dialogTitle, text, typedArea, typedField, windowStyle } from "./refinedStyles";
 
 export const AGENT_DIALOG_COPY = {
@@ -78,6 +81,8 @@ export interface AddAgentInput {
   memory?: string;
   /** CA-12 P11: how it starts; absent for "When I ask". */
   runs?: Runs;
+  /** CA-13 P6: the helper models it used, for an agent (a team has none of its own). */
+  helpers?: Helper[];
 }
 
 /** CA-02 P4: what "Add as an agent" opens the dialog with. */
@@ -125,6 +130,7 @@ function Form({
   const [instructions, setInstructions] = useState(seed?.instructions ?? "");
   const [start, setStart] = useState<"ask" | "schedule" | "event">("ask");
   const [startDetail, setStartDetail] = useState("");
+  const [helpers, setHelpers] = useState<Helper[]>([]);
   const uid = useId();
   const ready = setupReady(setup);
 
@@ -143,6 +149,7 @@ function Form({
       ...(instructions.trim() ? { instructions } : null),
       ...(start !== "ask" ? { runs: { how: start, ...(startDetail.trim() ? { detail: startDetail.trim() } : null) } as Runs } : null),
       ...(setup.memory?.trim() ? { memory: setup.memory.trim() } : null),
+      ...(kind === "agent" && helpers.length ? { helpers } : null),
     });
   };
 
@@ -217,6 +224,8 @@ function Form({
           </Field>
         }
       />
+
+      {kind === "agent" ? <HelpersField helpers={helpers} toolNames={setup.tools.map((tool) => toolName(tool) ?? tool)} decisions={[]} phone={phone} onChange={setHelpers} /> : null}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
         <Button variant="secondary" size={phone ? 44 : 36} onClick={onCancel}>

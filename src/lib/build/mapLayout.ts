@@ -38,6 +38,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
+import { helperChip, HELPERS_MAX } from "./helpers";
 import { conditionKey, conditionOrder, modelShort, runsWhenValue, sameCondition, uncoveredCount, type RunsWhen } from "./decision";
 import { checkStatus, groupKey, groupKind, groupOfStep, shownGroups, stepRunsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
@@ -149,6 +150,8 @@ export interface MapBox {
   outputs?: { key: string; label: string }[];
   /** CA-13, a decision only: some options have no step, so the box says "Other options: no step". */
   otherNoStep?: boolean;
+  /** CA-13 P6, an agent only: one small mark on the box's edge for each helper (at most 12), labelled on hover and focus. Never a box or a wire. */
+  helperMarks?: { label: string; job: string; provider: string }[];
 }
 
 export interface MapLane {
@@ -627,6 +630,7 @@ export function layoutMap(
       stack: null,
       ...(step.kind === "check" ? { text: step.check?.passing ?? "", status: step.check ? checkStatus(step.check) : null } : null),
       ...(sent.length > 0 ? { sentWith: sent } : null),
+      ...(step.kind === "agent" && step.helpers?.length ? { helperMarks: step.helpers.slice(0, HELPERS_MAX).map((helper) => ({ label: helperChip(helper), job: helper.job, provider: helper.provider })) } : null),
       ...(step.kind === "decision" && step.decision
         ? {
             contents: `${modelShort(step.decision.provider, step.decision.model)} · ${plural(step.decision.questions.length, "question")}`,

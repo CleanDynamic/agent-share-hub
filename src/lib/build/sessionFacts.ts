@@ -10,6 +10,8 @@
 // Costs are always said as "about". A cost read from a Claude Code result file is in the file's own currency (US
 // dollars) and is shown in it; it is never converted, because no rate is known here.
 
+import { traceUrlOf } from "./trace";
+
 export type Currency = "GBP" | "USD";
 
 export interface SessionExtras {
@@ -18,6 +20,10 @@ export interface SessionExtras {
   currency?: Currency;
   /** Tokens used, from a result file. */
   tokens?: number;
+  /** CA-13 P8: how long the session ran, in milliseconds, as the maker gave it or a result file said. */
+  ms?: number;
+  /** CA-13 P5: a trace link for the session (https only). */
+  traceUrl?: string;
   /** Tokens read from the cache, from a result file only. */
   cached?: number;
   /** Words in the whole session, when the intake knew them. */
@@ -42,7 +48,7 @@ export const PARALLEL_MAX = 20;
 /** A session over this many words is "long". */
 export const LONG_SESSION_WORDS = 100_000;
 
-const EXTRA_KEYS = ["cost", "currency", "tokens", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy"] as const;
+const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -60,6 +66,10 @@ export function extrasOf(entry: unknown): SessionExtras {
   }
   const tokens = whole(entry.tokens, TOKENS_MAX);
   if (tokens !== undefined && tokens > 0) out.tokens = tokens;
+  const trace = traceUrlOf(entry.traceUrl);
+  if (trace) out.traceUrl = trace;
+  const ms = whole(entry.ms, TOKENS_MAX);
+  if (ms !== undefined && ms > 0) out.ms = ms;
   const cached = whole(entry.cached, TOKENS_MAX);
   if (cached !== undefined && cached > 0) out.cached = cached;
   const words = whole(entry.words, TOKENS_MAX);

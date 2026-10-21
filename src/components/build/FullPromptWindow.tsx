@@ -37,6 +37,8 @@ import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelTag } from "@/components/brand/ModelTag";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ChangedText } from "@/components/build/ChangedText";
+import { CodeLines } from "@/components/code/CodeLines";
+import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/answerShape";
 import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
 import { REPLY_MAX } from "@/lib/build/composePrompts";
 import { groupKind, groupOfStep, promptNumbersOf, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
@@ -304,6 +306,28 @@ function RefinedTextBox({ text, changes, boxRef, phone, onPick }: { text: string
 }
 
 /** CA-12 P12: "What came back". The maker edits it (up to 4,000 characters); a reader sees it as read-only text. */
+/** CA-13 P7: how the answer was constrained, where, the schema and the sample; and Copy the setting. */
+function ShapeRead({ shape }: { shape: OutputShape }) {
+  const [said, setSaid] = useState("");
+  const fragment = shapeFragment(shape);
+  return (
+    <section data-testid="shape-read" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <h3 style={{ ...EYEBROW, margin: 0 }}>Answer shape</h3>
+      <p style={{ ...geist(13, 400, t.text2), margin: 0 }}>{[SHAPE_HOW_LABEL[shape.how], shape.where].filter(Boolean).join(" · ")}</p>
+      {shape.schema ? <CodeLines text={shape.schema} testId="shape-schema" label="Schema" /> : null}
+      {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
+      {fragment.text ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Button variant="secondary" size={28} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Couldn't copy. Select the text and copy it."))}>
+            Copy the setting
+          </Button>
+          <span aria-live="polite" style={geist(12, 400, t.label)}>{said}</span>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function ReplyField({ step, onReply, phone }: { step: Step; onReply?: (id: string, reply: string) => void; phone: boolean }) {
   const [draft, setDraft] = useState(step.reply ?? "");
   const [focused, setFocused] = useState(false);
@@ -402,6 +426,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
       ) : null}
       <RefinedTextBox key={step.id} text={step.text} changes={step.changes} boxRef={textRef} phone={phone} onPick={mode === "maker" && onChanges ? setPicked : undefined} />
       {!isInstructions(step) && step.kind === "prompt" ? <ReplyField key={`reply-${step.id}`} step={step} onReply={mode === "maker" ? onReply : undefined} phone={phone} /> : null}
+      {!isInstructions(step) && step.kind === "prompt" && step.outputShape ? <ShapeRead shape={step.outputShape} /> : null}
       {step.changes?.length ? (
         <p data-testid="changes-line" style={{ ...quiet, margin: 0 }}>
           {changesLine(step.changes.length)}

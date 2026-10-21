@@ -26,6 +26,10 @@ import { HEX_HINT, normaliseHex } from "@/lib/theme/partColour";
 import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
+import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } from "./cost";
+import { helpersOf, helpersRefusal, type Helper } from "./helpers";
+import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
+import { traceRefusal, traceUrlOf } from "./trace";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
@@ -146,6 +150,19 @@ export interface Step {
   decision?: DecisionFacts;
   /** CA-13 P3, a runtime tile only (agent, team, code, tool, decision): the decision it runs after, and the value it ran on. */
   runsWhen?: RunsWhen;
+  /** CA-13 P6, an agent only: the helper models that kept it on track (at most 12). */
+  helpers?: Helper[];
+  /** CA-13 P5, an agent only: the Code tiles that define it (`payload.defined_in`, node ids), e.g. the file holding `create_deep_agent(...)`. */
+  definedIn?: string[];
+  /** CA-13 P5, an agent only: a trace link (https only). */
+  traceUrl?: string;
+  /** CA-13 P14, an agent only: "How to install, optional", as the maker gave it. A decision keeps its own in `decision`. */
+  install?: string;
+  /** CA-13 P7, a prompt or an agent: the shape its answer is forced into. */
+  outputShape?: OutputShape;
+  /** CA-13 P8: what it took to make (any tile) and what it costs to run (a runtime tile): never added together. */
+  buildCost?: CostFigures;
+  runCost?: RunCost;
 }
 
 /** CA-12 P7: a tool tile's facts. */
@@ -768,11 +785,38 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
     ...(kind === "decision" && decisionOf(payload) ? { decision: decisionOf(payload) as DecisionFacts } : null),
+    ...runtimeFactsOf(kind, payload),
     // CA-13 P3: only a runtime tile runs when a decision went a certain way.
     ...(canRunWhen(kind) && runsWhenOf(payload.runs_when) ? { runsWhen: runsWhenOf(payload.runs_when) as RunsWhen } : null),
     // CA-06 P4: the maker's colour, when it reads as one.
     ...(normaliseHex(payload.colour) ? { colour: normaliseHex(payload.colour) as string } : null),
   };
+}
+
+/** CA-13: the runtime facts a tile's payload holds, each only on the tiles that can have it. */
+function runtimeFactsOf(kind: StepKind, payload: Payload): Partial<Step> {
+  const out: Partial<Step> = {};
+  if (kind === "agent") {
+    const helpers = helpersOf(payload.helpers);
+    if (helpers.length) out.helpers = helpers;
+    const definedIn = Array.isArray(payload.defined_in) ? payload.defined_in.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
+    if (definedIn.length) out.definedIn = definedIn;
+    const trace = traceUrlOf(payload.trace_url);
+    if (trace) out.traceUrl = trace;
+    const install = stringOf(payload.install)?.trim().slice(0, 400);
+    if (install) out.install = install;
+  }
+  if (kind === "prompt" || kind === "agent") {
+    const shape = outputShapeOf(payload.output_shape);
+    if (shape) out.outputShape = shape;
+  }
+  const built = buildCostOf(payload.build_cost);
+  if (built) out.buildCost = built;
+  if (kind === "agent" || kind === "team" || kind === "code" || kind === "tool" || kind === "decision") {
+    const run = runCostOf(payload.run_cost);
+    if (run) out.runCost = run;
+  }
+  return out;
 }
 
 /** An agent's instructions: its first child, drawn from the agent's own row. */
@@ -798,6 +842,14 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     memoryTidy: undefined,
     changesEachRound: undefined,
     modelRun: undefined,
+    runsWhen: undefined,
+    helpers: undefined,
+    definedIn: undefined,
+    traceUrl: undefined,
+    install: undefined,
+    outputShape: undefined,
+    buildCost: undefined,
+    runCost: undefined,
   };
 }
 
@@ -1388,6 +1440,81 @@ export async function setDecision(node: BuildNode, input: DecisionInput): Promis
   const title = titleOrNull(input.name);
   if (title && title.length > TITLE_MAX) throw refuse("setDecision", `A title is at most ${TITLE_MAX} characters.`);
   return upsertNode({ ...withPayload(node, payload), title });
+}
+
+/** What Details can write to a tile beyond its own fields (CA-13). A key left out is kept; `null` takes it off. */
+export interface RuntimePatch {
+  helpers?: readonly Helper[] | null;
+  definedIn?: readonly string[] | null;
+  traceUrl?: string | null;
+  install?: string | null;
+  outputShape?: OutputShape | null;
+  buildCost?: CostFigures | null;
+  runCost?: RunCost | null;
+}
+
+const RUNTIME_TYPES = new Set([AGENT_TYPE, TEAM_TYPE, CODE_TYPE, DECISION_TYPE, TOOL_TYPE]);
+
+/**
+ * CA-13: the runtime facts of a tile, checked. Helpers, "defined in" and a trace link belong to an agent; an install line to
+ * an agent or a decision; an answer shape to a prompt or an agent; what it took to make to any tile; what it costs to run to a
+ * runtime tile only (rule 3).
+ */
+export async function setRuntimeFields(node: BuildNode, patch: RuntimePatch): Promise<BuildNode> {
+  const payload = { ...payloadOf(node) };
+  const set = (key: string, value: unknown) => {
+    if (value === null || value === undefined) delete payload[key];
+    else payload[key] = value as Json;
+  };
+  const agent = node.type === AGENT_TYPE;
+  if ("helpers" in patch) {
+    if (!agent) throw refuse("setRuntimeFields", "Only an agent has helpers.");
+    const list = patch.helpers ?? [];
+    const why = helpersRefusal(list);
+    if (why) throw refuse("setRuntimeFields", `${why}.`);
+    set("helpers", list.length ? list : null);
+  }
+  if ("definedIn" in patch) {
+    if (!agent) throw refuse("setRuntimeFields", "Only an agent is defined in code.");
+    const ids = [...new Set((patch.definedIn ?? []).filter(Boolean))];
+    set("defined_in", ids.length ? ids : null);
+  }
+  if ("traceUrl" in patch) {
+    if (!agent) throw refuse("setRuntimeFields", "Only an agent has a trace link.");
+    const why = traceRefusal(patch.traceUrl ?? "");
+    if (why) throw refuse("setRuntimeFields", why);
+    set("trace_url", patch.traceUrl?.trim() ? (traceUrlOf(patch.traceUrl) as string) : null);
+  }
+  if ("install" in patch) {
+    if (!agent && node.type !== DECISION_TYPE) throw refuse("setRuntimeFields", "Only an agent or a decision has an install line.");
+    const line = patch.install?.trim() ?? "";
+    if (line.length > 400) throw refuse("setRuntimeFields", "An install line is at most 400 characters.");
+    set("install", line || null);
+  }
+  if ("outputShape" in patch) {
+    if (!agent && node.type !== PROMPT_TYPE) throw refuse("setRuntimeFields", "Only a prompt or an agent has an answer shape.");
+    if (patch.outputShape) {
+      const why = shapeRefusal(patch.outputShape);
+      if (why) throw refuse("setRuntimeFields", why);
+    }
+    set("output_shape", patch.outputShape ?? null);
+  }
+  if ("buildCost" in patch) {
+    if (patch.buildCost) {
+      const why = costRefusal(patch.buildCost);
+      if (why) throw refuse("setRuntimeFields", why);
+    }
+    set("build_cost", patch.buildCost && buildCostOf(patch.buildCost) ? patch.buildCost : null);
+  }
+  if ("runCost" in patch) {
+    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime tile has a cost to run.");
+    if (patch.runCost) {
+      const why = costRefusal(patch.runCost);
+      if (why) throw refuse("setRuntimeFields", why);
+    }
+    set("run_cost", patch.runCost && runCostOf(patch.runCost) ? patch.runCost : null);
+  }
+  return upsertNode(withPayload(node, payload));
 }
 
 /** The decisions of a build as `runsWhenRefusal` reads them: id, top-level order and facts. */

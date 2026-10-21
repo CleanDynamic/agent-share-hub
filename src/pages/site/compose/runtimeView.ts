@@ -4,6 +4,9 @@
    nothing else is offered "Runs when". The panel reads this; it never reads payloads. */
 
 import { decisionRefsOf, topIndexOf, type Step } from "@/lib/build/graph";
+import type { CostFigures, RunCost } from "@/lib/build/cost";
+import type { Helper } from "@/lib/build/helpers";
+import { schemaFileNames, type OutputShape } from "@/lib/build/answerShape";
 import { canRunWhen, runsWhenChoices, runsWhenLabel, runsWhenOf, runsWhenRefusal, type RunsWhen, type RunsWhenIs } from "@/lib/build/decision";
 
 export interface RunsWhenQuestion {
@@ -30,6 +33,22 @@ export interface RunsWhenView {
 
 export interface RuntimeView {
   runsWhen?: RunsWhenView;
+  /** An agent: its helpers, the Code tiles it is defined in, its trace link and install line. */
+  agent?: {
+    helpers: Helper[];
+    definedIn: string[];
+    traceUrl: string | null;
+    install: string | null;
+    codeTiles: { id: string; label: string; source: string }[];
+    decisions: { id: string; label: string }[];
+    toolNames: string[];
+  };
+  /** A decision's install line, shown beside its settings. */
+  install?: string | null;
+  /** A prompt or an agent: its answer shape, and any `*.schema.json` file in the build. */
+  shape?: { shape: OutputShape | null; schemaFiles: string[] };
+  /** Any tile: what it took to make; a runtime tile also what it costs to run (rule 3). */
+  costs?: { build: CostFigures | null; run: RunCost | null; runtime: boolean };
 }
 
 /** The kind a step has for `canRunWhen`: a tool tile is "tool"; an agent inside a team is not a top-level tile. */
@@ -59,7 +78,24 @@ export function runsWhenViewOf(step: Step, steps: readonly Step[]): RunsWhenView
   };
 }
 
-export const runtimeViewOf = (step: Step, steps: readonly Step[]): RuntimeView | undefined => {
+/** The runtime side of a selected tile; undefined when there is none to show. `names` gives tool and file names by node id. */
+export const runtimeViewOf = (step: Step, steps: readonly Step[], names: Readonly<Record<string, string>> = {}, fileNames: readonly string[] = []): RuntimeView | undefined => {
+  const out: RuntimeView = {};
   const runsWhen = runsWhenViewOf(step, steps);
-  return runsWhen ? { runsWhen } : undefined;
+  if (runsWhen) out.runsWhen = runsWhen;
+  const top = steps.some((candidate) => candidate.id === step.id);
+  if (step.kind === "agent" && top) {
+    out.agent = {
+      helpers: step.helpers ?? [],
+      definedIn: step.definedIn ?? [],
+      traceUrl: step.traceUrl ?? null,
+      install: step.install ?? null,
+      codeTiles: steps.filter((candidate) => candidate.kind === "code").map((candidate) => ({ id: candidate.id, label: candidate.filename ?? candidate.title ?? candidate.defaultTitle, source: candidate.text })),
+      decisions: steps.filter((candidate) => candidate.kind === "decision").map((candidate) => ({ id: candidate.id, label: candidate.title ?? candidate.defaultTitle })),
+      toolNames: (step.toolRefs ?? []).map((id) => names[id]).filter((name): name is string => Boolean(name)),
+    };
+  }
+  if ((step.kind === "agent" && top) || step.kind === "prompt") out.shape = { shape: step.outputShape ?? null, schemaFiles: schemaFileNames(fileNames) };
+  if (!step.id.endsWith(":instructions") && (top || step.kind === "prompt")) out.costs = { build: step.buildCost ?? null, run: step.runCost ?? null, runtime: canRunWhen(step.kind) };
+  return Object.keys(out).length ? out : undefined;
 };

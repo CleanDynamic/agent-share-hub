@@ -45,7 +45,9 @@ import {
 import { Button } from "@/components/brand/Button";
 import { drawBranches } from "@/components/build/BranchRows";
 import { LinkLines } from "@/components/build/LinkLines";
+import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { callsOf } from "@/lib/build/decisionCopy";
+import { definesOf } from "@/lib/build/agentCode";
 import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, DecisionTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
@@ -902,6 +904,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         <ChangedText text={step.text} changes={step.changes} />
       </p>
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={open} /> : null}
+      {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1105,6 +1108,8 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
               ))}
             </span>
           ) : null}
+          {!isTeam && step.helpers?.length ? <HelperChips helpers={step.helpers} decisionName={(id) => props.steps.find((candidate) => candidate.id === id)?.title ?? props.steps.find((candidate) => candidate.id === id)?.defaultTitle} /> : null}
+          {!isTeam && step.outputShape ? <ShapeChip shape={step.outputShape} /> : null}
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
           {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
@@ -1398,7 +1403,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         </Menu.Root>
       </div>
       <CodeLines text={step.text} compact testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
-      <LinkLines lines={callsOf(step.id, props.steps)} onOpen={props.onSelect} indent={INDENT} />
+      <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />

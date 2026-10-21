@@ -40,6 +40,9 @@ import { DM_MONO } from "@/lib/theme/type";
 import { ChoiceRows } from "./ChoiceRows";
 import { DecisionFields } from "./DecisionFields";
 import { RunsWhenField } from "./RunsWhenField";
+import { RuntimeFields } from "./RuntimeFields";
+import type { HelpersRead } from "@/lib/build/agentCode";
+import type { RuntimePatch } from "@/lib/build/graph";
 import type { RuntimeView } from "./runtimeView";
 import { draftToInput, type DecisionDraft } from "@/lib/build/decisionDraft";
 import type { DecisionInput } from "@/lib/build/graph";
@@ -290,6 +293,10 @@ export interface DetailsHandlers {
   onDecision?: (id: string, input: DecisionInput) => void;
   /** CA-13 P3: set when a runtime tile runs (null: always). Absent: Runs when is not shown. */
   onRunsWhen?: (id: string, runsWhen: RunsWhen | null) => void;
+  /** CA-13 P5 to P8: change a tile's helpers, "defined in", trace link, install line, answer shape or costs. Absent: they are not shown. */
+  onRuntime?: (id: string, patch: RuntimePatch) => void;
+  /** CA-13 P6: "Read the helpers from code": the helpers, and the model and tools, as found in a create_deep_agent(...) call. */
+  onReadHelpers?: (id: string, read: HelpersRead) => void;
   onRename: (id: string, title: string) => void;
   onOpenPrompt?: (id: string) => void;
   onModel: (id: string, model: string | null) => void;
@@ -1949,6 +1956,9 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "decision" ? <DecisionDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
+      {view.runtime && h.onRuntime && view.kind !== "session" ? (
+        <RuntimeFields key={`${view.id}:runtime`} id={view.id} runtime={view.runtime} phone={phone} onRuntime={h.onRuntime} onReadHelpers={h.onReadHelpers} />
+      ) : null}
       {view.runtime?.runsWhen && h.onRunsWhen && view.kind !== "prompt" ? (
         <RunsWhenField key={`${view.kind === "session" ? view.key : view.id}:when:${view.runtime.runsWhen.currentLabel ?? ""}`} view={view.runtime.runsWhen} phone={phone} onChange={(next) => h.onRunsWhen?.(view.kind === "session" ? view.key : view.id, next)} />
       ) : null}

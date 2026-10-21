@@ -401,8 +401,9 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
   const view = resolveBase(ctx);
   if (!view) return null;
   // CA-13: a runtime tile also carries when it runs.
-  const step = ctx.steps.find((candidate) => candidate.id === ctx.selectedId);
-  const runtime = step ? runtimeViewOf(step, ctx.steps) : undefined;
+  const step = flatten(ctx.steps).find((candidate) => candidate.id === ctx.selectedId);
+  const all = pieces(ctx.tree, ctx.sourceFiles as SourceFile[]);
+  const runtime = step && step.kind !== "file" && step.kind !== "tool" ? runtimeViewOf(step, ctx.steps, Object.fromEntries(Object.entries(all.byId).map(([id, piece]) => [id, piece.name])), all.files.map((file) => file.name)) : undefined;
   return runtime ? { ...view, runtime } : view;
 }
 

@@ -760,3 +760,18 @@ describe("CA-13 · decisions and branches", () => {
     expect(overlaps(router([step({ id: "j8", number: "8", kind: "agent" })]).layout)).toEqual([]);
   });
 });
+
+describe("CA-13 · helper marks on an agent's box", () => {
+  it("gives an agent one mark for each helper, never a box or a wire, and a build without helpers none", () => {
+    const helpers = [
+      { provider: "scaledown", job: "summarize" as const, trigger: { at: 0.8 } },
+      { provider: "scaledown", job: "compress" as const, tools: ["fetch_docs"] },
+    ];
+    const layout = layoutMap([step({ id: "p1", number: "1", sessionId: "s1" }), step({ id: "a2", number: "2", kind: "agent", helpers })], [{ sessionId: "s1", number: 1, tool: "Claude Code", model: null, startedAt: "2026-10-01T10:00:00", stepNumbers: ["1"] }], [], [], []);
+    const agent = layout.boxes.find((b) => b.id === "a2")!;
+    expect(agent.helperMarks?.map((m) => m.label)).toEqual(["Summarize at 80%", "Compress fetch_docs"]);
+    expect(layout.boxes).toHaveLength(2);
+    expect(layout.wires.some((w) => w.from.startsWith("helper") || w.to.startsWith("helper"))).toBe(false);
+    expect(bakery().layout.boxes.some((b) => b.helperMarks)).toBe(false);
+  });
+});

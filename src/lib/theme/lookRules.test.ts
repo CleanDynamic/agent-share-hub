@@ -341,6 +341,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/RunsWhenField.tsx",
   "src/pages/site/compose/BuildMap.tsx",
   "src/pages/site/compose/toolPickerModel.ts",
+  // CA-13 P5 to P8
+  "src/components/build/RuntimeChips.tsx",
+  "src/pages/site/compose/HelpersField.tsx",
+  "src/pages/site/compose/CostFields.tsx",
+  "src/pages/site/compose/RuntimeFields.tsx",
+  "src/pages/site/compose/SessionExtrasFields.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AgentSetupFields.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

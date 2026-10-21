@@ -4,6 +4,7 @@
    the fields, empty. PURE: values in, changes out. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
+import { traceUrlOf } from "@/lib/build/trace";
 import { useState, type KeyboardEvent } from "react";
 
 import { X } from "lucide-react";
@@ -111,6 +112,51 @@ export function SessionFactsFields({ id, extras, phone, onChange }: { id: string
           <span style={text(13, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
         </label>
         <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.showReadersLine}</span>
+      </Field>
+      <Field id={`${id}-time`} label="How long it ran" hint="Minutes, optional">
+        <div style={{ width: 120 }}>
+          <ExtrasInput
+            key={`${id}:ms:${extras.ms ?? ""}`}
+            label="How long it ran"
+            value={extras.ms !== undefined ? String(Math.round((extras.ms / 60_000) * 10) / 10) : ""}
+            placeholder="45"
+            max={8}
+            phone={phone}
+            inputMode="decimal"
+            onCommit={(value) => {
+              const minutes = Number(value.trim());
+              save({ ms: value.trim() && Number.isFinite(minutes) && minutes >= 0 ? Math.round(minutes * 60_000) : undefined });
+            }}
+          />
+        </div>
+      </Field>
+      <Field id={`${id}-tokens`} label="Tokens used" hint="Optional">
+        <div style={{ width: 160 }}>
+          <ExtrasInput
+            key={`${id}:tokens:${extras.tokens ?? ""}`}
+            label="Tokens used"
+            value={extras.tokens !== undefined ? String(extras.tokens) : ""}
+            placeholder="1200000"
+            max={14}
+            phone={phone}
+            inputMode="numeric"
+            onCommit={(value) => {
+              const n = Number(value.trim().replace(/,/g, ""));
+              save({ tokens: value.trim() && Number.isInteger(n) && n > 0 ? n : undefined });
+            }}
+          />
+        </div>
+      </Field>
+      <Field id={`${id}-trace`} label="Trace link" hint="https only, optional">
+        <ExtrasInput
+          key={`${id}:trace:${extras.traceUrl ?? ""}`}
+          label="Trace link"
+          value={extras.traceUrl ?? ""}
+          placeholder="https://smith.langchain.com/…"
+          max={2000}
+          phone={phone}
+          onCommit={(value) => save({ traceUrl: traceUrlOf(value) ?? undefined })}
+        />
       </Field>
       <Field id={`${id}-how`} label={EXTRAS_COPY.how} hint={EXTRAS_COPY.optional} group>
         <ChoiceRows<"watching" | "background">

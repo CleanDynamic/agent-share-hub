@@ -1440,6 +1440,21 @@ export function SandboxPage() {
               prompts.setDecision(id, input);
               afterWrite();
             }}
+            onRuntime={(id, patch) => {
+              prompts.setRuntime(id, patch);
+              afterWrite();
+            }}
+            onReadHelpers={(id, read) => {
+              const agent = steps.find((step) => step.id === id);
+              if (!agent) return;
+              // The agent, its tools and its helpers, as found: only what the code wrote out literally.
+              prompts.setRuntime(id, { helpers: read.helpers });
+              if (read.model || read.tools.length) {
+                const have = (agent.toolRefs ?? []).map((ref) => listFacts.names[ref]).filter(Boolean);
+                prompts.setAgent(id, { model: read.model ?? agent.model ?? "", harness: agent.harness ? (toolFor(agent.harness)?.id ?? agent.harness) : "deep-agents", tools: [...new Set([...have, ...read.tools])] });
+              }
+              afterWrite();
+            }}
             onRunsWhen={(id, runsWhen) => {
               prompts.setRunsWhen(id, steps, runsWhen);
               afterWrite();

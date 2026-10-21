@@ -24,6 +24,12 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { groupKey, groupKind, stepRunsLabel, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { FileTileBody, ManualTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { Certainty } from "@/components/build/Certainty";
+import { TraceLink } from "@/components/build/RuntimeChips";
+import { ToolMark } from "@/pages/site/compose/refinedPieces";
+import { shapeFragment, SHAPE_HOW_LABEL } from "@/lib/build/answerShape";
+import { agentCopy, agentSpecOf, definedInTiles, definesOf } from "@/lib/build/agentCode";
+import { certaintySource } from "@/lib/build/certainty";
+import { beforeAfterLine, helperChip, helperSavingsLine, markTool, providerLabel, type Helper } from "@/lib/build/helpers";
 import { LinkLines } from "@/components/build/LinkLines";
 import { answerLine, answerWord, runsWhenLabel, decisionHeadline, isTypeSafe, questionLine, questionTypeLabel, sourceNote, sureOf } from "@/lib/build/decision";
 import { callsOf, calledFromTiles, COPY_REQUEST_NOTE, decisionCopy } from "@/lib/build/decisionCopy";
@@ -207,7 +213,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
       return (
         <>
           <Facts facts={[step.filename, step.language, step.entrypoint ? "start reading here" : null].filter((fact): fact is string => Boolean(fact))} />
-          <LinkLines lines={callsOf(step.id, props.steps)} onOpen={(id) => props.onGo(refTo({ kind: "node", id }))} />
+          <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={(id) => props.onGo(refTo({ kind: "node", id }))} />
           <CodeLines text={step.text} testId="part-text" label="Code" empty={PART_WINDOW_COPY.nothing} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <Button variant="secondary" size={28} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the code and copy it."))}>
@@ -222,6 +228,8 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
       return (
         <>
           <Facts facts={[step.harness ? `Ran in ${step.harness}` : null].filter((fact): fact is string => Boolean(fact))} />
+          {step.traceUrl ? <TraceLink url={step.traceUrl} /> : null}
+          <AgentRuntimeBody step={step} props={props} say={say} />
           <Section label={PART_WINDOW_COPY.instructions}>
             <TextWell label={PART_WINDOW_COPY.instructions}>{step.text}</TextWell>
           </Section>
@@ -307,6 +315,105 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
   }
 }
 
+/* ── an agent's runtime side (CA-13 P5 to P7) ── */
+
+/** Defined in, each helper in full, the answer shape, and Copy: the maker's code when there is one, a labelled starting point when not. */
+function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowProps; say: (words: string) => void }) {
+  const parts = allParts(props.steps);
+  const names = props.names ?? {};
+  const tiles = definedInTiles(step, parts);
+  const helpers = step.helpers ?? [];
+  const decisionName = (id: string) => {
+    const found = parts.find((part) => part.id === id);
+    return found ? stepTitle(found) : undefined;
+  };
+  const copy = helpers.length || tiles.length || step.harness ? agentCopy(agentSpecOf(step, names), tiles, decisionName) : null;
+  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the text and copy it."));
+  const shape = step.outputShape;
+  const fragment = shape ? shapeFragment(shape) : null;
+  return (
+    <>
+      {tiles.length ? (
+        <Section label="Defined in">
+          <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${t.hairlineModule}` }}>
+            {tiles.map((tile) => (
+              <GoRow key={tile.id} number={parts.find((part) => part.id === tile.id)?.number ?? ""} title={`Defined in ${tile.name}`} kind="Code" onGo={() => props.onGo(refTo({ kind: "node", id: tile.id }))} />
+            ))}
+          </div>
+        </Section>
+      ) : null}
+      {helpers.length ? (
+        <Section label="Helpers it used">
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {helpers.map((helper, index) => (
+              <HelperBody key={`${helper.job}-${index}`} helper={helper} decisionName={decisionName} />
+            ))}
+            {helperSavingsLine(helpers) ? <span style={text(12.5, 400, t.text2)}>{helperSavingsLine(helpers)}</span> : null}
+          </div>
+        </Section>
+      ) : null}
+      {shape ? (
+        <Section label="Answer shape">
+          <Facts facts={[SHAPE_HOW_LABEL[shape.how], shape.where ?? null].filter((fact): fact is string => Boolean(fact))} />
+          {shape.schema ? <CodeLines text={shape.schema} testId="shape-schema" label="Schema" /> : null}
+          {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
+          {fragment?.text ? (
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button variant="secondary" size={28} fontSize={12} onClick={() => done(fragment.text)}>
+                Copy the setting
+              </Button>
+            </div>
+          ) : null}
+        </Section>
+      ) : null}
+      {copy ? (
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+          {copy.code ? (
+            <Button variant="primary" size={28} fontSize={12} onClick={() => done(copy.code!.text)}>
+              {copy.code.label}
+            </Button>
+          ) : null}
+          <Button variant="secondary" size={28} fontSize={12} onClick={() => done(copy.start.text)}>
+            {copy.start.label}
+          </Button>
+        </div>
+      ) : null}
+      {copy ? <span style={text(12, 400, t.label)}>{copy.start.note}.</span> : null}
+    </>
+  );
+}
+
+/** One helper in full: its job and provider, its settings, and what it did (with Certainty where it scored something). */
+function HelperBody({ helper, decisionName }: { helper: Helper; decisionName: (id: string) => string | undefined }) {
+  const did = helper.did;
+  const settings = [
+    helper.model ? `Model ${helper.model}` : null,
+    helper.trigger?.at !== undefined ? `When the history reaches ${Math.round(helper.trigger.at * 100)}%` : null,
+    helper.trigger?.keep !== undefined ? `Keeps the newest ${Math.round(helper.trigger.keep * 100)}%` : null,
+    helper.tools?.length ? `Results of ${helper.tools.join(", ")}` : null,
+    helper.fields?.length ? `Pulls out ${helper.fields.join(", ")}` : null,
+    helper.labels?.length ? `Labels ${helper.labels.join(", ")}` : null,
+    helper.stopAt !== undefined ? `Stops the run at ${Math.round(helper.stopAt * 100) / 100}` : null,
+  ].filter((fact): fact is string => Boolean(fact));
+  const ba = beforeAfterLine(did);
+  return (
+    <div data-testid="helper-body" style={{ ...WELL, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={{ ...text(13.5, 500, t.text), display: "flex", alignItems: "center", gap: 8 }}>
+        <ToolMark tool={markTool(helper.provider, helper.job)} size={14} />
+        {helperChip(helper, decisionName)}
+        <span style={text(12, 400, t.label)}>{providerLabel(helper.provider)}</span>
+      </span>
+      {settings.map((line) => (
+        <span key={line} style={text(12.5, 400, t.text2)}>{line}</span>
+      ))}
+      {ba ? <span data-testid="helper-before-after" style={{ ...text(13, 400, t.text), fontVariantNumeric: "tabular-nums" }}>{ba}</span> : null}
+      {did?.times !== undefined && helper.job === "summarize" ? <span style={text(13, 400, t.text)}>{did.times} {did.times === 1 ? "time" : "times"}</span> : null}
+      {did?.values ? <span style={text(13, 400, t.text)}>{Object.entries(did.values).map(([k, v]) => `${k} = ${v}`).join(", ")}</span> : null}
+      {did?.stopped ? <Certainty answer={did.stopped.label} share={did.stopped.score} source={did.source} /> : did ? <span style={text(11.5, 400, t.label)}>{certaintySource(did.source)}</span> : null}
+    </div>
+  );
+}
+
 /* ── a decision (CA-13 P2) ── */
 
 /** Called from, what it reads, each question in full, the answer with its bars, where the figures came from, and Copy. */
@@ -388,6 +495,7 @@ function SessionBody({ group, props }: { group: SessionGroup; props: PartWindowP
   return (
     <>
       <Facts facts={facts} />
+      {group.extras?.traceUrl ? <TraceLink url={group.extras.traceUrl} /> : null}
       {setup ? <p style={{ ...text(12.5, 400, t.text2), margin: 0 }}>{PART_WINDOW_COPY.setup(setup)}</p> : null}
       <Section label={PART_WINDOW_COPY.tiles}>
         <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${t.hairlineModule}` }}>

@@ -123,3 +123,72 @@ describe("setRunsWhen", () => {
     await expect(setRunsWhen(tree[2] as unknown as BuildNode, steps, { ...ok, decision: "gone" })).rejects.toThrow(/no longer in the build/);
   });
 });
+
+import { setRuntimeFields } from "./graph";
+
+describe("runtime facts (CA-13 P5 to P8)", () => {
+  const agent = node({ id: "a", type: "agent_config", payload: { system_prompt: "x", model: "m", harness: "deep-agents" } });
+  const asNode = (n: NodeTree) => n as unknown as BuildNode;
+  const written = () => (upsertNode.mock.calls.at(-1)?.[0] as { payload: Record<string, unknown> }).payload;
+
+  it("reads an agent's helpers, where it is defined, its trace link, answer shape and both costs", () => {
+    const [step] = buildSteps([
+      node({
+        id: "a",
+        type: "agent_config",
+        payload: {
+          system_prompt: "x",
+          model: "m",
+          helpers: [{ provider: "scaledown", job: "summarize", trigger: { at: 0.8 } }, { job: "nope" }],
+          defined_in: ["c1"],
+          trace_url: "https://smith.langchain.com/o/1",
+          output_shape: { how: "json-schema", schema: "{\"title\":\"Order\"}" },
+          build_cost: { ms: 1200, cost: 0.01 },
+          run_cost: { per: "call", ms: 120 },
+        },
+      }),
+    ]);
+    expect(step.helpers).toHaveLength(1);
+    expect(step.definedIn).toEqual(["c1"]);
+    expect(step.traceUrl).toBe("https://smith.langchain.com/o/1");
+    expect(step.outputShape?.how).toBe("json-schema");
+    expect(step.buildCost?.ms).toBe(1200);
+    expect(step.runCost).toMatchObject({ per: "call", ms: 120 });
+    // The agent's own instructions row carries none of it.
+    expect(step.children[0].helpers).toBeUndefined();
+    expect(step.children[0].runCost).toBeUndefined();
+  });
+
+  it("drops an http trace link and a run cost on a prompt when reading", () => {
+    const [prompt, agentStep] = buildSteps([
+      node({ id: "p", position: 1, payload: { text: "hi", build_cost: { ms: 5 }, run_cost: { per: "call", ms: 9 }, helpers: [{ provider: "x", job: "summarize" }] } }),
+      node({ id: "a2", position: 2, type: "agent_config", payload: { system_prompt: "x", model: "m", trace_url: "http://x.com/t" } }),
+    ]);
+    expect(prompt.buildCost?.ms).toBe(5);
+    expect(prompt.runCost).toBeUndefined();
+    expect(prompt.helpers).toBeUndefined();
+    expect(agentStep.traceUrl).toBeUndefined();
+  });
+
+  it("writes helpers, defined in, a trace link, install and shape on an agent, and takes them off with null", async () => {
+    await setRuntimeFields(asNode(agent), { helpers: [{ provider: "scaledown", job: "extract", fields: ["order_id"] }], definedIn: ["c1", "c1"], traceUrl: "https://smith.langchain.com/x", install: " pip install thing ", outputShape: { how: "json-schema", schema: "{}" } });
+    expect(written()).toMatchObject({ helpers: [{ provider: "scaledown", job: "extract", fields: ["order_id"] }], defined_in: ["c1"], trace_url: "https://smith.langchain.com/x", install: "pip install thing", output_shape: { how: "json-schema", schema: "{}" } });
+    await setRuntimeFields(asNode({ ...agent, payload: written() } as NodeTree), { helpers: null, traceUrl: null });
+    expect(written().helpers).toBeUndefined();
+    expect(written().trace_url).toBeUndefined();
+  });
+
+  it("refuses what does not belong: helpers on a prompt, an http trace link, an incomplete helper or a run cost on a prompt", async () => {
+    const prompt = asNode(node({ id: "p", payload: { text: "hi" } }));
+    await expect(setRuntimeFields(prompt, { helpers: [{ provider: "scaledown", job: "summarize" }] })).rejects.toThrow(/Only an agent has helpers/);
+    await expect(setRuntimeFields(asNode(agent), { traceUrl: "http://x.com" })).rejects.toThrow(/https/);
+    await expect(setRuntimeFields(asNode(agent), { helpers: [{ provider: "scaledown", job: "extract" }] })).rejects.toThrow(/fields to pull out/);
+    await expect(setRuntimeFields(prompt, { runCost: { per: "call", ms: 1, source: "maker" } })).rejects.toThrow(/Only a runtime tile/);
+    await expect(setRuntimeFields(prompt, { outputShape: { how: "json-schema" } })).rejects.toThrow(/needs its schema/);
+  });
+
+  it("keeps what it took to make apart from what it costs to run, on a runtime tile", async () => {
+    await setRuntimeFields(asNode(agent), { buildCost: { ms: 1000, source: "maker" }, runCost: { per: "hour", cost: 7, currency: "GBP", source: "maker" } });
+    expect(written()).toMatchObject({ build_cost: { ms: 1000 }, run_cost: { per: "hour", cost: 7 } });
+  });
+});

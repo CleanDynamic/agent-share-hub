@@ -43,6 +43,8 @@ import {
   DECISION_TYPE_MISSING,
   setDecision,
   setRunsWhen,
+  setRuntimeFields,
+  type RuntimePatch,
   type DecisionInput,
   addCheck,
   addCode,
@@ -101,6 +103,7 @@ import { addedToast, parsePromptDragData, promptSourceLine } from "./composeMode
 import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
 import type { ChangeRange } from "@/lib/build/changes";
 import type { RunsWhen } from "@/lib/build/decision";
+import type { Helper } from "@/lib/build/helpers";
 import type { ModelRun } from "@/lib/build/modelRun";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { showMadeWithIn } from "./useComposeSessions";
@@ -157,6 +160,8 @@ export interface AgentSetupInput {
 }
 
 export interface AgentInput extends AgentSetupInput {
+  /** CA-13 P6: the helper models an agent used. */
+  helpers?: Helper[];
   kind: "agent" | "team";
   name: string | null;
   instructions?: string;
@@ -232,6 +237,8 @@ export interface ComposePrompts {
   setDecision: (id: string, input: DecisionInput) => void;
   /** CA-13 P3: set or clear when a runtime tile runs. */
   setRunsWhen: (id: string, steps: readonly Step[], runsWhen: RunsWhen | null) => void;
+  /** CA-13 P5 to P8: a tile's helpers, "defined in", trace link, install line, answer shape and costs. */
+  setRuntime: (id: string, patch: RuntimePatch) => void;
   /** UI-P69: add an agent inside a team. */
   addAgentTo: (teamId: string, model: string) => Promise<string | null>;
   /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
@@ -697,7 +704,7 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
@@ -713,7 +720,9 @@ export function useComposePrompts({
           ...(session ? { session } : null),
         };
         if (kind === "agent") {
-          const created = await addAgent(build, nodes.current(), { name, model, ...setup });
+          let created = await addAgent(build, nodes.current(), { name, model, ...setup });
+          // CA-13 P6: the helpers it used, written with the agent.
+          if (helpers?.length) created = await setRuntimeFields(created, { helpers });
           nodes.record(created.id, created);
           noteTool(build, harness);
           return created.id;
@@ -745,6 +754,8 @@ export function useComposePrompts({
   const setDecisionOf = (id: string, input: DecisionInput) => void writeStep(id, "Couldn't save that decision. Try again.", (node) => setDecision(node, input));
   const setRunsWhenOf = (id: string, steps: readonly Step[], runsWhen: RunsWhen | null) =>
     void writeStep(id, "Couldn't change when that runs. Try again.", (node) => setRunsWhen(node, steps, runsWhen));
+
+  const setRuntimeOf = (id: string, patch: RuntimePatch) => void writeStep(id, "Couldn't save that. Try again.", (node) => setRuntimeFields(node, patch));
 
   const addAgentTo = (teamId: string, model: string) =>
     nodes
@@ -928,5 +939,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }
