@@ -304,6 +304,10 @@ export const CA03_FILES: readonly string[] = [
   "src/components/code/CodeLines.tsx",
   "src/components/code/lineModel.ts",
   "src/pages/site/compose/BuildList.nest.test.tsx",
+  // CA-12 P2
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/SourcesPanel.test.tsx",
+  "src/pages/site/drafts/DraftsPage.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

@@ -71,7 +71,7 @@ import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
+import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups } from "@/lib/build/postRefs";
@@ -586,7 +586,8 @@ export function SandboxPage() {
     [prompts, sessionToWrite],
   );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
-  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
+  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now(), buildId ?? null), [sessions.library, adding, buildId]);
+  const unfinishedRows = useMemo(() => unfinishedSources(sessions.unfinished, Date.now()), [sessions.unfinished]);
 
   /* ── Details (UI-P66) ── */
 
@@ -1367,7 +1368,7 @@ export function SandboxPage() {
             ringedId={ringed?.id ?? null}
           />
         }
-        addableSessions={libraryRows.filter((row) => !row.adding)}
+        addableSessions={libraryRows.filter((row) => !row.adding && !row.inThisDraft)}
         onAddSession={(id) => {
           showPending("session");
           void onAddSession(id).finally(() => setPendingAdd(null));
@@ -1382,6 +1383,11 @@ export function SandboxPage() {
             sessions={sourceSessionRows}
             files={sourceFileRows}
             library={libraryRows}
+            libraryHasMore={sessions.libraryHasMore}
+            libraryLoadingMore={sessions.libraryLoadingMore}
+            onLibraryMore={sessions.libraryMore}
+            arriving={unfinishedRows.arriving}
+            didntFinish={unfinishedRows.didntFinish}
             reminders={reminderRows}
             selectedId={selectedId}
             onSelect={setSelectedId}

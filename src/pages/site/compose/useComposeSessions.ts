@@ -36,6 +36,7 @@ import {
   setSessionModel,
   type SessionPrompt,
   type SessionSummary,
+  type UnfinishedSession,
 } from "@/lib/build/sessions";
 
 import type { MadeWithChip } from "./composeModel";
@@ -59,8 +60,14 @@ export function showMadeWithIn(queryClient: QueryClient, id: string, state: Made
 export interface ComposeSessions {
   /** This build's own sessions, oldest first: what Made with is drawn from. */
   sessions: SessionSummary[];
-  /** Every session on the account, newest first: what Your sessions lists. */
+  /** Every finished session on the account, newest first: what Your sessions lists. */
   library: SessionSummary[];
+  /** CA-12: the library has another page. */
+  libraryHasMore: boolean;
+  libraryLoadingMore: boolean;
+  libraryMore: () => void;
+  /** CA-12: imports still arriving, and ones that did not finish. */
+  unfinished: UnfinishedSession[];
   /** The library's read. */
   status: "loading" | "error" | "ready";
   retry: () => void;
@@ -283,6 +290,10 @@ export function useComposeSessions({
   return {
     sessions: buildSessions.data ?? NO_SESSIONS,
     library: library.data ?? NO_SESSIONS,
+    libraryHasMore: library.hasMore,
+    libraryLoadingMore: library.loadingMore,
+    libraryMore: library.fetchMore,
+    unfinished: library.unfinished,
     status,
     retry: () => void library.refetch(),
     setOpenIds,

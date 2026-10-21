@@ -538,7 +538,7 @@ function DefaultSources() {
     <>
       <span style={label}>Sessions in this build</span>
       <span style={label}>Files in this build</span>
-      <span style={label}>Not in a build</span>
+      <span style={label}>Your sessions</span>
       <div style={{ minHeight: 56, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px dashed ${t.line}`, ...text(12.5, 400, t.text2) }}>
         Drop sessions or files
       </div>

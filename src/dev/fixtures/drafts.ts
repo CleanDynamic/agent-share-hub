@@ -41,10 +41,7 @@ export const sessionsFixture: SessionSummary[] = [
   session("s2", "The n8n workflow fails on the Outlook trigger. Why?", "GPT-6 Astra", "2026-10-02T08:00:00.000Z"),
   session("s3", "Make the triage rules editable from a Google Sheet.", "GPT-6.1 Sol", "2026-10-01T09:00:00.000Z"),
   session("s4", "Explain this contract clause like I am 12.", "Opus 5.5", "2026-09-14T09:00:00.000Z"),
-];
-
-const attachedFixture: SessionSummary[] = [
-  { ...session("s5", "Rename every photo in a folder by the date it was taken.", "Opus 5.5", "2026-09-30T09:00:00.000Z"), buildId: "d1" },
+  { ...session("s5", "Rename every photo in a folder by the date it was taken.", "Opus 5.5", "2026-09-30T09:00:00.000Z"), buildId: "d1", status: "claimed", draftIds: ["d1"] },
 ];
 
 /** The view's props for a state; `?state=` on the dev page picks one. */
@@ -57,16 +54,12 @@ export function draftsViewProps(state: DesignState = "populated"): DraftsViewPro
     onRetrySessions: () => undefined,
     drafts: draftsFixture,
     sessions: sessionsFixture,
-    attached: attachedFixture,
-    showAttached: false,
-    onToggleAttached: () => undefined,
     onAddToNew: () => undefined,
     onAddToDraft: () => undefined,
-    onRemove: () => undefined,
     onConnect: () => undefined,
   };
   if (state === "loading") return { ...base, draftsStatus: "loading", sessionsStatus: "loading" };
   if (state === "error") return { ...base, draftsStatus: "error", sessionsStatus: "error" };
-  if (state === "empty") return { ...base, drafts: [], sessions: [], attached: [] };
+  if (state === "empty") return { ...base, drafts: [], sessions: [] };
   return base;
 }

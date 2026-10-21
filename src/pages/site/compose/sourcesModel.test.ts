@@ -4,7 +4,7 @@ import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { SessionSummary } from "@/lib/build/sessions";
 import type { BuildNode } from "@/lib/build/types";
 
-import { isChatExport, looksLikeChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
+import { alsoInLine, isChatExport, looksLikeChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources } from "./sourcesModel";
 
 const step = (over: Partial<Step>): Step => ({
   id: "n1", kind: "prompt", number: "1", title: null, defaultTitle: "Prompt 1", text: "x", words: 1, model: null, sessionId: null, tool: null, runs: null, uses: [], children: [], ...over,
@@ -78,9 +78,53 @@ describe("sourceFiles and librarySources", () => {
     expect(rows.map((r) => r.note)).toEqual(["made in step 2", "added by you"]);
   });
 
-  it("lists only parsed sessions that are in no build", () => {
-    const rows = librarySources([summary({ id: "1" }), summary({ id: "2", buildId: "b" }), summary({ id: "3", status: "claimed" })], new Set(["1"]), Date.now());
-    expect(rows).toEqual([{ id: "1", label: "Opus 5.5", line: "1 Mar · 2 prompts", adding: true }]);
+  it("lists every finished session: waiting, in this draft, in other drafts and expired, none hidden", () => {
+    const rows = librarySources(
+      [
+        summary({ id: "1", status: "parsed", draftIds: [] }),
+        summary({ id: "2", status: "claimed", buildId: "b", draftIds: ["b"] }),
+        summary({ id: "3", status: "expired", draftIds: ["x", "y"] }),
+        summary({ id: "4", status: "claimed", buildId: "other", draftIds: ["other"] }),
+      ],
+      new Set(["1"]),
+      Date.now(),
+      "b",
+    );
+    expect(rows.map((r) => [r.id, r.inThisDraft, r.alsoIn, r.adding])).toEqual([
+      ["1", false, null, true],
+      ["2", true, null, false],
+      ["3", false, "Also in 2 drafts", false],
+      ["4", false, "Also in 1 draft", false],
+    ]);
+    expect(rows[0]).toMatchObject({ label: "Opus 5.5", line: "1 Mar · 2 prompts" });
+    expect(JSON.stringify(rows)).not.toMatch(/expired/i);
+  });
+
+  it("counts a session claimed before CA-12 as in the draft it names, when the read gave no draft list", () => {
+    const rows = librarySources([summary({ id: "1", status: "claimed", buildId: "b" })], new Set(), Date.now(), "b");
+    expect(rows[0]).toMatchObject({ inThisDraft: true, alsoIn: null });
+  });
+
+  it("says where else a session is, not counting this draft", () => {
+    expect(alsoInLine(["b"], "b")).toBeNull();
+    expect(alsoInLine(["b", "c"], "b")).toBe("Also in 1 draft");
+    expect(alsoInLine(["b", "c", "d"], "b")).toBe("Also in 2 drafts");
+    expect(alsoInLine(["c"], null)).toBe("Also in 1 draft");
+  });
+
+  it("splits imports that are not sessions yet into Still arriving and Didn't finish", () => {
+    const groups = unfinishedSources(
+      [
+        { id: "a", status: "open", client: "claude", createdAt: "2026-03-04T10:00:00Z" },
+        { id: "b", status: "assembling", client: null, createdAt: "2026-03-05T10:00:00Z" },
+        { id: "c", status: "failed", client: "chatgpt", createdAt: "2026-03-06T10:00:00Z", reason: "It couldn't be read." },
+        { id: "d", status: "duplicate", client: null, createdAt: "2026-03-07T10:00:00Z", reason: "You had already sent this one." },
+      ],
+      Date.now(),
+    );
+    expect(groups.arriving.map((i) => [i.id, i.line])).toEqual([["a", "Sent 4 Mar"], ["b", "Sent 5 Mar"]]);
+    expect(groups.didntFinish.map((i) => [i.id, i.line])).toEqual([["c", "It couldn't be read."], ["d", "You had already sent this one."]]);
+    expect(unfinishedSources([], Date.now())).toEqual({ arriving: [], didntFinish: [] });
   });
 });
 

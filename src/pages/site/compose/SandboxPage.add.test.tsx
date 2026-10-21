@@ -207,7 +207,7 @@ describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)
     if (item.source === "^Session") {
       fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
       fireEvent.keyDown(await screen.findByRole("menuitem", { name: item }), { key: "ArrowRight" });
-      fireEvent.click(await screen.findByRole("menuitem", { name: /\d+ prompts?$/ }, { timeout: 5_000 }));
+      fireEvent.click((await screen.findAllByRole("menuitem", { name: /\d+ prompts?$/ }, { timeout: 5_000 }))[0]);
     } else {
       await choose(false, item);
     }

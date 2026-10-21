@@ -14,7 +14,7 @@ interface Call {
 
 function chain(result: { data?: unknown; error?: unknown; count?: number | null }, calls: Call[]) {
   const builder: Record<string, unknown> = {};
-  for (const method of ["select", "eq", "in", "not", "order", "limit", "update"]) {
+  for (const method of ["select", "eq", "in", "not", "order", "limit", "range", "update"]) {
     builder[method] = (...args: unknown[]) => {
       calls.push({ method, args });
       return builder;
@@ -62,6 +62,8 @@ import {
   listBuildSessions,
   listLibrarySessions,
   listSessions,
+  listUnfinishedSessions,
+  unfinishedReason,
   removeSession,
   setSessionModel,
 } from "./sessions";
@@ -216,9 +218,9 @@ describe("listSessions", () => {
 });
 
 describe("listLibrarySessions", () => {
-  it("asks for every usable session on the account, in any build or none, newest first", async () => {
-    answer({ data: [row({ status: "claimed", build_id: BUILD_ID }), row({ status: "expired" })] });
-    const sessions = await listLibrarySessions();
+  it("asks for every finished session on the account, in any build or none, newest first, a page at a time", async () => {
+    answer({ data: [row({ status: "claimed", build_id: BUILD_ID }), row({ id: "i2", status: "expired" })] });
+    const { sessions, hasMore } = await listLibrarySessions();
 
     expect(callOf("from")?.args).toEqual(["import_sessions"]);
     const columns = callOf("select")?.args[0] as string;
@@ -227,13 +229,39 @@ describe("listLibrarySessions", () => {
     expect(callOf("in")?.args).toEqual(["status", ["parsed", "claimed", "expired"]]);
     expect(callOf("not")?.args).toEqual(["proposal", "is", null]);
     expect(callOf("order")?.args).toEqual(["created_at", { ascending: false }]);
-    expect(callOf("limit")?.args).toEqual([100]);
+    // One row past the page of 100, to know whether there is another.
+    expect(callOf("range")?.args).toEqual([0, 100]);
     // Not narrowed to one build: no build_id filter at all.
     expect(calls.filter((c) => c.method === "eq")).toEqual([]);
     expect(sessions.map((s) => [s.status, s.buildId])).toEqual([
       ["claimed", BUILD_ID],
       ["expired", null],
     ]);
+    expect(hasMore).toBe(false);
+  });
+
+  it("names the drafts a session is in: build_sessions rows and the draft an old claim named", async () => {
+    answer(
+      { data: [row({ status: "claimed", build_id: BUILD_ID }), row({ id: "i2", status: "parsed" })] },
+      { data: [{ build_id: "b-other", import_id: IMPORT_ID }, { build_id: BUILD_ID, import_id: IMPORT_ID }, { build_id: "b-x", import_id: "i2" }] },
+    );
+    const { sessions } = await listLibrarySessions();
+    expect(sessions.map((s) => [...(s.draftIds ?? [])].sort())).toEqual([[BUILD_ID, "b-other"].sort(), ["b-x"]]);
+  });
+
+  it("lists a session whose drafts could not be read, rather than failing the list", async () => {
+    answer({ data: [row()] }, { error: { code: "42P01", message: 'relation "build_sessions" does not exist' } });
+    const { sessions } = await listLibrarySessions();
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].draftIds).toEqual([]);
+  });
+
+  it("reads the next page from an offset and says when there is one more", async () => {
+    answer({ data: Array.from({ length: 101 }, (_, at) => row({ id: `i${at}` })) });
+    const { sessions, hasMore } = await listLibrarySessions({ offset: 100 });
+    expect(callOf("range")?.args).toEqual([100, 200]);
+    expect(sessions).toHaveLength(100);
+    expect(hasMore).toBe(true);
   });
 
   it("throws on a read error rather than listing nothing", async () => {
@@ -242,22 +270,57 @@ describe("listLibrarySessions", () => {
   });
 });
 
+describe("listUnfinishedSessions", () => {
+  it("reads the imports that are still arriving or did not finish, newest first", async () => {
+    answer({
+      data: [
+        { id: "a", status: "open", client: "claude", created_at: "2026-10-05T10:00:00Z", error: null },
+        { id: "b", status: "failed", client: null, created_at: "2026-10-04T10:00:00Z", error: "Too long to read\nstack line two" },
+        { id: "c", status: "duplicate", client: "chatgpt", created_at: "2026-10-03T10:00:00Z", error: null },
+      ],
+    });
+    const list = await listUnfinishedSessions();
+    expect(callOf("in")?.args).toEqual(["status", ["open", "assembling", "failed", "duplicate"]]);
+    expect(callOf("order")?.args).toEqual(["created_at", { ascending: false }]);
+    expect(list.map((item) => [item.id, item.reason])).toEqual([
+      ["a", undefined],
+      ["b", "Too long to read"],
+      ["c", "You had already sent this one."],
+    ]);
+  });
+
+  it("gives a failed import with no message a plain reason, and cuts a long one", () => {
+    expect(unfinishedReason("failed", null)).toBe("It couldn't be read.");
+    expect(unfinishedReason("failed", "x".repeat(300))).toHaveLength(120);
+    expect(unfinishedReason("open", "ignored")).toBeUndefined();
+  });
+});
+
 describe("listBuildSessions", () => {
-  it("reads one build's claimed sessions oldest first, with a limit", async () => {
-    answer({ data: [row({ build_id: BUILD_ID })] });
+  it("reads one draft's sessions: those linked in build_sessions, and the ones an old claim put there", async () => {
+    answer(
+      { data: [{ build_id: BUILD_ID, session_key: "i-linked", import_id: "i-linked", position: 0, collapsed: false }] },
+      { data: [row({ build_id: BUILD_ID })] },
+      { data: [row({ id: "i-linked", status: "expired" })] },
+    );
     const sessions = await listBuildSessions(BUILD_ID);
     expect(calls.filter((c) => c.method === "eq").map((c) => c.args)).toEqual([
       ["build_id", BUILD_ID],
+      ["build_id", BUILD_ID],
       ["status", "claimed"],
     ]);
-    expect(callOf("order")?.args).toEqual(["created_at", { ascending: true }]);
-    expect(callOf("limit")?.args[0]).toBeGreaterThan(0);
-    expect(sessions[0].buildId).toBe(BUILD_ID);
+    // The linked one is in the table, so it comes first, in its position; the old claim follows.
+    expect(sessions.map((s) => s.id)).toEqual(["i-linked", IMPORT_ID]);
   });
 
   it("is empty for a build whose sessions RLS hides", async () => {
-    answer({ data: [] });
+    answer({ data: [] }, { data: [] });
     expect(await listBuildSessions(BUILD_ID)).toEqual([]);
+  });
+
+  it("reads an old draft as it always was when the table is not there", async () => {
+    answer({ error: { code: "PGRST205", message: "Could not find the table 'public.build_sessions' in the schema cache" } }, { data: [row({ build_id: BUILD_ID })] });
+    expect((await listBuildSessions(BUILD_ID)).map((s) => s.id)).toEqual([IMPORT_ID]);
   });
 });
 

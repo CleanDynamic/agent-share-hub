@@ -66,6 +66,8 @@ export function sessionMeta(session: SessionSummary, drafts: readonly DraftListI
   const parts = [sessionSource(session), sessionDate(session.createdAt, now)].filter(Boolean);
   const target = session.targetBuildId ? drafts.find((d) => d.id === session.targetBuildId) : undefined;
   if (target) parts.push(`for ${draftTitle(target.title)}`);
+  const inDrafts = (session.draftIds ?? (session.buildId ? [session.buildId] : [])).length;
+  if (inDrafts > 0) parts.push(`In ${inDrafts} ${inDrafts === 1 ? "draft" : "drafts"}`);
   return parts.join(" · ");
 }
 
@@ -89,19 +91,26 @@ export type MenuItem =
   | { key: string; label: string; kind: "target"; buildId: string }
   | { key: string; label: string; kind: "new" }
   | { key: string; label: string; kind: "draft"; buildId: string }
-  | { key: string; label: string; kind: "open"; buildId: string }
-  | { key: string; label: string; kind: "remove" };
+  | { key: string; label: string; kind: "open"; buildId: string };
 
-/** The + menu of a session not in a build, in order. "remove" is drawn after a separator. */
+/**
+ * The + menu of a session, in order (CA-12). A finished session is never used up: it can go into a new build or any
+ * draft, so each draft it is not in is "Add to"; one it is already in is "Open", since adding it again would make a
+ * second copy of its tiles there.
+ */
 export function menuItems(session: SessionSummary, drafts: readonly DraftListItem[]): MenuItem[] {
   const items: MenuItem[] = [];
+  const inDrafts = new Set(session.draftIds ?? (session.buildId ? [session.buildId] : []));
   const target = session.targetBuildId ? drafts.find((d) => d.id === session.targetBuildId) : undefined;
-  if (target) items.push({ key: "target", kind: "target", buildId: target.id, label: `Add to ${draftTitle(target.title)}` });
+  if (target && !inDrafts.has(target.id)) items.push({ key: "target", kind: "target", buildId: target.id, label: `Add to ${draftTitle(target.title)}` });
   items.push({ key: "new", kind: "new", label: "Start a new build" });
   for (const draft of drafts.slice(0, MENU_DRAFTS_MAX)) {
-    items.push({ key: `draft-${draft.id}`, kind: "draft", buildId: draft.id, label: `Add to ${draftTitle(draft.title)}` });
+    items.push(
+      inDrafts.has(draft.id)
+        ? { key: `open-${draft.id}`, kind: "open", buildId: draft.id, label: `Open ${draftTitle(draft.title)}` }
+        : { key: `draft-${draft.id}`, kind: "draft", buildId: draft.id, label: `Add to ${draftTitle(draft.title)}` },
+    );
   }
-  items.push({ key: "remove", kind: "remove", label: "Remove session" });
   return items;
 }
 

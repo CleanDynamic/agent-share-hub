@@ -93,8 +93,8 @@ export function sandboxSourcesProps(which: SandboxFixture = "fox", state: Design
       { id: "f2", name: "logo.png", note: "added by you" },
     ],
     library: empty || fox ? [] : [
-      { id: "l1", label: "Claude", line: "1 Mar · 4 prompts", adding: false },
-      { id: "l2", label: "Cursor", line: "28 Feb · 2 prompts", adding: false },
+      { id: "l1", label: "Claude", line: "1 Mar · 4 prompts", adding: false, inThisDraft: false, alsoIn: null, firstPrompt: null, date: "1 Mar", promptCount: 4 },
+      { id: "l2", label: "Cursor", line: "28 Feb · 2 prompts", adding: false, inThisDraft: false, alsoIn: null, firstPrompt: null, date: "28 Feb", promptCount: 2 },
     ],
     selectedId: fox ? "p1" : "p3",
     onSelect: noop,

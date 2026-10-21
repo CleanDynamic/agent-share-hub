@@ -13,7 +13,7 @@ import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
 import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
 import { goalLine, toolLabel } from "@/lib/build/making";
-import type { SessionSummary } from "@/lib/build/sessions";
+import type { SessionSummary, UnfinishedSession } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
 import { isSetupPayload } from "@/lib/build/setup";
 import type { BuildNode } from "@/lib/build/types";
@@ -65,6 +65,23 @@ export interface SourceLibraryItem {
   /** "{d MMM} · {n} prompts". */
   line: string;
   adding: boolean;
+  /** CA-12: the session is already in this draft: "In this draft" stands where the + button was. */
+  inThisDraft: boolean;
+  /** CA-12: "Also in 2 drafts", for a session in other drafts; null for none. */
+  alsoIn: string | null;
+  /** CA-12: the first prompt, for the Add a session list's search. */
+  firstPrompt: string | null;
+  /** CA-12: the date as the line shows it, and the prompt count. */
+  date: string;
+  promptCount: number;
+}
+
+/** CA-12: an import that is not a session yet. */
+export interface SourceUnfinishedItem {
+  id: string;
+  label: string;
+  /** "Sent 3 Oct" for one still arriving; the reason for one that did not finish. */
+  line: string;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -195,16 +212,46 @@ export function projectFileReminders(sessions: readonly Pick<SourceSession, "too
   return out;
 }
 
-/** The library's sessions that are in no build, newest first as the library lists them. */
-export function librarySources(library: readonly SessionSummary[], adding: ReadonlySet<string>, now: number): SourceLibraryItem[] {
-  return library
-    .filter((session) => session.status === "parsed" && session.buildId === null)
-    .map((session) => ({
+/** "Also in 2 drafts", from the drafts a session is in other than this one; null for none. */
+export function alsoInLine(draftIds: readonly string[], buildId: string | null | undefined): string | null {
+  const others = draftIds.filter((id) => id !== buildId).length;
+  return others === 0 ? null : `Also in ${others} ${others === 1 ? "draft" : "drafts"}`;
+}
+
+/**
+ * CA-12: every finished session, newest first as the library lists them: waiting, in this draft, in other drafts, and
+ * ones marked expired. None is hidden and "expired" is never shown. One already in this draft says so; one in other
+ * drafts keeps its + button and says where else it is.
+ */
+export function librarySources(library: readonly SessionSummary[], adding: ReadonlySet<string>, now: number, buildId: string | null = null): SourceLibraryItem[] {
+  return library.map((session) => {
+    const ids = session.draftIds ?? (session.buildId ? [session.buildId] : []);
+    const date = shortDate(session.createdAt) || sessionDate(session.createdAt, now);
+    return {
       id: session.id,
       label: sessionSource(session),
-      line: `${shortDate(session.createdAt) || sessionDate(session.createdAt, now)} · ${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`,
+      line: `${date} · ${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`,
       adding: adding.has(session.id),
-    }));
+      inThisDraft: buildId !== null && ids.includes(buildId),
+      alsoIn: alsoInLine(ids, buildId),
+      firstPrompt: session.firstPrompt,
+      date,
+      promptCount: session.promptCount,
+    };
+  });
+}
+
+/** CA-12: the imports still arriving, and the ones that did not finish, for the two small groups at the bottom of Sources. */
+export function unfinishedSources(list: readonly UnfinishedSession[], now: number): { arriving: SourceUnfinishedItem[]; didntFinish: SourceUnfinishedItem[] } {
+  const arriving: SourceUnfinishedItem[] = [];
+  const didntFinish: SourceUnfinishedItem[] = [];
+  for (const item of list) {
+    const label = sessionSource({ modelName: null, client: item.client });
+    const sent = shortDate(item.createdAt) || sessionDate(item.createdAt, now);
+    if (item.status === "open" || item.status === "assembling") arriving.push({ id: item.id, label, line: sent ? `Sent ${sent}` : "Sent" });
+    else didntFinish.push({ id: item.id, label, line: item.reason ?? "It didn't finish." });
+  }
+  return { arriving, didntFinish };
 }
 
 const CHAT_EXPORT_CHARS = 400_000;

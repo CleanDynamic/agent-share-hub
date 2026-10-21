@@ -23,7 +23,7 @@ beforeEach(() => {
 });
 
 function view(props: Partial<DraftsViewProps> = {}) {
-  const base = { ...draftsViewProps(), onRetryDrafts: vi.fn(), onRetrySessions: vi.fn(), onToggleAttached: vi.fn(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onRemove: vi.fn(), onConnect: vi.fn(), ...props };
+  const base = { ...draftsViewProps(), onRetryDrafts: vi.fn(), onRetrySessions: vi.fn(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onConnect: vi.fn(), ...props };
   render(
     <MemoryRouter>
       <DraftsView {...base} />
@@ -54,7 +54,7 @@ describe("DraftsView", () => {
   it("draws both lists: the drafts, last edited first, and the waiting sessions", () => {
     view();
     expect(screen.getAllByTestId("draft-row")).toHaveLength(4);
-    expect(screen.getAllByTestId("session-row")).toHaveLength(4);
+    expect(screen.getAllByTestId("session-row")).toHaveLength(5);
     expect(screen.getByRole("heading", { name: "Continue editing" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Older post drafts/ }).getAttribute("href")).toBe("/drafts/posts");
@@ -123,7 +123,7 @@ describe("DraftsView", () => {
     expect(screen.getAllByTestId("session-row")[0].getAttribute("draggable")).toBeNull();
   });
 
-  it("the + menu offers a new build, up to eight drafts, and Remove after a separator", async () => {
+  it("the + menu offers a new build and up to eight drafts, and never removes a session", async () => {
     const p = view();
     const add = screen.getAllByRole("button", { name: /^Add “Every morning at 7/ })[0];
     fireEvent.pointerDown(add, { button: 0, ctrlKey: false });
@@ -135,23 +135,9 @@ describe("DraftsView", () => {
       "Add to Untitled build",
       "Add to Inbox triage v2",
       "Add to First MCP test",
-      "Remove session",
     ]);
     fireEvent.click(within(menu).getByRole("menuitem", { name: "Add to Photo renamer by date taken" }));
     expect(p.onAddToDraft).toHaveBeenCalledWith("s1", expect.objectContaining({ id: "d1" }));
-  });
-
-  it("Remove asks first, in an alert dialog", async () => {
-    const p = view();
-    const add = screen.getAllByRole("button", { name: /^Add “Every morning at 7/ })[0];
-    fireEvent.keyDown(add, { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove session" }));
-    const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText("Remove this session?")).toBeInTheDocument();
-    expect(within(dialog).getByText("It disappears from Drafts. This can't be undone.")).toBeInTheDocument();
-    expect(p.onRemove).not.toHaveBeenCalled();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
-    expect(p.onRemove).toHaveBeenCalledWith("s1");
   });
 
   it("on a phone the + opens the 'Add to a build' sheet and rows have no grip", async () => {
@@ -161,30 +147,31 @@ describe("DraftsView", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /^Add “Every morning at 7/ })[0]);
     const sheet = await screen.findByRole("dialog", { name: "Add to a build" });
     expect(within(sheet).getAllByRole("button").map((b) => b.textContent)).toEqual(
-      expect.arrayContaining(["Start a new build", "Add to Photo renamer by date taken", "Remove session"]),
+      expect.arrayContaining(["Start a new build", "Add to Photo renamer by date taken"]),
     );
   });
 
-  it("sessions already in a build hide behind a toggle, are not draggable, and say where they are", () => {
-    const p = view();
-    expect(screen.queryByTestId("session-row-attached")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Show 1 already in a build" }));
-    expect(p.onToggleAttached).toHaveBeenCalled();
+  it("CA-12: a session already in a draft is listed with the others, says so, and offers Open for that draft and Add to for the rest", async () => {
+    view();
+    const row = screen.getAllByTestId("session-row").find((li) => li.textContent?.includes("Rename every photo"));
+    expect(row?.textContent).toContain("In 1 draft");
+    expect(screen.queryByRole("button", { name: /already in a build/ })).toBeNull();
+    fireEvent.keyDown(within(row as HTMLElement).getByRole("button", { name: /Rename every photo/ }), { key: "Enter" });
+    const open = await screen.findByRole("menuitem", { name: "Open Photo renamer by date taken" });
+    expect(open.getAttribute("href")).toBe("/compose/d1");
+    expect(screen.queryByRole("menuitem", { name: "Add to Photo renamer by date taken" })).toBeNull();
+    expect(screen.getByRole("menuitem", { name: "Add to Untitled build" })).toBeInTheDocument();
   });
 
-  it("shown, they read 'In {draft}', and their menu is one 'Open' link", async () => {
-    view({ showAttached: true });
-    const row = screen.getByTestId("session-row-attached");
-    expect(row.textContent).toContain("In Photo renamer by date taken");
-    expect(row.getAttribute("draggable")).toBeNull();
-    expect(screen.getByRole("button", { name: "Hide sessions already in a build" })).toBeInTheDocument();
-    fireEvent.keyDown(within(row).getByRole("button", { name: /Photo renamer by date taken/ }), { key: "Enter" });
-    const item = await screen.findByRole("menuitem", { name: "Open Photo renamer by date taken" });
-    expect(item.getAttribute("href")).toBe("/compose/d1");
+  it("CA-12: asks for the next page of sessions", () => {
+    const onMore = vi.fn();
+    view({ moreSessions: { loading: false, onMore } });
+    fireEvent.click(screen.getByRole("button", { name: "Show more sessions" }));
+    expect(onMore).toHaveBeenCalled();
   });
 
   it("empty: one line and one action each, and 'Nothing in progress.'", () => {
-    const p = view({ drafts: [], sessions: [], attached: [] });
+    const p = view({ drafts: [], sessions: [] });
     expect(screen.getByText("No new sessions.")).toBeInTheDocument();
     expect(screen.getByText("Nothing in progress.")).toBeInTheDocument();
     expect(screen.getByTestId("start-row")).toBeInTheDocument();

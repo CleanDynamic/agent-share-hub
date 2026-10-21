@@ -28,7 +28,7 @@ const appQueryClient = () =>
 
 const TIMEOUT: FaultAnswer = { status: 500, body: { code: "57014", details: null, hint: null, message: "canceling statement due to statement timeout" } };
 
-const WAITING = /^\/rest\/v1\/import_sessions\?.*status=in\.\(parsed\)(&|$)/;
+const WAITING = /^\/rest\/v1\/import_sessions\?.*status=in\.\(parsed,claimed,expired\)(&|$)/;
 const DRAFTS = /^\/rest\/v1\/builds\?select=id,creator_id/;
 
 function mount({ faults = [], delays = [] }: { faults?: Fault[]; delays?: Delay[] } = {}) {
@@ -69,7 +69,7 @@ describe("CA-10 · the Drafts page, one status per panel", () => {
     expect(within(panel("Sessions")).getByText("Code 57014")).toBeTruthy();
     expect(screen.queryByRole("status", { name: "Continue editing" })).toBeNull();
     expect(screen.getByText("Draft 15")).toBeTruthy();
-    expect(lines(logged)).toEqual(["[Drafts] sessions read failed 57014 listSessions failed: canceling statement due to statement timeout"]);
+    expect(lines(logged)).toEqual(["[Drafts] sessions read failed 57014 listLibrarySessions failed: canceling statement due to statement timeout"]);
   });
 
   it("both panels failing: each says so, with its code", async () => {

@@ -35,13 +35,13 @@ function panel(over: Partial<SourcesPanelProps> = {}) {
 
 const sessionRows = (n: number): SourceSession[] => many(n, (at) => ({ key: `s${at}`, number: at, tool: "Claude", detail: "Opus 5.5 · 3 Mar", prompts: [] }));
 const fileRows = (n: number): SourceFile[] => many(n, (at) => ({ id: `f${at}`, name: `file-${at}.pdf`, note: "added by you" }));
-const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `l${at}`, label: "Claude", line: "1 Mar · 2 prompts", adding: false }));
+const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `l${at}`, label: "Claude", line: "1 Mar · 2 prompts", adding: false, inThisDraft: false, alsoIn: null, firstPrompt: null, date: "1 Mar", promptCount: 2 }));
 
 describe("Sources' choice budgets", () => {
   it.each([
     ["Sessions in this build", { sessions: sessionRows(9) }, 9],
     ["Files in this build", { files: fileRows(8) }, 8],
-    ["Not in a build", { library: libraryRows(10) }, 10],
+    ["Your sessions", { library: libraryRows(10) }, 10],
   ] as const)("shows at most six rows in %s, then one Show more", (name, over, total) => {
     panel({ sessions: [], files: [], library: [], ...over });
     const group = screen.getByRole("region", { name });
@@ -57,7 +57,7 @@ describe("Sources' choice budgets", () => {
   it("leaves out a group with nothing in it", () => {
     panel({ files: [], library: [] });
     expect(screen.queryByRole("region", { name: "Files in this build" })).toBeNull();
-    expect(screen.queryByRole("region", { name: "Not in a build" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Your sessions" })).toBeNull();
   });
 
   it("has no filled button and one add route per library session", () => {
@@ -145,13 +145,13 @@ describe("the refined look (UI-P93)", () => {
 
   it("lists the three groups in order, each session with its tool's real mark and a toggle", () => {
     panel();
-    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Sessions in this build", "Files in this build", "Not in a build"]);
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Sessions in this build", "Files in this build", "Your sessions"]);
     const sessions = screen.getByRole("region", { name: "Sessions in this build" });
     expect(within(sessions).getAllByRole("button", { name: /^Open session/ })).toHaveLength(3);
     expect(sessions.querySelectorAll("[data-mark]")).toHaveLength(3);
   });
 
-  it("has a 6px square per group (hollow for Not in a build), a boxed 26 Add session and a 56-high dashed drop zone", () => {
+  it("has a 6px square per group (hollow for Your sessions), a boxed 26 Add session and a 56-high dashed drop zone", () => {
     panel();
     const add = screen.getAllByRole("button", { name: "Add session" })[0];
     expect(add.getAttribute("style")).toMatch(/width:\s*26px/);
