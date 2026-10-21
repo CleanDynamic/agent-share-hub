@@ -1,0 +1,169 @@
+[
+  {
+    "route": "home",
+    "path": "/",
+    "perMinuteVisible": 2,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "hidden30s": 3,
+    "hiddenByPurpose": {
+      "GET dm_threads ?or": 1,
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 12,
+    "returnByPurpose": {
+      "POST dm_presence ?on_conflict": 4,
+      "POST rpc/get_build_feed": 1,
+      "HEAD builds ?status&last_confirmed_at": 1,
+      "HEAD build_reproductions ?created_at": 2,
+      "GET streak_days ?user_id&date": 1,
+      "GET build_reproductions ?user_id&created_at": 1,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1
+    }
+  },
+  {
+    "route": "gallery",
+    "path": "/gallery",
+    "perMinuteVisible": 1,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 1
+    },
+    "hidden30s": 2,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 12,
+    "returnByPurpose": {
+      "POST dm_presence ?on_conflict": 4,
+      "GET builds ?status&or": 2,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1,
+      "GET build_reproductions ?build_id": 2,
+      "GET builds": 2
+    }
+  },
+  {
+    "route": "build",
+    "path": "/b2/ca09-showcase",
+    "perMinuteVisible": 1,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 1
+    },
+    "hidden30s": 2,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 6,
+    "returnByPurpose": {
+      "POST dm_presence ?on_conflict": 4,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1
+    }
+  },
+  {
+    "route": "drafts",
+    "path": "/drafts",
+    "perMinuteVisible": 7,
+    "visibleByPurpose": {
+      "GET import_sessions ?status": 6,
+      "POST dm_presence ?on_conflict": 1
+    },
+    "hidden30s": 2,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 10,
+    "returnByPurpose": {
+      "POST dm_presence ?on_conflict": 4,
+      "GET import_sessions ?status": 2,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1,
+      "GET builds": 1,
+      "GET builds ?id": 1
+    }
+  },
+  {
+    "route": "compose-new",
+    "path": "/compose/new",
+    "perMinuteVisible": 7,
+    "visibleByPurpose": {
+      "GET import_sessions ?status&proposal": 6,
+      "POST dm_presence ?on_conflict": 1
+    },
+    "hidden30s": 2,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 7,
+    "returnByPurpose": {
+      "POST dm_presence ?on_conflict": 4,
+      "GET import_sessions ?status&proposal": 1,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1
+    }
+  },
+  {
+    "route": "compose-7step",
+    "path": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+    "perMinuteVisible": 7,
+    "visibleByPurpose": {
+      "GET import_sessions ?status&proposal": 6,
+      "POST dm_presence ?on_conflict": 1
+    },
+    "hidden30s": 2,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 8,
+    "returnByPurpose": {
+      "POST dm_presence ?on_conflict": 4,
+      "GET import_sessions ?build_id&status": 1,
+      "GET import_sessions ?status&proposal": 1,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1
+    }
+  },
+  {
+    "route": "profile",
+    "path": "/profile/ana-test",
+    "perMinuteVisible": 1,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 1
+    },
+    "hidden30s": 2,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 6,
+    "returnByPurpose": {
+      "GET profiles ?id": 1,
+      "POST dm_presence ?on_conflict": 4,
+      "HEAD builds ?creator_id&status": 1
+    }
+  },
+  {
+    "route": "messages",
+    "path": "/messages",
+    "perMinuteVisible": 1,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 1
+    },
+    "hidden30s": 2,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 2
+    },
+    "onReturn5s": 22,
+    "returnByPurpose": {
+      "POST dm_presence ?on_conflict": 4,
+      "GET dm_threads ?or": 4,
+      "GET dm_thread_members ?user_id": 2,
+      "GET profiles ?id": 3,
+      "HEAD builds ?creator_id&status": 1,
+      "GET follows ?follower_id&following_id": 2,
+      "GET dm_messages ?thread_id": 2,
+      "HEAD dm_messages ?thread_id&sender_id&sent_at": 4
+    }
+  }
+]

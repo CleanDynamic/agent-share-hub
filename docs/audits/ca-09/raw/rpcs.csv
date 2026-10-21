@@ -1,0 +1,25 @@
+rpc,in_types_ts,newest_migration,args_sent,args_in_migration,mismatch,call_sites
+accept_bounty_solution,true,20260830120000_solution_build_id.sql,p_bounty_id p_solution_id,p_bounty_id p_solution_id p_solved_node_id,,src/lib/bounty/solutions.ts:290
+claim_challenge,true,20260629162842_d6a32f50-e79a-4551-9296-47f9f181b441.sql,_challenge_id,_challenge_id,,src/lib/progress/index.ts:251
+gallery_facets,true,20260824140000_gallery_facets.sql,thresholds,thresholds,,src/lib/build/gallery.ts:761
+get_build_feed,true,20261001150000_rc_build_feed_following.sql,,before,,src/lib/feed/getBuildFeed.ts:238
+get_email_by_username,true,20260318185439_68df3ada-ec24-4ac8-9c6c-174d13f5603e.sql,_username,_username,,src/lib/auth/signInWithEmailOrUsername.ts:24
+get_quest_state,true,20260629162842_d6a32f50-e79a-4551-9296-47f9f181b441.sql,_user_id,_user_id,,src/lib/progress/index.ts:170
+get_visible_surfaces,true,20260629172454_7e1bb160-6bb2-418c-986d-bbf232ac0e6b.sql,_user_id,_user_id,,src/lib/profile/profileProgress.ts:94 src/lib/progress/index.ts:154
+increment_content_view_count,true,20260316225912_550a88a9-007d-4f20-adeb-c47708cb56c0.sql,_content_id,_content_id,,src/lib/content-detail/recordPostView.ts:40 src/pages/ContentDetail.legacy.tsx:320
+increment_download_count,true,20260316203528_24725248-e26e-42ea-b74c-2a124e04656c.sql,_content_id,_content_id,,src/components/BookmarkButton.tsx:144 src/lib/download.ts:45
+increment_project_view_count,true,20260316224525_fc1dbcec-c7f7-4db4-91de-9c5fb3beb311.sql,_project_id,_project_id,,src/pages/ProjectDetail.tsx:188
+is_admin,true,20260316202122_7957ed86-2966-4526-bc9a-0f37309ec08f.sql,_user_id,_user_id,,src/lib/reblog/deleteReblog.ts:39
+maker_build_metrics,false,20261001220000_rc_maker_stats.sql,uid,uid,,src/lib/analytics/buildStats.ts:143
+maker_stats,false,20261001220000_rc_maker_stats.sql,,uid,,src/lib/profile/makerStats.ts:81
+mark_depth_revealed,true,20260629172454_7e1bb160-6bb2-418c-986d-bbf232ac0e6b.sql,,,,src/lib/progress/index.ts:264
+mark_welcome_xp_shown,true,20260629163904_9903135e-5d36-4436-aa53-80419a3863bb.sql,,,,src/components/ambient/useWelcomeXp.ts:41
+rebuild_tree,false,20261001170000_rc_rebuild_tree.sql,,root max_nodes,,src/lib/build/lineage.ts:171
+record_daily_activity,true,20260629172454_7e1bb160-6bb2-418c-986d-bbf232ac0e6b.sql,,,,src/lib/progress/index.ts:313
+resolve_report,false,20261001190000_rc_reports.sql,,report action,,src/lib/moderation/reports.ts:216
+respec_track,true,20260629172454_7e1bb160-6bb2-418c-986d-bbf232ac0e6b.sql,_track,_track,,src/lib/progress/index.ts:275
+search_build_ids,false,20261001140000_rc_search_builds.sql,,q max_results,,src/lib/build/search.ts:76
+set_build_post_media,true,20261016120000_post_threads.sql,p_build_id p_media_ids,p_build_id p_media_ids,,src/lib/build/cover.ts:404
+set_user_track,true,20260629172454_7e1bb160-6bb2-418c-986d-bbf232ac0e6b.sql,_track,_track,,src/lib/progress/index.ts:270
+soft_delete_primitive_comment,true,20260516234150_481c82b0-9401-4db5-af4c-957227196ccb.sql,_comment_id,_comment_id,,src/lib/content-detail/softDeleteComment.ts:9
+top_solvers,false,20261001160000_rc_top_solvers.sql,,max_results since_days,,src/lib/bounty/solvers.ts:82

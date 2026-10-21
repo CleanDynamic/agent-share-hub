@@ -1,0 +1,4364 @@
+[
+  {
+    "area": "Composer",
+    "name": "Add (open the menu)",
+    "screen": "/compose/{7-step}",
+    "should": "open the Add menu",
+    "profile": "desktop",
+    "target": {
+      "x": 843,
+      "y": 412,
+      "w": 67,
+      "h": 28
+    },
+    "covered": null,
+    "firstVisibleMs": 77,
+    "effectMs": 77,
+    "effect": "state: aria-expanded=true",
+    "seen": [
+      {
+        "ms": 73,
+        "kind": "focus (hidden)",
+        "detail": "div top=-940 bottom=-470 vh=800 offscreen"
+      },
+      {
+        "ms": 77,
+        "kind": "state",
+        "detail": "aria-expanded=true"
+      },
+      {
+        "ms": 77,
+        "kind": "state",
+        "detail": "data-state=open"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=true",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "New sessionOne sitting with one toolProm",
+      "top": -64,
+      "bottom": 406,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "New session",
+    "screen": "/compose/{7-step}",
+    "should": "open the New session dialog",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": -59,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "verdict": "Broken",
+    "whatChanged": "cannot be pressed: the row is outside the screen",
+    "error": "locator.click: Timeout 5000ms exceeded."
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Prompt",
+    "screen": "/compose/{7-step}",
+    "should": "put the cursor in the add-prompt field, on screen, keyboard up",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": -13,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 37,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 37,
+        "kind": "focus",
+        "detail": "div top=-13 bottom=33 vh=800"
+      },
+      {
+        "ms": 65,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 65,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 70,
+        "kind": "focus",
+        "detail": "button top=412 bottom=440 vh=800"
+      }
+    ],
+    "whatChanged": "focus: div top=-13 bottom=33 vh=800",
+    "expectedHappened": false,
+    "active": {
+      "tag": "button",
+      "label": "Add",
+      "top": 412,
+      "bottom": 440,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Broken",
+    "note": "focus went back to the Add button"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Agent or team",
+    "screen": "/compose/{7-step}",
+    "should": "open the agent dialog",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 79,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 57,
+    "effectMs": 57,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 49,
+        "kind": "focus (hidden)",
+        "detail": "button top=174 bottom=198 vh=800 covered by div"
+      },
+      {
+        "ms": 57,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 57,
+        "kind": "appeared",
+        "detail": "dialog:Add an agent or a teamOne agentA team of agentsPrompts that "
+      },
+      {
+        "ms": 57,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 57,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 60,
+        "kind": "focus",
+        "detail": "button top=174 bottom=198 vh=800"
+      }
+    ],
+    "whatChanged": "appeared: div:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "One agent",
+      "top": 174,
+      "bottom": 198,
+      "visible": true
+    },
+    "dialogs": [
+      "Add an agent or a teamOne agentA team of agentsPrompts that "
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "File",
+    "screen": "/compose/{7-step}",
+    "should": "open the file picker",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 125,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 56,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 56,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 56,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 62,
+        "kind": "focus",
+        "detail": "button top=412 bottom=440 vh=800"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=false",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Add",
+      "top": 412,
+      "bottom": 440,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": true,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Tool",
+    "screen": "/compose/{7-step}",
+    "should": "open the tool dialog",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 171,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 57,
+    "effectMs": 57,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 50,
+        "kind": "focus (hidden)",
+        "detail": "button[Tool] top=389 bottom=421 vh=800 covered by div"
+      },
+      {
+        "ms": 57,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 58,
+        "kind": "appeared",
+        "detail": "dialog:Add a toolToolPick a toolCancelAdd"
+      },
+      {
+        "ms": 58,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 58,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 60,
+        "kind": "focus",
+        "detail": "button[Tool] top=389 bottom=421 vh=800"
+      }
+    ],
+    "whatChanged": "appeared: div:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Tool",
+      "top": 389,
+      "bottom": 421,
+      "visible": true
+    },
+    "dialogs": [
+      "Add a toolToolPick a toolCancelAdd"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Manual step",
+    "screen": "/compose/{7-step}",
+    "should": "open the manual step dialog",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 217,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 57,
+    "effectMs": 57,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 49,
+        "kind": "focus (hidden)",
+        "detail": "button[Tool] top=313 bottom=345 vh=800 covered by div"
+      },
+      {
+        "ms": 57,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 57,
+        "kind": "appeared",
+        "detail": "dialog:Add a manual stepToolPick a toolWhat was done0 / 140Picture,"
+      },
+      {
+        "ms": 57,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 57,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 60,
+        "kind": "focus",
+        "detail": "button[Tool] top=313 bottom=345 vh=800"
+      }
+    ],
+    "whatChanged": "appeared: div:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Tool",
+      "top": 313,
+      "bottom": 345,
+      "visible": true
+    },
+    "dialogs": [
+      "Add a manual stepToolPick a toolWhat was done0 / 140Picture,"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Code",
+    "screen": "/compose/{7-step}",
+    "should": "open the code dialog",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 263,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 63,
+    "effectMs": 63,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 53,
+        "kind": "focus (hidden)",
+        "detail": "textarea[Paste or type the code] top=174 bottom=433 vh=800 covered by div"
+      },
+      {
+        "ms": 63,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 63,
+        "kind": "appeared",
+        "detail": "dialog:Add codeCodeLanguageOtherFile name, optionalWritten with, op"
+      },
+      {
+        "ms": 63,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 63,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 68,
+        "kind": "focus",
+        "detail": "textarea[Paste or type the code] top=174 bottom=433 vh=800"
+      }
+    ],
+    "whatChanged": "appeared: div:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "textarea",
+      "label": "Paste or type the code",
+      "top": 174,
+      "bottom": 433,
+      "visible": true
+    },
+    "dialogs": [
+      "Add codeCodeLanguageOtherFile name, optionalWritten with, op"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Check",
+    "screen": "/compose/{7-step}",
+    "should": "open the check dialog (or be shown disabled)",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 309,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 53,
+    "effectMs": 53,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 45,
+        "kind": "focus (hidden)",
+        "detail": "textarea[Places a test order for 2 sourdough loaves] top=186 bottom=260 vh=800 covered by div"
+      },
+      {
+        "ms": 53,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 53,
+        "kind": "appeared",
+        "detail": "dialog:Add a checkWhat it tested0 / 280What counts as passingWhen i"
+      },
+      {
+        "ms": 53,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 53,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 56,
+        "kind": "focus",
+        "detail": "textarea[Places a test order for 2 sourdough loaves] top=186 bottom=260 vh=800"
+      }
+    ],
+    "whatChanged": "appeared: div:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "textarea",
+      "label": "Places a test order for 2 sourdough loaves",
+      "top": 186,
+      "bottom": 260,
+      "visible": true
+    },
+    "dialogs": [
+      "Add a checkWhat it tested0 / 280What counts as passingWhen i"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Result",
+    "screen": "/compose/{7-step}",
+    "should": "add a Result step and select it",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 355,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 50,
+    "effectMs": 330,
+    "effect": "appeared: div:ResultSummaryUntitled resultWhat it isA linkA pictureA fileA",
+    "seen": [
+      {
+        "ms": 50,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 50,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 56,
+        "kind": "focus",
+        "detail": "button top=412 bottom=440 vh=800"
+      },
+      {
+        "ms": 330,
+        "kind": "appeared",
+        "detail": "div:ResultSummaryUntitled resultWhat it isA linkA pictureA fileA"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=false",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Add",
+      "top": 412,
+      "bottom": 440,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "POST 201 build_nodes 121ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Slow"
+  },
+  {
+    "area": "Composer › Add",
+    "name": "Session (submenu)",
+    "screen": "/compose/{7-step}",
+    "should": "open the list of waiting sessions",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 33,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": null,
+    "effectMs": null,
+    "effect": null,
+    "seen": [],
+    "whatChanged": "nothing",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "SessionA chat from your sources",
+      "top": 33,
+      "bottom": 79,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer › Add (new post)",
+    "name": "Prompt",
+    "screen": "/compose/new",
+    "should": "put the cursor in the add-prompt field, on screen",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": -13,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 62,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 62,
+        "kind": "focus",
+        "detail": "div top=-13 bottom=33 vh=800"
+      },
+      {
+        "ms": 84,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 84,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 94,
+        "kind": "focus",
+        "detail": "button top=412 bottom=440 vh=800"
+      }
+    ],
+    "whatChanged": "focus: div top=-13 bottom=33 vh=800",
+    "expectedHappened": false,
+    "active": {
+      "tag": "button",
+      "label": "Add",
+      "top": 412,
+      "bottom": 440,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Broken",
+    "note": "focus went back to the Add button"
+  },
+  {
+    "area": "Composer › Add (new post)",
+    "name": "Result",
+    "screen": "/compose/new",
+    "should": "make the draft, add a Result step",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": 355,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "firstVisibleMs": 48,
+    "effectMs": 326,
+    "effect": "url: /compose/34196cfc-3365-4357-9691-533763b2b947",
+    "seen": [
+      {
+        "ms": 48,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 48,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 53,
+        "kind": "focus",
+        "detail": "button top=412 bottom=440 vh=800"
+      },
+      {
+        "ms": 326,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 336,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 353,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 369,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 384,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 400,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 417,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 433,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 449,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 465,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 481,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 497,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 513,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 528,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 563,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 577,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 613,
+        "kind": "appeared",
+        "detail": "button:ResultUntitled resulttext"
+      },
+      {
+        "ms": 613,
+        "kind": "appeared",
+        "detail": "div:ResultSummaryUntitled resultWhat it isA linkA pictureA fileA"
+      },
+      {
+        "ms": 621,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 624,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 641,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 657,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 675,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 688,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 705,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 721,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 737,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 753,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 769,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 784,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 801,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 817,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 832,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 849,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 865,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      },
+      {
+        "ms": 880,
+        "kind": "url",
+        "detail": "/compose/34196cfc-3365-4357-9691-533763b2b947"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=false",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Add",
+      "top": 412,
+      "bottom": 440,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "POST 201 builds 122ms",
+      "POST 201 build_nodes 120ms",
+      "GET 200 build_media 120ms",
+      "GET 200 builds 120ms",
+      "GET 200 build_nodes 121ms",
+      "GET 200 build_nodes 120ms",
+      "GET 200 build_events 121ms",
+      "GET 200 build_media 123ms",
+      "GET 200 import_sessions 120ms",
+      "GET 200 builds 121ms",
+      "GET 200 build_media 122ms",
+      "GET 200 build_media 121ms",
+      "PATCH 200 builds 121ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Slow"
+  },
+  {
+    "area": "Composer › Add (new post)",
+    "name": "New session",
+    "screen": "/compose/new",
+    "should": "open the New session dialog",
+    "profile": "desktop",
+    "target": {
+      "x": 635,
+      "y": -59,
+      "w": 270,
+      "h": 46
+    },
+    "covered": null,
+    "verdict": "Broken",
+    "whatChanged": "cannot be pressed: the row is outside the screen",
+    "error": "locator.click: Timeout 5000ms exceeded."
+  },
+  {
+    "area": "Composer",
+    "name": "List / Map: Map",
+    "screen": "/compose/{7-step}",
+    "should": "show the map",
+    "profile": "desktop",
+    "target": {
+      "x": 904,
+      "y": 119,
+      "w": 51,
+      "h": 22
+    },
+    "covered": null,
+    "firstVisibleMs": 34,
+    "effectMs": 65,
+    "effect": "state: aria-pressed=false",
+    "seen": [
+      {
+        "ms": 34,
+        "kind": "focus",
+        "detail": "button top=119 bottom=141 vh=800"
+      },
+      {
+        "ms": 65,
+        "kind": "state",
+        "detail": "aria-pressed=false"
+      },
+      {
+        "ms": 65,
+        "kind": "state",
+        "detail": "aria-pressed=true"
+      },
+      {
+        "ms": 66,
+        "kind": "appeared",
+        "detail": "toolbar:20"
+      },
+      {
+        "ms": 66,
+        "kind": "appeared",
+        "detail": "div:goes into 0suggested 0click to select · double-click to read"
+      }
+    ],
+    "whatChanged": "focus: button top=119 bottom=141 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Map",
+      "top": 140,
+      "bottom": 162,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Select a prompt (tap the card)",
+    "screen": "/compose/{7-step}",
+    "should": "select it and show its details",
+    "profile": "desktop",
+    "target": {
+      "x": 306,
+      "y": 516,
+      "w": 604,
+      "h": 142
+    },
+    "covered": null,
+    "firstVisibleMs": 11,
+    "effectMs": 28,
+    "effect": "state: data-selected=true",
+    "seen": [
+      {
+        "ms": 11,
+        "kind": "focus",
+        "detail": "div[Prompt 1: Prompt 1] top=516 bottom=658 vh=800"
+      },
+      {
+        "ms": 28,
+        "kind": "state",
+        "detail": "data-selected=true"
+      },
+      {
+        "ms": 29,
+        "kind": "appeared",
+        "detail": "div:Prompt 1Prompt 1Typed here · Claudeclaude-sonnet · prompt 1 "
+      }
+    ],
+    "whatChanged": "focus: div[Prompt 1: Prompt 1] top=516 bottom=658 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "Prompt 1: Prompt 1",
+      "top": 516,
+      "bottom": 658,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Step menu (…)",
+    "screen": "/compose/{7-step}",
+    "should": "open the step's menu",
+    "profile": "desktop",
+    "target": {
+      "x": 867,
+      "y": 533,
+      "w": 26,
+      "h": 26
+    },
+    "covered": null,
+    "firstVisibleMs": 89,
+    "effectMs": 89,
+    "effect": "state: aria-expanded=true",
+    "seen": [
+      {
+        "ms": 84,
+        "kind": "focus (hidden)",
+        "detail": "div top=-532 bottom=-266 vh=800 offscreen"
+      },
+      {
+        "ms": 89,
+        "kind": "state",
+        "detail": "aria-expanded=true"
+      },
+      {
+        "ms": 89,
+        "kind": "state",
+        "detail": "data-state=open"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=true",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "RenameRead all of itCopy togetherAttach ",
+      "top": 263,
+      "bottom": 529,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Step menu › Read all of it",
+    "screen": "/compose/{7-step}",
+    "should": "open the whole prompt",
+    "profile": "desktop",
+    "target": {
+      "x": 718,
+      "y": 300,
+      "w": 170,
+      "h": 32
+    },
+    "covered": null,
+    "firstVisibleMs": 87,
+    "effectMs": 87,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 71,
+        "kind": "focus (hidden)",
+        "detail": "div top=300 bottom=332 vh=800 covered by div"
+      },
+      {
+        "ms": 87,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 87,
+        "kind": "appeared",
+        "detail": "dialog:Prompt 1 of 3 · full promptTitle · starts as \"Prompt 1\" · on"
+      },
+      {
+        "ms": 87,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 87,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 90,
+        "kind": "focus (hidden)",
+        "detail": "button[Prompt 1 options] top=533 bottom=559 vh=800 covered by full-prompt-text"
+      }
+    ],
+    "whatChanged": "appeared: div:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Prompt 1 options",
+      "top": 533,
+      "bottom": 559,
+      "visible": false
+    },
+    "dialogs": [
+      "Prompt 1 of 3 · full promptTitle · starts as \"Prompt 1\" · on"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Step menu › Rename",
+    "screen": "/compose/{7-step}",
+    "should": "turn the title into a field",
+    "profile": "desktop",
+    "target": {
+      "x": 718,
+      "y": 268,
+      "w": 170,
+      "h": 32
+    },
+    "covered": null,
+    "firstVisibleMs": 71,
+    "effectMs": 84,
+    "effect": "appeared: input:",
+    "seen": [
+      {
+        "ms": 71,
+        "kind": "state",
+        "detail": "aria-expanded=false"
+      },
+      {
+        "ms": 71,
+        "kind": "state",
+        "detail": "data-state=closed"
+      },
+      {
+        "ms": 84,
+        "kind": "focus",
+        "detail": "input[Title of prompt 1][Prompt 1] top=533 bottom=561 vh=800"
+      },
+      {
+        "ms": 84,
+        "kind": "appeared",
+        "detail": "input:"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=false",
+    "expectedHappened": true,
+    "active": {
+      "tag": "input",
+      "label": "Title of prompt 1",
+      "top": 533,
+      "bottom": 561,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Card",
+    "screen": "/compose/{7-step}",
+    "should": "open the card editor",
+    "profile": "desktop",
+    "target": {
+      "x": 974,
+      "y": 118,
+      "w": 63,
+      "h": 30
+    },
+    "covered": null,
+    "firstVisibleMs": 33,
+    "effectMs": 71,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 33,
+        "kind": "focus",
+        "detail": "button top=118 bottom=148 vh=800"
+      },
+      {
+        "ms": 69,
+        "kind": "focus (hidden)",
+        "detail": "button[Close] top=20 bottom=50 vh=800 covered by div"
+      },
+      {
+        "ms": 71,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 72,
+        "kind": "appeared",
+        "detail": "dialog:CardCoverThe cover is the first picture in your post.Edit th"
+      }
+    ],
+    "whatChanged": "focus: button top=118 bottom=148 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Close",
+      "top": 20,
+      "bottom": 50,
+      "visible": true
+    },
+    "dialogs": [
+      "CardCoverThe cover is the first picture in your post.Edit th"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Preview",
+    "screen": "/compose/{7-step}",
+    "should": "show the preview",
+    "profile": "desktop",
+    "target": {
+      "x": 789,
+      "y": 339,
+      "w": 36,
+      "h": 36
+    },
+    "covered": null,
+    "firstVisibleMs": 96,
+    "effectMs": 96,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 92,
+        "kind": "focus (hidden)",
+        "detail": "button[Close] top=126 bottom=156 vh=800 covered by div"
+      },
+      {
+        "ms": 96,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 96,
+        "kind": "appeared",
+        "detail": "dialog:PreviewM(Miles (test)@miles-test · nowPantry inventory helpe"
+      }
+    ],
+    "whatChanged": "appeared: div:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Close",
+      "top": 126,
+      "bottom": 156,
+      "visible": true
+    },
+    "dialogs": [
+      "PreviewM(Miles (test)@miles-test · nowPantry inventory helpe"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Publish",
+    "screen": "/compose/{7-step}",
+    "should": "publish, or say what is missing",
+    "profile": "desktop",
+    "target": {
+      "x": 1135,
+      "y": 118,
+      "w": 79,
+      "h": 30
+    },
+    "covered": null,
+    "firstVisibleMs": 28,
+    "effectMs": 41,
+    "effect": "state: disabled=",
+    "seen": [
+      {
+        "ms": 28,
+        "kind": "focus",
+        "detail": "button top=118 bottom=148 vh=800"
+      },
+      {
+        "ms": 41,
+        "kind": "state",
+        "detail": "disabled="
+      },
+      {
+        "ms": 41,
+        "kind": "text",
+        "detail": "Publishing…"
+      },
+      {
+        "ms": 312,
+        "kind": "text",
+        "detail": "Published · saved just now · 3 prompts · 1 code file · 1 man"
+      },
+      {
+        "ms": 312,
+        "kind": "text",
+        "detail": "Published"
+      },
+      {
+        "ms": 313,
+        "kind": "appeared",
+        "detail": "status:Published. It will show in the Gallery once you say who this"
+      }
+    ],
+    "whatChanged": "focus: button top=118 bottom=148 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "body",
+      "label": "Skip to contentbuildgalleryHomeGalleryBo",
+      "top": 0,
+      "bottom": 1897,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [
+      "Published. It will show in the Gallery once you say who this is for.See it"
+    ],
+    "requests": [
+      "PATCH 200 builds 120ms",
+      "GET 200 import_sessions 121ms",
+      "GET 200 builds 121ms",
+      "PATCH 200 builds 121ms",
+      "GET 200 builds 121ms",
+      "GET 200 build_nodes 121ms",
+      "GET 200 build_nodes 121ms",
+      "GET 200 build_events 121ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Composer",
+    "name": "Missing: a cover picture (link)",
+    "screen": "/compose/new",
+    "should": "take you to the cover",
+    "profile": "desktop",
+    "target": {
+      "x": 155,
+      "y": 148,
+      "w": 134,
+      "h": 17
+    },
+    "covered": null,
+    "firstVisibleMs": 30,
+    "effectMs": 46,
+    "effect": "appeared: button:",
+    "seen": [
+      {
+        "ms": 30,
+        "kind": "focus",
+        "detail": "button top=148 bottom=165 vh=800"
+      },
+      {
+        "ms": 43,
+        "kind": "focus",
+        "detail": "div[The thread] top=218 bottom=266 vh=800"
+      },
+      {
+        "ms": 46,
+        "kind": "appeared",
+        "detail": "button:"
+      },
+      {
+        "ms": 80,
+        "kind": "scroll",
+        "detail": "2"
+      },
+      {
+        "ms": 96,
+        "kind": "scroll",
+        "detail": "8"
+      },
+      {
+        "ms": 112,
+        "kind": "scroll",
+        "detail": "19"
+      },
+      {
+        "ms": 128,
+        "kind": "scroll",
+        "detail": "33"
+      },
+      {
+        "ms": 144,
+        "kind": "scroll",
+        "detail": "48"
+      },
+      {
+        "ms": 160,
+        "kind": "scroll",
+        "detail": "63"
+      },
+      {
+        "ms": 176,
+        "kind": "scroll",
+        "detail": "74"
+      },
+      {
+        "ms": 192,
+        "kind": "scroll",
+        "detail": "81"
+      },
+      {
+        "ms": 208,
+        "kind": "scroll",
+        "detail": "83"
+      }
+    ],
+    "whatChanged": "focus: button top=148 bottom=165 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "The thread",
+      "top": 135,
+      "bottom": 183,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Post editor",
+    "name": "Type in post 1",
+    "screen": "/compose/{thread}",
+    "should": "put the cursor in the post and show the letter",
+    "profile": "desktop",
+    "target": {
+      "x": 358,
+      "y": 0,
+      "w": 520,
+      "h": 4295
+    },
+    "covered": null,
+    "firstVisibleMs": null,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 73,
+        "kind": "focus (hidden)",
+        "detail": "div[The thread] top=-1 bottom=25 vh=800 covered by a"
+      }
+    ],
+    "whatChanged": "focus (hidden): div[The thread] top=-1 bottom=25 vh=800 covered by a",
+    "expectedHappened": false,
+    "active": {
+      "tag": "div",
+      "label": "The thread",
+      "top": 0,
+      "bottom": 4295,
+      "visible": false
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Silent"
+  },
+  {
+    "area": "Post editor",
+    "name": "What did you build? (first post)",
+    "screen": "/compose/{7-step}",
+    "should": "put the cursor in the post",
+    "profile": "desktop",
+    "target": {
+      "x": 358,
+      "y": 218,
+      "w": 520,
+      "h": 48
+    },
+    "covered": null,
+    "firstVisibleMs": 32,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 32,
+        "kind": "focus",
+        "detail": "div[The thread] top=218 bottom=266 vh=800"
+      }
+    ],
+    "whatChanged": "focus: div[The thread] top=218 bottom=266 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "The thread",
+      "top": 218,
+      "bottom": 266,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Post editor",
+    "name": "Add another post",
+    "screen": "/compose/{7-step}",
+    "should": "start a second post",
+    "profile": "desktop",
+    "target": {
+      "x": 358,
+      "y": 286,
+      "w": 158,
+      "h": 25
+    },
+    "covered": null,
+    "firstVisibleMs": 33,
+    "effectMs": 37,
+    "effect": "appeared: button:",
+    "seen": [
+      {
+        "ms": 33,
+        "kind": "focus",
+        "detail": "div[The thread] top=218 bottom=266 vh=800"
+      },
+      {
+        "ms": 37,
+        "kind": "appeared",
+        "detail": "button:"
+      }
+    ],
+    "whatChanged": "focus: div[The thread] top=218 bottom=266 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "The thread",
+      "top": 218,
+      "bottom": 266,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Post editor › toolbar",
+    "name": "Picture",
+    "screen": "/compose/{7-step}",
+    "should": "open the file picker",
+    "profile": "desktop",
+    "target": {
+      "x": 358,
+      "y": 339,
+      "w": 36,
+      "h": 36
+    },
+    "covered": null,
+    "firstVisibleMs": null,
+    "effectMs": null,
+    "effect": null,
+    "seen": [],
+    "whatChanged": "nothing",
+    "expectedHappened": true,
+    "active": {
+      "tag": "body",
+      "label": "Skip to contentbuildgalleryHomeGalleryBo",
+      "top": 0,
+      "bottom": 1840,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": true,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Post editor › toolbar",
+    "name": "Bulleted list",
+    "screen": "/compose/{7-step}",
+    "should": "make a list",
+    "profile": "desktop",
+    "target": {
+      "x": 396,
+      "y": 339,
+      "w": 36,
+      "h": 36
+    },
+    "covered": null,
+    "firstVisibleMs": 35,
+    "effectMs": 35,
+    "effect": "appeared: ul:",
+    "seen": [
+      {
+        "ms": 35,
+        "kind": "appeared",
+        "detail": "ul:"
+      },
+      {
+        "ms": 37,
+        "kind": "state",
+        "detail": "aria-pressed=true"
+      },
+      {
+        "ms": 37,
+        "kind": "state",
+        "detail": "disabled=null"
+      },
+      {
+        "ms": 845,
+        "kind": "text",
+        "detail": "Draft · saving… · 3 prompts · 1 code file · 1 manual step"
+      },
+      {
+        "ms": 1352,
+        "kind": "text",
+        "detail": "Draft · saved just now · 3 prompts · 1 code file · 1 manual "
+      }
+    ],
+    "whatChanged": "appeared: ul:",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "The thread",
+      "top": 218,
+      "bottom": 280,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "POST 200 rpc/set_build_post_media 121ms",
+      "PATCH 200 builds 121ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Post editor › toolbar",
+    "name": "Text size (Aa)",
+    "screen": "/compose/{7-step}",
+    "should": "open the text size menu",
+    "profile": "desktop",
+    "target": {
+      "x": 472,
+      "y": 339,
+      "w": 36,
+      "h": 36
+    },
+    "covered": null,
+    "firstVisibleMs": 31,
+    "effectMs": 31,
+    "effect": "appeared: group:TitleHeadingBodySmallCode",
+    "seen": [
+      {
+        "ms": 31,
+        "kind": "appeared",
+        "detail": "group:TitleHeadingBodySmallCode"
+      },
+      {
+        "ms": 31,
+        "kind": "state",
+        "detail": "aria-expanded=true"
+      }
+    ],
+    "whatChanged": "appeared: group:TitleHeadingBodySmallCode",
+    "expectedHappened": true,
+    "active": {
+      "tag": "body",
+      "label": "Skip to contentbuildgalleryHomeGalleryBo",
+      "top": 0,
+      "bottom": 1892,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Post editor › toolbar",
+    "name": "@ (reference)",
+    "screen": "/compose/{7-step}",
+    "should": "open references",
+    "profile": "desktop",
+    "target": {
+      "x": 510,
+      "y": 339,
+      "w": 36,
+      "h": 36
+    },
+    "covered": null,
+    "firstVisibleMs": 37,
+    "effectMs": 39,
+    "effect": "appeared: div:Session 1 · Claude1Prompt 1Prompt2Prompt 2Prompt3Code 3Code4",
+    "seen": [
+      {
+        "ms": 37,
+        "kind": "focus",
+        "detail": "input[Find a tile or session][Find a tile or session] top=252 bottom=282 vh=800"
+      },
+      {
+        "ms": 39,
+        "kind": "appeared",
+        "detail": "div:Session 1 · Claude1Prompt 1Prompt2Prompt 2Prompt3Code 3Code4"
+      },
+      {
+        "ms": 42,
+        "kind": "state",
+        "detail": "aria-selected=false"
+      },
+      {
+        "ms": 42,
+        "kind": "state",
+        "detail": "aria-selected=true"
+      }
+    ],
+    "whatChanged": "focus: input[Find a tile or session][Find a tile or session] top=252 bottom=282 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "input",
+      "label": "Find a tile or session",
+      "top": 256,
+      "bottom": 286,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Post editor › toolbar",
+    "name": "Add to the post (+)",
+    "screen": "/compose/{7-step}",
+    "should": "open what can be added",
+    "profile": "desktop",
+    "target": {
+      "x": 306,
+      "y": 278,
+      "w": 604,
+      "h": 40
+    },
+    "covered": null,
+    "firstVisibleMs": 32,
+    "effectMs": 36,
+    "effect": "appeared: button:",
+    "seen": [
+      {
+        "ms": 32,
+        "kind": "focus",
+        "detail": "div[The thread] top=218 bottom=266 vh=800"
+      },
+      {
+        "ms": 36,
+        "kind": "appeared",
+        "detail": "button:"
+      }
+    ],
+    "whatChanged": "focus: div[The thread] top=218 bottom=266 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "The thread",
+      "top": 218,
+      "bottom": 266,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Drafts",
+    "name": "Open a draft",
+    "screen": "/drafts",
+    "should": "open it in the composer",
+    "profile": "desktop",
+    "target": {
+      "x": 86,
+      "y": 298,
+      "w": 563,
+      "h": 23
+    },
+    "covered": null,
+    "firstVisibleMs": 40,
+    "effectMs": 51,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 40,
+        "kind": "focus",
+        "detail": "a top=290 bottom=350 vh=800"
+      },
+      {
+        "ms": 51,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 54,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 64,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 80,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 97,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 112,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 128,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 144,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 160,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 176,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 192,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 208,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 224,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 240,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 256,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 272,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 288,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 305,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 320,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 336,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 352,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 368,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 384,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 400,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 416,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 432,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 448,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 464,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 496,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 512,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 528,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 562,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 582,
+        "kind": "appeared",
+        "detail": "div:Skip to contentbuildgalleryHomeGalleryBountiesLibraryDrafts1"
+      },
+      {
+        "ms": 586,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 598,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 608,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      },
+      {
+        "ms": 627,
+        "kind": "url",
+        "detail": "/compose/0d0d0d0d-0000-4000-8000-000000000001"
+      }
+    ],
+    "whatChanged": "focus: a top=290 bottom=350 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "body",
+      "label": "Skip to contentbuildgalleryHomeGalleryBo",
+      "top": 0,
+      "bottom": 1840,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "GET 200 builds 120ms",
+      "GET 200 build_nodes 122ms",
+      "GET 200 build_nodes 121ms",
+      "GET 200 build_events 121ms",
+      "GET 200 node_types 122ms",
+      "HEAD 200 notifications 120ms",
+      "GET 200 /auth/v1/user 120ms",
+      "GET 200 build_media 122ms",
+      "GET 200 import_sessions 121ms",
+      "GET 200 import_sessions 122ms",
+      "GET 200 builds 121ms",
+      "GET 200 profiles 121ms",
+      "POST 200 rpc/gallery_facets 121ms",
+      "GET 200 build_media 121ms",
+      "GET 200 build_media 120ms",
+      "PATCH 200 builds 120ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Drafts",
+    "name": "Start a new build",
+    "screen": "/drafts",
+    "should": "open a new post",
+    "profile": "desktop",
+    "target": {
+      "x": 111,
+      "y": 252,
+      "w": 113,
+      "h": 22
+    },
+    "covered": null,
+    "firstVisibleMs": 32,
+    "effectMs": 73,
+    "effect": "appeared: div:Skip to contentbuildgalleryHomeGalleryBountiesLibraryDrafts1",
+    "seen": [
+      {
+        "ms": 32,
+        "kind": "focus",
+        "detail": "a top=240 bottom=286 vh=800"
+      },
+      {
+        "ms": 73,
+        "kind": "appeared",
+        "detail": "div:Skip to contentbuildgalleryHomeGalleryBountiesLibraryDrafts1"
+      },
+      {
+        "ms": 84,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 97,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 112,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 133,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 149,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 160,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 177,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 195,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 229,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 244,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 257,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 272,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 288,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 304,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 320,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 336,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 353,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 425,
+        "kind": "appeared",
+        "detail": "div:Untitled buildDraft · Missing: a cover picture or video, a t"
+      },
+      {
+        "ms": 425,
+        "kind": "appeared",
+        "detail": "div:M(What did you build?Add another postAa"
+      },
+      {
+        "ms": 425,
+        "kind": "appeared",
+        "detail": "div:What did you build?"
+      },
+      {
+        "ms": 425,
+        "kind": "appeared",
+        "detail": "p:What did you build?"
+      },
+      {
+        "ms": 432,
+        "kind": "appeared",
+        "detail": "span:4"
+      },
+      {
+        "ms": 433,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 448,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 464,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 496,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 512,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 531,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 560,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 577,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 592,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 608,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 624,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 640,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 656,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 672,
+        "kind": "url",
+        "detail": "/compose/new"
+      }
+    ],
+    "whatChanged": "focus: a top=240 bottom=286 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "body",
+      "label": "Skip to contentbuildgalleryHomeGalleryBo",
+      "top": 0,
+      "bottom": 883,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "HEAD 200 notifications 120ms",
+      "GET 200 /auth/v1/user 121ms",
+      "GET 200 import_sessions 121ms",
+      "GET 200 node_types 121ms",
+      "GET 200 profiles 121ms",
+      "POST 200 rpc/gallery_facets 122ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Drafts",
+    "name": "Connect a tool",
+    "screen": "/drafts",
+    "should": "open the connector guide",
+    "profile": "desktop",
+    "target": {
+      "x": 1091,
+      "y": 141,
+      "w": 123,
+      "h": 36
+    },
+    "covered": null,
+    "firstVisibleMs": 35,
+    "effectMs": 93,
+    "effect": "appeared: div:",
+    "seen": [
+      {
+        "ms": 35,
+        "kind": "focus",
+        "detail": "button top=141 bottom=177 vh=800"
+      },
+      {
+        "ms": 88,
+        "kind": "focus (hidden)",
+        "detail": "button[Close] top=161 bottom=191 vh=800 covered by div"
+      },
+      {
+        "ms": 93,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 93,
+        "kind": "appeared",
+        "detail": "dialog:ConnectorSend your sessions to buildgallery01Add the connect"
+      }
+    ],
+    "whatChanged": "focus: button top=141 bottom=177 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Close",
+      "top": 161,
+      "bottom": 191,
+      "visible": true
+    },
+    "dialogs": [
+      "ConnectorSend your sessions to buildgallery01Add the connect"
+    ],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Drafts",
+    "name": "Session › its menu",
+    "screen": "/drafts",
+    "should": "offer Start a build / Add to a draft / Remove",
+    "profile": "desktop",
+    "target": {
+      "x": 1171,
+      "y": 248,
+      "w": 30,
+      "h": 30
+    },
+    "covered": null,
+    "firstVisibleMs": 72,
+    "effectMs": 72,
+    "effect": "state: aria-expanded=true",
+    "seen": [
+      {
+        "ms": 66,
+        "kind": "focus (hidden)",
+        "detail": "div top=-658 bottom=-329 vh=800 offscreen"
+      },
+      {
+        "ms": 72,
+        "kind": "state",
+        "detail": "aria-expanded=true"
+      },
+      {
+        "ms": 72,
+        "kind": "state",
+        "detail": "data-state=open"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=true",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "Start a new buildAdd to Pantry inventory",
+      "top": 284,
+      "bottom": 613,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Drafts",
+    "name": "Show N already in a build",
+    "screen": "/drafts",
+    "should": "list the sessions already in builds",
+    "profile": "desktop",
+    "target": {
+      "x": 729,
+      "y": 586,
+      "w": 142,
+      "h": 19
+    },
+    "covered": null,
+    "firstVisibleMs": 32,
+    "effectMs": 49,
+    "effect": "text: Hide sessions already in a build",
+    "seen": [
+      {
+        "ms": 32,
+        "kind": "focus",
+        "detail": "button top=586 bottom=605 vh=800"
+      },
+      {
+        "ms": 49,
+        "kind": "text",
+        "detail": "Hide sessions already in a build"
+      },
+      {
+        "ms": 49,
+        "kind": "appeared",
+        "detail": "ul:Sort on nothing the it label to the with plan it lines arriv"
+      }
+    ],
+    "whatChanged": "focus: button top=586 bottom=605 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Hide sessions already in a build",
+      "top": 586,
+      "bottom": 605,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Build page",
+    "name": "Copy for AI",
+    "screen": "/b2/ca09-showcase",
+    "should": "copy, and say so",
+    "profile": "desktop",
+    "target": {
+      "x": 552,
+      "y": 125,
+      "w": 89,
+      "h": 30
+    },
+    "covered": null,
+    "firstVisibleMs": 29,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 29,
+        "kind": "focus",
+        "detail": "button top=125 bottom=155 vh=800"
+      }
+    ],
+    "whatChanged": "focus: button top=125 bottom=155 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Copy for AI",
+      "top": 125,
+      "bottom": 155,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Build page",
+    "name": "Rebuild",
+    "screen": "/b2/ca09-showcase",
+    "should": "start a rebuild",
+    "profile": "desktop",
+    "target": {
+      "x": 725,
+      "y": 125,
+      "w": 69,
+      "h": 30
+    },
+    "covered": null,
+    "firstVisibleMs": 27,
+    "effectMs": 48,
+    "effect": "appeared: div:Skip to contentbuildgalleryHomeGalleryBountiesLibraryDrafts1",
+    "seen": [
+      {
+        "ms": 27,
+        "kind": "focus",
+        "detail": "button top=125 bottom=155 vh=800"
+      },
+      {
+        "ms": 48,
+        "kind": "appeared",
+        "detail": "div:Skip to contentbuildgalleryHomeGalleryBountiesLibraryDrafts1"
+      },
+      {
+        "ms": 53,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 65,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 81,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 97,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 113,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 128,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 145,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 160,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 176,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 193,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 208,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 224,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 240,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 256,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 272,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 288,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 306,
+        "kind": "appeared",
+        "detail": "span:4"
+      },
+      {
+        "ms": 311,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 320,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 337,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 342,
+        "kind": "appeared",
+        "detail": "status:Loading the rebuildFamily of this build0 builds · 0 generati"
+      },
+      {
+        "ms": 352,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 368,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 384,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 401,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 417,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 432,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 448,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 465,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 496,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 513,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 528,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 546,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 561,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 576,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 592,
+        "kind": "url",
+        "detail": "/rebuild/ca09-showcase"
+      },
+      {
+        "ms": 605,
+        "kind": "appeared",
+        "detail": "a:Garden diary, start to finish"
+      }
+    ],
+    "whatChanged": "focus: button top=125 bottom=155 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "body",
+      "label": "Skip to contentbuildgalleryHomeGalleryBo",
+      "top": 0,
+      "bottom": 1042,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "HEAD 200 notifications 121ms",
+      "GET 200 builds 121ms",
+      "GET 200 builds 120ms",
+      "GET 200 builds 121ms",
+      "POST 404 PGRST202 rpc/rebuild_tree 121ms",
+      "GET 200 build_nodes 121ms",
+      "GET 200 build_nodes 122ms",
+      "GET 200 build_events 121ms",
+      "GET 200 builds 121ms",
+      "GET 200 build_nodes 120ms",
+      "GET 200 build_events 121ms",
+      "POST 201 builds 120ms",
+      "POST 201 build_nodes 121ms",
+      "POST 404 PGRST202 rpc/rebuild_tree 121ms",
+      "POST 201 build_events 121ms",
+      "GET 200 builds 121ms",
+      "GET 200 profiles 120ms",
+      "PATCH 200 builds 120ms",
+      "GET 200 builds 120ms",
+      "GET 200 builds 120ms",
+      "GET 200 build_nodes 120ms",
+      "GET 200 build_nodes 121ms",
+      "GET 200 build_events 120ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Build page",
+    "name": "Second tab",
+    "screen": "/b2/ca09-showcase",
+    "should": "switch tab",
+    "profile": "desktop",
+    "target": {
+      "x": 145,
+      "y": 380,
+      "w": 103,
+      "h": 40
+    },
+    "covered": null,
+    "firstVisibleMs": 17,
+    "effectMs": 31,
+    "effect": "state: aria-selected=false",
+    "seen": [
+      {
+        "ms": 17,
+        "kind": "focus",
+        "detail": "button top=380 bottom=420 vh=800"
+      },
+      {
+        "ms": 31,
+        "kind": "state",
+        "detail": "aria-selected=false"
+      },
+      {
+        "ms": 31,
+        "kind": "state",
+        "detail": "aria-selected=true"
+      },
+      {
+        "ms": 31,
+        "kind": "appeared",
+        "detail": "section:step 0 of 0prompt00:00The group item batch and of the by the"
+      }
+    ],
+    "whatChanged": "focus: button top=380 bottom=420 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Watch it get built",
+      "top": 380,
+      "bottom": 420,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "GET 404 PGRST205 build_comments 121ms",
+      "GET 404 PGRST205 build_comments 120ms",
+      "GET 200 builds 120ms",
+      "GET 200 builds 128ms",
+      "GET 200 builds 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000086/unplaced/picture-0.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000092/unplaced/picture-0.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000151/unplaced/picture-0.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000186/unplaced/picture-0.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000212/unplaced/picture-0.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-0.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-1.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-10.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-11.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-12.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-13.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-14.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-15.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-16.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-17.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-18.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-19.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-2.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-20.jpg 123ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-21.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-22.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-23.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-24.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-25.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-26.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-27.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-28.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-29.jpg 121ms",
+      "GET 400 42703 builds 120ms",
+      "GET 404 PGRST205 build_likes 120ms",
+      "GET 404 PGRST205 build_saves 120ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-3.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-30.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-31.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-32.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-33.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-34.jpg 121ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-35.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-36.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-37.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-38.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-39.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-4.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-5.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-6.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-7.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-8.jpg 122ms",
+      "POST 200 /storage/v1/object/sign/build-media/0d0d0d0d-0000-4000-8000-000000000291/unplaced/picture-9.jpg 121ms",
+      "GET 200 /storage/v1/render/image/sign/build-media/0d0d0d0d-0000-4000-8000-000000000186/unplaced/picture-0.jpg 121ms",
+      "GET 200 /storage/v1/render/image/sign/build-media/0d0d0d0d-0000-4000-8000-000000000092/unplaced/picture-0.jpg 121ms",
+      "GET 200 /storage/v1/render/image/sign/build-media/0d0d0d0d-0000-4000-8000-000000000151/unplaced/picture-0.jpg 121ms",
+      "GET 200 /storage/v1/render/image/sign/build-media/0d0d0d0d-0000-4000-8000-000000000086/unplaced/picture-0.jpg 121ms",
+      "GET 200 /storage/v1/render/image/sign/build-media/0d0d0d0d-0000-4000-8000-000000000212/unplaced/picture-0.jpg 120ms",
+      "GET 404 PGRST205 build_comments 121ms",
+      "GET 404 PGRST205 build_comments 121ms",
+      "GET 400 42703 builds 120ms",
+      "GET 404 PGRST205 build_likes 121ms",
+      "GET 404 PGRST205 build_saves 121ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Build page",
+    "name": "Like / me too",
+    "screen": "/b2/ca09-showcase",
+    "should": "count it",
+    "profile": "desktop",
+    "target": {
+      "x": 189,
+      "y": 382,
+      "w": 36,
+      "h": 36
+    },
+    "covered": null,
+    "firstVisibleMs": 30,
+    "effectMs": 33,
+    "effect": "state: aria-pressed=true",
+    "seen": [
+      {
+        "ms": 30,
+        "kind": "focus",
+        "detail": "button[Like] top=382 bottom=418 vh=800"
+      },
+      {
+        "ms": 33,
+        "kind": "state",
+        "detail": "aria-pressed=true"
+      },
+      {
+        "ms": 297,
+        "kind": "state",
+        "detail": "aria-pressed=false"
+      }
+    ],
+    "whatChanged": "focus: button[Like] top=382 bottom=418 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "button",
+      "label": "Like",
+      "top": 382,
+      "bottom": 418,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [
+      "Something went wrong."
+    ],
+    "requests": [
+      "POST 404 PGRST205 build_likes 121ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "Home",
+    "screen": "/drafts",
+    "should": "go to Home",
+    "profile": "desktop",
+    "target": {
+      "x": 151,
+      "y": 0,
+      "w": 60,
+      "h": 48
+    },
+    "covered": null,
+    "firstVisibleMs": 30,
+    "effectMs": 45,
+    "effect": "appeared: span:",
+    "seen": [
+      {
+        "ms": 30,
+        "kind": "focus",
+        "detail": "a top=0 bottom=48 vh=800"
+      },
+      {
+        "ms": 45,
+        "kind": "appeared",
+        "detail": "span:"
+      },
+      {
+        "ms": 46,
+        "kind": "state",
+        "detail": "aria-current=page"
+      },
+      {
+        "ms": 46,
+        "kind": "state",
+        "detail": "aria-current=null"
+      },
+      {
+        "ms": 46,
+        "kind": "appeared",
+        "detail": "span:Home"
+      },
+      {
+        "ms": 46,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 50,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 65,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 80,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 103,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 112,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 128,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 144,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 161,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 176,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 193,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 208,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 224,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 240,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 256,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 272,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 288,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 304,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 320,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 336,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 355,
+        "kind": "appeared",
+        "detail": "div:FollowingEveryoneEvery AI build, hung with its proof.Every A"
+      },
+      {
+        "ms": 357,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 368,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 384,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 400,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 416,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 451,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 464,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 496,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 512,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 528,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 560,
+        "kind": "url",
+        "detail": "/"
+      },
+      {
+        "ms": 576,
+        "kind": "url",
+        "detail": "/"
+      }
+    ],
+    "whatChanged": "focus: a top=0 bottom=48 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "a",
+      "label": "Home",
+      "top": 0,
+      "bottom": 48,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "HEAD 200 builds 121ms",
+      "POST 200 rpc/get_build_feed 121ms",
+      "HEAD 200 build_reproductions 121ms",
+      "HEAD 200 build_reproductions 121ms",
+      "GET 200 xp_events 121ms",
+      "GET 200 streak_days 120ms",
+      "GET 200 build_reproductions 120ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "Gallery",
+    "screen": "/drafts",
+    "should": "go to Gallery",
+    "profile": "desktop",
+    "target": {
+      "x": 210,
+      "y": 0,
+      "w": 67,
+      "h": 48
+    },
+    "covered": null,
+    "firstVisibleMs": 30,
+    "effectMs": 46,
+    "effect": "appeared: span:",
+    "seen": [
+      {
+        "ms": 30,
+        "kind": "focus",
+        "detail": "a top=0 bottom=48 vh=800"
+      },
+      {
+        "ms": 46,
+        "kind": "appeared",
+        "detail": "span:"
+      },
+      {
+        "ms": 46,
+        "kind": "state",
+        "detail": "aria-current=page"
+      },
+      {
+        "ms": 46,
+        "kind": "state",
+        "detail": "aria-current=null"
+      },
+      {
+        "ms": 46,
+        "kind": "text",
+        "detail": "Gallery"
+      },
+      {
+        "ms": 46,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 50,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 64,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 87,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 103,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 112,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 128,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 144,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 160,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 176,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 192,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 208,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 224,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 240,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 256,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 272,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 289,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 305,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 320,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 336,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 351,
+        "kind": "appeared",
+        "detail": "div:Gallery FeedDashboardModelAnyMade withAnyMade forAnythingSor"
+      },
+      {
+        "ms": 353,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 368,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 384,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 400,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 416,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 432,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 448,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 464,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 496,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 512,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 528,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/gallery"
+      },
+      {
+        "ms": 560,
+        "kind": "url",
+        "detail": "/gallery"
+      }
+    ],
+    "whatChanged": "focus: a top=0 bottom=48 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "a",
+      "label": "Gallery",
+      "top": 0,
+      "bottom": 48,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [
+      "That didn't load.Try again"
+    ],
+    "requests": [
+      "GET 200 builds 120ms",
+      "POST 200 rpc/gallery_facets 120ms",
+      "GET 200 build_reproductions 121ms",
+      "GET 400 42703 builds 120ms",
+      "GET 200 builds 120ms",
+      "GET 200 build_reproductions 121ms",
+      "GET 400 42703 builds 120ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [
+      "[The gallery] did not load Error: listGalleryFeed failed: column builds.like_count does not exist\n    at e (https://127.0.0.1:4445/assets/types-BsT7uiYi.js:1:90"
+    ],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "Bounties",
+    "screen": "/drafts",
+    "should": "go to Bounties",
+    "profile": "desktop",
+    "target": {
+      "x": 278,
+      "y": 0,
+      "w": 78,
+      "h": 48
+    },
+    "covered": null,
+    "firstVisibleMs": 30,
+    "effectMs": 45,
+    "effect": "appeared: span:",
+    "seen": [
+      {
+        "ms": 30,
+        "kind": "focus",
+        "detail": "a top=0 bottom=48 vh=800"
+      },
+      {
+        "ms": 45,
+        "kind": "appeared",
+        "detail": "span:"
+      },
+      {
+        "ms": 45,
+        "kind": "state",
+        "detail": "aria-current=page"
+      },
+      {
+        "ms": 45,
+        "kind": "state",
+        "detail": "aria-current=null"
+      },
+      {
+        "ms": 45,
+        "kind": "text",
+        "detail": "Bounties"
+      },
+      {
+        "ms": 45,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 48,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 64,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 82,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 114,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 129,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 145,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 161,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 177,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 193,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 209,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 225,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 241,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 256,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 273,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 289,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 305,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 321,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 336,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 347,
+        "kind": "appeared",
+        "detail": "div:BountiesOpen asks on real buildsThe build works. One part is"
+      },
+      {
+        "ms": 352,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 368,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 384,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 401,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 417,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 432,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 448,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 465,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 497,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 513,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 529,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 560,
+        "kind": "url",
+        "detail": "/bounties"
+      },
+      {
+        "ms": 576,
+        "kind": "url",
+        "detail": "/bounties"
+      }
+    ],
+    "whatChanged": "focus: a top=0 bottom=48 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "a",
+      "label": "Bounties",
+      "top": 0,
+      "bottom": 48,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [
+      "That didn't load.Try again"
+    ],
+    "requests": [
+      "GET 200 bounties 120ms",
+      "POST 404 PGRST202 rpc/top_solvers 121ms",
+      "POST 404 PGRST202 rpc/top_solvers 121ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [
+      "[Top solvers] did not load Error: listTopSolvers failed: Could not find the function public.top_solvers(max_results) in the schema cache\n    at n (https://127.0"
+    ],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "Library",
+    "screen": "/drafts",
+    "should": "go to Library",
+    "profile": "desktop",
+    "target": {
+      "x": 355,
+      "y": 0,
+      "w": 66,
+      "h": 48
+    },
+    "covered": null,
+    "firstVisibleMs": 30,
+    "effectMs": 44,
+    "effect": "appeared: span:",
+    "seen": [
+      {
+        "ms": 30,
+        "kind": "focus",
+        "detail": "a top=0 bottom=48 vh=800"
+      },
+      {
+        "ms": 44,
+        "kind": "appeared",
+        "detail": "span:"
+      },
+      {
+        "ms": 44,
+        "kind": "state",
+        "detail": "aria-current=page"
+      },
+      {
+        "ms": 45,
+        "kind": "state",
+        "detail": "aria-current=null"
+      },
+      {
+        "ms": 45,
+        "kind": "text",
+        "detail": "Library"
+      },
+      {
+        "ms": 45,
+        "kind": "appeared",
+        "detail": "div:"
+      },
+      {
+        "ms": 51,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 69,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 87,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 96,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 113,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 129,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 144,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 160,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 176,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 192,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 208,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 224,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 241,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 256,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 272,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 288,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 304,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 320,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 336,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 347,
+        "kind": "appeared",
+        "detail": "div:BackSavedCollections"
+      },
+      {
+        "ms": 352,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 368,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 384,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 400,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 416,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 432,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 448,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 464,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 497,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 512,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 529,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/library"
+      },
+      {
+        "ms": 560,
+        "kind": "url",
+        "detail": "/library"
+      }
+    ],
+    "whatChanged": "focus: a top=0 bottom=48 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "a",
+      "label": "Library",
+      "top": 0,
+      "bottom": 48,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "GET 404 PGRST205 build_saves 121ms",
+      "GET 404 PGRST205 build_saves 120ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "Drafts",
+    "screen": "/drafts",
+    "should": "go to Drafts",
+    "profile": "desktop",
+    "target": {
+      "x": 421,
+      "y": 0,
+      "w": 81,
+      "h": 48
+    },
+    "covered": null,
+    "firstVisibleMs": 32,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 32,
+        "kind": "focus",
+        "detail": "a top=0 bottom=48 vh=800"
+      }
+    ],
+    "whatChanged": "focus: a top=0 bottom=48 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "a",
+      "label": "Drafts16",
+      "top": 0,
+      "bottom": 48,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "New build",
+    "screen": "/drafts",
+    "should": "open a new post",
+    "profile": "desktop",
+    "target": {
+      "x": 1055,
+      "y": 9,
+      "w": 95,
+      "h": 30
+    },
+    "covered": null,
+    "firstVisibleMs": 33,
+    "effectMs": 57,
+    "effect": "appeared: div:Skip to contentbuildgalleryHomeGalleryBountiesLibraryDrafts1",
+    "seen": [
+      {
+        "ms": 33,
+        "kind": "focus",
+        "detail": "button top=9 bottom=39 vh=800"
+      },
+      {
+        "ms": 57,
+        "kind": "appeared",
+        "detail": "div:Skip to contentbuildgalleryHomeGalleryBountiesLibraryDrafts1"
+      },
+      {
+        "ms": 61,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 64,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 80,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 97,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 115,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 134,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 161,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 178,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 192,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 209,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 225,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 240,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 256,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 272,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 288,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 304,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 320,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 337,
+        "kind": "appeared",
+        "detail": "span:4"
+      },
+      {
+        "ms": 392,
+        "kind": "appeared",
+        "detail": "div:Untitled buildDraft · Missing: a cover picture or video, a t"
+      },
+      {
+        "ms": 393,
+        "kind": "appeared",
+        "detail": "div:M(What did you build?Add another postAa"
+      },
+      {
+        "ms": 393,
+        "kind": "appeared",
+        "detail": "div:What did you build?"
+      },
+      {
+        "ms": 393,
+        "kind": "appeared",
+        "detail": "p:What did you build?"
+      },
+      {
+        "ms": 393,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 400,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 416,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 432,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 448,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 464,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 480,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 496,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 512,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 528,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 544,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 560,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 576,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 593,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 608,
+        "kind": "url",
+        "detail": "/compose/new"
+      },
+      {
+        "ms": 624,
+        "kind": "url",
+        "detail": "/compose/new"
+      }
+    ],
+    "whatChanged": "focus: button top=9 bottom=39 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "body",
+      "label": "Skip to contentbuildgalleryHomeGalleryBo",
+      "top": 0,
+      "bottom": 883,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [
+      "HEAD 200 notifications 121ms",
+      "GET 200 /auth/v1/user 120ms",
+      "GET 200 import_sessions 122ms",
+      "GET 200 node_types 121ms",
+      "GET 200 profiles 121ms",
+      "POST 200 rpc/gallery_facets 122ms"
+    ],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "Search",
+    "screen": "/drafts",
+    "should": "open search",
+    "profile": "desktop",
+    "target": {
+      "x": 844,
+      "y": 14,
+      "w": 172,
+      "h": 19
+    },
+    "covered": null,
+    "firstVisibleMs": 32,
+    "effectMs": null,
+    "effect": null,
+    "seen": [
+      {
+        "ms": 32,
+        "kind": "focus",
+        "detail": "input[Search builds][Search builds, makers, tools] top=14 bottom=34 vh=800"
+      }
+    ],
+    "whatChanged": "focus: input[Search builds][Search builds, makers, tools] top=14 bottom=34 vh=800",
+    "expectedHappened": true,
+    "active": {
+      "tag": "input",
+      "label": "Search builds",
+      "top": 14,
+      "bottom": 34,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "auto",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  },
+  {
+    "area": "Header",
+    "name": "Account (avatar)",
+    "screen": "/drafts",
+    "should": "open the account menu",
+    "profile": "desktop",
+    "target": {
+      "x": 1234,
+      "y": 11,
+      "w": 26,
+      "h": 26
+    },
+    "covered": null,
+    "firstVisibleMs": 85,
+    "effectMs": 85,
+    "effect": "state: aria-expanded=true",
+    "seen": [
+      {
+        "ms": 80,
+        "kind": "focus (hidden)",
+        "detail": "div top=-278 bottom=-139 vh=800 offscreen"
+      },
+      {
+        "ms": 85,
+        "kind": "state",
+        "detail": "aria-expanded=true"
+      },
+      {
+        "ms": 85,
+        "kind": "state",
+        "detail": "data-state=open"
+      }
+    ],
+    "whatChanged": "state: aria-expanded=true",
+    "expectedHappened": true,
+    "active": {
+      "tag": "div",
+      "label": "ProfileLibraryDraftsSign out",
+      "top": 45,
+      "bottom": 184,
+      "visible": true
+    },
+    "dialogs": [],
+    "toasts": [],
+    "requests": [],
+    "bodyPointerEvents": "none",
+    "errors": [],
+    "fileChooser": false,
+    "disabledBefore": false,
+    "verdict": "Works"
+  }
+]

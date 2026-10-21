@@ -1,0 +1,10 @@
+table,call_sites
+block_connections,src/lib/documentPersistence.ts:360 src/lib/documentPersistence.ts:370
+blocks,src/lib/documentPersistence.ts:298 src/lib/documentPersistence.ts:355 src/lib/documentPersistence.ts:377
+build_comments,src/lib/moderation/reports.ts:161 src/lib/social/comments.ts:123 src/lib/social/comments.ts:153 src/lib/social/comments.ts:206 src/lib/social/comments.ts:232 src/lib/social/comments.ts:252
+build_likes,src/lib/social/likes.ts:22 src/lib/social/likes.ts:33 src/lib/social/likes.ts:49
+build_saves,src/lib/messaging/builds.ts:78 src/lib/social/saves.ts:32 src/lib/social/saves.ts:43 src/lib/social/saves.ts:59 src/lib/social/saves.ts:90
+canvas_versions,src/components/canvas/VersionHistory.tsx:43
+content_reports,src/lib/moderation/reports.ts:66 src/lib/moderation/reports.ts:139
+saved_items,src/components/feed-card.tsx:227 src/components/feed-card.tsx:794 src/components/feed-card.tsx:801
+stages,src/lib/documentPersistence.ts:351 src/lib/documentPersistence.ts:384

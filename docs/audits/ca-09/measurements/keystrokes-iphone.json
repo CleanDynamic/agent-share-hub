@@ -1,0 +1,26 @@
+{
+  "profile": "iphone",
+  "add-prompt field": {
+    "letters": 20,
+    "ms": 4064,
+    "commits": 20,
+    "rendersPerLetter": {
+      "PostTab": 1
+    },
+    "worstKeyEventMs": 40,
+    "keyEventsOver50ms": 0
+  },
+  "post editor": {
+    "letters": 20,
+    "ms": 4226,
+    "commits": 22,
+    "rendersPerLetter": {
+      "SandboxPage": 0.1,
+      "SandboxView": 0.1,
+      "PostTab": 0.1,
+      "BuildList": 0.1
+    },
+    "worstKeyEventMs": 72,
+    "keyEventsOver50ms": 4
+  }
+}
