@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { Check, Copy } from "lucide-react";
 
 import { Button } from "@/components/brand/Button";
+import { CodeLines } from "@/components/code/CodeLines";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Segmented, type SegmentedItem } from "@/components/brand/Segmented";
 import { ring } from "@/lib/theme/controls";
@@ -83,7 +84,12 @@ function useCopied(onCopy: (text: string) => Promise<boolean>) {
 
 /* ── the well ── */
 
-function Well({ text, phone }: { text: string; phone: boolean }) {
+/** Code reads in the numbered `CodeLines` (CA-11); anything else in the plain well. */
+function Well({ text, phone, code = false }: { text: string; phone: boolean; code?: boolean }) {
+  return code ? <CodeLines text={text} maxLines={WELL_LINES} testId="build-run-well" label="Code" /> : <TextOnlyWell text={text} phone={phone} />;
+}
+
+function TextOnlyWell({ text, phone }: { text: string; phone: boolean }) {
   const [open, setOpen] = useState(false);
   const lines = text.split("\n");
   const long = lines.length > WELL_LINES;
@@ -202,7 +208,7 @@ function Step({
           ) : null}
         </div>
         {step.copyText ? (
-          <Well text={step.copyText} phone={phone} />
+          <Well text={step.copyText} phone={phone} code={step.kind === "Code"} />
         ) : (
           <p style={{ margin: 0, color: t.text2 }}>This step carries nothing to copy yet.</p>
         )}

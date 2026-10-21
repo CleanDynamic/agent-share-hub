@@ -274,7 +274,8 @@ describe("code (CA-02 P7)", () => {
     };
   };
 
-  it("shows Code, its file name, its line count and its first six lines in a mono well", () => {
+  // CA-11: the well is CodeLines now: numbered lines, and up to 8 lines (it was 6) before "Show all N lines".
+  it("shows Code, its file name, its line count and its first eight lines in a numbered mono well", () => {
     const base = sandboxListProps("bakery");
     const step = codeStep();
     list({ steps: [...base.steps, step] });
@@ -282,7 +283,8 @@ describe("code (CA-02 P7)", () => {
     expect(card.getAttribute("data-kind")).toBe("code");
     expect(within(card).getByTestId("code-eyebrow").textContent).toBe("Code · app.ts · 8 lines");
     const well = within(card).getByTestId("code-lines");
-    expect(well.textContent).toBe("1\n2\n3\n4\n5\n6");
+    expect(well.textContent).toBe("1\n2\n3\n4\n5\n6\n7\n8");
+    expect(within(card).getByTestId("code-gutter-numbers").textContent).toBe("1\n2\n3\n4\n5\n6\n7\n8");
     expect(well.style.fontFamily).toContain("--font-data");
     expect(within(card).getByRole("button", { name: `Code ${step.number} options` })).toBeTruthy();
   });

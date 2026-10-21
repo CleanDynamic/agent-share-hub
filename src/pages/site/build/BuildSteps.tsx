@@ -27,6 +27,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { CodeLines } from "@/components/code/CodeLines";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { ModelMark } from "@/components/brand/ModelMark";
@@ -584,7 +585,7 @@ function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <>
           <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{[TILE_KIND[step.kind] ?? step.kind, name].filter(Boolean).join(" · ")}</span>
           {step.kind === "code" ? (
-            <pre style={{ margin: 0, ...mono(12), color: t.text, whiteSpace: "pre", overflowX: "auto" }}>{step.text}</pre>
+            <CodeLines text={step.text} compact testId="code-lines" label={`${name ?? "Code"} text`} />
           ) : step.text ? (
             <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
           ) : null}

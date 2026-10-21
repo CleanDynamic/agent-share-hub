@@ -15,6 +15,7 @@ import type { CSSProperties } from "react";
 import { hexToRgba } from "../tokens";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import { CodeLines } from "@/components/code/CodeLines";
 import { modelLabel } from "@/lib/models/registry";
 import { toolName } from "@/lib/tools/registry";
 import { data as dataType, eyebrow, label as labelType, tabular } from "@/lib/theme/type";
@@ -156,7 +157,7 @@ export function ArtefactRenderer(props: NodeProps) {
           </ChipRow>
         ) : null}
 
-        {source ? <MonoBlock text={source} collapseTo={24} /> : null}
+        {source ? <CodeLines text={source} maxLines={24} testId="artefact-code" label="Code" /> : null}
 
         {writtenWith ? <Caption>{`Written with ${writtenWith}`}</Caption> : null}
 

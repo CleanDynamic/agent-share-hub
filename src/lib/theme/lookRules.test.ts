@@ -295,6 +295,15 @@ export const CA03_FILES: readonly string[] = [
   // CA-10 P5
   "src/hooks/usePresence.ts",
   "src/hooks/usePresence.test.tsx",
+  // CA-11 (artefact.tsx and RunBody.tsx changed too, but still carry older-look values on lines CA-11 did not touch)
+  "src/components/build/PartWindow.tsx",
+  "src/components/code/CodeEditorField.test.tsx",
+  "src/components/code/CodeEditorField.tsx",
+  "src/components/code/CodeGutter.tsx",
+  "src/components/code/CodeLines.test.tsx",
+  "src/components/code/CodeLines.tsx",
+  "src/components/code/lineModel.ts",
+  "src/pages/site/compose/BuildList.nest.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

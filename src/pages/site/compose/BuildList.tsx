@@ -43,6 +43,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
 import { ColourButton } from "@/components/brand/ColourButton";
@@ -435,9 +436,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
       </span>
       {step.kind === "code" ? (
-        <pre data-testid="code-lines" style={{ ...wellField, margin: 0, width: "auto", padding: "8px 12px", fontFamily: DM_MONO, fontSize: 12, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", color: t.text }}>
-          {firstLines(step.text)}
-        </pre>
+        <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
       ) : step.text ? (
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       ) : null}
@@ -1302,24 +1301,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           </Menu.Portal>
         </Menu.Root>
       </div>
-      <pre
-        data-testid="code-lines"
-        style={{
-          ...wellField,
-          margin: 0,
-          marginLeft: INDENT,
-          width: "auto",
-          padding: "8px 12px",
-          fontFamily: DM_MONO,
-          fontSize: 12,
-          lineHeight: 1.55,
-          whiteSpace: "pre",
-          overflowX: "auto",
-          color: t.text,
-        }}
-      >
-        {firstLines(step.text)}
-      </pre>
+      <CodeLines text={step.text} compact testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />

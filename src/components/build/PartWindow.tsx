@@ -16,6 +16,7 @@ import { X } from "lucide-react";
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { CodeLines } from "@/components/code/CodeLines";
 import { IconButton } from "@/components/brand/IconButton";
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -120,7 +121,7 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function TextWell({ children, mono = false, label }: { children: string; mono?: boolean; label: string }) {
+function TextWell({ children, label }: { children: string; label: string }) {
   return (
     <div
       tabIndex={0}
@@ -133,9 +134,10 @@ function TextWell({ children, mono = false, label }: { children: string; mono?: 
         overflow: "auto",
         padding: 16,
         outline: "none",
-        whiteSpace: mono ? "pre" : "pre-wrap",
-        overflowWrap: mono ? undefined : "anywhere",
-        ...(mono ? { fontFamily: DM_MONO, fontSize: 12.5, lineHeight: "20px", color: t.text } : { ...text(14, 400, t.text), lineHeight: "23px" }),
+        whiteSpace: "pre-wrap",
+        overflowWrap: "anywhere",
+        ...text(14, 400, t.text),
+        lineHeight: "23px",
       }}
     >
       {children || PART_WINDOW_COPY.nothing}
@@ -192,9 +194,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
       return (
         <>
           <Facts facts={[step.filename, step.language, step.entrypoint ? "start reading here" : null].filter((fact): fact is string => Boolean(fact))} />
-          <TextWell mono label="Code">
-            {step.text}
-          </TextWell>
+          <CodeLines text={step.text} testId="part-text" label="Code" empty={PART_WINDOW_COPY.nothing} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <Button variant="secondary" size={28} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the code and copy it."))}>
               {PART_WINDOW_COPY.copyCode}

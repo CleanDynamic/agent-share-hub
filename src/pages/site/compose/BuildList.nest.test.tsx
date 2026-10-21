@@ -72,7 +72,8 @@ describe("the List (CA-04 P2)", () => {
     expect(tiles.map((tile) => tile.getAttribute("data-kind"))).toEqual(["code", "file"]);
     expect(within(tiles[0]).getAllByText("Sent with prompt 2")).toHaveLength(1);
     expect(within(tiles[1]).getByText("Sent with order-form.tsx")).toBeTruthy();
-    expect(within(tiles[0]).queryByText("1")).toBeNull();
+    // CA-11: a code tile's own line numbers are in the page now, so "no number" means no step number beside them.
+    expect(within(tiles[0]).queryAllByText("1").filter((node) => !node.closest('[data-testid="code-gutter"]'))).toHaveLength(0);
   });
 
   it("gives each tile a grip handle at its left, the only drag start", () => {
