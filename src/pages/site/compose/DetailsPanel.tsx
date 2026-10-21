@@ -22,6 +22,7 @@ import { createContext, useContext, useEffect, useRef, useState, type CSSPropert
 import { ColourButton, ColourDot } from "@/components/brand/ColourButton";
 
 import { Button } from "@/components/brand/Button";
+import { CodeEditorField } from "@/components/code/CodeEditorField";
 import { ChangedText } from "@/components/build/ChangedText";
 import { changesLine, type ChangeRange } from "@/lib/build/changes";
 import { Checkbox } from "@/components/brand/Checkbox";
@@ -1588,15 +1589,15 @@ function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentView; pho
 
         {how === "script" && field?.kind === "code" ? (
           <FieldBlock label={field.label}>
-            <textarea
-              aria-label={field.label}
+            <CodeEditorField
+              ariaLabel={field.label}
+              testId="details-script"
               maxLength={field.max}
-              rows={3}
+              rows={{ min: 3, max: 8 }}
               placeholder={field.placeholder}
               value={detail}
-              onChange={(event) => setDetail(event.target.value)}
+              onChange={setDetail}
               onBlur={() => write(detail)}
-              style={{ ...typedArea(phone), fontFamily: DM_MONO, fontSize: phone ? 16 : 12, whiteSpace: "pre", overflowX: "auto" }}
             />
           </FieldBlock>
         ) : null}

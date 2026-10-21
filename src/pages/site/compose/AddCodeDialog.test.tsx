@@ -32,14 +32,17 @@ const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonEleme
 const upload = (...files: File[]) => fireEvent.change(screen.getByTestId("code-files"), { target: { files } });
 
 describe("Add › Code (CA-02 P7)", () => {
-  it("is a 420-wide dialog with a monospace well of 12 rows and no spell check", () => {
+  // CA-11: the well is now a numbered code box. It is 12 lines tall (20 each, 6 padding top and bottom, a 1px border
+  // each side), the line height is 20px not 1.55, and the gutter starts at 1.
+  it("is a 420-wide dialog with a monospace well of 12 lines, a numbered gutter and no spell check", () => {
     open();
     expect(screen.getByRole("dialog", { name: CODE_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("add-code-dialog").style.width).toBe("420px");
-    expect(well().rows).toBe(12);
+    expect(screen.getByTestId("code-well-box").style.height).toBe("254px");
+    expect(screen.getByTestId("code-gutter-numbers").textContent).toBe("1");
     expect(well().getAttribute("spellcheck")).toBe("false");
     expect(well().style.fontFamily).toContain("--font-data");
-    expect(well().style.lineHeight).toBe("1.55");
+    expect(well().style.lineHeight).toBe("20px");
     expect(add().disabled).toBe(true);
   });
 

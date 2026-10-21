@@ -2,7 +2,7 @@
 
    A Radix dialog, 420 wide, on the Card's surface tokens (a `BottomSheet` below 768), built like the manual step's:
 
-   - The code: a monospace well (DM Mono 13/1.55, 12 rows, no spell check); Tab puts in two spaces.
+   - The code: `CodeEditorField` (CA-11), a monospace well with a numbered gutter; Tab puts in two spaces.
    - Language: a select over the code node type's enum, prefilled from the text (`codeLanguageFor`) until it is
      chosen by hand; a .tsx, .jsx or .yml file name overrides the guess.
    - File name, optional, 120 characters.
@@ -19,10 +19,11 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useId, useRef, useState, type CSSProperties } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { IconButton } from "@/components/brand/IconButton";
+import { CodeEditorField } from "@/components/code/CodeEditorField";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, type CodeLanguage } from "@/lib/build/graph";
@@ -34,7 +35,7 @@ import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } f
 import { Field } from "./composeControls";
 import { ModelPicker } from "./ModelPicker";
 import { PickMenu } from "./PickMenu";
-import { dialogTitle, tnum, typedArea, typedField, windowStyle } from "./refinedStyles";
+import { dialogTitle, tnum, typedField, windowStyle } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const CODE_DIALOG_COPY = {
@@ -92,9 +93,6 @@ export interface AddCodeDialogProps {
   seed?: string | null;
 }
 
-/** Two spaces in place of a tab, at the cursor. */
-const INDENT_TEXT = "  ";
-
 function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialogProps, "onAdd" | "inBuild" | "seed"> & { onCancel: () => void; phone: boolean }) {
   const [source, setSource] = useState(seed ?? "");
   const [filename, setFilename] = useState("");
@@ -114,16 +112,6 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
 
   const quiet: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
   const count: CSSProperties = { fontFamily: FIGTREE, fontSize: 11.5, color: t.text2, ...tnum };
-
-  const onTab = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== "Tab" || event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) return;
-    event.preventDefault();
-    const box = event.currentTarget;
-    const { selectionStart: start, selectionEnd: end } = box;
-    const next = `${source.slice(0, start)}${INDENT_TEXT}${source.slice(end)}`;
-    setSource(next);
-    requestAnimationFrame(() => box.setSelectionRange(start + INDENT_TEXT.length, start + INDENT_TEXT.length));
-  };
 
   const take = async (picked: File[]) => {
     const read = await Promise.all(picked.map(readCodeFile));
@@ -147,19 +135,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
       style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
     >
       <Field id={`${uid}-code`} label={CODE_DIALOG_COPY.code}>
-        <textarea
-          id={`${uid}-code`}
-          data-testid="code-well"
-          rows={12}
-          spellCheck={false}
-          autoCapitalize="off"
-          autoCorrect="off"
-          value={source}
-          placeholder={CODE_DIALOG_COPY.placeholder}
-          onChange={(event) => setSource(event.target.value)}
-          onKeyDown={onTab}
-          style={typedArea(phone, { padding: 8, fontFamily: DM_MONO, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", tabSize: 2 })}
-        />
+        <CodeEditorField id={`${uid}-code`} testId="code-well" value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />
         {tooLong ? (
           <span role="alert" style={quiet}>
             {CODE_COPY.tooLong}
