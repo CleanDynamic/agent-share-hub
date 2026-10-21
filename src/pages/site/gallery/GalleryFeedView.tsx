@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
+import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -91,6 +92,13 @@ export interface GalleryFeedViewProps {
   /** TF-14. The chosen tool; null is "Any tool". */
   tool: Tool | null;
   onToolChange: (id: string | null) => void;
+  /** CA-13 P12. The chosen pattern; null is "Any pattern". Absent props draw no Pattern menu. */
+  pattern?: Pattern | null;
+  onPatternChange?: (pattern: Pattern | null) => void;
+  /** CA-13 P12. The patterns on offer, with counts; a pattern with none is left out, and with none at all there is no menu. */
+  patterns?: readonly { value: Pattern; count: number }[];
+  /** CA-13 P12. Each card's own patterns, by build id: asked for only once the column is live. */
+  patternMarks?: Readonly<Record<string, readonly Pattern[]>>;
   audience: string | null;
   onAudienceChange: (audience: string | null) => void;
   /** "Made for" options, with counts. */
@@ -163,7 +171,7 @@ export interface MenuGroup {
 }
 
 export interface FeedMenu {
-  key: "model" | "tool" | "for" | "sort";
+  key: "model" | "tool" | "pattern" | "for" | "sort";
   label: string;
   value: string;
   groups: MenuGroup[];
@@ -230,9 +238,31 @@ export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
 
   const audienceLabel = audience === null ? "Anything" : (audiences.find((option) => option.value === audience)?.label ?? audience);
 
+  // CA-13 P12: beside the other filters, only while some pattern has a build.
+  const offered = (props.patterns ?? []).filter((entry) => entry.count > 0);
+  const patternMenu: FeedMenu[] =
+    offered.length > 0 && props.onPatternChange
+      ? [
+          {
+            key: "pattern",
+            label: "Pattern",
+            value: props.pattern ? PATTERN_LABEL[props.pattern] : "Any",
+            groups: [
+              {
+                options: [
+                  { key: "any", label: "Any pattern", selected: !props.pattern, onSelect: () => props.onPatternChange?.(null) },
+                  ...offered.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, selected: props.pattern === entry.value, onSelect: () => props.onPatternChange?.(entry.value) })),
+                ],
+              },
+            ],
+          },
+        ]
+      : [];
+
   return [
     { key: "model", label: "Model", value: model ? model.name : "Any", groups: modelGroups },
     { key: "tool", label: "Made with", value: tool ? tool.name : "Any", groups: toolGroups },
+    ...patternMenu,
     { key: "for", label: "Made for", value: audienceLabel, groups: [{ options: audienceOptions }] },
     { key: "sort", label: "Sort", value: sortLabel(sort), groups: [{ options: sortOptions }] },
   ];
@@ -550,6 +580,7 @@ function ActiveFilters(props: GalleryFeedViewProps) {
   if (query) chips.push({ key: "q", label: `“${query}”`, onRemove: () => onSearch(null) });
   if (model) chips.push({ key: "model", label: `Proof on ${model.name}`, onRemove: () => onModelChange(null) });
   if (tool) chips.push({ key: "tool", label: `Made with ${tool.name}`, onRemove: () => onToolChange(null) });
+  if (props.pattern && props.onPatternChange) chips.push({ key: "pattern", label: PATTERN_LABEL[props.pattern], onRemove: () => props.onPatternChange?.(null) });
   if (audience) {
     const label = audiences.find((option) => option.value === audience)?.label ?? audience;
     chips.push({ key: "for", label: `Made for ${label}`, onRemove: () => onAudienceChange(null) });
@@ -579,12 +610,14 @@ function Rows({
   viewerId,
   engagement,
   now,
+  patternMarks,
 }: {
   section: FeedSectionView;
   srcByPath: GalleryFeedViewProps["srcByPath"];
   viewerId: string | null;
   engagement?: Engagement;
   now?: number;
+  patternMarks?: GalleryFeedViewProps["patternMarks"];
 }) {
   return (
     <>
@@ -601,6 +634,7 @@ function Rows({
               makerAvatar={build.creatorAvatar}
               modelsUsed={build.models_used}
               plaqueBuild={plaque}
+              patterns={patternMarks?.[build.id]}
               engagement={engagement ? engagementFor(engagement, build.id) : undefined}
               now={now}
             />
@@ -681,7 +715,7 @@ function FeedList(props: GalleryFeedViewProps) {
     list.kind === "all" ? list.list.rows.length === 0 : list.reproducedOn.rows.length === 0 && list.notYet.rows.length === 0;
   if (empty) return <EmptyFeed query={props.query} onClearAll={props.onClearAll} onNavigate={props.onNavigate} />;
 
-  const rowProps = { srcByPath, viewerId, engagement, now };
+  const rowProps = { srcByPath, viewerId, engagement, now, patternMarks: props.patternMarks };
   const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 16 };
 
   return (

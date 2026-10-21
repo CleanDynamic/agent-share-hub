@@ -279,6 +279,8 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
       making,
       made_with: madeWith,
     } as unknown as BuildPatch);
+    // CA-13 P11: the patterns the build uses follow it. A failure here never fails the save that called this.
+    void import("./patternsWrite").then((module) => module.refreshPatterns(buildId, making)).catch(() => undefined);
   } catch (error) {
     console.warn("[refreshMakingStats] making stats not written", {
       code: errorCode(error),

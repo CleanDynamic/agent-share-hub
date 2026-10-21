@@ -355,6 +355,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compare/ComparePage.tsx",
   "src/pages/site/build/BuildView.tsx",
   "src/components/build/FullPromptWindow.tsx",
+  // CA-13 P11, P12
+  "src/components/gallery/PatternMarks.tsx",
+  "src/pages/site/gallery/GalleryPatterns.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

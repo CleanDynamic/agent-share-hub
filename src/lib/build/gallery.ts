@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
 import { MODEL_VERSIONS, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
 import { TOOLS } from "@/lib/tools/registry";
+import { isPattern, type Pattern } from "./patterns";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import type { ThreadDoc } from "./thread";
@@ -740,9 +741,13 @@ export interface GalleryFacet {
 export interface GalleryFacets {
   roles: GalleryFacet[];
   tools: GalleryFacet[];
+  /** CA-13 P12: how many gallery builds use each pattern. Empty until the CA-13 patterns migration is live: the RPC then carries no `patterns`. */
+  patterns: { value: Pattern; count: number }[];
+  /** CA-13 P12: the RPC answered with `patterns`, so the column exists and may be asked for. */
+  patternsLive: boolean;
 }
 
-export const NO_FACETS: GalleryFacets = { roles: [], tools: [] };
+export const NO_FACETS: GalleryFacets = { roles: [], tools: [], patterns: [], patternsLive: false };
 
 /**
  * The values worth offering as filters, counted over the same set of builds
@@ -764,10 +769,15 @@ export async function getGalleryFacets(): Promise<GalleryFacets> {
 
   if (error) throw buildLayerError("getGalleryFacets", error);
 
-  const payload = (data ?? {}) as Partial<GalleryFacets>;
+  const payload = (data ?? {}) as Partial<GalleryFacets> & { patterns?: unknown };
+  const patterns = Array.isArray(payload.patterns)
+    ? (payload.patterns as { value?: unknown; count?: unknown }[]).flatMap((entry) => (isPattern(entry.value) && typeof entry.count === "number" && entry.count > 0 ? [{ value: entry.value, count: entry.count }] : []))
+    : [];
   return {
     roles: Array.isArray(payload.roles) ? payload.roles : [],
     tools: Array.isArray(payload.tools) ? payload.tools : [],
+    patterns,
+    patternsLive: Array.isArray(payload.patterns),
   };
 }
 
@@ -1088,6 +1098,8 @@ export interface GalleryFeedParams {
   audience?: string;
   /** A tool id from the registry (TF-14). An id it does not name is ignored. */
   tool?: string;
+  /** CA-13 P12. One of the three patterns. Only ever sent once the facets carried `patterns`, so the column exists. */
+  pattern?: Pattern;
   sort: GalleryFeedSort;
   q?: string;
   /** Zero-based. With a model it pages both lists. */
@@ -1216,13 +1228,30 @@ async function feedSearchClause(raw: string | undefined): Promise<string | null>
   return clauses.join(",");
 }
 
+/**
+ * CA-13 P12: the patterns of the builds on the page, by build id. Asked for only once the facets carried `patterns` (the column
+ * is live), and never part of the card query, so a Gallery without the migration is exactly the Gallery it was. A failed read
+ * is an empty map: the marks are an offer, and a Gallery that failed to load for a mark would be the wrong trade.
+ */
+export async function getBuildPatterns(ids: readonly string[]): Promise<Record<string, Pattern[]>> {
+  const unique = [...new Set(ids)].slice(0, 200);
+  if (unique.length === 0) return {};
+  const { data, error } = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { in: (column: string, values: string[]) => PromiseLike<{ data: { id: string; patterns: unknown }[] | null; error: unknown }> } } })
+    .from("builds")
+    .select("id, patterns")
+    .in("id", unique);
+  if (error || !data) return {};
+  return Object.fromEntries(data.flatMap((row) => (Array.isArray(row.patterns) ? [[row.id, row.patterns.filter(isPattern)] as const] : [])));
+}
+
 /** The gallery's membership rule plus the feed's audience and search. */
 function feedBase(
   columns: string,
   audience: string | undefined,
   search: string | null,
   withCount = false,
-  madeWith: readonly string[] = []
+  madeWith: readonly string[] = [],
+  pattern?: Pattern,
 ): FeedQuery {
   let query = feedTable("builds")
     .select(columns, withCount ? { count: "exact" } : undefined)
@@ -1231,6 +1260,8 @@ function feedBase(
     .or(galleryPredicate());
   if (audience) query = query.overlaps("made_for", [audience]);
   if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
+  // CA-13 P12: only when a pattern was chosen, which the page offers only once the column is live.
+  if (pattern) query = query.contains("patterns", [pattern]);
   if (search) query = query.or(search);
   return query;
 }
@@ -1428,7 +1459,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   if (version === null) {
     const query = withFeedEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true, madeWith), params.sort)
+      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern), params.sort)
     ).range(start, end);
     const { data, error, count } = await query;
     if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1461,7 +1492,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
   const light: LightRow[] = [];
   for (let i = 0; i < candidates.length; i += FEED_ID_CHUNK) {
     const chunk = candidates.slice(i, i + FEED_ID_CHUNK);
-    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search, false, madeWith)
+    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search, false, madeWith, params.pattern)
       .in("id", chunk)
       .limit(chunk.length);
     if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1487,7 +1518,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   // notYet: the rest of the (capped) gallery, in the sort's overall order.
   const { data: populationData, error: populationError } = await feedOrder(
-    feedBase("id", audience, search, false, madeWith),
+    feedBase("id", audience, search, false, madeWith, params.pattern),
     params.sort
   ).limit(FEED_POPULATION_CAP);
   if (populationError) throw buildLayerError("listGalleryFeed", populationError);

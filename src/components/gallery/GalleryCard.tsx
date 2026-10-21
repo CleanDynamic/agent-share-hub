@@ -56,6 +56,7 @@ import { useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BuildCard, CardCredit, COVER_HEIGHT, type BuildCardTitleSize } from "@/components/brand/BuildCard";
 import { CategoryChip } from "@/components/brand/CategoryChip";
+import type { Pattern } from "@/lib/build/patterns";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { gapEdge } from "@/components/brand/GapMarker";
 import { PictureLamp } from "@/components/brand/PictureLamp";
@@ -121,6 +122,8 @@ export interface GalleryCardProps {
    * own figures — `plaqueBuildFor(build, proof)` for a chosen model. Row layout only.
    */
   plaqueBuild?: PlaqueBuild;
+  /** CA-13 P12: the patterns the build uses, from its own data: at most two are marked, with "+1" for a third. Row layout only. */
+  patterns?: readonly Pattern[];
   /** Frozen "now", for a fixture or a test. Row layout only. */
   now?: number;
   /**
@@ -153,6 +156,7 @@ export function GalleryCard({
   makerAvatar,
   modelsUsed,
   plaqueBuild,
+  patterns,
   now,
 }: GalleryCardProps) {
   if (layout === "row") {
@@ -165,6 +169,7 @@ export function GalleryCard({
         makerAvatar={makerAvatar ?? null}
         modelsUsed={modelsUsed ?? []}
         plaqueBuild={plaqueBuild ?? build}
+        patterns={patterns}
         openAsk={openBounty(build)}
         engagement={engagement}
         now={now}

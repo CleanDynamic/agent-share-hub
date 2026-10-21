@@ -39,6 +39,7 @@ import { MODEL_VERSIONS, TEXT_LABS, type Lab } from "@/lib/models/registry";
 
 import { GALLERY_LENSES, GALLERY_SHAPES, type GalleryFeedSort, type GalleryLens } from "./gallery";
 import { toolFor } from "@/lib/tools/registry";
+import { isPattern, type Pattern } from "./patterns";
 
 import { normaliseQuery } from "./search";
 
@@ -94,6 +95,8 @@ export interface GalleryParams {
   model?: string;
   /** TF-14. A tool id from the registry; absent is "Any tool". */
   tool?: string;
+  /** CA-13 P12. One of the three patterns; absent is "Any pattern". */
+  pattern?: Pattern;
   /** UI-P49. Present only when it is not newest. */
   sort?: GalleryFeedSort;
   /** UI-P50. The dashboard's tab; present only when it is not Builds. */
@@ -172,6 +175,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const shapes = cleanShapes(search.getAll("shape"));
   const model = search.get("model");
   const tool = toolFor(search.get("tool"))?.id;
+  const pattern = search.get("pattern");
   const sort = search.get("sort");
   const tab = search.get("tab");
   const lab = search.get("lab");
@@ -188,6 +192,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(search.get("view") === "dashboard" ? { view: "dashboard" as const } : {}),
     ...(isModel(model) ? { model } : {}),
     ...(tool ? { tool } : {}),
+    ...(isPattern(pattern) ? { pattern } : {}),
     ...(isSort(sort) && sort !== "newest" ? { sort } : {}),
     ...(isTab(tab) ? { tab } : {}),
     ...(isLab(lab) ? { lab } : {}),
@@ -200,7 +205,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, sort, tab, lab, report, active, dsort, build, q.
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, sort, tab, lab, report, active, dsort, build, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -213,6 +218,7 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   if (isModel(params.model)) out.set("model", params.model);
   const tool = toolFor(params.tool)?.id;
   if (tool) out.set("tool", tool);
+  if (isPattern(params.pattern)) out.set("pattern", params.pattern);
   if (isSort(params.sort) && params.sort !== "newest") out.set("sort", params.sort);
   if (isTab(params.tab)) out.set("tab", params.tab);
   if (isLab(params.lab)) out.set("lab", params.lab);

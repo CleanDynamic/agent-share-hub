@@ -31,7 +31,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { feedMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEngagement } from "@/hooks/useEngagement";
-import { galleryHref, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
+import { galleryHref, getBuildPatterns, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
 import {
   listGalleryFeed,
   type GalleryFeed,
@@ -88,6 +88,7 @@ function GalleryFeedPage() {
   const modelId = params.model ?? null;
   const audience = params.madeFor[0] ?? null;
   const toolId = params.tool ?? null;
+  const patternId = params.pattern ?? null;
   const sort: GalleryFeedSort = params.sort ?? "newest";
   const { query } = params;
   const chosenTool = toolId ? (TOOLS.find((entry) => entry.id === toolId) ?? null) : null;
@@ -99,11 +100,12 @@ function GalleryFeedPage() {
       view,
       model: modelId ?? undefined,
       tool: toolId ?? undefined,
+      pattern: patternId ?? undefined,
       madeFor: audience ? [audience] : [],
       sort,
       query,
     }),
-    [view, modelId, toolId, audience, sort, query],
+    [view, modelId, toolId, patternId, audience, sort, query],
   );
 
   /** Every change writes the address; the query keys follow it. */
@@ -121,7 +123,7 @@ function GalleryFeedPage() {
 
   /* ── the feed, a page at a time ── */
 
-  const filters = { model: modelId, tool: toolId, audience, sort, q: query };
+  const filters = { model: modelId, tool: toolId, pattern: patternId, audience, sort, q: query };
   const viewKey = JSON.stringify(filters);
   const [paging, setPaging] = useState<Paging>({ key: viewKey, first: 1, second: 1 });
   const shown: Paging = paging.key === viewKey ? paging : { key: viewKey, first: 1, second: 1 };
@@ -134,6 +136,7 @@ function GalleryFeedPage() {
         listGalleryFeed({
           model: modelId ?? undefined,
           tool: toolId ?? undefined,
+          pattern: patternId ?? undefined,
           audience: audience ?? undefined,
           sort,
           q: query ?? undefined,
@@ -219,6 +222,17 @@ function GalleryFeedPage() {
     [facets.data],
   );
 
+  /* CA-13 P12: the patterns on offer (hidden at 0), and each card's own, asked for only once the column is known to be live. */
+  const patterns = facets.data?.patterns ?? [];
+  const patternsLive = facets.data?.patternsLive === true;
+  const patternIds = useMemo(() => (list.kind === "all" ? list.list.rows : [...list.reproducedOn.rows, ...list.notYet.rows]).map((row) => row.build.id), [list]);
+  const patternMarks = useQuery({
+    queryKey: ["build", "getBuildPatterns", patternIds.join(",")],
+    queryFn: () => getBuildPatterns(patternIds),
+    enabled: patternsLive && patternIds.length > 0,
+    staleTime: FACETS_STALE_MS,
+  });
+
   /* Up to three makers whose names match the query: the one extra request, and only with a query. */
   const makers = useQuery({
     queryKey: ["gallery-makers", query],
@@ -258,6 +272,10 @@ function GalleryFeedPage() {
         onModelChange={(id) => go({ model: id ?? undefined })}
         tool={chosenTool}
         onToolChange={(id) => go({ tool: id ?? undefined })}
+        pattern={patternId}
+        onPatternChange={(next) => go({ pattern: next ?? undefined })}
+        patterns={patterns}
+        patternMarks={patternMarks.data}
         audience={audience}
         onAudienceChange={(next) => go({ madeFor: next ? [next] : [] })}
         audiences={audiences}
@@ -273,7 +291,7 @@ function GalleryFeedPage() {
         viewerId={user?.id ?? null}
         engagement={engagement}
         aboveList={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
-        onClearAll={() => go({ query: null, model: undefined, tool: undefined, madeFor: [] })}
+        onClearAll={() => go({ query: null, model: undefined, tool: undefined, pattern: undefined, madeFor: [] })}
         onNavigate={navigate}
         autoFocusSearch={focusSearch}
       />

@@ -273,7 +273,22 @@ describe("the facets", () => {
 
   it("returns empty lists rather than undefined when the function returns nothing", async () => {
     rpc.mockResolvedValue({ data: null, error: null });
-    await expect(getGalleryFacets()).resolves.toEqual({ roles: [], tools: [] });
+    await expect(getGalleryFacets()).resolves.toEqual({ roles: [], tools: [], patterns: [], patternsLive: false });
+  });
+
+  it("CA-13: reads the pattern counts the migration adds, drops a count of 0 or a pattern it does not know, and says the column is live", async () => {
+    rpc.mockResolvedValue({
+      data: { roles: [], tools: [], patterns: [{ value: "router", count: 3 }, { value: "long-running", count: 0 }, { value: "nonsense", count: 9 }, { value: "structured-output", count: 1 }] },
+      error: null,
+    });
+    await expect(getGalleryFacets()).resolves.toEqual({ roles: [], tools: [], patterns: [{ value: "router", count: 3 }, { value: "structured-output", count: 1 }], patternsLive: true });
+  });
+
+  it("CA-13: before the migration the answer carries no patterns, so nothing asks for the column", async () => {
+    rpc.mockResolvedValue({ data: { roles: [], tools: [] }, error: null });
+    const facets = await getGalleryFacets();
+    expect(facets.patternsLive).toBe(false);
+    expect(facets.patterns).toEqual([]);
   });
 });
 
