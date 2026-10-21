@@ -110,6 +110,10 @@ export interface SandboxViewProps extends CardProps {
 
   /** Add › Agent or team: opens the Add dialog. Absent, the item stays disabled. */
   onAddAgent?: () => void;
+  /** CA-13 P2: Add › Decision opens the decision dialog. Absent, the item stays disabled. */
+  onAddDecision?: () => void;
+  /** CA-13 P1: the `decision` node type is live. False: Add › Decision is disabled and says so. */
+  decisionAvailable?: boolean;
   /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
   onAddManual?: () => void;
   /** CA-02 P7: Add › Code opens the code dialog. Absent, the item stays disabled. */
@@ -138,7 +142,7 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
 }
 
-export type AddKey = "prompt" | "agent" | "file" | "tool" | "manual" | "code" | "check" | "result";
+export type AddKey = "prompt" | "agent" | "decision" | "file" | "tool" | "manual" | "code" | "check" | "result";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -149,6 +153,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   /* CA-12 P4: sessions are not in this menu: a session is a group of tiles, added with "+ Add a session" under the last one. */
   { key: "prompt", name: "Prompt", line: "A message you sent", ready: true },
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: true },
+  { key: "decision", name: "Decision", line: "A typed choice the app asks a model for", ready: true },
   { key: "file", name: "File", line: "Something the AI read", ready: true },
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
@@ -184,7 +189,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
 
 /** One item of the Add menu, wired: what it calls, whether it is enabled. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
@@ -197,8 +202,14 @@ export interface AddEntry {
   movesFocus?: boolean;
 }
 
-export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
+/** CA-13 P1: the line under Add › Decision while the database change is not live. */
+export const DECISION_OFF_LINE = "Decisions need the CA-13 database change. Ask Lovable to apply it.";
+
+export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
+    if (item.key === "decision") {
+      return { ...item, line: decisionAvailable ? item.line : DECISION_OFF_LINE, enabled: item.ready && decisionAvailable && Boolean(onAddDecision), onSelect: onAddDecision };
+    }
     if (item.key === "check") {
       // Listed always; offered once the build has an agent, a team or code to check.
       return { ...item, line: checkable ? item.line : ADD_COPY.checkFirst, enabled: item.ready && checkable && Boolean(onAddCheck), onSelect: onAddCheck };
@@ -674,6 +685,8 @@ export function SandboxView(props: SandboxViewProps) {
       onAddTool={props.onAddTool}
       onAddResult={props.onAddResult}
       onAddAgent={props.onAddAgent}
+      onAddDecision={props.onAddDecision}
+      decisionAvailable={props.decisionAvailable}
       onAddManual={props.onAddManual}
       onAddCode={props.onAddCode}
       onAddCheck={props.onAddCheck}

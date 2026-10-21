@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { AI_TOOLS, APPS, SUGGESTED_APPS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS } from "@/lib/tools/registry";
+import { WORKSPACE_AI_TOOLS, APPS, excludeRuntime, SUGGESTED_APPS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS } from "@/lib/tools/registry";
 
 import { OTHER_LIST_COPY, TOOL_PICKER_COPY, pickerRows, toolsForStep, type PickerRow } from "./toolPickerModel";
 
 /** A manual step: every tool but the retired one fits it, so these rows are the whole list. */
 const base = { query: "", inBuild: [], expanded: false, allowNone: false, step: "manual" as const };
-const PICKABLE = AI_TOOLS.filter((tool) => tool.status !== "retired");
+const PICKABLE = WORKSPACE_AI_TOOLS.filter((tool) => tool.status !== "retired");
 const ids = (rows: PickerRow[]) => rows.flatMap((row) => (row.kind === "tool" ? [row.tool.id] : []));
 
 describe("pickerRows", () => {
@@ -147,12 +147,12 @@ describe("CA-12 P13 · two lists", () => {
       expect(appIds, id).toContain(id);
     }
     expect(APPS).toHaveLength(24);
-    const aiIds = AI_TOOLS.map((tool) => tool.id);
+    const aiIds = WORKSPACE_AI_TOOLS.map((tool) => tool.id);
     for (const id of ["chatgpt", "claude", "claude-code", "cursor", "lovable", "github-copilot", "midjourney", "suno"]) expect(aiIds, id).toContain(id);
     for (const id of ["github", "stripe", "vercel", "gmail"]) expect(aiIds, id).not.toContain(id);
     for (const id of ["chatgpt", "claude-code", "cursor", "lovable"]) expect(appIds, id).not.toContain(id);
     expect(aiIds.filter((id) => appIds.includes(id)).sort()).toEqual(["elevenlabs", "figma", "make", "n8n", "notion", "zapier"]);
-    expect(TOOLS).toHaveLength(new Set([...aiIds, ...appIds]).size);
+    expect(excludeRuntime(TOOLS)).toHaveLength(new Set([...aiIds, ...appIds]).size);
   });
 
   it("offers apps first suggested, and every app under one heading, never an AI tool", () => {
@@ -199,5 +199,25 @@ describe("CA-12 P13 · two lists", () => {
     expect(toolsForStep("tool", "app")).toHaveLength(24);
     expect(toolsForStep("manual", "app")).toHaveLength(24);
     expect(toolsForStep("agent", "app")).toHaveLength(24);
+  });
+});
+
+describe("CA-13 rule 5 · Runtime models and services in the pickers", () => {
+  const ai = { query: "", inBuild: [], expanded: false, allowNone: false, step: "agent" as const };
+
+  it("leaves runtime models out of every ordinary picker, by id or by typing", () => {
+    expect(ids(pickerRows({ ...ai, expanded: true }))).not.toContain("typesafe-jev");
+    expect(ids(pickerRows({ ...ai, query: "jev" }))).not.toContain("typesafe-jev");
+  });
+
+  it("shows the subcategory first under its heading, with its four groups, when the picker asks for it", () => {
+    const rows = pickerRows({ ...ai, runtime: true });
+    const headings = rows.filter((row) => row.kind === "heading").map((row) => (row as { label: string }).label);
+    expect(headings.slice(0, 5)).toEqual(["Runtime models and services", "Decision models", "Context helpers", "Agent frameworks", "Tracing"]);
+    expect(ids(rows).slice(0, 8)).toEqual(["typesafe-jev", "scaledown-summarize", "scaledown-compress", "scaledown-extract", "scaledown-classify", "deep-agents", "langgraph", "langsmith"]);
+  });
+
+  it("finds a runtime model by typing when it is asked for", () => {
+    expect(ids(pickerRows({ ...ai, query: "jev", runtime: true }))).toContain("typesafe-jev");
   });
 });

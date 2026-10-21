@@ -96,8 +96,8 @@ describe("SandboxView frame", () => {
   });
 
   it("lists the eight Add items in order, with no session in them (CA-12 P4), Code after Manual step and Check after Code; all are live (UI-P64 to UI-P70, CA-02 P7, CA-03 P5)", () => {
-    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent or team", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "agent", "file", "tool", "manual", "code", "check", "result"]);
+    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent or team", "Decision", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "agent", "decision", "file", "tool", "manual", "code", "check", "result"]);
     expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Lines of code you wrote or ran");
     expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "How it tested its own work", ready: true });
   });
@@ -184,7 +184,7 @@ describe("the Build panel's head when an agent or a team is opened (UI-P69)", ()
   });
 });
 
-describe("the Add menu holds exactly 8 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4)", () => {
+describe("the Add menu holds exactly 9 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4)", () => {
   it("enables every item once each has something to open", async () => {
     view({
       onAddCheck: vi.fn(),
@@ -194,14 +194,15 @@ describe("the Add menu holds exactly 8 items, all enabled (UI-P70, CA-02 P7, CA-
       onAddResult: vi.fn(),
       onAddPromptFocus: vi.fn(),
       onAddAgent: vi.fn(),
+      onAddDecision: vi.fn(),
       onAddManual: vi.fn(),
       onAddCode: vi.fn(),
     });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items).toHaveLength(8);
+    expect(items).toHaveLength(9);
     expect(items[0].textContent).toBe("PromptA message you sent");
-    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(8).fill(null));
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(9).fill(null));
     expect(items.map((item) => item.textContent).join(" ")).not.toMatch(/session/i);
   });
 
@@ -556,3 +557,13 @@ describe("CA-10 · a save that stopped says what failed", () => {
   });
 });
 
+describe("CA-13 P1 · Add › Decision", () => {
+  it("is disabled, with the database line, until the decision type is live", () => {
+    const off = addEntries({ onAddDecision: vi.fn(), decisionAvailable: false }).find((item) => item.key === "decision");
+    expect(off?.enabled).toBe(false);
+    expect(off?.line).toBe("Decisions need the CA-13 database change. Ask Lovable to apply it.");
+    const on = addEntries({ onAddDecision: vi.fn(), decisionAvailable: true }).find((item) => item.key === "decision");
+    expect(on?.enabled).toBe(true);
+    expect(on?.line).toBe("A typed choice the app asks a model for");
+  });
+});

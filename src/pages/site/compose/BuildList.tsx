@@ -43,7 +43,10 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { drawBranches } from "@/components/build/BranchRows";
+import { LinkLines } from "@/components/build/LinkLines";
+import { callsOf } from "@/lib/build/decisionCopy";
+import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, DecisionTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -1306,6 +1309,11 @@ function ToolCard({ step, index, last, props }: { step: Step; index: number; las
   return <PlainCard step={step} index={index} last={last} props={props} noun="Tool" eyebrow="Tool · added by maker" body={<ToolTileBody step={step} />} />;
 }
 
+/** CA-13 P2: a decision as a tile: its model, and one line per question. It runs in the app, so it says so. */
+function DecisionCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" eyebrow="Decision · runs in the app" body={<DecisionTileBody step={step} />} />;
+}
+
 /** CA-12 P8: a file as a tile: its type, name and size, and a preview. */
 function FileCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   return <PlainCard step={step} index={index} last={last} props={props} noun="File" eyebrow="File · added by maker" body={<FileTileBody step={step} />} />;
@@ -1390,6 +1398,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         </Menu.Root>
       </div>
       <CodeLines text={step.text} compact testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
+      <LinkLines lines={callsOf(step.id, props.steps)} onOpen={props.onSelect} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1872,6 +1881,8 @@ export function BuildList(props: BuildListProps) {
       <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "tool" ? (
       <ToolCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "decision" ? (
+      <DecisionCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "file" ? (
       <FileCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "code" ? (
@@ -1910,7 +1921,7 @@ export function BuildList(props: BuildListProps) {
           <SessionRun key={run.key} head={run.head} phone={props.phone} lit={Boolean(key && props.ringedSession?.key === key)}>
             {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} onPickApp={props.onPickApp} inBuild={props.inBuild} count={long ? total : undefined} /> : null}
             {run.head ? <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} /> : null}
-            {shown.map(placed)}
+            {drawBranches(shown, (step) => step, steps, placed)}
             {long && key ? (
               <div>
                 <TextButton

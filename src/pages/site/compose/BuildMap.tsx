@@ -122,7 +122,7 @@ export function boxName(box: Pick<MapBox, "kind" | "stepKind" | "number" | "titl
   const count = box.inputs.length;
   const inputs = `${count} ${count === 1 ? "input" : "inputs"}`;
   if (box.kind === "result") return `Result, ${box.title}, ${inputs}`;
-  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : box.stepKind === "code" ? "Code" : box.stepKind === "check" ? "Check" : "Prompt";
+  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : box.stepKind === "code" ? "Code" : box.stepKind === "check" ? "Check" : box.stepKind === "decision" ? "Decision" : "Prompt";
   return `${word} ${box.number}, ${box.title}, ${inputs}`;
 }
 
@@ -219,6 +219,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   const code = box.kind === "step" && box.stepKind === "code";
   /* CA-03 P5: a check is a box labelled "Check", what counts as passing as its text and its status in the foot. */
   const check = box.kind === "step" && box.stepKind === "check";
+  /* CA-13: a decision is a box labelled "Decision", its model and question count as its text, and one labelled output for each branch that has steps. */
+  const decision = box.kind === "step" && box.stepKind === "decision";
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
@@ -311,7 +313,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               <span data-testid="map-result-label" style={{ ...geist(10.5, 500, t.evidence), flexShrink: 0 }}>
                 Result
               </span>
-            ) : manual || code || check || (!box.defaultTitle && box.number) ? (
+            ) : manual || code || check || decision || (!box.defaultTitle && box.number) ? (
               <span style={refinedNumber}>{box.number}</span>
             ) : null}
             {code ? (
@@ -322,6 +324,11 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
             {check ? (
               <span data-testid="map-check-label" style={{ ...geist(10.5, 500, t.label), flexShrink: 0 }}>
                 Check
+              </span>
+            ) : null}
+            {decision ? (
+              <span data-testid="map-decision-label" style={{ ...geist(10.5, 500, t.label), flexShrink: 0 }}>
+                Decision
               </span>
             ) : null}
             {manual ? (
@@ -335,9 +342,9 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
           {reader ? (
             <>
               {/* The reader's box says its inputs in its name alone, as the board draws it. */}
-              {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
+              {(decision ? box.contents : box.text) ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{decision ? box.contents : box.text}</span> : null}
               {sentRows}
-              {box.kind === "step" && !manual ? (
+              {box.kind === "step" && !manual && !decision ? (
                 <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`}</span>
               ) : null}
             </>
@@ -367,16 +374,30 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
                   overflowWrap: "anywhere",
                 }}
               >
-                {box.text}
+                {decision ? box.contents : box.text}
               </span>
               {sentRows}
               <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "block", lineHeight: "20px", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums", ...ellipsis }}>
-                {box.kind === "step" && !manual ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
+                {box.kind === "step" && !manual && !decision ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
               </span>
             </>
           )}
         </>
       )}
+      {box.outputs?.length ? (
+        <span data-testid={`map-outputs-${box.id}`} style={{ position: "absolute", right: 0, top: MAP_SIZES.head + 1, width: "55%", pointerEvents: "none" }}>
+          {box.outputs.map((output, at) => (
+            <span key={output.key} data-testid="map-output" style={{ position: "absolute", right: 12, top: at * MAP_SIZES.row, height: row, maxWidth: "100%", display: "flex", alignItems: "center", ...geist(11, 400, onPath ? t.text : t.text2), ...ellipsis }}>
+              {output.label}
+            </span>
+          ))}
+          {box.otherNoStep ? (
+            <span data-testid="map-output-other" style={{ position: "absolute", right: 12, top: box.outputs.length * MAP_SIZES.row, height: row, maxWidth: "100%", display: "flex", alignItems: "center", ...geist(11, 400, t.label), ...ellipsis }}>
+              Other options: no step
+            </span>
+          ) : null}
+        </span>
+      ) : null}
     </button>
   );
 });
@@ -405,7 +426,9 @@ function Wires({ wires, joined, selecting }: { wires: readonly MapWire[]; joined
               d={`${wire.d} h ${MAP_SIZES.arrow}`}
               fill="none"
               strokeWidth={1.2}
-              strokeDasharray={wire.suggested ? "4 4" : undefined}
+              data-dotted={wire.dotted ? "true" : undefined}
+              strokeDasharray={wire.suggested ? "4 4" : wire.dotted ? "1.5 4" : undefined}
+              strokeLinecap={wire.dotted ? "round" : undefined}
               style={{ stroke: strong ? t.text : t.label, strokeOpacity: strong ? 0.7 : 0.45 }}
             />
           </g>
@@ -852,7 +875,7 @@ export function BuildMap(props: BuildMapProps) {
             : null}
 
           {ordered
-            .filter((box) => box.kind !== "result")
+            .filter((box) => box.kind !== "result" && !box.outputs?.length)
             .map((box) => (
               <span
                 key={`dot-${box.id}`}
@@ -878,6 +901,18 @@ export function BuildMap(props: BuildMapProps) {
                 }
               />
             ))}
+
+          {/* CA-13: a decision's output dots, one for each branch that has steps, level with its label. */}
+          {layout.boxes.flatMap((box) =>
+            (box.outputs ?? []).map((output, at) => (
+              <span
+                key={`out-${box.id}-${output.key}`}
+                data-testid={`map-output-dot-${box.id}-${at}`}
+                aria-hidden="true"
+                style={{ position: "absolute", left: box.x + box.w - SQUARE / 2, top: box.y + MAP_SIZES.head + MAP_SIZES.row * at + MAP_SIZES.row / 2 - SQUARE / 2, ...squarePaint(selecting && joined.boxes.has(box.id)), pointerEvents: "none", ...(selecting && !joined.boxes.has(box.id) ? DIM : null) }}
+              />
+            )),
+          )}
 
           {drag ? (
             <svg width={layout.width} height={layout.height} aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>

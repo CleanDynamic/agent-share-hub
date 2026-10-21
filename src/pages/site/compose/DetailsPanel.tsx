@@ -38,6 +38,12 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { ChoiceRows } from "./ChoiceRows";
+import { DecisionFields } from "./DecisionFields";
+import { RunsWhenField } from "./RunsWhenField";
+import type { RuntimeView } from "./runtimeView";
+import { draftToInput, type DecisionDraft } from "@/lib/build/decisionDraft";
+import type { DecisionInput } from "@/lib/build/graph";
+import type { RunsWhen } from "@/lib/build/decision";
 import { Field, FIELD_LABEL, TextButton } from "./composeControls";
 import {
   atOnce,
@@ -259,9 +265,31 @@ export interface CheckView extends InputsView {
   check: CheckFacts;
 }
 
-export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView;
+/** CA-13 P2: a decision, as the Details panel edits it: its whole form is a draft. */
+export interface DecisionView {
+  kind: "decision";
+  sentWithLine?: string;
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  draft: DecisionDraft;
+  /** The Code tiles in the build (rule 4). */
+  codeTiles: readonly { id: string; label: string; source: string }[];
+  /** The steps it can read the output of. */
+  stepChoices: readonly { id: string; label: string }[];
+}
+
+export type DetailsView = (PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView | DecisionView) & {
+  /** CA-13: the runtime side of the tile: when it runs. */
+  runtime?: RuntimeView;
+};
 
 export interface DetailsHandlers {
+  /** CA-13 P2: save a decision's settings. Absent: it is shown, not edited. */
+  onDecision?: (id: string, input: DecisionInput) => void;
+  /** CA-13 P3: set when a runtime tile runs (null: always). Absent: Runs when is not shown. */
+  onRunsWhen?: (id: string, runsWhen: RunsWhen | null) => void;
   onRename: (id: string, title: string) => void;
   onOpenPrompt?: (id: string) => void;
   onModel: (id: string, model: string | null) => void;
@@ -982,6 +1010,41 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
+/* ── a decision (CA-13 P2) ── */
+
+function DecisionDetails({ view, phone, inBuild, ...h }: { view: DecisionView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
+  const [draft, setDraft] = useState(view.draft);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const save = () => {
+    const made = draftToInput(draft);
+    if ("error" in made) {
+      setError(made.error);
+      return;
+    }
+    setError(null);
+    h.onDecision?.(view.id, made.input);
+    setSaved(true);
+  };
+  return (
+    <>
+      <Head eyebrow={view.sentWithLine ?? `Decision ${view.number} · runs in the app`}>
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of decision ${view.number}`} phone={phone} onRename={h.onRename} />
+      </Head>
+      <DecisionFields draft={draft} onChange={(next) => { setDraft(next); setSaved(false); }} phone={phone} codeTiles={view.codeTiles} stepChoices={view.stepChoices} inBuild={inBuild} />
+      {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
+      {h.onDecision ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Button variant="primary" size={phone ? 44 : 28} fontSize={12} onClick={save} style={phone ? undefined : { height: 26 }}>
+            Save the decision
+          </Button>
+          <span aria-live="polite" style={quiet()}>{saved ? "Saved" : ""}</span>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -1885,6 +1948,10 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
+      {view.kind === "decision" ? <DecisionDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
+      {view.runtime?.runsWhen && h.onRunsWhen && view.kind !== "prompt" ? (
+        <RunsWhenField key={`${view.kind === "session" ? view.key : view.id}:when:${view.runtime.runsWhen.currentLabel ?? ""}`} view={view.runtime.runsWhen} phone={phone} onChange={(next) => h.onRunsWhen?.(view.kind === "session" ? view.key : view.id, next)} />
+      ) : null}
       {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} onTrainedOn={h.onTrainedOn} onRemoveInside={h.onRemoveInside} /> : null}
     </div>
     </DetailsColourContext.Provider>

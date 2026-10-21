@@ -606,3 +606,157 @@ describe("sessions at the same time (CA-05 P5)", () => {
     expect(togetherSets(together(false).groups).size).toBe(0);
   });
 });
+
+/* ── CA-13: decisions and branches live in the runtime band ── */
+
+describe("CA-13 · decisions and branches", () => {
+  const decisionStep = (over: Partial<Step> = {}): Step =>
+    step({
+      id: "d",
+      number: "3",
+      kind: "decision",
+      defaultTitle: "team",
+      decision: {
+        provider: "typesafe-jev",
+        model: "jev-1.13.0",
+        calledFrom: ["c"],
+        stateFrom: null,
+        questions: [
+          { id: "team", type: "choice", instructions: "", options: [{ key: "billing" }, { key: "support" }, { key: "kitchen" }] },
+          { id: "tone", type: "score", instructions: "", levels: ["Calm", "Annoyed", "Angry"] },
+          { id: "escalation", type: "yesno", instructions: "" },
+        ],
+      },
+      ...over,
+    });
+  const when = (key: string, question = "team") => ({ decision: "d", question, is: [key] });
+  const group: SessionGroup[] = [{ sessionId: "s1", number: 1, tool: "Claude Code", model: null, startedAt: "2026-10-01T10:00:00", stepNumbers: ["1", "2"] }];
+
+  const router = (extra: Step[] = []) => {
+    const steps: Step[] = [
+      step({ id: "p1", number: "1", sessionId: "s1" }),
+      step({ id: "c", number: "2", kind: "code", sessionId: "s1", session: "s1" }),
+      decisionStep(),
+      // Listed out of the options' order on purpose.
+      step({ id: "a4", number: "4", kind: "agent", runsWhen: when("support") }),
+      step({ id: "k5", number: "5", kind: "code", runsWhen: when("kitchen") }),
+      step({ id: "a6", number: "6", kind: "agent", runsWhen: when("billing") }),
+      step({ id: "a7", number: "7", kind: "agent", runsWhen: when("billing") }),
+      ...extra,
+    ];
+    return { steps, layout: layoutMap(steps, group, [], [], []) };
+  };
+
+  it("gives the decision a lane of its own, labelled over 'runs in the app'", () => {
+    const { layout } = router();
+    const lane = layout.lanes.find((l) => l.kind === "decision");
+    expect(lane?.label).toBe("Decision · team");
+    expect(lane?.sub).toBe("runs in the app");
+  });
+
+  it("leaves session lanes exactly as they were and keeps every branch out of them", () => {
+    const { layout } = router();
+    const sessionLanes = layout.lanes.filter((l) => l.kind === "session");
+    expect(sessionLanes.map((l) => l.label)).toEqual(["Session 1"]);
+    const sessionIndex = layout.lanes.findIndex((l) => l.kind === "session");
+    for (const id of ["a4", "k5", "a6", "a7"]) expect(layout.boxes.find((b) => b.id === id)?.lane).not.toBe(sessionIndex);
+    expect(layout.boxes.find((b) => b.id === "p1")?.lane).toBe(sessionIndex);
+  });
+
+  it("puts each branch in its own lane directly under the decision's, ordered as the options are, steps of one branch sharing a lane", () => {
+    const { layout } = router();
+    const at = layout.lanes.findIndex((l) => l.kind === "decision");
+    expect(layout.lanes.slice(at + 1, at + 4).map((l) => [l.kind, l.label])).toEqual([["branch", "If billing"], ["branch", "If support"], ["branch", "If kitchen"]]);
+    const laneOf = (id: string) => layout.boxes.find((b) => b.id === id)?.lane;
+    expect(laneOf("a6")).toBe(laneOf("a7"));
+    expect(laneOf("a6")).toBe(at + 1);
+    expect(laneOf("a4")).toBe(at + 2);
+    expect(laneOf("k5")).toBe(at + 3);
+  });
+
+  it("starts a branch after the decision, and the decision no earlier than the code that calls it", () => {
+    const { layout } = router();
+    const dec = layout.boxes.find((b) => b.id === "d")!;
+    expect(dec.column).toBeGreaterThanOrEqual(layout.boxes.find((b) => b.id === "c")!.column);
+    for (const id of ["a4", "k5", "a6"]) expect(layout.boxes.find((b) => b.id === id)!.column).toBeGreaterThanOrEqual(dec.column + 1);
+    expect(layout.boxes.find((b) => b.id === "a7")!.column).toBeGreaterThan(layout.boxes.find((b) => b.id === "a6")!.column);
+  });
+
+  it("gives the decision one output dot for each branch that has steps, and wires each to its branch's first step", () => {
+    const { layout } = router();
+    const dec = layout.boxes.find((b) => b.id === "d")!;
+    expect(dec.outputs?.map((o) => o.label)).toEqual(["team · billing", "team · support", "team · kitchen"]);
+    const out = layout.wires.filter((w) => w.from === "d" && w.output);
+    expect(out.map((w) => w.to)).toEqual(["a6", "a4", "k5"]);
+    for (const wire of out) expect(wire.y1).toBeGreaterThan(dec.y + MAP_SIZES.head);
+    expect(dec.otherNoStep).toBeUndefined();
+  });
+
+  it("joins the branches back at the next step with no condition, after the last step of each", () => {
+    const { steps, layout } = router([step({ id: "j8", number: "8", kind: "agent" })]);
+    expect(steps).toHaveLength(8);
+    const joins = layout.wires.filter((w) => w.to === "j8");
+    expect(joins.map((w) => w.from).sort()).toEqual(["a4", "a7", "k5"]);
+    const join = layout.boxes.find((b) => b.id === "j8")!;
+    for (const id of ["a4", "k5", "a7"]) expect(join.column).toBeGreaterThanOrEqual(layout.boxes.find((b) => b.id === id)!.column + 1);
+  });
+
+  it("draws a dotted wire from the code tile to the decision it calls", () => {
+    const { layout } = router();
+    const calls = layout.wires.filter((w) => w.to === "d" && w.dotted);
+    expect(calls.map((w) => w.from)).toEqual(["c"]);
+  });
+
+  it("draws a score and a yes or no branch, and says 'Other options: no step' for the rest", () => {
+    const steps: Step[] = [
+      step({ id: "p1", number: "1", sessionId: "s1" }),
+      decisionStep({ id: "d", number: "2", decision: { ...decisionStep().decision!, calledFrom: [] } }),
+      step({ id: "a3", number: "3", kind: "agent", runsWhen: { decision: "d", question: "tone", is: { atLeast: 1 } } }),
+      step({ id: "a4", number: "4", kind: "agent", runsWhen: { decision: "d", question: "escalation", is: { yes: true } } }),
+    ];
+    const layout = layoutMap(steps, group, [], [], []);
+    const dec = layout.boxes.find((b) => b.id === "d")!;
+    expect(dec.outputs?.map((o) => o.label)).toEqual(["tone · Annoyed or more", "escalation · yes"]);
+    expect(dec.otherNoStep).toBe(true);
+    expect(layout.lanes.filter((l) => l.kind === "branch").map((l) => l.label)).toEqual(["If Annoyed or more", "If yes"]);
+  });
+
+  it("draws only the options that have steps for a decision with twenty options", () => {
+    const options = Array.from({ length: 20 }, (_, i) => ({ key: `o${i}` }));
+    const steps: Step[] = [
+      step({ id: "p1", number: "1", sessionId: "s1" }),
+      decisionStep({ id: "d", number: "2", decision: { provider: "typesafe-jev", model: "jev-1.13.0", calledFrom: [], stateFrom: null, questions: [{ id: "q", type: "choice", instructions: "", options }] } }),
+      step({ id: "a3", number: "3", kind: "agent", runsWhen: { decision: "d", question: "q", is: ["o7"] } }),
+      step({ id: "a4", number: "4", kind: "agent", runsWhen: { decision: "d", question: "q", is: ["o2"] } }),
+    ];
+    const layout = layoutMap(steps, group, [], [], []);
+    const dec = layout.boxes.find((b) => b.id === "d")!;
+    expect(dec.outputs?.map((o) => o.label)).toEqual(["o2", "o7"]);
+    expect(dec.otherNoStep).toBe(true);
+    expect(layout.lanes.filter((l) => l.kind === "branch")).toHaveLength(2);
+  });
+
+  it("keeps a loop inside a branch: a step that uses a later one is routed above both boxes", () => {
+    const steps: Step[] = [
+      step({ id: "p1", number: "1", sessionId: "s1" }),
+      decisionStep({ id: "d", number: "2", decision: { ...decisionStep().decision!, calledFrom: [] } }),
+      step({ id: "a3", number: "3", kind: "agent", runsWhen: when("billing"), uses: [out("a4")] }),
+      step({ id: "a4", number: "4", kind: "agent", runsWhen: when("billing"), runs: { how: "until", detail: "it passes" } }),
+    ];
+    const layout = layoutMap(steps, group, [], [], []);
+    expect(layout.wires.some((w) => w.loop && w.from === "a4" && w.to === "a3")).toBe(true);
+  });
+
+  it("draws a build with no decision exactly as before, and a condition whose decision is gone as the step would be without it", () => {
+    const { layout } = bakery();
+    expect(layout.lanes.some((l) => l.kind === "decision" || l.kind === "branch")).toBe(false);
+    const steps: Step[] = [step({ id: "p1", number: "1", sessionId: "s1" }), step({ id: "a2", number: "2", kind: "agent", runsWhen: { decision: "gone", question: "team", is: ["billing"] } })];
+    const lonely = layoutMap(steps, group, [], [], []);
+    expect(lonely.lanes.some((l) => l.kind === "branch")).toBe(false);
+    expect(lonely.lanes.some((l) => l.kind === "agent")).toBe(true);
+  });
+
+  it("leaves no box on another", () => {
+    expect(overlaps(router([step({ id: "j8", number: "8", kind: "agent" })]).layout)).toEqual([]);
+  });
+});

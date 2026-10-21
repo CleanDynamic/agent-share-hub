@@ -61,6 +61,8 @@ import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
+import { AddDecisionDialog } from "./AddDecisionDialog";
+import type { DecisionInput } from "@/lib/build/graph";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAdd } from "./BuildList";
 import { useComposerScrollPadding } from "./composeChrome";
@@ -182,6 +184,10 @@ export function SandboxPage() {
   const teamType = useQuery({ queryKey: ["build", "getNodeType", "team"], queryFn: () => getNodeType("team"), staleTime: Infinity });
   const teamsAvailable = Boolean(teamType.data?.is_active);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
+  /** CA-13 P1, P2: Add › Decision, disabled until the `decision` node type is live. */
+  const decisionType = useQuery({ queryKey: ["build", "getNodeType", "decision"], queryFn: () => getNodeType("decision"), staleTime: Infinity });
+  const decisionAvailable = Boolean(decisionType.data?.is_active);
+  const [addDecisionOpen, setAddDecisionOpen] = useState(false);
   /** CA-02 P4: "Add as an agent" opens the dialog with the tool and the field's text, and waits to hear it was saved. */
   const [agentSeed, setAgentSeed] = useState<AgentSeed | null>(null);
   const seedDone = useRef<((saved: boolean) => void) | null>(null);
@@ -817,6 +823,18 @@ export function SandboxPage() {
     [prompts, afterWrite, settleSeed, sessionToWrite],
   );
 
+  const onAddDecision = useCallback(
+    async (input: DecisionInput) => {
+      const session = await sessionToWrite();
+      const id = await prompts.addDecisionTile({ ...input, session });
+      if (!id) return;
+      setSelectedId(id);
+      setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+      afterWrite();
+    },
+    [prompts, afterWrite, sessionToWrite],
+  );
+
   const onAddAgentTo = useCallback(
     async (teamId: string) => {
       const team = steps.find((candidate) => candidate.id === teamId);
@@ -1358,6 +1376,8 @@ export function SandboxPage() {
         onAddTool={() => setAddToolOpen(true)}
         onAddResult={onAddResult}
         onAddAgent={() => setAddAgentOpen(true)}
+        onAddDecision={() => setAddDecisionOpen(true)}
+        decisionAvailable={decisionAvailable}
         onAddManual={() => setAddManualOpen(true)}
         onAddCode={() => setAddCodeOpen(true)}
         onAddCheck={() => setAddCheckOpen(true)}
@@ -1414,6 +1434,14 @@ export function SandboxPage() {
             onAttach={pickForStep}
             onRemoveUse={(id, use) => {
               prompts.removeUse(id, use);
+              afterWrite();
+            }}
+            onDecision={(id, input) => {
+              prompts.setDecision(id, input);
+              afterWrite();
+            }}
+            onRunsWhen={(id, runsWhen) => {
+              prompts.setRunsWhen(id, steps, runsWhen);
               afterWrite();
             }}
             onRuns={(id, runs) => {
@@ -1580,6 +1608,18 @@ export function SandboxPage() {
         inBuild={inBuild}
         onAdd={(input) => void onAddAgentOrTeam(input)}
       />
+      <AddDecisionDialog
+        open={addDecisionOpen}
+        onOpenChange={setAddDecisionOpen}
+        inBuild={inBuild}
+        codeTiles={codeTilesOf(steps)}
+        stepChoices={stepChoicesOf(steps)}
+        onAddCode={() => {
+          setAddDecisionOpen(false);
+          setAddCodeOpen(true);
+        }}
+        onAdd={(input) => void onAddDecision(input)}
+      />
       <AddManualStepDialog
         open={addManualOpen}
         onOpenChange={setAddManualOpen}
@@ -1627,5 +1667,13 @@ export function SandboxPage() {
     </>
   );
 }
+
+/** CA-13 rule 4: the Code tiles of a build, for "Called from" and "Read from a Code tile". */
+export const codeTilesOf = (steps: readonly Step[]): { id: string; label: string; source: string }[] =>
+  steps.flatMap((step) => (step.kind === "code" ? [{ id: step.id, label: step.filename ?? step.title ?? step.defaultTitle, source: step.text }] : []));
+
+/** CA-13 P2: the steps a decision can read the output of. */
+export const stepChoicesOf = (steps: readonly Step[]): { id: string; label: string }[] =>
+  steps.filter((step) => step.kind !== "decision").map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }));
 
 export default SandboxPage;

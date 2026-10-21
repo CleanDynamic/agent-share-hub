@@ -26,8 +26,19 @@
 //            the wire from a step to a file it makes. A loop
 //            back (DATA §3, "until") rises 36 above both boxes.
 //
+//   CA-13 BRANCHES LIVE IN THE RUNTIME BAND, NEVER ACROSS DATE COLUMNS (rule 2). A Decision takes a lane of its own, labelled
+//            "Decision · team" over "runs in the app", beside the agents' lanes; session lanes are unchanged by any branch. Its
+//            column is the same rule as an agent's (after the steps it uses) and never earlier than the code that calls it.
+//            Each branch (the steps that run when it went one way) takes one lane directly under the Decision's, ordered as the
+//            options are, and starts after the Decision. The Decision's box has one output dot for each branch that has
+//            steps, labelled, and wires from each dot to the first step of its branch; "Other options: no step" stands for
+//            the rest, so twenty options stay readable. Branch lanes join back to the next step with no condition, which
+//            sits after the last step of every branch. A dotted wire joins a Code tile to the Decision it calls. An
+//            "until" loop is unchanged, and a branch can hold one.
+//
 // Units are px in the map's own space; the view adds its frame padding.
 
+import { conditionKey, conditionOrder, modelShort, runsWhenValue, sameCondition, uncoveredCount, type RunsWhen } from "./decision";
 import { checkStatus, groupKey, groupKind, groupOfStep, shownGroups, stepRunsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
@@ -134,13 +145,17 @@ export interface MapBox {
   status?: { line: string; allPassed: boolean } | null;
   /** CA-04 P2: the tiles sent with this step, depth first, drawn as small rows inside its box, never as boxes. */
   sentWith?: { id: string; kind: string; name: string }[];
+  /** CA-13, a decision only: one output dot for each branch that has steps, in the order of the options. */
+  outputs?: { key: string; label: string }[];
+  /** CA-13, a decision only: some options have no step, so the box says "Other options: no step". */
+  otherNoStep?: boolean;
 }
 
 export interface MapLane {
   /** CA-05 P5: sessions that ran at the same time share this number, and their lanes sit together. Absent for any other lane. */
   together?: number;
   key: string;
-  kind: "session" | "typed" | "files" | "agent" | "hand";
+  kind: "session" | "typed" | "files" | "agent" | "hand" | "decision" | "branch";
   label: string;
   /** "Claude · Opus 5.5". */
   sub: string;
@@ -170,6 +185,10 @@ export interface MapWire {
   y1: number;
   x2: number;
   y2: number;
+  /** CA-13: a Code tile's call to a Decision, drawn dotted. */
+  dotted?: boolean;
+  /** CA-13: leaves the Decision's output dot of this key. */
+  output?: string;
   /** A word or two drawn on the wire: "sent back until approved". */
   label?: string;
   /** Where the label sits (its middle). */
@@ -324,7 +343,37 @@ export function layoutMap(
   groups.forEach((group, at) => group.stepNumbers.forEach((number) => laneOfNumber.set(number, at)));
 
   const stepLane: number[] = [];
+  /* CA-13: a decision's lane, and a branch's: the lane of every step that runs when one decision went one way. */
+  const decisionLane = new Map<string, number>();
+  const branchLaneOf = new Map<string, number>();
+  const branchOf = new Map<number, { decision: string; when: RunsWhen }>();
+  const branchLaneFor = (at: number, rw: RunsWhen): number | undefined => {
+    const owner = steps.findIndex((candidate) => candidate.id === rw.decision);
+    // A condition whose decision is gone, or sits below the step, is drawn as the step would be without it.
+    if (owner < 0 || owner >= at || steps[owner].kind !== "decision") return undefined;
+    const key = conditionKey(rw);
+    const known = branchLaneOf.get(key);
+    if (known !== undefined) return known;
+    const q = steps[owner].decision?.questions.find((candidate) => candidate.id === rw.question);
+    lanes.push({ key: `branch-${key}`, kind: "branch", label: `If ${runsWhenValue(rw, q)}`, sub: `${rw.question} · runs in the app`, dashed: false, y: 0, h: 0 });
+    branchLaneOf.set(key, lanes.length - 1);
+    branchOf.set(lanes.length - 1, { decision: rw.decision, when: rw });
+    return lanes.length - 1;
+  };
+  let sessionLane: number | undefined;
   steps.forEach((step, at) => {
+    if (step.kind === "decision") {
+      const first = step.decision?.questions[0]?.id ?? step.defaultTitle;
+      lanes.push({ key: `decision-${step.id}`, kind: "decision", label: `Decision · ${first}`, sub: "runs in the app", dashed: false, y: 0, h: 0 });
+      decisionLane.set(step.id, lanes.length - 1);
+      stepLane.push(lanes.length - 1);
+      return;
+    }
+    const branchLane = step.runsWhen ? branchLaneFor(at, step.runsWhen) : undefined;
+    if (branchLane !== undefined) {
+      stepLane.push(branchLane);
+      return;
+    }
     if (isContainer(step)) {
       lanes.push({ key: `agent-${step.id}`, kind: "agent", label: `${step.kind === "team" ? "Team" : "Agent"} ${step.number}`, sub: "runs by itself", dashed: false, y: 0, h: 0 });
       stepLane.push(lanes.length - 1);
@@ -342,7 +391,8 @@ export function layoutMap(
       return;
     }
     let lane = laneOfNumber.get(step.number);
-    if (lane === undefined) lane = at > 0 ? stepLane[at - 1] : undefined;
+    // A step with no session of its own takes the lane of the one before it, never a branch's or a decision's.
+    if (lane === undefined) lane = at > 0 && !branchOf.has(stepLane[at - 1]) && !decisionLane.has(steps[at - 1].id) ? stepLane[at - 1] : sessionLane;
     if (lane === undefined) {
       // A first step that is not a prompt: the lane of the next prompt, or a lane of its own.
       const next = steps.slice(at + 1).find((candidate) => laneOfNumber.has(candidate.number));
@@ -352,8 +402,31 @@ export function layoutMap(
       lanes.push({ key: "typed-0", kind: "typed", label: "Written here", sub: "", dashed: false, y: 0, h: 0 });
       lane = lanes.length - 1;
     }
+    sessionLane = lane;
     stepLane.push(lane);
   });
+
+  /* CA-13: each decision's branch lanes sit directly under its own, ordered as the options are. Nothing else moves. */
+  if (branchOf.size > 0) {
+    const order: number[] = [];
+    for (let at = 0; at < lanes.length; at++) {
+      if (branchOf.has(at)) continue;
+      order.push(at);
+      const owner = [...decisionLane].find(([, lane]) => lane === at)?.[0];
+      if (!owner) continue;
+      const mine = [...branchOf].filter(([, info]) => info.decision === owner);
+      const asked = steps.find((candidate) => candidate.id === owner)?.decision?.questions;
+      mine.sort((a, b) => conditionOrder(a[1].when, asked) - conditionOrder(b[1].when, asked) || a[0] - b[0]);
+      order.push(...mine.map(([lane]) => lane));
+    }
+    const placed = order.map((old) => lanes[old]);
+    const moved = new Map(order.map((old, next) => [old, next]));
+    lanes.splice(0, lanes.length, ...placed);
+    stepLane.forEach((lane, at) => (stepLane[at] = moved.get(lane) ?? lane));
+    laneOfNumber.forEach((lane, number) => laneOfNumber.set(number, moved.get(lane) ?? lane));
+    for (const [key, lane] of decisionLane) decisionLane.set(key, moved.get(lane) ?? lane);
+    for (const [key, lane] of branchLaneOf) branchLaneOf.set(key, moved.get(lane) ?? lane);
+  }
 
   /* ── date columns ── */
   const days = new Set<string>();
@@ -417,6 +490,23 @@ export function layoutMap(
         // A use of a later step is a loop: it does not push this one right.
         if (from !== undefined && from < at) column = Math.max(column, stepColumn[from] + spanOf(steps[from]));
       }
+      // CA-13: a decision is never earlier than the code that calls it; a branch starts after its decision; a step with no
+      // condition that follows branches sits after the last step of each of them, where they join.
+      for (const id of step.decision?.calledFrom ?? []) {
+        const from = indexOfStep.get(id);
+        if (from !== undefined && from < at) column = Math.max(column, stepColumn[from]);
+      }
+      if (step.runsWhen) {
+        const owner = indexOfStep.get(step.runsWhen.decision);
+        if (owner !== undefined && owner < at && steps[owner].kind === "decision") column = Math.max(column, stepColumn[owner] + spanOf(steps[owner]));
+      } else {
+        const seen = new Set<number>();
+        for (let back = at - 1; back >= 0 && steps[back].runsWhen; back--) {
+          if (seen.has(stepLane[back])) continue;
+          seen.add(stepLane[back]);
+          column = Math.max(column, stepColumn[back] + spanOf(steps[back]));
+        }
+      }
       stepColumn.push(column);
       lastInLane.set(stepLane[at], at);
       if (before === undefined && set !== undefined) firstOf.set(set, [...(firstOf.get(set) ?? []), column]);
@@ -477,13 +567,37 @@ export function layoutMap(
     boxOf.set(box.id, box);
   };
 
+  /* CA-13: each decision's branches (one for each distinct condition that has steps), in the order of the options, with the
+     first step of each: the output dots of its box and where their wires go. */
+  const branchesOf = new Map<string, { key: string; label: string; first: string; when: RunsWhen }[]>();
+  steps.forEach((step, at) => {
+    const rw = step.runsWhen;
+    if (!rw || !branchOf.has(stepLane[at]) || stepLane[at] !== branchLaneOf.get(conditionKey(rw))) return;
+    const list = branchesOf.get(rw.decision) ?? [];
+    if (list.some((entry) => entry.key === conditionKey(rw))) return;
+    const q = steps.find((candidate) => candidate.id === rw.decision)?.decision?.questions;
+    const asked = new Set((steps.find((candidate) => candidate.id === rw.decision)?.decision?.questions ?? []).map((candidate) => candidate.id));
+    const prefix = asked.size > 1 ? `${rw.question} · ` : "";
+    list.push({ key: conditionKey(rw), label: `${prefix}${runsWhenValue(rw, q?.find((candidate) => candidate.id === rw.question))}`, first: step.id, when: rw });
+    branchesOf.set(rw.decision, list);
+  });
+  for (const [decision, list] of branchesOf) {
+    const questions = steps.find((candidate) => candidate.id === decision)?.decision?.questions ?? [];
+    list.sort((a, b) => conditionOrder(a.when, questions) - conditionOrder(b.when, questions));
+  }
+
   steps.forEach((step, at) => {
     const inputs = inputsOf(step.id, step.uses);
     const container = isContainer(step);
     const sent = sentRows(step);
+    const branches = step.kind === "decision" ? (branchesOf.get(step.id) ?? []) : [];
+    const otherNoStep = step.kind === "decision" && branches.length > 0 && (step.decision?.questions ?? []).some((q) => branches.some((entry) => entry.when.question === q.id) && uncoveredCount(q, branches.map((entry) => entry.when)) > 0);
+    const dots = inputs.length > 0 || branches.length > 0 ? Math.max(inputs.length, branches.length + (otherNoStep ? 1 : 0)) : 0;
     const size = container
       ? { w: 2 * S.column + S.gap, h: Math.max(S.agentHeight, S.head + S.row * inputs.length + S.lanePad) }
-      : sizeOf(inputs.length);
+      : step.kind === "decision"
+        ? { w: S.columnWide, h: S.head + (dots > 0 ? S.row * dots + S.state : 0) + S.body + S.foot }
+        : sizeOf(inputs.length);
     const { w } = size;
     const h = size.h + S.sentRow * sent.length;
     add({
@@ -513,6 +627,12 @@ export function layoutMap(
       stack: null,
       ...(step.kind === "check" ? { text: step.check?.passing ?? "", status: step.check ? checkStatus(step.check) : null } : null),
       ...(sent.length > 0 ? { sentWith: sent } : null),
+      ...(step.kind === "decision" && step.decision
+        ? {
+            contents: `${modelShort(step.decision.provider, step.decision.model)} · ${plural(step.decision.questions.length, "question")}`,
+            ...(branches.length > 0 ? { outputs: branches.map((entry) => ({ key: entry.key, label: entry.label })), ...(otherNoStep ? { otherNoStep: true } : null) } : null),
+          }
+        : null),
     });
   });
 
@@ -605,12 +725,12 @@ export function layoutMap(
 
   /* ── wires ── */
   const wires: MapWire[] = [];
-  const wire = (from: MapBox, to: MapBox, inputAt: number | null, suggested: boolean): void => {
+  const wire = (from: MapBox, to: MapBox, inputAt: number | null, suggested: boolean, extra: { outputAt?: number; dotted?: boolean; suffix?: string } = {}): void => {
     // A use of a later step (DATA §3, "until") goes back: it is routed above both boxes.
     const fromAt = indexOfStep.get(from.id);
     const toAt = indexOfStep.get(to.id);
     const x1 = from.x + from.w;
-    const y1 = from.y + S.head / 2;
+    const y1 = extra.outputAt === undefined ? from.y + S.head / 2 : from.y + S.head + S.row * extra.outputAt + S.row / 2;
     const x2 = to.x;
     const y2 = inputAt === null ? to.y + S.head / 2 : to.y + S.head + S.row * inputAt + S.row / 2;
     const loop = fromAt !== undefined && toAt !== undefined && fromAt > toAt;
@@ -622,7 +742,21 @@ export function layoutMap(
       const dx = x2 - x1;
       d = `M ${x1} ${y1} C ${x1 + 0.6 * dx} ${y1}, ${x2 - 0.6 * dx} ${y2}, ${x2 - S.arrow} ${y2}`;
     }
-    wires.push({ id: `${from.id}>${to.id}:${inputAt ?? "next"}`, from: from.id, to: to.id, suggested, loop, named: inputAt !== null, d, x1, y1, x2, y2 });
+    wires.push({
+      id: `${from.id}>${to.id}:${inputAt ?? "next"}${extra.suffix ?? ""}`,
+      from: from.id,
+      to: to.id,
+      suggested,
+      loop,
+      named: inputAt !== null,
+      d,
+      x1,
+      y1,
+      x2,
+      y2,
+      ...(extra.dotted ? { dotted: true } : null),
+      ...(extra.outputAt !== undefined ? { output: extra.suffix } : null),
+    });
   };
 
   for (const box of boxes) {
@@ -646,6 +780,34 @@ export function layoutMap(
     const from = boxOf.get(before.id);
     const to = boxOf.get(step.id);
     if (from && to) wire(from, to, null, false);
+  });
+
+  /* CA-13: from each output dot of a decision to the first step of its branch; a Code tile to the decision it calls, dotted;
+     and the last step of each branch to the step with no condition where the branches meet. */
+  steps.forEach((step, at) => {
+    if (step.kind !== "decision") return;
+    const from = boxOf.get(step.id);
+    if (!from) return;
+    (branchesOf.get(step.id) ?? []).forEach((branch, k) => {
+      const to = boxOf.get(branch.first);
+      if (to) wire(from, to, null, false, { outputAt: k, suffix: `:out:${branch.key}` });
+    });
+    for (const id of step.decision?.calledFrom ?? []) {
+      const code = boxOf.get(id);
+      const codeAt = indexOfStep.get(id);
+      if (code && codeAt !== undefined && codeAt < at) wire(code, from, null, false, { dotted: true, suffix: ":calls" });
+    }
+  });
+  steps.forEach((step, at) => {
+    if (step.runsWhen) return;
+    const lasts = new Map<number, number>();
+    for (let back = at - 1; back >= 0 && steps[back].runsWhen; back--) if (!lasts.has(stepLane[back])) lasts.set(stepLane[back], back);
+    const to = boxOf.get(step.id);
+    if (!to) return;
+    for (const back of lasts.values()) {
+      const from = boxOf.get(steps[back].id);
+      if (from) wire(from, to, null, false, { suffix: ":join" });
+    }
   });
 
   return { lanes, columns, boxes, wires, width, height };

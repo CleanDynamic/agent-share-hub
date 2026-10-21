@@ -36,7 +36,10 @@ import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
 import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
 import { PartWindow } from "@/components/build/PartWindow";
-import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, ToolTileBody } from "@/components/build/tileBodies";
+import { drawBranches } from "@/components/build/BranchRows";
+import { LinkLines } from "@/components/build/LinkLines";
+import { callsOf } from "@/lib/build/decisionCopy";
+import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, ToolTileBody, DecisionTileBody } from "@/components/build/tileBodies";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
@@ -554,7 +557,7 @@ function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; i
 /* ── tiles sent with a step (CA-04 P2) ── */
 
 /** A tile's kind as its row says it. */
-const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team", tool: "Tool" };
+const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team", tool: "Tool", decision: "Decision" };
 
 /** What is sent with a step, indented 36 under its text as the paste-ins are, each able to hold more, indented again. */
 function SentWith({ entries, ctx }: { entries: readonly ReaderStep[]; ctx: Ctx }) {
@@ -755,6 +758,24 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     );
   }
 
+  if (step.kind === "decision" && step.decision) {
+    /* CA-13 P2: a decision the product asks a model for: its model, and one line per question. Drawn as the composer draws it. */
+    return (
+      <article
+        id={stepDomId(step.id)}
+        data-testid="step-card"
+        data-step={step.number}
+        data-kind="decision"
+        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
+      >
+        <Title entry={entry} right={null} />
+        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>Decision · runs in the app</div>
+        <DecisionTileBody step={step} indent={INDENT} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
+      </article>
+    );
+  }
+
   if (step.kind === "tool" || (step.kind === "file" && !step.inside)) {
     /* CA-12 P7, P8: a tool or a file the maker put in the session: what it is, drawn as the composer draws it. */
     const file = entry.file ?? null;
@@ -805,6 +826,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
+      {step.kind === "code" ? <LinkLines lines={callsOf(step.id, view.steps.map((candidate) => candidate.step))} onOpen={ctx.go} indent={INDENT} /> : null}
       <SaveLines files={entry.makes} />
       <SentWith entries={entry.sentWith} ctx={ctx} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />
@@ -1128,7 +1150,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           const drawn = run.groups.map((group) => (
             <div key={group.key} style={column(8)}>
               {group.head}
-              {group.entries.map((entry) =>
+              {drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
                 isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
               )}
             </div>

@@ -332,6 +332,15 @@ export const CA03_FILES: readonly string[] = [
   // CA-12 P9
   "src/pages/site/compose/AddResultDialog.tsx",
   "src/pages/site/compose/AddResultDialog.test.tsx",
+  // CA-13 P1 to P4
+  "src/components/build/Certainty.tsx",
+  "src/components/build/BranchRows.tsx",
+  "src/components/build/LinkLines.tsx",
+  "src/pages/site/compose/DecisionFields.tsx",
+  "src/pages/site/compose/AddDecisionDialog.tsx",
+  "src/pages/site/compose/RunsWhenField.tsx",
+  "src/pages/site/compose/BuildMap.tsx",
+  "src/pages/site/compose/toolPickerModel.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

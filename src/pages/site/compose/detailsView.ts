@@ -45,7 +45,9 @@ import {
 } from "./detailsModel";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
 import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/lib/build/setup";
-import type { AgentView, CheckView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import { runtimeViewOf } from "./runtimeView";
+import { draftFromFacts } from "@/lib/build/decisionDraft";
+import type { AgentView, CheckView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
 
@@ -378,8 +380,33 @@ function setupView(node: NodeTree, ctx: ViewContext): DetailsView | null {
   };
 }
 
+/** CA-13 rule 1, 4: a decision as the Details panel edits it. */
+function decisionView(step: Step, ctx: ViewContext): DecisionView | null {
+  if (!step.decision) return null;
+  return {
+    kind: "decision",
+    ...insideOf(step),
+    id: step.id,
+    number: step.number,
+    title: step.title,
+    defaultTitle: step.defaultTitle,
+    draft: draftFromFacts(step.decision, step.title),
+    codeTiles: ctx.steps.filter((candidate) => candidate.kind === "code").map((candidate) => ({ id: candidate.id, label: candidate.filename ?? candidate.title ?? candidate.defaultTitle, source: candidate.text })),
+    stepChoices: ctx.steps.filter((candidate) => candidate.kind !== "decision" && candidate.id !== step.id).map((candidate) => ({ id: candidate.id, label: `${candidate.number} · ${stepTitle(candidate)}` })),
+  };
+}
+
 /** The view of what is selected, or null when nothing is, or what was selected is gone. */
 export function resolveView(ctx: ViewContext): DetailsView | null {
+  const view = resolveBase(ctx);
+  if (!view) return null;
+  // CA-13: a runtime tile also carries when it runs.
+  const step = ctx.steps.find((candidate) => candidate.id === ctx.selectedId);
+  const runtime = step ? runtimeViewOf(step, ctx.steps) : undefined;
+  return runtime ? { ...view, runtime } : view;
+}
+
+function resolveBase(ctx: ViewContext): DetailsView | null {
   const id = ctx.selectedId;
   if (!id) return null;
   const all = pieces(ctx.tree, ctx.sourceFiles as SourceFile[]);
@@ -399,6 +426,7 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
     return node ? { ...toolView(node, ctx), ...insideOf(step) } : null;
   }
   if (step) {
+    if (step.kind === "decision") return decisionView(step, ctx);
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);
     if (step.kind === "code") return codeView(step, ctx, all);

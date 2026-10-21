@@ -23,6 +23,10 @@ import { REF_COPY } from "@/components/post/RefLinks";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { groupKey, groupKind, stepRunsLabel, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { FileTileBody, ManualTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { Certainty } from "@/components/build/Certainty";
+import { LinkLines } from "@/components/build/LinkLines";
+import { answerLine, answerWord, runsWhenLabel, decisionHeadline, isTypeSafe, questionLine, questionTypeLabel, sourceNote, sureOf } from "@/lib/build/decision";
+import { callsOf, calledFromTiles, COPY_REQUEST_NOTE, decisionCopy } from "@/lib/build/decisionCopy";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import { modelLabel } from "@/lib/models/registry";
@@ -51,6 +55,12 @@ export const PART_WINDOW_COPY = {
   tiles: "Its tiles",
   setup: (n: number) => `Setup · ${n} ${n === 1 ? "item" : "items"}`,
   nothing: "Nothing written yet",
+  calledFrom: "Called from",
+  reads: "What it reads",
+  questions: "Questions",
+  answer: "What it answered",
+  copyRequest: "Copy as a request",
+  copyTheCode: "Copy the code",
 } as const;
 
 export interface PartWindowProps {
@@ -197,6 +207,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
       return (
         <>
           <Facts facts={[step.filename, step.language, step.entrypoint ? "start reading here" : null].filter((fact): fact is string => Boolean(fact))} />
+          <LinkLines lines={callsOf(step.id, props.steps)} onOpen={(id) => props.onGo(refTo({ kind: "node", id }))} />
           <CodeLines text={step.text} testId="part-text" label="Code" empty={PART_WINDOW_COPY.nothing} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <Button variant="secondary" size={28} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the code and copy it."))}>
@@ -262,6 +273,8 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
         </>
       );
     }
+    case "decision":
+      return <DecisionBody step={step} props={props} say={say} />;
     case "tool":
       // CA-12 P7: the app, how it was connected, what it did.
       return <ToolTileBody step={step} />;
@@ -292,6 +305,79 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
         </>
       );
   }
+}
+
+/* ── a decision (CA-13 P2) ── */
+
+/** Called from, what it reads, each question in full, the answer with its bars, where the figures came from, and Copy. */
+function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps; say: (words: string) => void }) {
+  const facts = step.decision;
+  const parts = allParts(props.steps);
+  if (!facts) return <p style={{ ...text(13, 400, t.label), margin: 0 }}>{PART_WINDOW_COPY.nothing}</p>;
+  const copy = decisionCopy(step, parts);
+  const tiles = calledFromTiles(step, parts);
+  const read = facts.stateFrom ? parts.find((part) => part.id === facts.stateFrom) : undefined;
+  const answered = facts.answer ?? null;
+  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the text and copy it."));
+  return (
+    <>
+      <Facts facts={[decisionHeadline(facts), facts.via === "adapter" ? "Through an adapter" : null].filter((fact): fact is string => Boolean(fact))} />
+      {tiles.length ? (
+        <Section label={PART_WINDOW_COPY.calledFrom}>
+          <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${t.hairlineModule}` }}>
+            {tiles.map((tile) => {
+              const code = parts.find((part) => part.id === tile.id);
+              return <GoRow key={tile.id} number={code?.number ?? ""} title={tile.name} kind="Code" onGo={() => props.onGo(refTo({ kind: "node", id: tile.id }))} />;
+            })}
+          </div>
+        </Section>
+      ) : null}
+      {read || facts.stateSample ? (
+        <Section label={PART_WINDOW_COPY.reads}>
+          {read ? <GoRow number={read.number} title={stepTitle(read)} kind={REF_KIND[read.kind] ?? "Prompt"} onGo={() => props.onGo(refTo({ kind: "node", id: read.id }))} /> : null}
+          {facts.stateSample ? <CodeLines text={facts.stateSample} testId="decision-state" label="The state" /> : null}
+        </Section>
+      ) : null}
+      <Section label={PART_WINDOW_COPY.questions}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {facts.questions.map((q) => {
+            const a = answered?.[q.id] ?? facts.expected?.[q.id];
+            const sure = a ? sureOf(q, a) : undefined;
+            return (
+              <div key={q.id} data-testid="decision-question" style={{ ...WELL, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={text(13.5, 500, t.text)}>
+                  {q.id} <span style={text(12, 400, t.label)}>{questionTypeLabel(q.type)}{q.type === "yesno" && isTypeSafe(facts.provider) ? " · Noul" : ""}</span>
+                </span>
+                {q.instructions ? <span style={{ ...text(13, 400, t.text2), overflowWrap: "anywhere" }}>{q.instructions}</span> : null}
+                <span style={text(12.5, 400, t.label)}>{questionLine(q).slice(q.id.length + 2)}</span>
+                {a ? (
+                  sure !== undefined ? (
+                    <Certainty answer={answerWord(q, a)} share={sure} probabilities={a.probabilities} source={answered?.[q.id] ? facts.source : "original"} />
+                  ) : (
+                    <span style={text(13, 400, t.text)}>{answerLine(q, a).slice(q.id.length + 3)}</span>
+                  )
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </Section>
+      {answered && sourceNote(facts.source) && !facts.questions.some((q) => answered[q.id] && sureOf(q, answered[q.id]) !== undefined) ? <span style={text(12, 400, t.label)}>{sourceNote(facts.source)}</span> : null}
+      {copy ? (
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+          {copy.code ? (
+            <Button variant="primary" size={28} fontSize={12} onClick={() => done(copy.code!.text)}>
+              {PART_WINDOW_COPY.copyTheCode}
+            </Button>
+          ) : null}
+          <Button variant="secondary" size={28} fontSize={12} onClick={() => done(copy.request.text)}>
+            {PART_WINDOW_COPY.copyRequest}
+          </Button>
+        </div>
+      ) : null}
+      {copy && !copy.code ? <span style={text(12, 400, t.label)}>{COPY_REQUEST_NOTE}.</span> : null}
+    </>
+  );
 }
 
 function SessionBody({ group, props }: { group: SessionGroup; props: PartWindowProps }) {
@@ -394,6 +480,9 @@ export function PartWindow(props: PartWindowProps) {
           <h2 ref={heading} tabIndex={-1} style={{ ...text(18, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere", outline: "none" }}>
             {title}
           </h2>
+          {step?.runsWhen ? (
+            <Facts facts={[runsWhenLabel(step.runsWhen, props.steps.find((candidate) => candidate.id === step.runsWhen?.decision)?.decision?.questions.find((q) => q.id === step.runsWhen?.question))]} />
+          ) : null}
           {step ? <TileBody step={step} props={props} say={say} /> : null}
           {group ? <SessionBody group={group} props={props} /> : null}
           <div

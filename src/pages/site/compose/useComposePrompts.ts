@@ -39,6 +39,11 @@ import {
 import {
   addAgent,
   addAgentPrompt,
+  addDecision,
+  DECISION_TYPE_MISSING,
+  setDecision,
+  setRunsWhen,
+  type DecisionInput,
   addCheck,
   addCode,
   CHECK_TYPE,
@@ -95,6 +100,7 @@ import type { CodeSuggestion } from "@/lib/build/sentWithSuggest";
 import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
 import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
 import type { ChangeRange } from "@/lib/build/changes";
+import type { RunsWhen } from "@/lib/build/decision";
 import type { ModelRun } from "@/lib/build/modelRun";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { showMadeWithIn } from "./useComposeSessions";
@@ -220,6 +226,12 @@ export interface ComposePrompts {
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
   /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
   setAgent: (id: string, setup: AgentSetupInput) => void;
+  /** CA-13 P2: Add › Decision. Resolves the new tile's id, or null if it failed. */
+  addDecisionTile: (input: DecisionInput) => Promise<string | null>;
+  /** CA-13 P2: change a decision's settings. */
+  setDecision: (id: string, input: DecisionInput) => void;
+  /** CA-13 P3: set or clear when a runtime tile runs. */
+  setRunsWhen: (id: string, steps: readonly Step[], runsWhen: RunsWhen | null) => void;
   /** UI-P69: add an agent inside a team. */
   addAgentTo: (teamId: string, model: string) => Promise<string | null>;
   /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
@@ -716,6 +728,24 @@ export function useComposePrompts({
         return null;
       });
 
+  /** CA-13 P2: Add › Decision. */
+  const addDecisionTile = (input: DecisionInput) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await addDecision(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed(cause instanceof Error && /CA-13/.test(cause.message) ? DECISION_TYPE_MISSING : "Couldn't add that decision. Try again.")(cause);
+        return null;
+      });
+
+  const setDecisionOf = (id: string, input: DecisionInput) => void writeStep(id, "Couldn't save that decision. Try again.", (node) => setDecision(node, input));
+  const setRunsWhenOf = (id: string, steps: readonly Step[], runsWhen: RunsWhen | null) =>
+    void writeStep(id, "Couldn't change when that runs. Try again.", (node) => setRunsWhen(node, steps, runsWhen));
+
   const addAgentTo = (teamId: string, model: string) =>
     nodes
       .run(async () => {
@@ -898,5 +928,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

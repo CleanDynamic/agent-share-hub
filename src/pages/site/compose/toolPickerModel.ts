@@ -17,7 +17,7 @@
 // ("GitHub Copilot is an AI tool. Add it to a session or a prompt."); any other typed name still has its Use "{query}" row.
 
 import { fitsStep } from "@/lib/tools/modelRules";
-import { AI_TOOLS, APPS, APP_GROUP_LABEL, SUGGESTED_APPS, SUGGESTED_TOOLS, TOOL_GROUPS, TOOLS, isPickable, toolFor, type StepKey, type Tool, type ToolList } from "@/lib/tools/registry";
+import { AI_TOOLS, APPS, RUNTIME_GROUPS, RUNTIME_HEADING, RUNTIME_TOOLS, excludeRuntime, APP_GROUP_LABEL, SUGGESTED_APPS, SUGGESTED_TOOLS, TOOL_GROUPS, TOOLS, isPickable, toolFor, type StepKey, type Tool, type ToolList } from "@/lib/tools/registry";
 
 /** The Add item each step is named on (SandboxView's ADD_ITEMS), for the line under an unavailable row. */
 const ADD_NAME: Record<StepKey, string> = {
@@ -67,6 +67,11 @@ export interface PickerInput {
   step: StepKey;
   /** CA-12 P13: the list offered. AI tools when absent. */
   list?: ToolList;
+  /**
+   * CA-13 rule 5: offer the Runtime models and services subcategory, first, under its own heading. Only the Decision dialog,
+   * helpers, an agent's "Runs in" and answer shapes set it; every other picker leaves runtime models out (`excludeRuntime`).
+   */
+  runtime?: boolean;
 }
 
 /** Whether a tool runs prompts by itself and is never named on a prompt (Hermes Agent, Manus). */
@@ -117,10 +122,12 @@ function matches(query: string, from: readonly Tool[]): Tool[] {
   return [...starts, ...contains];
 }
 
-const fits = (step: StepKey, list: ToolList = "ai") => (tool: Tool): boolean => isPickable(tool) && (list === "app" || fitsStep(tool.id, step));
+const fits = (step: StepKey, list: ToolList = "ai") => (tool: Tool): boolean =>
+  isPickable(tool) && (list === "app" || tool.category === "runtime" || fitsStep(tool.id, step));
 
-/** The tools that can be picked for this step, in list order: what "Show all {n} tools" counts. */
-export const toolsForStep = (step: StepKey, list: ToolList = "ai"): Tool[] => (list === "app" ? APPS : AI_TOOLS).filter(fits(step, list));
+/** The tools that can be picked for this step, in list order: what "Show all {n} tools" counts. The runtime subcategory only when `runtime`. */
+export const toolsForStep = (step: StepKey, list: ToolList = "ai", runtime = false): Tool[] =>
+  (list === "app" ? APPS : runtime ? [...RUNTIME_TOOLS, ...excludeRuntime(AI_TOOLS)] : excludeRuntime(AI_TOOLS)).filter(fits(step, list));
 
 /** CA-12 P13: the note a name typed in one list earns when it is only in the other. */
 export const OTHER_LIST_COPY = {
@@ -131,33 +138,45 @@ export const OTHER_LIST_COPY = {
 /** Notes for the tools typed that are in the other list only, at most two. */
 function otherListNotes(query: string, list: ToolList): PickerRow[] {
   const other = list === "ai" ? "app" : "ai";
-  const here = (list === "ai" ? AI_TOOLS : APPS).map((tool) => tool.id);
+  const here = (list === "ai" ? excludeRuntime(AI_TOOLS) : APPS).map((tool) => tool.id);
   return matches(query, TOOLS.filter((tool) => tool.lists.includes(other) && !here.includes(tool.id)))
     .filter(isPickable)
     .slice(0, 2)
     .map((tool): PickerRow => ({ kind: "note", text: list === "ai" ? OTHER_LIST_COPY.isApp(tool.name) : OTHER_LIST_COPY.isAiTool(tool.name) }));
 }
 
-function allGrouped(step: StepKey, list: ToolList): PickerRow[] {
+/** CA-13: the subcategory first: its heading, then each of its four groups as a small subheading. */
+export function runtimeRows(): PickerRow[] {
+  return [
+    { kind: "heading", label: RUNTIME_HEADING } as PickerRow,
+    ...RUNTIME_GROUPS.flatMap((group) => [
+      { kind: "heading", label: group.label } as PickerRow,
+      ...RUNTIME_TOOLS.filter((tool) => tool.group === group.key).map((tool): PickerRow => ({ kind: "tool", tool })),
+    ]),
+  ];
+}
+
+function allGrouped(step: StepKey, list: ToolList, runtime: boolean): PickerRow[] {
   if (list === "app") {
     const tools = toolsForStep(step, list);
     return tools.length ? [{ kind: "heading", label: APP_GROUP_LABEL } as PickerRow, ...tools.map((tool) => fittingRow(tool, step))] : [];
   }
-  return TOOL_GROUPS.flatMap((group) => {
+  const rest = TOOL_GROUPS.flatMap((group) => {
     const tools = toolsForStep(step, list).filter((tool) => tool.group === group.key);
     return tools.length ? [{ kind: "heading", label: group.label } as PickerRow, ...tools.map((tool) => fittingRow(tool, step))] : [];
   });
+  return runtime ? [...runtimeRows(), ...rest] : rest;
 }
 
-export function pickerRows({ query, inBuild, expanded, allowNone, step, list = "ai" }: PickerInput): PickerRow[] {
+export function pickerRows({ query, inBuild, expanded, allowNone, step, list = "ai", runtime = false }: PickerInput): PickerRow[] {
   const ok = fits(step, list);
-  const inList = (tool: Tool) => tool.lists.includes(list);
+  const inList = (tool: Tool) => tool.lists.includes(list) && (runtime || tool.category !== "runtime");
   const toolRows = (tools: readonly Tool[]): PickerRow[] => tools.map((tool) => fittingRow(tool, step));
   const rows: PickerRow[] = allowNone ? [{ kind: "none" }] : [];
   const typed = query.trim();
 
   if (!typed) {
-    if (expanded) return [...rows, ...allGrouped(step, list)];
+    if (expanded) return [...rows, ...allGrouped(step, list, runtime)];
     const used = buildTools(inBuild).filter((tool) => inList(tool) && ok(tool)).slice(0, PICKER_LIMIT);
     const taken = new Set(used.map((tool) => tool.id));
     const suggested: Tool[] = [];
@@ -167,13 +186,14 @@ export function pickerRows({ query, inBuild, expanded, allowNone, step, list = "
       taken.add(tool.id);
       suggested.push(tool);
     }
-    if (used.length) rows.push({ kind: "heading", label: "In this build" }, ...toolRows(used));
+    if (runtime && list === "ai") rows.push(...runtimeRows());
+    if (used.length) rows.push({ kind: "heading", label: "In this build" }, ...toolRows(used.filter((tool) => tool.category !== "runtime")));
     if (suggested.length) rows.push({ kind: "heading", label: "Suggested" }, ...toolRows(suggested));
-    rows.push({ kind: "showAll", count: toolsForStep(step, list).length });
+    rows.push({ kind: "showAll", count: toolsForStep(step, list, runtime).length });
     return rows;
   }
 
-  const matched = matches(typed, list === "app" ? APPS : AI_TOOLS).filter(isPickable);
+  const matched = matches(typed, list === "app" ? APPS : runtime ? [...RUNTIME_TOOLS, ...excludeRuntime(AI_TOOLS)] : excludeRuntime(AI_TOOLS)).filter(isPickable);
   const found = matched.filter(ok);
   const shown = expanded ? found : found.slice(0, PICKER_LIMIT);
   rows.push(...toolRows(shown));
