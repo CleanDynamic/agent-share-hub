@@ -116,7 +116,7 @@ describe("Setup {n} on the List's head", () => {
     const onOpenSetup = vi.fn();
     render(
       <MemoryRouter>
-        <BuildList phone={false} steps={steps} dividers={dividers(steps, groups, { "typed-b": 4 })} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} focusAdd={0} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} onOpenSetup={onOpenSetup} />
+        <BuildList phone={false} steps={steps} dividers={dividers(steps, groups, { "typed-b": 4 })} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} onOpenSetup={onOpenSetup} />
       </MemoryRouter>,
     );
     expect(screen.queryByRole("button", { name: /Setup of session 1/ })).toBeNull();

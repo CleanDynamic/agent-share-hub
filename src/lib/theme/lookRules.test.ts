@@ -280,6 +280,10 @@ export const CA03_FILES: readonly string[] = [
   // CA-10 P3
   "src/dev/fixtures/sandbox.ts",
   "src/pages/site/compose/SessionsPanel.tsx",
+  // CA-10 P3
+  "src/pages/site/compose/SandboxPage.add.test.tsx",
+  "src/pages/site/compose/draftStart.ts",
+  "src/pages/site/compose/useComposeDetails.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

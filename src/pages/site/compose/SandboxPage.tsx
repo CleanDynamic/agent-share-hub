@@ -24,6 +24,7 @@
    Mounted by `ComposeRoute` only while SANDBOX_COMPOSER_ENABLED is on. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -59,7 +60,8 @@ import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
-import { BuildList, partName, type AddAsAgentInput } from "./BuildList";
+import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAdd } from "./BuildList";
+import { useComposerScrollPadding } from "./composeChrome";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { BuildMap } from "./BuildMap";
@@ -79,6 +81,7 @@ import { parseRefTo, refTo } from "@/lib/build/thread";
 import { usePostLinks } from "./usePostLinks";
 import { useColourPicking } from "./useColourPicking";
 import { previewColours, type ColourPreview } from "@/lib/build/colourPreview";
+import { sayFailed } from "./draftStart";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -96,6 +99,8 @@ export function SandboxPage() {
   const queryClient = useQueryClient();
   const phone = useIsPhone();
   const fine = useFinePointer();
+  /* CA-10 (CA-09 F12): a focused field or a new tile scrolled into view lands above the phone's dock and action bar. */
+  useComposerScrollPadding(phone);
 
   /* PT-05: the thread of the post above the build. Held here so the status line and Publish can see it. */
   const thread = useComposeThread({ build, buildId, isOwner: compose.isOwner, ensureBuild });
@@ -255,10 +260,23 @@ export function SandboxPage() {
 
   /* ── List (UI-P65) ── */
 
-  const [focusAdd, setFocusAdd] = useState(0);
+  /* CA-10 (CA-09 F2): Add › Prompt focuses the add field INSIDE THE TAP that chose it, so an iPhone raises the
+     keyboard, and says so (true), so the menu does not hand focus back to Add. The field is drawn only in the List: from
+     the Map it switches first, in the same tap. Scrolled to the middle (the page's scroll padding keeps it above the
+     phone's bars), then focused without a second scroll, then ringed for a moment. */
+  const addPromptField = useRef<HTMLTextAreaElement | null>(null);
+  const [addPromptFlash, setAddPromptFlash] = useState(0);
   /** "Name a file it makes": the prompt whose Makes field Details opens, and when it was asked. */
   const [focusMakes, setFocusMakes] = useState<{ id: string; at: number } | null>(null);
-  const onAddPromptFocus = useCallback(() => setFocusAdd((count) => count + 1), []);
+  const onAddPromptFocus = useCallback((): boolean => {
+    if (!addPromptField.current && lens !== "list") flushSync(() => onLens("list"));
+    const field = addPromptField.current;
+    if (!field) return false;
+    field.scrollIntoView?.({ block: "center" });
+    field.focus({ preventScroll: true });
+    setAddPromptFlash((count) => count + 1);
+    return true;
+  }, [lens, onLens]);
   const listFacts = useMemo(() => {
     const names: Record<string, string> = {};
     const intoResult = new Set<string>();
@@ -441,7 +459,7 @@ export function SandboxPage() {
         setChosenSession(key);
       } catch (cause) {
         console.error("[Sandbox] session not made", cause);
-        toast.error("Couldn't make that session. Try again.");
+        sayFailed(cause, "Couldn't make that session. Try again.");
       }
     },
     [ensureBuild, refreshRecord],
@@ -461,7 +479,7 @@ export function SandboxPage() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session not saved", cause);
-        toast.error("Couldn't save that session. Try again.");
+        sayFailed(cause, "Couldn't save that session. Try again.");
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -490,7 +508,7 @@ export function SandboxPage() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] goal not saved", cause);
-        toast.error("Couldn't save the goal. Try again.");
+        sayFailed(cause, "Couldn't save the goal. Try again.");
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -516,7 +534,7 @@ export function SandboxPage() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session facts not saved", cause);
-        toast.error("Couldn't save that. Try again.");
+        sayFailed(cause, "Couldn't save that. Try again.");
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -539,7 +557,7 @@ export function SandboxPage() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] sessions at the same time not saved", cause);
-        toast.error("Couldn't save that. Try again.");
+        sayFailed(cause, "Couldn't save that. Try again.");
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -557,7 +575,7 @@ export function SandboxPage() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session colour not saved", cause);
-        toast.error("Couldn't save that colour. Try again.");
+        sayFailed(cause, "Couldn't save that colour. Try again.");
       }
     },
     [ensureBuild, groups, made, refreshRecord],
@@ -761,9 +779,38 @@ export function SandboxPage() {
     async (kind: "tool" | "result", name?: string) => {
       const id = await prompts.addPiece(kind, name);
       if (id) setSelectedId(id);
+      return id;
     },
     [prompts],
   );
+
+  /* CA-10 (CA-09 T7, Add › Result and Add › Session): until the write lands (on a new post `ensureBuild` makes the
+     draft first) a tile saying so stands at the end of the List, where the new one will be, drawn and scrolled to in
+     the tap itself, so the press never shows nothing. A new Result is then scrolled to the middle and ringed once, as
+     the build page rings a `#node-` step; a session's steps land where its tile stood. */
+  const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null);
+  const [ringed, setRinged] = useState<{ id: string; n: number } | null>(null);
+  const showPending = useCallback(
+    (kind: PendingAdd) => {
+      if (lens !== "list") return;
+      flushSync(() => setPendingAdd(kind));
+      document.querySelector('[data-testid="add-pending"]')?.scrollIntoView?.({ block: "center" });
+    },
+    [lens],
+  );
+  const onAddResult = useCallback(() => {
+    showPending("result");
+    void addPiece("result").then((id) => {
+      setPendingAdd(null);
+      if (id) setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+    });
+  }, [addPiece, showPending]);
+  useEffect(() => {
+    if (!ringed) return;
+    document.querySelector(`[data-tile-id="${ringed.id}"]`)?.scrollIntoView?.({ block: "center" });
+    const timer = window.setTimeout(() => setRinged(null), ADD_FLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [ringed]);
 
   const download = useCallback(
     async (nodeId: string) => {
@@ -779,7 +826,7 @@ export function SandboxPage() {
         }
       } catch (cause) {
         console.error("[Sandbox] download failed", cause);
-        toast.error("Couldn't download that. Try again.");
+        sayFailed(cause, "Couldn't download that. Try again.");
       }
     },
     [tree],
@@ -797,7 +844,7 @@ export function SandboxPage() {
         prompts.setFields(resultId, { media_id: media.id });
       } catch (cause) {
         console.error("[Sandbox] picture not added", cause);
-        toast.error(`Couldn't add ${file.name}. Try again.`);
+        sayFailed(cause, `Couldn't add ${file.name}. Try again.`);
       }
     },
     [ensureBuild, nodes, prompts],
@@ -813,7 +860,7 @@ export function SandboxPage() {
         viewProps.onFiles([new File([blob], media.filename ?? "cover", { type: media.mime ?? blob.type })]);
       } catch (cause) {
         console.error("[Sandbox] cover not set", cause);
-        toast.error("Couldn't use that as the cover. Try again.");
+        sayFailed(cause, "Couldn't use that as the cover. Try again.");
       }
     },
     [viewProps],
@@ -833,7 +880,7 @@ export function SandboxPage() {
         ]);
       } catch (cause) {
         console.error("[Sandbox] session not added", cause);
-        toast.error("Couldn't add that session. Try again.");
+        sayFailed(cause, "Couldn't add that session. Try again.");
       } finally {
         setAdding((previous) => {
           const next = new Set(previous);
@@ -870,7 +917,7 @@ export function SandboxPage() {
         return added.node;
       } catch (cause) {
         console.error("[Sandbox] file not added", cause);
-        toast.error(`Couldn't ${verb} ${file.name}. Try again.`);
+        sayFailed(cause, `Couldn't ${verb} ${file.name}. Try again.`);
         return null;
       }
     },
@@ -1017,7 +1064,7 @@ export function SandboxPage() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] setup not added", cause);
-        toast.error("Couldn't add that to the setup. Try again.");
+        sayFailed(cause, "Couldn't add that to the setup. Try again.");
       }
       return left;
     },
@@ -1043,7 +1090,7 @@ export function SandboxPage() {
         })
         .catch((cause) => {
           console.error("[Sandbox] not marked", cause);
-          toast.error("Couldn't change that. Try again.");
+          sayFailed(cause, "Couldn't change that. Try again.");
         }),
     [nodes, tree],
   );
@@ -1150,7 +1197,7 @@ export function SandboxPage() {
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => setAddToolOpen(true)}
-        onAddResult={() => void addPiece("result")}
+        onAddResult={onAddResult}
         onAddAgent={() => setAddAgentOpen(true)}
         onAddManual={() => setAddManualOpen(true)}
         onAddCode={() => setAddCodeOpen(true)}
@@ -1312,11 +1359,17 @@ export function SandboxPage() {
             onAddAsAgent={onAddAsAgent}
             onKeepAsCode={onKeepAsCode}
             inBuild={inBuild}
-            focusAdd={focusAdd}
+            addPromptRef={addPromptField}
+            addPromptFlash={addPromptFlash}
+            pendingAdd={pendingAdd}
+            ringedId={ringed?.id ?? null}
           />
         }
         addableSessions={libraryRows.filter((row) => !row.adding)}
-        onAddSession={(id) => void onAddSession(id)}
+        onAddSession={(id) => {
+          showPending("session");
+          void onAddSession(id).finally(() => setPendingAdd(null));
+        }}
         sources={
           <div ref={sourcesAnchor} style={{ minWidth: 0 }}>
           <SourcesPanel

@@ -629,7 +629,6 @@ export function shapeListProps(key: ShapeKey, source: ShapeSource = SHAPES[key])
     onAccept: noop,
     onDismiss: noop,
     onAddPrompt: () => Promise.resolve(true),
-    focusAdd: 0,
     onAddAgentPrompt: () => Promise.resolve(true),
     onAddAgentTo: noop,
     // CA-04 P2: tiles move on the dev page as they do in the composer; nothing is written.

@@ -1,0 +1,55 @@
+1280x800 draft Prompt        field focused and on screen at 0 and 600 ms  · 0ms [563,625] focus=true; 600ms [563,625] focus=true; floor 800
+1280x800 draft New session   dialog open, on screen  · New session
+1280x800 draft Agent or team dialog open, on screen  · Add an agent or a team
+1280x800 draft File          file chooser opened
+1280x800 draft Tool          dialog open, on screen  · Add a tool
+1280x800 draft Manual step   dialog open, on screen  · Add a manual step
+1280x800 draft Code          dialog open, on screen  · Add code
+1280x800 draft Check         dialog open, on screen  · Add a check
+1280x800 draft Result        tile drawn at once, new Result on screen  · pending at 0 ms true, at 300 ms false; result on screen true (/compose/0d0d0d0d-0000-4000-8000-000000000001)
+1280x800 new   Prompt        field focused and on screen at 0 and 600 ms  · 0ms [410,472] focus=true; 600ms [410,472] focus=true; floor 800
+1280x800 new   New session   dialog open, on screen  · New session
+1280x800 new   Agent or team dialog open, on screen  · Add an agent or a team
+1280x800 new   File          file chooser opened
+1280x800 new   Tool          dialog open, on screen  · Add a tool
+1280x800 new   Manual step   dialog open, on screen  · Add a manual step
+1280x800 new   Code          dialog open, on screen  · Add code
+1280x800 new   Check         shown disabled, says why  · CheckAdd an agent or code first
+1280x800 new   Result        tile drawn at once, new Result on screen  · pending at 0 ms true, at 300 ms true; result on screen true (/compose/5c0008e5-c4f8-4b15-be6e-9456dd9d23e5)
+430x739  draft Prompt        field focused and on screen at 0 and 600 ms  · 0ms [417,485] focus=true; 600ms [417,485] focus=true; floor 581
+430x739  draft New session   dialog open, on screen  · New session
+430x739  draft Agent or team dialog open, on screen  · Add an agent or a team
+430x739  draft File          file chooser opened
+430x739  draft Tool          dialog open, on screen  · Add a tool
+430x739  draft Manual step   dialog open, on screen  · Add a manual step
+430x739  draft Code          dialog open, on screen  · Add code
+430x739  draft Check         dialog open, on screen  · Add a check
+430x739  draft Result        tile drawn at once, new Result on screen  · pending at 0 ms true, at 300 ms false; result on screen true (/compose/0d0d0d0d-0000-4000-8000-000000000001)
+430x739  new   Prompt        field focused and on screen at 0 and 600 ms  · 0ms [417,485] focus=true; 600ms [417,485] focus=true; floor 581
+430x739  new   New session   dialog open, on screen  · New session
+430x739  new   Agent or team dialog open, on screen  · Add an agent or a team
+430x739  new   File          file chooser opened
+430x739  new   Tool          dialog open, on screen  · Add a tool
+430x739  new   Manual step   dialog open, on screen  · Add a manual step
+430x739  new   Code          dialog open, on screen  · Add code
+430x739  new   Check         shown disabled, says why  · CheckAdd an agent or code first
+430x739  new   Result        tile drawn at once, new Result on screen  · pending at 0 ms true, at 300 ms true; result on screen true (/compose/92cd12b6-3640-470d-a88c-a6cba0009dc1)
+390x664  draft Prompt        field focused and on screen at 0 and 600 ms  · 0ms [342,410] focus=true; 600ms [342,410] focus=true; floor 506
+390x664  draft New session   dialog open, on screen  · New session
+390x664  draft Agent or team dialog open, on screen  · Add an agent or a team
+390x664  draft File          file chooser opened
+390x664  draft Tool          dialog open, on screen  · Add a tool
+390x664  draft Manual step   dialog open, on screen  · Add a manual step
+390x664  draft Code          dialog open, on screen  · Add code
+390x664  draft Check         dialog open, on screen  · Add a check
+390x664  draft Result        tile drawn at once, new Result on screen  · pending at 0 ms true, at 300 ms false; result on screen true (/compose/0d0d0d0d-0000-4000-8000-000000000001)
+390x664  new   Prompt        field focused and on screen at 0 and 600 ms  · 0ms [342,410] focus=true; 600ms [342,410] focus=true; floor 506
+390x664  new   New session   dialog open, on screen  · New session
+390x664  new   Agent or team dialog open, on screen  · Add an agent or a team
+390x664  new   File          file chooser opened
+390x664  new   Tool          dialog open, on screen  · Add a tool
+390x664  new   Manual step   dialog open, on screen  · Add a manual step
+390x664  new   Code          dialog open, on screen  · Add code
+390x664  new   Check         shown disabled, says why  · CheckAdd an agent or code first
+390x664  new   Result        tile drawn at once, new Result on screen  · pending at 0 ms true, at 300 ms true; result on screen true (/compose/685a320d-b274-4dad-9311-d5f1aea22223)
+PASS: every Add item visibly does something

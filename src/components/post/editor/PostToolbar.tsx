@@ -13,7 +13,8 @@
 import { useEditorState, type Editor } from "@tiptap/react";
 import { NodeSelection, TextSelection } from "@tiptap/pm/state";
 import { Eye } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { flushSync } from "react-dom";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { Button } from "@/components/brand/Button";
@@ -387,14 +388,10 @@ export function TextSizeRow({ editor, current, phone, onDone }: { editor: Editor
   );
 }
 
-function LinkRow({ editor, href, hasLink, onDone }: { editor: Editor; href: string; hasLink: boolean; onDone: () => void }) {
+/** CA-10 (CA-09 F2): the Link button opens this row and focuses its field in the same tap (`field` is the button's). */
+function LinkRow({ editor, href, hasLink, onDone, field }: { editor: Editor; href: string; hasLink: boolean; onDone: () => void; field: RefObject<HTMLInputElement | null> }) {
   const [value, setValue] = useState(href);
   const [problem, setProblem] = useState<string | null>(null);
-  const field = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    field.current?.focus();
-  }, []);
 
   const save = () => {
     const address = value.trim();
@@ -490,6 +487,12 @@ export function PostToolbar({
 }) {
   const tools = useEditorState({ editor, selector: ({ editor: current }) => readTools(current) }) ?? NONE;
   const [panel, setPanel] = useState<"size" | "link" | null>(null);
+  const linkField = useRef<HTMLInputElement | null>(null);
+  /* Drawn now, then focused, inside the tap: an iPhone raises the keyboard only for a focus in the tap's handler. */
+  const openLink = () => {
+    flushSync(() => setPanel("link"));
+    linkField.current?.focus();
+  };
 
   if (!editor) return null;
 
@@ -513,12 +516,12 @@ export function PostToolbar({
           <ToolButton label="Underline" size={size} pressed={tools.underline} onClick={run(() => editor.chain().focus().toggleUnderline().run())}>
             <span style={{ ...letter, fontWeight: 500, textDecoration: "underline" }}>U</span>
           </ToolButton>
-          <ToolButton label="Link" size={size} pressed={tools.link} expanded={false} onClick={() => setPanel("link")}>
+          <ToolButton label="Link" size={size} pressed={tools.link} expanded={false} onClick={openLink}>
             <Tool glyph="link" />
           </ToolButton>
         </div>
       ) : null}
-      {panel === "link" ? <LinkRow editor={editor} href={tools.href} hasLink={tools.link} onDone={() => setPanel(null)} /> : null}
+      {panel === "link" ? <LinkRow editor={editor} href={tools.href} hasLink={tools.link} onDone={() => setPanel(null)} field={linkField} /> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, borderTop: `1px solid ${t.hairline}`, minWidth: 0 }}>
         <div role="group" aria-label="Add to the post" style={{ display: "flex", alignItems: "center", gap: phone ? 0 : 2, flex: "1 1 auto", minWidth: 0, overflowX: "auto" }}>
           <ToolButton

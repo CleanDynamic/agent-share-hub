@@ -2,6 +2,7 @@
 // behaviour), then a block for what the refined board draws. Styles are read through SSR markup.
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { createRef } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -359,11 +360,14 @@ describe("the add field", () => {
     expect(field.value).toBe("Keep me");
   });
 
-  it("takes the cursor when asked", () => {
+  it("CA-10: hands its field to the page, and rings it when Add › Prompt reaches it", () => {
     const props = sandboxListProps("fox");
-    const { rerender } = render(<BuildList {...props} focusAdd={0} />);
-    rerender(<BuildList {...props} focusAdd={1} />);
-    expect(document.activeElement).toBe(screen.getByPlaceholderText("Paste or type a prompt…"));
+    const field = createRef<HTMLTextAreaElement>();
+    const { rerender } = render(<BuildList {...props} addPromptRef={field} />);
+    expect(field.current).toBe(screen.getByPlaceholderText("Paste or type a prompt…"));
+    expect(screen.getByTestId("add-prompt").getAttribute("data-lit")).toBeNull();
+    rerender(<BuildList {...props} addPromptRef={field} addPromptFlash={1} />);
+    expect(screen.getByTestId("add-prompt").getAttribute("data-lit")).toBe("true");
   });
 });
 
@@ -618,7 +622,8 @@ describe("the refined look (UI-P93)", () => {
     expect(items.map((item) => item.textContent)).toEqual(["Rename", "Read all of it", "Attach a file", "Name a file it makes", "Move up", "Move down", "Remove"]);
     expect(items).toHaveLength(7);
     fireEvent.click(screen.getByRole("menuitem", { name: "Name a file it makes" }));
-    expect(onNameMade).toHaveBeenCalledWith("p2");
+    // CA-10: asked once the menu has let go of focus, so it cannot take it back from the field.
+    await waitFor(() => expect(onNameMade).toHaveBeenCalledWith("p2"));
   });
 
   it("shows no Name a file it makes item when nothing handles it", async () => {

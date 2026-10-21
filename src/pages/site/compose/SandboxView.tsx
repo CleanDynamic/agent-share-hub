@@ -257,22 +257,21 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
   const [sessionsOpen, setSessionsOpen] = useState(false);
   /** Set by a row that moved focus, read once as the menu closes. */
   const moved = useRef(false);
-  const keepFocus = (event: Event) => {
-    if (!moved.current) return;
-    moved.current = false;
+  const addButton = useRef<HTMLButtonElement>(null);
+  /* As the menu or sheet closes: focus stays where a row put it, or goes back to Add WITHOUT SCROLLING, so a row that
+     scrolled the page to what it added (Result, Session) is not undone. A tap does not focus a button on an iPhone,
+     so Add is named, not "whatever had focus before". */
+  const backToAdd = (event: Event) => {
     event.preventDefault();
+    if (moved.current) {
+      moved.current = false;
+      return;
+    }
+    addButton.current?.focus({ preventScroll: true });
   };
   const entries = addEntries(props);
-  const addButton = useRef<HTMLButtonElement>(null);
 
   if (phone) {
-    /* A tap does not focus a button on an iPhone, so the sheet hands focus back to Add by name, not to "whatever had
-       it before". */
-    const backToAdd = (event: Event) => {
-      if (moved.current) return keepFocus(event);
-      event.preventDefault();
-      addButton.current?.focus();
-    };
     const choose = (item: Pick<AddEntry, "onSelect" | "movesFocus">) => {
       if (item.movesFocus) moved.current = true;
       // Shut first, in this tap, so the sheet's focus trap is gone before the row moves focus.
@@ -320,10 +319,10 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
       <Menu.Trigger asChild>
-        <MenuButton label="Add" value="" data-testid="sandbox-add" />
+        <MenuButton ref={addButton} label="Add" value="" data-testid="sandbox-add" />
       </Menu.Trigger>
       <Menu.Portal>
-        <MenuContent align="end" sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={keepFocus}>
+        <MenuContent align="end" sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={backToAdd}>
           {entries.map((item) => {
             if (item.sessions) {
               return (

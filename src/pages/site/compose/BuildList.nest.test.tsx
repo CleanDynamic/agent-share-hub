@@ -50,7 +50,7 @@ function list(steps: readonly Step[], over: Partial<BuildListProps> = {}) {
     onAccept: vi.fn(),
     onDismiss: vi.fn(),
     onAddPrompt: vi.fn(() => Promise.resolve(true)),
-    focusAdd: 0,
+    
     onAddAgentPrompt: vi.fn(() => Promise.resolve(true)),
     onAddAgentTo: vi.fn(),
     onNest: vi.fn(() => Promise.resolve(true)),

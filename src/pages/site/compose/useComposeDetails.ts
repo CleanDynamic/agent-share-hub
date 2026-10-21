@@ -20,6 +20,7 @@ import { breakageFields, composerBreakage, composerGap, gapProblemText, saveBrea
 import { parseAmount } from "./composeModel";
 import type { ComposeDetailKey, ComposeDetails } from "./MoreDetails";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
+import { sayFailed } from "./draftStart";
 
 const EMPTY: ComposeDetails = { symptom: "", resolution: "", costMonthly: "", costSetup: "", firstResult: "", gapOn: false, gapProblem: "" };
 
@@ -27,7 +28,7 @@ const amount = (value: number | null | undefined) => (typeof value === "number" 
 
 const failed = (line: string) => (cause: unknown) => {
   console.error("[Compose] details write failed", cause);
-  toast.error(line);
+  sayFailed(cause, line);
 };
 
 export interface ComposeDetailsState {

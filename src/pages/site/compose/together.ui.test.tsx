@@ -75,7 +75,7 @@ describe("the line under the head", () => {
     const groups = sessionGroups(steps, [], {}, meta as never);
     render(
       <MemoryRouter>
-        <BuildList phone={false} steps={steps} dividers={dividers(steps, groups)} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} focusAdd={0} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} />
+        <BuildList phone={false} steps={steps} dividers={dividers(steps, groups)} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} />
       </MemoryRouter>,
     );
     expect(screen.getAllByTestId("together-line").map((line) => line.textContent)).toEqual(["At the same time as Session 3 · own copy: fix-totals", "At the same time as Session 2"]);
@@ -94,7 +94,7 @@ describe("the line under the head", () => {
     const groups = sessionGroups(steps, [], {}, { "typed-a": meta["typed-a"], "typed-b": { tool: "claude-code", date: "2026-10-12" }, "typed-c": { tool: "claude-code", date: "2026-10-12" } } as never);
     render(
       <MemoryRouter>
-        <BuildList phone={false} steps={steps} dividers={dividers(steps, groups)} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} focusAdd={0} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} />
+        <BuildList phone={false} steps={steps} dividers={dividers(steps, groups)} names={{}} suggestions={[]} intoResult={new Set()} results={[]} selectedId={null} onSelect={vi.fn()} onRename={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} onAccept={vi.fn()} onDismiss={vi.fn()} onAddPrompt={vi.fn(async () => true)} onAddAgentPrompt={vi.fn(async () => true)} onAddAgentTo={vi.fn()} />
       </MemoryRouter>,
     );
     expect(screen.queryByTestId("together-line")).toBeNull();

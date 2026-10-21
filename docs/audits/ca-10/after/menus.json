@@ -1,0 +1,977 @@
+{
+  "failures": 0,
+  "results": [
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "top",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "top",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "top",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "top",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "top",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "top",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "middle",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "bottom",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "top",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "middle",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "bottom",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x600",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "top",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "top",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "top",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "top",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 5,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "top",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 8,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "top",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "middle",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "bottom",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "top",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "middle",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "bottom",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "1280x900",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 16,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "top",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "top",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "top",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "top",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "top",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "top",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "middle",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "bottom",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "top",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "middle",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "bottom",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "390x664",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "top",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 1 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "top",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 2 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "top",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Code 3 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "top",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Manual step 4 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 6,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "top",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "middle",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Prompt 5 options",
+      "at": "bottom",
+      "opened": true,
+      "rows": 9,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "top",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "middle",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "Adding to Session 2 · Claude",
+      "at": "bottom",
+      "opened": true,
+      "rows": 3,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "top",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "middle",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+      "menu": "model",
+      "at": "bottom",
+      "opened": true,
+      "rows": 11,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "top",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "middle",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    },
+    {
+      "viewport": "430x739",
+      "route": "/compose/new",
+      "menu": "Add",
+      "at": "bottom",
+      "opened": true,
+      "rows": 10,
+      "outside": []
+    }
+  ]
+}

@@ -58,6 +58,8 @@ import { useComposeDetails } from "./useComposeDetails";
 import { useComposeNodes } from "./useComposeNodes";
 import { useComposePrompts } from "./useComposePrompts";
 import { useComposeSessions } from "./useComposeSessions";
+import { DraftNotStartedError } from "./draftStart";
+import { errorLine } from "@/lib/errors/code";
 
 const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", buildId] as const;
 
@@ -124,9 +126,10 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         })
         .catch((cause: unknown) => {
           creating.current = null;
-          console.error("[Compose] createBuild failed", cause);
+          console.error(errorLine("[Compose] createBuild failed", cause));
           toast.error("Couldn't start your draft. Try again.");
-          throw cause;
+          // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
+          throw new DraftNotStartedError(cause);
         });
     }
     return creating.current;

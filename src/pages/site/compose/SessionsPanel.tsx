@@ -27,6 +27,7 @@
 import * as Popover from "@radix-ui/react-popover";
 import { ChevronDown, Plus } from "lucide-react";
 import { useEffect, useId, useRef, useState, type CSSProperties, type DragEvent, type FormEvent } from "react";
+import { flushSync } from "react-dom";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
@@ -129,9 +130,11 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
   const trigger = useInteractive<HTMLButtonElement>();
   const value = choice === OTHER ? other.trim() : choice;
 
-  useEffect(() => {
-    if (choice === OTHER) otherRef.current?.focus();
-  }, [choice]);
+  /* CA-10: "Other…" draws its field and focuses it in the same change, so an iPhone raises the keyboard. */
+  const choose = (next: string) => {
+    flushSync(() => setChoice(next));
+    if (next === OTHER) otherRef.current?.focus();
+  };
 
   const save = (event: FormEvent) => {
     event.preventDefault();
@@ -168,7 +171,7 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
             <label htmlFor={`${id}-model`} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600 }}>
               Which model was session {session.number}?
             </label>
-            <select id={`${id}-model`} value={choice} onChange={(event) => setChoice(event.target.value)} style={control}>
+            <select id={`${id}-model`} value={choice} onChange={(event) => choose(event.target.value)} style={control}>
               <option value="" disabled>
                 Choose a model
               </option>
