@@ -39,6 +39,7 @@ import {
   removeComposerCover,
   replaceComposerCover,
 } from "@/lib/build/composeCover";
+import { seedFirstSession } from "@/lib/build/firstSession";
 import { refreshMakingStats } from "@/lib/build/making";
 import { modelLabel } from "@/lib/models/registry";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
@@ -108,6 +109,9 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
   const held = useRef<BuildPatch>({});
   const [createdHere, setCreatedHere] = useState(false);
 
+  /** CA-12 P3: the key of Session 1, made with the draft. Null on a draft that was already there. */
+  const firstSession = useRef<string | null>(null);
+
   const ensureBuild = useCallback((): Promise<string> => {
     if (buildId) return Promise.resolve(buildId);
     if (!creating.current) {
@@ -117,7 +121,12 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         outcome: said.trim() ? said : null,
         made_for: parseAudience(forWho),
       })
-        .then((created) => {
+        .then(async (created) => {
+          // Every post has at least one session. It is not worth a failed draft if this one cannot be written.
+          firstSession.current = await seedFirstSession(created.id).catch((cause: unknown) => {
+            console.error(errorLine("[Compose] Session 1 not made", cause));
+            return null;
+          });
           hydratedFor.current = created.id;
           setCreatedHere(true);
           // replace: /compose/new must not sit in history, or Back re-enters it and starts a second draft.
@@ -382,7 +391,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     onGapSwitch: details.setGapOn,
   };
 
-  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, buildId, nodes, sessions, prompts };
+  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts };
 }
 
 export function ComposePage() {

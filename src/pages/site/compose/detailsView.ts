@@ -125,7 +125,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     title: step.title,
     defaultTitle: step.defaultTitle,
     editable: !instructions,
-    sessionLine: instructions ? "Instructions" : typed && !inSession ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
+    sessionLine: instructions ? "Instructions" : typed && !inSession ? (tool ?? "Prompt") : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
     detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun) : null, when, place].filter(Boolean).join(" · "),
     typed,
     model,

@@ -118,6 +118,17 @@ export async function insertBuildSession(row: Omit<BuildSessionRow, "collapsed">
   if (error) throw buildLayerError("insertBuildSession", error);
 }
 
+/** Like `insertBuildSession`, but a table that is not there yet is not an error: false says it was not stored. */
+export async function insertBuildSessionIfTable(row: Parameters<typeof insertBuildSession>[0]): Promise<boolean> {
+  try {
+    await insertBuildSession(row);
+    return true;
+  } catch (cause) {
+    if (isMissingTable((cause as { cause?: unknown } | null)?.cause ?? cause)) return false;
+    throw cause;
+  }
+}
+
 export async function deleteBuildSession(buildId: string, sessionKey: string): Promise<void> {
   const { error } = await table().delete().eq("build_id", buildId).eq("session_key", sessionKey);
   if (error) throw buildLayerError("deleteBuildSession", error);

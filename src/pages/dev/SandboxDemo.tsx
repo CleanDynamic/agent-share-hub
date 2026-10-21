@@ -78,7 +78,7 @@ function demoThread(doc: ThreadDoc): ComposeThread {
 /** A typed prompt saved as Claude with Grok 4.7, which Claude does not offer (CA-02 P8). */
 function brokenPair() {
   const base = sandboxDetailsProps("prompt", "bakery");
-  return base.view?.kind === "prompt" ? { ...base, onModel: () => undefined, view: { ...base.view, typed: true, tool: "Claude", model: "Grok 4.7", sessionLine: "Typed here · Claude", detailLine: "Grok 4.7" } } : base;
+  return base.view?.kind === "prompt" ? { ...base, onModel: () => undefined, view: { ...base.view, typed: true, tool: "Claude", model: "Grok 4.7", sessionLine: "Claude", detailLine: "Grok 4.7" } } : base;
 }
 
 /** A CA-02 shape as the List and the Map take it, Details' selection marked in both. */

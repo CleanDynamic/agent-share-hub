@@ -104,7 +104,8 @@ import {
   tnum,
   wellField,
 } from "./refinedStyles";
-import type { SourceSession } from "./sourcesModel";
+import { isTypedSession } from "@/lib/build/making";
+import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent } from "./ComposeMenu";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
@@ -129,6 +130,10 @@ export interface BuildListProps {
   steps: readonly Step[];
   /** The divider that goes before a step, keyed by its number. */
   dividers: ReadonlyMap<string, SourceSession>;
+  /** CA-12 P3: sessions that hold no tile yet (Session 1 of a new post), each drawn as its head, after the others. */
+  emptySessions?: readonly SourceSession[];
+  /** CA-12 P3: "Pick an app" on the head of a session made here that has none. The tool is an id or a typed name; null clears it. */
+  onPickApp?: (sessionKey: string, tool: string | null) => void;
   /** File and tool names, by node id, for the input chips. */
   names: Readonly<Record<string, string>>;
   suggestions: readonly ListSuggestion[];
@@ -505,7 +510,7 @@ const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 
 /* ── a session's head ── */
 
-function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; phone: boolean; onOpenSetup?: (key: string) => void }) {
+function SessionHead({ session, phone, onOpenSetup, onPickApp, inBuild = [] }: { session: SourceSession; phone: boolean; onOpenSetup?: (key: string) => void; onPickApp?: (key: string, tool: string | null) => void; inBuild?: readonly string[] }) {
   /* CA-04 P2: a tile dropped on a session's head goes into that session. */
   const drop = useNestSession(session.key);
   return (
@@ -529,6 +534,10 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
         Session {session.number} · {session.tool}
       </span>
       <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{session.detail}</span>
+      {/* CA-12 P3: a session made here with no app offers to pick one. */}
+      {onPickApp && session.tool === NO_APP && isTypedSession(session.key) ? (
+        <ToolPicker label={`Pick an app for session ${session.number}`} placeholder="Pick an app" value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
+      ) : null}
       <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
       <SessionColour session={session} phone={phone} />
       {session.setupCount && onOpenSetup ? (
@@ -1674,9 +1683,8 @@ function AddPrompt({
         </div>
       ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-        <Quiet>Typed here ·</Quiet>
-        <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {/* CA-03: Typed here has no field label, so its menu keeps the word "model" while empty. */}
+        <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
+        {/* CA-03: this row has no field label, so the model menu keeps the word "model" while empty. */}
         {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.model} />}
         <span style={{ flexGrow: 1 }} />
         <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy || redirect} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
@@ -1813,9 +1821,9 @@ export function BuildList(props: BuildListProps) {
      fields' type is set here, where they inherit it. */
     <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
-      {runsOf(steps, props.dividers).map((run) => (
+      {[...runsOf(steps, props.dividers), ...(props.emptySessions ?? []).map((head): Run => ({ key: `empty:${head.key}`, head, steps: [] }))].map((run) => (
         <SessionRun key={run.key} head={run.head} phone={props.phone}>
-          {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} /> : null}
+          {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} onPickApp={props.onPickApp} inBuild={props.inBuild} /> : null}
           {run.head ? <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} /> : null}
           {run.steps.map(placed)}
         </SessionRun>

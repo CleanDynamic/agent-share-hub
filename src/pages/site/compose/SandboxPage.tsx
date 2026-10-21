@@ -42,7 +42,7 @@ import { goalRefusal, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
-import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
@@ -71,7 +71,7 @@ import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources } from "./sourcesModel";
+import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups } from "@/lib/build/postRefs";
@@ -94,7 +94,7 @@ const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [ste
 export function SandboxPage() {
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
-  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
+  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const phone = useIsPhone();
@@ -415,10 +415,17 @@ export function SandboxPage() {
   const sessionChoices = useMemo(
     () =>
       shown.length > 1 || shown.some((group) => groupKind(group) !== "legacy")
-        ? sourceSessionRows.map((row) => ({ key: row.key, label: `Session ${row.number} · ${row.tool}`, tool: row.tool === "Typed here" || row.tool === "Unknown tool" ? null : row.tool }))
+        ? sourceSessionRows.map((row) => ({ key: row.key, label: `Session ${row.number} · ${row.tool}`, tool: row.tool === NO_APP ? null : row.tool }))
         : undefined,
     [shown, sourceSessionRows],
   );
+  /* CA-12 P3: a session with no tile yet is still drawn, as its head. A post whose draft is not made has Session 1 already. */
+  const emptySessions = useMemo<SourceSession[]>(() => {
+    const withTiles = new Set(shown.filter((group) => group.stepNumbers.length > 0).map((group) => groupKey(group)));
+    const empties = sourceSessionRows.filter((row) => !withTiles.has(row.key) && isTypedSession(row.key));
+    if (empties.length === 0 && !buildId && shown.length === 0) return [{ key: FIRST_SESSION_KEY, number: 1, tool: NO_APP, detail: "", prompts: [] }];
+    return empties;
+  }, [shown, sourceSessionRows, buildId]);
   const [addSessionOpen, setAddSessionOpen] = useState(false);
   const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
 
@@ -442,12 +449,16 @@ export function SandboxPage() {
    */
   const sessionToWrite = useCallback(async (): Promise<string | null> => {
     const key = currentSession;
-    if (!key) return null;
+    // CA-12 P3: a new post's first change makes the draft and its Session 1, and goes into it.
+    if (!key) {
+      if (!buildId) await ensureBuild();
+      return firstSession.current;
+    }
     if (!isLegacySession(key)) return key;
     const last = shown[shown.length - 1];
     if (last && groupKey(last) === key) return null;
     return claim(key);
-  }, [currentSession, shown, claim]);
+  }, [currentSession, shown, claim, buildId, ensureBuild, firstSession]);
 
   const onNewSession = useCallback(
     async (tool: string | null) => {
@@ -579,6 +590,24 @@ export function SandboxPage() {
       }
     },
     [ensureBuild, groups, made, refreshRecord],
+  );
+
+  /** CA-12 P3: "Pick an app" on a session made here. On a post with no draft yet, the draft and its Session 1 are made first. */
+  const onPickApp = useCallback(
+    async (key: string, tool: string | null) => {
+      try {
+        const id = await ensureBuild();
+        const real = key === FIRST_SESSION_KEY ? firstSession.current : key;
+        if (!real) return;
+        const before = sessionsMetaOf(made)[real] ?? { tool: null, date: todayDay() };
+        await setSessionMeta(id, real, { ...before, tool });
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] app not saved", cause);
+        sayFailed(cause, "Couldn't save that app. Try again.");
+      }
+    },
+    [ensureBuild, firstSession, made, refreshRecord],
   );
 
   const onAddPrompt = useCallback(
@@ -1322,6 +1351,8 @@ export function SandboxPage() {
             phone={phone}
             steps={steps}
             dividers={dividerRows}
+            emptySessions={emptySessions}
+            onPickApp={(key, tool) => void onPickApp(key, tool)}
             names={listFacts.names}
             suggestions={suggestions}
             intoResult={listFacts.intoResult}

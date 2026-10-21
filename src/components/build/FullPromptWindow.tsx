@@ -132,7 +132,7 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   const dated = group ? groupKind(group) !== "legacy" : false;
   const when = dated && group ? shortDate(group.startedAt) : "";
   const facts = [
-    group || tool ? `${dated && group ? `Session ${group.number}` : "Typed here"}${tool ? ` · ${tool}` : ""}` : null,
+    group || tool ? [dated && group ? `Session ${group.number}` : null, tool].filter(Boolean).join(" · ") || null : null,
     model,
     when || null,
     group && inSession > 0 ? `prompt ${inSession} of ${sessionPrompts.length} in the session` : null,

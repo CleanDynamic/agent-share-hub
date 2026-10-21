@@ -79,7 +79,7 @@ describe("lanes", () => {
     expect(layout.lanes.map((lane) => [lane.label, lane.dashed])).toEqual([
       ["Session 1", false],
       ["Session 2", false],
-      ["Typed here", false],
+      ["Written here", false],
       ["Agent 5", false],
       ["Files and tools", true],
     ]);
@@ -91,7 +91,7 @@ describe("lanes", () => {
   it("gives an agent a lane of its own, and has no files lane without files or tools", () => {
     const { steps, groups } = bakery();
     const layout = layoutMap(steps, groups, [], [], []);
-    expect(layout.lanes.map((lane) => lane.label)).toEqual(["Session 1", "Session 2", "Typed here", "Agent 5"]);
+    expect(layout.lanes.map((lane) => lane.label)).toEqual(["Session 1", "Session 2", "Written here", "Agent 5"]);
     expect(layout.lanes[3]).toMatchObject({ kind: "agent", sub: "runs by itself" });
     expect(layout.boxes.find((box) => box.id === "a5")?.lane).toBe(3);
   });

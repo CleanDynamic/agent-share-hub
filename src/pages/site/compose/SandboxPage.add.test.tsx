@@ -181,11 +181,11 @@ describe.each([
     let waiting: HTMLElement;
     if (sheet) {
       fireEvent.click(sheet.getByRole("button", { name: /^Session/ }));
-      waiting = await waitFor(() => sheet.getByRole("button", { name: /\d+ prompts?$/ }));
+      waiting = await waitFor(() => sheet.getAllByRole("button", { name: /\d+ prompts?$/ })[0]);
     } else {
       const trigger = await screen.findByRole("menuitem", { name: /^Session/ });
       fireEvent.keyDown(trigger, { key: "ArrowRight" });
-      waiting = await screen.findByRole("menuitem", { name: /\d+ prompts?$/ }, { timeout: 5_000 });
+      waiting = (await screen.findAllByRole("menuitem", { name: /\d+ prompts?$/ }, { timeout: 5_000 }))[0];
     }
     fireEvent.click(waiting);
     const pending = screen.getByTestId("add-pending");

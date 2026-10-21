@@ -53,6 +53,8 @@ const IMPORT_SESSIONS = [
   "expected_chunks", "expires_at", "fingerprint", "id", "model", "proposal", "reader_id", "secret_findings", "source_hint", "status",
   "target_build_id", "total_chars", "updated_at", "user_id",
 ];
+/** CA-12: 20261021120000_ca12_sessions.sql. */
+const BUILD_SESSIONS = ["build_id", "collapsed", "created_at", "import_id", "position", "session_key"];
 const PROFILES = [
   "account_type", "avatar_url", "banner_url", "bio", "bounty_lifetime_acceptances", "bounty_lifetime_submissions",
   "bounty_lifetime_votes_received", "bounty_solutions_accepted", "bounty_solutions_submitted", "bounty_solver_acceptance_rate",
@@ -89,7 +91,7 @@ export const LIVE_SCHEMA: Schema = {
 /** Every migration in supabase/migrations applied: post_doc (20261016120000) and colour_swatches (20261020120000). */
 export const REPO_SCHEMA: Schema = {
   ...LIVE_SCHEMA,
-  tables: { ...LIVE_SCHEMA.tables, builds: [...LIVE_BUILDS, "post_doc"], profiles: [...PROFILES, "colour_swatches"] },
+  tables: { ...LIVE_SCHEMA.tables, builds: [...LIVE_BUILDS, "post_doc"], profiles: [...PROFILES, "colour_swatches"], build_sessions: BUILD_SESSIONS },
   postMediaCap: 40,
 };
 
@@ -171,16 +173,24 @@ function seedRows(): Record<string, Row[]> {
   ];
   const builds = touched.map((at, index) => buildRow({ id: `0d0d0d0d-0000-4000-8000-${String(index + 1).padStart(12, "0")}`, title: `Draft ${index + 1}`, created_at: at, updated_at: at }));
   const proposal = (text: string) => ({ events: [{ kind: "prompt", ordinal: 0, payload: { text }, source_ref: { index: 0 } }], summary: { user_turn_count: 1, assistant_turn_count: 1 } });
+  /** CA-12: a long session, for the collapse rule: `count` prompts, one per user turn. */
+  const longProposal = (count: number) => ({
+    events: Array.from({ length: count }, (_, at) => ({ kind: "prompt", ordinal: at + 1, visibility: "public", occurred_at: null, payload: { text: `Prompt ${at + 1} of the long session.` }, source_ref: { source: "transcript", session_id: "0e0e0e0e-0000-4000-8000-000000000003", index: at * 2 + 1 } })),
+    nodes: [],
+    summary: { session_id: "0e0e0e0e-0000-4000-8000-000000000003", user_turn_count: count, assistant_turn_count: count },
+  });
   const sessions: Row[] = [
     { id: "0e0e0e0e-0000-4000-8000-000000000001", user_id: MAKER_ID, client: "claude-code", model: null, status: "parsed", build_id: null, target_build_id: null, created_at: "2026-10-09T10:00:00Z", updated_at: "2026-10-09T10:00:00Z", proposal: proposal("A waiting session.") },
     { id: "0e0e0e0e-0000-4000-8000-000000000002", user_id: MAKER_ID, client: "claude", model: null, status: "claimed", build_id: builds[0].id, target_build_id: null, created_at: "2026-10-08T10:00:00Z", updated_at: "2026-10-08T10:00:00Z", proposal: proposal("A session in a draft.") },
+    { id: "0e0e0e0e-0000-4000-8000-000000000003", user_id: MAKER_ID, client: "claude-code", model: null, status: "expired", build_id: null, target_build_id: null, created_at: "2026-10-01T10:00:00Z", updated_at: "2026-10-01T10:00:00Z", proposal: longProposal(66) },
   ];
   const nodeTypes = ["prompt", "agent_config", "team", "manual_step", "document", "integration", "result", "code", "eval_run", "breakage", "gap", "recording", "screenshot"].map((key, sort) => ({
     // No colour: the two flows never draw a type's colour, and src/ holds no raw colour literal (theme/compliance.test.ts).
     key, label: key, category: "process", colour: null, icon: "Box", renderer: "process", copyable: true, is_active: true, sort, schema: { fields: [] },
   }));
   const profile = { id: MAKER_ID, username: "maker", display_name: "Maker", avatar_url: null, is_admin: false, is_creator: true };
-  return { builds, build_nodes: [], build_events: [], node_types: nodeTypes, build_media: [], import_sessions: sessions, profiles: [profile] };
+  const buildSessions: Row[] = [{ id: "0f0f0f0f-0000-4000-8000-000000000001", build_id: builds[0].id, session_key: "0e0e0e0e-0000-4000-8000-000000000002", import_id: "0e0e0e0e-0000-4000-8000-000000000002", position: 0, collapsed: false, created_at: "2026-10-08T10:00:00Z" }];
+  return { builds, build_nodes: [], build_events: [], node_types: nodeTypes, build_media: [], import_sessions: sessions, profiles: [profile], build_sessions: buildSessions };
 }
 
 function buildRow(over: Row): Row {
@@ -397,6 +407,7 @@ function readable(table: string, row: Row, uid: string | null): boolean {
       return row.status !== "draft" || (uid !== null && row.creator_id === uid);
     case "build_nodes":
     case "build_media":
+    case "build_sessions":
     case "build_events": {
       const build = buildOf(row.build_id);
       return Boolean(build && readable("builds", build, uid));
@@ -415,6 +426,7 @@ function writable(table: string, row: Row, uid: string | null): boolean {
       return uid !== null && row.creator_id === uid;
     case "build_nodes":
     case "build_media":
+    case "build_sessions":
     case "build_events": {
       const build = buildOf(row.build_id);
       return Boolean(build && uid !== null && build.creator_id === uid);
@@ -426,6 +438,13 @@ function writable(table: string, row: Row, uid: string | null): boolean {
     default:
       return false;
   }
+}
+
+/** CA-12: the unique index on build_sessions (build_id, position), which is not deferrable. */
+function uniqueViolation(table: string, next: Row, rows: readonly Row[]): string | null {
+  if (table !== "build_sessions") return null;
+  const clash = rows.find((row) => row.id !== next.id && row.build_id === next.build_id && (row.position === next.position || row.session_key === next.session_key));
+  return clash ? (clash.session_key === next.session_key ? "build_sessions_pkey" : "build_sessions_build_position_key") : null;
 }
 
 /** The CHECK constraints a write meets, as the migrations define them (only those whose column exists). */
@@ -514,6 +533,8 @@ function table(method: string, name: string, params: URLSearchParams, headers: H
       if (name === "build_nodes" && !backend.rows.node_types.some((type) => type.key === next.type)) {
         return pgError(409, "23503", 'insert or update on table "build_nodes" violates foreign key constraint "build_nodes_type_fkey"', `Key (type)=(${String(next.type)}) is not present in table "node_types".`);
       }
+      const clash = uniqueViolation(name, next, [...rows, ...written]);
+      if (clash) return pgError(409, "23505", `duplicate key value violates unique constraint "${clash}"`);
       written.push(next);
     }
     for (const next of written) {
@@ -533,6 +554,8 @@ function table(method: string, name: string, params: URLSearchParams, headers: H
       const next = { ...row, ...patch, ...(name === "builds" ? { updated_at: new Date().toISOString() } : null) };
       const broken = checkViolation(name, next);
       if (broken) return pgError(400, "23514", `new row for relation "${name}" violates check constraint "${broken}"`, "Failing row contains (…).");
+      const clash = uniqueViolation(name, next, rows);
+      if (clash) return pgError(409, "23505", `duplicate key value violates unique constraint "${clash}"`);
       written.push(next);
     }
     for (const next of written) rows[rows.findIndex((row) => row.id === next.id)] = next;

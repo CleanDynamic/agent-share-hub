@@ -6,7 +6,7 @@
 
 import { modelRunLine } from "@/lib/build/modelRun";
 import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
-import { groupKey, shownGroups, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
+import { groupKey, groupKind, shownGroups, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 
 import { sourceSessions, type SourceSession } from "./sourcesModel";
@@ -39,7 +39,7 @@ export const suggestionKey = (use: Use): string => `${use.kind}:${use.node_id}`;
  * first step of each run of steps from one session. A step that begins a new
  * session, or a new run of typed prompts, gets one; the steps after it do not.
  *
- * CA-04 P1: a build with exactly one session shows no head, and an old build's
+ * CA-04 P1: a build with exactly one session shows no head (CA-12: unless it is one made here), and an old build's
  * implicit group (its steps before any session) never has one.
  */
 export function dividers(
@@ -52,7 +52,8 @@ export function dividers(
   const shown = shownGroups(groups);
   // CA-04 P4, P6: a lone session keeps its head when it has something to say there: Setup {n}, Worked until, Runs when.
   const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal || sessionFactsLine({ extras: group.extras, words: group.longWords }, "maker") || togetherLine(group.extras, () => 0));
-  if (shown.length === 0 || (shown.length === 1 && !says(shown[0]))) return out;
+  // CA-12 P3: a session made here (Session 1 of a new post) always has its head, with its app or "No app chosen".
+  if (shown.length === 0 || (shown.length === 1 && !says(shown[0]) && groupKind(shown[0]) !== "typed")) return out;
   const sessions = new Map(sourceSessions(groups, steps, [], {}, setupCounts, runsWhen).map((session) => [session.key, session]));
   for (const group of shown) {
     const first = group.stepNumbers[0];

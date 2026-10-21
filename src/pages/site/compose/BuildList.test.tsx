@@ -145,7 +145,7 @@ describe("step cards", () => {
 describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
   const openMenu = (name: string | RegExp) => fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
   const pickTool = (query: string, row: string | RegExp) => {
-    fireEvent.click(screen.getByRole("button", { name: /^Typed here · / }));
+    fireEvent.click(screen.getByRole("button", { name: /^Prompt tool · / }));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
     fireEvent.click(screen.getByRole("option", { name: row }));
   };
@@ -783,7 +783,7 @@ describe("sessions are sittings (CA-04 P1)", () => {
 
   it("puts the current session's tool in the field", () => {
     list({ sessionChoices: choices, currentSession: "typed-b" });
-    expect(within(screen.getByTestId("add-prompt")).getByRole("button", { name: /Typed here · Claude Code/ })).toBeTruthy();
+    expect(within(screen.getByTestId("add-prompt")).getByRole("button", { name: /Prompt tool · Claude Code/ })).toBeTruthy();
   });
 
   it("says nothing about sessions while the build has only the one its typed prompts make", () => {

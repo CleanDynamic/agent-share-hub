@@ -22,9 +22,9 @@ describe("sourceSessions", () => {
     expect(rows[0].prompts.map((p) => [p.number, p.title, p.isDefault])).toEqual([["1", "Prompt 1", true], ["2", "Copy", false]]);
   });
 
-  it("draws prompts written here as one 'typed here' session", () => {
+  it("draws prompts written here as one session with no app chosen", () => {
     const rows = sourceSessions([group({ sessionId: null, tool: null, model: null, startedAt: "typed here", stepNumbers: ["1"] })], [step({})]);
-    expect(rows[0]).toMatchObject({ key: "typed-1", tool: "Unknown tool", detail: "typed here" });
+    expect(rows[0]).toMatchObject({ key: "typed-1", tool: "No app chosen", detail: "" });
     expect(rows[0].prompts).toHaveLength(1);
   });
 
@@ -42,9 +42,9 @@ describe("sourceSessions — a session given its tool (TF-13)", () => {
     expect(rows[0]).toMatchObject({ tool: "Perplexity", pickTool: { value: "perplexity" } });
   });
 
-  it("reads 'Unknown tool' until one is chosen, and offers the picker", () => {
+  it("reads 'No app chosen' until one is chosen, and offers the picker", () => {
     const rows = sourceSessions([group({ tool: null })], steps, [summary({ id: "a", client: "web" })]);
-    expect(rows[0]).toMatchObject({ tool: "Unknown tool", pickTool: { value: null } });
+    expect(rows[0]).toMatchObject({ tool: "No app chosen", pickTool: { value: null } });
   });
 
   it("offers no picker when the client names the tool", () => {
@@ -170,7 +170,7 @@ describe("projectFileReminders", () => {
   });
 
   it("says nothing for a chat tool, an unknown tool, or a tool with its file in the build", () => {
-    expect(projectFileReminders(tools("ChatGPT", "Unknown tool"), [])).toEqual([]);
+    expect(projectFileReminders(tools("ChatGPT", "No app chosen"), [])).toEqual([]);
     expect(projectFileReminders(tools("Claude Code"), files("docs/claude.md"))).toEqual([]);
     // SKILL.md is a second file: it does not stand in for the first.
     expect(projectFileReminders(tools("Claude Code"), files("SKILL.md"))).toHaveLength(1);

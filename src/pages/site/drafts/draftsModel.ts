@@ -58,7 +58,7 @@ export function sessionDate(iso: string, now: number): string {
 
 /** The model's name, or the client that sent the session when there is none. */
 export function sessionSource(session: Pick<SessionSummary, "modelName" | "client">): string {
-  return session.modelName || CLIENT_LABEL[session.client ?? ""] || "Unknown tool";
+  return session.modelName || CLIENT_LABEL[session.client ?? ""] || "No app chosen";
 }
 
 /** "{modelName} · {date}", ending " · for {draft}" when the connector was aimed at one. */

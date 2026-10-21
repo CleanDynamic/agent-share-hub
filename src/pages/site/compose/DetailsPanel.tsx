@@ -824,7 +824,7 @@ function PairNote({ tool, model, phone, onChange, onRemove }: { tool: string | n
 
 /* ── a prompt ── */
 
-/** The tool, from the session line: "Session 2 · Claude Code" and "Typed here · ChatGPT" both end in it. */
+/** The tool, from the session line: "Session 2 · Claude Code" ends in it. */
 const toolOf = (sessionLine: string): string => sessionLine.split(" · ").pop() ?? "";
 
 /** The Makes list of a step; only where the panel can write it. */
@@ -1004,7 +1004,7 @@ function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean }
 export const SESSION_DETAILS_COPY = {
   tool: "Tool",
   date: "Date",
-  typedHere: "Typed here",
+  typedHere: "No app chosen",
   dateHint: "2026-10-12",
   badDate: "Write the day as 2026-10-12.",
 } as const;
@@ -1264,7 +1264,7 @@ function SessionDetails({
           </div>
         ) : null}
         <KeyValue label="Model">{view.model || "Not named"}</KeyValue>
-        <KeyValue label="Date">{view.date || "Typed here"}</KeyValue>
+        <KeyValue label="Date">{view.date || "Not dated"}</KeyValue>
       </div>
       )}
       <SetupSection view={view} phone={phone} focus={focusSetup ?? null} onSelect={onSelect} onAddToSetup={onAddToSetup} onNotShared={onNotShared} />
