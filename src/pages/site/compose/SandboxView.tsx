@@ -283,11 +283,16 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
 
   if (phone) {
     const choose = (item: Pick<AddEntry, "onSelect" | "movesFocus">) => {
-      if (item.movesFocus) moved.current = true;
-      // Shut first, in this tap, so the sheet's focus trap is gone before the row moves focus.
+      if (!item.movesFocus) {
+        // One render: the sheet shuts as the row's dialog or tile appears.
+        setOpen(false);
+        item.onSelect?.();
+        return;
+      }
+      // A row that moves focus shuts the sheet first, in this tap, so its focus trap is gone before the focus moves.
+      moved.current = true;
       closeNow(setOpen);
-      const result = item.onSelect?.();
-      if (item.movesFocus && result !== true) moved.current = false;
+      if (item.onSelect?.() !== true) moved.current = false;
     };
     return (
       <>

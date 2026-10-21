@@ -1,0 +1,11 @@
+iphone normal (120 ms)                                                        drafts   7079  error   null  after 40 s: the drafts  reads 4
+iphone slow (400 ms)                                                          drafts   7368  error   null  after 40 s: the drafts  reads 4
+iphone statement timeout when a returned proposal is over 1 MB (8 s, 57014)   drafts   7679  error  24355  after 40 s: the drafts  reads 6
+iphone waiting sessions slow alone (+6 s)                                     drafts   6962  error   null  after 40 s: the drafts  reads 4
+iphone all sessions slow alone (+6 s)                                         drafts   7057  error   null  after 40 s: the drafts  reads 4
+iphone drafts slow alone (+6 s)                                               drafts  12578  error   null  after 40 s: the drafts  reads 4
+iphone waiting sessions fail alone (57014)                                    drafts   7031  error   7961  after 40 s: the drafts  reads 5
+iphone all sessions fail alone (57014)                                        drafts   7236  error   null  after 40 s: the drafts  reads 5
+iphone drafts fail alone (57014)                                              drafts   null  error   8172  after 40 s: That didn't load.  reads 4
+iphone both session reads fail                                                drafts   7083  error   7983  after 40 s: the drafts  reads 6
+iphone everything fails                                                       drafts   null  error   7929  after 40 s: That didn't load.  reads 6

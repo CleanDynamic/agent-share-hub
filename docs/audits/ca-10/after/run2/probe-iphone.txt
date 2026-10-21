@@ -1,0 +1,16 @@
+New sessionOne sitting with on | 243-291 | disabled=false | hit=true 
+PromptA message you sent | 291-339 | disabled=false | hit=true 
+SessionA chat from your source | 339-387 | disabled=false | hit=true 
+Agent or teamPrompts that run  | 387-435 | disabled=false | hit=true 
+FileSomething the AI read | 435-483 | disabled=false | hit=true 
+ToolAn app or connector it use | 483-531 | disabled=false | hit=true 
+Manual stepWork done outside A | 531-579 | disabled=false | hit=true 
+CodeLines of code you wrote or | 579-627 | disabled=false | hit=true 
+CheckHow it tested its own wor | 627-675 | disabled=false | hit=true 
+ResultThe finished thing | 675-723 | disabled=false | hit=true 
+New session: trial click ok
+after +0ms TEXTAREA  Add a prompt top=417 bottom=485 vh=739 scrollY=1345 under=TEXTAREA:
+after +50ms TEXTAREA  Add a prompt top=417 bottom=485 vh=739 scrollY=1345 under=TEXTAREA:
+after +200ms TEXTAREA  Add a prompt top=417 bottom=485 vh=739 scrollY=1345 under=TEXTAREA:
+after +600ms TEXTAREA  Add a prompt top=417 bottom=485 vh=739 scrollY=1345 under=TEXTAREA:
+after +1500ms TEXTAREA  Add a prompt top=417 bottom=485 vh=739 scrollY=1345 under=TEXTAREA:

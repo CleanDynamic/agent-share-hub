@@ -292,6 +292,9 @@ export const CA03_FILES: readonly string[] = [
   "src/components/compose/TrayDrop.test.tsx",
   // CA-10 P4
   "src/components/compose/Publish.test.tsx",
+  // CA-10 P5
+  "src/hooks/usePresence.ts",
+  "src/hooks/usePresence.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

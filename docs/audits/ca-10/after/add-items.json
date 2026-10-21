@@ -142,7 +142,7 @@
       "route": "new post",
       "item": "Result",
       "verdict": "tile drawn at once, new Result on screen",
-      "detail": "pending at 0 ms true, at 300 ms true; result on screen true (/compose/5c0008e5-c4f8-4b15-be6e-9456dd9d23e5)",
+      "detail": "pending at 0 ms true, at 300 ms true; result on screen true (/compose/bc2631d6-5278-4647-9fd5-a25ef60c7e0d)",
       "pass": true
     },
     {
@@ -286,7 +286,7 @@
       "route": "new post",
       "item": "Result",
       "verdict": "tile drawn at once, new Result on screen",
-      "detail": "pending at 0 ms true, at 300 ms true; result on screen true (/compose/92cd12b6-3640-470d-a88c-a6cba0009dc1)",
+      "detail": "pending at 0 ms true, at 300 ms true; result on screen true (/compose/223e5202-16ae-4cb1-9051-c9e59c20370d)",
       "pass": true
     },
     {
@@ -430,7 +430,7 @@
       "route": "new post",
       "item": "Result",
       "verdict": "tile drawn at once, new Result on screen",
-      "detail": "pending at 0 ms true, at 300 ms true; result on screen true (/compose/685a320d-b274-4dad-9311-d5f1aea22223)",
+      "detail": "pending at 0 ms true, at 300 ms true; result on screen true (/compose/8f226f09-7d36-4303-8b7d-adf69f849f11)",
       "pass": true
     }
   ]

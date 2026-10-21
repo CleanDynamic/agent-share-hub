@@ -1,0 +1,65 @@
+[
+  {
+    "route": "drafts",
+    "path": "/drafts",
+    "perMinuteVisible": 2,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 1,
+      "GET import_sessions ?status": 1
+    },
+    "hidden30s": 1,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 1
+    },
+    "onReturn5s": 7,
+    "returnByPurpose": {
+      "GET import_sessions ?status": 2,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1,
+      "GET builds": 1,
+      "GET builds ?id": 1,
+      "POST dm_presence ?on_conflict": 1
+    }
+  },
+  {
+    "route": "compose-new",
+    "path": "/compose/new",
+    "perMinuteVisible": 2,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 1,
+      "GET import_sessions ?status&proposal": 1
+    },
+    "hidden30s": 1,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 1
+    },
+    "onReturn5s": 4,
+    "returnByPurpose": {
+      "GET import_sessions ?status&proposal": 1,
+      "HEAD builds ?creator_id&status": 1,
+      "GET profiles ?id": 1,
+      "POST dm_presence ?on_conflict": 1
+    }
+  },
+  {
+    "route": "compose-7step",
+    "path": "/compose/0d0d0d0d-0000-4000-8000-000000000001",
+    "perMinuteVisible": 2,
+    "visibleByPurpose": {
+      "POST dm_presence ?on_conflict": 1,
+      "GET import_sessions ?status&proposal": 1
+    },
+    "hidden30s": 1,
+    "hiddenByPurpose": {
+      "POST dm_presence ?on_conflict": 1
+    },
+    "onReturn5s": 5,
+    "returnByPurpose": {
+      "GET import_sessions ?build_id&status": 1,
+      "GET import_sessions ?status&proposal": 1,
+      "GET profiles ?id": 1,
+      "HEAD builds ?creator_id&status": 1,
+      "POST dm_presence ?on_conflict": 1
+    }
+  }
+]
