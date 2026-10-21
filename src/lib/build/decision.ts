@@ -428,3 +428,10 @@ export function uncoveredCount(q: DecisionQuestion, conditions: readonly RunsWhe
   const answered = new Set(mine.flatMap((rw) => (!Array.isArray(rw.is) && "yes" in rw.is ? [rw.is.yes] : [])));
   return 2 - answered.size;
 }
+
+/** "team → billing (92% sure)" or "escalation → no (0.18)": how the run view says what the original answered. */
+export function originalAnswer(q: DecisionQuestion, a: DecisionAnswer): string {
+  if (q.type === "yesno") return `${q.id} → ${answerWord(q, a)} (${trim2(Number(a.value))})`;
+  const sure = sureOf(q, a);
+  return `${q.id} → ${answerWord(q, a)}${sure !== undefined ? ` (${percent(sure)}% sure)` : ""}`;
+}

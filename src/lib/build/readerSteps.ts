@@ -42,6 +42,8 @@ import {
   type Step,
 } from "./graph";
 import { bracketed } from "./changes";
+import { DECISION_TYPE, modelShort, originalAnswer, questionLine, runsWhenLabel } from "./decision";
+import { runtimeNeeds } from "./runtimeNeeds";
 import { copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionsMetaOf, type Making } from "./making";
@@ -199,7 +201,7 @@ export interface NeedRow {
   id?: string;
 }
 
-export type NeedKey = "tools" | "files" | "runs" | "time" | "other";
+export type NeedKey = "tools" | "files" | "runs" | "accounts" | "time" | "other";
 
 export interface NeedGroup {
   key: NeedKey;
@@ -842,6 +844,11 @@ export function whatYouNeed(
     });
   if (runs.length > 0) groups.push({ key: "runs", label: "How it runs", rows: runs });
 
+  /* CA-13 P14: the accounts, keys and installs a reader needs, each once: a TypeSafe or ScaleDown key, Deep Agents, LangSmith, an API
+     key for an answer shape, and the install lines the maker gave. Keys are only named. */
+  const accounts: NeedRow[] = runtimeNeeds(context.topSteps, context.groups).map((need) => ({ title: need.title, detail: need.steps.length ? stepList(need.steps) : "" }));
+  if (accounts.length > 0) groups.push({ key: "accounts", label: "Accounts, keys and installs", rows: accounts });
+
   /* Time */
   const dated = (making?.sessions ?? []).map((session) => session.started_at).filter((iso): iso is string => Boolean(shortDate(iso)));
   if ((making?.sessions.length ?? 0) > 1 && dated.length > 1) {
@@ -861,7 +868,7 @@ export function whatYouNeed(
   }
 
   /* Other parts */
-  const handled = new Set<string>([PROMPT_TYPE, AGENT_TYPE, TEAM_TYPE, MANUAL_STEP_TYPE, FILE_TYPE, TOOL_TYPE, RESULT_TYPE, PREREQUISITE_TYPE]);
+  const handled = new Set<string>([PROMPT_TYPE, AGENT_TYPE, TEAM_TYPE, MANUAL_STEP_TYPE, FILE_TYPE, TOOL_TYPE, RESULT_TYPE, PREREQUISITE_TYPE, DECISION_TYPE]);
   const other: NeedRow[] = tree
     .filter((node) => node.parent_id === null && !handled.has(node.type) && !EVIDENCE_NODE_TYPES.has(node.type) && !isSetupPayload(node.payload))
     .map((node) => ({ id: node.id, title: (node.title ?? "").trim() || node.type, detail: node.type }));
@@ -1010,6 +1017,19 @@ export function stepsMarkdown(
   for (const entry of steps) {
     const { step } = entry;
     lines.push(`## Step ${step.number} · ${entry.title}`, "");
+    // CA-13 P3: a runtime tile that runs only when a decision went a certain way says so, in the words the page uses.
+    if (step.runsWhen) {
+      const owner = steps.find((candidate) => candidate.step.id === step.runsWhen?.decision)?.step.decision;
+      lines.push(`${runsWhenLabel(step.runsWhen, owner?.questions.find((q) => q.id === step.runsWhen?.question))}.`, "");
+    }
+    // CA-13 P2: a decision is a call to a small model with these questions; on the example the original answered as shown.
+    if (step.kind === "decision" && step.decision) {
+      lines.push(`Call ${modelShort(step.decision.provider, step.decision.model)} with these questions:`, "", ...step.decision.questions.map((q) => `- ${questionLine(q)}`), "");
+      const given = step.decision.answer ?? step.decision.expected;
+      if (given) lines.push(`On the example, the original answered: ${step.decision.questions.flatMap((q) => (given[q.id] ? [originalAnswer(q, given[q.id])] : [])).join("; ")}.`, "");
+      if (step.decision.stateSample) lines.push("The message it read:", "", fenced(step.decision.stateSample), "");
+      continue;
+    }
     // CA-04 P4: a session that starts with an agent, a team or a manual step still starts with its setup.
     if (entry.chat?.kind === "new" && step.kind !== "prompt") {
       lines.push(chatSentence(entry.chat), "");

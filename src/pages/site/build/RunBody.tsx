@@ -180,15 +180,23 @@ function Step({
   copied: boolean;
   onCopy: () => void;
 }) {
+  /* CA-13 P13: a branch step is "4a", and a build with decisions numbers its own steps; any other build counts as it always did. */
+  const said = step.number ?? String(number);
   return (
-    <li data-testid="build-run-step" data-node-id={step.id} style={stepGrid(phone)}>
+    <>
+      {step.heading ? (
+        <li role="presentation" data-testid="build-run-heading" style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, fontWeight: 600, color: t.text2, paddingTop: 4 }}>
+          {step.heading}
+        </li>
+      ) : null}
+    <li data-testid="build-run-step" data-node-id={step.id} data-number={step.number} style={stepGrid(phone)}>
       <span aria-hidden="true" style={numberStyle}>
-        {pad2(number)}
+        {step.number ? said : pad2(number)}
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, minHeight: 25 }}>
           <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 600, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
-            <span style={VISUALLY_HIDDEN}>{`Step ${number}: `}</span>
+            <span style={VISUALLY_HIDDEN}>{`Step ${said}: `}</span>
             {step.title}
             <span style={{ fontFamily: DM_MONO, fontSize: 10, fontWeight: 400, color: t.text2, marginLeft: 6, whiteSpace: "nowrap" }}>
               {step.kind}
@@ -201,7 +209,7 @@ function Step({
               fontSize={12}
               icon={copied ? Check : Copy}
               onClick={onCopy}
-              aria-label={`Copy step ${number}: ${step.title}`}
+              aria-label={`Copy step ${said}: ${step.title}`}
             >
               {copied ? "Copied" : "Copy"}
             </Button>
@@ -212,8 +220,20 @@ function Step({
         ) : (
           <p style={{ margin: 0, color: t.text2 }}>This step carries nothing to copy yet.</p>
         )}
+        {step.setsUp?.length ? (
+          <div data-testid="build-run-sets-up" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, color: t.text2 }}>What this code sets up</span>
+            {step.setsUp.map((line) => (
+              <span key={line} style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, overflowWrap: "anywhere" }}>{line}</span>
+            ))}
+          </div>
+        ) : null}
+        {step.quiet?.map((line) => (
+          <span key={line} data-testid="build-run-quiet" style={{ fontFamily: FIGTREE, fontSize: 11.5, color: t.label, fontVariantNumeric: "tabular-nums" }}>{line}</span>
+        ))}
       </div>
     </li>
+    </>
   );
 }
 
