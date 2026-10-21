@@ -100,6 +100,8 @@ const BuildSitePage = lazy(() => import("./pages/site/build/BuildPage"));
 // UI-P31 — Rebuild and lineage in the site frame; their own chunks, picked by `FrameRoute`.
 const RebuildSitePage = lazy(() => import("./pages/site/rebuild/RebuildPage"));
 const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
+// CA-13 P9 — two builds of the same thing, side by side.
+const CompareSitePage = lazy(() => import("./pages/site/compare/ComparePage"));
 // UI-P34 — the Profile in the site frame; its own chunk, picked by `FrameRoute`.
 const ProfileSitePage = lazy(() => import("./pages/site/profile/ProfilePage"));
 // UI-P35 — Activity in the site frame; its own chunk (it draws a chart), picked by `FrameRoute`.
@@ -448,6 +450,22 @@ const App = () => (
                         </RouteBoundary>
                       }
                       legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildSitePage /></Suspense>}
+                    />
+                  }
+                />
+                {/* CA-13 P9 — two builds that share a root in the rebuild tree, compared step by step. */}
+                <Route
+                  path="/b2/:slug/compare/:otherSlug"
+                  element={
+                    <FrameRoute
+                      site={
+                        <RouteBoundary>
+                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <CompareSitePage />
+                          </Suspense>
+                        </RouteBoundary>
+                      }
+                      legacy={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><CompareSitePage /></Suspense></RouteBoundary>}
                     />
                   }
                 />

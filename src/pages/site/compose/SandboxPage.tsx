@@ -1521,6 +1521,7 @@ export function SandboxPage() {
           <BuildList
             phone={phone}
             steps={steps}
+            costGroups={groups}
             dividers={dividerRows}
             emptySessions={emptySessions}
             onPickApp={(key, tool) => void onPickApp(key, tool)}
@@ -1676,6 +1677,7 @@ export function SandboxPage() {
         onClose={links.closeWindows}
         onGo={links.goFromWindow}
         onDownload={(id) => void download(id)}
+        audience="maker"
         setupCounts={setupCounts}
         onCloseAutoFocus={links.onCloseAutoFocus}
       />

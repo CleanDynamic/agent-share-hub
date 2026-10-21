@@ -927,6 +927,8 @@ export function BuildPage() {
               cards: (rebuildCards.data ?? []).map((card) => cardOf(card, "rebuild")),
               loading: rebuildCards.isPending,
               lineageTo: `/b2/${build.slug}/lineage`,
+              // CA-13 P9: each rebuild can be set beside this one.
+              compareLinks: (rebuildCards.data ?? []).map((card) => ({ to: `/b2/${build.slug}/compare/${card.slug}`, label: `Compare with ${((card.title ?? "").trim() || "that rebuild")}` })),
             }}
           />
         );
@@ -1067,6 +1069,8 @@ export function BuildPage() {
           ...(setupItems.length > 0 ? { onDownloadSetup: () => void downloadSetup(build.slug, setupItems) } : null),
           onRebuild: () => navigate(isLoggedIn ? `/rebuild/${build.slug}` : loginBack(`/rebuild/${build.slug}`)),
           lineageTo: `/b2/${build.slug}/lineage`,
+          // CA-13 P9: a rebuild whose source is still here can be set beside it.
+          ...(source.data?.build.slug ? { compareTo: `/b2/${build.slug}/compare/${source.data.build.slug}` } : null),
         }}
         proof={{
           build,

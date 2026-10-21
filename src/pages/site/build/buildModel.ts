@@ -152,6 +152,8 @@ export interface BuildActionsView {
   onDownloadSetup?: () => void;
   onRebuild: () => void;
   lineageTo: string;
+  /** CA-13 P9: "Compare with the original", for a rebuild whose source is still here. Absent: no such link. */
+  compareTo?: string;
 }
 
 export type ProofActionKind = "reproduce" | "reconfirm" | "sign-in";
@@ -873,6 +875,8 @@ export interface RebuildsBodyView {
   loading: boolean;
   /** The family tree: `/b2/:slug/lineage`. */
   lineageTo: string;
+  /** CA-13 P9: "Compare with …" for each rebuild of this build. Absent or empty: none. */
+  compareLinks?: readonly { to: string; label: string }[];
 }
 
 /* ── Under the first screen ── */

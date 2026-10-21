@@ -39,6 +39,7 @@ import { PartWindow } from "@/components/build/PartWindow";
 import { drawBranches } from "@/components/build/BranchRows";
 import { LinkLines } from "@/components/build/LinkLines";
 import { HelperChips, ShapeChip, TraceLink } from "@/components/build/RuntimeChips";
+import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
 import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, ToolTileBody, DecisionTileBody } from "@/components/build/tileBodies";
@@ -773,6 +774,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <Title entry={entry} right={null} />
         <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>Decision · runs in the app</div>
         <DecisionTileBody step={step} indent={INDENT} />
+        <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );
@@ -829,6 +831,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+      <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
       {step.kind === "code" ? <LinkLines lines={[...callsOf(step.id, view.steps.map((candidate) => candidate.step)), ...definesOf(step.id, view.steps.map((candidate) => candidate.step))]} onOpen={ctx.go} indent={INDENT} /> : null}
       <SaveLines files={entry.makes} />
       <SentWith entries={entry.sentWith} ctx={ctx} />
@@ -928,6 +931,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       {entry.runs ? <DotLine testId="runs-line" style={{ paddingLeft: INDENT }}>{entry.runs}</DotLine> : null}
       {step.helpers?.length ? <HelperChips helpers={step.helpers} indent={INDENT} decisionName={(id) => ctx.view.steps.map((candidate) => candidate.step).find((candidate) => candidate.id === id)?.title ?? undefined} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+      <TileCostLines step={step} audience="reader" groups={ctx.view.groups ?? []} indent={INDENT} />
       {step.traceUrl ? <span style={{ paddingLeft: INDENT }}><TraceLink url={step.traceUrl} /></span> : null}
       <OutsideWarning names={entry.outside} style={{ marginLeft: INDENT }} />
       <SaveLines files={entry.makes} />
@@ -1147,6 +1151,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           </>
         )}
       </div>
+      <CostStrip steps={steps.map((entry) => entry.step)} groups={view.groups ?? []} audience="reader" />
       {map ? (
         <Suspense fallback={<div role="status" style={{ ...text(12, 400, t.text2), padding: "24px 0" }}>Drawing the map…</div>}>
           <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />

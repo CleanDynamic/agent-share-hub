@@ -46,6 +46,7 @@ import { Button } from "@/components/brand/Button";
 import { drawBranches } from "@/components/build/BranchRows";
 import { LinkLines } from "@/components/build/LinkLines";
 import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
+import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
 import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, DecisionTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
@@ -60,7 +61,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
-import type { Step } from "@/lib/build/graph";
+import type { SessionGroup, Step } from "@/lib/build/graph";
 import { checkStatus, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
@@ -139,6 +140,8 @@ export const LIST_COPY = {
 export interface BuildListProps {
   phone: boolean;
   steps: readonly Step[];
+  /** CA-13 P8: the build's sessions, for the totals and for which figures readers see. Absent: no totals strip. */
+  costGroups?: readonly SessionGroup[];
   /** The divider that goes before a step, keyed by its number. */
   dividers: ReadonlyMap<string, SourceSession>;
   /** CA-12 P3: sessions that hold no tile yet (Session 1 of a new post), each drawn as its head, after the others. */
@@ -905,6 +908,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       </p>
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={open} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+      <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1110,6 +1114,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           ) : null}
           {!isTeam && step.helpers?.length ? <HelperChips helpers={step.helpers} decisionName={(id) => props.steps.find((candidate) => candidate.id === id)?.title ?? props.steps.find((candidate) => candidate.id === id)?.defaultTitle} /> : null}
           {!isTeam && step.outputShape ? <ShapeChip shape={step.outputShape} /> : null}
+          <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} />
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
           {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
@@ -1316,7 +1321,7 @@ function ToolCard({ step, index, last, props }: { step: Step; index: number; las
 
 /** CA-13 P2: a decision as a tile: its model, and one line per question. It runs in the app, so it says so. */
 function DecisionCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" eyebrow="Decision · runs in the app" body={<DecisionTileBody step={step} />} />;
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" eyebrow="Decision · runs in the app" body={<DecisionTileBody step={step} />} foot={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
 }
 
 /** CA-12 P8: a file as a tile: its type, name and size, and a preview. */
@@ -1404,6 +1409,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       </div>
       <CodeLines text={step.text} compact testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
+      <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1915,6 +1921,7 @@ export function BuildList(props: BuildListProps) {
      fields' type is set here, where they inherit it. */
     <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
+      {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {[...runsOf(steps, props.dividers), ...(props.emptySessions ?? []).map((head): Run => ({ key: `empty:${head.key}`, head, steps: [] }))].map((run) => {
         const key = run.head?.key ?? null;
         const total = run.head?.prompts.length ?? 0;

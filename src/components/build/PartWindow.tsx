@@ -31,6 +31,7 @@ import { agentCopy, agentSpecOf, definedInTiles, definesOf } from "@/lib/build/a
 import { certaintySource } from "@/lib/build/certainty";
 import { beforeAfterLine, helperChip, helperSavingsLine, markTool, providerLabel, type Helper } from "@/lib/build/helpers";
 import { LinkLines } from "@/components/build/LinkLines";
+import { TileCostLines } from "@/components/build/CostLines";
 import { answerLine, answerWord, runsWhenLabel, decisionHeadline, isTypeSafe, questionLine, questionTypeLabel, sourceNote, sureOf } from "@/lib/build/decision";
 import { callsOf, calledFromTiles, COPY_REQUEST_NOTE, decisionCopy } from "@/lib/build/decisionCopy";
 import { REF_KIND } from "@/lib/build/postRefs";
@@ -88,6 +89,8 @@ export interface PartWindowProps {
   setupCounts?: Readonly<Record<string, number>>;
   /** Called as the window closes, instead of putting focus back where it was. */
   onCloseAutoFocus?: (event: Event) => void;
+  /** CA-13 P8: whose eyes it is for: a reader sees money only when the maker shows costs. The maker's composer says "maker". */
+  audience?: "maker" | "reader";
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -591,6 +594,7 @@ export function PartWindow(props: PartWindowProps) {
           {step?.runsWhen ? (
             <Facts facts={[runsWhenLabel(step.runsWhen, props.steps.find((candidate) => candidate.id === step.runsWhen?.decision)?.decision?.questions.find((q) => q.id === step.runsWhen?.question))]} />
           ) : null}
+          {step ? <TileCostLines step={step} audience={props.audience ?? "reader"} groups={props.groups} /> : null}
           {step ? <TileBody step={step} props={props} say={say} /> : null}
           {group ? <SessionBody group={group} props={props} /> : null}
           <div

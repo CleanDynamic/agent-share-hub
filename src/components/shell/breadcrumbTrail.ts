@@ -48,6 +48,9 @@ export function trailFor(pathname: string, title: string | null): Crumb[] {
   if (lineage) {
     return [HOME, GALLERY, { label: title, href: `/b2/${lineage.params.slug}` }, { label: "Lineage" }];
   }
+  // CA-13 P9: two builds of the same thing, side by side.
+  const compare = here(pathname, "/b2/:slug/compare/:otherSlug");
+  if (compare) return [HOME, GALLERY, { label: title, href: `/b2/${compare.params.slug}` }, { label: "Compare" }];
   const build = here(pathname, "/b2/:slug");
   if (build) return [HOME, GALLERY, { label: title }];
   const rebuild = here(pathname, "/rebuild/:slug");

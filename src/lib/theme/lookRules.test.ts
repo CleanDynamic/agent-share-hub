@@ -349,6 +349,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SessionExtrasFields.tsx",
   "src/pages/site/compose/AddAgentDialog.tsx",
   "src/pages/site/compose/AgentSetupFields.tsx",
+  // CA-13 P8, P9
+  "src/components/build/CostLines.tsx",
+  "src/pages/site/compare/CompareView.tsx",
+  "src/pages/site/compare/ComparePage.tsx",
+  "src/pages/site/build/BuildView.tsx",
+  "src/components/build/FullPromptWindow.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

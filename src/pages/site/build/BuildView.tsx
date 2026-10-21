@@ -731,6 +731,7 @@ function ActionDock({
       )}
       <DockItem label="Rebuild" first={false} phone={phone} height={height} onClick={actions.onRebuild} testId="build-rebuild" />
       <DockItem label="Lineage" first={false} phone={phone} height={height} to={actions.lineageTo} testId="build-lineage" />
+      {actions.compareTo ? <DockItem label="Compare with the original" first={false} phone={phone} height={height} to={actions.compareTo} testId="build-compare" /> : null}
     </div>
   );
 }
