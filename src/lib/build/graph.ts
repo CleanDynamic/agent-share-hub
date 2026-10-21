@@ -42,7 +42,7 @@ export const CODE_TYPE = "code";
 export const CHECK_TYPE = "eval_run";
 
 /** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -392,6 +392,7 @@ const KIND_NAME: Record<StepKind, string> = {
   code: "Code",
   check: "Check",
   file: "File",
+  tool: "Tool",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -498,6 +499,59 @@ function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRe
 const dismissedOf = (payload: Payload): string[] =>
   Array.isArray(payload.dismissed) ? payload.dismissed.filter((key): key is string => typeof key === "string") : [];
 
+/** CA-12 P6: the first words of a text, whitespace folded, "…" after them when there were more. */
+export function firstWords(value: string, count: number): string {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  return words.length > count ? `${words.slice(0, count).join(" ")}…` : words.join(" ");
+}
+
+/** CA-12 P6: the first line with something on it, trimmed and cut at `max` characters. */
+export function firstLineOf(value: string, max = TITLE_MAX): string {
+  const line = value.split(/\r?\n/).map((l) => l.trim()).find(Boolean) ?? "";
+  return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line;
+}
+
+/** CA-12 P6/P9: the site's name for a link: "github.com" for "https://www.github.com/a/b". Null when it is not a link. */
+export function siteNameOf(url: string | null | undefined): string | null {
+  const raw = (url ?? "").trim();
+  if (!raw) return null;
+  try {
+    const host = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`).hostname.replace(/^www\./i, "");
+    return host.includes(".") ? host : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * CA-12 P6: what a tile is called when its maker has not named it: what it holds, never its number (the badge has it).
+ * A prompt: its first 8 words. Code: its file name, else its first line. A manual step: its first line. An agent: the first
+ * line of its instructions (its name is its title, which always wins). A tool: the app. A file: its name. A result: what
+ * it is, else its link's site, else "Result". A check: what it tested. Nothing to go on: the kind's name.
+ */
+export function defaultTitleFor(kind: StepKind, payload: Payload): string {
+  const str = (key: string) => stringOf(payload[key])?.trim() ?? "";
+  const named = (value: string) => value || KIND_NAME[kind];
+  switch (kind) {
+    case "prompt":
+      return named(firstWords(str("text"), 8));
+    case "code":
+      return named(str("filename") || firstLineOf(str("source")));
+    case "manual":
+      return named(firstLineOf(Array.isArray(payload.lines) ? String(payload.lines.find((l) => typeof l === "string" && l.trim()) ?? "") : str("text")));
+    case "agent":
+      return named(firstLineOf(str("system_prompt")));
+    case "tool":
+      return named(str("service"));
+    case "file":
+      return named(str("title"));
+    case "check":
+      return named(firstLineOf(str("tested")));
+    default:
+      return KIND_NAME[kind];
+  }
+}
+
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
   const text =
@@ -510,9 +564,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
           : kind === "file"
             ? (stringOf(payload.summary) ?? "")
             : (stringOf(payload.text) ?? "");
-  // CA-04 P2: a tile inside another has no number; it is named by its kind, or by its file name.
-  const named = kind === "file" ? stringOf(payload.title)?.trim() : kind === "code" ? stringOf(payload.filename)?.trim() : null;
-  const defaultTitle = number ? `${KIND_NAME[kind]} ${number}` : (named || KIND_NAME[kind]);
+  // CA-12 P6: named from what it holds, never by repeating its number.
+  const defaultTitle = defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = stringOf(payload.tool);
   return {

@@ -76,6 +76,24 @@ describe("the List (CA-04 P2)", () => {
     expect(within(tiles[0]).queryAllByText("1").filter((node) => !node.closest('[data-testid="code-gutter"]'))).toHaveLength(0);
   });
 
+  it("CA-12 P6: 'Send with the step above' is a button with a join glyph; on a computer it shows while its tile is hovered or focused, on a phone always", () => {
+    list(buildSteps(tree()));
+    const second = screen.getByRole("group", { name: /^Prompt 2/ });
+    const control = within(second).getAllByTestId("nest-control").find((c) => c.textContent === NEST_LIST_COPY.sendWithAbove) as HTMLElement;
+    const button = within(control).getByRole("button", { name: NEST_LIST_COPY.sendWithAbove });
+    expect(button.querySelector("svg")).toBeTruthy();
+    expect(control.style.opacity).toBe("0");
+    fireEvent.pointerEnter(second);
+    expect(control.style.opacity).toBe("1");
+    fireEvent.pointerLeave(second);
+    expect(control.style.opacity).toBe("0");
+    fireEvent.focusIn(second);
+    expect(control.style.opacity).toBe("1");
+    cleanup();
+    list(buildSteps(tree()), { phone: true });
+    expect((within(screen.getByRole("group", { name: /^Prompt 2/ })).getAllByTestId("nest-control").find((c) => c.textContent === NEST_LIST_COPY.sendWithAbove) as HTMLElement).style.opacity).toBe("1");
+  });
+
   it("gives each tile a grip handle at its left, the only drag start", () => {
     list(buildSteps(tree()));
     expect(screen.getAllByTestId("drag-handle").map((handle) => handle.getAttribute("aria-label"))).toEqual(["Move prompt 1", "Move prompt 2", "Move order-form.tsx", "Move menu.pdf"]);

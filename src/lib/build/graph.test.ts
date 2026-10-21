@@ -46,6 +46,8 @@ import {
   untilDetail,
   untilParts,
   sessionGroups,
+  defaultTitleFor,
+  siteNameOf,
   shownGroups,
   setNodeFields,
   setRuns,
@@ -100,8 +102,8 @@ describe("buildSteps", () => {
       node({ id: "b", position: 4, type: "manual_step", payload: { tool: "Figma", text: "Exported" } }),
     ]);
     expect(steps.map((s) => [s.id, s.number, s.kind, s.defaultTitle])).toEqual([
-      ["a", "1", "prompt", "Prompt 1"],
-      ["b", "2", "manual", "Manual step 2"],
+      ["a", "1", "prompt", "one two three"],
+      ["b", "2", "manual", "Exported"],
     ]);
     expect(steps[0]).toMatchObject({ text: "one two three", words: 3, title: null });
   });
@@ -117,11 +119,11 @@ describe("buildSteps", () => {
       ],
     });
     const [step] = buildSteps([agent]);
-    expect(step).toMatchObject({ kind: "agent", number: "1", defaultTitle: "Agent 1", model: "claude-sonnet-5-5" });
+    expect(step).toMatchObject({ kind: "agent", number: "1", defaultTitle: "Be brief now", model: "claude-sonnet-5-5" });
     expect(step.children.map((c) => [c.id, c.number, c.kind, stepTitle(c), c.text])).toEqual([
       ["ag:instructions", "1.1", "prompt", "Instructions", "Be brief now"],
       ["p1", "1.2", "prompt", "Kick off", "first"],
-      ["p2", "1.3", "prompt", "Prompt 1.3", "second"],
+      ["p2", "1.3", "prompt", "second", "second"],
     ]);
   });
 
@@ -141,12 +143,12 @@ describe("buildSteps", () => {
       node({ id: "tm", type: "team", position: 2, payload: {}, children: agents }),
     ]);
     expect(lead.number).toBe("1");
-    expect(team).toMatchObject({ kind: "team", number: "2", defaultTitle: "Team 2" });
+    expect(team).toMatchObject({ kind: "team", number: "2", defaultTitle: "Team" });
     expect(team.children.map((c) => c.number)).toEqual(["2.1", "2.2", "2.3", "2.4"]);
     expect(team.children[0]).toMatchObject({ kind: "agent", text: "Agent 1 brief" });
     expect(team.children[0].children.map((c) => [c.number, c.defaultTitle, c.text])).toEqual([
       ["2.1.1", "Instructions", "Agent 1 brief"],
-      ["2.1.2", "Prompt 2.1.2", "hidden until opened"],
+      ["2.1.2", "hidden until opened", "hidden until opened"],
     ]);
   });
 
@@ -159,7 +161,52 @@ describe("buildSteps", () => {
 
   it("trims a typed title and falls back to the default for a blank one", () => {
     const [a, b] = buildSteps([node({ position: 1, title: "  Draft  " }), node({ position: 2, title: "   " })]);
-    expect([stepTitle(a), stepTitle(b)]).toEqual(["Draft", "Prompt 2"]);
+    expect([stepTitle(a), stepTitle(b)]).toEqual(["Draft", "one two three"]);
+  });
+});
+
+describe("CA-12 P6: tiles are named from what they hold", () => {
+  const title = (kind: Parameters<typeof defaultTitleFor>[0], payload: Record<string, unknown>) => defaultTitleFor(kind, payload as never);
+
+  it("a prompt: its first 8 words, with … when there were more; the kind's name when empty", () => {
+    expect(title("prompt", { text: "Write me a launch email for the new bakery app today please" })).toBe("Write me a launch email for the new…");
+    expect(title("prompt", { text: "  Short   one " })).toBe("Short one");
+    expect(title("prompt", { text: "" })).toBe("Prompt");
+  });
+
+  it("code: the file name, else the first line with something on it", () => {
+    expect(title("code", { source: "x", filename: "order-form.tsx" })).toBe("order-form.tsx");
+    expect(title("code", { source: "\n\n  select 1;\nselect 2;" })).toBe("select 1;");
+    expect(title("code", { source: "" })).toBe("Code");
+  });
+
+  it("a manual step: its first line; an agent: the first line of its instructions; a check: what it tested", () => {
+    expect(title("manual", { text: "Exported the logo\nthen resized it" })).toBe("Exported the logo");
+    expect(title("agent", { system_prompt: "\nYou triage the inbox.\nBe brief." })).toBe("You triage the inbox.");
+    expect(title("agent", { system_prompt: "" })).toBe("Agent");
+    expect(title("check", { tested: "Places a test order" })).toBe("Places a test order");
+    expect(title("check", {})).toBe("Check");
+  });
+
+  it("a tool: the app; a file: its name; nothing to go on: the kind", () => {
+    expect(title("tool", { service: "GitHub" })).toBe("GitHub");
+    expect(title("file", { title: "brand-guide.md" })).toBe("brand-guide.md");
+    expect(title("file", {})).toBe("File");
+    expect(title("team", {})).toBe("Team");
+  });
+
+  it("never repeats the number, and a title the maker typed wins", () => {
+    const [step, typed] = buildSteps([node({ position: 1, payload: { text: "Plan the app" } }), node({ position: 2, title: "Mine", payload: { text: "Plan the app" } })]);
+    expect(step.defaultTitle).toBe("Plan the app");
+    expect(step.defaultTitle).not.toMatch(/\d/);
+    expect(stepTitle(typed)).toBe("Mine");
+  });
+
+  it("names a link's site", () => {
+    expect(siteNameOf("https://www.github.com/a/b?c=1")).toBe("github.com");
+    expect(siteNameOf("example.org/page")).toBe("example.org");
+    expect(siteNameOf("not a link")).toBeNull();
+    expect(siteNameOf("")).toBeNull();
   });
 });
 
@@ -549,7 +596,7 @@ describe("a manual step (UI-P70)", () => {
       ["m", "3", "manual"],
       ["p3", "4", "prompt"],
     ]);
-    expect(after[2]).toMatchObject({ defaultTitle: "Manual step 3", title: null, tool: "Figma", text: "Laid out the hero", model: null, runs: null, mediaId: null });
+    expect(after[2]).toMatchObject({ defaultTitle: "Laid out the hero", title: null, tool: "Figma", text: "Laid out the hero", model: null, runs: null, mediaId: null });
   });
 
   it("does not number files, tools or results that sit between steps", () => {
@@ -827,9 +874,9 @@ describe("code is a step (CA-02 P7)", () => {
     ];
     const steps = buildSteps(tree);
     expect(steps.map((step) => [step.id, step.kind, step.number, step.defaultTitle])).toEqual([
-      ["p1", "prompt", "1", "Prompt 1"],
-      ["c1", "code", "2", "Code 2"],
-      ["c2", "code", "3", "Code 3"],
+      ["p1", "prompt", "1", "Plan the app"],
+      ["c1", "code", "2", "app.ts"],
+      ["c2", "code", "3", "select 1;"],
     ]);
     expect(steps[1]).toMatchObject({ text: "a\nb", words: 2, language: "ts", filename: "app.ts", entrypoint: true, tool: "Cursor", model: "Opus 5", uses: [{ kind: "output", node_id: "p1" }] });
     expect(steps[2]).toMatchObject({ filename: null, entrypoint: false });
@@ -900,7 +947,7 @@ describe("a check is a step (CA-03 P5)", () => {
       id: "k1",
       kind: "check",
       number: "2",
-      defaultTitle: "Check 2",
+      defaultTitle: "Places a test order",
       text: "Places a test order",
       uses: [{ kind: "output", node_id: "c1" }],
       check: { tested: "Places a test order", passing: "The total shows £9.00", onFail: null, passed: 13, total: 14, runAt: "2026-10-12" },

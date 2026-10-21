@@ -184,7 +184,7 @@ describe("CA-12 P5 · adding a session", () => {
 
     // The page: its head, the count, three tiles and "Show all 66 prompts".
     expect(await screen.findByRole("button", { name: "Show all 66 prompts" }, { timeout: 10_000 })).toBeTruthy();
-    expect(screen.getAllByText(/Prompt \d+ of the long session\./)).toHaveLength(3);
+    expect(screen.getAllByTestId("step-card")).toHaveLength(3);
     expect(screen.getByRole("separator", { name: /^Session 1 · / }).textContent).toContain("66 prompts");
   });
 
@@ -194,7 +194,7 @@ describe("CA-12 P5 · adding a session", () => {
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: /66 prompts$/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Show all 66 prompts" }, { timeout: 15_000 }));
     expect(await screen.findByRole("button", { name: "Show fewer" })).toBeTruthy();
-    expect(screen.getAllByText(/Prompt \d+ of the long session\./)).toHaveLength(66);
+    expect(screen.getAllByTestId("step-card")).toHaveLength(66);
     await waitFor(() => expect(tableRows("build_sessions").find((row) => row.session_key === LONG)?.collapsed).toBe(false));
   });
 

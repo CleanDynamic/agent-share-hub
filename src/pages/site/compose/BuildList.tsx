@@ -25,7 +25,7 @@
    CA-03 P7: an agent that can use a tool reading content it doesn't control has the warning module under it. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ArrowUp, MoreHorizontal } from "lucide-react";
+import { ArrowUp, Link as JoinIcon, MoreHorizontal, Unlink as SplitIcon } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -363,29 +363,60 @@ interface ListNest {
 
 const ListNestContext = createContext<ListNest | null>(null);
 
+/**
+ * CA-12 P6: whether the tile around `ref` is hovered or holds focus. "Send with the step above" is a control, so it is drawn
+ * as one (a text button with a small join glyph); on a computer it shows while the tile is hovered or focused, and on a phone
+ * (no hover) always.
+ */
+function useTileHover(phone: boolean) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"]');
+    if (!tile || phone) return;
+    const on = () => setNear(true);
+    const off = (event: Event) => {
+      if (event.type === "focusout" && tile.contains((event as FocusEvent).relatedTarget as Node | null)) return;
+      setNear(false);
+    };
+    tile.addEventListener("pointerenter", on);
+    tile.addEventListener("pointerleave", off);
+    tile.addEventListener("focusin", on);
+    tile.addEventListener("focusout", off);
+    return () => {
+      tile.removeEventListener("pointerenter", on);
+      tile.removeEventListener("pointerleave", off);
+      tile.removeEventListener("focusin", on);
+      tile.removeEventListener("focusout", off);
+    };
+  }, [phone]);
+  return { ref, shown: phone || near };
+}
+
 /** "Send with the step above" on a top-level tile after the first; "Make it its own step" on a tile inside one. */
 function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
   const nest = useContext(ListNestContext);
+  const { ref, shown } = useTileHover(phone);
   if (!nest) return null;
-  if (step.inside) {
-    return (
-      <TextButton target={phone} style={text(12, 500, t.text2)} onClick={(event) => {
-        event.stopPropagation();
-        nest.move(step.id, null, nest.after(step.id));
-      }}>
-        {NEST_LIST_COPY.ownStep}
-      </TextButton>
-    );
-  }
-  const above = nest.above(step.id);
-  if (!above || !nest.canNest(step.id, above.id)) return null;
+  const above = step.inside ? null : nest.above(step.id);
+  if (!step.inside && (!above || !nest.canNest(step.id, above.id))) return null;
+  const own = Boolean(step.inside);
+  const Icon = own ? SplitIcon : JoinIcon;
   return (
-    <TextButton target={phone} style={text(12, 500, t.text2)} onClick={(event) => {
-      event.stopPropagation();
-      nest.move(step.id, above.id, Number.MAX_SAFE_INTEGER);
-    }}>
-      {NEST_LIST_COPY.sendWithAbove}
-    </TextButton>
+    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0, transition: "opacity 120ms" }}>
+      <TextButton
+        target={phone}
+        style={{ ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: 4 }}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (own) nest.move(step.id, null, nest.after(step.id));
+          else if (above) nest.move(step.id, above.id, Number.MAX_SAFE_INTEGER);
+        }}
+      >
+        <Icon size={12} strokeWidth={1.6} aria-hidden="true" />
+        {own ? NEST_LIST_COPY.ownStep : NEST_LIST_COPY.sendWithAbove}
+      </TextButton>
+    </span>
   );
 }
 
