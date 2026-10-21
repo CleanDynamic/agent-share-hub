@@ -130,7 +130,7 @@ describe("StepsList", () => {
   it("the result sits under its own head: the evidence check, the host and where it came from", () => {
     mountList(view("list"));
     const result = screen.getByTestId("result-card");
-    expect(within(result).getByText("crumb-bakery.vercel.app")).toBeTruthy();
+    expect(within(result).getAllByText("crumb-bakery.vercel.app").length).toBeGreaterThan(0);
     expect(within(result).getByText("from step 5")).toBeTruthy();
     expect(result.querySelector('[data-ui="glyph"], svg')).not.toBeNull();
   });

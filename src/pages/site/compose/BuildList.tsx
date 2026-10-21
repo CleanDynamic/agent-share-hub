@@ -56,7 +56,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { checkStatus, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkStatus, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -1546,10 +1546,12 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
         <Quiet>Result</Quiet>
         <span style={{ ...text(14, 500, t.text), overflowWrap: "anywhere" }}>{result.title}</span>
         <ResultTileBody facts={result.facts} />
-        <Quiet>
-          {result.holds}
-          {result.from ? ` · from prompt ${result.from}` : ""}
-        </Quiet>
+        {resultHolds(result.facts) || result.from ? (
+          <Quiet>
+            {resultHolds(result.facts) ? result.holds : ""}
+            {result.from ? `${resultHolds(result.facts) ? " · " : ""}from prompt ${result.from}` : ""}
+          </Quiet>
+        ) : null}
       </div>
     </div>
   );

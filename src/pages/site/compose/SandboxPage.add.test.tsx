@@ -136,6 +136,8 @@ describe.each([
     await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
     const before = screen.queryAllByTestId("result-card").length;
     await choose(phone, /^Result/);
+    fireEvent.change(await screen.findByLabelText("Web address"), { target: { value: "plumandrye.example" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
     // In the tap: the stand-in tile, scrolled to.
     const pending = screen.getByTestId("add-pending");
     expect(pending.textContent).toContain("Adding a result");
@@ -182,6 +184,8 @@ describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)
     mount("/compose/new", [{ method: "POST", path: /^\/rest\/v1\/builds(\?|$)/, answer: PG.rlsInsert("builds") }]);
     await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
     await choose(false, item);
+    fireEvent.change(await screen.findByLabelText("Web address"), { target: { value: "plumandrye.example" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
     await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
     expect(said.mock.calls.map(([line]) => line)).toEqual(["Couldn't start your draft. Try again."]);

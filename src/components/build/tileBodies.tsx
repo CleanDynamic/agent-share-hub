@@ -4,9 +4,10 @@
 
    PURE. Every body takes the `Step` the graph already makes (`buildSteps`), so the maker sees what readers see. */
 
-import { File as FileIcon, FileCode, FileImage, FileSpreadsheet, FileText, Link as LinkIcon } from "lucide-react";
+import { File as FileIcon, FileCode, FileImage, FileSpreadsheet, FileText } from "lucide-react";
 import { type CSSProperties, type ReactNode, useState } from "react";
 
+import { Glyph } from "@/components/brand/Glyph";
 import { CodeLines } from "@/components/code/CodeLines";
 import { CONNECTION_LABEL, RESULT_THUMBS, resultHolds, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
@@ -182,7 +183,7 @@ function SiteIcon({ host, size = 20 }: { host: string; size?: number }) {
   const box: CSSProperties = { width: size, height: size, flexShrink: 0, borderRadius: 4, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", color: t.text2 };
   return failed ? (
     <span data-testid="site-icon" data-fallback="" style={box}>
-      <LinkIcon size={Math.round(size * 0.8)} strokeWidth={1.5} aria-hidden="true" />
+      <Glyph name="link" size={Math.round(size * 0.8)} />
     </span>
   ) : (
     <span data-testid="site-icon" style={box}>
