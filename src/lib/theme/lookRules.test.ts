@@ -300,6 +300,7 @@ export const CA03_FILES: readonly string[] = [
   "src/components/code/CodeEditorField.test.tsx",
   "src/components/code/CodeEditorField.tsx",
   "src/components/code/CodeGutter.tsx",
+  "src/components/code/CodeLines.test.tsx",
   "src/components/code/CodeLines.tsx",
   "src/components/code/lineModel.ts",
   "src/pages/site/compose/BuildList.nest.test.tsx",
