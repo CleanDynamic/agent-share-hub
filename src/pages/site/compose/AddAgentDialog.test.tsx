@@ -296,3 +296,28 @@ describe("CA-12 P11: the dialog's order and what it asks", () => {
     expect(vi.mocked(props.onAdd).mock.calls[0][0]).not.toHaveProperty("runs");
   });
 });
+
+describe("CA-13 · Deep Agents and helpers in the Add dialog", () => {
+  it("offers the Runtime models and services subcategory first under Runs in, with Deep Agents and LangGraph in Agent frameworks", () => {
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Runs in" }));
+    const rows = screen.getAllByRole("option").map((row) => row.textContent ?? "");
+    expect(screen.getByText("Runtime models and services")).toBeTruthy();
+    // "Not sure", then the subcategory's own rows before any other tool.
+    expect(rows.slice(0, 3)).toEqual(["Not sure", "TypeSafe Jev", "ScaleDown Summarize"]);
+    expect(screen.getAllByText("Agent frameworks").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("LangChain Deep Agents").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("LangGraph").length).toBeGreaterThan(0);
+  });
+
+  it("asks for Helpers it used on an agent, and hands the helpers back", () => {
+    const props = open();
+    fireEvent.click(screen.getByRole("button", { name: "Add a helper" }));
+    fireEvent.change(screen.getByLabelText("When the history reaches"), { target: { value: "80" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add this helper" }));
+    fireEvent.click(screen.getByRole("button", { name: "Runs in" }));
+    fireEvent.click(screen.getByRole("option", { name: /Not sure/ }));
+    fireEvent.click(screen.getByRole("button", { name: AGENT_DIALOG_COPY.add }));
+    expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].helpers).toEqual([{ provider: "scaledown", job: "summarize", trigger: { at: 0.8 } }]);
+  });
+});

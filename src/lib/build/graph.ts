@@ -26,6 +26,11 @@ import { HEX_HINT, normaliseHex } from "@/lib/theme/partColour";
 import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
+import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } from "./cost";
+import { helpersOf, helpersRefusal, type Helper } from "./helpers";
+import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
+import { traceRefusal, traceUrlOf } from "./trace";
+import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -42,7 +47,7 @@ export const CODE_TYPE = "code";
 export const CHECK_TYPE = "eval_run";
 
 /** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -141,6 +146,23 @@ export interface Step {
   reply?: string;
   /** CA-12 P12, a check only: its cases, when it has any. */
   cases?: CheckCase[];
+  /** CA-13 P2, a decision only: its questions, what it read and one real answer. */
+  decision?: DecisionFacts;
+  /** CA-13 P3, a runtime tile only (agent, team, code, tool, decision): the decision it runs after, and the value it ran on. */
+  runsWhen?: RunsWhen;
+  /** CA-13 P6, an agent only: the helper models that kept it on track (at most 12). */
+  helpers?: Helper[];
+  /** CA-13 P5, an agent only: the Code tiles that define it (`payload.defined_in`, node ids), e.g. the file holding `create_deep_agent(...)`. */
+  definedIn?: string[];
+  /** CA-13 P5, an agent only: a trace link (https only). */
+  traceUrl?: string;
+  /** CA-13 P14, an agent only: "How to install, optional", as the maker gave it. A decision keeps its own in `decision`. */
+  install?: string;
+  /** CA-13 P7, a prompt or an agent: the shape its answer is forced into. */
+  outputShape?: OutputShape;
+  /** CA-13 P8: what it took to make (any tile) and what it costs to run (a runtime tile): never added together. */
+  buildCost?: CostFigures;
+  runCost?: RunCost;
 }
 
 /** CA-12 P7: a tool tile's facts. */
@@ -272,6 +294,8 @@ export const CHANGES_EACH_ROUND_MAX = 120;
 export const MANUAL_TEXT_MAX = 140;
 
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
+/** CA-13 P1: said when Add › Decision is refused because the `decision` node type is not live yet. */
+export const DECISION_TYPE_MISSING = "Decisions need the CA-13 database change. Ask Lovable to apply it.";
 
 const USE_KINDS: readonly UseKind[] = ["output", "file", "tool"];
 const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event", "goal", "script"];
@@ -434,6 +458,7 @@ const KIND_OF_TYPE: Record<string, StepKind> = {
   [MANUAL_STEP_TYPE]: "manual",
   [CODE_TYPE]: "code",
   [CHECK_TYPE]: "check",
+  [DECISION_TYPE]: "decision",
 };
 
 const KIND_NAME: Record<StepKind, string> = {
@@ -445,6 +470,7 @@ const KIND_NAME: Record<StepKind, string> = {
   check: "Check",
   file: "File",
   tool: "Tool",
+  decision: "Decision",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -614,6 +640,10 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
       return named(str("title"));
     case "check":
       return named(firstLineOf(str("tested")));
+    case "decision": {
+      const ids = (Array.isArray(payload.questions) ? payload.questions : []).flatMap((q) => (isRecord(q) && typeof q.id === "string" && q.id ? [q.id] : []));
+      return ids.length ? ids.slice(0, 3).join(", ") : KIND_NAME[kind];
+    }
     default:
       return KIND_NAME[kind];
   }
@@ -717,7 +747,9 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
             ? (stringOf(payload.summary) ?? "")
             : kind === "tool"
               ? (stringOf(payload.scopes) ?? "")
-              : (stringOf(payload.text) ?? "");
+              : kind === "decision"
+                ? (stringOf(payload.state_sample) ?? "")
+                : (stringOf(payload.text) ?? "");
   // CA-12 P6: named from what it holds, never by repeating its number.
   const defaultTitle = defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
@@ -752,9 +784,39 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "file" ? { fileFacts: fileFactsOf(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
+    ...(kind === "decision" && decisionOf(payload) ? { decision: decisionOf(payload) as DecisionFacts } : null),
+    ...runtimeFactsOf(kind, payload),
+    // CA-13 P3: only a runtime tile runs when a decision went a certain way.
+    ...(canRunWhen(kind) && runsWhenOf(payload.runs_when) ? { runsWhen: runsWhenOf(payload.runs_when) as RunsWhen } : null),
     // CA-06 P4: the maker's colour, when it reads as one.
     ...(normaliseHex(payload.colour) ? { colour: normaliseHex(payload.colour) as string } : null),
   };
+}
+
+/** CA-13: the runtime facts a tile's payload holds, each only on the tiles that can have it. */
+function runtimeFactsOf(kind: StepKind, payload: Payload): Partial<Step> {
+  const out: Partial<Step> = {};
+  if (kind === "agent") {
+    const helpers = helpersOf(payload.helpers);
+    if (helpers.length) out.helpers = helpers;
+    const definedIn = Array.isArray(payload.defined_in) ? payload.defined_in.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
+    if (definedIn.length) out.definedIn = definedIn;
+    const trace = traceUrlOf(payload.trace_url);
+    if (trace) out.traceUrl = trace;
+    const install = stringOf(payload.install)?.trim().slice(0, 400);
+    if (install) out.install = install;
+  }
+  if (kind === "prompt" || kind === "agent") {
+    const shape = outputShapeOf(payload.output_shape);
+    if (shape) out.outputShape = shape;
+  }
+  const built = buildCostOf(payload.build_cost);
+  if (built) out.buildCost = built;
+  if (kind === "agent" || kind === "team" || kind === "code" || kind === "tool" || kind === "decision") {
+    const run = runCostOf(payload.run_cost);
+    if (run) out.runCost = run;
+  }
+  return out;
 }
 
 /** An agent's instructions: its first child, drawn from the agent's own row. */
@@ -780,6 +842,14 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     memoryTidy: undefined,
     changesEachRound: undefined,
     modelRun: undefined,
+    runsWhen: undefined,
+    helpers: undefined,
+    definedIn: undefined,
+    traceUrl: undefined,
+    install: undefined,
+    outputShape: undefined,
+    buildCost: undefined,
+    runCost: undefined,
   };
 }
 
@@ -1189,9 +1259,9 @@ function runsPayload(operation: string, runs: Runs | null | undefined): Json | n
 }
 
 /** Say once that the type is not in the registry yet, then stop. */
-async function requireLiveType(operation: string, key: string): Promise<void> {
+async function requireLiveType(operation: string, key: string, message: string = NODE_TYPE_MISSING): Promise<void> {
   const type = await getNodeType(key);
-  if (!type || !type.is_active) throw refuse(operation, NODE_TYPE_MISSING);
+  if (!type || !type.is_active) throw refuse(operation, message);
 }
 
 const titleOrNull = (value: string | null | undefined): string | null => value?.trim() || null;
@@ -1289,6 +1359,185 @@ export async function addTeam(
   const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: { ...(session ? { session } : null), ...(start ? { runs: start } : null) } as Json });
   const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: instructions ?? "", ...keys } as Json });
   return { team, agent };
+}
+
+// --- CA-13: decisions and "Runs when" ----------------------------------------
+
+/** What a Decision holds when it is added or changed. `answer` is one real answer, when the maker has one. */
+export interface DecisionInput {
+  /** A blank name saves as null, so the default (its question names) shows. */
+  name?: string | null;
+  provider: string;
+  model: string;
+  via?: "api" | "adapter";
+  /** The Code tiles that make the call (rule 4). */
+  calledFrom?: readonly string[];
+  /** The step the state came from (writes a Uses link), or null when typed. */
+  stateFrom?: string | null;
+  stateSample?: string;
+  questions: readonly DecisionQuestion[];
+  answer?: Record<string, DecisionAnswer>;
+  source?: "run" | "maker";
+  /** "How to install, optional", as given. */
+  install?: string;
+  session?: string | null;
+}
+
+/** The payload keys a Decision writes, checked. */
+function decisionPayload(operation: string, input: DecisionInput): Payload {
+  const provider = input.provider.trim();
+  if (!provider) throw refuse(operation, "A decision needs a model or service.");
+  const why = questionsRefusal(input.questions, input.name?.trim() || undefined);
+  if (why) throw refuse(operation, why);
+  if ((input.stateSample ?? "").length > STATE_SAMPLE_MAX) throw refuse(operation, `The state is at most ${STATE_SAMPLE_MAX.toLocaleString("en-GB")} characters.`);
+  const out: Payload = {
+    provider: toolFor(provider)?.id ?? provider,
+    model: input.model.trim(),
+    questions: input.questions.map((q) => ({
+      id: q.id.trim(),
+      type: q.type,
+      instructions: q.instructions.trim(),
+      ...(q.type === "choice" ? { options: (q.options ?? []).map((o) => ({ key: o.key.trim(), ...(o.line?.trim() ? { line: o.line.trim() } : null) })) } : null),
+      ...(q.type === "score" ? { levels: (q.levels ?? []).map((level) => level.trim()) } : null),
+    })) as unknown as Json,
+  };
+  if (input.via) out.via = input.via;
+  const called = [...new Set((input.calledFrom ?? []).filter(Boolean))];
+  if (called.length) out.called_from = called;
+  if (input.stateFrom) out.state_from = input.stateFrom;
+  if (input.stateSample?.trim()) out.state_sample = input.stateSample;
+  if (input.answer && Object.keys(input.answer).length) {
+    out.answer = input.answer as unknown as Json;
+    out.source = input.source ?? "maker";
+  }
+  if (input.install?.trim()) out.install = input.install.trim();
+  return out;
+}
+
+/** A Decision: top level, a runtime tile. Refused until the CA-13 database change is live. */
+export async function addDecision(buildId: string, tree: readonly NodeTree[], input: DecisionInput): Promise<BuildNode> {
+  await requireLiveType("addDecision", DECISION_TYPE, DECISION_TYPE_MISSING);
+  const title = titleOrNull(input.name);
+  if (title && title.length > TITLE_MAX) throw refuse("addDecision", `A title is at most ${TITLE_MAX} characters.`);
+  const keys = decisionPayload("addDecision", input);
+  const uses = input.stateFrom ? [{ kind: "output", node_id: input.stateFrom }] : [];
+  return placeTopNode(buildId, tree, { type: DECISION_TYPE, title, payload: { ...keys, ...(uses.length ? { uses } : null), ...(input.session ? { session: input.session } : null) } as Json });
+}
+
+/** Change a Decision's settings. Keys it does not write (its place, "Runs when", costs) are kept. */
+export async function setDecision(node: BuildNode, input: DecisionInput): Promise<BuildNode> {
+  if (node.type !== DECISION_TYPE) throw refuse("setDecision", "That is not a decision.");
+  const keys = decisionPayload("setDecision", input);
+  const old = payloadOf(node);
+  const payload: Payload = { ...old };
+  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install"]) delete payload[key];
+  Object.assign(payload, keys);
+  // The state's Uses link follows "What it reads": the old output link goes, the new one is added.
+  const kept = usesOf(node).filter((use) => !(use.kind === "output" && use.node_id === old.state_from));
+  if (input.stateFrom && !kept.some((use) => use.kind === "output" && use.node_id === input.stateFrom)) kept.push({ kind: "output", node_id: input.stateFrom });
+  if (kept.length) payload.uses = kept as unknown as Json;
+  else delete payload.uses;
+  const title = titleOrNull(input.name);
+  if (title && title.length > TITLE_MAX) throw refuse("setDecision", `A title is at most ${TITLE_MAX} characters.`);
+  return upsertNode({ ...withPayload(node, payload), title });
+}
+
+/** What Details can write to a tile beyond its own fields (CA-13). A key left out is kept; `null` takes it off. */
+export interface RuntimePatch {
+  helpers?: readonly Helper[] | null;
+  definedIn?: readonly string[] | null;
+  traceUrl?: string | null;
+  install?: string | null;
+  outputShape?: OutputShape | null;
+  buildCost?: CostFigures | null;
+  runCost?: RunCost | null;
+}
+
+const RUNTIME_TYPES = new Set([AGENT_TYPE, TEAM_TYPE, CODE_TYPE, DECISION_TYPE, TOOL_TYPE]);
+
+/**
+ * CA-13: the runtime facts of a tile, checked. Helpers, "defined in" and a trace link belong to an agent; an install line to
+ * an agent or a decision; an answer shape to a prompt or an agent; what it took to make to any tile; what it costs to run to a
+ * runtime tile only (rule 3).
+ */
+export async function setRuntimeFields(node: BuildNode, patch: RuntimePatch): Promise<BuildNode> {
+  const payload = { ...payloadOf(node) };
+  const set = (key: string, value: unknown) => {
+    if (value === null || value === undefined) delete payload[key];
+    else payload[key] = value as Json;
+  };
+  const agent = node.type === AGENT_TYPE;
+  if ("helpers" in patch) {
+    if (!agent) throw refuse("setRuntimeFields", "Only an agent has helpers.");
+    const list = patch.helpers ?? [];
+    const why = helpersRefusal(list);
+    if (why) throw refuse("setRuntimeFields", `${why}.`);
+    set("helpers", list.length ? list : null);
+  }
+  if ("definedIn" in patch) {
+    if (!agent) throw refuse("setRuntimeFields", "Only an agent is defined in code.");
+    const ids = [...new Set((patch.definedIn ?? []).filter(Boolean))];
+    set("defined_in", ids.length ? ids : null);
+  }
+  if ("traceUrl" in patch) {
+    if (!agent) throw refuse("setRuntimeFields", "Only an agent has a trace link.");
+    const why = traceRefusal(patch.traceUrl ?? "");
+    if (why) throw refuse("setRuntimeFields", why);
+    set("trace_url", patch.traceUrl?.trim() ? (traceUrlOf(patch.traceUrl) as string) : null);
+  }
+  if ("install" in patch) {
+    if (!agent && node.type !== DECISION_TYPE) throw refuse("setRuntimeFields", "Only an agent or a decision has an install line.");
+    const line = patch.install?.trim() ?? "";
+    if (line.length > 400) throw refuse("setRuntimeFields", "An install line is at most 400 characters.");
+    set("install", line || null);
+  }
+  if ("outputShape" in patch) {
+    if (!agent && node.type !== PROMPT_TYPE) throw refuse("setRuntimeFields", "Only a prompt or an agent has an answer shape.");
+    if (patch.outputShape) {
+      const why = shapeRefusal(patch.outputShape);
+      if (why) throw refuse("setRuntimeFields", why);
+    }
+    set("output_shape", patch.outputShape ?? null);
+  }
+  if ("buildCost" in patch) {
+    if (patch.buildCost) {
+      const why = costRefusal(patch.buildCost);
+      if (why) throw refuse("setRuntimeFields", why);
+    }
+    set("build_cost", patch.buildCost && buildCostOf(patch.buildCost) ? patch.buildCost : null);
+  }
+  if ("runCost" in patch) {
+    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime tile has a cost to run.");
+    if (patch.runCost) {
+      const why = costRefusal(patch.runCost);
+      if (why) throw refuse("setRuntimeFields", why);
+    }
+    set("run_cost", patch.runCost && runCostOf(patch.runCost) ? patch.runCost : null);
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/** The decisions of a build as `runsWhenRefusal` reads them: id, top-level order and facts. */
+export const decisionRefsOf = (steps: readonly Step[]): DecisionRef[] =>
+  steps.flatMap((step, index) => (step.kind === "decision" ? [{ id: step.id, index, facts: step.decision ?? null }] : []));
+
+/** The top-level index of a step, or of the team it sits in; -1 when it is not in `steps`. */
+export const topIndexOf = (steps: readonly Step[], id: string): number => steps.findIndex((step) => step.id === id || step.children.some((child) => child.id === id));
+
+/**
+ * CA-13 P3: set or clear when a runtime tile runs. Refused for a prompt, manual step, file, result or session head, for a
+ * decision at or below it, and for a question or value the decision does not have (`runsWhenRefusal`).
+ */
+export async function setRunsWhen(node: BuildNode, steps: readonly Step[], runsWhen: RunsWhen | null): Promise<BuildNode> {
+  const payload = { ...payloadOf(node) };
+  delete payload.runs_when;
+  if (runsWhen) {
+    const kind = node.type === TEAM_TYPE ? "team" : node.type === AGENT_TYPE ? "agent" : node.type === CODE_TYPE ? "code" : node.type === DECISION_TYPE ? "decision" : isStepTile(node) && node.type === TOOL_TYPE ? "tool" : node.type;
+    const why = runsWhenRefusal(kind, topIndexOf(steps, node.id), runsWhen, decisionRefsOf(steps));
+    if (why) throw refuse("setRunsWhen", why);
+    payload.runs_when = runsWhen as unknown as Json;
+  }
+  return upsertNode(withPayload(node, payload));
 }
 
 /**

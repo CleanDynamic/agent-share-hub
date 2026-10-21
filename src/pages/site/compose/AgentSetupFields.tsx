@@ -160,6 +160,7 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
               onChange(result.value);
             }}
             inBuild={inBuild}
+            runtime
             allowNone
             noneLabel={dialog ? AGENT_SETUP_COPY.notSure : AGENT_SETUP_COPY.ownCode}
             unpicked={dialog && !runsChosen}

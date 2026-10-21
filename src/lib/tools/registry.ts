@@ -65,14 +65,22 @@ export const LOGO_KEYS = [
 
 export type LogoKey = (typeof LOGO_KEYS)[number];
 
-export type ToolGroupKey = "chat" | "coding" | "builders" | "agents" | "automation" | "image" | "video" | "audio" | "notes" | "design" | "other" | "services";
+export type ToolGroupKey =
+  | "chat" | "coding" | "builders" | "agents" | "automation" | "image" | "video" | "audio" | "notes" | "design" | "other" | "services"
+  | "runtime-decisions" | "runtime-context" | "runtime-frameworks" | "runtime-tracing";
+
+/**
+ * CA-13 rule 5: where a model or service sits. "workspace" is where work was done (every tool before CA-13); "runtime" is a
+ * part of the finished product (Jev, ScaleDown, Deep Agents, LangSmith). Nobody has a session in a runtime model.
+ */
+export type ToolCategory = "workspace" | "runtime";
 
 /** CA-12 P13: which picker lists a tool. */
 export type ToolList = "ai" | "app";
 
 export type ToolKind =
   | "chat" | "coding" | "builder" | "agent" | "automation"
-  | "image" | "video" | "audio" | "notes" | "design" | "app";
+  | "image" | "video" | "audio" | "notes" | "design" | "app" | "runtime";
 
 export type ToolModels =
   | { mode: "fixed"; ids: string[]; other: boolean }    // the tool's own picker; other: true when it also takes your own key or a typed id
@@ -86,6 +94,8 @@ export type StepKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual
 export interface Tool {
   /** CA-12 P13: the lists it is offered in. */
   lists: readonly ToolList[];
+  /** CA-13: "runtime" for the Runtime models and services subcategory; "workspace" for everything else. */
+  category: ToolCategory;
   /** What a payload stores: "claude-code". */
   id: string;
   /** What a page shows: "Claude Code". */
@@ -145,7 +155,18 @@ export const TOOL_GROUPS: readonly { key: ToolGroupKey; label: string }[] = [
   { key: "other", label: "Other apps" },
 ];
 
-const ENTRIES: readonly Omit<Tool, "lists">[] = [
+/** CA-13: the four groups of the Runtime models and services subcategory, in the order they show. */
+export const RUNTIME_GROUPS: readonly { key: ToolGroupKey; label: string }[] = [
+  { key: "runtime-decisions", label: "Decision models" },
+  { key: "runtime-context", label: "Context helpers" },
+  { key: "runtime-frameworks", label: "Agent frameworks" },
+  { key: "runtime-tracing", label: "Tracing" },
+];
+
+/** CA-13: the subcategory's heading wherever it is offered. */
+export const RUNTIME_HEADING = "Runtime models and services";
+
+const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   {
     id: "chatgpt", name: "ChatGPT", group: "chat", logo: "openai", aliases: ["chat gpt", "chatgpt.com"], client: "chatgpt",
     kind: "chat",
@@ -588,7 +609,7 @@ const ENTRIES: readonly Omit<Tool, "lists">[] = [
 ];
 
 /** CA-12 P13: an app or service with no model, named on a Tool tile, a manual step or an agent's tools. */
-const app = (id: string, name: string, aliases: string[], logo: LogoKey | null = null, readsOutside = false): Omit<Tool, "lists"> => ({
+const app = (id: string, name: string, aliases: string[], logo: LogoKey | null = null, readsOutside = false): Omit<Tool, "lists" | "category"> => ({
   id,
   name,
   group: "services",
@@ -604,7 +625,7 @@ const app = (id: string, name: string, aliases: string[], logo: LogoKey | null =
 });
 
 /** CA-12 P13: apps and services that are not AI tools. A mark where one is already in the project, else the neutral square. */
-const APP_ENTRIES: readonly Omit<Tool, "lists">[] = [
+const APP_ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   app("github", "GitHub", ["github.com", "git hub"], null, true),
   app("gitlab", "GitLab", ["gitlab.com"], null, true),
   app("stripe", "Stripe", ["stripe.com"]),
@@ -623,6 +644,35 @@ const APP_ENTRIES: readonly Omit<Tool, "lists">[] = [
   app("resend", "Resend", ["resend.com"]),
 ];
 
+/** CA-13: a model or service that is part of the finished product. A neutral glyph, no logo; it runs no session, so it fits no Add item. */
+const runtime = (id: string, name: string, group: ToolGroupKey, aliases: string[]): Omit<Tool, "lists" | "category"> => ({
+  id,
+  name,
+  group,
+  logo: null,
+  aliases,
+  kind: "runtime",
+  // An agent framework runs whatever model it is given; every other runtime model is not a place a prompt is run.
+  models: group === "runtime-frameworks" ? { mode: "any", suggested: [] } : { mode: "none" },
+  steps: group === "runtime-frameworks" ? ["agent"] : [],
+  status: "current",
+  source: null,
+  checked: null,
+  unverified: true,
+});
+
+/** CA-13 rule 5: the Runtime models and services subcategory. */
+const RUNTIME_ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
+  runtime("typesafe-jev", "TypeSafe Jev", "runtime-decisions", ["jev", "typesafe", "type safe jev"]),
+  runtime("scaledown-summarize", "ScaleDown Summarize", "runtime-context", ["scaledown summarization"]),
+  runtime("scaledown-compress", "ScaleDown Compress", "runtime-context", ["scaledown tool compression"]),
+  runtime("scaledown-extract", "ScaleDown Extract", "runtime-context", ["scaledown extraction"]),
+  runtime("scaledown-classify", "ScaleDown Classify", "runtime-context", ["scaledown classifier"]),
+  runtime("deep-agents", "LangChain Deep Agents", "runtime-frameworks", ["deep agents", "deepagents", "langchain deep agents"]),
+  runtime("langgraph", "LangGraph", "runtime-frameworks", ["lang graph"]),
+  runtime("langsmith", "LangSmith", "runtime-tracing", ["lang smith", "smith.langchain.com"]),
+];
+
 /** CA-12 P13: in both lists: an AI workflow or a place work happens. Everything else in the original list is an AI tool, bar the two apps. */
 const IN_BOTH = new Set(["n8n", "zapier", "make", "elevenlabs", "notion", "figma"]);
 const APP_ONLY = new Set(["vercel", "gmail"]);
@@ -631,12 +681,25 @@ const listsOf = (id: string): readonly ToolList[] => (APP_ONLY.has(id) ? ["app"]
 
 /** Every entry, AI tool or app, for looking a name up. */
 export const TOOLS: readonly Tool[] = [
-  ...ENTRIES.map((entry): Tool => ({ ...entry, lists: listsOf(entry.id) })),
-  ...APP_ENTRIES.map((entry): Tool => ({ ...entry, lists: ["app"] })),
+  ...ENTRIES.map((entry): Tool => ({ ...entry, lists: listsOf(entry.id), category: "workspace" })),
+  ...APP_ENTRIES.map((entry): Tool => ({ ...entry, lists: ["app"], category: "workspace" })),
+  ...RUNTIME_ENTRIES.map((entry): Tool => ({ ...entry, lists: ["ai"], category: "runtime" })),
 ];
+
+/**
+ * CA-13 rule 5: THE ONE FILTER. Anything that picks where work was done (a session, a prompt, an agent's tool, "Written
+ * with") reads its tools through this, so a runtime model is never offered there. Written once; use it everywhere.
+ */
+export const excludeRuntime = <T extends Pick<Tool, "category">>(tools: readonly T[]): T[] => tools.filter((tool) => tool.category !== "runtime");
+
+/** CA-13: the Runtime models and services subcategory, in group order. The Decision dialog, helpers, "Runs in" and answer shapes show it first. */
+export const RUNTIME_TOOLS: readonly Tool[] = RUNTIME_GROUPS.flatMap((group) => TOOLS.filter((tool) => tool.group === group.key));
 
 /** CA-12 P13: where the AI work was done. Sessions, prompts, an agent's "Runs in" and code's "Written with" pick from this. */
 export const AI_TOOLS: readonly Tool[] = TOOLS.filter((tool) => tool.lists.includes("ai"));
+
+/** CA-13: AI tools where work is done: the list session and prompt pickers offer, with the runtime subcategory taken out. */
+export const WORKSPACE_AI_TOOLS: readonly Tool[] = excludeRuntime(AI_TOOLS);
 
 /** CA-12 P13: what the AI or the maker worked with. A Tool tile, a manual step's "Where was it done?" and an agent's tools pick from this. */
 export const APPS: readonly Tool[] = TOOLS.filter((tool) => tool.lists.includes("app"));

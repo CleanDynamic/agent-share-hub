@@ -45,6 +45,8 @@ export interface ToolPickerProps {
   list?: ToolList;
   /** CA-12 P11: nothing has been chosen yet, even though "none" is a choice: the trigger shows the placeholder, not the none row's words. */
   unpicked?: boolean;
+  /** CA-13 rule 5: offer the Runtime models and services subcategory first (Decision dialog, helpers, "Runs in", answer shapes). */
+  runtime?: boolean;
 }
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.kind !== "note";
@@ -75,7 +77,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai", unpicked = false }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai", unpicked = false, runtime = false }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -88,7 +90,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
   const typedValue = value && !chosen ? value.trim() : null;
   const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel && !unpicked ? noneLabel : placeholder);
 
-  const rows = pickerRows({ query, inBuild, expanded, allowNone, step, list });
+  const rows = pickerRows({ query, inBuild, expanded, allowNone, step, list, runtime });
   const pickable = rows.filter(isPickable);
   const current = Math.min(active, Math.max(pickable.length - 1, 0));
   const rowId = (row: PickerRow) => `${uid}-row-${pickable.indexOf(row)}`;
@@ -105,7 +107,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     if (!next) return;
     setQuery("");
     setExpanded(false);
-    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone, step, list }).filter(isPickable);
+    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone, step, list, runtime }).filter(isPickable);
     setActive(Math.max(0, first.findIndex(isChosen)));
   };
 

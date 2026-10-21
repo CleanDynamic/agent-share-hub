@@ -450,3 +450,27 @@ describe("setup files and workflow files", () => {
     expect(readerSteps(made, makingFor("claude-code"))[1].attach[0].setup).toBeNull();
   });
 });
+
+/* ── CA-13 P14, P19: accounts, keys and installs; decisions in the markdown ── */
+
+describe("readerSteps · a Decision (CA-13)", () => {
+  const questions = [{ id: "team", type: "choice", instructions: "Which team?", options: [{ key: "billing" }, { key: "support" }] }];
+  const tree = [
+    prompt("p1", 1, "Route the ticket.", null),
+    node("dec", { position: 2, type: "decision", title: "Router", payload: { provider: "typesafe-jev", model: "jev-1.13.0", questions, answer: { team: { value: "billing" } }, source: "run", install: "pip install typesafe" } }),
+  ];
+  const steps = readerSteps(tree, { sessions: [], excluded_models: [] });
+
+  it("lists the accounts, keys and installs once, with the steps that need them", () => {
+    const need = whatYouNeed(steps, tree, { sessions: [], excluded_models: [] });
+    const group = need.find((entry) => entry.key === "accounts");
+    expect(group?.label).toBe("Accounts, keys and installs");
+    expect(group?.rows.map((row) => row.title)).toEqual([expect.stringContaining("TYPESAFE_API_KEY"), "Install: pip install typesafe"]);
+  });
+
+  it("says the decision in the markdown, and never a key value", () => {
+    const md = stepsMarkdown({ title: "T" }, steps);
+    expect(md).toContain("Router");
+    expect(md).not.toMatch(/sk-|api[_-]?key\s*=\s*\S/i);
+  });
+});

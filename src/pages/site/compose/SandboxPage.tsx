@@ -50,17 +50,20 @@ import { insertBuildSessionIfTable, nextSessionPosition, orderOf, setSessionColl
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
+import { runtimeChecks } from "@/lib/build/runtimeChecks";
 import { useComposePage } from "./ComposePage";
 import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
-import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
+import { SandboxView, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
 import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
+import { AddDecisionDialog } from "./AddDecisionDialog";
+import type { DecisionInput } from "@/lib/build/graph";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAdd } from "./BuildList";
 import { useComposerScrollPadding } from "./composeChrome";
@@ -128,6 +131,7 @@ export function SandboxPage() {
     }),
     [user?.id, profile?.display_name, profile?.username, profile?.avatar_url],
   );
+  const runtimeIssues = useMemo(() => runtimeChecks(buildSteps(tree)), [tree]);
   const onPublish = useCallback(async () => {
     await flushThread();
     // A thread that cannot be saved is not published half-written.
@@ -135,8 +139,14 @@ export function SandboxPage() {
       toast(threadHold);
       return;
     }
+    // CA-13 P18: a broken Decision or Runs when stops Publish; the rest are reminders said once and do not.
+    if (runtimeIssues.blockers.length > 0) {
+      toast(`To publish, fix this: ${runtimeIssues.blockers[0]}.`);
+      return;
+    }
+    for (const line of runtimeIssues.reminders) toast(line);
     viewProps.onPublish();
-  }, [flushThread, threadHold, viewProps]);
+  }, [flushThread, threadHold, viewProps, runtimeIssues]);
   const onRetrySave = useCallback(() => {
     if (thread.save === "error") thread.retry();
     if (viewProps.save === "error") viewProps.onRetrySave();
@@ -182,6 +192,10 @@ export function SandboxPage() {
   const teamType = useQuery({ queryKey: ["build", "getNodeType", "team"], queryFn: () => getNodeType("team"), staleTime: Infinity });
   const teamsAvailable = Boolean(teamType.data?.is_active);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
+  /** CA-13 P1, P2: Add › Decision, disabled until the `decision` node type is live. */
+  const decisionType = useQuery({ queryKey: ["build", "getNodeType", "decision"], queryFn: () => getNodeType("decision"), staleTime: Infinity });
+  const decisionAvailable = Boolean(decisionType.data?.is_active);
+  const [addDecisionOpen, setAddDecisionOpen] = useState(false);
   /** CA-02 P4: "Add as an agent" opens the dialog with the tool and the field's text, and waits to hear it was saved. */
   const [agentSeed, setAgentSeed] = useState<AgentSeed | null>(null);
   const seedDone = useRef<((saved: boolean) => void) | null>(null);
@@ -817,6 +831,18 @@ export function SandboxPage() {
     [prompts, afterWrite, settleSeed, sessionToWrite],
   );
 
+  const onAddDecision = useCallback(
+    async (input: DecisionInput) => {
+      const session = await sessionToWrite();
+      const id = await prompts.addDecisionTile({ ...input, session });
+      if (!id) return;
+      setSelectedId(id);
+      setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+      afterWrite();
+    },
+    [prompts, afterWrite, sessionToWrite],
+  );
+
   const onAddAgentTo = useCallback(
     async (teamId: string) => {
       const team = steps.find((candidate) => candidate.id === teamId);
@@ -1358,6 +1384,8 @@ export function SandboxPage() {
         onAddTool={() => setAddToolOpen(true)}
         onAddResult={onAddResult}
         onAddAgent={() => setAddAgentOpen(true)}
+        onAddDecision={() => setAddDecisionOpen(true)}
+        decisionAvailable={decisionAvailable}
         onAddManual={() => setAddManualOpen(true)}
         onAddCode={() => setAddCodeOpen(true)}
         onAddCheck={() => setAddCheckOpen(true)}
@@ -1414,6 +1442,29 @@ export function SandboxPage() {
             onAttach={pickForStep}
             onRemoveUse={(id, use) => {
               prompts.removeUse(id, use);
+              afterWrite();
+            }}
+            onDecision={(id, input) => {
+              prompts.setDecision(id, input);
+              afterWrite();
+            }}
+            onRuntime={(id, patch) => {
+              prompts.setRuntime(id, patch);
+              afterWrite();
+            }}
+            onReadHelpers={(id, read) => {
+              const agent = steps.find((step) => step.id === id);
+              if (!agent) return;
+              // The agent, its tools and its helpers, as found: only what the code wrote out literally.
+              prompts.setRuntime(id, { helpers: read.helpers });
+              if (read.model || read.tools.length) {
+                const have = (agent.toolRefs ?? []).map((ref) => listFacts.names[ref]).filter(Boolean);
+                prompts.setAgent(id, { model: read.model ?? agent.model ?? "", harness: agent.harness ? (toolFor(agent.harness)?.id ?? agent.harness) : "deep-agents", tools: [...new Set([...have, ...read.tools])] });
+              }
+              afterWrite();
+            }}
+            onRunsWhen={(id, runsWhen) => {
+              prompts.setRunsWhen(id, steps, runsWhen);
               afterWrite();
             }}
             onRuns={(id, runs) => {
@@ -1478,6 +1529,7 @@ export function SandboxPage() {
           <BuildList
             phone={phone}
             steps={steps}
+            costGroups={groups}
             dividers={dividerRows}
             emptySessions={emptySessions}
             onPickApp={(key, tool) => void onPickApp(key, tool)}
@@ -1563,7 +1615,7 @@ export function SandboxPage() {
           />
           </div>
         }
-        missing={missing.map((key) => ({ key, label: PUBLISH_WORDS[key] }))}
+        missing={[...missing.map((key): SandboxMissingItem => ({ key, label: PUBLISH_WORDS[key] })), ...runtimeIssues.blockers.map((label, at) => ({ key: `runtime-${at}` as const, label }))]}
         counts={counts}
         lens={lens}
         onLens={onLens}
@@ -1579,6 +1631,18 @@ export function SandboxPage() {
         seed={agentSeed}
         inBuild={inBuild}
         onAdd={(input) => void onAddAgentOrTeam(input)}
+      />
+      <AddDecisionDialog
+        open={addDecisionOpen}
+        onOpenChange={setAddDecisionOpen}
+        inBuild={inBuild}
+        codeTiles={codeTilesOf(steps)}
+        stepChoices={stepChoicesOf(steps)}
+        onAddCode={() => {
+          setAddDecisionOpen(false);
+          setAddCodeOpen(true);
+        }}
+        onAdd={(input) => void onAddDecision(input)}
       />
       <AddManualStepDialog
         open={addManualOpen}
@@ -1621,11 +1685,20 @@ export function SandboxPage() {
         onClose={links.closeWindows}
         onGo={links.goFromWindow}
         onDownload={(id) => void download(id)}
+        audience="maker"
         setupCounts={setupCounts}
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
     </>
   );
 }
+
+/** CA-13 rule 4: the Code tiles of a build, for "Called from" and "Read from a Code tile". */
+export const codeTilesOf = (steps: readonly Step[]): { id: string; label: string; source: string }[] =>
+  steps.flatMap((step) => (step.kind === "code" ? [{ id: step.id, label: step.filename ?? step.title ?? step.defaultTitle, source: step.text }] : []));
+
+/** CA-13 P2: the steps a decision can read the output of. */
+export const stepChoicesOf = (steps: readonly Step[]): { id: string; label: string }[] =>
+  steps.filter((step) => step.kind !== "decision").map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }));
 
 export default SandboxPage;

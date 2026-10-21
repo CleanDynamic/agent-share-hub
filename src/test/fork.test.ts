@@ -645,3 +645,92 @@ describe("rewritePayload", () => {
     expect(rewritePayload(null, promptType, map)).toEqual({});
   });
 });
+
+// --- CA-13 P15: copy the method, not the evidence ----------------------------
+
+describe("forkBuild and the original's evidence (CA-13 P15)", () => {
+  const decisionType = {
+    key: "decision", label: "Decision", category: "configuration", colour: "#0EA5E9", icon: "GitBranch", renderer: "configuration",
+    copyable: true, is_active: true, sort: 7, schema: { fields: [{ key: "questions", label: "Questions", type: "json" }, { key: "state_from", label: "State from", type: "string", format: "node_id" }] },
+  };
+  const codeType = { key: "code", label: "Code", category: "artefact", colour: "#999999", icon: "Code", renderer: "artefact", copyable: true, is_active: true, sort: 8, schema: { fields: [{ key: "source", label: "Source", type: "text" }] } };
+  const agentType = { key: "agent_config", label: "Agent configuration", category: "configuration", colour: "#7C3AED", icon: "Bot", renderer: "agent_config", copyable: true, is_active: true, sort: 2, schema: { fields: [{ key: "model", label: "Model", type: "string" }] } };
+  const promptType = { key: "prompt", label: "Prompt", category: "instruction", colour: "#E8571A", icon: "MessageSquare", renderer: "prompt", copyable: true, is_active: true, sort: 1, schema: { fields: [{ key: "text", label: "Text", type: "text" }] } };
+
+  const questions = [{ id: "team", type: "choice", instructions: "Which team?", options: [{ key: "billing" }, { key: "support" }] }];
+  const answer = { team: { value: "billing", probabilities: { billing: 0.92, support: 0.08 } } };
+
+  const router = [
+    { id: "c-code", parent_id: null, position: 0, type: "code", event_id: null, payload: { source: "client.decide()", language: "python", filename: "router.py", build_cost: { ms: 900, cost: 0.02 } } },
+    { id: "c-dec", parent_id: null, position: 1, type: "decision", event_id: null, payload: { provider: "typesafe-jev", model: "jev-1.13.0", called_from: ["c-code"], questions, answer, source: "run", state_sample: "I was charged twice.", install: "pip install x", run_cost: { per: "call", ms: 120, cost: 0.0001 } } },
+    { id: "c-agent-code", parent_id: null, position: 2, type: "code", event_id: null, payload: { source: "create_deep_agent()", language: "python" } },
+    { id: "c-agent", parent_id: null, position: 3, type: "agent_config", event_id: null, payload: { model: "m", harness: "deep-agents", defined_in: ["c-agent-code"], runs_when: { decision: "c-dec", question: "team", is: ["billing"] }, trace_url: "https://smith.langchain.com/o/1", build_cost: { ms: 1 }, run_cost: { per: "hour", cost: 7 }, helpers: [{ provider: "scaledown", job: "summarize", trigger: { at: 0.8 }, did: { times: 6, source: "run" } }], output_shape: { how: "json-schema", where: "Claude API", schema: "{}" } } },
+    { id: "c-prompt", parent_id: null, position: 4, type: "prompt", event_id: null, payload: { text: "Reply", build_cost: { ms: 1200, tokensIn: 3400 } } },
+  ];
+
+  function seedRouter(creator = OWNER) {
+    seed();
+    state.tables.builds[0].creator_id = creator;
+    state.tables.node_types = [decisionType, codeType, agentType, promptType].map((type) => ({ ...type })) as unknown as Row[];
+    state.tables.build_nodes = router.map((node) => ({ build_id: SOURCE, title: node.id, note: null, source_ref: null, is_gap: false, created_at: "2026-07-28T00:00:00Z", ...node })) as Row[];
+    state.tables.build_events = [];
+    clearNodeTypeCache();
+  }
+
+  const copy = (title: string) => forkedNodes().find((node) => node.title === title) as Row & { payload: Record<string, unknown> };
+
+  it("points called_from, defined_in and runs_when at the copies, never at the source", async () => {
+    seedRouter();
+    await forkBuild({ sourceBuildId: SOURCE });
+    const ids = Object.fromEntries(forkedNodes().map((node) => [node.title as string, node.id]));
+    expect(copy("c-dec").payload.called_from).toEqual([ids["c-code"]]);
+    expect(copy("c-agent").payload.defined_in).toEqual([ids["c-agent-code"]]);
+    expect(copy("c-agent").payload.runs_when).toEqual({ decision: ids["c-dec"], question: "team", is: ["billing"] });
+    expect(JSON.stringify(forkedNodes().map((n) => n.payload))).not.toMatch(/c-(code|dec|agent-code)/);
+  });
+
+  it("removes the costs, what each helper did and the trace link, and keeps everything that is method", async () => {
+    seedRouter("somebody-else");
+    await forkBuild({ sourceBuildId: SOURCE });
+    const agent = copy("c-agent").payload;
+    expect(agent).not.toHaveProperty("build_cost");
+    expect(agent).not.toHaveProperty("run_cost");
+    expect(agent).not.toHaveProperty("trace_url");
+    expect(agent.helpers).toEqual([{ provider: "scaledown", job: "summarize", trigger: { at: 0.8 } }]);
+    expect(agent.output_shape).toEqual({ how: "json-schema", where: "Claude API", schema: "{}" });
+    expect(agent.harness).toBe("deep-agents");
+    expect(copy("c-code").payload).not.toHaveProperty("build_cost");
+    expect(copy("c-prompt").payload).toEqual({ text: "Reply" });
+    const decision = copy("c-dec").payload;
+    expect(decision).not.toHaveProperty("run_cost");
+    expect(decision.questions).toEqual(questions);
+    expect(decision.state_sample).toBe("I was charged twice.");
+    expect(decision.install).toBe("pip install x");
+  });
+
+  it("keeps a decision's answer as the original's, renamed expected", async () => {
+    seedRouter("somebody-else");
+    await forkBuild({ sourceBuildId: SOURCE });
+    const decision = copy("c-dec").payload;
+    expect(decision).not.toHaveProperty("answer");
+    expect(decision.expected).toEqual(answer);
+    expect(decision.source).toBe("original");
+  });
+
+  it("strips them from a fork of your own build too: the copy has run nowhere yet", async () => {
+    seedRouter(OWNER);
+    state.userId = OWNER;
+    await forkBuild({ sourceBuildId: SOURCE });
+    expect(copy("c-agent").payload).not.toHaveProperty("run_cost");
+    expect(copy("c-dec").payload).toHaveProperty("expected");
+    expect(copy("c-dec").payload).not.toHaveProperty("answer");
+  });
+
+  it("leaves the source exactly as it was", async () => {
+    seedRouter("somebody-else");
+    await forkBuild({ sourceBuildId: SOURCE });
+    const source = state.tables.build_nodes.filter((node) => node.build_id === SOURCE).find((node) => node.title === "c-dec") as Row & { payload: Record<string, unknown> };
+    expect(source.payload.answer).toEqual(answer);
+    expect(source.payload.run_cost).toBeDefined();
+  });
+});

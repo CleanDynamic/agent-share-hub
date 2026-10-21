@@ -27,12 +27,12 @@ import type { RebuildsBodyView } from "./buildModel";
 /** The card's cover and title on this wall. */
 export const REBUILD_CARD = { coverHeight: 86, titleSize: 17 } as const;
 
-function FamilyLink({ to, phone }: { to: string; phone: boolean }) {
+function FamilyLink({ to, phone, label, testId = "build-rebuilds-family" }: { to: string; phone: boolean; label?: string; testId?: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <Link
       to={to}
-      data-testid="build-rebuilds-family"
+      data-testid={testId}
       {...handlers}
       style={{
         alignSelf: "flex-start",
@@ -50,14 +50,14 @@ function FamilyLink({ to, phone }: { to: string; phone: boolean }) {
         ...ring(state.focusVisible),
       }}
     >
-      <Network size={15} strokeWidth={1.6} aria-hidden="true" />
-      See the family tree
+      {label ? null : <Network size={15} strokeWidth={1.6} aria-hidden="true" />}
+      {label ?? "See the family tree"}
     </Link>
   );
 }
 
 export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBodyView; phone?: boolean }) {
-  const { cards, loading, lineageTo } = rebuilds;
+  const { cards, loading, lineageTo, compareLinks } = rebuilds;
   const columns = phone ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))";
   const gap = phone ? 10 : 12;
 
@@ -84,6 +84,15 @@ export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBo
         <EmptyState line="This build has no rebuilds yet." data-testid="build-rebuilds-empty" />
       )}
       <FamilyLink to={lineageTo} phone={phone} />
+      {compareLinks?.length ? (
+        <ul aria-label="Compare" data-testid="build-compare-links" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+          {compareLinks.map((link) => (
+            <li key={link.to}>
+              <FamilyLink to={link.to} phone={phone} label={link.label} testId="build-compare-link" />
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   );
 }

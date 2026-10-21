@@ -2,15 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 
-import { AI_TOOLS, APPS, LOGO_KEYS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, isPickable, projectFileOf, toolFor, toolName, toolsInGroup } from "./registry";
+import { AI_TOOLS, APPS, LOGO_KEYS, RUNTIME_GROUPS, RUNTIME_HEADING, RUNTIME_TOOLS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, WORKSPACE_AI_TOOLS, excludeRuntime, isPickable, projectFileOf, toolFor, toolName, toolsInGroup } from "./registry";
 
 const squash = (raw: string) => raw.toLowerCase().replace(/[\s._-]+/g, "");
 
 describe("tool registry", () => {
-  it("has 43 AI tools and 24 apps (6 are both), 61 entries with unique ids (CA-12 P13)", () => {
-    expect(AI_TOOLS).toHaveLength(43);
+  it("has 43 AI tools and 24 apps (6 are both), 8 runtime models and services, 69 entries with unique ids (CA-12 P13, CA-13)", () => {
+    expect(WORKSPACE_AI_TOOLS).toHaveLength(43);
+    expect(AI_TOOLS).toHaveLength(51);
     expect(APPS).toHaveLength(24);
-    expect(TOOLS).toHaveLength(61);
+    expect(RUNTIME_TOOLS).toHaveLength(8);
+    expect(TOOLS).toHaveLength(69);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
   });
 
@@ -27,7 +29,7 @@ describe("tool registry", () => {
   it("uses only exported logo keys, and only known groups", () => {
     for (const tool of TOOLS) {
       if (tool.logo !== null) expect(LOGO_KEYS, tool.id).toContain(tool.logo);
-      expect([...TOOL_GROUPS.map((g) => g.key), "services"], tool.id).toContain(tool.group);
+      expect([...TOOL_GROUPS.map((g) => g.key), ...RUNTIME_GROUPS.map((g) => g.key), "services"], tool.id).toContain(tool.group);
     }
   });
 
@@ -70,7 +72,7 @@ describe("what each tool is, offers and fits (CA-02)", () => {
 
   it("gives every tool a kind, models, steps and a status", () => {
     for (const tool of TOOLS) {
-      expect(["chat", "coding", "builder", "agent", "automation", "image", "video", "audio", "notes", "design", "app"], tool.id).toContain(tool.kind);
+      expect(["chat", "coding", "builder", "agent", "automation", "image", "video", "audio", "notes", "design", "app", "runtime"], tool.id).toContain(tool.kind);
       expect(["fixed", "any", "tiers", "hidden", "none"], tool.id).toContain(tool.models.mode);
       expect(Array.isArray(tool.steps), tool.id).toBe(true);
       expect(["current", "retired"], tool.id).toContain(tool.status);
@@ -99,7 +101,7 @@ describe("what each tool is, offers and fits (CA-02)", () => {
   });
 
   it("lets every tool but Sora be named on a manual step", () => {
-    for (const tool of TOOLS) expect(tool.steps.includes("manual"), tool.id).toBe(tool.id !== "sora");
+    for (const tool of excludeRuntime(TOOLS)) expect(tool.steps.includes("manual"), tool.id).toBe(tool.id !== "sora");
   });
 
   it("adds Muse Code beside Muse, Meta's consumer agent", () => {
@@ -165,5 +167,30 @@ describe("models run on your own computer (CA-05 P8)", () => {
   });
   it("marks only those two as local", () => {
     expect(TOOLS.filter((tool) => tool.local).map((tool) => tool.id)).toEqual(["ollama", "lm-studio"]);
+  });
+
+  describe("Runtime models and services (CA-13 rule 5)", () => {
+    it("sits in the registry with its four groups and the entries the prompt lists", () => {
+      expect(RUNTIME_GROUPS.map((g) => g.label)).toEqual(["Decision models", "Context helpers", "Agent frameworks", "Tracing"]);
+      expect(RUNTIME_HEADING).toBe("Runtime models and services");
+      const byGroup = (key: string) => RUNTIME_TOOLS.filter((t) => t.group === key).map((t) => t.name);
+      expect(byGroup("runtime-decisions")).toEqual(["TypeSafe Jev"]);
+      expect(byGroup("runtime-context")).toEqual(["ScaleDown Summarize", "ScaleDown Compress", "ScaleDown Extract", "ScaleDown Classify"]);
+      expect(byGroup("runtime-frameworks")).toEqual(["LangChain Deep Agents", "LangGraph"]);
+      expect(byGroup("runtime-tracing")).toEqual(["LangSmith"]);
+      for (const tool of RUNTIME_TOOLS) expect(tool.category).toBe("runtime");
+    });
+
+    it("is found by toolFor and toolName like any other entry", () => {
+      expect(toolFor("jev")?.id).toBe("typesafe-jev");
+      expect(toolName("deep agents")).toBe("LangChain Deep Agents");
+      expect(toolFor("LangSmith")?.group).toBe("runtime-tracing");
+    });
+
+    it("is taken out of session and prompt pickers by the one helper", () => {
+      expect(excludeRuntime(AI_TOOLS).every((t) => t.category !== "runtime")).toBe(true);
+      expect(excludeRuntime(AI_TOOLS)).toHaveLength(43);
+      expect(WORKSPACE_AI_TOOLS.map((t) => t.id)).not.toContain("typesafe-jev");
+    });
   });
 });

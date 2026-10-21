@@ -62,6 +62,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BUILD_COLUMNS, deleteBuild, getBuildHeader, updateBuild } from "./builds";
 import { forkBuild } from "./fork";
+import { methodOf } from "./forkRules";
 import {
   gallerySelect,
   toGalleryBuild,
@@ -553,8 +554,9 @@ function fieldChanges(
     changes.push(fieldChange("note", "Note", source.note, draft.note));
   }
 
-  const before = payloadOf(source);
-  const after = payloadOf(draft);
+  // CA-13 P15: the copy starts without the original's evidence, so the evidence is not a change the rebuilder made.
+  const before = methodOf(payloadOf(source));
+  const after = methodOf(payloadOf(draft));
   const declared = (nodeType?.schema?.fields ?? []) as FieldDef[];
   const labels = new Map(declared.map((field) => [field.key, field.label]));
   const keys = [

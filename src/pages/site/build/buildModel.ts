@@ -15,6 +15,9 @@ import { gapStatement } from "@/components/build/GapPanel";
 import { asPayload, eventLead, payloadNumber, payloadText } from "@/components/build/eventDisplay";
 import { creatorLabel } from "@/components/build/rebuildDisplay";
 import { collectRunSequence, runSequenceText } from "@/components/build/RunView";
+import { buildSteps, sessionGroups } from "@/lib/build/graph";
+import { decorateRun, decoratedText, hasRuntimeFacts, type RunItemOut } from "@/lib/build/runSequence";
+import { runtimeNeeds } from "@/lib/build/runtimeNeeds";
 import type { ResolveMedia } from "@/components/build/MediaFigure";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { RowEngagement } from "@/components/social/EngagementRow";
@@ -152,6 +155,8 @@ export interface BuildActionsView {
   onDownloadSetup?: () => void;
   onRebuild: () => void;
   lineageTo: string;
+  /** CA-13 P9: "Compare with the original", for a rebuild whose source is still here. Absent: no such link. */
+  compareTo?: string;
 }
 
 export type ProofActionKind = "reproduce" | "reconfirm" | "sign-in";
@@ -698,6 +703,14 @@ export interface RunStepView {
   kind: string;
   /** What "Copy" puts on the clipboard, or null when the step carries nothing to copy. */
   copyText: string | null;
+  /** CA-13 P13: "4" or, under a branch, "4a". Absent: the step is numbered by its place, as it always was. */
+  number?: string;
+  /** CA-13 P13: a line before the step: "If team is billing:", "Then, in every case:". */
+  heading?: string;
+  /** CA-13 P13: what this code sets up: the decisions and agents it holds. */
+  setsUp?: string[];
+  /** CA-13 P13: the original's time and cost, only when the maker shows costs. Never copied. */
+  quiet?: string[];
 }
 
 export interface RunPrerequisiteView {
@@ -759,19 +772,37 @@ export function runBody(
 ): RunBodyView {
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
   const { steps, prerequisites } = collectRunSequence(tree, typesByKey);
+  const base: RunStepView[] = steps.map((step) => ({
+    id: step.node.id,
+    title: (step.node.title ?? "").trim() || "Untitled step",
+    kind: step.nodeType?.label ?? step.node.type,
+    copyText: step.copyText,
+  }));
+  const prereqs: RunPrerequisiteView[] = prerequisites.map((item) => ({
+    id: item.node.id,
+    title: (item.node.title ?? "").trim() || "Untitled",
+    requirement: item.requirement,
+  }));
+
+  /* CA-13 P13, P14: a build with decisions, branches, helpers or an answer shape reads its steps as the maker's code first, with
+     branches numbered 4a, 4b; and What you need adds the accounts, keys and installs. Any other build is returned as it always was. */
+  const graph = buildSteps(tree);
+  const making = asMaking(build.making);
+  const groups = sessionGroups(graph, making.sessions, making.session_tools ?? {}, sessionsMetaOf(build.making));
+  const needs = runtimeNeeds(graph, groups).map((need, index): RunPrerequisiteView => ({ id: `need:${index}`, title: need.title, requirement: need.steps.length ? `step${need.steps.length === 1 ? "" : "s"} ${need.steps.join(", ")}` : null }));
+  if (!hasRuntimeFacts(graph) && needs.length === 0) {
+    return { steps: base, prerequisites: prereqs, allText: runSequenceText(build, prerequisites, steps), words: runLayer ? layerSteps(runLayer, resolveNode) : null };
+  }
+  const names: Record<string, string> = {};
+  for (const node of tree) if (node.type === "integration" && typeof (node.payload as { service?: unknown } | null)?.service === "string") names[node.id] = (node.payload as { service: string }).service;
+  const decorated = hasRuntimeFacts(graph)
+    ? decorateRun(base, graph, groups, names)
+    : base.map((item, index): RunItemOut => ({ ...item, number: String(index + 1) }));
+  const allPrereqs = [...prereqs, ...needs];
   return {
-    steps: steps.map((step) => ({
-      id: step.node.id,
-      title: (step.node.title ?? "").trim() || "Untitled step",
-      kind: step.nodeType?.label ?? step.node.type,
-      copyText: step.copyText,
-    })),
-    prerequisites: prerequisites.map((item) => ({
-      id: item.node.id,
-      title: (item.node.title ?? "").trim() || "Untitled",
-      requirement: item.requirement,
-    })),
-    allText: runSequenceText(build, prerequisites, steps),
+    steps: decorated.map((item) => ({ ...item })),
+    prerequisites: allPrereqs,
+    allText: decoratedText(build.title, allPrereqs, decorated),
     words: runLayer ? layerSteps(runLayer, resolveNode) : null,
   };
 }
@@ -873,6 +904,8 @@ export interface RebuildsBodyView {
   loading: boolean;
   /** The family tree: `/b2/:slug/lineage`. */
   lineageTo: string;
+  /** CA-13 P9: "Compare with …" for each rebuild of this build. Absent or empty: none. */
+  compareLinks?: readonly { to: string; label: string }[];
 }
 
 /* ── Under the first screen ── */

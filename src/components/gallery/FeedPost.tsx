@@ -28,6 +28,8 @@ import { Avatar } from "@/components/brand/Avatar";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { MadeWithMarks } from "@/components/brand/MadeWithMarks";
 import { Plaque, type PlaqueBuild } from "@/components/brand/Plaque";
+import { PatternMarks } from "@/components/gallery/PatternMarks";
+import type { Pattern } from "@/lib/build/patterns";
 import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { PostThread } from "@/components/post/PostThread";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -52,6 +54,8 @@ export interface FeedPostProps {
   modelsUsed: readonly string[];
   /** Absent in a preview, which draws "Draft" where the plaque goes. */
   plaqueBuild?: PlaqueBuild;
+  /** CA-13 P12: the patterns the build uses; at most two are marked. */
+  patterns?: readonly Pattern[];
   /** The open ask's line ("1 part unsolved · £120"), or null. Absent: none. */
   openAsk?: string | null;
   /** The reader's share of the page's engagement. Absent: no action row. */
@@ -81,6 +85,7 @@ export function FeedPost({
   makerAvatar,
   modelsUsed,
   plaqueBuild,
+  patterns,
   openAsk = null,
   engagement,
   now,
@@ -278,6 +283,7 @@ export function FeedPost({
           ) : plaqueBuild ? (
             <Plaque build={plaqueBuild} size="card" now={now} />
           ) : null}
+          <PatternMarks patterns={patterns} />
           {openAsk ? (
             <span
               data-testid="feed-open-ask"

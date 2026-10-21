@@ -33,6 +33,12 @@
 // that earned them. A fork that inherited "reproduced 12 times" would be
 // claiming someone else's evidence on day one.
 //
+// CA-13 THE ORIGINAL'S EVIDENCE IN THE PAYLOADS. What a tile says it cost (`build_cost`, `run_cost`), what each helper did on the
+// original's run (`helpers[].did`) and its trace link (`trace_url`) are removed; a decision's `answer` is kept as `expected`, the
+// original's answer to check against. Everything that is method is kept: questions, conditions, "called from" and "defined in"
+// (rewritten to the copies), helpers' settings, answer shapes, install lines. See forkRules.ts, which also says why forking your
+// own build strips them too.
+//
 // HIDDEN EVENTS. RLS lets any reader of a published build select every one of
 // its events, hidden included — visibility is enforced by getEvents in the
 // query, not by the database. So a fork of someone else's build takes only the
@@ -44,6 +50,7 @@ import { BUILD_COLUMNS, deleteBuild, getBuildHeader, slugifyTitle, updateBuild }
 import { getEvents } from "./events";
 import { getNodeTree } from "./nodes";
 import { getNodeTypes } from "./nodeTypes";
+import { methodOf, readyChecks } from "./forkRules";
 import type { Json } from "@/integrations/supabase/types";
 import {
   buildLayerError,
@@ -141,15 +148,18 @@ export async function forkBuild({
       type: node.type,
       title: node.title,
       note: node.note,
-      payload: rewritePayload(node.payload, typesByKey.get(node.type), copiedNodeIds),
+      // CA-13 P15: the method, not the evidence: no costs, no "what it did", no trace link; a decision's answer is the original's.
+      payload: methodOf(rewritePayload(node.payload, typesByKey.get(node.type), copiedNodeIds) as object) as Json,
       // Provenance of the original capture, which is still true of this text.
       source_ref: node.source_ref,
       event_id: null,
       is_gap: node.is_gap,
     }));
 
+    // CA-13 P16: a ready-made check for each Decision that carries the original's answer (only where the check type is live).
+    const checkRows = typesByKey.has("eval_run") ? readyChecks(nodeRows, newId).map((row) => ({ ...row, build_id: build.id, parent_id: null, note: null, source_ref: null, event_id: null, is_gap: false, payload: row.payload as Json })) : [];
     if (nodeRows.length > 0) {
-      const { error } = await supabase.from("build_nodes").insert(nodeRows);
+      const { error } = await supabase.from("build_nodes").insert([...nodeRows, ...checkRows]);
       if (error) throw buildLayerError("forkBuild (nodes)", error);
     }
 

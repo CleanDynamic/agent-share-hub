@@ -227,6 +227,7 @@ export {
   galleryShortfall,
   galleryThreshold,
   getGalleryFacets,
+  getBuildPatterns,
   inGallery,
   listGallery,
   type GalleryBounty,

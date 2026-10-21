@@ -181,3 +181,13 @@ describe("the detail sheet's parameter (UI-P51)", () => {
     expect(galleryHref({ build: "a b" })).toBe("/gallery");
   });
 });
+
+describe("CA-13 P12 — the pattern parameter", () => {
+  it("reads one of the three, writes it after tool and before sort, and drops anything else", () => {
+    const params = parse("sort=reproduced&pattern=router&tool=lovable");
+    expect(params).toMatchObject({ pattern: "router", tool: "lovable" });
+    expect(galleryHref(params)).toBe("/gallery?tool=lovable&pattern=router&sort=reproduced");
+    expect(parse("pattern=nonsense")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(galleryHref(parse("pattern=structured-output"))).toBe("/gallery?pattern=structured-output");
+  });
+});

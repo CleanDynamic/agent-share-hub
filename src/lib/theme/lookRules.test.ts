@@ -332,6 +332,32 @@ export const CA03_FILES: readonly string[] = [
   // CA-12 P9
   "src/pages/site/compose/AddResultDialog.tsx",
   "src/pages/site/compose/AddResultDialog.test.tsx",
+  // CA-13 P1 to P4
+  "src/components/build/Certainty.tsx",
+  "src/components/build/BranchRows.tsx",
+  "src/components/build/LinkLines.tsx",
+  "src/pages/site/compose/DecisionFields.tsx",
+  "src/pages/site/compose/AddDecisionDialog.tsx",
+  "src/pages/site/compose/RunsWhenField.tsx",
+  "src/pages/site/compose/BuildMap.tsx",
+  "src/pages/site/compose/toolPickerModel.ts",
+  // CA-13 P5 to P8
+  "src/components/build/RuntimeChips.tsx",
+  "src/pages/site/compose/HelpersField.tsx",
+  "src/pages/site/compose/CostFields.tsx",
+  "src/pages/site/compose/RuntimeFields.tsx",
+  "src/pages/site/compose/SessionExtrasFields.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AgentSetupFields.tsx",
+  // CA-13 P8, P9
+  "src/components/build/CostLines.tsx",
+  "src/pages/site/compare/CompareView.tsx",
+  "src/pages/site/compare/ComparePage.tsx",
+  "src/pages/site/build/BuildView.tsx",
+  "src/components/build/FullPromptWindow.tsx",
+  // CA-13 P11, P12
+  "src/components/gallery/PatternMarks.tsx",
+  "src/pages/site/gallery/GalleryPatterns.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

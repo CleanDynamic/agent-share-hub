@@ -98,6 +98,9 @@ import { BUILD_PAGE_STEPS_ENABLED } from "@/lib/build/flags";
 import { toMarkdown, toPortable } from "@/lib/build/portable";
 import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia, type ReaderSetupItem } from "@/lib/build/readerSteps";
 import { setupFolder } from "@/lib/build/setupFolder";
+import { runtimeFolder } from "@/lib/build/runtimeFolder";
+import { hasRuntimeFacts } from "@/lib/build/runSequence";
+import type { Step } from "@/lib/build/graph";
 import { toast } from "sonner";
 import { writeZip } from "@/lib/build/zip";
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
@@ -205,12 +208,14 @@ function downloadPortable(record: BuildRecord) {
 }
 
 /** CA-04 P4: every session's setup, as the folder its tool expects, in one ZIP. A file that cannot be fetched is left out and said. */
-async function downloadSetup(slug: string, items: readonly ReaderSetupItem[]) {
+async function downloadSetup(slug: string, items: readonly ReaderSetupItem[], steps: readonly Step[] = []) {
   const load = async (url: string) => {
     const response = await fetch(url);
     return response.ok ? new Uint8Array(await response.arrayBuffer()) : null;
   };
-  const { entries, missing } = await setupFolder(items, load);
+  const { entries: setupEntries, missing } = await setupFolder(items, load);
+  const taken = new Set(setupEntries.map((entry) => entry.path));
+  const entries = [...setupEntries, ...runtimeFolder(steps).entries.filter((entry) => !taken.has(entry.path))];
   const zip = writeZip(entries);
   const blob = new Blob([zip as unknown as BlobPart], { type: "application/zip" });
   const objectUrl = typeof URL.createObjectURL === "function" ? URL.createObjectURL(blob) : null;
@@ -550,6 +555,7 @@ export function BuildPage() {
     };
   }, [build, tree, media.data]);
   const stepsOn = reader !== null;
+  const hasRuntime = hasRuntimeFacts((reader?.steps ?? []).map((entry) => entry.step));
   /* CA-04 P4: every session's setup, from the chats that start them. */
   const setupItems = useMemo(
     () => (reader?.steps ?? []).flatMap((entry) => (entry.chat?.kind === "new" ? entry.chat.setup : [])),
@@ -927,6 +933,8 @@ export function BuildPage() {
               cards: (rebuildCards.data ?? []).map((card) => cardOf(card, "rebuild")),
               loading: rebuildCards.isPending,
               lineageTo: `/b2/${build.slug}/lineage`,
+              // CA-13 P9: each rebuild can be set beside this one.
+              compareLinks: (rebuildCards.data ?? []).map((card) => ({ to: `/b2/${build.slug}/compare/${card.slug}`, label: `Compare with ${((card.title ?? "").trim() || "that rebuild")}` })),
             }}
           />
         );
@@ -1064,9 +1072,11 @@ export function BuildPage() {
                 : toMarkdown(toPortable(record)),
             ),
           onDownload: () => downloadPortable(record),
-          ...(setupItems.length > 0 ? { onDownloadSetup: () => void downloadSetup(build.slug, setupItems) } : null),
+          ...(setupItems.length > 0 || hasRuntime ? { onDownloadSetup: () => void downloadSetup(build.slug, setupItems, (reader?.steps ?? []).map((entry) => entry.step)) } : null),
           onRebuild: () => navigate(isLoggedIn ? `/rebuild/${build.slug}` : loginBack(`/rebuild/${build.slug}`)),
           lineageTo: `/b2/${build.slug}/lineage`,
+          // CA-13 P9: a rebuild whose source is still here can be set beside it.
+          ...(source.data?.build.slug ? { compareTo: `/b2/${build.slug}/compare/${source.data.build.slug}` } : null),
         }}
         proof={{
           build,

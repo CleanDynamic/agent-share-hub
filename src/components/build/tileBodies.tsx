@@ -11,6 +11,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { CodeLines } from "@/components/code/CodeLines";
 import { CONNECTION_LABEL, RESULT_THUMBS, resultHolds, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
+import { decisionHeadline, decisionLines, expectedLine } from "@/lib/build/decision";
 import { formatSize } from "@/lib/build/readerSteps";
 import { t } from "@/lib/theme/tokens";
 import { TextButton } from "@/pages/site/compose/composeControls";
@@ -46,6 +47,38 @@ export function ToolTileBody({ step, indent = 0 }: { step: Step; indent?: number
       </div>
       {how ? <span data-testid="tool-how" style={text(12.5, 400, t.text2)}>{how}</span> : null}
       {step.app?.scopes ? <span data-testid="tool-scopes" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{step.app.scopes}</span> : null}
+    </div>
+  );
+}
+
+/* ── a decision (CA-13 P2) ── */
+
+/**
+ * "Decision · Jev 1.13" with the provider's mark, then one line per question: "team → billing · 92% sure", "tone → Annoyed
+ * (2 of 3) · 71% sure", "escalation → no · 0.18". With no answer recorded each line shows the question and its options in
+ * `--label`. On a copied build the original's answer reads as the original's, never as the copier's result.
+ */
+export function DecisionTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+  const facts = step.decision;
+  if (!facts) return null;
+  const lines = decisionLines(facts);
+  const expected = facts.expected && !facts.answer ? facts.questions.flatMap((q) => (facts.expected?.[q.id] ? [expectedLine(q, facts.expected[q.id])] : [])) : [];
+  return (
+    <div data-testid="decision-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <ToolMark tool={facts.provider} size={20} />
+        <span data-testid="decision-headline" style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{decisionHeadline(facts)}</span>
+      </div>
+      {lines.map((line, index) => (
+        <span key={index} data-testid="decision-line" data-answered={line.answered || undefined} style={{ ...text(13, 400, line.answered ? t.text : t.label), fontVariantNumeric: "tabular-nums", overflowWrap: "anywhere" }}>
+          {line.text}
+        </span>
+      ))}
+      {expected.map((line, index) => (
+        <span key={`e${index}`} data-testid="decision-expected" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
+          {line}
+        </span>
+      ))}
     </div>
   );
 }

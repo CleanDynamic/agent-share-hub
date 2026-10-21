@@ -67,6 +67,7 @@ import type {
 import { NeedPanel, StepsList } from "./BuildSteps";
 import { menuItem, menuSurface } from "../compose/refinedStyles";
 import { buildSummary } from "@/lib/build/buildSummary";
+import { buildPatterns, patternsLine } from "@/lib/build/patterns";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
@@ -731,6 +732,7 @@ function ActionDock({
       )}
       <DockItem label="Rebuild" first={false} phone={phone} height={height} onClick={actions.onRebuild} testId="build-rebuild" />
       <DockItem label="Lineage" first={false} phone={phone} height={height} to={actions.lineageTo} testId="build-lineage" />
+      {actions.compareTo ? <DockItem label="Compare with the original" first={false} phone={phone} height={height} to={actions.compareTo} testId="build-compare" /> : null}
     </div>
   );
 }
@@ -1305,7 +1307,10 @@ function PhoneBuild(props: BuildViewProps) {
 export function BuildView(props: BuildViewProps) {
   const phone = useIsPhone();
   // CA-03 P8: the line under the title, from what the build holds.
-  const summary = props.hero.summary ?? (props.steps ? buildSummary(props.steps.steps.map((entry) => entry.step)) : "");
+  const kind = props.hero.summary ?? (props.steps ? buildSummary(props.steps.steps.map((entry) => entry.step)) : "");
+  // CA-13 P12: the patterns it uses, worked out from the build, join the facts line: "Uses a router · Long-running agent".
+  const patterns = props.steps ? patternsLine(buildPatterns(props.steps.steps.map((entry) => entry.step), props.steps.groups ?? [])) : "";
+  const summary = [kind, patterns].filter(Boolean).join(" · ");
   const view = { ...props, hero: { ...props.hero, summary } };
   return phone ? <PhoneBuild {...view} /> : <DesktopBuild {...view} />;
 }
