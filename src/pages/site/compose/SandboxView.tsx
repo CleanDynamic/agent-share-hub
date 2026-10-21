@@ -57,7 +57,8 @@ import type { SaveFailure } from "@/hooks/useComposeBuild";
 export type SandboxLens = "list" | "map";
 
 export interface SandboxMissingItem {
-  key: PublishKey;
+  /** CA-13 P18: "runtime-0" for a Decision or Runs when that stops Publish. */
+  key: PublishKey | `runtime-${number}`;
   /** In plain words: "a cover picture or video". */
   label: string;
 }
@@ -579,7 +580,8 @@ export function SandboxView(props: SandboxViewProps) {
     }, 0);
   };
 
-  const onMissing = (key: PublishKey) => {
+  const onMissing = (key: SandboxMissingItem["key"]) => {
+    if (key.startsWith("runtime-")) return;
     if (key === "evidence") return openPost();
     if (key === "title") return openCard("title");
     if (key === "outcome") return openCard("summary");

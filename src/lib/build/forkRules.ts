@@ -15,6 +15,8 @@
 // are different: the copy is a new build that has not run, so a figure it carried would claim the original's evidence on its first
 // day, as an inherited "reproduced 12 times" would. The method is yours to keep; the evidence stays with the build that earned it.
 
+import { DECISION_TYPE, checkLine, decisionOf } from "./decision";
+
 type Payload = Record<string, unknown>;
 
 export const EVIDENCE_KEYS = ["build_cost", "run_cost", "trace_url"] as const;
@@ -42,4 +44,28 @@ export function methodOf<T extends object | null | undefined>(payload: T): T {
     out.source = "original";
   }
   return out as T;
+}
+
+// --- CA-13 Part 16: a ready-made check -------------------------------------------------------------------------------------
+
+/** A Check (CA-12) for each copied Decision that has an expected answer, ready for the copier to run: not yet run (0 of 0). */
+export function readyChecks(rows: readonly { id: string; type: string; parent_id: string | null; position: number; title?: string | null; payload: unknown }[], newId: () => string): { id: string; type: string; position: number; title: null; payload: Payload }[] {
+  const top = rows.reduce((max, row) => Math.max(max, row.parent_id === null ? row.position : 0), 0);
+  const out: { id: string; type: string; position: number; title: null; payload: Payload }[] = [];
+  for (const row of rows) {
+    if (row.type !== DECISION_TYPE || row.parent_id !== null) continue;
+    const facts = decisionOf(row.payload);
+    const known = facts?.expected ?? facts?.answer;
+    if (!facts || !known) continue;
+    const lines = facts.questions.flatMap((question) => (known[question.id] ? [checkLine(question, known[question.id])] : []));
+    if (lines.length === 0) continue;
+    out.push({
+      id: newId(),
+      type: "eval_run",
+      position: top + out.length + 1,
+      title: null,
+      payload: { tested: `${row.title?.trim() || "The decision"} on the original's example`, passing: lines.join(" "), passed: 0, total: 0, uses: [{ kind: "output", node_id: row.id }] },
+    });
+  }
+  return out;
 }

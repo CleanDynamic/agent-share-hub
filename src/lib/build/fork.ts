@@ -50,7 +50,7 @@ import { BUILD_COLUMNS, deleteBuild, getBuildHeader, slugifyTitle, updateBuild }
 import { getEvents } from "./events";
 import { getNodeTree } from "./nodes";
 import { getNodeTypes } from "./nodeTypes";
-import { methodOf } from "./forkRules";
+import { methodOf, readyChecks } from "./forkRules";
 import type { Json } from "@/integrations/supabase/types";
 import {
   buildLayerError,
@@ -156,8 +156,10 @@ export async function forkBuild({
       is_gap: node.is_gap,
     }));
 
+    // CA-13 P16: a ready-made check for each Decision that carries the original's answer (only where the check type is live).
+    const checkRows = typesByKey.has("eval_run") ? readyChecks(nodeRows, newId).map((row) => ({ ...row, build_id: build.id, parent_id: null, note: null, source_ref: null, event_id: null, is_gap: false, payload: row.payload as Json })) : [];
     if (nodeRows.length > 0) {
-      const { error } = await supabase.from("build_nodes").insert(nodeRows);
+      const { error } = await supabase.from("build_nodes").insert([...nodeRows, ...checkRows]);
       if (error) throw buildLayerError("forkBuild (nodes)", error);
     }
 

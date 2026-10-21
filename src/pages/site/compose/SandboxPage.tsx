@@ -50,11 +50,12 @@ import { insertBuildSessionIfTable, nextSessionPosition, orderOf, setSessionColl
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
+import { runtimeChecks } from "@/lib/build/runtimeChecks";
 import { useComposePage } from "./ComposePage";
 import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
-import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
+import { SandboxView, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
 import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
@@ -130,6 +131,7 @@ export function SandboxPage() {
     }),
     [user?.id, profile?.display_name, profile?.username, profile?.avatar_url],
   );
+  const runtimeIssues = useMemo(() => runtimeChecks(buildSteps(tree)), [tree]);
   const onPublish = useCallback(async () => {
     await flushThread();
     // A thread that cannot be saved is not published half-written.
@@ -137,8 +139,14 @@ export function SandboxPage() {
       toast(threadHold);
       return;
     }
+    // CA-13 P18: a broken Decision or Runs when stops Publish; the rest are reminders said once and do not.
+    if (runtimeIssues.blockers.length > 0) {
+      toast(`To publish, fix this: ${runtimeIssues.blockers[0]}.`);
+      return;
+    }
+    for (const line of runtimeIssues.reminders) toast(line);
     viewProps.onPublish();
-  }, [flushThread, threadHold, viewProps]);
+  }, [flushThread, threadHold, viewProps, runtimeIssues]);
   const onRetrySave = useCallback(() => {
     if (thread.save === "error") thread.retry();
     if (viewProps.save === "error") viewProps.onRetrySave();
@@ -1607,7 +1615,7 @@ export function SandboxPage() {
           />
           </div>
         }
-        missing={missing.map((key) => ({ key, label: PUBLISH_WORDS[key] }))}
+        missing={[...missing.map((key): SandboxMissingItem => ({ key, label: PUBLISH_WORDS[key] })), ...runtimeIssues.blockers.map((label, at) => ({ key: `runtime-${at}` as const, label }))]}
         counts={counts}
         lens={lens}
         onLens={onLens}
