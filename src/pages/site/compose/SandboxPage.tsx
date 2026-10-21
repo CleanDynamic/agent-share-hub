@@ -34,7 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, fileKindOf, previewOf, canCheck, TRAINED_MODEL, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -56,6 +56,7 @@ import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
+import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
 import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
@@ -306,7 +307,8 @@ export function SandboxPage() {
         results.push({
           id: node.id,
           title: str("summary") ?? str("url") ?? "Result",
-          holds: payload.kind === TRAINED_MODEL ? "a trained model" : payload.media_id ? "a picture" : payload.url ? "a link" : "text",
+          holds: resultHoldsWord(resultFactsOf(node)),
+          facts: resultFactsOf(node),
           from: from ? (numberOf.get(from.node_id) ?? null) : null,
         });
       }
@@ -900,13 +902,39 @@ export function SandboxPage() {
     },
     [lens],
   );
-  const onAddResult = useCallback(() => {
-    showPending("result");
-    void addPiece("result").then((id) => {
-      setPendingAdd(null);
-      if (id) setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
-    });
-  }, [addPiece, showPending]);
+  const [addResultOpen, setAddResultOpen] = useState(false);
+  /** CA-12 P9: Add › Result asks what the result is first; the files it holds are stored, then the tile stands at the end of the List. */
+  const onAddResultInput = useCallback(
+    async (input: AddResultInput) => {
+      showPending("result");
+      try {
+        let made: ResultInput;
+        if (input.kind === "link") made = { kind: "link", url: input.url };
+        else if (input.kind === "model") made = { kind: "model", baseModel: input.baseModel, method: input.method };
+        else {
+          const build = await ensureBuild();
+          const stored = [];
+          for (const file of input.kind === "file" ? [input.file] : input.files) stored.push({ file, media: await nodes.run(() => uploadMedia({ buildId: build, file })) });
+          made =
+            input.kind === "file"
+              ? { kind: "file", mediaId: stored[0].media.id, name: stored[0].file.name, size: stored[0].file.size, mime: stored[0].file.type || null }
+              : { kind: "media", mediaIds: stored.map((one) => one.media.id), names: stored.map((one) => one.file.name) };
+        }
+        const id = await prompts.addResultOf(made);
+        if (id) {
+          setSelectedId(id);
+          setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+        }
+      } catch (cause) {
+        console.error("[Sandbox] result not added", cause);
+        sayFailed(cause, "Couldn't add that result. Try again.");
+      } finally {
+        setPendingAdd(null);
+      }
+    },
+    [ensureBuild, nodes, prompts, showPending],
+  );
+  const onAddResult = useCallback(() => setAddResultOpen(true), []);
   useEffect(() => {
     if (!ringed) return;
     document.querySelector(`[data-tile-id="${ringed.id}"]`)?.scrollIntoView?.({ block: "center" });
@@ -1562,6 +1590,7 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
+      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} onAdd={(input) => void onAddResultInput(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void onAddTool(input)} />
       <FullPromptWindow
         steps={steps}

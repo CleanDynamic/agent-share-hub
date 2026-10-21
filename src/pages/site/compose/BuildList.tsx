@@ -43,7 +43,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, TILE_COPY, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -1534,7 +1534,7 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
           onSelect(result.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", alignItems: "center", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
+      style={{ ...moduleStyle(selected), display: "flex", alignItems: "flex-start", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
     >
       <span
         aria-hidden="true"
@@ -1545,6 +1545,7 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <Quiet>Result</Quiet>
         <span style={{ ...text(14, 500, t.text), overflowWrap: "anywhere" }}>{result.title}</span>
+        <ResultTileBody facts={result.facts} />
         <Quiet>
           {result.holds}
           {result.from ? ` · from prompt ${result.from}` : ""}

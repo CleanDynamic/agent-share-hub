@@ -6,7 +6,7 @@
 
 import { modelRunLine } from "@/lib/build/modelRun";
 import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
-import { groupKey, groupKind, shownGroups, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
+import { groupKey, groupKind, shownGroups, stepTitle, type ResultFacts, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 
 import { sourceSessions, type SourceSession } from "./sourcesModel";
@@ -25,8 +25,10 @@ export interface ListSuggestion {
 export interface ListResult {
   id: string;
   title: string;
-  /** "a picture", "a link", "text". */
+  /** "a picture", "a link", "a file", "a trained model", or "Nothing added yet". */
   holds: string;
+  /** CA-12 P9: what it holds, for the tile to show the thing itself. */
+  facts: ResultFacts;
   /** The step it came from, as a number ("3"), when known. */
   from: string | null;
 }

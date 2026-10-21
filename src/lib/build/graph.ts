@@ -1974,6 +1974,119 @@ export async function addResult(
   return placeTopNode(buildId, tree, { type: RESULT_TYPE, title: null, payload: compact({ summary: summary.trim(), media_id, url }) });
 }
 
+/* ── what a result holds (CA-12 P9) ── */
+
+/** The most pictures a result holds, and the most its tile shows. */
+export const RESULT_MEDIA_MAX = 12;
+export const RESULT_THUMBS = 4;
+
+/** A result's link, split for its card: the site's name, the path under it, and the host a favicon service is asked for. */
+export interface ResultLink {
+  url: string;
+  site: string;
+  path: string;
+  host: string;
+}
+
+/** What a result holds, read from its payload; at most one of `link`, `mediaIds`, `file` and `model` is set. Nothing set reads "Nothing added yet". */
+export interface ResultFacts {
+  link: ResultLink | null;
+  /** Pictures or video, in order. */
+  mediaIds: string[];
+  file: { name: string; kind: FileKind; size: number | null; mediaId: string } | null;
+  model: { baseModel: string; method: string } | null;
+}
+
+/** A link split for its card, or null when it is not an address. */
+export function resultLinkOf(url: string | null | undefined): ResultLink | null {
+  const raw = (url ?? "").trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`);
+    if (!/^https?:$/.test(parsed.protocol)) return null;
+    const host = parsed.hostname.replace(/^www\./i, "");
+    const path = `${parsed.pathname === "/" ? "" : parsed.pathname}${parsed.search}`;
+    return { url: parsed.toString(), site: host, path, host };
+  } catch {
+    return null;
+  }
+}
+
+/** What a result holds. A model is read from `kind`; a file from `file_name`; pictures from `media_ids` (or the one `media_id` older results keep). */
+export function resultFactsOf(node: Pick<BuildNode, "payload">): ResultFacts {
+  const payload = payloadOf(node);
+  const ids = Array.isArray(payload.media_ids) ? payload.media_ids.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
+  const one = stringOf(payload.media_id)?.trim() || null;
+  const fileName = stringOf(payload.file_name)?.trim() || null;
+  const model = payload.kind === TRAINED_MODEL;
+  const mediaIds = ids.length > 0 ? ids.slice(0, RESULT_MEDIA_MAX) : one && !fileName ? [one] : [];
+  return {
+    link: model ? null : resultLinkOf(stringOf(payload.url)),
+    mediaIds: model || fileName ? [] : mediaIds,
+    file: !model && fileName && one ? { name: fileName, kind: fileKindOf(fileName, stringOf(payload.file_mime)), size: numberOf(payload.file_size), mediaId: one } : null,
+    model: model ? { baseModel: stringOf(payload.base_model)?.trim() ?? "", method: stringOf(payload.method)?.trim() ?? "" } : null,
+  };
+}
+
+/** Whether a result holds something to show. */
+export const resultHolds = (facts: ResultFacts): boolean => Boolean(facts.link || facts.mediaIds.length > 0 || facts.file || facts.model);
+
+/** One line for what a result holds, for the rows that name it: never "text". */
+export function resultHoldsWord(facts: ResultFacts): string {
+  if (facts.model) return "a trained model";
+  if (facts.link) return "a link";
+  if (facts.file) return "a file";
+  if (facts.mediaIds.length > 1) return `${facts.mediaIds.length} pictures`;
+  if (facts.mediaIds.length === 1) return "a picture";
+  return "Nothing added yet";
+}
+
+export type ResultInput =
+  | { kind: "link"; url: string }
+  | { kind: "media"; mediaIds: readonly string[]; names: readonly string[] }
+  | { kind: "file"; mediaId: string; name: string; size: number | null; mime: string | null }
+  | { kind: "model"; baseModel: string; method: string };
+
+/** What a new result is called until its maker names it: the site, the file's name, "Trained model". */
+export function resultSummaryOf(input: ResultInput): string {
+  if (input.kind === "link") return resultLinkOf(input.url)?.site ?? input.url.trim();
+  if (input.kind === "media") return input.names.length > 1 ? `${input.names[0]} and ${input.names.length - 1} more` : (input.names[0] ?? "Picture");
+  if (input.kind === "file") return input.name;
+  return "Trained model";
+}
+
+/** Why a result cannot be added, or null. */
+export function resultRefusal(input: ResultInput): string | null {
+  if (input.kind === "link") return resultLinkOf(input.url) ? null : "Add a web address, like example.com/page.";
+  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add a picture or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `A result holds at most ${RESULT_MEDIA_MAX} pictures.` : null;
+  if (input.kind === "file") return input.name.trim() && input.mediaId ? null : "Add a file.";
+  if (input.baseModel.trim().length > BASE_MODEL_MAX) return `The base model is at most ${BASE_MODEL_MAX} characters.`;
+  if (input.method.trim().length > TRAINED_METHOD_MAX) return `How it was trained is at most ${TRAINED_METHOD_MAX} characters.`;
+  return input.baseModel.trim() || input.method.trim() ? null : "Say what it is based on, or how it was trained.";
+}
+
+/** CA-12 P9: add a result that holds the thing itself: a link, pictures or video, a file, or a model. */
+export async function addResultTile(buildId: string, tree: readonly NodeTree[], input: ResultInput): Promise<BuildNode> {
+  const why = resultRefusal(input);
+  if (why) throw refuse("addResultTile", why);
+  const out: Record<string, Json> = { summary: resultSummaryOf(input) };
+  if (input.kind === "link") out.url = resultLinkOf(input.url)?.url ?? input.url.trim();
+  else if (input.kind === "media") {
+    out.media_id = input.mediaIds[0];
+    out.media_ids = [...input.mediaIds];
+  } else if (input.kind === "file") {
+    out.media_id = input.mediaId;
+    out.file_name = input.name.trim();
+    if (input.size !== null) out.file_size = input.size;
+    if (input.mime) out.file_mime = input.mime;
+  } else {
+    out.kind = TRAINED_MODEL;
+    if (input.baseModel.trim()) out.base_model = input.baseModel.trim();
+    if (input.method.trim()) out.method = input.method.trim();
+  }
+  return placeTopNode(buildId, tree, { type: RESULT_TYPE, title: null, payload: out as Json });
+}
+
 /** The payload without the fields left blank. */
 function compact(fields: Record<string, string | undefined>): Json {
   const out: Record<string, string> = {};

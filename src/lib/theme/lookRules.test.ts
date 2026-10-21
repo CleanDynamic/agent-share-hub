@@ -329,6 +329,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/DetailsPanel.tsx",
   "src/pages/site/compose/CheckCasesField.tsx",
   "src/pages/site/compose/CheckCasesField.test.tsx",
+  // CA-12 P9
+  "src/pages/site/compose/AddResultDialog.tsx",
+  "src/pages/site/compose/AddResultDialog.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

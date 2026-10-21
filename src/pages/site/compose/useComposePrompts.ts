@@ -79,6 +79,8 @@ import {
   usesOf,
   type AgentModel,
   setCheckCases,
+  addResultTile,
+  type ResultInput,
   type CheckCase,
   type CheckInput,
   type Runs,
@@ -209,6 +211,8 @@ export interface ComposePrompts {
   /** TF-08: take a made file out of the build and out of the steps that use it. */
   removeMadeFile: (fileId: string) => void;
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). CA-02 P6: a tool comes named. */
+  /** CA-12 P9: a result that holds the thing itself. Resolves its id, or null if it failed. */
+  addResultOf: (input: ResultInput) => Promise<string | null>;
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
   addToolTile: (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) => Promise<string | null>;
@@ -639,6 +643,19 @@ export function useComposePrompts({
         return null;
       });
 
+  const addResultOf = (input: ResultInput) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await addResultTile(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that result. Try again.")(cause);
+        return null;
+      });
+
   const addToolTile = (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) =>
     nodes
       .run(async () => {
@@ -881,5 +898,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addToolTile, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

@@ -4,11 +4,11 @@
 
    PURE. Every body takes the `Step` the graph already makes (`buildSteps`), so the maker sees what readers see. */
 
-import { File as FileIcon, FileCode, FileImage, FileSpreadsheet, FileText } from "lucide-react";
-import { type CSSProperties, type ReactNode } from "react";
+import { File as FileIcon, FileCode, FileImage, FileSpreadsheet, FileText, Link as LinkIcon } from "lucide-react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 
 import { CodeLines } from "@/components/code/CodeLines";
-import { CONNECTION_LABEL, type CheckCase, type FileKind, type Step } from "@/lib/build/graph";
+import { CONNECTION_LABEL, RESULT_THUMBS, resultHolds, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
 import { formatSize } from "@/lib/build/readerSteps";
 import { t } from "@/lib/theme/tokens";
@@ -170,6 +170,92 @@ export function CheckCasesBody({ cases = [], indent = 0 }: { cases?: readonly Ch
           <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{[failing.input && `In: ${failing.input}`, failing.expected && `Expected: ${failing.expected}`, failing.actual && `Got: ${failing.actual}`].filter(Boolean).join(" · ")}</span>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/* ── a result ── */
+
+/** The site's icon from the favicon service the article blocks already use; a link glyph when it does not load. The page itself is never fetched. */
+function SiteIcon({ host, size = 20 }: { host: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const box: CSSProperties = { width: size, height: size, flexShrink: 0, borderRadius: 4, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", color: t.text2 };
+  return failed ? (
+    <span data-testid="site-icon" data-fallback="" style={box}>
+      <LinkIcon size={Math.round(size * 0.8)} strokeWidth={1.5} aria-hidden="true" />
+    </span>
+  ) : (
+    <span data-testid="site-icon" style={box}>
+      <img src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`} alt="" width={size} height={size} onError={() => setFailed(true)} style={{ display: "block", width: "100%", height: "100%" }} />
+    </span>
+  );
+}
+
+/** What a result holds, the thing itself: a link as a card, up to 4 thumbnails, a file, or a model. Nothing yet reads "Nothing added yet". */
+export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; indent?: number }) {
+  const wrap: CSSProperties = { display: "flex", flexDirection: "column", gap: 8, paddingLeft: indent, minWidth: 0 };
+  if (!resultHolds(facts)) {
+    return (
+      <div data-testid="result-tile" style={wrap}>
+        <span data-testid="result-empty" style={text(13, 400, t.label)}>{TILE_COPY.nothingAdded}</span>
+      </div>
+    );
+  }
+  if (facts.link) {
+    const { link } = facts;
+    return (
+      <div data-testid="result-tile" style={wrap}>
+        <a
+          data-testid="result-link"
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(event) => event.stopPropagation()}
+          style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, padding: 8, borderRadius: 6, border: `1px solid ${t.line}`, background: t.cell, textDecoration: "none", boxSizing: "border-box" }}
+        >
+          <SiteIcon host={link.host} />
+          <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{link.site}</span>
+            {link.path ? <span style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>{link.path}</span> : null}
+          </span>
+        </a>
+      </div>
+    );
+  }
+  if (facts.mediaIds.length > 0) {
+    const shown = facts.mediaIds.slice(0, RESULT_THUMBS);
+    const more = facts.mediaIds.length - shown.length;
+    return (
+      <div data-testid="result-tile" style={wrap}>
+        <div data-testid="result-thumbs" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          {shown.map((id) => (
+            <ManualThumb key={id} mediaId={id} size={64} />
+          ))}
+          {more > 0 ? <Quiet>{`+${more} more`}</Quiet> : null}
+        </div>
+      </div>
+    );
+  }
+  if (facts.file) {
+    const { file } = facts;
+    const size = formatSize(file.size);
+    return (
+      <div data-testid="result-tile" style={wrap}>
+        <div data-testid="result-file" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <FileMark kind={file.kind} />
+          <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{file.name}</span>
+            <Quiet>{[FILE_WORD[file.kind], size].filter(Boolean).join(" · ")}</Quiet>
+          </span>
+        </div>
+      </div>
+    );
+  }
+  const model = facts.model;
+  return (
+    <div data-testid="result-tile" style={wrap}>
+      <span data-testid="result-model" style={{ ...text(13.5, 500, t.text), overflowWrap: "anywhere" }}>{model?.baseModel ? `Based on ${model.baseModel}` : "A trained model"}</span>
+      {model?.method ? <span style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>{model.method}</span> : null}
     </div>
   );
 }

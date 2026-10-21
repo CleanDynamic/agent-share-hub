@@ -36,7 +36,7 @@ import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
 import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
 import { PartWindow } from "@/components/build/PartWindow";
-import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ToolTileBody } from "@/components/build/tileBodies";
+import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, ToolTileBody } from "@/components/build/tileBodies";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
@@ -920,7 +920,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
 
 function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
   const { view } = ctx;
-  const name = result.url ? (
+  const name = result.url && !result.facts.link ? (
     <a href={result.url} target="_blank" rel="noopener noreferrer" data-hit="" style={{ ...text(14, 500, t.text), textDecoration: "none", overflowWrap: "anywhere" }}>
       {result.title}
     </a>
@@ -949,6 +949,8 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span style={text(11.5, 400, t.label)}>Result</span>
           {name}
+          {/* CA-12 P9: the thing itself, as the maker's tile draws it. */}
+          {result.trained ? null : <ResultTileBody facts={result.facts} />}
           {/* CA-05 P10: a trained model, said in one line, with the file it learned from. */}
           {result.trained ? (
             <span data-testid="trained-model-line" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
@@ -960,7 +962,7 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
         {result.trained?.file?.download ? <DownloadButton href={result.trained.file.download} name={result.trained.file.name} /> : null}
         {result.from ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>from step {result.from}</span> : null}
       </div>
-      {result.mediaId ? <MediaFigure reference={result.mediaId} resolveMedia={view.resolveMedia} width={640} alt={result.title} /> : null}
+      {result.mediaId && result.facts.mediaIds.length === 0 && !result.facts.file ? <MediaFigure reference={result.mediaId} resolveMedia={view.resolveMedia} width={640} alt={result.title} /> : null}
     </article>
   );
 }

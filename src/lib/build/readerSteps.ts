@@ -32,10 +32,12 @@ import {
   sessionGroups,
   stepTitle,
   CONNECTION_LABEL,
+  resultFactsOf,
   siteNameOf,
   toolConnectionOf,
   trainedModelLine,
   trainedModelOf,
+  type ResultFacts,
   type SessionGroup,
   type Step,
 } from "./graph";
@@ -212,6 +214,8 @@ export interface ReaderResult {
   title: string;
   url: string | null;
   mediaId: string | null;
+  /** CA-12 P9: what it holds, drawn the way the maker's tile draws it. */
+  facts: ResultFacts;
   /** The step it came from, as a number, when known. */
   from: string | null;
   /** CA-05 P10: a trained model: "A trained model, based on Muse Spark Open, trained on 1,200 rows of ratings.csv", how it was trained, and the file with its Download. */
@@ -664,6 +668,7 @@ export function readerResults(tree: readonly NodeTree[], media: ReadonlyMap<stri
         title: text(node, "summary") ?? text(node, "url") ?? "Result",
         url: text(node, "url") ?? (found ? mediaUrl(found, { width: "original" }) : null),
         mediaId,
+        facts: resultFactsOf(node),
         from: from ? (numberOf.get(from.node_id) ?? null) : null,
         ...(trained
           ? {
