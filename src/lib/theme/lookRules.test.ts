@@ -321,6 +321,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AddToolDialog.test.tsx",
   "src/pages/site/compose/AddManualStepDialog.tsx",
   "src/pages/site/compose/AgentSetupFields.tsx",
+  "src/components/build/FullPromptWindow.tsx",
+  "src/pages/site/build/BuildSteps.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AddCheckDialog.tsx",
+  "src/pages/site/compose/BuildList.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/CheckCasesField.tsx",
+  "src/pages/site/compose/CheckCasesField.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

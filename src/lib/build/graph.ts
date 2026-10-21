@@ -195,6 +195,8 @@ export interface CheckFacts {
   runs?: CheckRun[];
   /** CA-05 P7: how many cases the test files sent with it hold, when every file could be counted exactly. */
   cases?: number;
+  /** CA-12 P12: the cases the maker wrote down, in order. Absent when there are none. */
+  caseList?: CheckCase[];
 }
 
 /** CA-05 P7: one run of a check: the day and how many passed of how many. */
@@ -510,6 +512,7 @@ function checkFacts(payload: Payload, cases: readonly CheckCase[] = []): CheckFa
     total: counted ? counted.total : numberOf(payload.total),
     runAt: stringOf(payload.run_at)?.trim() || null,
     ...(runs.length > 0 ? { runs } : null),
+    ...(cases.length > 0 ? { caseList: [...cases] } : null),
   };
 }
 

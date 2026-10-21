@@ -22,7 +22,8 @@ import { useId, useRef, useState } from "react";
 import { Button } from "@/components/brand/Button";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { MANUAL_TEXT_MAX, MANUAL_TOOL_MAX } from "@/lib/build/graph";
+import { MANUAL_LINES_MAX, MANUAL_TEXT_MAX, MANUAL_TOOL_MAX, type ManualWhere, type WhereKind } from "@/lib/build/graph";
+import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor } from "@/lib/build/media";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -33,13 +34,27 @@ import { ToolPicker } from "./ToolPicker";
 
 export const MANUAL_DIALOG_COPY = {
   title: "Add a manual step",
-  placeholder: "What you did, in one line",
+  placeholder: "What you did",
   missing: "Manual steps need the Deploy queue item from UI-P61.",
+  where: "Where was it done?",
+  whatWasDone: "What was done",
+  addLine: "Add a line",
+  siteLink: "Link to the website",
 } as const;
 
+/** CA-12 P10: where a manual step can have been done. "App or website" takes an app from the apps list. */
+export const WHERE_CHOICES: readonly { value: WhereKind; label: string }[] = [
+  { value: "app", label: "An app or website" },
+  { value: "terminal", label: "A terminal" },
+  { value: "phone", label: "On a phone" },
+  { value: "offline", label: "Offline, in person" },
+  { value: "site", label: "Another website" },
+];
+
 export interface AddManualStepInput {
-  tool: string;
-  text: string;
+  where: ManualWhere;
+  /** 1 to 12 lines, each up to 140 characters. */
+  lines: string[];
   file: File | null;
 }
 
@@ -56,16 +71,27 @@ export interface AddManualStepDialogProps {
 }
 
 function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<AddManualStepDialogProps, "after" | "available" | "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
+  const [kind, setKind] = useState<WhereKind>("app");
   const [picked, setPicked] = useState<string | null>(null);
-  const [text, setText] = useState("");
+  const [site, setSite] = useState("");
+  const [lines, setLines] = useState<string[]>([""]);
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
+  const lineRefs = useRef<(HTMLInputElement | null)[]>([]);
   const uid = useId();
 
-  const tool = (picked ?? "").trim();
-  const ready = available && tool.length > 0 && tool.length <= MANUAL_TOOL_MAX && text.trim().length > 0 && text.length <= MANUAL_TEXT_MAX;
-
+  const appName = picked ? (toolName(picked) ?? picked.trim()) : "";
+  const kept = lines.map((line) => line.trim()).filter(Boolean);
+  const placeOk = kind === "app" ? appName.length > 0 && appName.length <= MANUAL_TOOL_MAX : kind === "site" ? site.trim().length > 0 : true;
+  const ready = available && placeOk && kept.length > 0 && kept.length <= MANUAL_LINES_MAX;
+  const where = (): ManualWhere => ({ kind, name: kind === "app" ? appName : null, url: kind === "site" ? site.trim() : null });
+  const setLine = (at: number, value: string) => setLines((current) => current.map((line, i) => (i === at ? value : line)));
+  const addLine = (focus = true) => {
+    if (lines.length >= MANUAL_LINES_MAX) return;
+    setLines((current) => [...current, ""]);
+    if (focus) window.setTimeout(() => lineRefs.current[lines.length]?.focus(), 0);
+  };
 
   const choose = (picked: File | undefined) => {
     if (!picked) return;
@@ -81,23 +107,65 @@ function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<A
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        if (ready) onAdd({ tool, text: text.trim(), file });
+        if (ready) onAdd({ where: where(), lines: kept, file });
       }}
       /* The global field rule makes a field inherit its size on a desktop, so the form sets the fields' 13 here. */
       style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
     >
       {after ? <p style={{ ...type(12.5, 400, t.text2), margin: 0 }}>Goes after {after}</p> : null}
 
-      <Field id={`${uid}-tool`} label="Tool" group>
-        <div>
-          <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Pick an app" />
+      <Field id={`${uid}-where`} label={MANUAL_DIALOG_COPY.where} group>
+        <div role="radiogroup" aria-label={MANUAL_DIALOG_COPY.where} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {WHERE_CHOICES.map((choice) => (
+            <Button key={choice.value} variant={kind === choice.value ? "primary" : "secondary"} size={phone ? 44 : 30} fontSize={13} aria-pressed={kind === choice.value} onClick={() => setKind(choice.value)}>
+              {choice.label}
+            </Button>
+          ))}
         </div>
+        {kind === "app" ? (
+          <div>
+            <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Pick an app" />
+          </div>
+        ) : null}
+        {kind === "site" ? (
+          <input type="text" inputMode="url" aria-label={MANUAL_DIALOG_COPY.siteLink} placeholder="https://" value={site} onChange={(event) => setSite(event.target.value)} style={typedField(phone)} />
+        ) : null}
       </Field>
 
-      <Field id={`${uid}-text`} label="What was done">
-        <input id={`${uid}-text`} type="text" value={text} maxLength={MANUAL_TEXT_MAX} placeholder={MANUAL_DIALOG_COPY.placeholder} onChange={(event) => setText(event.target.value)} style={typedField(phone)} />
-        <span data-testid="manual-counter" style={{ ...type(11.5, 400, t.text2), ...tnum, alignSelf: "flex-end" }}>
-          {text.length} / {MANUAL_TEXT_MAX}
+      <Field id={`${uid}-text`} label={MANUAL_DIALOG_COPY.whatWasDone} group>
+        <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+          {lines.map((line, at) => (
+            <li key={at} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ ...type(12, 400, t.text2), ...tnum, minWidth: 16 }}>{at + 1}</span>
+              <input
+                ref={(el) => {
+                  lineRefs.current[at] = el;
+                }}
+                type="text"
+                aria-label={`Line ${at + 1}`}
+                value={line}
+                maxLength={MANUAL_TEXT_MAX}
+                placeholder={at === 0 ? MANUAL_DIALOG_COPY.placeholder : ""}
+                onChange={(event) => setLine(at, event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                    // Enter adds the next line instead of sending the form; an empty line sends nothing.
+                    event.preventDefault();
+                    if (line.trim()) addLine();
+                  }
+                }}
+                style={{ ...typedField(phone), flexGrow: 1 }}
+              />
+            </li>
+          ))}
+        </ol>
+        <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Button variant="ghost" size={phone ? 44 : 30} fontSize={13} disabled={lines.length >= MANUAL_LINES_MAX} onClick={() => addLine()}>
+            {MANUAL_DIALOG_COPY.addLine}
+          </Button>
+          <span data-testid="manual-counter" style={{ ...type(11.5, 400, t.text2), ...tnum }}>
+            {lines.length} / {MANUAL_LINES_MAX} lines
+          </span>
         </span>
       </Field>
 

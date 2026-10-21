@@ -43,7 +43,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { AgentTileBody, CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, TILE_COPY, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -249,6 +249,7 @@ export function useClamped<T extends HTMLElement>(text: string) {
   return { ref, clamped };
 }
 
+export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
 export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
 /* ── small pieces ── */
@@ -953,7 +954,11 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
       {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
       {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
       {step.kind === "agent" && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
-      <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
+      {step.id.endsWith(":instructions") && !step.text.trim() ? (
+        <span data-testid="agent-instructions" style={text(12.5, 400, t.label)}>{TILE_COPY.noInstructions}</span>
+      ) : (
+        <p data-testid={step.id.endsWith(":instructions") ? "agent-instructions" : undefined} style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", whiteSpace: step.id.endsWith(":instructions") ? "pre-wrap" : undefined, ...(step.id.endsWith(":instructions") ? clamp3 : clamp2) }}>{step.text}</p>
+      )}
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
       <OutsideWarning names={outside} />
       {to ? <MentionedLine to={to} phone={phone} /> : null}
@@ -1086,7 +1091,17 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
           <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
-          {stepRunsLabel(step) ? <DotLine testId="runs-line">{stepRunsLabel(step)}</DotLine> : null}
+          {isTeam ? (stepRunsLabel(step) ? <DotLine testId="runs-line">{stepRunsLabel(step)}</DotLine> : null) : <DotLine testId="runs-line">{startsLine(stepRunsLabel(step))}</DotLine>}
+          {!isTeam && (step.toolRefs ?? []).length > 0 ? (
+            <span data-testid="agent-tools" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+              {(step.toolRefs ?? []).map((id) => props.names[id]).filter(Boolean).map((name) => (
+                <span key={name} title={name} style={{ display: "inline-flex", alignItems: "center", gap: 4, ...text(11.5, 400, t.text2) }}>
+                  <ToolMark tool={name} size={14} />
+                  {name}
+                </span>
+              ))}
+            </span>
+          ) : null}
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
           {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
@@ -1470,6 +1485,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         </DotLine>
       ) : null}
       {step.check ? <CheckExtraLines check={step.check} style={{ paddingLeft: INDENT }} /> : null}
+      <CheckCasesBody cases={step.check?.caseList} indent={INDENT} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>

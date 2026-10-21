@@ -17,11 +17,11 @@ function open() {
 const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
 describe("Add › Check", () => {
-  it("asks what it tested, what counts as passing, when it failed, its runs and its last run, in that order", () => {
+  it("asks what it tested, what counts as passing, when it failed, its cases, its runs and its last run, in that order", () => {
     open();
     const dialog = screen.getByRole("dialog", { name: "Add a check" });
     const labels = [...dialog.querySelectorAll("label, [role='group'] > div:first-child > span")].map((label) => label.textContent);
-    expect(labels).toEqual(["What it tested", "What counts as passing", "When it failed", "Runs", "Last run"]);
+    expect(labels).toEqual(["What it tested", "What counts as passing", "When it failed", "Cases", "Optional", "Runs", "Last run"]);
     expect((screen.getByLabelText("What it tested") as HTMLTextAreaElement).rows).toBe(3);
     expect((screen.getByLabelText("What counts as passing") as HTMLTextAreaElement).rows).toBe(2);
     const failed = screen.getByLabelText("When it failed") as HTMLTextAreaElement;

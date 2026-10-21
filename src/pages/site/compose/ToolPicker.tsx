@@ -43,6 +43,8 @@ export interface ToolPickerProps {
   placeholder?: string;
   /** CA-12 P13: the list offered: AI tools (the default) or apps and services. */
   list?: ToolList;
+  /** CA-12 P11: nothing has been chosen yet, even though "none" is a choice: the trigger shows the placeholder, not the none row's words. */
+  unpicked?: boolean;
 }
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.kind !== "note";
@@ -73,7 +75,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai" }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai", unpicked = false }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -84,7 +86,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
 
   const chosen = toolFor(value);
   const typedValue = value && !chosen ? value.trim() : null;
-  const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel ? noneLabel : placeholder);
+  const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel && !unpicked ? noneLabel : placeholder);
 
   const rows = pickerRows({ query, inBuild, expanded, allowNone, step, list });
   const pickable = rows.filter(isPickable);

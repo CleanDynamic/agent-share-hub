@@ -38,6 +38,7 @@ import { ModelTag } from "@/components/brand/ModelTag";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ChangedText } from "@/components/build/ChangedText";
 import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
+import { REPLY_MAX } from "@/lib/build/composePrompts";
 import { groupKind, groupOfStep, promptNumbersOf, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
@@ -64,6 +65,8 @@ export interface FullPromptWindowProps {
   names?: Readonly<Record<string, string>>;
   /** CA-05 P1, maker mode: save the words a reader changes in a prompt; an empty list takes them off. */
   onChanges?: (id: string, ranges: ChangeRange[]) => void;
+  /** CA-12 P12, maker mode: save what came back for a prompt; an empty text takes it off. */
+  onReply?: (id: string, reply: string) => void;
   /** Reader mode (UI-P74): the "Before you send it" panel for a step, under the text, in place of the plain lines. */
   renderBefore?: (step: Step) => ReactNode;
   /** CA-06 P3: opened from a link in the post; the footer offers Back to the post. */
@@ -300,8 +303,49 @@ function RefinedTextBox({ text, changes, boxRef, phone, onPick }: { text: string
   );
 }
 
+/** CA-12 P12: "What came back". The maker edits it (up to 4,000 characters); a reader sees it as read-only text. */
+function ReplyField({ step, onReply, phone }: { step: Step; onReply?: (id: string, reply: string) => void; phone: boolean }) {
+  const [draft, setDraft] = useState(step.reply ?? "");
+  const [focused, setFocused] = useState(false);
+  const save = () => {
+    if (draft.trim() !== (step.reply ?? "")) onReply?.(step.id, draft);
+  };
+  if (!onReply) {
+    if (!step.reply) return null;
+    return (
+      <section data-testid="reply-read" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <h3 style={{ ...EYEBROW, margin: 0 }}>What came back</h3>
+        <p style={{ ...geist(14, 400, t.text2), margin: 0, lineHeight: "22px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{step.reply}</p>
+      </section>
+    );
+  }
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <label htmlFor={`reply-${step.id}`} style={{ ...EYEBROW, margin: 0 }}>
+        What came back
+      </label>
+      <textarea
+        id={`reply-${step.id}`}
+        aria-label="What came back"
+        value={draft}
+        maxLength={REPLY_MAX}
+        rows={4}
+        placeholder="Nothing added yet"
+        onChange={(event) => setDraft(event.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setFocused(false);
+          save();
+        }}
+        style={{ ...WELL, padding: "8px 16px", resize: "vertical", outline: "none", boxSizing: "border-box", width: "100%", ...geist(phone ? 16 : 14, 400, t.text), lineHeight: "22px", ...(focused ? { borderColor: t.selectedEdge } : null) }}
+      />
+      <span style={{ ...geist(11.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{`${draft.length} / ${REPLY_MAX}`}</span>
+    </section>
+  );
+}
+
 function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
-  const { mode, onTitle, onClose, onNavigate, onChanges } = props;
+  const { mode, onTitle, onClose, onNavigate, onChanges, onReply } = props;
   const [said, say] = useAnnouncer();
   /** CA-05 P1: what is selected in the text (or the caret), while the maker can mark words. */
   const [picked, setPicked] = useState<ChangeRange | null>(null);
@@ -357,6 +401,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
         </div>
       ) : null}
       <RefinedTextBox key={step.id} text={step.text} changes={step.changes} boxRef={textRef} phone={phone} onPick={mode === "maker" && onChanges ? setPicked : undefined} />
+      {!isInstructions(step) && step.kind === "prompt" ? <ReplyField key={`reply-${step.id}`} step={step} onReply={mode === "maker" ? onReply : undefined} phone={phone} /> : null}
       {step.changes?.length ? (
         <p data-testid="changes-line" style={{ ...quiet, margin: 0 }}>
           {changesLine(step.changes.length)}

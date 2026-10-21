@@ -1430,6 +1430,7 @@ export function SandboxPage() {
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
             onCheckRuns={prompts.setCheckRuns}
+            onCheckCases={prompts.setCheckCases}
             onModelRun={prompts.setModelRun}
             onTrainedOn={(id, file) => void onTrainedOn(id, file)}
             onAgentNotes={prompts.setAgentNotes}
@@ -1570,6 +1571,7 @@ export function SandboxPage() {
         mode="maker"
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
+        onReply={prompts.setReply}
         onNavigate={setOpenPromptId}
         onClose={() => {
           setOpenPromptId(null);

@@ -8,7 +8,7 @@ import { File as FileIcon, FileCode, FileImage, FileSpreadsheet, FileText } from
 import { type CSSProperties, type ReactNode } from "react";
 
 import { CodeLines } from "@/components/code/CodeLines";
-import { CONNECTION_LABEL, type FileKind, type Step } from "@/lib/build/graph";
+import { CONNECTION_LABEL, type CheckCase, type FileKind, type Step } from "@/lib/build/graph";
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
 import { formatSize } from "@/lib/build/readerSteps";
 import { t } from "@/lib/theme/tokens";
@@ -131,60 +131,6 @@ export function ManualTileBody({ step, indent = 0, picture = true }: { step: Ste
 
 /* ── an agent ── */
 
-/** The first 3 lines of its instructions, its tools as small marks, and one line for how it starts. */
-export function AgentTileBody({
-  step,
-  toolNames,
-  starts,
-  onRead,
-  indent = 0,
-}: {
-  step: Step;
-  /** The names of the apps it can use. */
-  toolNames: readonly string[];
-  /** "When I ask", "On a schedule · Mondays 07:00", "When something happens". */
-  starts: string;
-  onRead?: () => void;
-  indent?: number;
-}) {
-  const instructions = step.text.trim();
-  return (
-    <div data-testid="agent-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
-      {instructions ? (
-        <>
-          <p data-testid="agent-instructions" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(3) }}>
-            {instructions}
-          </p>
-          {onRead && (instructions.split(/\r?\n/).length > 3 || instructions.length > 220) ? (
-            <div>
-              <TextButton underline onClick={onRead} style={text(12, 500, t.text2)}>
-                {TILE_COPY.readAll}
-              </TextButton>
-            </div>
-          ) : null}
-        </>
-      ) : (
-        <span data-testid="agent-instructions" style={text(12.5, 400, t.label)}>
-          {TILE_COPY.noInstructions}
-        </span>
-      )}
-      {toolNames.length > 0 ? (
-        <div data-testid="agent-tools" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-          {toolNames.map((name) => (
-            <span key={name} title={name} style={{ display: "inline-flex", alignItems: "center", gap: 4, ...text(11.5, 400, t.text2) }}>
-              <ToolMark tool={name} size={14} />
-              {name}
-            </span>
-          ))}
-        </div>
-      ) : null}
-      <span data-testid="agent-starts" style={text(12, 400, t.text2)}>
-        {starts}
-      </span>
-    </div>
-  );
-}
-
 /** "When I ask", or the way it runs in the words Details uses; an agent with none runs when asked. */
 export function startsLine(runs: string): string {
   return runs || "When I ask";
@@ -212,8 +158,7 @@ export function ReplyBlock({ reply, onRead, indent = 0 }: { reply: string; onRea
 /* ── a check's cases ── */
 
 /** The case total, and the first failing case when there is one. */
-export function CheckCasesBody({ step, indent = 0 }: { step: Step; indent?: number }) {
-  const cases = step.cases ?? [];
+export function CheckCasesBody({ cases = [], indent = 0 }: { cases?: readonly CheckCase[]; indent?: number }) {
   if (cases.length === 0) return null;
   const failing = cases.find((c) => !c.passed);
   return (

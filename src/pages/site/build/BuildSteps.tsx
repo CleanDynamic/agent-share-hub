@@ -36,7 +36,7 @@ import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
 import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
 import { PartWindow } from "@/components/build/PartWindow";
-import { FileTileBody, ManualTileBody, ReplyBlock, ToolTileBody } from "@/components/build/tileBodies";
+import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ToolTileBody } from "@/components/build/tileBodies";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
@@ -749,6 +749,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <Title entry={entry} right={null} />
         <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{CHECK_COPY.eyebrow}</div>
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
+        <CheckCasesBody cases={step.check.caseList} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );
