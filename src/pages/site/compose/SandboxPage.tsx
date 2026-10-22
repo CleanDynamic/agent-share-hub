@@ -46,7 +46,8 @@ import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSes
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionToBuild, emptyFirstSession } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
-import { insertBuildSessionIfTable, nextSessionPosition, orderOf, setSessionCollapsed } from "@/lib/build/buildSessions";
+import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
+import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed } from "@/lib/build/sessionLayout";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -161,7 +162,7 @@ export function SandboxPage() {
 
   const made = (build as { making?: unknown } | null)?.making;
   /* CA-12 P5: sessions are numbered by `build_sessions.position`; a draft with no rows is numbered by its steps, as before. */
-  const order = useMemo(() => orderOf(sessions.rows), [sessions.rows]);
+  const order = useMemo(() => getSessionOrder(made, sessions.rows), [made, sessions.rows]);
   /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
   const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
   const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
@@ -459,10 +460,11 @@ export function SandboxPage() {
   /* CA-12 P3: a session with no tile yet is still drawn, as its head. A post whose draft is not made has Session 1 already. */
   const emptySessions = useMemo<SourceSession[]>(() => {
     const withTiles = new Set(shown.filter((group) => group.stepNumbers.length > 0).map((group) => groupKey(group)));
-    const empties = sourceSessionRows.filter((row) => !withTiles.has(row.key) && isTypedSession(row.key));
+    // CA-14 P1: a session in the order with no tile is drawn, imported or made here.
+    const empties = sourceSessionRows.filter((row) => !withTiles.has(row.key) && (isTypedSession(row.key) || order.includes(row.key)));
     if (empties.length === 0 && !buildId && shown.length === 0) return [{ key: FIRST_SESSION_KEY, number: 1, tool: NO_APP, detail: "", prompts: [] }];
     return empties;
-  }, [shown, sourceSessionRows, buildId]);
+  }, [shown, sourceSessionRows, buildId, order]);
   const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
 
   /** An old build's run of typed prompts, saved as a session made here so it can change. Resolves its new key. */
@@ -542,26 +544,26 @@ export function SandboxPage() {
   /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
   const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
   const collapsedKeys = useMemo(() => {
-    const out = new Set(sessions.rows.filter((row) => row.collapsed).map((row) => row.sessionKey));
+    const out = readCollapsed(made, sessions.rows, sourceSessionRows.map((row) => row.key));
     for (const [key, closed] of Object.entries(collapseOverride)) {
       if (closed) out.add(key);
       else out.delete(key);
     }
     return out;
-  }, [sessions.rows, collapseOverride]);
+  }, [made, sessions.rows, sourceSessionRows, collapseOverride]);
   const onToggleCollapsed = useCallback(
     (key: string, closed: boolean) => {
       setCollapseOverride((previous) => ({ ...previous, [key]: closed }));
       if (!buildId) return;
-      void setSessionCollapsed(buildId, key, closed)
-        .then(() => queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }))
+      void setCollapsed(buildId, key, closed, made)
+        .then(() => Promise.all([queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }), queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) })]))
         .catch((cause) => {
           console.error("[Sandbox] collapse not saved", cause);
           setCollapseOverride((previous) => ({ ...previous, [key]: !closed }));
           sayFailed(cause, "Couldn't save that. Try again.");
         });
     },
-    [buildId, queryClient],
+    [buildId, queryClient, made],
   );
 
   const onSessionMeta = useCallback(

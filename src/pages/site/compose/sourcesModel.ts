@@ -51,6 +51,8 @@ export interface SourceSession {
   together?: string;
   /** CA-06 P4: the maker's colour for the session, "#RRGGBB"; absent when it has none. */
   colour?: string;
+  /** CA-14 P1: the maker's title for the session; absent when it has none. */
+  title?: string;
 }
 
 export interface SourceFile {
@@ -147,6 +149,7 @@ export function sourceSessions(
       ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
       ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
       ...(group.colour ? { colour: group.colour } : null),
+      ...(group.title ? { title: group.title } : null),
       ...(factsOf(group, "maker") ? { facts: factsOf(group, "maker") as string } : null),
       ...(togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) ? { together: togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) as string } : null),
       prompts: mine.map((step) => ({

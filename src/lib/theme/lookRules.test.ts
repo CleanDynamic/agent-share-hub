@@ -358,6 +358,16 @@ export const CA03_FILES: readonly string[] = [
   // CA-13 P11, P12
   "src/components/gallery/PatternMarks.tsx",
   "src/pages/site/gallery/GalleryPatterns.test.tsx",
+  // CA-14 P1
+  "src/lib/build/addSession.ts",
+  "src/pages/site/build/buildModel.ts",
+  "src/lib/build/graph.ts",
+  "src/lib/build/making.ts",
+  "src/lib/build/readerSteps.ts",
+  "src/lib/build/sessionLayout.test.ts",
+  "src/lib/build/sessionLayout.ts",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/sourcesModel.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

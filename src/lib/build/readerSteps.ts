@@ -46,7 +46,7 @@ import { DECISION_TYPE, modelShort, originalAnswer, questionLine, runsWhenLabel 
 import { runtimeNeeds } from "./runtimeNeeds";
 import { copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
-import { goalLine, sessionsMetaOf, type Making } from "./making";
+import { goalLine, sessionOrderOf, sessionsMetaOf, type Making } from "./making";
 import { modelRunLine } from "./modelRun";
 import { runsWhenLine } from "./runsFrom";
 import { sessionFactsLine, togetherLine } from "./sessionFacts";
@@ -408,7 +408,7 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     }
   }
   const byId = new Map(all.map((step) => [step.id, step]));
-  const groups = sessionGroups(topSteps, sessions, making?.session_tools ?? {}, sessionsMetaOf(making));
+  const groups = sessionGroups(topSteps, sessions, making?.session_tools ?? {}, sessionsMetaOf(making), sessionOrderOf(making));
   const tools = readTools(tree);
   const toolIds = [
     ...new Set(

@@ -22,7 +22,8 @@ import { REPLY_MAX } from "./composePrompts";
 import { nextTopPosition } from "./composeCover";
 import { loadImportProposal } from "./imports";
 import type { TranscriptProposal, TranscriptSourceRef } from "./intake";
-import { isTypedSession, refreshMakingStats, sessionsMetaOf, setSessionMeta } from "./making";
+import { isTypedSession, patchMaking, refreshMakingStats, sessionsMetaOf, setSessionMeta } from "./making";
+import { getSessionOrder, setCollapsed } from "./sessionLayout";
 import { getNodeTree } from "./nodes";
 import { recordCreatedVia } from "./provenance";
 import { buildLayerError, type BuildNodeInsert, type NodeTree } from "./types";
@@ -223,6 +224,13 @@ export async function addSessionToBuild(importId: string, target: AddTarget): Pr
       if (!isMissingTable((cause as { cause?: unknown } | null)?.cause ?? cause)) throw cause;
       console.warn("[addSession] build_sessions is not applied; the session is in the draft by its tiles");
     }
+
+    // CA-14 P1: the order and the fold are also kept in `making`, so a draft without the table still has them.
+    const keptOrder = getSessionOrder(making, rows).filter((key) => key !== replaced && key !== importId);
+    const at = replaced ? Math.max(0, getSessionOrder(making, rows).indexOf(replaced)) : keptOrder.length;
+    keptOrder.splice(Math.min(at, keptOrder.length), 0, importId);
+    await patchMaking(buildId, { session_order: keptOrder }).catch((cause) => console.warn("[addSession] order not kept in making", cause));
+    if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => console.warn("[addSession] fold not kept in making", cause));
 
     if (isNew) {
       await recordCreatedVia(buildId, { destination: "new", importId, client: row.client, readerId: null });
