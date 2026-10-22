@@ -1063,3 +1063,60 @@ export const FIELD_MAX = 3;
 export const TASK_MAX = 3;
 export const SETTING_MAX = 2;
 export const CUSTOM_MAX_LENGTH = 60;
+
+/* ── matching a name against Tools and stack ── */
+
+const STACK_INDEX: ReadonlyMap<string, TaxonomyValue[]> = (() => {
+  const map = new Map<string, TaxonomyValue[]>();
+  for (const value of STACK_VALUES) {
+    if (!value.selectable) continue;
+    for (const spelling of [value.label, ...value.synonyms]) {
+      const key = squash(spelling);
+      if (!key) continue;
+      const list = map.get(key) ?? [];
+      if (!list.includes(value)) list.push(value);
+      map.set(key, list);
+    }
+  }
+  return map;
+})();
+
+const GROUP_ORDER: Record<"app" | "model" | "language", string[]> = {
+  app: ["ai-applications", "applications", "cloud", "data-storage", "ai-frameworks", "frameworks", "languages", "models"],
+  model: ["models", "ai-applications", "ai-frameworks", "applications", "cloud", "data-storage", "frameworks", "languages"],
+  language: ["languages", "frameworks", "ai-frameworks", "applications", "ai-applications", "cloud", "data-storage", "models"],
+};
+
+/** A model's own name ("claude-sonnet-4", "gpt-5-6-sol") read as the model family the lists name. */
+const MODEL_FAMILIES: readonly [RegExp, string][] = [
+  [/claude|sonnet|opus|haiku/i, "models.claude"],
+  [/\bgpt|chatgpt|\bo[1-9]\b/i, "models.gpt"],
+  [/gemini|nano-banana|veo/i, "models.gemini"],
+  [/llama/i, "models.llama"],
+  [/mistral|mixtral/i, "models.mistral"],
+  [/qwen/i, "models.qwen"],
+  [/deepseek/i, "models.deepseek"],
+  [/whisper/i, "models.whisper"],
+  [/stable.?diffusion|sdxl/i, "models.stable-diffusion"],
+  [/flux/i, "models.flux"],
+];
+
+/**
+ * The Tools and stack value a name belongs to, or null. A name is matched by label and synonym with spaces, dots and dashes
+ * ignored. `prefer` settles a name that two groups share ("Claude" is an app and a model): an app by default, the model
+ * for a model's own name, which is also read as its family.
+ */
+export function stackFor(name: string, prefer: "app" | "model" | "language" = "app"): TaxonomyValue | null {
+  const key = squash(name);
+  if (!key) return null;
+  const hits = STACK_INDEX.get(key);
+  if (hits && hits.length > 0) {
+    const order = GROUP_ORDER[prefer];
+    return [...hits].sort((a, b) => order.indexOf(a.parent ?? "") - order.indexOf(b.parent ?? ""))[0];
+  }
+  if (prefer === "model") {
+    const family = MODEL_FAMILIES.find(([pattern]) => pattern.test(name));
+    if (family) return valueOf("stack", family[1]);
+  }
+  return null;
+}
