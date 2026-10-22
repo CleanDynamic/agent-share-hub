@@ -96,7 +96,7 @@ export interface SandboxViewProps extends CardProps {
   onUseResultPicture?: () => void;
 
   /**
-   * Puts the cursor in the Build panel's add field: Add › Prompt, and the "a prompt" missing item. CA-10: it runs
+   * Puts the cursor in the Build panel's add field: Add › Prompt. CA-10: it runs
    * inside the tap's own handler (so an iPhone raises the keyboard) and returns true once focus has moved, so the
    * menu does not take it back.
    */
