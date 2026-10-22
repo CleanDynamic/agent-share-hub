@@ -22,7 +22,7 @@ import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { REF_COPY } from "@/components/post/RefLinks";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { groupKey, groupKind, stepRunsLabel, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
-import { FileTileBody, ManualTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { FileTileBody, ManualTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { Certainty } from "@/components/build/Certainty";
 import { TraceLink } from "@/components/build/RuntimeChips";
 import { ToolMark } from "@/pages/site/compose/refinedPieces";
@@ -49,23 +49,23 @@ export const PART_WINDOW_COPY = {
   copied: "Copied",
   download: "Download",
   done: "Done",
-  instructions: "Instructions",
+  instructions: "System instructions",
   models: "Models",
-  tools: "Tools",
+  tools: "Available tools",
   agents: "Its agents",
   tested: "Test description",
   passing: "Pass criteria",
   onFail: "Failure notes",
   runs: "Runs",
-  starts: "How it starts",
-  cases: "Cases",
+  starts: "Trigger",
+  cases: "Test cases",
   tiles: "Its tiles",
   setup: (n: number) => `Setup · ${n} ${n === 1 ? "item" : "items"}`,
   nothing: "Nothing written yet",
-  calledFrom: "Called from",
-  reads: "What it reads",
+  calledFrom: "Calling code",
+  reads: "Input",
   questions: "Questions",
-  answer: "What it answered",
+  answer: "Recorded answer",
   copyRequest: "Copy as a request",
   copyTheCode: "Copy the code",
 } as const;
@@ -237,7 +237,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
             <TextWell label={PART_WINDOW_COPY.instructions}>{step.text}</TextWell>
           </Section>
           <Section label={PART_WINDOW_COPY.starts}>
-            <p style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px" }}>{startsLine(stepRunsLabel(step))}</p>
+            <p style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px" }}>{triggerLine(step)}</p>
           </Section>
           {models.length ? (
             <Section label={PART_WINDOW_COPY.models}>
@@ -346,7 +346,7 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
         </Section>
       ) : null}
       {helpers.length ? (
-        <Section label="Helpers it used">
+        <Section label="Supporting models">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {helpers.map((helper, index) => (
               <HelperBody key={`${helper.job}-${index}`} helper={helper} decisionName={decisionName} />

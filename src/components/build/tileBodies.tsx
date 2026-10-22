@@ -9,12 +9,14 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { CodeLines } from "@/components/code/CodeLines";
-import { CONNECTION_LABEL, MESSAGE_CHANNEL_LABEL, RESULT_THUMBS, resultHolds, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
+import { CONNECTION_LABEL, MESSAGE_CHANNEL_LABEL, RESULT_THUMBS, resultHolds, stepRunsLabel, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
 import { decisionHeadline, decisionLines, expectedLine } from "@/lib/build/decision";
 import { formatSize } from "@/lib/build/readerSteps";
 import { REPO_USAGE_LABEL } from "@/lib/build/sourceTiles";
 import { splitVariables } from "@/lib/build/tileExtras";
+import type { ReaderFact } from "@/lib/build/readerFacts";
+import { typeLineOf } from "@/lib/build/tileLines";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { TextButton } from "@/pages/site/compose/composeControls";
@@ -183,9 +185,12 @@ export function ManualTileBody({ step, indent = 0, picture = true, lean = false,
 
 /* ── an agent ── */
 
-/** "When I ask", or the way it runs in the words Details uses; an agent with none runs when asked. */
-export function startsLine(runs: string): string {
-  return runs || "When I ask";
+/** An agent's trigger, in the words the agent modal asks it: Manual, Scheduled or Event, then what it was given; any other way it ran, as its line says it. */
+export function triggerLine(step: Pick<Step, "runs" | "changesEachRound">): string {
+  const runs = step.runs;
+  if (runs?.how === "schedule") return `Scheduled${runs.detail ? ` · ${runs.detail}` : ""}`;
+  if (runs?.how === "event") return `Event${runs.detail ? ` · ${runs.detail}` : ""}`;
+  return stepRunsLabel(step) || "Manual";
 }
 
 /* ── a prompt's reply ── */
@@ -406,11 +411,11 @@ export function TileFooter({ facts, link, indent = 0 }: { facts: readonly (strin
 /* ── a system prompt (CA-15 P9) ── */
 
 /** Its text clamped to two lines, each `{variable}` drawn as a small mono chip (12, the control fill). */
-export function SystemPromptTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+export function SystemPromptTileBody({ step, indent = 0, full = false }: { step: Step; indent?: number; full?: boolean }) {
   const parts = splitVariables(step.text);
   return (
     <div data-testid="system-prompt-tile" style={{ paddingLeft: indent, minWidth: 0 }}>
-      <p data-testid="system-prompt-text" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>
+      <p data-testid="system-prompt-text" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(full ? null : clamp(2)) }}>
         {parts.map((part, at) =>
           part.variable ? (
             <span key={at} data-testid="variable-chip" style={{ ...CONTROL, fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", padding: "0 6px", margin: "0 1px", borderRadius: 4, display: "inline-block", color: t.text, whiteSpace: "nowrap" }}>
@@ -468,6 +473,40 @@ export function RepoTileBody({ step, indent = 0 }: { step: Step; indent?: number
         </span>
       ) : null}
     </div>
+  );
+}
+
+/** The type line a reader sees under a tile's title: the same words the composer draws above it. */
+export function TypeLine({ step, indent = 0 }: { step: Pick<Step, "kind"> & Parameters<typeof typeLineOf>[0]; indent?: number }) {
+  return (
+    <div data-testid={`${step.kind}-eyebrow`} style={{ ...text(12, 400, t.label), paddingLeft: indent, overflowWrap: "anywhere" }}>
+      {typeLineOf(step)}
+    </div>
+  );
+}
+
+/** What the maker gave beyond a tile's body, as label over value. Nothing at all when there is nothing: a reader never meets an empty row. */
+export function ReaderFacts({ facts, indent = 0 }: { facts: readonly ReaderFact[]; indent?: number }) {
+  if (facts.length === 0) return null;
+  return (
+    <dl data-testid="reader-facts" style={{ margin: 0, paddingLeft: indent, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      {facts.map((fact) => (
+        <div key={fact.label} data-testid="reader-fact" style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+          <dt style={text(12, 400, t.text2)}>{fact.label}</dt>
+          <dd style={{ ...text(13, 400, t.text), margin: 0, overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(fact.mono ? { fontFamily: DM_MONO, fontSize: 12.5 } : null) }}>
+            {fact.lines ? (
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 1 }}>
+                {fact.lines.map((line, at) => (
+                  <li key={at}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              fact.text
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

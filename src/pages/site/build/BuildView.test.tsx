@@ -216,7 +216,7 @@ describe("a check on the build page (CA-03 P5)", () => {
   it("draws it as a step: the test description, pass criteria, failure notes and its status", () => {
     mount(withSteps([check]));
     const card = screen.getAllByTestId("step-card").find((entry) => entry.getAttribute("data-kind") === "check")!;
-    expect(card.textContent).toContain("Check · how it checked its work");
+    expect(card.textContent).toContain("CheckPassed 13 of 14 runs");
     expect(within(card).getByTestId("check-status").textContent).toBe("Passed 13 of 14 runs · since 12 Oct");
     expect(within(card).getAllByTestId("label-value").map((row) => row.textContent)).toEqual([
       "Test descriptionPlaces a test order for 2 sourdough loaves",

@@ -199,7 +199,7 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
         <textarea id={`${uid}-passing`} rows={2} maxLength={CHECK_TEXT_MAX} value={passing} placeholder={CHECK_DIALOG_COPY.passingPlaceholder} onChange={(event) => setPassing(event.target.value)} style={typedArea(phone)} />
       </Field>
 
-      <div role="group" aria-label={CHECK_DIALOG_COPY.runs} data-testid="check-runs" style={{ background: t.flat, border: `1px solid ${t.line}`, borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
+      <div role="group" aria-label={CHECK_DIALOG_COPY.runs} data-testid="check-runs" style={{ background: t.flat, border: `1px solid ${t.line}`, borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
         <SectionHeading>{CHECK_DIALOG_COPY.runs}</SectionHeading>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {small(shownPassed, setPassed, CHECK_DIALOG_COPY.passed)}

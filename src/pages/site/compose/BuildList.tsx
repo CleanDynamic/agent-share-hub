@@ -50,7 +50,7 @@ import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -576,11 +576,11 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
             collisionPadding={16}
             onClick={(event) => event.stopPropagation()}
             data-testid="sent-with-review"
-            style={{ ...menuSurface(360), maxHeight: "var(--radix-popover-content-available-height)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}
+            style={{ ...menuSurface(360), maxHeight: "var(--radix-popover-content-available-height)", padding: 12, display: "flex", flexDirection: "column", gap: 12 }}
           >
             <span style={text(12.5, 500, t.text)}>{SENT_WITH_COPY.keep}</span>
             {offered.map((suggestion) => (
-              <div key={suggestion.key} data-testid="sent-with-suggestion" style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: `1px solid ${t.line}` }}>
+              <div key={suggestion.key} data-testid="sent-with-suggestion" style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 12, borderTop: `1px solid ${t.line}` }}>
                 <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
@@ -1282,7 +1282,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
               {instructions}
             </span>
           ) : null}
-          <DotLine testId="runs-line">{startsLine(stepRunsLabel(step))}</DotLine>
+          <DotLine testId="runs-line">{triggerLine(step)}</DotLine>
           {toolNames.length > 0 ? (
             <span data-testid="agent-tools" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
               {toolNames.map((name) => (
