@@ -49,9 +49,10 @@ import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBod
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
-import { groupKey } from "@/lib/build/graph";
+import { groupKey, groupKind, shownGroups, type SessionGroup } from "@/lib/build/graph";
 import { parseRefTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
+import { shortDate } from "@/lib/build/readerSteps";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";
 import { ring } from "@/lib/theme/controls";
@@ -61,6 +62,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { OutsideWarning } from "../compose/OutsideWarning";
+import { titleRepeatsText } from "../compose/buildListModel";
 import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
@@ -785,18 +787,23 @@ function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
       <NumberTile>{entry.step.number}</NumberTile>
-      <h3
-        style={{
-          ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text),
-          margin: 0,
-          flexGrow: 1,
-          minWidth: 0,
-          letterSpacing: "-0.005em",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {entry.title}
-      </h3>
+      {/* CA-14 P8: an automatic title that only repeats the start of the text under it is not drawn, as in the composer. */}
+      {entry.isDefaultTitle && entry.step.kind === "prompt" && titleRepeatsText(entry.step.text, entry.title) ? (
+        <span aria-hidden="true" data-testid="title-hidden" style={{ flexGrow: 1 }} />
+      ) : (
+        <h3
+          style={{
+            ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text),
+            margin: 0,
+            flexGrow: 1,
+            minWidth: 0,
+            letterSpacing: "-0.005em",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {entry.title}
+        </h3>
+      )}
       {right}
     </div>
   );
@@ -1116,6 +1123,38 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
   return groups;
 }
 
+/**
+ * CA-14 P1: a session of the maker's with no tile yet is drawn too, as its head and "No tiles yet", so the numbers a reader
+ * sees run 1, 2, 3 with none missing. Each goes before the first session numbered after it.
+ */
+function withEmptySessions(groups: Group[], all: readonly SessionGroup[] | undefined): Group[] {
+  const out = [...groups];
+  for (const group of shownGroups(all ?? []).filter((entry) => entry.stepNumbers.length === 0 && groupKind(entry) === "typed")) {
+    const key = groupKey(group);
+    if (out.some((entry) => entry.chat?.key === key)) continue;
+    const chat: SessionChat = {
+      kind: "new",
+      tool: group.tool,
+      model: group.model,
+      session: group.number,
+      date: shortDate(group.startedAt),
+      startedAt: group.startedAt,
+      typed: false,
+      headline: group.tool ? `New chat in ${group.tool}` : "New chat",
+      detail: "",
+      setup: [],
+      key,
+      ...(group.title ? { title: group.title } : null),
+      ...(group.colour ? { colour: group.colour } : null),
+      collapsed: false,
+      tiles: 0,
+    };
+    const at = out.findIndex((entry) => entry.chat && entry.chat.session !== null && entry.chat.session > group.number);
+    out.splice(at < 0 ? out.length : at, 0, { key: `empty:${key}`, head: (fold: Fold | null) => (fold ? <ReaderSessionHead chat={chat} fold={fold} /> : null), entries: [], chat, session: key, ...(group.colour ? { colour: group.colour } : null) });
+  }
+  return out;
+}
+
 const column = (gap: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap, minWidth: 0 });
 
 /** CA-06 P4: the groups of one session, side by side, so a coloured session can be drawn inside one line. */
@@ -1135,7 +1174,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
 
   /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
-  const runs = sessionRuns(groupsOf(steps, { onCopy: view.onCopy, announce, phone }));
+  const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));
   const firstRun = runs[0];
   const [foldedKeys, setFolded] = useState<ReadonlySet<string>>(() => new Set(runs.flatMap((run) => run.groups.flatMap((group) => (group.chat?.collapsed ? [group.chat.key] : [])))));
   /* CA-14 P6: a build with three sessions or more has the session list for its readers; it costs them nothing, so it is always on. */
@@ -1276,7 +1315,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
                   {folded ? null : (
                     <>
                       <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} />
-                      {tiles}
+                      {group.entries.length === 0 ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>No tiles yet</p> : tiles}
                     </>
                   )}
                 </div>

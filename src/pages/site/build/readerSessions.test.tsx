@@ -107,3 +107,48 @@ describe("the session list", () => {
     expect(screen.getByTestId("session-list").tagName).toBe("BUTTON");
   });
 });
+
+describe("a tile's automatic title", () => {
+  it("is not drawn when it only repeats the start of the text, and a typed title is", () => {
+    const tree = [
+      { ...prompt("x1", 0, "typed-a"), payload: { text: "ccc", session: "typed-a" } },
+      { ...prompt("x2", 1, "typed-a"), title: "ccc", payload: { text: "ccc", session: "typed-a" } },
+    ] as unknown as NodeTree[];
+    const steps = readerSteps(tree, { excluded_models: [], sessions: [], session_tools: {}, sessions_meta: { "typed-a": meta["typed-a"] } } as never, new Map());
+    const { title: _t, outcome: _o, ...rest } = buildStepsFixture("list");
+    mount({ ...rest, steps, counts: buildCounts(steps) });
+    const first = document.querySelector('[data-step="1"]') as HTMLElement;
+    const second = document.querySelector('[data-step="2"]') as HTMLElement;
+    expect(within(first).queryByRole("heading", { level: 3 })).toBeNull();
+    expect(within(second).getByRole("heading", { level: 3 }).textContent).toBe("ccc");
+  });
+});
+
+describe("what the build page keeps of builds.making", () => {
+  it("keeps the maker's order and the sessions left folded, and nothing else that is not the right shape", async () => {
+    const { asMaking } = await import("./buildModel");
+    const made = asMaking({ sessions: [], session_order: ["b", "a", 3, "b"], sessions_collapsed: ["a", null], junk: true });
+    expect(made.session_order).toEqual(["b", "a"]);
+    expect(made.sessions_collapsed).toEqual(["a"]);
+    expect(made).not.toHaveProperty("junk");
+    const bare = asMaking({});
+    expect(bare).not.toHaveProperty("session_order");
+    expect(bare).not.toHaveProperty("sessions_collapsed");
+  });
+});
+
+describe("a session with no tile yet", () => {
+  it("is drawn for a reader as its head and No tiles yet, so the numbers run on without a gap", async () => {
+    const { buildSteps, sessionGroups } = await import("@/lib/build/graph");
+    const tree = [prompt("a-1", 0, "typed-a"), prompt("a-2", 1, "typed-a")];
+    const emptyMeta = { "typed-c": meta["typed-c"], "typed-a": meta["typed-a"] };
+    const making = { excluded_models: [], sessions: [], session_tools: {}, sessions_meta: emptyMeta, session_order: ["typed-c", "typed-a"] };
+    const steps = readerSteps(tree, making as never, new Map());
+    const groups = sessionGroups(buildSteps(tree), [], {}, emptyMeta as never, ["typed-c", "typed-a"]);
+    const { title: _t, outcome: _o, ...rest } = buildStepsFixture("list");
+    mount({ ...rest, steps, groups, counts: buildCounts(steps) });
+    expect(screen.getAllByTestId("reader-session-head").map((head) => head.getAttribute("aria-label"))).toEqual(["Session 1 · Cursor", "Session 2 · Claude"]);
+    const empty = document.querySelector('[data-reader-session="typed-c"]') as HTMLElement;
+    expect(within(empty).getByText("No tiles yet")).toBeTruthy();
+  });
+});

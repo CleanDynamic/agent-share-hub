@@ -238,7 +238,7 @@ const DAY_MS = 86_400_000;
 const PREREQUISITE_TYPE = "prerequisite";
 
 /** "27 Sep", in UTC so a server and a browser agree (the same reading as the page model's shortDate). Null for a missing or unreadable date. */
-function shortDate(iso: string | null | undefined): string | null {
+export function shortDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return null;

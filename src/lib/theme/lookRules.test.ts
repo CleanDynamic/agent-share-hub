@@ -360,6 +360,9 @@ export const CA03_FILES: readonly string[] = [
   "src/components/gallery/PatternMarks.tsx",
   "src/pages/site/gallery/GalleryPatterns.test.tsx",
   // CA-14 P5 to P8
+  "src/lib/build/patternsWrite.ts",
+  "src/pages/site/build/useReaderPostLinks.ts",
+  "src/pages/site/compare/ComparePage.tsx",
   "src/components/build/SessionJump.tsx",
   "src/dev/fixtures/sandbox.ts",
   "src/lib/build/sessionEdit.test.ts",
