@@ -1,4 +1,4 @@
-/* CA-03 P5, CA-15 P5 — Add › "Check": a test that verifies this part of the build.
+/* CA-03 P5, CA-15 P5: Add › "Check": a test that verifies this part of the build.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). Required, in this order:
 

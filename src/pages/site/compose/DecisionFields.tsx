@@ -1,4 +1,4 @@
-/* CA-13 P2, CA-15 P8 — the Decision form's fields, shared by Add › Decision and Details.
+/* CA-13 P2, CA-15 P8: the Decision form's fields, shared by Add › Decision and Details.
 
    In this order:
 

@@ -1,4 +1,4 @@
-/* CA-15 P1 — the Optional section every tile modal ends with.
+/* CA-15 P1: the Optional section every tile modal ends with.
 
    A heading row, "Optional" (13/500) and on the right the count of its fields in mono ("6 fields"); then one row per
    optional field, each closed when the modal opens. A closed row shows the field's name (13), under it one grey line

@@ -1,4 +1,4 @@
-/* CA-02 P7, CA-15 P6 — Add › "Code": source code produced in this step, as it was used.
+/* CA-02 P7, CA-15 P6: Add › "Code": source code produced in this step, as it was used.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). Required: the code, typed or uploaded.
 

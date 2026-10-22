@@ -1,4 +1,4 @@
-/* CA-12 P9, CA-15 P3 — Add › "Result": the output this prompt produced.
+/* CA-12 P9, CA-15 P3: Add › "Result": the output this prompt produced.
 
    The shared modal frame (`ModalShell`, `ModalForm`), 520 wide (a `BottomSheet` below 768). It asks the output type first, a
    grid of twelve plain buttons, then the fields that type requires:

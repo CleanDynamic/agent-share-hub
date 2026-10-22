@@ -1,4 +1,4 @@
-/* CA-13 P6, CA-15 P7 — "Supporting models", on an agent: in Details and in the Add agent dialog.
+/* CA-13 P6, CA-15 P7: "Supporting models", on an agent: in Details and in the Add agent dialog.
 
    The list of supporting models as chips with a Remove each, then "Add a supporting model": the job first, then the provider (ScaleDown,
    TypeSafe or typed), then that job's few fields in sentence case, and under all of them an optional "What it did on the

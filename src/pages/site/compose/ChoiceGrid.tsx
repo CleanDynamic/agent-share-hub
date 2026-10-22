@@ -1,4 +1,4 @@
-/* CA-15 P3 — one choice from a handful, as a grid of plain buttons: the Result's output type, the Tool's connection method.
+/* CA-15 P3: one choice from a handful, as a grid of plain buttons: the Result's output type, the Tool's connection method.
 
    Three columns. A button is the control recipe; the chosen one is the selected recipe, never a colour. Each is a real
    button with `aria-pressed`, the group is named, and a phone's buttons are 44 high. With `allowClear` a second press on

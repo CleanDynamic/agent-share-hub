@@ -1,4 +1,4 @@
-/* CA-02 P5, CA-15 P7 — the host platform an agent ran on, the models it used and the tools it could call.
+/* CA-02 P5, CA-15 P7: the host platform an agent ran on, the models it used and the tools it could call.
 
    One set of controls, in the Add dialog and in Details:
 

@@ -1,4 +1,4 @@
-/* CA-15 P9 — Add › "System prompt": instructions that apply across prompts.
+/* CA-15 P9: Add › "System prompt": instructions that apply across prompts.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). Required:
 

@@ -1,4 +1,4 @@
-/* CA-15 P9 — Add › "Dataset": data used for training, evaluation or retrieval.
+/* CA-15 P9: Add › "Dataset": data used for training, evaluation or retrieval.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). Required: Name and Description. Visible: Use (Training,
    Fine-tuning, Evaluation, Retrieval, Testing), stored as `payload.use`.

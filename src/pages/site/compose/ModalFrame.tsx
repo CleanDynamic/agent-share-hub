@@ -1,4 +1,4 @@
-/* CA-15 P1 — the one frame every tile modal shares.
+/* CA-15 P1: the one frame every tile modal shares.
 
    Three parts, in the window recipe (`windowStyle`, `dialogTitle`):
 

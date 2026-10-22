@@ -1,4 +1,4 @@
-/* CA-15 P9 — Add › "GitHub repository": a repository used in this build, owned by you or by a third party.
+/* CA-15 P9: Add › "GitHub repository": a repository used in this build, owned by you or by a third party.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). Required:
 

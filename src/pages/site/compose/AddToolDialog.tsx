@@ -1,4 +1,4 @@
-/* CA-02 P6, CA-12 P7, CA-15 P4 — Add › "Tool": an external application the model used during the build.
+/* CA-02 P6, CA-12 P7, CA-15 P4: Add › "Tool": an external application the model used during the build.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). One required field:
 

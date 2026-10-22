@@ -1,4 +1,4 @@
-// CA-03 P5, CA-15 P5 — Add › Check: the required fields in order, the Runs panel, the Optional section and the refusals in plain words.
+// CA-03 P5, CA-15 P5: Add › Check: the required fields in order, the Runs panel, the Optional section and the refusals in plain words.
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

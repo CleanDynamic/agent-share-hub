@@ -1,4 +1,4 @@
-/* CA-15 P11 — the Optional section of the Details panel, in the modals' words.
+/* CA-15 P11: the Optional section of the Details panel, in the modals' words.
 
    A selected tile shows the same rows its modal had under Optional: closed, each saying what it holds, each opening to its
    field. The rows are described as data (`ExtraRow`), built from the tile's own stored payload with the same readers the modal

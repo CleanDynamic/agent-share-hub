@@ -1,4 +1,4 @@
-// CA-15 P2 — the prompt window's Optional section: Model settings and Variables, for the maker and for a reader.
+// CA-15 P2: the prompt window's Optional section: Model settings and Variables, for the maker and for a reader.
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";

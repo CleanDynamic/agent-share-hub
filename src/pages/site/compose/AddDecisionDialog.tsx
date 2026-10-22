@@ -1,4 +1,4 @@
-/* CA-13 P2, CA-15 P8 — Add › "Decision": a structured classification your application requests from a model.
+/* CA-13 P2, CA-15 P8: Add › "Decision": a structured classification your application requests from a model.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). The fields are `DecisionFields`: a Model block (Model or
    service, Version, Invocation), the Questions block, then the Optional section. This holds the draft and the one primary,

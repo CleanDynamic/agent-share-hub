@@ -1,4 +1,4 @@
-/* UI-P69, CA-15 P7 — Add › "Agent": a model that runs on its own, with instructions and tools.
+/* UI-P69, CA-15 P7: Add › "Agent": a model that runs on its own, with instructions and tools.
 
    The shared modal frame, 520 wide (a `BottomSheet` below 768). Required: a model (`setupReady`). Visible:
 
