@@ -84,6 +84,8 @@ export function stackBySessionMoves(
   tree: readonly Pick<BuildNode, "id" | "parent_id" | "position" | "type">[],
   steps: readonly Step[],
   groups: readonly SessionGroup[],
+  /** Steps that go to the end of their session, in this order (a tile moved or merged in), after the ones already there. */
+  atEnd: readonly string[] = [],
 ): NodeMove[] {
   const nodes = topSteps(tree);
   const idOf = new Map(steps.map((step) => [step.number, step.id]));
@@ -96,8 +98,18 @@ export function stackBySessionMoves(
       wanted.push(id);
     }
   };
+  const last = new Set(atEnd);
   for (const group of groups.filter((entry) => entry.implicit)) group.stepNumbers.forEach(take);
-  for (const group of groups.filter((entry) => !entry.implicit)) group.stepNumbers.forEach(take);
+  for (const group of groups.filter((entry) => !entry.implicit)) {
+    // The tiles that were already there first, then the ones put at the end, in the order given.
+    group.stepNumbers.filter((number) => !last.has(idOf.get(number) ?? "")).forEach(take);
+    atEnd.filter((id) => group.stepNumbers.some((number) => idOf.get(number) === id)).forEach((id) => {
+      if (!seen.has(id)) {
+        seen.add(id);
+        wanted.push(id);
+      }
+    });
+  }
   for (const node of nodes) if (!seen.has(node.id)) wanted.push(node.id);
   const slots = nodes.map((node) => node.position as number);
   return wanted.flatMap((id, at) => (nodes[at] && nodes[at].id !== id ? [{ id, parent_id: null, position: slots[at] }] : []));

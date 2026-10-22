@@ -127,3 +127,14 @@ export function madeLine(names: readonly string[]): string | null {
   const more = names.length - 2;
   return `Makes ${names.slice(0, 2).join(", ")}${more > 0 ? ` +${more}` : ""}`;
 }
+
+/**
+ * CA-14 P8: a tile's automatic title says nothing its text does not already say when the text starts with it
+ * ("ccc" over "ccc", or the first eight words and an ellipsis over the same eight words). A title the maker typed is
+ * never passed here: it always shows.
+ */
+export function titleRepeatsText(text: string, title: string): boolean {
+  const squash = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
+  const head = squash(title.replace(/(…|\.\.\.)\s*$/, ""));
+  return head.length > 0 && squash(text).startsWith(head);
+}

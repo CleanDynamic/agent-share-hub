@@ -47,31 +47,37 @@ describe("the List", () => {
     expect(coloured.style.border).toBe(`1px solid ${rgb(LINKS_COLOURS.session)}`);
     expect(coloured.style.borderRadius).toBe("12px");
     expect(coloured.style.padding).toBe("12px");
-    expect(within(coloured).getByRole("separator", { name: /^Session 2/ })).toBeTruthy();
+    expect(within(coloured).getByRole("group", { name: /^Session 2/ })).toBeTruthy();
     expect(container.querySelectorAll("[data-session-colour]")).toHaveLength(1);
   });
 
-  it("gives every tile and session head a colour button named for its part and its hex, only where colour can be set", () => {
+  it("draws a colour button only on a part that has a colour; the others give one from their ⋯ menu (CA-14 P2)", async () => {
     const onColour = vi.fn();
-    inRouter(createElement(BuildList, { ...shapeListProps("one-sitting", source), onColour }));
+    const sessionOps = { onTitle: vi.fn(), onMove: vi.fn(), onRemove: vi.fn() };
+    inRouter(createElement(BuildList, { ...shapeListProps("one-sitting", source), onColour, sessionOps }));
     expect(screen.getByRole("button", { name: `Colour for Prompt 2: ${LINKS_COLOURS.prompt}` })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Colour for Prompt 1: none" })).toBeTruthy();
     expect(screen.getByRole("button", { name: `Colour for Session 2: ${LINKS_COLOURS.session}` })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Colour for Session 1: none" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Colour for Prompt 1: none" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Colour for Session 1: none" })).toBeNull();
     const code = screen.getByRole("button", { name: `Colour for Code order-form.tsx: ${LINKS_COLOURS.code}` });
     fireEvent.click(code);
     expect(onColour).toHaveBeenCalledWith("node:o-c1", code, "Code order-form.tsx", LINKS_COLOURS.code);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 1 options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Colour…" }));
+    expect(onColour).toHaveBeenLastCalledWith("node:o-p1", expect.anything(), "Prompt 1", null);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Session 1 options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Colour…" }));
+    expect(onColour).toHaveBeenLastCalledWith(`session:${LINKS_S1}`, expect.anything(), "Session 1", null);
     cleanup();
     inRouter(createElement(BuildList, shapeListProps("one-sitting", source)));
     expect(screen.queryAllByTestId("colour-button")).toHaveLength(0);
   });
 
-  it("draws an empty circle dashed, and a set one filled", () => {
+  it("draws a set colour as a filled circle, and no circle at all for none", () => {
     inRouter(createElement(BuildList, { ...shapeListProps("one-sitting", source), onColour: vi.fn() }));
-    const none = screen.getByRole("button", { name: "Colour for Prompt 1: none" }).querySelector("[data-colour-dot]") as HTMLElement;
-    // jsdom drops a border with a var() in it, so the dot says which it is.
-    expect(none.getAttribute("data-colour-dot")).toBe("none");
-    expect(none.style.background).toBe("");
+    expect(document.querySelectorAll('[data-colour-dot="none"]')).toHaveLength(0);
     const set = screen.getByRole("button", { name: `Colour for Prompt 2: ${LINKS_COLOURS.prompt}` }).querySelector("[data-colour-dot]") as HTMLElement;
     expect(set.style.background).toBe("rgb(201, 168, 107)");
   });

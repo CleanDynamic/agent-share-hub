@@ -47,6 +47,8 @@ export interface ToolPickerProps {
   unpicked?: boolean;
   /** CA-13 rule 5: offer the Runtime models and services subcategory first (Decision dialog, helpers, "Runs in", answer shapes). */
   runtime?: boolean;
+  /** CA-14 P2: a text button in `--text2` (a session's "No app chosen"), not the boxed control. */
+  quiet?: boolean;
 }
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.kind !== "note";
@@ -77,7 +79,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai", unpicked = false, runtime = false }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai", unpicked = false, runtime = false, quiet = false }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -144,7 +146,26 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     }
   };
 
-  const triggerStyle: CSSProperties = {
+  const quietStyle: CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    boxSizing: "border-box",
+    maxWidth: "100%",
+    minWidth: 0,
+    height: phone ? 36 : 28,
+    padding: "0 6px",
+    margin: "0 -6px",
+    background: "transparent",
+    border: 0,
+    borderRadius: 6,
+    cursor: "pointer",
+    textDecoration: "underline",
+    textUnderlineOffset: 3,
+    ...text(15, 500, t.text2),
+    ...ring(trigger.state.focusVisible),
+  };
+  const triggerStyle: CSSProperties = quiet ? quietStyle : {
     ...CONTROL,
     ...(trigger.state.hovered ? CONTROL_HOVER : null),
     display: "inline-flex",

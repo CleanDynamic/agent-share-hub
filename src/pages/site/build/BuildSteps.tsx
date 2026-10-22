@@ -30,6 +30,8 @@ import { Button } from "@/components/brand/Button";
 import { CodeLines } from "@/components/code/CodeLines";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
+import { IconButton } from "@/components/brand/IconButton";
+import { ChevronRight } from "lucide-react";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
@@ -632,7 +634,60 @@ function Head({ children, detail, tool, model }: { children: ReactNode; detail?:
 const SETUP_INDENT = 28;
 
 /** A chat's head, with Setup at its end when the session has one: closed until asked, then its rows under the head. */
-function ChatHead({ chat, copy }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }>; copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean } }) {
+type SessionChat = Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }>;
+
+/** CA-14 P3: a session's fold, for its head and the tiles under it. */
+interface Fold {
+  folded: boolean;
+  toggle: () => void;
+  /** The id of the element that holds the tiles. */
+  controls: string;
+  tiles: number;
+  phone: boolean;
+}
+
+/**
+ * CA-14 P2: a session's head as a reader sees it, the same line as the maker's without the maker's controls: a fold
+ * arrow, the app's mark, "Session 1 · Claude", the title as plain text (nothing when there is none), the tile count only
+ * while folded, and the date.
+ */
+function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
+  const marked = markFor({ tool: chat.tool, model: chat.model }) !== null;
+  const name = `Session ${chat.session}`;
+  return (
+    <div role="group" aria-label={`${name} · ${chat.tool ?? "No app chosen"}`} data-testid="reader-session-head" style={{ display: "flex", flexWrap: fold.phone ? "wrap" : "nowrap", alignItems: "center", columnGap: 8, rowGap: 4, minHeight: 44, minWidth: 0 }}>
+      <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} boxed={false} size={30} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
+      {marked ? (
+        <span style={{ display: "inline-flex", color: t.text }}>
+          <ModelMark tool={chat.tool} model={chat.model} size={20} />
+        </span>
+      ) : (
+        <span aria-hidden="true" style={{ display: "inline-flex", width: 20, justifyContent: "center", color: t.label }}>
+          <Glyph name="layers" size={16} />
+        </span>
+      )}
+      <span style={{ ...text(15, 500, t.text), whiteSpace: "nowrap" }}>
+        {name}
+        {chat.tool ? ` · ${chat.tool}` : ""}
+      </span>
+      {chat.title ? (
+        <span data-testid="session-title-text" style={{ ...text(15, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
+          {chat.title}
+        </span>
+      ) : (
+        <span style={{ flex: "1 1 0", minWidth: 0 }} />
+      )}
+      {fold.folded ? (
+        <span data-testid="session-count" style={{ ...text(13, 400, t.text2), fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          {fold.tiles} {fold.tiles === 1 ? "tile" : "tiles"}
+        </span>
+      ) : null}
+      {chat.date ? <span style={{ ...text(13, 400, t.label), whiteSpace: "nowrap" }}>{chat.date}</span> : null}
+    </div>
+  );
+}
+
+function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }; fold?: Fold | null }) {
   const [open, setOpen] = useState(false);
   const setup = chat.setup;
   // CA-05 P6: under two quiet labels, only when both have rows.
@@ -659,26 +714,30 @@ function ChatHead({ chat, copy }: { chat: Extract<NonNullable<ReaderStep["chat"]
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
-          <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
-            {chat.headline}
-          </Head>
+          {fold && chat.session !== null ? (
+            <ReaderSessionHead chat={chat} fold={fold} />
+          ) : (
+            <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
+              {chat.headline}
+            </Head>
+          )}
         </div>
-        {setup.length > 0 || chat.startedWith ? (
+        {(setup.length > 0 || chat.startedWith) && !fold?.folded ? (
           <span style={{ paddingTop: 8, flexShrink: 0 }} data-testid="setup-toggle">
             <ReadAll label="Setup" onRead={() => setOpen((value) => !value)} expanded={open} />
           </span>
         ) : null}
       </div>
       {/* CA-04 P6: what the session worked until, and when it runs, one quiet line each under its head. */}
-      {chat.goal ? (
+      {chat.goal && !fold?.folded ? (
         <DotLine testId="goal-line" dot={chat.goal.reached ? t.evidence : t.label}>
           {chat.goal.line}
         </DotLine>
       ) : null}
-      {chat.runsWhen ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
-      {chat.facts ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
-      {chat.together ? <DotLine testId="together-line">{chat.together}</DotLine> : null}
-      {open ? (
+      {chat.runsWhen && !fold?.folded ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
+      {chat.facts && !fold?.folded ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
+      {chat.together && !fold?.folded ? <DotLine testId="together-line">{chat.together}</DotLine> : null}
+      {open && !fold?.folded ? (
         <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
           {/* CA-05 P3: the command that opened the session, as written, and the settings it names in plain words. */}
           {chat.startedWith ? (
@@ -1004,8 +1063,11 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
 /** A group on the page: a head and what follows it until the next head. */
 interface Group {
   key: string;
-  head: ReactNode;
+  /** CA-14 P3: a session's head is drawn with its fold; any other head is drawn as it is. */
+  head: ReactNode | ((fold: Fold | null) => ReactNode);
   entries: ReaderStep[];
+  /** CA-14 P2: set for a group that is a session's own (its head carries the session's number). */
+  chat?: SessionChat;
   /** CA-06 P4: the session the group is in (its first step's id), and the maker's colour for it. */
   session?: string;
   colour?: string;
@@ -1026,11 +1088,15 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
         ...inSession,
         key: `chat:${entry.step.id}`,
         // CA-04 P4: Setup at the head's end, when the session has one.
-        head: chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.together || chat.startedWith ? <ChatHead chat={chat} copy={copy} /> : (
-          <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
-            {chat.headline}
-          </Head>
-        ),
+        head: (fold: Fold | null) =>
+          chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.together || chat.startedWith || (fold && chat.session !== null) ? (
+            <ChatHead chat={chat} copy={copy} fold={fold} />
+          ) : (
+            <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
+              {chat.headline}
+            </Head>
+          ),
+        ...(chat.session !== null ? { chat } : null),
         entries: [],
       });
     }
@@ -1067,12 +1133,34 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   const { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
 
+  /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
+  const runs = sessionRuns(groupsOf(steps, { onCopy: view.onCopy, announce, phone }));
+  const firstRun = runs[0];
+  const [foldedKeys, setFolded] = useState<ReadonlySet<string>>(() => new Set(runs.flatMap((run) => run.groups.flatMap((group) => (group.chat?.collapsed ? [group.chat.key] : [])))));
+  const toggleFold = (key: string) =>
+    setFolded((before) => {
+      const next = new Set(before);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   /* CA-06 P3: a link in the post opens its part's window once the part is in view: a prompt the full prompt
      window, anything else the part window. */
   const [part, setPart] = useState<string | null>(null);
   const [fromPost, setFromPost] = useState(false);
   const shown = useRef<string | null>(null);
   const backing = useRef(false);
+  /* A tile a link, an address or a window names is never left inside a folded session. */
+  const targetId = open ?? ringed ?? (part ? (parseRefTo(part)?.kind === "node" ? (parseRefTo(part)?.id ?? null) : null) : null);
+  useEffect(() => {
+    if (!targetId) return;
+    const holds = (entry: ReaderStep): boolean => entry.step.id === targetId || entry.children.some(holds);
+    const home = runs.flatMap((run) => run.groups).find((group) => group.chat && group.entries.some(holds));
+    const key = home?.chat?.key;
+    if (key) setFolded((before) => (before.has(key) ? new Set([...before].filter((entry) => entry !== key)) : before));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetId]);
   /** Back to the post was pressed: the post takes focus as the window lets it go. */
   const backTo = view.onBackToPost;
   const openKey = view.focus?.open ? `${view.focus.open}:${view.focus.n}` : null;
@@ -1157,15 +1245,38 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
         </Suspense>
       ) : (
-        sessionRuns(groupsOf(steps, { onCopy: view.onCopy, announce, phone })).map((run) => {
-          const drawn = run.groups.map((group) => (
-            <div key={group.key} style={column(8)}>
-              {group.head}
-              {drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
-                isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
-              )}
-            </div>
-          ));
+        runs.map((run) => {
+          const drawn = run.groups.map((group, at) => {
+            const tiles = drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
+              isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
+            );
+            const chat = group.chat;
+            if (!chat || typeof group.head !== "function") {
+              return (
+                <div key={group.key} style={column(8)}>
+                  {typeof group.head === "function" ? group.head(null) : group.head}
+                  {tiles}
+                </div>
+              );
+            }
+            /* CA-14 P2, P3: a session is a container: its head, then its tiles 16 in with a 2px line down their left. */
+            const folded = foldedKeys.has(chat.key);
+            const controls = `reader-session-tiles-${chat.key}`;
+            const fold: Fold = { folded, toggle: () => toggleFold(chat.key), controls, tiles: chat.tiles, phone };
+            return (
+              <div key={group.key} data-reader-session={chat.key} style={{ ...column(4), ...(at > 0 || run !== firstRun ? { marginTop: 16 } : null) }}>
+                {group.head(fold)}
+                <div id={controls} hidden={folded} style={{ position: "relative", ...column(8), marginLeft: 16 }}>
+                  {folded ? null : (
+                    <>
+                      <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} />
+                      {tiles}
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          });
           // CA-06 P4: a coloured session's head and tiles sit inside its line; any other is drawn as it always was.
           return run.colour ? (
             <div key={run.key} data-session-colour={run.colour} style={{ ...column(16), ...outlineFor(run.colour), padding: 12 }}>

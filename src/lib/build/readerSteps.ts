@@ -46,7 +46,7 @@ import { DECISION_TYPE, modelShort, originalAnswer, questionLine, runsWhenLabel 
 import { runtimeNeeds } from "./runtimeNeeds";
 import { copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
-import { goalLine, sessionOrderOf, sessionsMetaOf, type Making } from "./making";
+import { goalLine, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, type Making } from "./making";
 import { modelRunLine } from "./modelRun";
 import { runsWhenLine } from "./runsFrom";
 import { sessionFactsLine, togetherLine } from "./sessionFacts";
@@ -91,6 +91,11 @@ export type ReaderChat =
       together?: string;
       /** CA-06 P4: the maker's colour for the session. */
       colour?: string;
+      /** CA-14 P2: the session's key, the maker's title for it (absent when none), whether the maker left it folded, and how many tiles it holds. */
+      key: string;
+      title?: string;
+      collapsed: boolean;
+      tiles: number;
     }
   | {
       kind: "same";
@@ -328,6 +333,8 @@ interface Context {
   tree: readonly NodeTree[];
   /** CA-04 P4: each session's setup, by its key. */
   setup: Map<string, ReaderSetupItem[]>;
+  /** CA-14 P3: the sessions the maker left folded. */
+  folded: ReadonlySet<string>;
 }
 
 const walk = (steps: readonly Step[], out: Step[] = []): Step[] => {
@@ -431,6 +438,7 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     toolIds,
     tree,
     setup: readSetup(tree, media),
+    folded: new Set(sessionsCollapsedOf(making)),
   };
 }
 
@@ -508,6 +516,10 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     setup: context.setup.get(groupKey(group)) ?? [],
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
     ...(group.colour ? { colour: group.colour } : null),
+    key: groupKey(group),
+    ...(group.title ? { title: group.title } : null),
+    collapsed: context.folded.has(groupKey(group)),
+    tiles: group.stepNumbers.length,
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
     ...factsOfGroup(group),
     ...togetherOfGroup(group, context.groups),

@@ -47,7 +47,9 @@ import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUr
 import { addSessionToBuild, emptyFirstSession } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
-import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed } from "@/lib/build/sessionLayout";
+import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessionOrder } from "@/lib/build/sessionLayout";
+import { useSessionEdits } from "./useSessionEdits";
+import { useViewOptions } from "./viewOptions";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -132,6 +134,8 @@ export function SandboxPage() {
     }),
     [user?.id, profile?.display_name, profile?.username, profile?.avatar_url],
   );
+  /* CA-14 P6: the View switches, kept for this maker on this device. */
+  const [viewOptions, setViewOptions] = useViewOptions(user?.id ?? null);
   const runtimeIssues = useMemo(() => runtimeChecks(buildSteps(tree)), [tree]);
   const onPublish = useCallback(async () => {
     await flushThread();
@@ -294,11 +298,16 @@ export function SandboxPage() {
      the Map it switches first, in the same tap. Scrolled to the middle (the page's scroll padding keeps it above the
      phone's bars), then focused without a second scroll, then ringed for a moment. */
   const addPromptField = useRef<HTMLTextAreaElement | null>(null);
+  /** CA-14 P5: opens the prompt box in the session being added to. Set once the sessions are known, below. */
+  const promptOpenRef = useRef<(() => void) | null>(null);
   const [addPromptFlash, setAddPromptFlash] = useState(0);
   /** "Name a file it makes": the prompt whose Makes field Details opens, and when it was asked. */
   const [focusMakes, setFocusMakes] = useState<{ id: string; at: number } | null>(null);
   const onAddPromptFocus = useCallback((): boolean => {
-    if (!addPromptField.current && lens !== "list") flushSync(() => onLens("list"));
+    if (lens !== "list") flushSync(() => onLens("list"));
+    /* CA-14 P5: the prompt box stands inside the session being added to; it is opened in this tap (flushSync), so the
+       field exists to take focus before the tap ends and an iPhone raises its keyboard. */
+    flushSync(() => promptOpenRef.current?.());
     const field = addPromptField.current;
     if (!field) return false;
     field.scrollIntoView?.({ block: "center" });
@@ -442,21 +451,20 @@ export function SandboxPage() {
   /* ── sessions (CA-04 P1) ── */
 
   /** The session the maker chose for what they add next; the build's last session while they have chosen none. */
-  const [chosenSession, setChosenSession] = useState<string | null>(null);
+  const [chosenSession, setChosenSessionState] = useState<string | null>(null);
+  /* CA-14 P5: choosing a session for what is added next takes effect in the same tap, before the next render: an Add item's
+     handler reads it straight away. */
+  const chosenRef = useRef<string | null>(null);
+  const setChosenSession = useCallback((key: string | null) => {
+    chosenRef.current = key;
+    setChosenSessionState(key);
+  }, []);
   const shown = useMemo(() => shownGroups(groups), [groups]);
   const currentSession = useMemo(() => {
     if (chosenSession && sourceSessionRows.some((row) => row.key === chosenSession)) return chosenSession;
     const last = shown[shown.length - 1];
     return last ? groupKey(last) : null;
   }, [chosenSession, sourceSessionRows, shown]);
-  /* The add field names its session once the build has more than the one session its typed prompts make. */
-  const sessionChoices = useMemo(
-    () =>
-      shown.length > 1 || shown.some((group) => groupKind(group) !== "legacy")
-        ? sourceSessionRows.map((row) => ({ key: row.key, label: `Session ${row.number} · ${row.tool}`, tool: row.tool === NO_APP ? null : row.tool }))
-        : undefined,
-    [shown, sourceSessionRows],
-  );
   /* CA-12 P3: a session with no tile yet is still drawn, as its head. A post whose draft is not made has Session 1 already. */
   const emptySessions = useMemo<SourceSession[]>(() => {
     const withTiles = new Set(shown.filter((group) => group.stepNumbers.length > 0).map((group) => groupKey(group)));
@@ -481,12 +489,33 @@ export function SandboxPage() {
     [groups, steps, prompts],
   );
 
+  /* ── CA-14: naming, moving, folding, removing, merging and splitting sessions ── */
+
+  /** What a screen reader hears when a session moves ("Session 3 moved to 2."). */
+  const [sessionSaid, setSessionSaid] = useState("");
+  /** The session whose prompt box is open. An empty draft has Session 1's open without it. */
+  const [promptSession, setPromptSession] = useState<string | null>(null);
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, onGone: (key) => {
+    if (chosenRef.current === key) setChosenSession(null);
+    setPromptSession((current) => (current === key ? null : current));
+  } });
+
+  promptOpenRef.current = () => {
+    const picked = chosenRef.current;
+    const key = picked && sourceSessionRows.some((row) => row.key === picked) ? picked : currentSession;
+    setPromptSession(key ?? FIRST_SESSION_KEY);
+    if (key && collapsedKeys.has(key)) onToggleCollapsed(key, false);
+  };
+
   /**
    * The session a new step records. None while it is an old build's last run of typed prompts, which a step added at
    * the end joins by itself; an earlier run is saved first, so the step can name it.
    */
   const sessionToWrite = useCallback(async (): Promise<string | null> => {
-    const key = currentSession;
+    const picked = chosenRef.current;
+    const key = picked && sourceSessionRows.some((row) => row.key === picked) ? picked : currentSession;
+    // CA-14 P5: a tile added to a session that is not the last is put with its own session once it is written.
+    edits.arm();
     // CA-12 P3: a new post's first change makes the draft and its Session 1, and goes into it.
     if (!key) {
       if (!buildId) await ensureBuild();
@@ -496,7 +525,7 @@ export function SandboxPage() {
     const last = shown[shown.length - 1];
     if (last && groupKey(last) === key) return null;
     return claim(key);
-  }, [currentSession, shown, claim, buildId, ensureBuild, firstSession]);
+  }, [currentSession, sourceSessionRows, edits, shown, claim, buildId, ensureBuild, firstSession]);
 
   /* CA-12 P4/P5: the session just added is scrolled to and outlined once; the row says "Adding…" until the write lands. */
   const [ringedSession, setRingedSession] = useState<{ key: string; n: number } | null>(null);
@@ -701,7 +730,13 @@ export function SandboxPage() {
   );
 
   const onAddPrompt = useCallback(
-    async (input: { text: string; tool: string | null; model: string | null }) => prompts.addNow({ ...input, session: await sessionToWrite() }),
+    async (input: { text: string; tool: string | null; model: string | null }) => {
+      const session = await sessionToWrite();
+      const saved = await prompts.addNow({ ...input, session });
+      // The box stays open in its session, ready for the next prompt.
+      if (saved && session) setPromptSession(session);
+      return saved;
+    },
     [prompts, sessionToWrite],
   );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
@@ -801,23 +836,6 @@ export function SandboxPage() {
     },
     [prompts, afterWrite],
   );
-  /** A tile dropped on a session's head: placed after that session's last step, then put in it. */
-  const onMoveToSession = useCallback(
-    async (id: string, key: string) => {
-      const group = groups.find((candidate) => groupKey(candidate) === key);
-      const last = group?.stepNumbers[group.stepNumbers.length - 1];
-      const end = last ? steps.findIndex((step) => step.number === last) + 1 : steps.length;
-      const from = steps.findIndex((step) => step.id === id);
-      const stable = isLegacySession(key) ? await claim(key) : key;
-      if (!stable) return false;
-      if (!(await prompts.nest(id, null, from >= 0 && from < end ? end - 1 : end))) return false;
-      prompts.setSessionOf(id, stable);
-      afterWrite();
-      return true;
-    },
-    [groups, steps, claim, prompts, afterWrite],
-  );
-
   const onAddAgentOrTeam = useCallback(
     async (input: AddAgentInput) => {
       savingSeed.current = true;
@@ -1553,7 +1571,7 @@ export function SandboxPage() {
             onDropOnStep={(id, files) => void onDropOnStep(id, files)}
             onNest={onNest}
             canNest={canNest}
-            onMoveToSession={onMoveToSession}
+            onMoveToSession={edits.onMoveTile}
             onKeepSentWith={(suggestion) => {
               prompts.keepSentWith(suggestion);
               afterWrite();
@@ -1568,9 +1586,11 @@ export function SandboxPage() {
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={onAddPrompt}
-            sessionChoices={sessionChoices}
-            currentSession={currentSession}
-            onCurrentSession={setChosenSession}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined }}
+            onDropSession={edits.onDrop}
+            onSplitHere={viewOptions.splitMerge ? edits.onSplitHere : undefined}
+            promptIn={promptSession}
+            said={sessionSaid}
                 onAddAsAgent={onAddAsAgent}
             onKeepAsCode={onKeepAsCode}
             inBuild={inBuild}

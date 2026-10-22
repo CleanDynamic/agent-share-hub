@@ -53,6 +53,8 @@ export interface SourceSession {
   colour?: string;
   /** CA-14 P1: the maker's title for the session; absent when it has none. */
   title?: string;
+  /** CA-14 P2: the session's day as the head shows it, "22 Oct"; "" for an old build's typed prompts. */
+  date?: string;
 }
 
 export interface SourceFile {
@@ -144,6 +146,7 @@ export function sourceSessions(
       number: group.number,
       tool: group.tool ?? NO_APP,
       detail: [model, when].filter(Boolean).join(" · "),
+      date: when,
       ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
       ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
@@ -168,6 +171,7 @@ export function sourceSessions(
       number: grouped.length + at + 1,
       tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : NO_APP),
       detail: [session.modelName, shortDate(session.createdAt)].filter(Boolean).join(" · "),
+      date: shortDate(session.createdAt),
       pickTool: pickTool(session.id),
       prompts: [],
     }));

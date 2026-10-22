@@ -71,7 +71,7 @@ describe("CA-12 P3 · Session 1", () => {
   it("a new post shows Session 1 with no app chosen above the prompt box, and says neither 'Unknown tool' nor 'typed here'", async () => {
     mount("/compose/new");
     await field();
-    expect(screen.getByRole("separator", { name: "Session 1 · No app chosen" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Session 1 · No app chosen" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Pick an app for session 1" })).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/Unknown tool|typed here/i);
   });
@@ -94,7 +94,7 @@ describe("CA-12 P3 · Session 1", () => {
   it("an old draft with no sessions is left as it was: no Session 1 appears until something is added", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
-    expect(screen.queryByRole("separator", { name: /^Session 1/ })).toBeNull();
+    expect(screen.queryByRole("group", { name: /^Session 1/ })).toBeNull();
     expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toEqual([]);
   });
 });
@@ -163,7 +163,7 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
 });
 
 describe("CA-12 P5 · adding a session", () => {
-  it("on a new post, a 66-prompt session replaces the empty Session 1: 66 tiles in it, collapsed to its first three", async () => {
+  it("on a new post, a 66-prompt session replaces the empty Session 1: 66 tiles in it, folded to its head", async () => {
     mount("/compose/new");
     await field();
     const picker = within(await openRow());
@@ -182,19 +182,21 @@ describe("CA-12 P5 · adding a session", () => {
     // The import itself is not used up.
     expect(tableRows("import_sessions").find((row) => row.id === LONG)).toMatchObject({ status: "expired", build_id: null });
 
-    // The page: its head, the count, three tiles and "Show all 66 prompts".
-    expect(await screen.findByRole("button", { name: "Show all 66 prompts" }, { timeout: 10_000 })).toBeTruthy();
-    expect(screen.getAllByTestId("step-card")).toHaveLength(3);
-    expect(screen.getByRole("separator", { name: /^Session 1 · / }).textContent).toContain("66 prompts");
+    // The page (CA-14 P3): a long session starts folded: its head with the count before the date, and nothing under it.
+    expect(await screen.findByRole("button", { name: "Expand Session 1" }, { timeout: 10_000 })).toBeTruthy();
+    expect(screen.queryAllByTestId("step-card")).toHaveLength(0);
+    expect(screen.getByTestId("session-count").textContent).toBe("66 tiles");
   });
 
   it("opening it draws every tile and keeps it open", async () => {
     mount("/compose/new");
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: /66 prompts$/ }));
-    fireEvent.click(await screen.findByRole("button", { name: "Show all 66 prompts" }, { timeout: 15_000 }));
-    expect(await screen.findByRole("button", { name: "Show fewer" })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Expand Session 1" }, { timeout: 15_000 }));
+    expect(await screen.findByRole("button", { name: "Collapse Session 1" })).toBeTruthy();
     expect(screen.getAllByTestId("step-card")).toHaveLength(66);
+    // Open, the count is not drawn.
+    expect(screen.queryByTestId("session-count")).toBeNull();
     await waitFor(() => expect(tableRows("build_sessions").find((row) => row.session_key === LONG)?.collapsed).toBe(false));
   });
 
@@ -204,14 +206,14 @@ describe("CA-12 P5 · adding a session", () => {
     // Give the draft a first session to be before it: draft 3 has none, so add the waiting one, then the long one.
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
     await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(1), { timeout: 10_000 });
-    await screen.findByRole("separator", { name: /^Session 1 · / }, { timeout: 10_000 });
+    await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: /66 prompts$/ }));
     await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 15_000 });
     expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT).map((row) => [row.session_key, row.position]).sort((a, b) => Number(a[1]) - Number(b[1]))).toEqual([
       [WAITING, 0],
       [LONG, 1],
     ]);
-    expect(await screen.findByRole("separator", { name: /^Session 2 · / })).toBeTruthy();
+    expect(await screen.findByRole("group", { name: /^Session 2 · / })).toBeTruthy();
     expect(tableRows("build_nodes").filter((row) => row.build_id === DRAFT)).toHaveLength(67);
   });
 
@@ -219,7 +221,7 @@ describe("CA-12 P5 · adding a session", () => {
     mount(`/compose/${DRAFT}`);
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
-    await screen.findByRole("separator", { name: /^Session 1 · / }, { timeout: 10_000 });
+    await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
     const again = within(await openRow()).getByRole("listitem", { name: /In this draft$/ }) as HTMLButtonElement;
     expect(again.disabled).toBe(true);
   });

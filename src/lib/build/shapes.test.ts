@@ -317,7 +317,7 @@ describe("CA-04 P7: one sitting, then agents; and a session that runs on GitHub"
     const view = { steps, results: readerResults(tree), need: whatYouNeed(steps, tree, m), counts: buildCounts(steps), map: readerMap(tree, m), mapAvailable: true, onCopy: async () => true, resolveMedia: () => undefined, otherBody: () => null, focus: null };
     const { container } = render(createElement(MemoryRouter, null, createElement("div", null, createElement(StepsList, { view, phone: false, announce: () => undefined }), createElement(NeedPanel, { view, onOpenOther: () => undefined }))));
     const text = container.textContent ?? "";
-    for (const said of ["New chat in Claude", "New chat in Claude Code", "Sent with prompt 2", "Sent with order-form.tsx", "menu.pdf", "Setup", "Worked until the order form passes its tests · at most 40 turns · reached in 12", "Order page team", "MCP server · at a web address · sign in with your github account", "Before you connect"]) {
+    for (const said of ["Session 1 · Claude", "Session 2 · Claude Code", "Sent with prompt 2", "Sent with order-form.tsx", "menu.pdf", "Setup", "Worked until the order form passes its tests · at most 40 turns · reached in 12", "Order page team", "MCP server · at a web address · sign in with your github account", "Before you connect"]) {
       expect(text, said).toContain(said);
     }
     expect(container.querySelectorAll('[data-testid="sent-with-tile"]')).toHaveLength(2);
