@@ -25,6 +25,7 @@
    CA-03 P7: an agent that can use a tool reading content it doesn't control has the warning module under it. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
+import * as Popover from "@radix-ui/react-popover";
 import { ArrowUp, Link as JoinIcon, MoreHorizontal, Unlink as SplitIcon } from "lucide-react";
 import {
   createContext,
@@ -49,7 +50,8 @@ import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, DecisionTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
+import { GlyphButton } from "./ModalFrame";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -62,7 +64,8 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { SessionGroup, Step } from "@/lib/build/graph";
-import { checkStatus, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
+import { checkHistoryLine, checkStatus, promptPlace, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -94,12 +97,11 @@ import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
-import { CHECK_COPY, CheckExtraLines, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
-import { DragHandle, NestGap, NestList, TAKES, useNestTile, useSessionDragging, type NestTarget } from "./listNest";
+import { DragHandle, NestGap, NestList, TAKES, useNestTile, useSessionDragging, useTileNear, type NestTarget } from "./listNest";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
-import { titleRepeatsText } from "./buildListModel";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
   INDENT,
@@ -125,7 +127,8 @@ export const LIST_COPY = {
   /** CA-10 (CA-09 F12): a phone has no double-click (the card's onDoubleClick is off there) and taps, not clicks. */
   hintPhone: "Tap a tile to see its details",
   placeholder: "Paste or type a prompt…",
-  showFull: "Show full prompt",
+  /** CA-15 P10: the one link in a prompt tile's footer. */
+  openPrompt: "Open prompt",
   /** CA-03 P5: a check's eyebrow. */
   check: CHECK_COPY.eyebrow,
   /** CA-03 P6. */
@@ -281,6 +284,8 @@ interface ListRefs {
   /** CA-14 P5, P7: the sessions a tile can move to, the one each top-level tile is in, and the first tile of each. */
   sessions?: readonly { key: string; label: string }[];
   sessionOf?: ReadonlyMap<string, string>;
+  /** The number of the session each top-level tile is in, for a prompt's name ("Prompt 3 · Session 2"). */
+  sessionNumbers?: ReadonlyMap<string, number>;
   firstOf?: ReadonlySet<string>;
   onMoveToSession?: BuildListProps["onMoveToSession"];
   onSplitHere?: BuildListProps["onSplitHere"];
@@ -426,46 +431,35 @@ interface ListNest {
 const ListNestContext = createContext<ListNest | null>(null);
 
 /**
- * CA-12 P6: whether the tile around `ref` is hovered or holds focus. "Send with the step above" is a control, so it is drawn
- * as one (a text button with a small join glyph); on a computer it shows while the tile is hovered or focused, and on a phone
- * (no hover) always.
+ * CA-12 P6: "Send with the step above" is a control, so it is drawn as one (a text button with a small join glyph); on a
+ * computer it shows while the tile is hovered or focused, and on a phone (no hover) always. CA-15 P10: with no fade.
  */
 function useTileHover(phone: boolean) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [near, setNear] = useState(false);
-  useEffect(() => {
-    const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"]');
-    if (!tile || phone) return;
-    const on = () => setNear(true);
-    const off = (event: Event) => {
-      if (event.type === "focusout" && tile.contains((event as FocusEvent).relatedTarget as Node | null)) return;
-      setNear(false);
-    };
-    tile.addEventListener("pointerenter", on);
-    tile.addEventListener("pointerleave", off);
-    tile.addEventListener("focusin", on);
-    tile.addEventListener("focusout", off);
-    return () => {
-      tile.removeEventListener("pointerenter", on);
-      tile.removeEventListener("pointerleave", off);
-      tile.removeEventListener("focusin", on);
-      tile.removeEventListener("focusout", off);
-    };
-  }, [phone]);
-  return { ref, shown: phone || near };
+  const shown = useTileNear(ref, phone);
+  return { ref, shown };
+}
+
+/** Whether "Send with the step above" (or "Make it its own step") is offered on a tile. */
+function useNestAvailable(step: Step): boolean {
+  const nest = useContext(ListNestContext);
+  if (!nest) return false;
+  if (step.inside) return true;
+  const above = nest.above(step.id);
+  return Boolean(above && nest.canNest(step.id, above.id));
 }
 
 /** "Send with the step above" on a top-level tile after the first; "Make it its own step" on a tile inside one. */
 function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
   const nest = useContext(ListNestContext);
   const { ref, shown } = useTileHover(phone);
-  if (!nest) return null;
+  const available = useNestAvailable(step);
+  if (!nest || !available) return null;
   const above = step.inside ? null : nest.above(step.id);
-  if (!step.inside && (!above || !nest.canNest(step.id, above.id))) return null;
   const own = Boolean(step.inside);
   const Icon = own ? SplitIcon : JoinIcon;
   return (
-    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0, transition: "opacity 120ms" }}>
+    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0 }}>
       <TextButton
         target={phone}
         style={{ ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: 4 }}
@@ -558,32 +552,51 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   );
 }
 
-/** CA-04 P2: code sent with an imported prompt in the chat, offered dashed: Accept puts it inside, Ignore leaves it. */
+/**
+ * CA-04 P2: code sent with an imported prompt in the chat. CA-15 P10: one row, "<n> items sent with this prompt were found in
+ * the chat", with a Review button. Review opens a small panel listing each item with Accept (puts it inside) and Ignore
+ * (leaves it out). With nothing offered, no row.
+ */
 function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProps }) {
   if (!props.onKeepSentWith || !props.onIgnoreSentWith) return null;
   const offered = codeInPrompt(step);
   if (offered.length === 0) return null;
+  const { phone } = props;
   return (
-    <div style={{ paddingLeft: INDENT, display: "flex", flexDirection: "column", gap: 8 }}>
-      {offered.map((suggestion) => (
-        <div
-          key={suggestion.key}
-          data-testid="sent-with-suggestion"
-          onClick={(event) => event.stopPropagation()}
-          style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 12px", borderRadius: 6, border: `1px dashed ${t.line}` }}
-        >
-          <span style={text(12, 400, t.text2)}>{SENT_WITH_COPY.line}</span>
-          <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Button variant="secondary" size={props.phone ? 44 : 28} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
-              {SENT_WITH_COPY.accept}
-            </Button>
-            <TextButton target={props.phone} style={text(12, 500, t.text2)} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
-              {SENT_WITH_COPY.ignore}
-            </TextButton>
-          </span>
-        </div>
-      ))}
+    <div data-testid="sent-with-found" onClick={(event) => event.stopPropagation()} style={{ paddingLeft: INDENT, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+      <span style={text(12, 400, t.text2)}>{SENT_WITH_COPY.found(offered.length)}</span>
+      <Popover.Root>
+        <Popover.Trigger asChild>
+          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12}>
+            {SENT_WITH_COPY.review}
+          </Button>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            align="start"
+            sideOffset={6}
+            collisionPadding={16}
+            onClick={(event) => event.stopPropagation()}
+            data-testid="sent-with-review"
+            style={{ ...menuSurface(360), maxHeight: "var(--radix-popover-content-available-height)", padding: 12, display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            <span style={text(12.5, 500, t.text)}>{SENT_WITH_COPY.keep}</span>
+            {offered.map((suggestion) => (
+              <div key={suggestion.key} data-testid="sent-with-suggestion" style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 12, borderTop: `1px solid ${t.line}` }}>
+                <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
+                    {SENT_WITH_COPY.accept}
+                  </Button>
+                  <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
+                    {SENT_WITH_COPY.ignore}
+                  </TextButton>
+                </span>
+              </div>
+            ))}
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
     </div>
   );
 }
@@ -686,6 +699,16 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
   );
 }
 
+/** What a step's "Uses" row holds: its input chips, the suggestions waiting on it, and whether it goes into the result. */
+function usesParts(step: Step, props: Pick<BuildListProps, "steps" | "names" | "suggestions" | "intoResult">, withGoes: boolean) {
+  const chips = step.uses
+    .map((use) => ({ use, text: inputLabel(use, props.steps, props.names) }))
+    .filter((chip): chip is { use: typeof chip.use; text: string } => chip.text !== null);
+  const mine = props.suggestions.filter((suggestion) => suggestion.stepId === step.id);
+  const goes = withGoes && props.intoResult.has(step.id);
+  return { chips, mine, goes, any: chips.length > 0 || mine.length > 0 || goes };
+}
+
 function UsesRow({
   step,
   props,
@@ -695,12 +718,8 @@ function UsesRow({
   props: Pick<BuildListProps, "steps" | "names" | "suggestions" | "intoResult" | "onAccept" | "onDismiss" | "onSelect">;
   withGoes?: boolean;
 }) {
-  const chips = step.uses
-    .map((use) => ({ use, text: inputLabel(use, props.steps, props.names) }))
-    .filter((chip): chip is { use: typeof chip.use; text: string } => chip.text !== null);
-  const mine = props.suggestions.filter((suggestion) => suggestion.stepId === step.id);
-  const goes = withGoes && props.intoResult.has(step.id);
-  if (chips.length === 0 && mine.length === 0 && !goes) return null;
+  const { chips, mine, goes, any } = usesParts(step, props, withGoes);
+  if (!any) return null;
   return (
     <>
       {chips.length > 0 || mine.length > 0 ? <Quiet>Uses</Quiet> : null}
@@ -786,6 +805,133 @@ function MadeLine({ names }: { names: readonly string[] | undefined }) {
   return line ? <Quiet style={{ paddingLeft: INDENT, overflowWrap: "anywhere" }}>{line}</Quiet> : null;
 }
 
+/* ── what every tile shares (CA-15 P10): its header, its menu and its footer ── */
+
+/** A tile's rename: asked for from its menu, started once the menu has closed (closing returns focus to its button, which would end an edit opened sooner). */
+function useRename(step: Step, props: BuildListProps) {
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const next = useRef(false);
+  const finish = (save: boolean) => {
+    setRenaming(false);
+    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
+  };
+  return {
+    renaming,
+    draft,
+    setDraft,
+    finish,
+    ask: () => {
+      next.current = true;
+    },
+    onCloseAutoFocus: (event: Event) => {
+      if (!next.current) return;
+      event.preventDefault();
+      next.current = false;
+      setDraft(step.title ?? "");
+      setRenaming(true);
+    },
+  };
+}
+
+/** The ⋯ menu at the right of a tile's header: rename, copy together, move, colour, session, remove. */
+function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun: string; index: number; last: boolean; props: BuildListProps; rename: ReturnType<typeof useRename> }) {
+  const { phone } = props;
+  return (
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`${noun} ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="end" sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()} onCloseAutoFocus={rename.onCloseAutoFocus}>
+          <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
+          <CopyTogetherRow step={step} phone={phone} />
+          <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+          <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+          <SessionTileRows step={step} phone={phone} />
+          <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+/**
+ * A tile's header: the number in its square, a type line (11.5, `--label`) with the title under it (14 / 500, one line, an
+ * ellipsis), the colour (only when one is set) and the ⋯ menu. The drag handle is drawn while the tile is hovered or has focus.
+ */
+function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+      <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
+      <NumberTile>{step.number}</NumberTile>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+        <span data-testid={typeTestId} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>
+          {typeLine}
+        </span>
+        {title}
+      </div>
+      <CardColour step={step} phone={phone} inMenu />
+      {menu}
+    </div>
+  );
+}
+
+/** A tile's title: one line, an ellipsis, in `--text2` while it is the automatic one. */
+function TileTitle({ step, rename, noun, phone }: { step: Step; rename: ReturnType<typeof useRename>; noun: string; phone: boolean }) {
+  const isDefault = step.title === null;
+  return rename.renaming ? (
+    <RenameField label={`Title of ${noun.toLowerCase()} ${step.number}`} draft={rename.draft} placeholder={step.defaultTitle} phone={phone} onDraft={rename.setDraft} onFinish={rename.finish} />
+  ) : (
+    <h3 data-default-title={isDefault ? "true" : undefined} title={stepTitle(step)} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, ...ellipsis }}>
+      {stepTitle(step)}
+    </h3>
+  );
+}
+
+/** The one text link at the right of a tile's footer: "Open prompt", "Show agents". It never selects the tile. */
+function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; onClick: () => void; expanded?: boolean; children: ReactNode }) {
+  return (
+    <TextButton
+      target={phone}
+      underline
+      aria-expanded={expanded}
+      style={text(12, 500, t.text2)}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      {children}
+    </TextButton>
+  );
+}
+
+/** What stands above a tile's footer: its "Uses" chips. Not drawn when it has none. */
+function ExtraRow({ step, props, withGoes = true }: { step: Step; props: BuildListProps; withGoes?: boolean }) {
+  if (!usesParts(step, props, withGoes).any) return null;
+  return (
+    <div style={footRow(INDENT)}>
+      <UsesRow step={step} props={props} withGoes={withGoes} />
+    </div>
+  );
+}
+
+/**
+ * The foot of every tile: its "Uses" chips, then one mono line of at most three counted facts with at most one link. "Send
+ * with the step above" shares that line, so a tile that can take it needs no row of its own.
+ */
+function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; props: BuildListProps; link?: ReactNode; facts?: readonly string[]; withGoes?: boolean }) {
+  const nest = useNestAvailable(step);
+  return (
+    <>
+      <ExtraRow step={step} props={props} withGoes={withGoes} />
+      <TileFooter facts={facts ?? footerFactsOf(step)} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
+    </>
+  );
+}
+
 /* ── a prompt's card ── */
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
@@ -793,10 +939,12 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const selected = selectedId === step.id;
   const title = stepTitle(step);
   const isDefault = step.title === null;
+  const sessionNumber = useContext(ListRefsContext).sessionNumbers?.get(step.id);
+  const place = promptPlace(step.number, sessionNumber);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [over, setOver] = useState(false);
-  const { ref: textRef, clamped } = useClamped<HTMLParagraphElement>(step.text);
+  const { ref: textRef } = useClamped<HTMLParagraphElement>(step.text);
   const open = props.onOpenPrompt ? () => props.onOpenPrompt?.(step.id) : undefined;
   const editable = step.kind === "prompt";
 
@@ -829,8 +977,9 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     <div
       ref={cardRef}
       role="group"
-      aria-label={`Prompt ${step.number}: ${title}`}
+      aria-label={`Prompt ${step.number}: ${step.title ?? "untitled"}`}
       data-testid="step-card"
+      data-kind="prompt"
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
@@ -859,19 +1008,35 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       } : undefined}
       style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
-        <NumberTile>{step.number}</NumberTile>
-        {renaming ? (
-          <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
-        ) : isDefault && titleRepeatsText(step.text, title) ? (
-          /* CA-14 P8: an automatic title that only repeats the start of the text under it is not drawn; its place is kept. */
-          <span aria-hidden="true" data-testid="title-hidden" style={{ flexGrow: 1 }} />
-        ) : (
-          <StepTitle title={title} isDefault={isDefault} />
-        )}
-        <CardColour step={step} phone={phone} inMenu={editable} />
-        {editable ? (
+      <TileHeader
+        step={step}
+        nest={nest}
+        phone={phone}
+        typeLine={typeLineOf(step)}
+        typeTestId="prompt-eyebrow"
+        title={
+          renaming ? (
+            <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
+          ) : (
+            /* A prompt is called by its place on the build; the maker's own title sits next to it, and the pencil edits it here. */
+            <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+              <h3 data-default-title={isDefault ? "true" : undefined} title={[place, step.title].filter(Boolean).join(" ")} style={{ margin: 0, minWidth: 0, letterSpacing: "-0.005em" }}>
+                <PromptName place={place} title={step.title} />
+              </h3>
+              <GlyphButton
+                glyph="pencil"
+                label={`Rename prompt ${step.number}`}
+                phone={phone}
+                onClick={() => {
+                  setDraft(step.title ?? "");
+                  setRenaming(true);
+                }}
+              />
+            </div>
+          )
+        }
+        menu={
+          editable ? (
           <Menu.Root>
             <Menu.Trigger asChild>
               <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Prompt ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
@@ -911,47 +1076,33 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
               </MenuContent>
             </Menu.Portal>
           </Menu.Root>
-        ) : null}
-      </div>
+        ) : null
+        }
+      />
       <p
         ref={textRef}
         style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
       >
         <ChangedText text={step.text} changes={step.changes} />
       </p>
-      {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={open} /> : null}
+      {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <SentWithSuggestions step={step} props={props} />
-      <div style={footRow(INDENT)}>
-        <UsesRow step={step} props={props} />
-        <NestButtons step={step} phone={phone} />
-        <span style={{ flexGrow: 1 }} />
-        {clamped ? (
-          <button
-            type="button"
-            data-hit=""
-            onClick={(event) => {
-              event.stopPropagation();
-              open?.();
-            }}
-            style={{
-              ...bareButton,
-              padding: phone ? "12px 0" : 0,
-              ...text(12, 500, t.text),
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
-              textDecorationColor: t.line,
-            }}
-          >
-            {LIST_COPY.showFull}
-          </button>
-        ) : null}
-        <Quiet style={tnum}>{wordsOf(step.words)}</Quiet>
-      </div>
+      <TileFoot
+        step={step}
+        props={props}
+        link={
+          open ? (
+            <FooterLink phone={phone} onClick={open}>
+              {LIST_COPY.openPrompt}
+            </FooterLink>
+          ) : null
+        }
+      />
     </div>
   );
 }
@@ -1063,61 +1214,94 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
 }
 
 /** "Agent · ", the model's mark at 14 and its name: the eyebrow's words are the current look's. */
-function ContainerEyebrow({ step, made, isTeam }: { step: Step; made: readonly string[]; isTeam: boolean }) {
-  const model = isTeam ? null : stepModel(step);
-  const lead = isTeam ? teamEyebrow(made, step.children[0]?.harness) : agentEyebrow(made, null, "Agent");
+/** The ids of every step under this one, for "is this the tile a link points into". */
+const holds = (step: Step, id: string): boolean => step.children.some((child) => child.id === id || holds(child, id));
+
+/** An agent's instructions: the first line of its own text. Nothing when it has none. */
+const instructionsLine = (agent: Step): string => (agent.children.find((child) => child.id.endsWith(":instructions"))?.text ?? "").split(/\r?\n/).find((line) => line.trim())?.trim() ?? "";
+
+/** The most tool marks an agent's tile shows. */
+const AGENT_TILE_TOOLS = 3;
+
+/** A team's agents as a compact list: the name at the left, the role and the model in mono at the right. */
+function TeamAgents({ team }: { team: Step }) {
   return (
-    <span data-testid="container-eyebrow" style={{ ...text(11.5, 400, t.label), display: "flex", alignItems: "center", gap: 6, minWidth: 0, flexWrap: "wrap" }}>
-      {model ? (
-        <>
-          {`${lead} · `}
-          <ToolMark model={step.model} size={14} />
-          {model}
-        </>
-      ) : (
-        lead
-      )}
-    </span>
+    <ul data-testid="team-agents" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2, paddingLeft: INDENT }}>
+      {team.children.map((agent, at) => {
+        const role = at === 0 ? "Lead" : "Agent";
+        const right = [role, agent.harness ? (toolName(agent.harness) ?? agent.harness) : null, stepModel(agent)].filter(Boolean).join(" · ");
+        return (
+          <li key={agent.id} data-testid="team-agent" style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
+            <span style={{ ...text(13, 400, agent.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(agent)}</span>
+            <span style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, flexShrink: 0, maxWidth: "55%", ...ellipsis }}>{right}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
-function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
+function ContainerCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const isTeam = step.kind === "team";
+  const noun = isTeam ? "Team" : "Agent";
   const selected = props.selectedId === step.id;
   const made = madeIn(step, props.steps);
   const [adding, setAdding] = useState(false);
+  /** Its prompts, or a team's agents, start folded behind the footer link. */
+  const [unfolded, setUnfolded] = useState(false);
   /** One agent of a team shows its own prompts at a time. */
   const [openAgent, setOpenAgent] = useState<string | null>(null);
-  /* CA-06 P3: a link to an agent's own prompt opens that agent first. */
+  /* CA-06 P3: a link to an agent's own prompt opens that agent first. CA-15 P10: and unfolds the tile that holds it. */
   const { reveal } = useContext(ListRefsContext);
   useEffect(() => {
-    if (!reveal || !isTeam) return;
+    if (!reveal) return;
+    if (holds(step, reveal.id)) setUnfolded(true);
+    if (!isTeam) return;
     const holder = step.children.find((child) => child.children.some((grand) => grand.id === reveal.id));
     if (holder) setOpenAgent(holder.id);
-  }, [reveal, isTeam, step.children]);
-  const goes = props.intoResult.has(step.id);
+  }, [reveal, isTeam, step]);
+  const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
+  const { phone } = props;
+  const instructions = isTeam ? "" : instructionsLine(step);
+  const toolNames = isTeam ? [] : (step.toolRefs ?? []).map((id) => props.names[id]).filter(Boolean).slice(0, AGENT_TILE_TOOLS);
+  /* A team folds its agents; an agent folds its prompts. An agent's own instructions are no prompt of its own, so an agent with only them has nothing to fold. */
+  const folds = isTeam ? step.children.length > 0 : step.children.some((child) => !child.id.endsWith(":instructions"));
+  const shown = unfolded || !folds;
   return (
     <div
       ref={cardRef}
       role="group"
-      aria-label={`${isTeam ? "Team" : "Agent"} ${step.number}: ${stepTitle(step)}`}
+      aria-label={`${noun} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
+      data-kind={step.kind}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 12, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
-        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
-        <NumberTile>{step.number}</NumberTile>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
-          <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
-          {isTeam ? (stepRunsLabel(step) ? <DotLine testId="runs-line">{stepRunsLabel(step)}</DotLine> : null) : <DotLine testId="runs-line">{startsLine(stepRunsLabel(step))}</DotLine>}
-          {!isTeam && (step.toolRefs ?? []).length > 0 ? (
+      <TileHeader
+        step={step}
+        nest={nest}
+        phone={phone}
+        typeLine={typeLineOf(step)}
+        typeTestId="container-eyebrow"
+        title={<TileTitle step={step} rename={rename} noun={noun} phone={phone} />}
+        menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
+      />
+      {isTeam ? (
+        <TeamAgents team={step} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: INDENT, minWidth: 0 }}>
+          {instructions ? (
+            <span data-testid="agent-instructions-line" style={{ ...text(13, 400, t.text), ...ellipsis }}>
+              {instructions}
+            </span>
+          ) : null}
+          <DotLine testId="runs-line">{triggerLine(step)}</DotLine>
+          {toolNames.length > 0 ? (
             <span data-testid="agent-tools" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-              {(step.toolRefs ?? []).map((id) => props.names[id]).filter(Boolean).map((name) => (
+              {toolNames.map((name) => (
                 <span key={name} title={name} style={{ display: "inline-flex", alignItems: "center", gap: 4, ...text(11.5, 400, t.text2) }}>
                   <ToolMark tool={name} size={14} />
                   {name}
@@ -1125,16 +1309,14 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
               ))}
             </span>
           ) : null}
-          {!isTeam && step.helpers?.length ? <HelperChips helpers={step.helpers} decisionName={(id) => props.steps.find((candidate) => candidate.id === id)?.title ?? props.steps.find((candidate) => candidate.id === id)?.defaultTitle} /> : null}
-          {!isTeam && step.outputShape ? <ShapeChip shape={step.outputShape} /> : null}
-          <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} />
-          {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
-          {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
-        <CardColour step={step} phone={props.phone} />
-      </div>
+      )}
+      {isTeam && stepRunsLabel(step) ? <DotLine testId="runs-line" style={{ paddingLeft: INDENT }}>{stepRunsLabel(step)}</DotLine> : null}
+      {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+      <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
-      <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      {shown ? (
+      <div data-testid="container-inside" style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {step.children.map((child, index) => {
           const own = isTeam ? child.children.filter((grand) => !grand.id.endsWith(":instructions")) : [];
           const open = isTeam && openAgent === child.id;
@@ -1182,18 +1364,19 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           <GhostAdd label="Add a prompt to this agent" phone={props.phone} onClick={() => setAdding(true)} />
         )}
       </div>
-      {step.uses.length > 0 || props.suggestions.some((s) => s.stepId === step.id) ? (
-        <div style={footRow(INDENT)}>
-          <UsesRow step={step} props={props} withGoes={false} />
-        </div>
-      ) : null}
-      {goes ? (
-        <div style={footRow(INDENT)}>
-          <GoesInto />
-        </div>
       ) : null}
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
-      <NestFoot step={step} phone={props.phone} />
+      <TileFoot
+        step={step}
+        props={props}
+        link={
+          folds ? (
+            <FooterLink phone={phone} expanded={unfolded} onClick={() => setUnfolded((open) => !open)}>
+              {unfolded ? (isTeam ? "Hide agents" : "Hide prompts") : isTeam ? "Show agents" : "Show prompts"}
+            </FooterLink>
+          ) : null
+        }
+      />
     </div>
   );
 }
@@ -1216,19 +1399,12 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
  * CA-12: a tile that is a module with a head (grip, number, eyebrow and title, colour, options) and a body of its own: a
  * manual step, a tool, a file. The body is the shared one (`tileBodies`), so the maker sees what readers see.
  */
-function PlainCard({ step, index, last, props, noun, eyebrow, body, foot }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; eyebrow: ReactNode; body: ReactNode; foot?: ReactNode }) {
+function PlainCard({ step, index, last, props, noun, body, after, link, typeLine }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; body: (indent: number) => ReactNode; after?: ReactNode; link?: ReactNode; typeLine?: ReactNode }) {
   const { phone } = props;
   const selected = props.selectedId === step.id;
-  const isDefault = step.title === null;
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState("");
-  const renameNext = useRef(false);
+  const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
-  const finish = (save: boolean) => {
-    setRenaming(false);
-    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
-  };
   return (
     <div
       ref={cardRef}
@@ -1246,67 +1422,30 @@ function PlainCard({ step, index, last, props, noun, eyebrow, body, foot }: { st
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...ring(props.ringedId === step.id) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
-        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
-        <NumberTile>{step.number}</NumberTile>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span data-testid={`${step.kind}-eyebrow`} style={text(11.5, 400, t.label)}>
-            {eyebrow}
-          </span>
-          {renaming ? (
-            <RenameField label={`Title of ${noun.toLowerCase()} ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
-          ) : (
-            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
-              {stepTitle(step)}
-            </h3>
-          )}
-        </div>
-        <CardColour step={step} phone={phone} inMenu />
-        <Menu.Root>
-          <Menu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`${noun} ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
-          </Menu.Trigger>
-          <Menu.Portal>
-            <MenuContent
-              align="end"
-              sideOffset={4}
-              style={menuSurface()}
-              onClick={(event) => event.stopPropagation()}
-              onCloseAutoFocus={(event) => {
-                if (!renameNext.current) return;
-                event.preventDefault();
-                renameNext.current = false;
-                setDraft(step.title ?? "");
-                setRenaming(true);
-              }}
-            >
-              <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
-              <CopyTogetherRow step={step} phone={phone} />
-              <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-              <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-              <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
-              <SessionTileRows step={step} phone={phone} />
-              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
-            </MenuContent>
-          </Menu.Portal>
-        </Menu.Root>
-      </div>
-      <div style={{ paddingLeft: INDENT, minWidth: 0 }}>{body}</div>
+      <TileHeader
+        step={step}
+        nest={nest}
+        phone={phone}
+        typeLine={typeLine ?? typeLineOf(step)}
+        typeTestId={`${step.kind}-eyebrow`}
+        title={<TileTitle step={step} rename={rename} noun={noun} phone={phone} />}
+        menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
+      />
+      {body(INDENT)}
+      {after}
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
-      <div style={footRow(INDENT)}>
-        <UsesRow step={step} props={props} />
-        <NestButtons step={step} phone={phone} />
-        {foot}
-      </div>
+      <TileFoot step={step} props={props} link={link} />
     </div>
   );
 }
 
 function ManualCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const [all, setAll] = useState(false);
+  const steps = step.lines?.length ?? 0;
   return (
     <PlainCard
       step={step}
@@ -1314,13 +1453,16 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
       last={last}
       props={props}
       noun="Manual step"
-      eyebrow="Manual step · added by maker"
-      body={<ManualTileBody step={step} picture={false} />}
-      foot={
-        step.mediaId ? (
-          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Quiet>1 screenshot</Quiet>
-            <ManualThumb mediaId={step.mediaId} />
+      body={(indent) => <ManualTileBody step={step} picture={false} lean all={all} indent={indent} />}
+      link={
+        steps > MANUAL_LEAN_LINES || step.mediaId ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            {steps > MANUAL_LEAN_LINES ? (
+              <FooterLink phone={props.phone} expanded={all} onClick={() => setAll((open) => !open)}>
+                {all ? "Show fewer steps" : "Show all steps"}
+              </FooterLink>
+            ) : null}
+            {step.mediaId ? <ManualThumb mediaId={step.mediaId} /> : null}
           </span>
         ) : null
       }
@@ -1328,37 +1470,45 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
   );
 }
 
-/** CA-12 P7: a tool as a tile: its app's mark and name, how it was connected, what it did. */
+/** CA-12 P7: a tool as a tile: its app's mark and name, and what it did. How it was connected is in its type line. */
 function ToolCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  return <PlainCard step={step} index={index} last={last} props={props} noun="Tool" eyebrow="Tool · added by maker" body={<ToolTileBody step={step} />} />;
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Tool" body={(indent) => <ToolTileBody step={step} lean indent={indent} />} />;
 }
 
-/** CA-13 P2: a decision as a tile: its model, and one line per question. It runs in the app, so it says so. */
+/** CA-13 P2: a decision as a tile: one line per question, the first two. It runs in the app, which its tile in Details says. */
 function DecisionCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" eyebrow="Decision · runs in the app" body={<DecisionTileBody step={step} />} foot={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" body={(indent) => <DecisionTileBody step={step} lean indent={indent} />} after={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
 }
 
-/** CA-12 P8: a file as a tile: its type, name and size, and a preview. */
+/** CA-15 P9: a system prompt as a tile: its text in two lines, with its variables as chips; what it applies to is in its type line. */
+function SystemPromptCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="System prompt" body={(indent) => <SystemPromptTileBody step={step} indent={indent} />} />;
+}
+
+/** CA-15 P9: a dataset as a tile: what it is and its columns; its use is in its type line. */
+function DatasetCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Dataset" body={(indent) => <DatasetTileBody step={step} indent={indent} />} />;
+}
+
+/** CA-15 P9: a GitHub repository as a tile: what it is for and how it was used, with a link to it. */
+function RepoCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="GitHub repository" body={(indent) => <RepoTileBody step={step} indent={indent} />} link={step.repo ? <OpenOnGitHub url={step.repo.url} /> : null} />;
+}
+
+/** CA-12 P8: a file as a tile: its mark and name, and a short preview; its type and size are in its type line. */
 function FileCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  return <PlainCard step={step} index={index} last={last} props={props} noun="File" eyebrow="File · added by maker" body={<FileTileBody step={step} />} />;
+  return <PlainCard step={step} index={index} last={last} props={props} noun="File" body={(indent) => <FileTileBody step={step} lean indent={indent} />} />;
 }
 
-/** CA-02 P7: lines of code, as a module like a manual step's: "Code", its file name or language, its lines, and its first 6 in a mono well. */
+/** CA-02 P7: lines of code, as a module like a manual step's: its type line (language and length), then its first 3 lines in a mono well. */
 function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
   const selected = props.selectedId === step.id;
-  const isDefault = step.title === null;
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState("");
-  const renameNext = useRef(false);
+  const rename = useRename(step, props);
+  const [all, setAll] = useState(false);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
-  const finish = (save: boolean) => {
-    setRenaming(false);
-    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
-  };
   const lines = lineCount(step.text);
-  const named = step.filename ?? step.language ?? null;
   return (
     <div
       ref={cardRef}
@@ -1377,80 +1527,49 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       }}
       style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
-        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
-        <NumberTile>{step.number}</NumberTile>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span data-testid="code-eyebrow" style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>
-            {["Code", named, `${lines} ${lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}
-          </span>
-          {renaming ? (
-            <RenameField label={`Title of code ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
-          ) : (
-            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
-              {stepTitle(step)}
-            </h3>
-          )}
-        </div>
-        <CardColour step={step} phone={phone} inMenu />
-        <Menu.Root>
-          <Menu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Code ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
-          </Menu.Trigger>
-          <Menu.Portal>
-            <MenuContent
-              align="end"
-              sideOffset={4}
-              style={menuSurface()}
-              onClick={(event) => event.stopPropagation()}
-              onCloseAutoFocus={(event) => {
-                if (!renameNext.current) return;
-                event.preventDefault();
-                renameNext.current = false;
-                setDraft(step.title ?? "");
-                setRenaming(true);
-              }}
-            >
-              <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
-              <CopyTogetherRow step={step} phone={phone} />
-              <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-              <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-              <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
-              <SessionTileRows step={step} phone={phone} />
-              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
-            </MenuContent>
-          </Menu.Portal>
-        </Menu.Root>
-      </div>
-      <CodeLines text={step.text} compact testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
+      <TileHeader
+        step={step}
+        nest={nest}
+        phone={phone}
+        typeLine={typeLineOf(step)}
+        typeTestId="code-eyebrow"
+        title={<TileTitle step={step} rename={rename} noun="Code" phone={phone} />}
+        menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
+      />
+      <CodeLines text={step.text} maxLines={CODE_TILE_LINES} expanded={all} hideToggle testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
-      <div style={footRow(INDENT)}>
-        <UsesRow step={step} props={props} />
-        <NestButtons step={step} phone={phone} />
-      </div>
+      <TileFoot
+        step={step}
+        props={props}
+        link={
+          lines > CODE_TILE_LINES ? (
+            <FooterLink phone={phone} expanded={all} onClick={() => setAll((open) => !open)}>
+              {all ? "Show fewer lines" : `Show all ${lines.toLocaleString("en-GB")} lines`}
+            </FooterLink>
+          ) : null
+        }
+      />
     </div>
   );
 }
 
-/** CA-03 P5: how the build checked its work: what it tested as its text, and one status line with a 7px dot. */
+/** How many lines of code a tile shows before "Show all <n> lines". */
+export const CODE_TILE_LINES = 3;
+
+/** CA-03 P5: how the build checked its work: its pass criteria, and one status line with a 7px dot. */
 function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
   const selected = props.selectedId === step.id;
-  const isDefault = step.title === null;
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState("");
-  const renameNext = useRef(false);
+  const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
-  const finish = (save: boolean) => {
-    setRenaming(false);
-    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
-  };
   const status = step.check ? checkStatus(step.check) : null;
+  const criteria = step.check?.passing.trim() ?? "";
+  const history = step.check ? checkHistoryLine(step.check.runs) : null;
   return (
     <div
       ref={cardRef}
@@ -1469,65 +1588,34 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
       }}
       style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
-        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
-        <NumberTile>{step.number}</NumberTile>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span data-testid="check-eyebrow" style={text(11.5, 400, t.label)}>
-            {LIST_COPY.check}
-          </span>
-          {renaming ? (
-            <RenameField label={`Title of check ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
-          ) : (
-            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
-              {stepTitle(step)}
-            </h3>
-          )}
-        </div>
-        <CardColour step={step} phone={phone} inMenu />
-        <Menu.Root>
-          <Menu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Check ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
-          </Menu.Trigger>
-          <Menu.Portal>
-            <MenuContent
-              align="end"
-              sideOffset={4}
-              style={menuSurface()}
-              onClick={(event) => event.stopPropagation()}
-              onCloseAutoFocus={(event) => {
-                if (!renameNext.current) return;
-                event.preventDefault();
-                renameNext.current = false;
-                setDraft(step.title ?? "");
-                setRenaming(true);
-              }}
-            >
-              <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
-              <CopyTogetherRow step={step} phone={phone} />
-              <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-              <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-              <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
-              <SessionTileRows step={step} phone={phone} />
-              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
-            </MenuContent>
-          </Menu.Portal>
-        </Menu.Root>
-      </div>
-      <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
+      <TileHeader
+        step={step}
+        nest={nest}
+        phone={phone}
+        typeLine={typeLineOf(step)}
+        typeTestId="check-eyebrow"
+        title={<TileTitle step={step} rename={rename} noun="Check" phone={phone} />}
+        menu={<TileMenu step={step} noun="Check" index={index} last={last} props={props} rename={rename} />}
+      />
+      {criteria ? (
+        <p data-testid="check-criteria" style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
+          <span style={{ color: t.label }}>Pass criteria: </span>
+          {criteria}
+        </p>
+      ) : null}
       {status ? (
         <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT }}>
           <span style={tnum}>{status.line}</span>
         </DotLine>
       ) : null}
-      {step.check ? <CheckExtraLines check={step.check} style={{ paddingLeft: INDENT }} /> : null}
-      <CheckCasesBody cases={step.check?.caseList} indent={INDENT} />
+      {history ? (
+        <DotLine testId="check-history" style={{ paddingLeft: INDENT }}>
+          <span style={tnum}>{history}</span>
+        </DotLine>
+      ) : null}
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
-      <div style={footRow(INDENT)}>
-        <UsesRow step={step} props={props} />
-        <NestButtons step={step} phone={phone} />
-      </div>
+      <TileFoot step={step} props={props} />
     </div>
   );
 }
@@ -1578,16 +1666,15 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
       >
         <Glyph name="check" size={14} />
       </span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <Quiet>Result</Quiet>
-        <span style={{ ...text(14, 500, t.text), overflowWrap: "anywhere" }}>{result.title}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+        <span data-testid="result-eyebrow" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>
+          {resultTypeLine(result.facts)}
+        </span>
+        <span title={result.title} style={{ ...text(14, 500, t.text), ...ellipsis }}>
+          {result.title}
+        </span>
         <ResultTileBody facts={result.facts} />
-        {resultHolds(result.facts) || result.from ? (
-          <Quiet>
-            {resultHolds(result.facts) ? result.holds : ""}
-            {result.from ? `${resultHolds(result.facts) ? " · " : ""}from prompt ${result.from}` : ""}
-          </Quiet>
-        ) : null}
+        <TileFooter facts={[resultHolds(result.facts) ? result.holds : null, result.from ? `from prompt ${result.from}` : null]} />
       </div>
     </div>
   );
@@ -1888,6 +1975,12 @@ export function BuildList(props: BuildListProps) {
       <ToolCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "decision" ? (
       <DecisionCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "system_prompt" ? (
+      <SystemPromptCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "dataset" ? (
+      <DatasetCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "repo" ? (
+      <RepoCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "file" ? (
       <FileCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "code" ? (
@@ -1895,7 +1988,7 @@ export function BuildList(props: BuildListProps) {
     ) : step.kind === "check" ? (
       <CheckCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : (
-      <ContainerCard key={step.id} step={step} props={props} />
+      <ContainerCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     );
   /* While tiles move, each top-level tile stands in a wrapper that holds the place to drop before it (and, for the
      last, after it). Otherwise the cards are drawn as they always were. */
@@ -2013,11 +2106,13 @@ export function BuildList(props: BuildListProps) {
     </div>
   );
   const sessionOf = new Map<string, string>();
+  const sessionNumbers = new Map<string, number>();
   const firstOf = new Set<string>();
   for (const run of runs) {
     if (!run.head || run.head.key.startsWith("typed-legacy-")) continue;
     run.steps.forEach((step, at) => {
       sessionOf.set(step.id, run.head?.key ?? "");
+      sessionNumbers.set(step.id, run.head?.number ?? 0);
       if (at === 0) firstOf.add(step.id);
     });
   }
@@ -2028,6 +2123,7 @@ export function BuildList(props: BuildListProps) {
     onColour: props.onColour,
     sessions: runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [{ key: run.head.key, label: [headName(run.head), run.head.title].filter(Boolean).join(" · ") }] : [])),
     sessionOf,
+    sessionNumbers,
     firstOf,
     onMoveToSession: props.onMoveToSession,
     onSplitHere: props.onSplitHere,

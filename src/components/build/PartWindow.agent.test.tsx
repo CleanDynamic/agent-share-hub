@@ -58,7 +58,7 @@ describe("an agent's window (CA-13 P5 to P7)", () => {
     expect(screen.getAllByTestId("helper-body")).toHaveLength(3);
     expect(screen.getByTestId("helper-before-after").textContent).toBe("18,402 → 3,110 characters (83% smaller)");
     // The classify helper's score goes through Certainty, with its source.
-    expect(screen.getByTestId("certainty-words").textContent).toBe("86% sure");
+    expect(screen.getByTestId("certainty-words").textContent).toBe("86% confidence");
     expect(screen.getByTestId("shape-schema")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy the setting" })).toBeTruthy();
   });

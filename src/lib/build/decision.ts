@@ -12,7 +12,20 @@ import { toolName } from "@/lib/tools/registry";
 
 export const DECISION_TYPE = "decision";
 
-export type QuestionType = "choice" | "score" | "yesno";
+/** CA-15 P8: `multi` (Multiple choice), `rank` (Ranking) and `extract` (Extraction) join the three a decision always had. */
+export type QuestionType = "choice" | "score" | "yesno" | "multi" | "rank" | "extract";
+
+/** The six types, in the order the form offers them. */
+export const QUESTION_TYPES: readonly QuestionType[] = ["choice", "multi", "score", "rank", "yesno", "extract"];
+
+/** The types that take options: one is chosen, several are chosen, or all are put in order. */
+export const OPTION_TYPES: readonly QuestionType[] = ["choice", "multi", "rank"];
+export const takesOptions = (type: QuestionType): boolean => OPTION_TYPES.includes(type);
+
+/** What an extraction pulls out. */
+export type ExtractField = "text" | "number" | "date" | "amount";
+export const EXTRACT_FIELDS: readonly ExtractField[] = ["text", "number", "date", "amount"];
+export const EXTRACT_FIELD_LABEL: Record<ExtractField, string> = { text: "Text", number: "Number", date: "Date", amount: "Amount" };
 
 export interface DecisionOption {
   key: string;
@@ -24,10 +37,12 @@ export interface DecisionQuestion {
   id: string;
   type: QuestionType;
   instructions: string;
-  /** Choice: 2 to 255. */
+  /** Single choice, multiple choice and ranking: 2 to 255. */
   options?: DecisionOption[];
   /** Score: lowest to highest, 2 to 20. */
   levels?: string[];
+  /** Extraction: what kind of value is pulled out. */
+  field?: ExtractField;
 }
 
 export interface DecisionAnswer {
@@ -56,9 +71,25 @@ export interface DecisionFacts {
   /** CA-13 P15: the original's answer on a copied build. It is never the copier's result. */
   expected?: Record<string, DecisionAnswer>;
   source?: AnswerSource;
-  /** "How to install, optional", exactly as the maker gave it. */
+  /** "Installation command", exactly as the maker gave it. */
   install?: string;
+  /** CA-15 P8: input and expected output pairs (`payload.examples`). */
+  examples?: DecisionExample[];
+  /** CA-15 P8: what to do when it is not confident (`payload.low_confidence`). */
+  lowConfidence?: LowConfidence;
 }
+
+/** CA-15 P8: one example: what went in, and the output that was expected. */
+export interface DecisionExample {
+  input: string;
+  output: string;
+}
+
+/** CA-15 P8: below this confidence (0 to 1) the answer is not trusted, or the decision goes to a person. */
+export type LowConfidence = { threshold: number } | { escalate: true };
+
+export const EXAMPLES_MAX = 10;
+export const EXAMPLE_TEXT_MAX = 600;
 
 export const QUESTIONS_MIN = 1;
 export const QUESTIONS_MAX = 20;
@@ -86,10 +117,12 @@ const unit = (value: unknown): number | undefined => (typeof value === "number" 
 function questionOf(raw: unknown): DecisionQuestion | null {
   if (!isRecord(raw)) return null;
   const id = str(raw.id)?.trim().slice(0, QUESTION_ID_MAX);
-  if (!id || !["choice", "score", "yesno"].includes(raw.type as string)) return null;
+  if (!id || !QUESTION_TYPES.includes(raw.type as QuestionType)) return null;
   const type = raw.type as QuestionType;
   const question: DecisionQuestion = { id, type, instructions: (str(raw.instructions) ?? "").slice(0, INSTRUCTIONS_MAX) };
-  if (type === "choice") {
+  if (type === "extract") {
+    question.field = EXTRACT_FIELDS.includes(raw.field as ExtractField) ? (raw.field as ExtractField) : "text";
+  } else if (takesOptions(type)) {
     const options = (Array.isArray(raw.options) ? raw.options : []).flatMap((entry): DecisionOption[] => {
       if (!isRecord(entry)) return [];
       const key = str(entry.key)?.trim().slice(0, OPTION_KEY_MAX);
@@ -133,6 +166,8 @@ export function decisionOf(payload: unknown): DecisionFacts | null {
   const source = ["run", "maker", "original"].includes(payload.source as string) ? (payload.source as AnswerSource) : undefined;
   const sample = str(payload.state_sample)?.slice(0, STATE_SAMPLE_MAX);
   const install = str(payload.install)?.trim().slice(0, INSTALL_MAX);
+  const examples = examplesOf(payload.examples);
+  const lowConfidence = lowConfidenceOf(payload.low_confidence);
   return {
     provider: str(payload.provider)?.trim() ?? "",
     model: str(payload.model)?.trim() ?? "",
@@ -145,7 +180,29 @@ export function decisionOf(payload: unknown): DecisionFacts | null {
     ...(expected ? { expected } : null),
     ...(source ? { source } : null),
     ...(install ? { install } : null),
+    ...(examples.length > 0 ? { examples } : null),
+    ...(lowConfidence ? { lowConfidence } : null),
   };
+}
+
+/** Input and expected output pairs, read defensively; a pair with nothing on either side is left out. */
+export function examplesOf(raw: unknown): DecisionExample[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .flatMap((entry): DecisionExample[] => {
+      if (!isRecord(entry)) return [];
+      const input = (str(entry.input) ?? "").trim().slice(0, EXAMPLE_TEXT_MAX);
+      const output = (str(entry.output) ?? "").trim().slice(0, EXAMPLE_TEXT_MAX);
+      return input || output ? [{ input, output }] : [];
+    })
+    .slice(0, EXAMPLES_MAX);
+}
+
+/** What to do at low confidence: a threshold from 0 to 1, or a person; null when neither was given. */
+export function lowConfidenceOf(raw: unknown): LowConfidence | null {
+  if (!isRecord(raw)) return null;
+  if (raw.escalate === true) return { escalate: true };
+  return typeof raw.threshold === "number" && Number.isFinite(raw.threshold) && raw.threshold >= 0 && raw.threshold <= 1 ? { threshold: raw.threshold } : null;
 }
 
 // --- checking -----------------------------------------------------------------
@@ -160,19 +217,21 @@ export function questionsRefusal(questions: readonly DecisionQuestion[], name?: 
     if (!q.id.trim()) return `${said} has a question with no name`;
     if (seen.has(q.id)) return `${said} asks '${q.id}' twice`;
     seen.add(q.id);
-    if (q.type === "choice" && (q.options?.length ?? 0) < OPTIONS_MIN) return `${said} has no options`;
-    if (q.type === "choice" && (q.options?.length ?? 0) > OPTIONS_MAX) return `A choice has ${OPTIONS_MAX} options at most`;
-    if (q.type === "choice" && new Set(q.options?.map((o) => o.key)).size !== q.options?.length) return `'${q.id}' has two options with the same name`;
+    if (takesOptions(q.type) && (q.options?.length ?? 0) < OPTIONS_MIN) return `${said} has no options`;
+    if (takesOptions(q.type) && (q.options?.length ?? 0) > OPTIONS_MAX) return `A ${q.type === "rank" ? "ranking" : "choice"} has ${OPTIONS_MAX} options at most`;
+    if (takesOptions(q.type) && new Set(q.options?.map((o) => o.key)).size !== q.options?.length) return `'${q.id}' has two options with the same name`;
     if (q.type === "score" && (q.levels?.length ?? 0) < LEVELS_MIN) return `${said} has no levels`;
     if (q.type === "score" && (q.levels?.length ?? 0) > LEVELS_MAX) return `A score has ${LEVELS_MAX} levels at most`;
+    if (q.type === "extract" && !EXTRACT_FIELDS.includes(q.field as ExtractField)) return `'${q.id}' has no field type`;
   }
   return null;
 }
 
 // --- wording ------------------------------------------------------------------
 
-/** "Yes or no (0 to 1)", with Noul in the label when the provider is TypeSafe. */
-export const questionTypeLabel = (type: QuestionType): string => (type === "choice" ? "Choice" : type === "score" ? "Score" : "Yes or no (0 to 1)");
+/** CA-15 P8: Single choice, Multiple choice, Score, Ranking, Yes or no, Extraction. A yes or no is stored as a number from 0 to 1. */
+export const QUESTION_TYPE_LABEL: Record<QuestionType, string> = { choice: "Single choice", multi: "Multiple choice", score: "Score", rank: "Ranking", yesno: "Yes or no", extract: "Extraction" };
+export const questionTypeLabel = (type: QuestionType): string => QUESTION_TYPE_LABEL[type];
 
 /** "Noul" is TypeSafe's word for a yes or no scored 0 to 1. */
 export const isTypeSafe = (provider: string): boolean => /typesafe|jev/i.test(provider);
@@ -190,10 +249,12 @@ export const decisionHeadline = (facts: Pick<DecisionFacts, "provider" | "model"
 
 /** The question and its options in a line, for a decision with no answer recorded: "team: billing, support, kitchen". */
 export function questionLine(q: DecisionQuestion): string {
-  if (q.type === "choice") {
+  if (takesOptions(q.type)) {
     const keys = (q.options ?? []).map((o) => o.key);
-    return keys.length > 4 ? `${q.id}: ${keys.slice(0, 3).join(", ")} and ${keys.length - 3} more` : `${q.id}: ${keys.join(", ")}`;
+    const list = keys.length > 4 ? `${keys.slice(0, 3).join(", ")} and ${keys.length - 3} more` : keys.join(", ");
+    return q.type === "multi" ? `${q.id}: any of ${list}` : q.type === "rank" ? `${q.id}: rank ${list}` : `${q.id}: ${list}`;
   }
+  if (q.type === "extract") return `${q.id}: extract ${(EXTRACT_FIELD_LABEL[q.field ?? "text"]).toLowerCase()}`;
   if (q.type === "score") {
     const levels = q.levels ?? [];
     return levels.length ? `${q.id}: ${levels[0]} to ${levels[levels.length - 1]}` : q.id;
@@ -214,6 +275,7 @@ export function answerWord(q: DecisionQuestion, a: DecisionAnswer): string {
 /** The share of the chosen answer, 0..1, when the answer says one. A yes or no has no "sure"; it has its number. */
 export function sureOf(q: DecisionQuestion, a: DecisionAnswer): number | undefined {
   if (q.type === "yesno") return undefined;
+  if (q.type === "multi" || q.type === "rank" || q.type === "extract") return a.confidence;
   if (q.type === "score") {
     const index = Number(a.value);
     const named = a.probabilities?.[(q.levels ?? [])[index] ?? ""] ?? a.probabilities?.[String(index)];
@@ -226,13 +288,13 @@ export const percent = (share: number): number => Math.round(share * 100);
 
 const trim2 = (n: number): string => String(Math.round(n * 100) / 100);
 
-/** The line of one answered question: "team → billing · 92% sure", "tone → Annoyed (2 of 3) · 71% sure", "escalation → no · 0.18". */
+/** The line of one answered question: "team → billing · 92% confidence", "tone → Annoyed (2 of 3) · 71% confidence", "escalation → no · 0.18". */
 export function answerLine(q: DecisionQuestion, a: DecisionAnswer): string {
   const word = answerWord(q, a);
   if (q.type === "yesno") return `${q.id} → ${word} · ${trim2(Number(a.value))}`;
   const place = q.type === "score" && (q.levels ?? [])[Number(a.value)] !== undefined ? ` (${Number(a.value) + 1} of ${(q.levels ?? []).length})` : "";
   const sure = sureOf(q, a);
-  return `${q.id} → ${word}${place}${sure !== undefined ? ` · ${percent(sure)}% sure` : ""}`;
+  return `${q.id} → ${word}${place}${sure !== undefined ? ` · ${percent(sure)}% confidence` : ""}`;
 }
 
 /** A tile's lines: one per question, answered when the decision recorded an answer, else the question and its options. */
@@ -243,10 +305,10 @@ export function decisionLines(facts: Pick<DecisionFacts, "questions" | "answer">
   });
 }
 
-/** CA-13 P15: "The original answered billing (92% sure) on this example; check yours does too." */
+/** CA-13 P15: "The original answered billing (92% confidence) on this example; check yours does too." */
 export function expectedLine(q: DecisionQuestion, a: DecisionAnswer): string {
   const sure = sureOf(q, a);
-  const word = q.type === "yesno" ? `${answerWord(q, a)} (${trim2(Number(a.value))})` : `${answerWord(q, a)}${sure !== undefined ? ` (${percent(sure)}% sure)` : ""}`;
+  const word = q.type === "yesno" ? `${answerWord(q, a)} (${trim2(Number(a.value))})` : `${answerWord(q, a)}${sure !== undefined ? ` (${percent(sure)}% confidence)` : ""}`;
   return `The original answered ${q.id} → ${word} on this example; check yours does too.`;
 }
 
@@ -269,11 +331,12 @@ export const COPY_REQUEST_NOTE = "Written from the settings on this page, not th
 export function decisionBody(facts: Pick<DecisionFacts, "model" | "questions" | "stateSample">): Record<string, unknown> {
   const questions: Record<string, unknown> = {};
   for (const q of facts.questions) {
-    questions[q.id] =
-      q.type === "choice"
-        ? { type: "choice", instructions: q.instructions, options: Object.fromEntries((q.options ?? []).map((o) => [o.key, o.line ?? ""])) }
-        : q.type === "score"
-          ? { type: "score", instructions: q.instructions, levels: q.levels ?? [] }
+    questions[q.id] = takesOptions(q.type)
+      ? { type: q.type, instructions: q.instructions, options: Object.fromEntries((q.options ?? []).map((o) => [o.key, o.line ?? ""])) }
+      : q.type === "score"
+        ? { type: "score", instructions: q.instructions, levels: q.levels ?? [] }
+        : q.type === "extract"
+          ? { type: "extract", instructions: q.instructions, field: q.field ?? "text" }
           : { type: "noul", instructions: q.instructions };
   }
   return { model: facts.model, state: facts.stateSample ?? "", questions };
@@ -363,7 +426,9 @@ export function sameCondition(a: RunsWhen, b: RunsWhen): boolean {
 export function runsWhenChoices(q: DecisionQuestion): { label: string; is: RunsWhenIs }[] {
   if (q.type === "choice") return (q.options ?? []).map((o) => ({ label: o.key, is: [o.key] }));
   if (q.type === "score") return (q.levels ?? []).map((level, index) => ({ label: `${level} or more`, is: { atLeast: index } }));
-  return [{ label: "yes", is: { yes: true } }, { label: "no", is: { yes: false } }];
+  if (q.type === "yesno") return [{ label: "yes", is: { yes: true } }, { label: "no", is: { yes: false } }];
+  // CA-15 P8: a multiple choice, a ranking and an extraction have no single value to branch on.
+  return [];
 }
 
 /** Whether a condition's value is one its question can take. */
@@ -372,6 +437,9 @@ export function runsWhenFits(rw: RunsWhen, q: DecisionQuestion): boolean {
   if ("atLeast" in rw.is) return q.type === "score" && rw.is.atLeast < (q.levels ?? []).length;
   return q.type === "yesno";
 }
+
+/** CA-15 P8: whether a question has a single value a step can run on. */
+export const canBranchOn = (q: DecisionQuestion): boolean => q.type === "choice" || q.type === "score" || q.type === "yesno";
 
 /** What a condition's decision turned out to be: a kind and an order, as the build holds them. */
 export interface DecisionRef {
@@ -425,13 +493,14 @@ export function uncoveredCount(q: DecisionQuestion, conditions: readonly RunsWhe
     const floors = mine.flatMap((rw) => (!Array.isArray(rw.is) && "atLeast" in rw.is ? [rw.is.atLeast] : []));
     return floors.length ? Math.min(...floors) : (q.levels ?? []).length;
   }
+  if (q.type !== "yesno") return 0;
   const answered = new Set(mine.flatMap((rw) => (!Array.isArray(rw.is) && "yes" in rw.is ? [rw.is.yes] : [])));
   return 2 - answered.size;
 }
 
-/** "team → billing (92% sure)" or "escalation → no (0.18)": how the run view says what the original answered. */
+/** "team → billing (92% confidence)" or "escalation → no (0.18)": how the run view says what the original answered. */
 export function originalAnswer(q: DecisionQuestion, a: DecisionAnswer): string {
   if (q.type === "yesno") return `${q.id} → ${answerWord(q, a)} (${trim2(Number(a.value))})`;
   const sure = sureOf(q, a);
-  return `${q.id} → ${answerWord(q, a)}${sure !== undefined ? ` (${percent(sure)}% sure)` : ""}`;
+  return `${q.id} → ${answerWord(q, a)}${sure !== undefined ? ` (${percent(sure)}% confidence)` : ""}`;
 }

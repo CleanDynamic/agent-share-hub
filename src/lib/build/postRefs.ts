@@ -54,6 +54,9 @@ export const REF_KIND: Record<Step["kind"], string> = {
   file: "File",
   tool: "Tool",
   decision: "Decision",
+  system_prompt: "System prompt",
+  dataset: "Dataset",
+  repo: "GitHub repository",
 } as Record<Step["kind"], string>;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

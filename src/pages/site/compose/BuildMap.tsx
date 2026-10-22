@@ -200,6 +200,10 @@ interface BoxViewProps {
 
 const isContainerBox = (box: Pick<MapBox, "kind" | "stepKind">): boolean => box.kind === "step" && (box.stepKind === "agent" || box.stepKind === "team");
 
+/** CA-15 P12: a system prompt, a dataset or a GitHub repository has no word count to give; its box says what it is. */
+const SOURCE_WORD: Record<string, string> = { system_prompt: "System prompt", dataset: "Dataset", repo: "GitHub repository" };
+const sourceWord = (box: Pick<MapBox, "kind" | "stepKind">): string | null => (box.kind === "step" && box.stepKind ? (SOURCE_WORD[box.stepKind] ?? null) : null);
+
 /** UI-P91: the same box in the refined look. Same button, name, handlers and words; only the paint and type differ. */
 const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen, onOpenContainer, reader, room = "dusk", colour }: BoxViewProps) {
   const container = isContainerBox(box);
@@ -345,7 +349,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               {(decision ? box.contents : box.text) ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{decision ? box.contents : box.text}</span> : null}
               {sentRows}
               {box.kind === "step" && !manual && !decision ? (
-                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`}</span>
+                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{check ? (box.status?.line ?? "") : code ? linesOf(box.text) : (sourceWord(box) ?? `${box.words} words`)}</span>
               ) : null}
             </>
           ) : (
@@ -378,7 +382,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               </span>
               {sentRows}
               <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "block", lineHeight: "20px", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums", ...ellipsis }}>
-                {box.kind === "step" && !manual && !decision ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
+                {box.kind === "step" && !manual && !decision ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : (sourceWord(box) ?? `${box.words} words`)) : ""}
               </span>
             </>
           )}

@@ -211,7 +211,7 @@ describe("CA-14 P5 · adding to the right session", () => {
     fireEvent.keyDown(addRows()[0], { key: "Enter" });
     await chooseAdd(/^Tool/);
     const dialog = await screen.findByTestId("add-tool-dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: /Pick a tool|Tool/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /Application/ }));
     fireEvent.change(await screen.findByRole("combobox", { name: "Find an app" }), { target: { value: "GitHub" } });
     fireEvent.click(await screen.findByRole("option", { name: /GitHub/ }));
     fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));
@@ -442,8 +442,8 @@ describe("CA-14 P5 · the Add sheet on a phone", () => {
     const sheet = await screen.findByTestId("add-sheet");
     const ask = within(sheet).getByRole("radiogroup", { name: "Add to which session?" });
     expect(within(ask).getAllByRole("radio").map((row) => row.getAttribute("aria-checked"))).toEqual(["false", "true"]);
-    expect(within(sheet).queryByText("Agent or team")).toBeNull();
+    expect(within(sheet).queryByText("Agent")).toBeNull();
     fireEvent.click(within(ask).getAllByRole("radio")[0]);
-    expect(await within(sheet).findByText("Agent or team")).toBeTruthy();
+    expect(await within(sheet).findByText("Agent")).toBeTruthy();
   });
 });

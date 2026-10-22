@@ -6,10 +6,10 @@ import { Certainty } from "./Certainty";
 afterEach(() => cleanup());
 
 describe("Certainty (CA-13 P4)", () => {
-  it("closed: the answer, '92% sure', a 48 by 4 bar, and a sentence for a screen reader", () => {
+  it("closed: the answer, '92% confidence', a 48 by 4 bar, and a sentence for a screen reader", () => {
     render(<Certainty answer="billing" share={0.92} source="run" probabilities={{ billing: 0.92, support: 0.08 }} />);
     expect(screen.getByText("billing")).toBeTruthy();
-    expect(screen.getByTestId("certainty-words").textContent).toBe("92% sure");
+    expect(screen.getByTestId("certainty-words").textContent).toBe("92% confidence");
     expect(screen.getByRole("img").getAttribute("aria-label")).toBe("billing, 92 percent sure, from the run");
     expect(screen.getByText("From the run")).toBeTruthy();
   });

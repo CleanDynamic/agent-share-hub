@@ -297,7 +297,7 @@ describe("an agent inside a team (UI-P69)", () => {
 
   it("edits the instructions and hands them over when the field is left", () => {
     const props = panel("agent", "bakery", { onInstructions: vi.fn() });
-    const field = screen.getByLabelText("Instructions") as HTMLTextAreaElement;
+    const field = screen.getByLabelText("System instructions") as HTMLTextAreaElement;
     expect(field.value).toBe("Check the menu and reply with any item that has no price.");
     fireEvent.change(field, { target: { value: "Reply with any item over ten pounds." } });
     fireEvent.blur(field);
@@ -312,7 +312,7 @@ describe("an agent inside a team (UI-P69)", () => {
     const base = sandboxDetailsProps("agent", "bakery");
     if (base.view?.kind !== "agent") throw new Error("fixture");
     panel("agent", "bakery", { onInstructions: vi.fn(), view: { ...base.view, kind: "team", instructions: "" } });
-    expect(screen.queryByText("Instructions")).toBeNull();
+    expect(screen.queryByText("System instructions")).toBeNull();
   });
 });
 
@@ -325,9 +325,9 @@ describe("a file, a tool, a result", () => {
     expect(screen.getByText("3 · Fix the mobile layout")).toBeTruthy();
   });
 
-  it("edits a tool's service and what it was used for", () => {
+  it("edits a tool's application and its actions performed (CA-15 P11)", () => {
     const props = panel("tool");
-    const scopes = screen.getByLabelText("What it was used for");
+    const scopes = screen.getByLabelText("Actions performed");
     fireEvent.change(scopes, { target: { value: "read" } });
     fireEvent.blur(scopes);
     expect(props.onFields).toHaveBeenCalledWith("t1", { scopes: "read" });
@@ -583,10 +583,10 @@ describe("an agent's harness, models and tools (CA-02 P5)", () => {
     };
   };
 
-  it("shows Runs in, each model with its role and the tools, with the same controls as the dialog", () => {
+  it("shows Host platform, each model with its role and the tools, with the same controls as the dialog", () => {
     const onAgentSetup = vi.fn();
     panel("agent", "bakery", { view: withSetup(), onAgentSetup });
-    expect(screen.getByRole("button", { name: "Runs in" }).textContent).toBe("Hermes Agent");
+    expect(screen.getByRole("button", { name: "Host platform" }).textContent).toBe("Hermes Agent");
     expect(screen.getByRole("button", { name: "model Opus 5.5" })).toBeTruthy();
     // CA-03: the role is a menu showing the role alone.
     expect(screen.getByRole("button", { name: "Role of model 2" }).textContent).toBe("other");
@@ -613,7 +613,7 @@ describe("an agent's harness, models and tools (CA-02 P5)", () => {
 
   it("shows an agent saved before CA-02 exactly as before", () => {
     panel("agent");
-    expect(screen.queryByRole("button", { name: "Runs in" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Host platform" })).toBeNull();
     expect(screen.getByText("Opus 5.5")).toBeTruthy();
   });
 });
@@ -631,6 +631,7 @@ describe("code (CA-02 P7)", () => {
     lines: 2,
     tool: "Cursor",
     model: "Opus 5",
+    payload: { filename: "app.ts", tool: "cursor", model: "Opus 5" },
     uses: [],
     options: [],
     goesInto: [],
@@ -640,10 +641,12 @@ describe("code (CA-02 P7)", () => {
   it("shows all of it in a mono well, what it was written with, and Copy", async () => {
     const writeText = vi.fn(() => Promise.resolve());
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
-    panel("prompt", "bakery", { view: code });
+    panel("prompt", "bakery", { view: code, onExtras: vi.fn() });
     expect(screen.getAllByText("Code 4").length).toBeGreaterThan(0);
     expect(screen.getByText("app.ts · ts · 2 lines")).toBeTruthy();
-    expect(screen.getByText("Cursor · Opus 5")).toBeTruthy();
+    // CA-15 P11: what generated it is a closed row of the Optional section, saying what it holds.
+    const row = screen.getAllByTestId("optional-field").find((el) => el.textContent?.includes("Generated with"));
+    expect(row?.textContent).toContain("Cursor · Opus 5");
     const well = screen.getByTestId("details-code");
     expect(well.textContent).toBe("export const a = 1;\nexport const b = 2;\n");
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
@@ -733,9 +736,9 @@ describe("a check (CA-03 P5)", () => {
     expect(screen.getByTestId("details-eyebrow").textContent).toBe("Check 9");
     expect(screen.getByTestId("check-status").textContent).toBe("Passed 14 of 14 runs · since 12 Oct");
     expect(screen.getAllByTestId("label-value").map((row) => [row.children[0].textContent, row.children[1].textContent])).toEqual([
-      ["What it tested", "Places a test order"],
-      ["What counts as passing", "The total shows £9.00"],
-      ["When it failed", "It showed £8.99."],
+      ["Test description", "Places a test order"],
+      ["Pass criteria", "The total shows £9.00"],
+      ["Failure notes", "It showed £8.99."],
     ]);
     expect(screen.getByText("Output of 3")).toBeTruthy();
     expect(screen.getByTestId("details-panel").textContent).not.toMatch(/verified|reproduc/i);
@@ -748,7 +751,7 @@ describe("what an agent remembers, in Details (CA-03 P6)", () => {
     const base = sandboxDetailsProps("agent", "bakery");
     if (base.view?.kind !== "agent") throw new Error("fixture");
     panel("agent", "bakery", { view: { ...base.view, setup: { harness: null, models: [{ model: "Opus 5.5", role: "main" }], tools: [] } }, onAgentSetup });
-    const field = screen.getByLabelText("What it remembers");
+    const field = screen.getByLabelText("Memory");
     fireEvent.change(field, { target: { value: "the dishes it featured" } });
     expect(onAgentSetup).not.toHaveBeenCalled();
     fireEvent.blur(field);

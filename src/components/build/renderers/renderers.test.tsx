@@ -959,7 +959,7 @@ describe("an agent that names its harness, its models and its tools (CA-02 P5)",
       />,
     );
 
-  it("draws Runs in, one line per model with its role under the model line, and each tool", () => {
+  it("draws Host platform, one line per model with its role under the model line, and each tool", () => {
     const { container } = draw({
       system_prompt: "Triage my inbox",
       model: "Opus 5.5",
@@ -971,7 +971,7 @@ describe("an agent that names its harness, its models and its tools (CA-02 P5)",
       tools: [{ tool_ref: "t-gmail" }, { tool_ref: "t-copilot" }],
     });
     const card = within(container);
-    expect(card.getByText("Runs in")).toBeTruthy();
+    expect(card.getByText("Host platform")).toBeTruthy();
     expect(card.getByText("Hermes Agent")).toBeTruthy();
     expect(card.getByText("Models")).toBeTruthy();
     expect(card.getByText("Opus 5.5 · main")).toBeTruthy();
@@ -981,12 +981,12 @@ describe("an agent that names its harness, its models and its tools (CA-02 P5)",
     // Read through their own lines, never again as raw leftovers.
     expect(container.textContent).not.toContain("hermes-agent");
     const text = container.textContent ?? "";
-    expect(text.indexOf("Opus 5.5")).toBeLessThan(text.indexOf("Runs in"));
+    expect(text.indexOf("Opus 5.5")).toBeLessThan(text.indexOf("Host platform"));
   });
 
-  it("draws an old agent exactly as before: no Runs in, no Models", () => {
+  it("draws an old agent exactly as before: no Host platform, no Models", () => {
     const { container } = draw({ system_prompt: "Triage my inbox", model: "Opus 5.5" });
-    expect(container.textContent).not.toContain("Runs in");
+    expect(container.textContent).not.toContain("Host platform");
     expect(container.textContent).not.toContain("Models");
   });
 });
@@ -1008,18 +1008,18 @@ describe("a check, drawn by the evidence renderer", () => {
     },
   } as Partial<NodeType> & { key: string; renderer: string });
 
-  it("draws what it tested, what counts as passing and when it failed under the existing fields, label over value", () => {
+  it("draws the test description, pass criteria and failure notes under the existing fields, label over value", () => {
     const node = makeNode({
       type: "eval_run",
       payload: { tested: "Places a test order", passing: "The total shows £9.00", on_fail: "It showed £8.99.", passed: 14, total: 14, run_at: "2026-10-12", uses: [{ kind: "output", node_id: "c1" }] },
     });
     const { container } = render(<NodeCard node={node} nodeType={evalRun} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
     const answers = screen.getByTestId("check-answers");
-    expect(within(answers).getByTestId("check-answer-tested").textContent).toBe("What it testedPlaces a test order");
-    expect(within(answers).getByTestId("check-answer-passing").textContent).toBe("What counts as passingThe total shows £9.00");
-    expect(within(answers).getByTestId("check-answer-on_fail").textContent).toBe("When it failedIt showed £8.99.");
+    expect(within(answers).getByTestId("check-answer-tested").textContent).toBe("Test descriptionPlaces a test order");
+    expect(within(answers).getByTestId("check-answer-passing").textContent).toBe("Pass criteriaThe total shows £9.00");
+    expect(within(answers).getByTestId("check-answer-on_fail").textContent).toBe("Failure notesIt showed £8.99.");
     // Under the existing fields: the passed figure comes first.
-    expect(container.textContent?.indexOf("14/14")).toBeLessThan(container.textContent?.indexOf("What it tested") ?? 0);
+    expect(container.textContent?.indexOf("14/14")).toBeLessThan(container.textContent?.indexOf("Test description") ?? 0);
     // Each key once: the answers are not drawn again among the rest.
     expect(container.textContent?.split("Places a test order").length).toBe(2);
     expect(container.textContent).not.toMatch(/verified|reproduc|lamp/i);
@@ -1037,11 +1037,11 @@ describe("a check, drawn by the evidence renderer", () => {
 });
 
 describe("what an agent remembers, on the build page (CA-03 P6)", () => {
-  it("labels the existing memory field What it remembers", () => {
+  it("labels the existing memory field Memory (CA-15 P12)", () => {
     const type = makeType({ key: "agent_config", renderer: "agent_config", category: "configuration", schema: { fields: [{ key: "memory", label: "Memory", type: "text" }] } } as Partial<NodeType> & { key: string; renderer: string });
     const node = makeNode({ type: "agent_config", payload: { system_prompt: "x", model: "Opus 5.5", memory: "which page sections it already reviewed" } });
     const { container } = render(<NodeCard node={node} nodeType={type} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
-    expect(container.textContent).toContain("What it rememberswhich page sections it already reviewed");
-    expect(container.textContent).not.toMatch(/Memory/);
+    expect(container.textContent).toContain("Memorywhich page sections it already reviewed");
+    expect(container.textContent).not.toMatch(/What it remembers/);
   });
 });

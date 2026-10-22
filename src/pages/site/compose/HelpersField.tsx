@@ -1,6 +1,6 @@
-/* CA-13 P6 — "Helpers it used", on an agent: in Details and in the Add agent dialog.
+/* CA-13 P6, CA-15 P7: "Supporting models", on an agent: in Details and in the Add agent dialog.
 
-   The list of helpers as chips with a Remove each, then "Add a helper": the job first, then the provider (ScaleDown,
+   The list of supporting models as chips with a Remove each, then "Add a supporting model": the job first, then the provider (ScaleDown,
    TypeSafe or typed), then that job's few fields in sentence case, and under all of them an optional "What it did on the
    run". The percentage a helper made smaller is never typed: it is worked out from the before and after. */
 
@@ -127,9 +127,18 @@ export interface HelpersFieldProps {
   decisions: readonly { id: string; label: string }[];
   phone: boolean;
   onChange: (helpers: Helper[]) => void;
+  /** CA-15 P7: the Optional section's row names it already; draw no heading of its own. */
+  bare?: boolean;
 }
 
-export function HelpersField({ helpers, toolNames, decisions, phone, onChange }: HelpersFieldProps) {
+export const HELPERS_COPY = {
+  title: "Supporting models",
+  add: "Add a supporting model",
+  addThis: "Add this supporting model",
+  remove: (n: number) => `Remove supporting model ${n}`,
+} as const;
+
+export function HelpersField({ helpers, toolNames, decisions, phone, onChange, bare = false }: HelpersFieldProps) {
   const [open, setOpen] = useState(false);
   const [d, setD] = useState<Draft>(blank);
   const [error, setError] = useState<string | null>(null);
@@ -147,20 +156,20 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange }:
     setOpen(false);
   };
   return (
-    <section aria-label="Helpers it used" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>Helpers it used</h3>
+    <section aria-label={HELPERS_COPY.title} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {bare ? null : <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{HELPERS_COPY.title}</h3>}
       {helpers.length ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {helpers.map((helper, index) => (
             <div key={`${helper.job}-${index}`} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
               <HelperChips helpers={[helper]} decisionName={(id) => decisions.find((x) => x.id === id)?.label} style={{ flex: 1 }} />
-              <TextButton target={phone} onClick={() => onChange(helpers.filter((_, i) => i !== index))} aria-label={`Remove helper ${index + 1}`}>Remove</TextButton>
+              <TextButton target={phone} onClick={() => onChange(helpers.filter((_, i) => i !== index))} aria-label={HELPERS_COPY.remove(index + 1)}>Remove</TextButton>
             </div>
           ))}
         </div>
       ) : null}
       {open ? (
-        <div role="group" aria-label="Add a helper" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: t.tile, border: `1px solid ${t.tileBorder}`, borderRadius: 6 }}>
+        <div role="group" aria-label={HELPERS_COPY.add} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: t.tile, border: `1px solid ${t.tileBorder}`, borderRadius: 6 }}>
           <Field id="helper-job" label="Job" group>
             <PickMenu label="Job of the helper" phone={phone} value={d.job} options={HELPER_JOBS.map((job) => ({ value: job, label: HELPER_JOB_LABEL[job] }))} onChange={(job) => set({ ...blank(), job, provider: job === "decide" ? "typesafe" : "scaledown" })} />
           </Field>
@@ -170,9 +179,9 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange }:
           {d.provider === "typed" ? <input aria-label="Provider name" type="text" value={d.typedProvider} maxLength={40} onChange={(e) => set({ typedProvider: e.target.value })} style={typedField(phone)} /> : null}
           {d.job === "summarize" ? (
             <>
-              <Field id="helper-model" label="Model" hint="As you gave it, optional"><input id="helper-model" type="text" value={d.model} maxLength={80} placeholder="openai:gpt-6-sol" onChange={(e) => set({ model: e.target.value })} style={typedField(phone)} /></Field>
-              <Field id="helper-at" label="When the history reaches" hint="Percent of the context"><input id="helper-at" type="text" inputMode="numeric" value={d.at} placeholder="80" onChange={(e) => set({ at: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
-              <Field id="helper-keep" label="Keep the newest" hint="Percent"><input id="helper-keep" type="text" inputMode="numeric" value={d.keep} placeholder="10" onChange={(e) => set({ keep: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
+              <Field id="helper-model" label="Model" hint="As you gave it"><input id="helper-model" type="text" value={d.model} maxLength={80} placeholder="e.g. openai:gpt-6-sol" onChange={(e) => set({ model: e.target.value })} style={typedField(phone)} /></Field>
+              <Field id="helper-at" label="When the history reaches" hint="Percent of the context"><input id="helper-at" type="text" inputMode="numeric" value={d.at} placeholder="e.g. 80" onChange={(e) => set({ at: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
+              <Field id="helper-keep" label="Keep the newest" hint="Percent"><input id="helper-keep" type="text" inputMode="numeric" value={d.keep} placeholder="e.g. 10" onChange={(e) => set({ keep: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
             </>
           ) : null}
           {d.job === "compress" ? (
@@ -193,14 +202,14 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange }:
           {d.job === "classify" ? (
             <>
               <ChipsInput label="Labels" items={d.labels} input={d.labelInput} onInput={(labelInput) => set({ labelInput })} onItems={(labels) => set({ labels })} phone={phone} />
-              <Field id="helper-stop" label="Stop the run when" hint="A label scores at or above, in percent, optional">
-                <input id="helper-stop" type="text" inputMode="numeric" value={d.stopAt} placeholder="80" onChange={(e) => set({ stopAt: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} />
+              <Field id="helper-stop" label="Stop the run when" hint="A label scores at or above, in percent">
+                <input id="helper-stop" type="text" inputMode="numeric" value={d.stopAt} placeholder="e.g. 80" onChange={(e) => set({ stopAt: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} />
               </Field>
             </>
           ) : null}
           {d.job === "decide" ? (
             <Field id="helper-decision" label="Decision" group>
-              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Pick a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(12, 400, t.label)}>Add a Decision tile first.</span>}
+              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Select a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(12, 400, t.label)}>Add a Decision tile first.</span>}
             </Field>
           ) : null}
           <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 24 }}>
@@ -225,13 +234,13 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange }:
           ) : null}
           {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
-            <Button variant="primary" size={size} onClick={add}>Add this helper</Button>
+            <Button variant="primary" size={size} onClick={add}>{HELPERS_COPY.addThis}</Button>
             <Button variant="secondary" size={size} onClick={() => { setOpen(false); setError(null); }}>Cancel</Button>
           </div>
         </div>
       ) : (
         <div>
-          <Button variant="secondary" size={size} disabled={helpers.length >= HELPERS_MAX} onClick={() => setOpen(true)}>Add a helper</Button>
+          <Button variant="secondary" size={size} disabled={helpers.length >= HELPERS_MAX} onClick={() => setOpen(true)}>{HELPERS_COPY.add}</Button>
         </div>
       )}
     </section>

@@ -27,23 +27,53 @@ const pickLanguage = (name: string) => {
   fireEvent.keyDown(language(), { key: "Enter" });
   fireEvent.click(screen.getByRole("menuitemradio", { name }));
 };
-const filename = () => screen.getByLabelText("File name, optional") as HTMLInputElement;
+const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
+const openRow = (name: string) => {
+  const head = row(name).querySelector("button") as HTMLButtonElement;
+  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
+};
+/** File path lives in the Optional section: opening its row is part of reaching it. */
+const filename = () => {
+  openRow("File path");
+  return screen.getByLabelText("File path") as HTMLInputElement;
+};
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const upload = (...files: File[]) => fireEvent.change(screen.getByTestId("code-files"), { target: { files } });
 
 describe("Add › Code (CA-02 P7)", () => {
   // CA-11: the well is now a numbered code box. It is 12 lines tall (20 each, 6 padding top and bottom, a 1px border
   // each side), the line height is 20px not 1.55, and the gutter starts at 1.
-  it("is a 420-wide dialog with a monospace well of 12 lines, a numbered gutter and no spell check", () => {
+  it("is a 520-wide dialog in the shared frame with a monospace well of 12 lines, a numbered gutter and no spell check", () => {
     open();
     expect(screen.getByRole("dialog", { name: CODE_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-code-dialog").style.width).toBe("420px");
+    expect(screen.getByTestId("add-code-dialog").style.width).toBe("520px");
     expect(screen.getByTestId("code-well-box").style.height).toBe("254px");
     expect(screen.getByTestId("code-gutter-numbers").textContent).toBe("1");
     expect(well().getAttribute("spellcheck")).toBe("false");
     expect(well().style.fontFamily).toContain("--font-data");
     expect(well().style.lineHeight).toBe("20px");
     expect(add().disabled).toBe(true);
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Source code produced in this step, as it was used");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required: code");
+  });
+
+  it("shows the code, Upload files and Language in that order, then File path and Generated with closed in Optional", () => {
+    open();
+    const body = screen.getByTestId("modal-body");
+    const order = [screen.getByLabelText("Code"), screen.getByRole("button", { name: "Upload files" }), screen.getByRole("button", { name: "Language" }), screen.getByTestId("optional-section")];
+    for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(body.contains(order[3])).toBe(true);
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
+    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual(["File path", "Generated with"]);
+    expect(screen.queryByLabelText("File path")).toBeNull();
+    expect(screen.getByText("Text files only. Each file is added as a separate step.")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/File name|Written with|optional/);
+  });
+
+  it("says All required fields complete once there is code", () => {
+    open();
+    fireEvent.change(well(), { target: { value: "x = 1" } });
+    expect(screen.getByTestId("modal-status").textContent).toBe("All required fields complete");
   });
 
   it("puts two spaces in for a tab", () => {
@@ -70,11 +100,12 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(filename().maxLength).toBe(120);
   });
 
-  it("adds the typed code as one step, written with a tool and model by the Typed here rules", () => {
+  it("adds the typed code as one step, generated with a tool and model by the Typed here rules", () => {
     const props = open();
     fireEvent.change(well(), { target: { value: "export const a = 1;\nexport const b = 2;\n" } });
     fireEvent.change(filename(), { target: { value: " app.ts " } });
-    fireEvent.click(screen.getByRole("button", { name: "Written with" }));
+    openRow("Generated with");
+    fireEvent.click(screen.getByRole("button", { name: "Generated with" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "cursor" } });
     fireEvent.click(screen.getByRole("option", { name: "Cursor" }));
     fireEvent.keyDown(screen.getByRole("button", { name: "model" }), { key: "Enter" });
@@ -88,9 +119,10 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("names code tools only in Written with", () => {
+  it("names code tools only in Generated with", () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: "Written with" }));
+    openRow("Generated with");
+    fireEvent.click(screen.getByRole("button", { name: "Generated with" }));
     fireEvent.click(screen.getByRole("option", { name: /^Show all/ }));
     const names = screen.getAllByRole("option").map((option) => option.textContent);
     expect(names).toContain("Claude Code");

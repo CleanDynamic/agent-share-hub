@@ -10,6 +10,7 @@
 import type { ReactNode } from "react";
 import { agentModelsOf } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
+import { agentExtrasOf } from "@/lib/build/tileExtras";
 import { t } from "@/lib/theme/tokens";
 import { toolName } from "@/lib/tools/registry";
 import {
@@ -46,7 +47,13 @@ import {
 
 /** CA-03 P6: the words this renderer shows of its own. A field it has no value for reads "·", as the build page's other empty cells. */
 export const CONFIGURATION_COPY = {
-  memory: "What it remembers",
+  memory: "Memory",
+  /** CA-15 P12: the words the agent modal asks these with. */
+  instructions: "System instructions",
+  tools: "Available tools",
+  limits: "Limits",
+  output: "Output and destination",
+  sample: "Sample run",
   none: "·",
 } as const;
 
@@ -64,6 +71,8 @@ export function AgentConfigRenderer(props: NodeProps) {
   const tools = rows(payload, "tools");
   const guardrails = rows(payload, "guardrails");
   const memory = str(payload, "memory");
+  // CA-15 P12: what the maker said it must not do, where its output goes and a sample run; each only when given.
+  const { limits = [], output, sample } = agentExtrasOf(payload);
 
   const params = AGENT_PARAM_KEYS.filter((key) => isPresent(payload[key])).map((key) => ({
     label: labelFor(props.nodeType, key),
@@ -83,6 +92,9 @@ export function AgentConfigRenderer(props: NodeProps) {
     "tools",
     "guardrails",
     "memory",
+    "limits",
+    "output",
+    "sample",
     "harness",
     "models",
     ...AGENT_PARAM_KEYS,
@@ -93,7 +105,7 @@ export function AgentConfigRenderer(props: NodeProps) {
     <div data-visual-slot="renderer-agent-config" style={{ minWidth: 0 }}>
       <Stack gap={14}>
         {systemPrompt ? (
-          <Field label={labelFor(props.nodeType, "system_prompt", "System prompt")}>
+          <Field label={CONFIGURATION_COPY.instructions}>
             <MonoBlock text={systemPrompt} collapseTo={SYSTEM_PROMPT_LINES} />
           </Field>
         ) : null}
@@ -101,7 +113,7 @@ export function AgentConfigRenderer(props: NodeProps) {
         <KeyValueGrid pairs={params} />
 
         {harness ? (
-          <Field label="Runs in">
+          <Field label="Host platform">
             <Prose>{toolName(harness) ?? harness}</Prose>
           </Field>
         ) : null}
@@ -126,7 +138,7 @@ export function AgentConfigRenderer(props: NodeProps) {
         ) : null}
 
         {tools.length > 0 ? (
-          <Field label={labelFor(props.nodeType, "tools", "Tools")}>
+          <Field label={CONFIGURATION_COPY.tools}>
             <ChipRow>
               {tools.map((tool, index) => {
                 const reference = tool.tool_ref ?? tool.value;
@@ -141,6 +153,24 @@ export function AgentConfigRenderer(props: NodeProps) {
         {memory ? (
           <Field label={CONFIGURATION_COPY.memory}>
             <Prose style={{ color: t.text2 }}>{memory}</Prose>
+          </Field>
+        ) : null}
+
+        {limits.length > 0 ? (
+          <Field label={CONFIGURATION_COPY.limits}>
+            <Bullets colour={t.evidence} items={limits} />
+          </Field>
+        ) : null}
+
+        {output ? (
+          <Field label={CONFIGURATION_COPY.output}>
+            <Prose>{output}</Prose>
+          </Field>
+        ) : null}
+
+        {sample ? (
+          <Field label={CONFIGURATION_COPY.sample}>
+            <MonoBlock text={sample} collapseTo={SYSTEM_PROMPT_LINES} />
           </Field>
         ) : null}
 

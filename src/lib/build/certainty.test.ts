@@ -4,8 +4,8 @@ import { certaintySource, certaintySpoken, certaintyWords, sortedShares } from "
 
 describe("certainty wording", () => {
   it("reads 92% as sure, and 60% as sure", () => {
-    expect(certaintyWords(0.92)).toEqual({ text: "92% sure", unsure: false });
-    expect(certaintyWords(0.6)).toEqual({ text: "60% sure", unsure: false });
+    expect(certaintyWords(0.92)).toEqual({ text: "92% confidence", unsure: false });
+    expect(certaintyWords(0.6)).toEqual({ text: "60% confidence", unsure: false });
   });
   it("reads 54% as unsure, with the number", () => {
     expect(certaintyWords(0.54)).toEqual({ text: "unsure (54%)", unsure: true });

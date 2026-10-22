@@ -4,10 +4,10 @@ import { UNSURE_BELOW } from "./decision";
 
 export type CertaintySource = "run" | "maker" | "original";
 
-/** "92% sure", or below 60% "unsure (54%)". Never a colour: the caller draws "unsure" in `t.label`. */
+/** "92% confidence", or below 60% "unsure (54%)". Never a colour: the caller draws "unsure" in `t.label`. */
 export function certaintyWords(share: number): { text: string; unsure: boolean } {
   const percent = Math.round(share * 100);
-  return share < UNSURE_BELOW ? { text: `unsure (${percent}%)`, unsure: true } : { text: `${percent}% sure`, unsure: false };
+  return share < UNSURE_BELOW ? { text: `unsure (${percent}%)`, unsure: true } : { text: `${percent}% confidence`, unsure: false };
 }
 
 /** "From the run", "Maker's figure". The site never states a vendor's figure as fact. */

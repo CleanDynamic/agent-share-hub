@@ -30,9 +30,9 @@ const trigger = () => screen.getByRole("button", { name: "Tool" });
 const find = () => screen.getByRole("combobox", { name: "Find a tool" });
 
 describe("ToolPicker", () => {
-  it('shows "Pick a tool" and then the chosen tool\'s name', () => {
+  it('shows "Select a tool" and then the chosen tool\'s name', () => {
     render(<Harness />);
-    expect(trigger().textContent).toBe("Pick a tool");
+    expect(trigger().textContent).toBe("Select a tool");
     cleanup();
     render(<Harness initial="lovable" />);
     expect(trigger().textContent).toBe("Lovable");

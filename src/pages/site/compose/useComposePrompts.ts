@@ -56,6 +56,13 @@ import {
   addMadeFile as writeMadeFile,
   addTool,
   addToolTile as addToolStep,
+  type ToolTileInput,
+  addSystemPromptTile as addSystemPromptStep,
+  addDatasetTile as addDatasetStep,
+  addRepoTile as addRepoStep,
+  type SystemPromptInput,
+  type DatasetInput,
+  type RepoInput,
   addUse,
   dismissSuggestion,
   madeFileNamesOf,
@@ -64,6 +71,7 @@ import {
   moveStep,
   placeStepAfter,
   removeUse,
+  setExtras,
   setNodeColour,
   setNodeFields,
   setInstructions,
@@ -104,6 +112,7 @@ import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
 import type { ChangeRange } from "@/lib/build/changes";
 import type { RunsWhen } from "@/lib/build/decision";
 import type { Helper } from "@/lib/build/helpers";
+import type { AgentPattern } from "@/lib/build/tileExtras";
 import type { ModelRun } from "@/lib/build/modelRun";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { showMadeWithIn } from "./useComposeSessions";
@@ -169,6 +178,12 @@ export interface AgentInput extends AgentSetupInput {
   runs?: Runs;
   /** CA-04 P1: the session it was added to. */
   session?: string | null;
+  /** CA-15 P7: what it must not do, where its output goes, a pasted sample run, a trace link, and (a team) its orchestration pattern. */
+  limits?: string[];
+  output?: string;
+  sample?: string;
+  traceUrl?: string;
+  pattern?: AgentPattern;
 }
 
 export interface ComposePrompts {
@@ -200,6 +215,10 @@ export interface ComposePrompts {
   /** CA-05 P1: say which words of a prompt a reader changes. */
   setChanges: (id: string, ranges: readonly ChangeRange[]) => void;
   setReply: (id: string, reply: string) => void;
+  /** CA-15: set or clear a tile's optional keys (a prompt's settings and variables, a tool's permissions ...); null clears one. */
+  setExtras: (id: string, patch: Record<string, unknown>) => void;
+  /** CA-15 P2: replace a prompt's text now (the window's "Mark selection as a variable"), keeping everything else it carries. */
+  setTextOf: (id: string, text: string) => void;
   setCheckCases: (id: string, cases: readonly CheckCase[]) => void;
   /** UI-P65: take a suggested input. */
   accept: (id: string, use: Use, steps: readonly Step[]) => void;
@@ -226,7 +245,11 @@ export interface ComposePrompts {
   addResultOf: (input: ResultInput) => Promise<string | null>;
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
-  addToolTile: (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) => Promise<string | null>;
+  addToolTile: (input: ToolTileInput) => Promise<string | null>;
+  /** CA-15 P9: a system prompt, a dataset and a GitHub repository as tiles; each resolves its id, or null if it failed. */
+  addSystemPromptTile: (input: SystemPromptInput) => Promise<string | null>;
+  addDatasetTile: (input: DatasetInput) => Promise<string | null>;
+  addRepoTile: (input: RepoInput) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
   /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
@@ -591,6 +614,10 @@ export function useComposePrompts({
     void writeStep(id, "Couldn't save those words. Try again.", (node) => setPromptChanges(node, ranges));
   const setReply = (id: string, reply: string) =>
     void writeStep(id, "Couldn't save that. Try again.", (node) => setPromptReply(node, reply.trim() || null));
+  const setExtrasOf = (id: string, patch: Record<string, unknown>) =>
+    void writeStep(id, "Couldn't save that. Try again.", (node) => setExtras(node, patch));
+  const setTextOf = (id: string, text: string) =>
+    void writeStep(id, "Couldn't save that prompt. Try again.", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
     void writeStep(id, "Couldn't save those cases. Try again.", (node) => setCheckCases(node, keptCases(cases)));
   const setAgentNotesOf = (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) =>
@@ -675,7 +702,24 @@ export function useComposePrompts({
         return null;
       });
 
-  const addToolTile = (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) =>
+  /** CA-15 P9: one queued write for a tile whose writer is `write`; the id of what it made, or null with the reason said. */
+  const addSourceTile = <Input,>(write: (build: string, tree: readonly NodeTree[], input: Input) => Promise<BuildNode>, failure: string) => (input: Input) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await write(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed(failure)(cause);
+        return null;
+      });
+  const addSystemPromptTile = addSourceTile(addSystemPromptStep, "Couldn't add that system prompt. Try again.");
+  const addDatasetTile = addSourceTile(addDatasetStep, "Couldn't add that dataset. Try again.");
+  const addRepoTile = addSourceTile(addRepoStep, "Couldn't add that repository. Try again.");
+
+  const addToolTile = (input: ToolTileInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
@@ -704,7 +748,7 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
@@ -719,18 +763,25 @@ export function useComposePrompts({
           ...(runs ? { runs } : null),
           ...(session ? { session } : null),
         };
+        /** CA-13 P6, CA-15 P7: what the agent says beyond its setup, written to the agent itself (the one that leads a team). */
+        const dressed = async (agent: BuildNode): Promise<BuildNode> => {
+          let made = agent;
+          if (helpers?.length || traceUrl) made = await setRuntimeFields(made, { ...(helpers?.length ? { helpers } : null), ...(traceUrl ? { traceUrl } : null) });
+          const extras = { ...(limits?.length ? { limits } : null), ...(output?.trim() ? { output } : null), ...(sample?.trim() ? { sample } : null) };
+          return Object.keys(extras).length > 0 ? setExtras(made, extras) : made;
+        };
         if (kind === "agent") {
-          let created = await addAgent(build, nodes.current(), { name, model, ...setup });
-          // CA-13 P6: the helpers it used, written with the agent.
-          if (helpers?.length) created = await setRuntimeFields(created, { helpers });
+          const created = await dressed(await addAgent(build, nodes.current(), { name, model, ...setup }));
           nodes.record(created.id, created);
           noteTool(build, harness);
           return created.id;
         }
-        const { team } = await addTeam(build, nodes.current(), { name, model, ...setup });
+        const { team, agent } = await addTeam(build, nodes.current(), { name, model, ...setup });
+        await dressed(agent);
+        const made = pattern ? await setExtras(team, { pattern }) : team;
         noteTool(build, harness);
-        nodes.record(team.id, team);
-        return team.id;
+        nodes.record(made.id, made);
+        return made.id;
       })
       .catch((cause) => {
         failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Teams need the Deploy queue item from UI-P61." : `Couldn't add that ${kind}. Try again.`)(cause);
@@ -939,5 +990,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

@@ -54,10 +54,10 @@ describe("Tool Details", () => {
     return onToolConnection;
   };
 
-  it("asks how it was connected under What it was used for, and where an MCP server ran", () => {
+  it("asks the connection method under What it was used for, and where an MCP server ran", () => {
     const onToolConnection = mount(view());
-    const group = screen.getByRole("radiogroup", { name: "How it was connected" });
-    expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual(["Built into the app", "MCP server", "My own code"]);
+    const group = screen.getByRole("radiogroup", { name: "Connection method" });
+    expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual(["MCP server", "Native integration", "Custom code", "Browser extension", "API key", "Zapier, Make or n8n", "Plugin or skill", "Command-line interface", "Manual copy and paste"]);
     expect(screen.queryByRole("radiogroup", { name: "Where it ran" })).toBeNull();
     fireEvent.click(within(group).getByRole("radio", { name: "MCP server" }));
     expect(onToolConnection).toHaveBeenCalledWith("t", "mcp", null);

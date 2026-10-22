@@ -1,6 +1,6 @@
 /* TF-02 — one tool picker, with logos.
 
-   A trigger showing the chosen tool's logo at 16 and its name, or "Pick a tool". It opens a Radix popover: a field,
+   A trigger showing the chosen tool's logo at 16 and its name, or "Select a tool". It opens a Radix popover: a field,
    "Find a tool", that takes focus, then the rows (`pickerRows`) as a listbox. The focus stays in the field and the
    active row is named by `aria-activedescendant`: Up and Down move, Enter picks, Esc closes and gives focus back to the
    trigger. A listed tool is handed back as its `id`, a typed name as typed and trimmed, "No tool" as null.
@@ -39,7 +39,7 @@ export interface ToolPickerProps {
   step: StepKey;
   /** CA-02 P5: what the "No tool" row says, and the trigger while nothing is picked ("My own code (API)"). */
   noneLabel?: string;
-  /** CA-12: what the trigger says while nothing is picked and there is no "none" row to name; "Pick a tool" by default. */
+  /** CA-12: what the trigger says while nothing is picked and there is no "none" row to name; "Select a tool" by default. */
   placeholder?: string;
   /** CA-12 P13: the list offered: AI tools (the default) or apps and services. */
   list?: ToolList;
@@ -79,7 +79,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Pick a tool", list = "ai", unpicked = false, runtime = false, quiet = false }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Select a tool", list = "ai", unpicked = false, runtime = false, quiet = false }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);

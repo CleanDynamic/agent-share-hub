@@ -1,7 +1,7 @@
 /* CA-12 P12 — a check's cases: what went in, what was expected, what came out, and whether it passed.
 
    One editor for Add › Check and Details. Up to 50 cases, each text up to 280 characters. A case with nothing in
-   "In" or "Expected" is not kept. With cases, "passed of total" is worked out from them. */
+   "In" or "Expected" is not kept. With cases, "passed out of total" is worked out from them. */
 
 import { useState } from "react";
 
@@ -12,10 +12,9 @@ import { Field, TextButton } from "./composeControls";
 import { text, tnum, typedField } from "./refinedStyles";
 
 export const CASES_COPY = {
-  title: "Cases",
-  optional: "Optional",
-  add: "Add a case",
-  remove: "Remove case",
+  title: "Test cases",
+  add: "Add a test case",
+  remove: "Remove test case",
   input: "In",
   expected: "Expected",
   actual: "Got",
@@ -36,9 +35,11 @@ export interface CheckCasesFieldProps {
   onChange: (cases: CheckCase[]) => void;
   /** Save only when the field loses focus (Details); the dialog calls on every change. */
   onBlurOnly?: boolean;
+  /** CA-15 P1: the Optional section's row names it already; draw the group without a label of its own. */
+  bare?: boolean;
 }
 
-export function CheckCasesField({ id, cases, phone, onChange, onBlurOnly = false }: CheckCasesFieldProps) {
+export function CheckCasesField({ id, cases, phone, onChange, onBlurOnly = false, bare = false }: CheckCasesFieldProps) {
   const [rows, setRows] = useState<CheckCase[]>(() => [...cases]);
   const set = (next: CheckCase[], now: boolean) => {
     setRows(next);
@@ -59,8 +60,7 @@ export function CheckCasesField({ id, cases, phone, onChange, onBlurOnly = false
       style={typedField(phone, { width: "100%", boxSizing: "border-box" })}
     />
   );
-  return (
-    <Field id={`${id}-cases`} label={CASES_COPY.title} hint={CASES_COPY.optional} group>
+  const list = (
       <div data-testid="check-cases-field" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
         {rows.map((row, at) => (
           <div key={at} data-testid="check-case" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
@@ -81,7 +81,7 @@ export function CheckCasesField({ id, cases, phone, onChange, onBlurOnly = false
           <TextButton target={phone} disabled={rows.length >= CASES_MAX} onClick={() => set([...rows, blank()], false)} style={text(12.5, 500, t.text2)}>
             {CASES_COPY.add}
           </TextButton>
-          {totals.total > 0 ? <span style={{ ...text(11.5, 400, t.text2), ...tnum }}>{`${totals.passed} passed of ${totals.total}`}</span> : null}
+          {totals.total > 0 ? <span style={{ ...text(11.5, 400, t.text2), ...tnum }}>{`${totals.passed} passed out of ${totals.total}`}</span> : null}
         </div>
         {why ? (
           <span role="alert" style={text(12.5, 400, t.text2)}>
@@ -89,6 +89,14 @@ export function CheckCasesField({ id, cases, phone, onChange, onBlurOnly = false
           </span>
         ) : null}
       </div>
+  );
+  return bare ? (
+    <div role="group" aria-label={CASES_COPY.title}>
+      {list}
+    </div>
+  ) : (
+    <Field id={`${id}-cases`} label={CASES_COPY.title} group>
+      {list}
     </Field>
   );
 }

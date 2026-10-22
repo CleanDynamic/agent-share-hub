@@ -25,7 +25,7 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { createContext, useContext, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
@@ -179,16 +179,55 @@ export function useNestTile(id: string) {
 /** A tile under a held tile that can take it: the selected fill, and its edge in `--text2`. */
 export const TAKES: CSSProperties = { background: t.selectedFill, borderColor: t.text2 };
 
-/** The `grip` at a tile's left: the only place a drag starts. 18 by 22; 44 high on a phone. */
+/**
+ * CA-15 P10: whether the tile around `ref` is hovered or holds focus (keyboard or pointer). On a phone, which has no hover, always
+ * true. Used for what a tile shows only when it is near: its drag handle and "Send with the step above". It changes
+ * what is drawn at once, with no fade.
+ */
+export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean): boolean {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"]');
+    if (!tile || phone) return;
+    const on = () => setNear(true);
+    const off = (event: Event) => {
+      if (event.type === "focusout" && tile.contains((event as FocusEvent).relatedTarget as Node | null)) return;
+      setNear(false);
+    };
+    tile.addEventListener("pointerenter", on);
+    tile.addEventListener("pointerleave", off);
+    tile.addEventListener("focusin", on);
+    tile.addEventListener("focusout", off);
+    return () => {
+      tile.removeEventListener("pointerenter", on);
+      tile.removeEventListener("pointerleave", off);
+      tile.removeEventListener("focusin", on);
+      tile.removeEventListener("focusout", off);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone, ref.current]);
+  return phone || near;
+}
+
+/** The `grip` at a tile's left: the only place a drag starts. 18 by 22; 44 high on a phone. It is drawn while its tile is hovered or has focus, and on a phone. */
 export function DragHandle({ label, nest, testId = "drag-handle" }: { label: string; nest: Pick<ReturnType<typeof useNestTile>, "on" | "handle" | "held">; testId?: string }) {
   const state = useContext(NestContext);
   const { state: interactive, handlers } = useInteractive<HTMLButtonElement>();
-  if (!nest.on) return null;
+  const own = useRef<HTMLButtonElement | null>(null);
+  const near = useTileNear(own, Boolean(state?.phone));
   const { attributes, listeners, setActivator } = nest.handle;
+  const hold = useCallback(
+    (element: HTMLButtonElement | null) => {
+      own.current = element;
+      setActivator(element);
+    },
+    [setActivator],
+  );
+  if (!nest.on) return null;
   return (
     <button
       type="button"
-      ref={setActivator}
+      ref={hold}
       data-testid={testId}
       {...attributes}
       {...listeners}
@@ -209,6 +248,7 @@ export function DragHandle({ label, nest, testId = "drag-handle" }: { label: str
         justifyContent: "center",
         color: t.label,
         borderRadius: 4,
+        opacity: near || nest.held ? 1 : 0,
         cursor: nest.held ? "grabbing" : "grab",
         touchAction: "none",
         ...ring(interactive.focusVisible),

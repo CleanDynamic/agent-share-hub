@@ -88,11 +88,19 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the eight Add items in order, with no session in them (CA-12 P4), Code after Manual step and Check after Code; all are live (UI-P64 to UI-P70, CA-02 P7, CA-03 P5)", () => {
-    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent or team", "Decision", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
+  it("lists the twelve Add items in order, with no session in them (CA-12 P4, CA-15 P9); the three new tiles are live only once their node type is", () => {
+    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent", "Decision", "System prompt", "File", "Dataset", "Tool", "GitHub repository", "Manual step", "Code", "Check", "Result"]);
     expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "agent", "decision", "file", "tool", "manual", "code", "check", "result"]);
-    expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Lines of code you wrote or ran");
-    expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "How it tested its own work", ready: true });
+    expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Source code written or run");
+    expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "A test that verifies part of the build", ready: true });
+  });
+
+  it("turns System prompt, Dataset and GitHub repository on when their node type is live and a handler is given (CA-15 P9)", () => {
+    const off = addEntries({ onAddSystemPrompt: vi.fn() });
+    expect(off.find((item) => item.key === "system_prompt")?.enabled).toBe(false);
+    const on = addEntries({ onAddSystemPrompt: vi.fn(), onAddDataset: vi.fn(), onAddRepo: vi.fn(), systemPromptAvailable: true, datasetAvailable: true, repoAvailable: true });
+    expect(on.filter((item) => ["system_prompt", "dataset", "repo"].includes(item.key)).map((item) => item.enabled)).toEqual([true, true, true]);
+    expect(on.find((item) => item.key === "repo")?.line).toBe("A repository used in this build");
   });
 
   it("lists Check but disables it until the build has an agent, a team or code (CA-03 P5)", () => {
@@ -100,7 +108,7 @@ describe("SandboxView frame", () => {
     const off = addEntries({ onAddCheck, checkable: false }).find((item) => item.key === "check");
     expect(off).toMatchObject({ name: "Check", line: "Add an agent or code first", enabled: false });
     const on = addEntries({ onAddCheck, checkable: true }).find((item) => item.key === "check");
-    expect(on).toMatchObject({ name: "Check", line: "How it tested its own work", enabled: true });
+    expect(on).toMatchObject({ name: "Check", line: "A test that verifies part of the build", enabled: true });
     on?.onSelect?.();
     expect(onAddCheck).toHaveBeenCalledTimes(1);
     expect(addEntries({ checkable: true }).find((item) => item.key === "check")?.enabled).toBe(false);
@@ -159,25 +167,25 @@ describe("the Build panel's head when an agent or a team is opened (UI-P69)", ()
     expect(screen.queryByTestId("sandbox-trail")).toBeNull();
   });
 
-  it("opens the Add dialog from Add › Agent or team", async () => {
+  it("opens the Add dialog from Add › Agent", async () => {
     const onAddAgent = vi.fn();
     view({ onAddAgent });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
-    const item = await screen.findByRole("menuitem", { name: /Agent or team/ });
+    const item = await screen.findByRole("menuitem", { name: /^Agent/ });
     expect(item.getAttribute("aria-disabled")).not.toBe("true");
     fireEvent.click(item);
     expect(onAddAgent).toHaveBeenCalled();
   });
 
-  it("leaves Agent or team disabled when nothing opens the dialog", async () => {
+  it("leaves Agent disabled when nothing opens the dialog", async () => {
     view();
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
-    const item = await screen.findByRole("menuitem", { name: /Agent or team/ });
+    const item = await screen.findByRole("menuitem", { name: /^Agent/ });
     expect(item.getAttribute("aria-disabled")).toBe("true");
   });
 });
 
-describe("the Add menu holds exactly 9 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4)", () => {
+describe("the Add menu holds exactly 12 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4)", () => {
   it("enables every item once each has something to open", async () => {
     view({
       onAddCheck: vi.fn(),
@@ -190,12 +198,18 @@ describe("the Add menu holds exactly 9 items, all enabled (UI-P70, CA-02 P7, CA-
       onAddDecision: vi.fn(),
       onAddManual: vi.fn(),
       onAddCode: vi.fn(),
+      onAddSystemPrompt: vi.fn(),
+      onAddDataset: vi.fn(),
+      onAddRepo: vi.fn(),
+      systemPromptAvailable: true,
+      datasetAvailable: true,
+      repoAvailable: true,
     });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items).toHaveLength(9);
-    expect(items[0].textContent).toBe("PromptA message you sent");
-    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(9).fill(null));
+    expect(items).toHaveLength(12);
+    expect(items[0].textContent).toBe("PromptA message sent to a model");
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(12).fill(null));
     expect(items.map((item) => item.textContent).join(" ")).not.toMatch(/session/i);
   });
 
@@ -452,7 +466,7 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     onAddCode: vi.fn(),
   });
 
-  it("holds the same eight items as 44pt rows under a plain Add heading, with a grab line", () => {
+  it("holds the same twelve items as 44pt rows under a plain Add heading, with a grab line", () => {
     stubWidth(390);
     view({ ...all(), onAddPromptFocus: vi.fn() });
     expect(screen.queryByRole("menu")).toBeNull();
@@ -544,6 +558,6 @@ describe("CA-13 P1 · Add › Decision", () => {
     expect(off?.line).toBe("Decisions need the CA-13 database change. Ask Lovable to apply it.");
     const on = addEntries({ onAddDecision: vi.fn(), decisionAvailable: true }).find((item) => item.key === "decision");
     expect(on?.enabled).toBe(true);
-    expect(on?.line).toBe("A typed choice the app asks a model for");
+    expect(on?.line).toBe("A structured classification your application requests from a model");
   });
 });
