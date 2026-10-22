@@ -395,14 +395,15 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
  * One mono line (11.5, `--label`) of at most three facts, and at most one text link on its right. Nothing at all when it has
  * neither: a fact that does not exist is left out by its caller, and this draws no empty row.
  */
-export function TileFooter({ facts, link, indent = 0 }: { facts: readonly (string | null | undefined | false)[]; link?: ReactNode; indent?: number }) {
+export function TileFooter({ facts, link, extra, indent = 0 }: { facts: readonly (string | null | undefined | false)[]; link?: ReactNode; /** A control that shares the line, drawn before the link (the hover-only "Send with the step above"). */ extra?: ReactNode; indent?: number }) {
   const shown = facts.filter((fact): fact is string => Boolean(fact)).slice(0, 3);
-  if (shown.length === 0 && !link) return null;
+  if (shown.length === 0 && !link && !extra) return null;
   return (
-    <div data-testid="tile-footer" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, paddingLeft: indent }}>
+    <div data-testid="tile-footer" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 12, minWidth: 0, paddingLeft: indent }}>
       <span data-testid="tile-footer-facts" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, flexGrow: 1, minWidth: 0, ...ellipsis, ...tnum }}>
         {shown.join(" · ")}
       </span>
+      {extra ? <span style={{ flexShrink: 0 }}>{extra}</span> : null}
       {link ? <span style={{ flexShrink: 0 }}>{link}</span> : null}
     </div>
   );

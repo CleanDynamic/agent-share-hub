@@ -237,6 +237,12 @@ describe("what a tile draws only when it is near (CA-15 P10)", () => {
     expect(handle.style.transition).toBe("");
   });
 
+  it("puts 'Send with the step above' on the footer's line, so a tile that can take it has no row of its own", () => {
+    show(twoPrompts(), { onNest: vi.fn(() => Promise.resolve(true)), canNest: () => true } as never);
+    const tile = screen.getByRole("group", { name: /^Prompt 2/ });
+    expect(within(within(tile).getByTestId("tile-footer")).getByTestId("nest-control")).toBeTruthy();
+  });
+
   it("draws 'Send with the step above' the same way, with no fade", () => {
     show(twoPrompts(), { onNest: vi.fn(() => Promise.resolve(true)), canNest: () => true } as never);
     const tile = screen.getByRole("group", { name: /^Prompt 2/ });

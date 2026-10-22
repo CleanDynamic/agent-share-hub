@@ -906,25 +906,26 @@ function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; on
   );
 }
 
-/** What stands above a tile's footer: its "Uses" chips and "Send with the step above". Not drawn when it has neither. */
+/** What stands above a tile's footer: its "Uses" chips. Not drawn when it has none. */
 function ExtraRow({ step, props, withGoes = true }: { step: Step; props: BuildListProps; withGoes?: boolean }) {
-  const uses = usesParts(step, props, withGoes).any;
-  const nest = useNestAvailable(step);
-  if (!uses && !nest) return null;
+  if (!usesParts(step, props, withGoes).any) return null;
   return (
     <div style={footRow(INDENT)}>
       <UsesRow step={step} props={props} withGoes={withGoes} />
-      <NestButtons step={step} phone={props.phone} />
     </div>
   );
 }
 
-/** The foot of every tile: the extras, then one mono line of at most three counted facts with at most one link. */
+/**
+ * The foot of every tile: its "Uses" chips, then one mono line of at most three counted facts with at most one link. "Send
+ * with the step above" shares that line, so a tile that can take it needs no row of its own.
+ */
 function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; props: BuildListProps; link?: ReactNode; facts?: readonly string[]; withGoes?: boolean }) {
+  const nest = useNestAvailable(step);
   return (
     <>
       <ExtraRow step={step} props={props} withGoes={withGoes} />
-      <TileFooter facts={facts ?? footerFactsOf(step)} link={link} indent={INDENT} />
+      <TileFooter facts={facts ?? footerFactsOf(step)} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
     </>
   );
 }

@@ -30,6 +30,11 @@ describe("the type line", () => {
     expect(typeLineOf(step({ type: "repo", payload: { step: true, url: "github.com/a/b" } }))).toBe("GitHub repository");
   });
 
+  it("counts a code tile's lines the way its well does: a trailing newline is not a line", () => {
+    expect(typeLineOf(step({ type: "code", payload: { source: "a\nb\n", language: "ts" } }))).toBe("Code · TypeScript · 2 lines");
+    expect(typeLineOf(step({ type: "code", payload: { source: "a\nb", language: "ts" } }))).toBe("Code · TypeScript · 2 lines");
+  });
+
   it("adds what is known to a repository and a dataset", () => {
     expect(typeLineOf(step({ type: "repo", payload: { step: true, url: "github.com/a/b", ownership: "third_party" } }))).toBe("GitHub repository · Third-party repository");
     expect(typeLineOf(step({ type: "dataset", payload: { step: true, description: "d", use: "finetuning" } }))).toBe("Dataset · Fine-tuning");

@@ -22,7 +22,7 @@ export const counted = (n: number | null | undefined, one: string, many: string 
 const LANGUAGE_LABEL: Record<string, string> = { ts: "TypeScript", tsx: "TypeScript (TSX)", js: "JavaScript", jsx: "JavaScript (JSX)", python: "Python", sql: "SQL", json: "JSON", yaml: "YAML", bash: "Bash", html: "HTML", css: "CSS", other: "Other" };
 const FILE_WORD = { text: "Text", code: "Code", pdf: "PDF", picture: "Picture", spreadsheet: "Spreadsheet", other: "File" } as const;
 
-const lineCount = (text: string): number => (text.trim() ? text.split(/\r?\n/).length : 0);
+const lineCount = (text: string): number => (text.trim() ? text.replace(/(\r?\n)+$/, "").split(/\r?\n/).length : 0);
 
 /** Parts joined by " · ", leaving out any that are missing. */
 const dotted = (...parts: readonly (string | null | undefined | false)[]): string => parts.filter(Boolean).join(" · ");
