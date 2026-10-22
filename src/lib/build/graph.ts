@@ -31,7 +31,7 @@ import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
 import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
-import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
+import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -1420,8 +1420,12 @@ export interface DecisionInput {
   questions: readonly DecisionQuestion[];
   answer?: Record<string, DecisionAnswer>;
   source?: "run" | "maker";
-  /** "How to install, optional", as given. */
+  /** "Installation command", as given. */
   install?: string;
+  /** CA-15 P8: input and expected output pairs. */
+  examples?: readonly DecisionExample[];
+  /** CA-15 P8: what to do when it is not confident. */
+  lowConfidence?: LowConfidence;
   session?: string | null;
 }
 
@@ -1439,8 +1443,9 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
       id: q.id.trim(),
       type: q.type,
       instructions: q.instructions.trim(),
-      ...(q.type === "choice" ? { options: (q.options ?? []).map((o) => ({ key: o.key.trim(), ...(o.line?.trim() ? { line: o.line.trim() } : null) })) } : null),
+      ...(takesOptions(q.type) ? { options: (q.options ?? []).map((o) => ({ key: o.key.trim(), ...(o.line?.trim() ? { line: o.line.trim() } : null) })) } : null),
       ...(q.type === "score" ? { levels: (q.levels ?? []).map((level) => level.trim()) } : null),
+      ...(q.type === "extract" ? { field: q.field ?? "text" } : null),
     })) as unknown as Json,
   };
   if (input.via) out.via = input.via;
@@ -1453,6 +1458,9 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
     out.source = input.source ?? "maker";
   }
   if (input.install?.trim()) out.install = input.install.trim();
+  const examples = (input.examples ?? []).map((example) => ({ input: example.input.trim(), output: example.output.trim() })).filter((example) => example.input || example.output);
+  if (examples.length > 0) out.examples = examples;
+  if (input.lowConfidence) out.low_confidence = input.lowConfidence as unknown as Json;
   return out;
 }
 
@@ -1472,7 +1480,7 @@ export async function setDecision(node: BuildNode, input: DecisionInput): Promis
   const keys = decisionPayload("setDecision", input);
   const old = payloadOf(node);
   const payload: Payload = { ...old };
-  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install"]) delete payload[key];
+  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install", "examples", "low_confidence"]) delete payload[key];
   Object.assign(payload, keys);
   // The state's Uses link follows "What it reads": the old output link goes, the new one is added.
   const kept = usesOf(node).filter((use) => !(use.kind === "output" && use.node_id === old.state_from));

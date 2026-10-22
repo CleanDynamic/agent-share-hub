@@ -60,8 +60,8 @@ export function ToolTileBody({ step, indent = 0 }: { step: Step; indent?: number
 /* ── a decision (CA-13 P2) ── */
 
 /**
- * "Decision · Jev 1.13" with the provider's mark, then one line per question: "team → billing · 92% sure", "tone → Annoyed
- * (2 of 3) · 71% sure", "escalation → no · 0.18". With no answer recorded each line shows the question and its options in
+ * "Decision · Jev 1.13" with the provider's mark, then one line per question: "team → billing · 92% confidence", "tone → Annoyed
+ * (2 of 3) · 71% confidence", "escalation → no · 0.18". With no answer recorded each line shows the question and its options in
  * `--label`. On a copied build the original's answer reads as the original's, never as the copier's result.
  */
 export function DecisionTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {

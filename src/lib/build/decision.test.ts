@@ -24,8 +24,8 @@ const esc: DecisionQuestion = { id: "escalation", type: "yesno", instructions: "
 
 describe("decision lines", () => {
   it("reads a choice, a score and a yes or no as the tile shows them", () => {
-    expect(answerLine(team, { value: "billing", probabilities: { billing: 0.92, support: 0.08 } })).toBe("team → billing · 92% sure");
-    expect(answerLine(tone, { value: 1, probabilities: { Annoyed: 0.71 } })).toBe("tone → Annoyed (2 of 3) · 71% sure");
+    expect(answerLine(team, { value: "billing", probabilities: { billing: 0.92, support: 0.08 } })).toBe("team → billing · 92% confidence");
+    expect(answerLine(tone, { value: 1, probabilities: { Annoyed: 0.71 } })).toBe("tone → Annoyed (2 of 3) · 71% confidence");
     expect(answerLine(esc, { value: 0.18 })).toBe("escalation → no · 0.18");
     expect(answerLine(esc, { value: 0.9 })).toBe("escalation → yes · 0.9");
   });
@@ -48,7 +48,7 @@ describe("decision lines", () => {
   });
 
   it("words the original's answer and the copier's check", () => {
-    expect(expectedLine(team, { value: "billing", probabilities: { billing: 0.92 } })).toBe("The original answered team → billing (92% sure) on this example; check yours does too.");
+    expect(expectedLine(team, { value: "billing", probabilities: { billing: 0.92 } })).toBe("The original answered team → billing (92% confidence) on this example; check yours does too.");
     expect(checkLine(team, { value: "billing" })).toBe("On this example, your copy should answer team = billing.");
   });
 });

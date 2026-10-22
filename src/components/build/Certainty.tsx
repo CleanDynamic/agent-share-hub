@@ -1,6 +1,6 @@
 /* CA-13 P4 — how sure, one look everywhere.
 
-   Closed: the answer, then "92% sure", then a thin bar 48 wide and 4 tall in `--text2` on `--hairline`. Below 60% the words
+   Closed: the answer, then "92% confidence", then a thin bar 48 wide and 4 tall in `--text2` on `--hairline`. Below 60% the words
    read "unsure (54%)" in `--label`: no red, amber or green. Opened: every option with its share as a bar, high to low, the
    chosen one in `--text`. A source note says "From the run" or "Maker's figure". A screen reader hears one sentence:
    "billing, 92 percent sure, from the run". Used for Decision answers, Classify helpers and Check cases. */
