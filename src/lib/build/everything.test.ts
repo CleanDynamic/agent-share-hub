@@ -192,7 +192,7 @@ describe("everything at once, in the composer", () => {
     expect(screen.getByRole("textbox", { name: "How it tidies its notes" })).toBeTruthy();
     cleanup();
     render(createElement(MemoryRouter, null, createElement(DetailsPanel, shapeDetailsProps("everything", "e-r1"))));
-    expect((screen.getByRole("radio", { name: "A trained model" }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("radio", { name: "Model" }) as HTMLInputElement).checked).toBe(true);
     expect(screen.getByTestId("trained-on").textContent).toContain("ratings.csv · 1,200 rows");
   });
 });

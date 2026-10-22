@@ -47,7 +47,7 @@ import { readsOutsideContent } from "@/lib/build/outsideContent";
 import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/lib/build/setup";
 import { runtimeViewOf } from "./runtimeView";
 import { draftFromFacts } from "@/lib/build/decisionDraft";
-import type { AgentView, CheckView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import type { AgentView, CheckView, DatasetView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, RepoView, ResultView, SessionView, SystemPromptView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
 
@@ -396,14 +396,39 @@ function decisionView(step: Step, ctx: ViewContext): DecisionView | null {
   };
 }
 
+/** CA-15 P11: a system prompt, a dataset or a GitHub repository: its name, its fields from its payload, and what it uses and goes into. */
+function sourceView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): SystemPromptView | DatasetView | RepoView | null {
+  const node = findNode(ctx.tree, step.id);
+  if (!node) return null;
+  const base = {
+    ...insideOf(step),
+    id: step.id,
+    number: step.number,
+    title: step.title,
+    defaultTitle: step.defaultTitle,
+    payload: payloadOf(node),
+    uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
+    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
+    goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
+  };
+  if (step.kind === "system_prompt") {
+    const prompts = flatten(ctx.steps).filter((candidate) => candidate.kind === "prompt" && !candidate.id.endsWith(":instructions") && !candidate.inside);
+    return { ...base, kind: "system_prompt", appliesTo: step.systemPrompt?.appliesTo ?? 0, prompts: prompts.map((prompt) => ({ id: prompt.id, label: `${prompt.number} ${stepTitle(prompt)}` })), session: step.session ?? null };
+  }
+  return { ...base, kind: step.kind === "dataset" ? "dataset" : "repo" } as DatasetView | RepoView;
+}
+
 /** The view of what is selected, or null when nothing is, or what was selected is gone. */
 export function resolveView(ctx: ViewContext): DetailsView | null {
-  const view = resolveBase(ctx);
-  if (!view) return null;
+  const found = resolveBase(ctx);
+  if (!found) return null;
+  // CA-15 P11: what the node stores, for the Optional rows a tile shows.
+  const node = ctx.selectedId ? findNode(ctx.tree, ctx.selectedId) : null;
+  const view = node && found.kind !== "session" ? { ...found, payload: payloadOf(node) } : found;
   // CA-13: a runtime tile also carries when it runs.
   const step = flatten(ctx.steps).find((candidate) => candidate.id === ctx.selectedId);
   const all = pieces(ctx.tree, ctx.sourceFiles as SourceFile[]);
-  const runtime = step && step.kind !== "file" && step.kind !== "tool" ? runtimeViewOf(step, ctx.steps, Object.fromEntries(Object.entries(all.byId).map(([id, piece]) => [id, piece.name])), all.files.map((file) => file.name)) : undefined;
+  const runtime = step && step.kind !== "file" && step.kind !== "tool" && step.kind !== "system_prompt" && step.kind !== "dataset" && step.kind !== "repo" ? runtimeViewOf(step, ctx.steps, Object.fromEntries(Object.entries(all.byId).map(([id, piece]) => [id, piece.name])), all.files.map((file) => file.name)) : undefined;
   return runtime ? { ...view, runtime } : view;
 }
 
@@ -428,6 +453,7 @@ function resolveBase(ctx: ViewContext): DetailsView | null {
   }
   if (step) {
     if (step.kind === "decision") return decisionView(step, ctx);
+    if (step.kind === "system_prompt" || step.kind === "dataset" || step.kind === "repo") return sourceView(step, ctx, all);
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);
     if (step.kind === "code") return codeView(step, ctx, all);

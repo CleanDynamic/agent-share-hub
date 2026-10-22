@@ -86,31 +86,33 @@ describe("Result Details", () => {
     return props;
   }
 
-  it("asks What it is with four choices, A link first, and shows nothing more for the first three", () => {
+  it("asks Output type with four choices, Link first, and shows nothing more for the first three", () => {
     details({ summary: "Site", url: "https://x.test" }, []);
-    expect(screen.getAllByRole("radio").map((radio) => radio.getAttribute("aria-label") ?? (radio.closest("label")?.textContent ?? ""))).toEqual(["A link", "A picture", "A file", "A trained model"]);
-    expect((screen.getByRole("radio", { name: "A link" }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getAllByRole("radio").map((radio) => radio.getAttribute("aria-label") ?? (radio.closest("label")?.textContent ?? ""))).toEqual(["Link", "Image or video", "File", "Model"]);
+    expect((screen.getByRole("radio", { name: "Link" }) as HTMLInputElement).checked).toBe(true);
     expect(screen.queryByText("Based on")).toBeNull();
     expect(screen.queryByText("Trained on")).toBeNull();
   });
 
-  it("saves the choice of A trained model as its kind", () => {
+  it("saves the choice of Model as its kind", () => {
     const props = details({ summary: "Site" }, []);
-    fireEvent.click(screen.getByRole("radio", { name: "A trained model" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Model" }));
     expect(props.onFields).toHaveBeenCalledWith("r1", { kind: "trained-model" });
   });
 
   it("takes the kind off when another choice is made", () => {
     const props = details(trainedPayload);
-    fireEvent.click(screen.getByRole("radio", { name: "A link" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Link" }));
     expect(props.onFields).toHaveBeenLastCalledWith("r1", { kind: null });
   });
 
-  it("asks Based on, Trained on and How it was trained, Optional", () => {
+  it("asks Based on and Trained on, and How it was trained in the Optional section, closed (CA-15 P11)", () => {
     const props = details(trainedPayload);
     expect(screen.getByText("Based on")).toBeTruthy();
     expect(screen.getByTestId("trained-on").textContent).toContain("ratings.csv · 1,200 rows");
     expect(screen.getByRole("button", { name: "Replace the file" })).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "How it was trained" })).toBeNull();
+    fireEvent.click(screen.getAllByTestId("optional-field").find((el) => el.textContent?.includes("How it was trained"))?.querySelector("button") as HTMLButtonElement);
     const how = screen.getByRole("textbox", { name: "How it was trained" });
     fireEvent.change(how, { target: { value: "Pairs ranked by a panel" } });
     fireEvent.keyDown(how, { key: "Enter" });

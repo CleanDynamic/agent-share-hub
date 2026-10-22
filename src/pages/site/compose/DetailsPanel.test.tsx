@@ -297,7 +297,7 @@ describe("an agent inside a team (UI-P69)", () => {
 
   it("edits the instructions and hands them over when the field is left", () => {
     const props = panel("agent", "bakery", { onInstructions: vi.fn() });
-    const field = screen.getByLabelText("Instructions") as HTMLTextAreaElement;
+    const field = screen.getByLabelText("System instructions") as HTMLTextAreaElement;
     expect(field.value).toBe("Check the menu and reply with any item that has no price.");
     fireEvent.change(field, { target: { value: "Reply with any item over ten pounds." } });
     fireEvent.blur(field);
@@ -312,7 +312,7 @@ describe("an agent inside a team (UI-P69)", () => {
     const base = sandboxDetailsProps("agent", "bakery");
     if (base.view?.kind !== "agent") throw new Error("fixture");
     panel("agent", "bakery", { onInstructions: vi.fn(), view: { ...base.view, kind: "team", instructions: "" } });
-    expect(screen.queryByText("Instructions")).toBeNull();
+    expect(screen.queryByText("System instructions")).toBeNull();
   });
 });
 
@@ -325,9 +325,9 @@ describe("a file, a tool, a result", () => {
     expect(screen.getByText("3 · Fix the mobile layout")).toBeTruthy();
   });
 
-  it("edits a tool's service and what it was used for", () => {
+  it("edits a tool's application and its actions performed (CA-15 P11)", () => {
     const props = panel("tool");
-    const scopes = screen.getByLabelText("What it was used for");
+    const scopes = screen.getByLabelText("Actions performed");
     fireEvent.change(scopes, { target: { value: "read" } });
     fireEvent.blur(scopes);
     expect(props.onFields).toHaveBeenCalledWith("t1", { scopes: "read" });
@@ -631,6 +631,7 @@ describe("code (CA-02 P7)", () => {
     lines: 2,
     tool: "Cursor",
     model: "Opus 5",
+    payload: { filename: "app.ts", tool: "cursor", model: "Opus 5" },
     uses: [],
     options: [],
     goesInto: [],
@@ -640,10 +641,12 @@ describe("code (CA-02 P7)", () => {
   it("shows all of it in a mono well, what it was written with, and Copy", async () => {
     const writeText = vi.fn(() => Promise.resolve());
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
-    panel("prompt", "bakery", { view: code });
+    panel("prompt", "bakery", { view: code, onExtras: vi.fn() });
     expect(screen.getAllByText("Code 4").length).toBeGreaterThan(0);
     expect(screen.getByText("app.ts · ts · 2 lines")).toBeTruthy();
-    expect(screen.getByText("Cursor · Opus 5")).toBeTruthy();
+    // CA-15 P11: what generated it is a closed row of the Optional section, saying what it holds.
+    const row = screen.getAllByTestId("optional-field").find((el) => el.textContent?.includes("Generated with"));
+    expect(row?.textContent).toContain("Cursor · Opus 5");
     const well = screen.getByTestId("details-code");
     expect(well.textContent).toBe("export const a = 1;\nexport const b = 2;\n");
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));

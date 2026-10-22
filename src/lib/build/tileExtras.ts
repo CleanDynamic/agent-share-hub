@@ -242,6 +242,15 @@ export function cleanVariablesValue(value: unknown): Json | null {
 
 export type Cleaner = (value: unknown) => Json | null;
 
+/** A one-line text of at most `max` characters; empty takes the key off. */
+export const lineCleaner =
+  (what: string, max: number): Cleaner =>
+  (value) => {
+    const said = clean(value);
+    if (said.length > max) throw new Error(`${what} is at most ${max} characters.`);
+    return said || null;
+  };
+
 /** The keys each node type's extras write, and how each is cleaned: a cleaner returns the value to store, or null to take the key off. */
 const CLEANERS: Record<string, Record<string, Cleaner>> = {
   agent_config: {
@@ -309,6 +318,14 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
       const names = cleanList(value, TOOL_ALTERNATIVE_MAX, TOOL_ALTERNATIVES_MAX);
       return names.length > 0 ? [...new Set(names)] : null;
     },
+  },
+  code: {
+    filename: lineCleaner("The file path", 200),
+    tool: lineCleaner("The tool", 80),
+    model: lineCleaner("The model", 80),
+  },
+  result: {
+    caption: lineCleaner("A caption", 140),
   },
   prompt: {
     settings: (value) => {

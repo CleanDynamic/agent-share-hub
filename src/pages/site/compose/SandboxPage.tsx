@@ -1619,6 +1619,10 @@ export function SandboxPage() {
             onSessionMeta={(key, change) => void onSessionMeta(key, change)}
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
+            onExtras={(id, patch) => {
+              prompts.setExtras(id, patch);
+              afterWrite();
+            }}
             onCheckRuns={prompts.setCheckRuns}
             onCheckCases={prompts.setCheckCases}
             onModelRun={prompts.setModelRun}
