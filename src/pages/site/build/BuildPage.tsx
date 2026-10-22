@@ -117,6 +117,8 @@ import { BreakageBody } from "./BreakageBody";
 import { CommentsPanel, LowerSections, WhereNextError, WhereNextPanels } from "./BuildLower";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
+import { ClassificationSection } from "@/components/build/ClassificationSection";
+import { getClassification } from "@/lib/classify/storage";
 import {
   askLabel,
   asMaking,
@@ -451,6 +453,15 @@ export function BuildPage() {
   });
 
   const viewerIsCreator = Boolean(user && build && user.id === build.creator_id);
+  /* CA-16 P7: the classification, read apart from the record (the columns may not exist yet: then there is nothing to show). */
+  const classification = useQuery({
+    queryKey: ["build", "getClassification", buildId],
+    queryFn: () => getClassification(buildId as string),
+    enabled: Boolean(buildId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   const hidden = useQuery<boolean>({
     queryKey: ["moderation", "isBuildHidden", buildId],
     queryFn: () => isBuildHidden(buildId as string),
@@ -1024,6 +1035,7 @@ export function BuildPage() {
       <LiveRegion message={announcement} />
       <BuildView
         fit="content"
+        classification={<ClassificationSection classification={classification.data?.live ? classification.data.classification : null} />}
         hero={{
           title: build.title,
           outcome: (build.outcome ?? "").trim(),

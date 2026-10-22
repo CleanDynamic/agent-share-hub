@@ -108,6 +108,8 @@ export interface BuildViewProps {
    * the page is exactly as it was.
    */
   steps?: BuildStepsView;
+  /** CA-16 P7: the Classification section, drawn under the hero. Absent: nothing, and the page is exactly as it was. */
+  classification?: ReactNode;
 }
 
 /** The first row's height on the desktop board. */
@@ -1181,6 +1183,7 @@ function DesktopBuild(props: BuildViewProps) {
           {stacked ? (
             <>
               <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
+              {props.classification}
               <Proof proof={proof} phone={false} now={now} />
               {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} /> : null}
               {steps ? <StepsNeed steps={steps} phone={false} /> : null}
@@ -1189,6 +1192,7 @@ function DesktopBuild(props: BuildViewProps) {
             <>
               <div style={{ ...wide(false), display: "flex", flexDirection: "column", gap: 32 }}>
                 <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
+                {props.classification}
                 {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
               </div>
               <div style={{ ...side, display: "flex", flexDirection: "column", gap: 32 }}>
@@ -1204,6 +1208,7 @@ function DesktopBuild(props: BuildViewProps) {
           <Proof proof={proof} phone={false} now={now} />
         </div>
       )}
+      {props.classification && !hero.thread ? props.classification : null}
       {steps ? (
         hero.thread ? null : (
           <div data-testid="build-second-row" style={pair(stacked)}>
@@ -1284,6 +1289,7 @@ function PhoneBuild(props: BuildViewProps) {
         </>
       )}
       <Proof proof={proof} phone now={now} />
+      {props.classification}
       <ScrollRow gap={6} label="Sections of this build" tablist>
         {viewer.tabs.map((tab) => (
           <FilterChip

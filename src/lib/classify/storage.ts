@@ -40,7 +40,13 @@ interface ClassificationTable {
 /** The stored classification of one build. `live: false` when the columns are not there yet (or the read failed). */
 export async function getClassification(buildId: string): Promise<StoredClassification> {
   if (columnMissing) return NOT_LIVE;
-  const { data, error } = await (supabase as unknown as ClassificationTable).from("builds").select("classification, facets").eq("id", buildId).maybeSingle();
+  let answer: { data: { classification?: unknown; facets?: unknown } | null; error: unknown };
+  try {
+    answer = await (supabase as unknown as ClassificationTable).from("builds").select("classification, facets").eq("id", buildId).maybeSingle();
+  } catch {
+    return NOT_LIVE;
+  }
+  const { data, error } = answer;
   if (error) {
     if (isMissingColumn(error)) columnMissing = true;
     return NOT_LIVE;
