@@ -116,10 +116,13 @@ describe.each([
   { device: "a phone", width: 390, phone: true },
 ])("CA-10 · every other Add item visibly does something, on $device", ({ width, phone }) => {
   const dialogs: [RegExp, RegExp][] = [
-    [/^Agent or team/, /agent/i],
+    [/^Agent/, /agent/i],
     [/^Tool/, /tool/i],
     [/^Manual step/, /manual|step/i],
     [/^Code/, /code/i],
+    [/^System prompt/, /system prompt/i],
+    [/^Dataset/, /dataset/i],
+    [/^GitHub repository/, /github repository/i],
   ];
   it.each(dialogs)("%s opens its dialog", async (item, title) => {
     stubWidth(width);
@@ -192,3 +195,35 @@ describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)
   });
 });
 
+
+describe.each([
+  { device: "a computer", width: 1280, phone: false },
+  { device: "a phone", width: 390, phone: true },
+])("CA-15 P9 · the new tiles are saved and drawn, on $device", ({ width, phone }) => {
+  const addFrom = async (item: RegExp, dialog: RegExp) => {
+    stubWidth(width);
+    mount(`/compose/${DRAFT}`);
+    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    await choose(phone, item);
+    return within(await screen.findByRole("dialog", { name: dialog }, { timeout: 5_000 }));
+  };
+
+  it("a system prompt added from the menu is drawn as a tile with its title and text", async () => {
+    const dialog = await addFrom(/^System prompt/, /system prompt/i);
+    fireEvent.change(dialog.getByLabelText("Name"), { target: { value: "Brand voice" } });
+    fireEvent.change(dialog.getByLabelText("Text"), { target: { value: "Write in plain English." } });
+    fireEvent.click(dialog.getByRole("button", { name: "Add" }));
+    const tile = await screen.findByRole("group", { name: /^System prompt \d+: Brand voice$/ }, { timeout: 5_000 });
+    expect(within(tile).getByTestId("system-prompt-text").textContent).toBe("Write in plain English.");
+    expect(screen.queryByRole("dialog", { name: /system prompt/i })).toBeNull();
+  });
+
+  it("a dataset added from the menu is drawn as a tile with its description", async () => {
+    const dialog = await addFrom(/^Dataset/, /dataset/i);
+    fireEvent.change(dialog.getByLabelText("Name"), { target: { value: "Tickets" } });
+    fireEvent.change(dialog.getByLabelText("Description"), { target: { value: "Support tickets from 2025" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Add" }));
+    const tile = await screen.findByRole("group", { name: /^Dataset \d+: Tickets$/ }, { timeout: 5_000 });
+    expect(within(tile).getByTestId("dataset-description").textContent).toBe("Support tickets from 2025");
+  });
+});

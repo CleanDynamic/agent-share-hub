@@ -13,6 +13,9 @@ import { CONNECTION_LABEL, MESSAGE_CHANNEL_LABEL, RESULT_THUMBS, resultHolds, ty
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
 import { decisionHeadline, decisionLines, expectedLine } from "@/lib/build/decision";
 import { formatSize } from "@/lib/build/readerSteps";
+import { REPO_USAGE_LABEL } from "@/lib/build/sourceTiles";
+import { splitVariables } from "@/lib/build/tileExtras";
+import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { ManualThumb } from "@/pages/site/compose/ManualThumb";
@@ -358,5 +361,101 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
       <span data-testid="result-model" style={{ ...text(13.5, 500, t.text), overflowWrap: "anywhere" }}>{model?.baseModel ? `Based on ${model.baseModel}` : "A trained model"}</span>
       {model?.method ? <span style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>{model.method}</span> : null}
     </div>
+  );
+}
+
+/* ── the footer every tile ends with (CA-15 P10) ── */
+
+/**
+ * One mono line (11.5, `--label`) of at most three facts, and at most one text link on its right. Nothing at all when it has
+ * neither: a fact that does not exist is left out by its caller, and this draws no empty row.
+ */
+export function TileFooter({ facts, link, indent = 0 }: { facts: readonly (string | null | undefined | false)[]; link?: ReactNode; indent?: number }) {
+  const shown = facts.filter((fact): fact is string => Boolean(fact)).slice(0, 3);
+  if (shown.length === 0 && !link) return null;
+  return (
+    <div data-testid="tile-footer" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, paddingLeft: indent }}>
+      <span data-testid="tile-footer-facts" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, flexGrow: 1, minWidth: 0, ...ellipsis, ...tnum }}>
+        {shown.join(" · ")}
+      </span>
+      {link ? <span style={{ flexShrink: 0 }}>{link}</span> : null}
+    </div>
+  );
+}
+
+/* ── a system prompt (CA-15 P9) ── */
+
+/** Its text clamped to two lines, each `{variable}` drawn as a small mono chip (12, the control fill). */
+export function SystemPromptTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+  const parts = splitVariables(step.text);
+  return (
+    <div data-testid="system-prompt-tile" style={{ paddingLeft: indent, minWidth: 0 }}>
+      <p data-testid="system-prompt-text" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>
+        {parts.map((part, at) =>
+          part.variable ? (
+            <span key={at} data-testid="variable-chip" style={{ ...CONTROL, fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", padding: "0 6px", margin: "0 1px", borderRadius: 4, display: "inline-block", color: t.text, whiteSpace: "nowrap" }}>
+              {part.text}
+            </span>
+          ) : (
+            <span key={at}>{part.text}</span>
+          ),
+        )}
+      </p>
+    </div>
+  );
+}
+
+/* ── a dataset (CA-15 P9) ── */
+
+/** What it is on one line, then its columns in mono on one line. */
+export function DatasetTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+  const facts = step.dataset;
+  if (!facts) return null;
+  return (
+    <div data-testid="dataset-tile" style={{ display: "flex", flexDirection: "column", gap: 2, paddingLeft: indent, minWidth: 0 }}>
+      {facts.description ? (
+        <span data-testid="dataset-description" style={{ ...text(13, 400, t.text), ...ellipsis }}>
+          {facts.description}
+        </span>
+      ) : null}
+      {facts.columns.length > 0 ? (
+        <span data-testid="dataset-columns" style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", color: t.text2, ...ellipsis }}>
+          {facts.columns.join(", ")}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/* ── a GitHub repository (CA-15 P9) ── */
+
+/** Its description clamped to two lines, then how it was used on one line in `--text2`. */
+export function RepoTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+  const repo = step.repo;
+  if (!repo) return null;
+  const usage = repo.usage.map((use) => REPO_USAGE_LABEL[use]).join(" · ");
+  if (!repo.description && !usage) return null;
+  return (
+    <div data-testid="repo-tile" style={{ display: "flex", flexDirection: "column", gap: 2, paddingLeft: indent, minWidth: 0 }}>
+      {repo.description ? (
+        <p data-testid="repo-description" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", ...clamp(2) }}>
+          {repo.description}
+        </p>
+      ) : null}
+      {usage ? (
+        <span data-testid="repo-usage" style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>
+          {usage}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** "Open on GitHub", the one link of a repository's footer. It opens in a new tab and never selects the tile. */
+export function OpenOnGitHub({ url }: { url: string }) {
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} style={{ ...text(12, 500, t.text2), textDecoration: "underline", borderRadius: 4 }}>
+      Open on GitHub
+    </a>
   );
 }

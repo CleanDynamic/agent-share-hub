@@ -94,6 +94,20 @@ export function variableNamesIn(text: string): string[] {
   return seen;
 }
 
+/** The text cut into plain runs and `{variables}`, in order, so a tile can draw each variable as a chip; the braces are not in a variable's text. */
+export function splitVariables(text: string): { text: string; variable: boolean }[] {
+  const parts: { text: string; variable: boolean }[] = [];
+  let from = 0;
+  for (const match of text.matchAll(VARIABLE)) {
+    const at = match.index ?? 0;
+    if (at > from) parts.push({ text: text.slice(from, at), variable: false });
+    parts.push({ text: match[1], variable: true });
+    from = at + match[0].length;
+  }
+  if (from < text.length) parts.push({ text: text.slice(from), variable: false });
+  return parts;
+}
+
 /** The variables as saved: only those with a description are kept. */
 export function variablesOf(raw: unknown): PromptVariable[] {
   if (!Array.isArray(raw)) return [];
@@ -218,9 +232,15 @@ export function agentExtrasOf(payload: Raw): { limits?: string[]; output?: strin
 /** A team's orchestration pattern; null when not given or not one of the four. */
 export const patternOf = (raw: unknown): AgentPattern | null => (AGENT_PATTERNS.includes(raw as AgentPattern) ? (raw as AgentPattern) : null);
 
+/** The variables to store: only those with a description; null when none has one. */
+export function cleanVariablesValue(value: unknown): Json | null {
+  const list = variablesOf(value).filter((entry) => entry.description);
+  return list.length > 0 ? list.map((entry) => ({ name: entry.name, description: entry.description })) : null;
+}
+
 /* ── the writer ── */
 
-type Cleaner = (value: unknown) => Json | null;
+export type Cleaner = (value: unknown) => Json | null;
 
 /** The keys each node type's extras write, and how each is cleaned: a cleaner returns the value to store, or null to take the key off. */
 const CLEANERS: Record<string, Record<string, Cleaner>> = {
@@ -297,12 +317,14 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
       const settings = settingsOf(raw);
       return settings ? { model: settings.model, effort: settings.effort, instructions: settings.instructions } : null;
     },
-    variables: (value) => {
-      const list = variablesOf(value).filter((entry) => entry.description);
-      return list.length > 0 ? list.map((entry) => ({ name: entry.name, description: entry.description })) : null;
-    },
+    variables: (value) => cleanVariablesValue(value),
   },
 };
+
+/** Another module's cleaners for a node type (the three tiles of `sourceTiles.ts`), added once when it loads. */
+export function registerCleaners(type: string, cleaners: Record<string, Cleaner>): void {
+  CLEANERS[type] = { ...CLEANERS[type], ...cleaners };
+}
 
 /** The patch as it will be stored. Throws, with a plain sentence, for a key the type does not take or a value out of range. */
 export function cleanExtras(type: string, patch: Record<string, unknown>): Record<string, Json | null> {

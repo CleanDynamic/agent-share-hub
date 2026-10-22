@@ -30,6 +30,24 @@ import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } f
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
+import {
+  datasetOf,
+  parseRepoUrl,
+  repoOf,
+  scopeOf,
+  scopeValue,
+  systemPromptOf,
+  type DatasetFacts,
+  type DatasetUse,
+  type RepoFacts,
+  type RepoFetched,
+  type RepoOwnership,
+  type RepoPinKind,
+  type RepoUsage,
+  type RepoVisibility,
+  type SystemPromptFacts,
+  type SystemPromptScope,
+} from "./sourceTiles";
 import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 
@@ -39,6 +57,10 @@ export const MANUAL_STEP_TYPE = "manual_step";
 export const FILE_TYPE = "document";
 export const TOOL_TYPE = "integration";
 export const RESULT_TYPE = "result";
+/** CA-15 P9: a System prompt, a Dataset and a GitHub repository, as tiles. Existing node types; a node is a tile only when its payload says `step: true`. */
+export const SYSTEM_PROMPT_TYPE = "system_prompt";
+export const DATASET_TYPE = "dataset";
+export const REPO_TYPE = "repo";
 /** CA-02 P7: lines of code the maker wrote or ran. Never run here. */
 export const CODE_TYPE = "code";
 /**
@@ -48,7 +70,7 @@ export const CODE_TYPE = "code";
 export const CHECK_TYPE = "eval_run";
 
 /** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "system_prompt" | "dataset" | "repo";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -148,6 +170,12 @@ export interface Step {
   /** CA-15 P2, a prompt or a system prompt: what it ran with (`payload.settings`), and the descriptions given to its `{variables}` (`payload.variables`). */
   settings?: PromptSettings;
   variables?: PromptVariable[];
+  /** CA-15 P9, a system prompt only: where it applies and its version; `appliesTo` is how many of the build's prompts that reaches. */
+  systemPrompt?: SystemPromptFacts & { appliesTo: number };
+  /** CA-15 P9, a dataset only: what it is, what it was used for and what it holds. */
+  dataset?: DatasetFacts;
+  /** CA-15 P9, a GitHub repository only: its address, ownership, what GitHub said and what the maker said. */
+  repo?: RepoFacts;
   /** CA-12 P12, a check only: its cases, when it has any. */
   cases?: CheckCase[];
   /** CA-13 P2, a decision only: its questions, what it read and one real answer. */
@@ -494,6 +522,9 @@ const KIND_NAME: Record<StepKind, string> = {
   file: "File",
   tool: "Tool",
   decision: "Decision",
+  system_prompt: "System prompt",
+  dataset: "Dataset",
+  repo: "GitHub repository",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -508,11 +539,14 @@ const isSetupNode = (payload: unknown): boolean => isRecord(payload) && isRecord
  * have no such key, so they are not tiles and nothing numbered moves.
  */
 export const isStepTile = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
-  (node.type === TOOL_TYPE || node.type === FILE_TYPE) && isRecord(node.payload) && node.payload.step === true && !isSetupNode(node.payload);
+  (node.type === TOOL_TYPE || node.type === FILE_TYPE || node.type in SOURCE_KIND) && isRecord(node.payload) && node.payload.step === true && !isSetupNode(node.payload);
+
+/** CA-15 P9: the node types that are tiles only when added from Add (`step: true`), so every node of these types saved before reads as it did. */
+const SOURCE_KIND: Record<string, StepKind> = { [SYSTEM_PROMPT_TYPE]: "system_prompt", [DATASET_TYPE]: "dataset", [REPO_TYPE]: "repo" };
 
 /** The kind a node is drawn as: a step tile's own, else the kind of its type; undefined for a node that is not a step. */
 const kindOfNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): StepKind | undefined =>
-  node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : KIND_OF_TYPE[node.type];
+  node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : node.type in SOURCE_KIND && isStepTile(node) ? SOURCE_KIND[node.type] : KIND_OF_TYPE[node.type];
 
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
   (node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload)) || isStepTile(node);
@@ -665,6 +699,14 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
       return named(str("title"));
     case "check":
       return named(firstLineOf(str("tested")));
+    case "system_prompt":
+      return named(firstLineOf(str("text")));
+    case "dataset":
+      return named(firstLineOf(str("description")));
+    case "repo": {
+      const parsed = parseRepoUrl(str("url"));
+      return parsed ? `${parsed.owner}/${parsed.name}` : KIND_NAME[kind];
+    }
     case "decision": {
       const ids = (Array.isArray(payload.questions) ? payload.questions : []).flatMap((q) => (isRecord(q) && typeof q.id === "string" && q.id ? [q.id] : []));
       return ids.length ? ids.slice(0, 3).join(", ") : KIND_NAME[kind];
@@ -784,7 +826,9 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
               ? (stringOf(payload.scopes) ?? "")
               : kind === "decision"
                 ? (stringOf(payload.state_sample) ?? "")
-                : (stringOf(payload.text) ?? "");
+                : kind === "dataset" || kind === "repo"
+                  ? (stringOf(payload.description) ?? "")
+                  : (stringOf(payload.text) ?? "");
   // CA-12 P6: named from what it holds, never by repeating its number.
   const defaultTitle = defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
@@ -817,7 +861,10 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
     ...(kind === "prompt" && settingsOf(payload.settings) ? { settings: settingsOf(payload.settings) as PromptSettings } : null),
-    ...(kind === "prompt" && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
+    ...((kind === "prompt" || kind === "system_prompt") && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
+    ...(kind === "system_prompt" ? { systemPrompt: { ...systemPromptOf(payload), appliesTo: 0 } } : null),
+    ...(kind === "dataset" ? { dataset: datasetOf(payload) } : null),
+    ...(kind === "repo" && repoOf(payload) ? { repo: repoOf(payload) as RepoFacts } : null),
     ...(kind === "tool" ? { app: { ...toolConnectionOf(node), scopes: stringOf(payload.scopes)?.trim() ?? null, ...toolExtrasOf(payload) } } : null),
     ...(kind === "file" ? { fileFacts: fileFactsOf(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
@@ -949,7 +996,30 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0));
+  return withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0)));
+}
+
+/**
+ * CA-15 P9: how many of the build's prompts each system prompt applies to: every prompt, the prompts of one session, or the
+ * ones chosen. A prompt is a top-level prompt step or one inside an agent, never an agent's instructions.
+ */
+function withReach(steps: Step[]): Step[] {
+  const all = flattenSteps(steps);
+  if (!all.some((step) => step.kind === "system_prompt")) return steps;
+  const prompts = all.filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions"));
+  const reach = (step: Step): number => {
+    const scope = step.systemPrompt?.scope;
+    if (!scope || scope.kind === "all") return prompts.length;
+    if (scope.kind === "session") return prompts.filter((prompt) => prompt.session === scope.key).length;
+    return scope.ids.filter((id) => prompts.some((prompt) => prompt.id === id)).length;
+  };
+  const apply = (step: Step): Step => ({
+    ...step,
+    ...(step.kind === "system_prompt" && step.systemPrompt ? { systemPrompt: { ...step.systemPrompt, appliesTo: reach(step) } } : null),
+    children: step.children.map(apply),
+    ...(step.sentWith ? { sentWith: step.sentWith.map(apply) } : null),
+  });
+  return steps.map(apply);
 }
 
 /** CA-04 P2: a step and every tile sent with it, depth first, in order. */
@@ -2295,6 +2365,145 @@ export async function addToolTile(buildId: string, tree: readonly NodeTree[], { 
   }
   for (const [key, value] of Object.entries(extras)) if (value !== null) payload[key] = value;
   return placeTopNode(buildId, tree, { type: TOOL_TYPE, title: null, payload: payload as Json });
+}
+
+// --- CA-15 P9: a system prompt, a dataset and a GitHub repository as tiles ------
+
+const sourceTypeMissing = (what: string): string => `${what} are not available yet: their node type is not switched on in the database.`;
+
+/** The payload keys a source tile writes, cleaned by that type's own cleaners; a null value is a key not written. */
+function sourcePayload(operation: string, type: string, patch: Record<string, unknown>, session?: string | null): Payload {
+  let cleaned: Record<string, Json | null>;
+  try {
+    cleaned = cleanExtras(type, patch);
+  } catch (cause) {
+    throw refuse(operation, cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  const payload: Payload = { step: true };
+  for (const [key, value] of Object.entries(cleaned)) if (value !== null) payload[key] = value;
+  if (session) payload.session = session;
+  return payload;
+}
+
+export interface SystemPromptInput {
+  /** Its name: the tile's title. */
+  name: string;
+  text: string;
+  scope: SystemPromptScope;
+  model?: string;
+  version?: string;
+  variables?: readonly PromptVariable[];
+  session?: string | null;
+}
+
+/** Instructions that apply across prompts: a tile with a name, its text and where it applies (`scope`: `all`, `session:<key>` or `prompts:<id,id>`). */
+export async function addSystemPromptTile(buildId: string, tree: readonly NodeTree[], input: SystemPromptInput): Promise<BuildNode> {
+  await requireLiveType("addSystemPromptTile", SYSTEM_PROMPT_TYPE, sourceTypeMissing("System prompts"));
+  const name = input.name.trim();
+  if (!name) throw refuse("addSystemPromptTile", "A system prompt needs its name.");
+  if (name.length > TITLE_MAX) throw refuse("addSystemPromptTile", `A name is at most ${TITLE_MAX} characters.`);
+  if (input.scope.kind === "prompts") {
+    const known = new Set(flattenSteps(buildSteps(tree)).filter((step) => step.kind === "prompt").map((step) => step.id));
+    if (input.scope.ids.length === 0 || input.scope.ids.some((id) => !known.has(id))) throw refuse("addSystemPromptTile", "Choose prompts that are in this build.");
+  }
+  const payload = sourcePayload("addSystemPromptTile", SYSTEM_PROMPT_TYPE, { text: input.text, scope: scopeValue(input.scope), model: input.model, version: input.version, variables: input.variables ?? [] }, input.session);
+  return placeTopNode(buildId, tree, { type: SYSTEM_PROMPT_TYPE, title: name, payload: payload as Json });
+}
+
+export interface DatasetInput {
+  name: string;
+  description: string;
+  use?: DatasetUse | null;
+  format?: string;
+  recordCount?: number | string | null;
+  columns?: readonly string[] | string;
+  source?: string;
+  sample?: readonly string[] | string;
+  licence?: string;
+  /** Only kept when `use` is retrieval. */
+  chunkStrategy?: string;
+  chunkSize?: number | string | null;
+  chunkOverlap?: number | string | null;
+  embeddingModel?: string;
+  session?: string | null;
+}
+
+/** Data used for training, evaluation or retrieval: a tile with a name, a description and what is known of it. The chunking keys are kept only for retrieval. */
+export async function addDatasetTile(buildId: string, tree: readonly NodeTree[], input: DatasetInput): Promise<BuildNode> {
+  await requireLiveType("addDatasetTile", DATASET_TYPE, sourceTypeMissing("Datasets"));
+  const name = input.name.trim();
+  if (!name) throw refuse("addDatasetTile", "A dataset needs its name.");
+  if (name.length > TITLE_MAX) throw refuse("addDatasetTile", `A name is at most ${TITLE_MAX} characters.`);
+  const retrieval = input.use === "retrieval";
+  const payload = sourcePayload(
+    "addDatasetTile",
+    DATASET_TYPE,
+    {
+      description: input.description,
+      use: input.use ?? null,
+      format: input.format,
+      record_count: input.recordCount ?? null,
+      columns: input.columns ?? [],
+      source: input.source,
+      sample: input.sample ?? [],
+      licence: input.licence,
+      ...(retrieval ? { chunk_strategy: input.chunkStrategy, chunk_size: input.chunkSize ?? null, chunk_overlap: input.chunkOverlap ?? null, embedding_model: input.embeddingModel } : null),
+    },
+    input.session,
+  );
+  return placeTopNode(buildId, tree, { type: DATASET_TYPE, title: name, payload: payload as Json });
+}
+
+export interface RepoInput {
+  url: string;
+  ownership: RepoOwnership;
+  description?: string;
+  /** What GitHub said when the URL was entered; absent when it could not be reached. */
+  fetched?: RepoFetched | null;
+  /** Third-party only. */
+  author?: string;
+  usage?: readonly RepoUsage[];
+  modifications?: string;
+  /** Your own repository only (created here, or yours already). */
+  visibility?: RepoVisibility | null;
+  generatedWith?: string | null;
+  deployedUrl?: string;
+  pin?: { kind: RepoPinKind; value: string } | null;
+  path?: string;
+  keyFiles?: readonly string[] | string;
+  run?: readonly string[] | string;
+  session?: string | null;
+}
+
+/**
+ * A GitHub repository used in the build, owned by the maker or by a third party. The URL alone makes a valid tile; what GitHub
+ * said (`stars`, `default_branch`, `language`, `licence_spdx`, `pushed_at`, `fetched_at`) is kept when it was retrieved. The
+ * author, usage and modifications belong to a third party's repository; visibility, "generated with" and the deployed URL to
+ * the maker's own. A run instruction that looks as if it holds a key's value is refused.
+ */
+export async function addRepoTile(buildId: string, tree: readonly NodeTree[], input: RepoInput): Promise<BuildNode> {
+  await requireLiveType("addRepoTile", REPO_TYPE, sourceTypeMissing("GitHub repositories"));
+  const parsed = parseRepoUrl(input.url);
+  if (!parsed) throw refuse("addRepoTile", "A repository URL looks like github.com/owner/name.");
+  const third = input.ownership === "third_party";
+  const fetched = input.fetched;
+  const payload = sourcePayload(
+    "addRepoTile",
+    REPO_TYPE,
+    {
+      url: parsed.url,
+      ownership: input.ownership,
+      description: input.description,
+      ...(fetched ? { stars: fetched.stars, default_branch: fetched.defaultBranch, language: fetched.language, licence_spdx: fetched.licenceSpdx, licence_name: fetched.licenceName, pushed_at: fetched.pushedAt, fetched_at: fetched.fetchedAt } : null),
+      ...(third ? { author: input.author?.trim() || parsed.owner, usage: input.usage ?? [], modifications: input.modifications } : { visibility: input.visibility ?? null, generated_with: input.generatedWith, deployed_url: input.deployedUrl }),
+      pin: input.pin ?? null,
+      path: input.path,
+      key_files: input.keyFiles ?? [],
+      run: input.run ?? [],
+    },
+    input.session,
+  );
+  return placeTopNode(buildId, tree, { type: REPO_TYPE, title: null, payload: payload as Json });
 }
 
 /** The finished thing. */

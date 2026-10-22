@@ -442,8 +442,8 @@ describe("CA-14 P5 · the Add sheet on a phone", () => {
     const sheet = await screen.findByTestId("add-sheet");
     const ask = within(sheet).getByRole("radiogroup", { name: "Add to which session?" });
     expect(within(ask).getAllByRole("radio").map((row) => row.getAttribute("aria-checked"))).toEqual(["false", "true"]);
-    expect(within(sheet).queryByText("Agent or team")).toBeNull();
+    expect(within(sheet).queryByText("Agent")).toBeNull();
     fireEvent.click(within(ask).getAllByRole("radio")[0]);
-    expect(await within(sheet).findByText("Agent or team")).toBeTruthy();
+    expect(await within(sheet).findByText("Agent")).toBeTruthy();
   });
 });

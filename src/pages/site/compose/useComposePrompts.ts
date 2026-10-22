@@ -57,6 +57,12 @@ import {
   addTool,
   addToolTile as addToolStep,
   type ToolTileInput,
+  addSystemPromptTile as addSystemPromptStep,
+  addDatasetTile as addDatasetStep,
+  addRepoTile as addRepoStep,
+  type SystemPromptInput,
+  type DatasetInput,
+  type RepoInput,
   addUse,
   dismissSuggestion,
   madeFileNamesOf,
@@ -240,6 +246,10 @@ export interface ComposePrompts {
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
   addToolTile: (input: ToolTileInput) => Promise<string | null>;
+  /** CA-15 P9: a system prompt, a dataset and a GitHub repository as tiles; each resolves its id, or null if it failed. */
+  addSystemPromptTile: (input: SystemPromptInput) => Promise<string | null>;
+  addDatasetTile: (input: DatasetInput) => Promise<string | null>;
+  addRepoTile: (input: RepoInput) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
   /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
@@ -692,6 +702,23 @@ export function useComposePrompts({
         return null;
       });
 
+  /** CA-15 P9: one queued write for a tile whose writer is `write`; the id of what it made, or null with the reason said. */
+  const addSourceTile = <Input,>(write: (build: string, tree: readonly NodeTree[], input: Input) => Promise<BuildNode>, failure: string) => (input: Input) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await write(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed(failure)(cause);
+        return null;
+      });
+  const addSystemPromptTile = addSourceTile(addSystemPromptStep, "Couldn't add that system prompt. Try again.");
+  const addDatasetTile = addSourceTile(addDatasetStep, "Couldn't add that dataset. Try again.");
+  const addRepoTile = addSourceTile(addRepoStep, "Couldn't add that repository. Try again.");
+
   const addToolTile = (input: ToolTileInput) =>
     nodes
       .run(async () => {
@@ -963,5 +990,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

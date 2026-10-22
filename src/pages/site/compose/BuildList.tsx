@@ -49,7 +49,7 @@ import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, TILE_COPY, DecisionTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
+import { CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, startsLine } from "@/components/build/tileBodies";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -62,6 +62,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { SessionGroup, Step } from "@/lib/build/graph";
+import { footerFactsOf, typeLineOf } from "@/lib/build/tileLines";
 import { checkStatus, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
@@ -1338,6 +1339,21 @@ function DecisionCard({ step, index, last, props }: { step: Step; index: number;
   return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" eyebrow="Decision · runs in the app" body={<DecisionTileBody step={step} />} foot={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
 }
 
+/** CA-15 P9: a system prompt as a tile: its text in two lines, its variables as chips, and what it applies to. */
+function SystemPromptCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="System prompt" eyebrow={typeLineOf(step)} body={<SystemPromptTileBody step={step} />} foot={<TileFooter facts={footerFactsOf(step)} />} />;
+}
+
+/** CA-15 P9: a dataset as a tile: what it is, its columns, and its format, columns and records. */
+function DatasetCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Dataset" eyebrow={typeLineOf(step)} body={<DatasetTileBody step={step} />} foot={<TileFooter facts={footerFactsOf(step)} />} />;
+}
+
+/** CA-15 P9: a GitHub repository as a tile: `owner/name`, what it is for, how it was used, and a link to it. */
+function RepoCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="GitHub repository" eyebrow={typeLineOf(step)} body={<RepoTileBody step={step} />} foot={<TileFooter facts={footerFactsOf(step)} link={step.repo ? <OpenOnGitHub url={step.repo.url} /> : null} />} />;
+}
+
 /** CA-12 P8: a file as a tile: its type, name and size, and a preview. */
 function FileCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   return <PlainCard step={step} index={index} last={last} props={props} noun="File" eyebrow="File · added by maker" body={<FileTileBody step={step} />} />;
@@ -1888,6 +1904,12 @@ export function BuildList(props: BuildListProps) {
       <ToolCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "decision" ? (
       <DecisionCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "system_prompt" ? (
+      <SystemPromptCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "dataset" ? (
+      <DatasetCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "repo" ? (
+      <RepoCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "file" ? (
       <FileCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "code" ? (

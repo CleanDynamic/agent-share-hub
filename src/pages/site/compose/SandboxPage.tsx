@@ -66,7 +66,10 @@ import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
+import { AddDatasetDialog } from "./AddDatasetDialog";
 import { AddDecisionDialog } from "./AddDecisionDialog";
+import { AddRepoDialog } from "./AddRepoDialog";
+import { AddSystemPromptDialog } from "./AddSystemPromptDialog";
 import type { DecisionInput } from "@/lib/build/graph";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAdd } from "./BuildList";
@@ -202,6 +205,16 @@ export function SandboxPage() {
   const decisionType = useQuery({ queryKey: ["build", "getNodeType", "decision"], queryFn: () => getNodeType("decision"), staleTime: Infinity });
   const decisionAvailable = Boolean(decisionType.data?.is_active);
   const [addDecisionOpen, setAddDecisionOpen] = useState(false);
+  /** CA-15 P9: Add › System prompt, Dataset and GitHub repository, each disabled until its node type is live. */
+  const systemPromptType = useQuery({ queryKey: ["build", "getNodeType", "system_prompt"], queryFn: () => getNodeType("system_prompt"), staleTime: Infinity });
+  const datasetType = useQuery({ queryKey: ["build", "getNodeType", "dataset"], queryFn: () => getNodeType("dataset"), staleTime: Infinity });
+  const repoType = useQuery({ queryKey: ["build", "getNodeType", "repo"], queryFn: () => getNodeType("repo"), staleTime: Infinity });
+  const systemPromptAvailable = Boolean(systemPromptType.data?.is_active);
+  const datasetAvailable = Boolean(datasetType.data?.is_active);
+  const repoAvailable = Boolean(repoType.data?.is_active);
+  const [addSystemPromptOpen, setAddSystemPromptOpen] = useState(false);
+  const [addDatasetOpen, setAddDatasetOpen] = useState(false);
+  const [addRepoOpen, setAddRepoOpen] = useState(false);
   /** CA-02 P4: "Add as an agent" opens the dialog with the tool and the field's text, and waits to hear it was saved. */
   const [agentSeed, setAgentSeed] = useState<AgentSeed | null>(null);
   const seedDone = useRef<((saved: boolean) => void) | null>(null);
@@ -865,6 +878,19 @@ export function SandboxPage() {
     [prompts, afterWrite, sessionToWrite],
   );
 
+  /** CA-15 P9: a system prompt, a dataset or a repository is placed at the end of the current session and selected, as a tool is. */
+  const onAddSourceTile = useCallback(
+    async (add: (session: string | null) => Promise<string | null>) => {
+      const session = await sessionToWrite();
+      const id = await add(session);
+      if (!id) return;
+      setSelectedId(id);
+      setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+      afterWrite();
+    },
+    [afterWrite, sessionToWrite],
+  );
+
   const onAddAgentTo = useCallback(
     async (teamId: string) => {
       const team = steps.find((candidate) => candidate.id === teamId);
@@ -1397,6 +1423,12 @@ export function SandboxPage() {
     onAddAgent: () => setAddAgentOpen(true),
     onAddDecision: () => setAddDecisionOpen(true),
     decisionAvailable,
+    onAddSystemPrompt: () => setAddSystemPromptOpen(true),
+    onAddDataset: () => setAddDatasetOpen(true),
+    onAddRepo: () => setAddRepoOpen(true),
+    systemPromptAvailable,
+    datasetAvailable,
+    repoAvailable,
     onAddManual: () => setAddManualOpen(true),
     onAddCode: () => setAddCodeOpen(true),
     onAddCheck: () => setAddCheckOpen(true),
@@ -1726,6 +1758,15 @@ export function SandboxPage() {
         }}
         onAdd={(input) => void onAddDecision(input)}
       />
+      <AddSystemPromptDialog
+        open={addSystemPromptOpen}
+        onOpenChange={setAddSystemPromptOpen}
+        prompts={flatten(steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions")).map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }))}
+        session={currentSession}
+        onAdd={(input) => void onAddSourceTile((session) => prompts.addSystemPromptTile({ ...input, session }))}
+      />
+      <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void onAddSourceTile((session) => prompts.addDatasetTile({ ...input, session }))} />
+      <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void onAddSourceTile((session) => prompts.addRepoTile({ ...input, session }))} />
       <AddManualStepDialog
         open={addManualOpen}
         onOpenChange={setAddManualOpen}

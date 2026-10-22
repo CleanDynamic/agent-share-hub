@@ -12,7 +12,7 @@ vi.mock("./nodes", () => ({
 const getNodeType = vi.fn();
 vi.mock("./nodeTypes", () => ({ getNodeType: (...a: unknown[]) => getNodeType(...a) }));
 
-import { CONNECTION_LABEL, addCheck, addResultTile, addToolTile, buildSteps, setExtras } from "./graph";
+import { CONNECTION_LABEL, addCheck, addDatasetTile, addRepoTile, addResultTile, addSystemPromptTile, addToolTile, buildSteps, setExtras } from "./graph";
 import type { Json } from "@/integrations/supabase/types";
 
 import type { BuildNode, NodeTree } from "./types";
@@ -224,5 +224,97 @@ describe("an agent's and a team's extras read back on the step (CA-15 P7)", () =
     expect(agent.output).toBeUndefined();
     expect(agent.sample).toBeUndefined();
     expect(team.pattern).toBeUndefined();
+  });
+});
+
+describe("the three source tiles (CA-15 P9)", () => {
+  const prompts = [node({ id: "p1", position: 1, payload: { text: "one two", session: "s1" } }), node({ id: "p2", position: 2, payload: { text: "three", session: "s2" } })];
+
+  it("each is refused, saying so, when its node type is not live", async () => {
+    getNodeType.mockResolvedValue(null);
+    await expect(addSystemPromptTile(BUILD, [], { name: "Voice", text: "Be brief", scope: { kind: "all" } })).rejects.toThrow(/System prompts are not available yet/);
+    await expect(addDatasetTile(BUILD, [], { name: "Orders", description: "d" })).rejects.toThrow(/Datasets are not available yet/);
+    await expect(addRepoTile(BUILD, [], { url: "github.com/acme/shop", ownership: "owned" })).rejects.toThrow(/GitHub repositories are not available yet/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("a system prompt keeps its name as the title, and its text, scope and optional keys in the payload", async () => {
+    await addSystemPromptTile(BUILD, prompts, { name: " Brand voice ", text: " Be brief ", scope: { kind: "prompts", ids: ["p1"] }, model: "Opus 5.5", version: "v2", variables: [{ name: "name", description: "First name" }], session: "s1" });
+    const row = upsertNode.mock.calls.at(-1)?.[0] as { type: string; title: string };
+    expect(row).toMatchObject({ type: "system_prompt", title: "Brand voice" });
+    expect(written()).toMatchObject({ step: true, text: "Be brief", scope: "prompts:p1", model: "Opus 5.5", version: "v2", session: "s1" });
+  });
+
+  it("a system prompt writes no optional key it was not given", async () => {
+    await addSystemPromptTile(BUILD, prompts, { name: "Voice", text: "Be brief", scope: { kind: "all" } });
+    expect(written()).toEqual({ step: true, text: "Be brief", scope: "all" });
+  });
+
+  it("a system prompt is refused without a name or text, and for prompts that are not in the build", async () => {
+    await expect(addSystemPromptTile(BUILD, prompts, { name: " ", text: "x", scope: { kind: "all" } })).rejects.toThrow("A system prompt needs its name.");
+    await expect(addSystemPromptTile(BUILD, prompts, { name: "n", text: " ", scope: { kind: "all" } })).rejects.toThrow("A system prompt needs its text.");
+    await expect(addSystemPromptTile(BUILD, prompts, { name: "n", text: "x", scope: { kind: "prompts", ids: ["nope"] } })).rejects.toThrow("Choose prompts that are in this build.");
+    await expect(addSystemPromptTile(BUILD, prompts, { name: "n", text: "x", scope: { kind: "prompts", ids: [] } })).rejects.toThrow("Choose prompts that are in this build.");
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("says how many prompts a system prompt applies to: all, one session's, or the chosen ones", () => {
+    const tree = [
+      ...prompts,
+      node({ id: "sp-all", position: 3, type: "system_prompt", payload: { step: true, text: "a", scope: "all" } }),
+      node({ id: "sp-session", position: 4, type: "system_prompt", payload: { step: true, text: "b", scope: "session:s2" } }),
+      node({ id: "sp-some", position: 5, type: "system_prompt", payload: { step: true, text: "c", scope: "prompts:p1,gone" } }),
+    ];
+    const reach = Object.fromEntries(buildSteps(tree).filter((step) => step.kind === "system_prompt").map((step) => [step.id, step.systemPrompt?.appliesTo]));
+    expect(reach).toEqual({ "sp-all": 2, "sp-session": 1, "sp-some": 1 });
+  });
+
+  it("a dataset keeps its description and what it is given, and the chunking keys only for retrieval", async () => {
+    await addDatasetTile(BUILD, [], { name: "Orders", description: " Last year's orders ", use: "evaluation", format: "CSV", recordCount: "1,200", columns: "id\ntotal", chunkStrategy: "paragraph", chunkSize: 512 });
+    expect(written()).toEqual({ step: true, description: "Last year's orders", use: "evaluation", format: "CSV", record_count: 1200, columns: ["id", "total"] });
+    await addDatasetTile(BUILD, [], { name: "Docs", description: "d", use: "retrieval", chunkStrategy: "paragraph", chunkSize: 512, chunkOverlap: 64, embeddingModel: "text-embedding" });
+    expect(written()).toMatchObject({ use: "retrieval", chunk_strategy: "paragraph", chunk_size: 512, chunk_overlap: 64, embedding_model: "text-embedding" });
+  });
+
+  it("a dataset is refused without a name or a description, or with a record count that is not a whole number", async () => {
+    await expect(addDatasetTile(BUILD, [], { name: "", description: "d" })).rejects.toThrow("A dataset needs its name.");
+    await expect(addDatasetTile(BUILD, [], { name: "n", description: " " })).rejects.toThrow("A dataset needs its description.");
+    await expect(addDatasetTile(BUILD, [], { name: "n", description: "d", recordCount: "1.5" })).rejects.toThrow("The record count is a whole number, 0 or more.");
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("a repository needs only a URL: it is stored in its plain form, with the third party's author defaulting to the owner", async () => {
+    await addRepoTile(BUILD, [], { url: "www.github.com/acme/shop.git", ownership: "third_party" });
+    expect(written()).toEqual({ step: true, url: "https://github.com/acme/shop", ownership: "third_party", author: "acme" });
+  });
+
+  it("a repository keeps what GitHub said, and splits the third-party keys from the maker's own", async () => {
+    const fetched = { stars: 10, defaultBranch: "main", language: "Go", licenceSpdx: "MIT", licenceName: "MIT License", pushedAt: "2026-09-01T00:00:00Z", fetchedAt: "2026-10-07T09:00:00Z" };
+    await addRepoTile(BUILD, [], { url: "github.com/acme/shop", ownership: "third_party", fetched, usage: ["copied"], modifications: "Changed the build", visibility: "private", pin: { kind: "tag", value: "v1" } });
+    expect(written()).toMatchObject({ stars: 10, default_branch: "main", language: "Go", licence_spdx: "MIT", fetched_at: "2026-10-07T09:00:00Z", usage: ["copied"], modifications: "Changed the build", pin: { kind: "tag", value: "v1" } });
+    expect(written().visibility).toBeUndefined();
+    await addRepoTile(BUILD, [], { url: "github.com/me/mine", ownership: "owned", visibility: "private", generatedWith: "Lovable", deployedUrl: "mine.example.com", usage: ["copied"], author: "someone" });
+    expect(written()).toMatchObject({ ownership: "owned", visibility: "private", generated_with: "Lovable", deployed_url: expect.stringContaining("mine.example.com") });
+    expect(written().usage).toBeUndefined();
+    expect(written().author).toBeUndefined();
+  });
+
+  it("a repository is refused for a URL that is not GitHub's, and for a run instruction that holds a key's value, which is never stored", async () => {
+    await expect(addRepoTile(BUILD, [], { url: "gitlab.com/acme/shop", ownership: "owned" })).rejects.toThrow("A repository URL looks like github.com/owner/name.");
+    await expect(addRepoTile(BUILD, [], { url: "github.com/acme/shop", ownership: "owned", run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] })).rejects.toThrow(/looks as if it holds a key's value/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("reads each back as a tile only when it says step, with its facts", () => {
+    const steps = buildSteps([
+      node({ id: "sp", position: 1, type: "system_prompt", payload: { step: true, text: "Be brief", scope: "all", version: "v2" } }),
+      node({ id: "ds", position: 2, type: "dataset", title: "Orders", payload: { step: true, description: "d", use: "training" } }),
+      node({ id: "rp", position: 3, type: "repo", payload: { step: true, url: "github.com/acme/shop", ownership: "owned" } }),
+      node({ id: "old", position: 4, type: "dataset", payload: { description: "an older node, not a tile" } }),
+    ]);
+    expect(steps.map((step) => step.kind)).toEqual(["system_prompt", "dataset", "repo"]);
+    expect(steps[0].systemPrompt).toMatchObject({ version: "v2", appliesTo: 0 });
+    expect(steps[1].dataset).toMatchObject({ use: "training" });
+    expect(steps[2].repo).toMatchObject({ owner: "acme", name: "shop", ownership: "owned" });
   });
 });

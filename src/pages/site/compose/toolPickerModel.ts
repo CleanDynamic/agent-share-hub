@@ -23,7 +23,7 @@ import { AI_TOOLS, APPS, RUNTIME_GROUPS, RUNTIME_HEADING, RUNTIME_TOOLS, exclude
 const ADD_NAME: Record<StepKey, string> = {
   prompt: "Prompt",
   session: "Session",
-  agent: "Agent or team",
+  agent: "Agent",
   file: "File",
   tool: "Tool",
   manual: "Manual step",
