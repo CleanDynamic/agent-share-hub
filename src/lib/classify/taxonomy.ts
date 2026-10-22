@@ -521,7 +521,7 @@ Formal methods and theory #formal | formal methods, theory, theoretical computer
   Proof assistants | Lean, Coq, Isabelle
   Algorithm design | algorithms, complexity
   Optimisation | optimization, operations research
-Accessibility engineering #a11y | accessibility, a11y
+Accessibility engineering #accessibility | accessibility, a11y
   Assistive technology | screen reader, assistive tech
   Accessibility auditing | WCAG, a11y audit
   Alternative text and captions | alt text, captions, subtitles

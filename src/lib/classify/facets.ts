@@ -78,22 +78,27 @@ const add = (out: Set<string>, facet: Facet, id: string) => {
   if (!id.startsWith(CUSTOM_PREFIX) && isKnown(facet, id)) out.add(`${facet}:${id}`);
 };
 
-/** The `facets` array: `<facet>:<id>`; a Field value brings every ancestor; custom entries never appear; a dispute replaces the derived value. */
+/** A value and every ancestor of it: a Field brings its Domain or Area, a Task its group, a Setting its group, a tool its group. */
+const addWithAncestors = (out: Set<string>, facet: Facet, id: string) => {
+  add(out, facet, id);
+  for (const ancestor of ancestorsOf(id, facet)) add(out, facet, ancestor);
+};
+
+/**
+ * The `facets` array: `<facet>:<id>`. A Field value brings every ancestor, so filtering by an Area or a Domain finds
+ * everything beneath it; Task, Setting and Tools and stack bring their group the same way, so a group's count is the
+ * number of builds and not a sum. Custom entries never appear. A dispute replaces the derived value.
+ */
 export function computeFacets(c: Classification): string[] {
   const out = new Set<string>();
   const { declared } = c;
-  for (const entry of declared.field) {
-    if (isCustomEntry(entry)) continue;
-    add(out, "field", entry.id);
-    for (const ancestor of ancestorsOf(entry.id)) add(out, "field", ancestor);
+  for (const facet of ["field", "task", "setting", "stack"] as const) {
+    for (const entry of declared[facet]) if (!isCustomEntry(entry)) addWithAncestors(out, facet, entry.id);
   }
-  for (const facet of ["task", "setting", "data"] as const) {
-    for (const entry of declared[facet]) if (!isCustomEntry(entry)) add(out, facet, entry.id);
-  }
+  for (const entry of declared.data) if (!isCustomEntry(entry)) add(out, "data", entry.id);
   if (declared.age) add(out, "age", declared.age);
-  for (const entry of declared.stack) if (!isCustomEntry(entry)) add(out, "stack", entry.id);
   for (const facet of DERIVED_FACETS) {
-    for (const id of shownValues(c, facet).values) add(out, facet, id);
+    for (const id of shownValues(c, facet).values) addWithAncestors(out, facet, id);
   }
   return [...out].sort();
 }

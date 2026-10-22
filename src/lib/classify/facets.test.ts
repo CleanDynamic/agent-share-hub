@@ -19,7 +19,7 @@ describe("computeFacets", () => {
     expect(facets).toEqual(["field:ai-ml", "field:ai-ml.retrieval", "field:ai-ml.retrieval.hybrid-search"]);
   });
 
-  it("covers the declared facets and keeps Task ids as they are", () => {
+  it("covers the declared facets, and a Task, Setting or tool brings its group", () => {
     const facets = computeFacets(
       classification({}, {
         task: [{ id: "analyse.text-analysis-nlp", primary: true }],
@@ -29,7 +29,12 @@ describe("computeFacets", () => {
         stack: [{ id: "applications.stata" }],
       }),
     );
-    expect(facets).toEqual(["age:18-and-over", "data:health-data", "setting:education.lecturer", "stack:applications.stata", "task:analyse.text-analysis-nlp"]);
+    expect(facets).toEqual(["age:18-and-over", "data:health-data", "setting:education", "setting:education.lecturer", "stack:applications", "stack:applications.stata", "task:analyse", "task:analyse.text-analysis-nlp"]);
+  });
+
+  it("counts a group once: two Tasks in one group give one group entry", () => {
+    const facets = computeFacets(classification({}, { task: [{ id: "create.writing", primary: true }, { id: "create.code" }] }));
+    expect(facets.filter((facet) => facet === "task:create")).toHaveLength(1);
   });
 
   it("never puts a custom entry or an unknown id in facets", () => {
