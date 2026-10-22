@@ -115,43 +115,6 @@ function readWriting(editor: Editor | null): Writing {
   return { post: focusedPost(editor.state), posts };
 }
 
-/** CA-07 P1: the row after the last post, as X ends a thread being written: the avatar at half strength, then the words. */
-function AddPostRow({ avatar, maker, phone, onAdd }: { avatar: number; maker: PreviewMaker | null; phone: boolean; onAdd: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      data-testid="add-post-row"
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={onAdd}
-      {...handlers}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: RAIL_GAP.desktop,
-        padding: 0,
-        border: 0,
-        borderRadius: 6,
-        background: "transparent",
-        cursor: "pointer",
-        textAlign: "left",
-        minWidth: 0,
-        minHeight: phone ? 44 : avatar,
-        ...ring(state.focusVisible),
-      }}
-    >
-      {/* Decorative: the maker's picture at half strength, or a plain circle, never initials too faint to read. */}
-      <span aria-hidden="true" data-ghost-avatar="" style={{ display: "inline-flex", opacity: DIMMED_OPACITY, flex: "none" }}>
-        {maker?.avatar ? (
-          <Avatar size={avatar} userId={maker.id ?? ""} name={maker.name ?? "You"} src={maker.avatar} />
-        ) : (
-          <span style={{ width: avatar, height: avatar, borderRadius: 999, background: t.avatarFill, display: "block" }} />
-        )}
-      </span>
-      <span data-ink={state.hovered ? "text2" : "label"} style={{ ...postType(phone).composer, color: state.hovered ? t.text2 : t.label }}>{NEXT_PLACEHOLDER}</span>
-    </button>
-  );
-}
 
 /** Whether a drag carries files. */
 function hasFiles(transfer: DataTransfer | null | undefined): boolean {
@@ -487,11 +450,8 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           />
         </div>
       </div>
-      {editor && writing.posts < MAX_THREAD_POSTS ? (
-        <AddPostRow avatar={avatar} maker={draft.maker} phone={phone} onAdd={() => addPostAtEnd(editor, setNotice)} />
-      ) : null}
       {/* Under the words, not the avatar, as X lines its toolbar up; a phone gives the toolbar the whole width. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, marginLeft: phone ? 0 : avatar + RAIL_GAP.desktop }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, marginLeft: phone ? 0 : avatar + RAIL_GAP.desktop }}>
         {notice ? (
           <p role="status" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
             {notice}

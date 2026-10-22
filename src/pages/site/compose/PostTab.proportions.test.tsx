@@ -106,35 +106,10 @@ describe("the posts not being written", () => {
 });
 
 describe("the row that adds a post", () => {
-  it("is a real button after the last post: the avatar at half strength and Add another post in the composer's size in --label", () => {
+  it("is gone: only the toolbar's + starts another post", () => {
     mount(doc(p("one")));
-    const ghost = screen.getByTestId("add-post-row");
-    expect(screen.getAllByRole("button", { name: "Add another post" })).toContain(ghost);
-    expect(ghost.tagName).toBe("BUTTON");
-    expect((ghost.firstElementChild as HTMLElement).style.opacity).toBe("0.5");
-    const words = ghost.lastElementChild as HTMLElement;
-    expect(words.style.fontSize).toBe("20px");
-    expect(words.getAttribute("data-ink")).toBe("label");
-  });
-
-  it("adds a post at the end, as the toolbar's + does, and the caret goes into it", () => {
-    const { editor } = mount(doc(p("one"), brk, p("two")));
-    focusAt(editor, 0);
-    fireEvent.click(screen.getByTestId("add-post-row"));
-    expect(postRuns(json(editor))).toHaveLength(3);
-    expect(editor.state.selection.$from.index(0)).toBe(4);
-  });
-
-  it("puts the caret in the last post when that post is still empty, rather than add another", () => {
-    const { editor } = mount(doc(p("one"), brk, p("")));
-    fireEvent.click(screen.getByTestId("add-post-row"));
-    expect(postRuns(json(editor))).toHaveLength(2);
-  });
-
-  it("is hidden once the thread holds ten posts", () => {
-    const content = Array.from({ length: MAX_THREAD_POSTS }, (_, at) => (at === 0 ? [p("1")] : [brk, p(String(at + 1))])).flat();
-    mount(doc(...content));
     expect(screen.queryByTestId("add-post-row")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Add another post" })).toHaveLength(1);
   });
 });
 
