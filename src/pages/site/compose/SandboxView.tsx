@@ -537,7 +537,7 @@ const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: 
 
 export function SandboxView(props: SandboxViewProps) {
   const phone = useIsPhone();
-  const { status, published, missing, save } = props;
+  const { status, published, save } = props;
 
   const [cardOpen, setCardOpen] = useState(false);
   const [cardField, setCardField] = useState<CardField | null>(null);
@@ -559,7 +559,6 @@ export function SandboxView(props: SandboxViewProps) {
   if (status === "notFound") return <NotFound />;
 
   const untitled = isUntitled(props.title);
-  const needs = missing.length > 0 && !published;
   // Map is for desktop; a phone is always the list.
   const lens: SandboxLens = phone ? "list" : props.lens;
 
@@ -580,15 +579,6 @@ export function SandboxView(props: SandboxViewProps) {
     }, 0);
   };
 
-  const onMissing = (key: SandboxMissingItem["key"]) => {
-    if (key.startsWith("runtime-")) return;
-    if (key === "evidence") return openPost();
-    if (key === "title") return openCard("title");
-    if (key === "outcome") return openCard("summary");
-    // CA-10: the field is focused in this tap; the Build panel takes focus only when there is no field to give it to.
-    if (props.onAddPromptFocus?.() === true) return;
-    buildRef.current?.focus();
-  };
 
   const statusLine = (
     <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
@@ -614,19 +604,6 @@ export function SandboxView(props: SandboxViewProps) {
       {props.threadNote ? ` · ${props.threadNote}` : null}
       {/* CA-03 P8: what kind of build it is, once it has more than one step. */}
       {props.summary ? <span data-testid="sandbox-summary">{` · ${props.summary}`}</span> : null}
-      {needs ? (
-        <>
-          {" · Missing: "}
-          {missing.map((item, index) => (
-            <span key={item.key}>
-              {index > 0 ? ", " : null}
-              <TextButton underline onClick={() => onMissing(item.key)} target={phone} style={underlined}>
-                {item.label}
-              </TextButton>
-            </span>
-          ))}
-        </>
-      ) : null}
     </p>
   );
 
