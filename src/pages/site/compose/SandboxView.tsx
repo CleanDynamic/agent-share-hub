@@ -6,8 +6,8 @@
    Card (drawn by `SandboxCard`, UI-P94), the same order of parts and the same accessible names. The page and
    the dev page choose with `useLook()`, and hand this the refined forks of the panels.
 
-   THE TITLE ROW, under a hairline: the draft's title 20/500 and its status line 12.5 `--text2` with the missing part
-   underlined; List / Map with "Map is now available" under it; Card and Preview (secondary 30) and Publish (primary
+   THE TITLE ROW, under a hairline: the draft's title 20/500 and its status line 12.5 `--text2`; List / Map with
+   "Map is now available" under it; Card and Preview (secondary 30) and Publish (primary
    30), the view's one primary. THE COLUMNS, a wrapping row with gap 24: Sources on the surface with a hairline on its
    right (`flex: 1 1 216px`, max 232), Build (`flex: 999 1 480px`), Details as a module (`flex: 1 1 280px`, max 300).
    A phone keeps today's order: the title, the Build panel with Sources and Details behind two buttons, and the action
@@ -15,8 +15,8 @@
 
    PT-05: THE POST SITS ABOVE THE BUILD, as X's composer sits above a timeline: the `post` slot (the thread written as
    one page) heads the Build column, above the first prompt, with a hairline under it. There are no tabs: the post and
-   the build are one page. The Card's Cover is one line and a button that comes here; "a cover picture or video" in
-   Missing does too, scrolling to the post and putting the caret in it.
+   the build are one page. The Card's Cover is one line and a button that comes here, scrolling to the post and putting
+   the caret in it.
 
    MAP (UI-P94, `refined/{dusk,noon}/composer-map.html`). Sources folds to its rail as today, drawn as a module 52
    wide (padding `8px 0`): ghost 40-wide buttons, 36 high, 44 with a count under the glyph (10.5/500, tabular),
