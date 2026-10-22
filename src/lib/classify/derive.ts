@@ -61,6 +61,8 @@ export interface GapQuestion {
   text: string;
   action: QuestionAction;
   actionLabel: string;
+  /** The tile the question is about, when it is about one: the agent that never ran, the tool with a paid plan. */
+  tileId?: string;
 }
 
 export interface Derivation {
@@ -473,10 +475,10 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
   }
   const hasRunEvidence = resultTiles.length > 0 || checks.some((tile) => (tile.step?.check?.runs?.length ?? 0) > 0 || truthy(tile.payload.runs, tile.payload.cases));
   for (const tile of scheduled) {
-    if (!hasRunEvidence) ask({ id: `trigger-no-run:${tile.id}`, text: "An agent runs on a schedule or an event, but nothing shows it ran. Add a result or a check.", action: "add-run", actionLabel: "Add a result" });
+    if (!hasRunEvidence) ask({ id: `trigger-no-run:${tile.id}`, text: "An agent runs on a schedule or an event, but nothing shows it ran. Add a result or a check.", action: "add-run", actionLabel: "Add a result", tileId: tile.id });
   }
   for (const tile of paid) {
-    if (!hasCostEntry(tiles, build)) ask({ id: `paid-plan-no-cost:${tile.id}`, text: "A tool names a paid plan, but no cost is given. What does it cost to run?", action: "add-cost", actionLabel: "Add a cost" });
+    if (!hasCostEntry(tiles, build)) ask({ id: `paid-plan-no-cost:${tile.id}`, text: "A tool names a paid plan, but no cost is given. What does it cost to run?", action: "add-cost", actionLabel: "Add a cost", tileId: tile.id });
   }
   if (codes.length === 0) {
     for (const tile of prompts) {

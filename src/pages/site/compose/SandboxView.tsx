@@ -1012,7 +1012,7 @@ export function SandboxView(props: SandboxViewProps) {
           }}
         >
           <Button variant="ghost" size={48} fontSize={14} onClick={() => openCard(null)}>
-            Card
+            Classification Card
           </Button>
           <LinkButton to={previewTo} phone>
             Preview
@@ -1046,7 +1046,7 @@ export function SandboxView(props: SandboxViewProps) {
         {lensSwitch}
         <div style={{ display: "flex", gap: 8, alignSelf: "flex-start", paddingTop: 2 }}>
           <Button variant="secondary" size={32} fontSize={13} onClick={() => openCard(null)} style={{ height: 30 }}>
-            Card
+            Classification Card
           </Button>
           <LinkButton to={previewTo} phone={false}>
             Preview

@@ -59,6 +59,7 @@ import { useComposePage } from "./ComposePage";
 import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
+import { useClassificationCard } from "./useClassificationCard";
 import { AddMenu, SandboxView, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
@@ -983,6 +984,30 @@ export function SandboxPage() {
     [ensureBuild, nodes, prompts, showPending],
   );
   const onAddResult = useCallback(() => setAddResultOpen(true), []);
+
+  /* CA-16: the Classification Card's data. Its actions send the maker to the tile or the dialog that answers a question. */
+  const classificationCard = useClassificationCard({
+    buildId,
+    build,
+    tree,
+    title: viewProps.title,
+    description: viewProps.description,
+    owner: compose.isOwner,
+    ensureBuild,
+  });
+  const classification = useMemo(
+    () => ({
+      ...classificationCard,
+      onSelectSource: (id: string) => setSelectedId(id),
+      onAction: (action: "add-code" | "add-run" | "add-cost" | "add-tool", question: { tileId?: string }) => {
+        if (action === "add-code") setAddCodeOpen(true);
+        else if (action === "add-run") setAddResultOpen(true);
+        else if (action === "add-tool") setAddToolOpen(true);
+        else if (question.tileId) setSelectedId(question.tileId);
+      },
+    }),
+    [classificationCard],
+  );
   useEffect(() => {
     if (!ringed) return;
     document.querySelector(`[data-tile-id="${ringed.id}"]`)?.scrollIntoView?.({ block: "center" });
@@ -1421,6 +1446,7 @@ export function SandboxPage() {
       <PartRegistryProvider registry={registry}>
       <SandboxView
         {...viewProps}
+        classification={classification}
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}
         save={mergeSave(viewProps.save, thread.save)}

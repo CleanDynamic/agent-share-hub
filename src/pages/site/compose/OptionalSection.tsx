@@ -66,11 +66,11 @@ export function OptionalRow({ label, value, count, phone, rowId, defaultOpen = f
   };
   return (
     <div style={{ borderBottom: `1px solid ${t.hairlineModule}` }} data-row={id}>
-      <button type="button" aria-expanded={open} aria-controls={`${id}-panel`} id={`${id}-button`} onClick={() => setOpen((v) => !v)} {...handlers} style={row}>
+      <button type="button" aria-expanded={open} aria-controls={`${id}-panel`} id={`${id}-button`} aria-labelledby={`${id}-label`} aria-describedby={open ? undefined : `${id}-value${count ? ` ${id}-count` : ""}`} onClick={() => setOpen((v) => !v)} {...handlers} style={row}>
         <Glyph name={open ? "chevd" : "chev"} size={16} color={t.label} />
-        <span style={{ flexShrink: 0 }}>{label}</span>
-        <span style={{ ...text(12.5, 400, unset ? t.label : t.text2), ...ellipsis, flexGrow: 1, minWidth: 0, textAlign: "right" }}>{open ? "" : shown}</span>
-        {count && !open ? <span style={{ ...text(11.5, 400, t.label), flexShrink: 0, whiteSpace: "nowrap" }}>{count}</span> : null}
+        <span id={`${id}-label`} style={{ flexShrink: 0 }}>{label}</span>
+        <span id={`${id}-value`} style={{ ...text(12.5, 400, unset ? t.label : t.text2), ...ellipsis, flexGrow: 1, minWidth: 0, textAlign: "right" }}>{open ? "" : shown}</span>
+        {count && !open ? <span id={`${id}-count`} style={{ ...text(11.5, 400, t.label), flexShrink: 0, whiteSpace: "nowrap" }}>{count}</span> : null}
       </button>
       {open ? (
         <div id={`${id}-panel`} role="region" aria-labelledby={`${id}-button`} style={{ padding: phone ? "4px 4px 16px" : "4px 4px 16px 24px", display: "flex", flexDirection: "column", gap: 12 }}>

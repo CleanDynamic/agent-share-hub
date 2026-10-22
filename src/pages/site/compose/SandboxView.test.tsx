@@ -106,12 +106,15 @@ describe("SandboxView frame", () => {
     expect(addEntries({ checkable: true }).find((item) => item.key === "check")?.enabled).toBe(false);
   });
 
-  it("opens the Card from its button with the six sections' fields", () => {
+  it("opens the Classification Card from its button with the title, the preview and the Optional rows closed", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
     const card = screen.getByTestId("sandbox-card");
-    for (const label of ["Title", "One-line summary", "Who it's for"]) expect(within(card).getByLabelText(label)).toBeTruthy();
-    expect(within(card).getByText("Cover")).toBeTruthy();
+    expect(within(card).getByLabelText("Title")).toBeTruthy();
+    expect(within(card).getByTestId("card-preview")).toBeTruthy();
+    for (const name of ["Summary", "Build details"]) expect(within(card).getByRole("button", { name }).getAttribute("aria-expanded")).toBe("false");
+    expect(within(card).queryByText("Cover")).toBeNull();
+    expect(within(card).queryByLabelText("Who it's for")).toBeNull();
   });
 });
 
@@ -242,7 +245,7 @@ describe("the refined look (UI-P93)", () => {
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
     expect(publish.getAttribute("style")).toMatch(/height:\s*30px/);
-    expect(screen.getByRole("button", { name: "Card" }).getAttribute("data-variant")).toBe("secondary");
+    expect(screen.getByRole("button", { name: "Classification Card" }).getAttribute("data-variant")).toBe("secondary");
     expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*30px/);
     expect(markup()).toContain("padding-bottom:20px;border-bottom:1px solid var(--hairline)");
   });
@@ -293,7 +296,7 @@ describe("the refined Map and Card (UI-P94)", () => {
 
   it("opens the Card as the refined side sheet", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
     const card = screen.getByTestId("sandbox-card");
     expect(card.style.width).toBe("472px");
   });
@@ -363,24 +366,20 @@ describe("the Card and the post", () => {
   afterEach(() => vi.useRealTimers());
 
 
-  it("says the cover is the first picture of the post, and Edit the post closes the sheet and goes to the post", () => {
+  it("carries no cover line and no Edit the post: the cover is edited in the post", () => {
     viewAt("/compose/x");
-    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
     const card = screen.getByTestId("sandbox-card");
-    expect(within(card).getByText("The cover is the first picture in your post.")).toBeTruthy();
-    fireEvent.click(within(card).getByRole("button", { name: "Edit the post" }));
-    vi.runAllTimers();
-    expect(screen.queryByTestId("sandbox-card")).toBeNull();
-    expect(document.activeElement?.textContent).toBe("the post body");
+    expect(within(card).queryByText("The cover is the first picture in your post.")).toBeNull();
+    expect(within(card).queryByRole("button", { name: "Edit the post" })).toBeNull();
   });
 
-  it("keeps Title, One-line summary, Who it's for, Made with and More details", () => {
+  it("keeps the Title, the Summary, Tools and stack with Made with, and Build details", () => {
     viewAt("/compose/x");
-    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
     const card = screen.getByTestId("sandbox-card");
-    for (const label of ["Title", "One-line summary", "Who it's for"]) expect(within(card).getByLabelText(label)).toBeTruthy();
-    expect(within(card).getByTestId("compose-made-with")).toBeTruthy();
-    expect(within(card).getByRole("button", { name: /More details/ })).toBeTruthy();
+    expect(within(card).getByLabelText("Title")).toBeTruthy();
+    for (const name of ["Summary", "Build details"]) expect(within(card).getByRole("button", { name })).toBeTruthy();
   });
 });
 
