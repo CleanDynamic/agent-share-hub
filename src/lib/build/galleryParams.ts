@@ -6,6 +6,9 @@
 // browser's own Back button. Nothing about what the reader is looking at lives
 // only in component state.
 //
+// CA-16 P6 ADDS f (repeatable): a classification facet key such as field:ai-ml, between pattern and sort. Only keys the
+// taxonomy knows are kept.
+//
 // EIGHT PARAMETERS, ALWAYS IN THIS ORDER: view (UI-P49), lens, for
 // (repeatable), with (repeatable), shape (repeatable, UI-P28), model (UI-P49),
 // sort (UI-P49), q. One order means one address per view: two links to the same
@@ -40,6 +43,7 @@ import { MODEL_VERSIONS, TEXT_LABS, type Lab } from "@/lib/models/registry";
 import { GALLERY_LENSES, GALLERY_SHAPES, type GalleryFeedSort, type GalleryLens } from "./gallery";
 import { toolFor } from "@/lib/tools/registry";
 import { isPattern, type Pattern } from "./patterns";
+import { isKnown, type Facet } from "@/lib/classify/taxonomy";
 
 import { normaliseQuery } from "./search";
 
@@ -72,6 +76,11 @@ export const DASHBOARD_ACTIVE: readonly DashboardActive[] = [7, 30, 90];
 /** UI-P50 — the two reporting toggles. */
 export type DashboardReport = "month" | "multi";
 
+/** CA-16b P3: the tabs after "All builds": the builds grouped by a facet's top-level values. */
+export type GalleryBy = "field" | "task" | "built" | "technique";
+export const GALLERY_BY: readonly GalleryBy[] = ["field", "task", "built", "technique"];
+const isBy = (value: string | null | undefined): value is GalleryBy => typeof value === "string" && (GALLERY_BY as readonly string[]).includes(value);
+
 /** Where the gallery lives. */
 const GALLERY_PATH = "/gallery";
 
@@ -97,6 +106,10 @@ export interface GalleryParams {
   tool?: string;
   /** CA-13 P12. One of the three patterns; absent is "Any pattern". */
   pattern?: Pattern;
+  /** CA-16 P6. Classification facet keys (`field:ai-ml`); present only when at least one is set. An OR within a facet, an AND across facets. */
+  facets?: string[];
+  /** CA-16b P3. The Gallery's tab: absent is "All builds". */
+  by?: GalleryBy;
   /** UI-P49. Present only when it is not newest. */
   sort?: GalleryFeedSort;
   /** UI-P50. The dashboard's tab; present only when it is not Builds. */
@@ -121,6 +134,14 @@ function cleanValues(values: readonly string[] | undefined): string[] {
     if (trimmed) seen.add(trimmed);
   }
   return [...seen];
+}
+
+/** CA-16 P6: keys of the form `<facet>:<id>` the lists know, first occurrence kept. */
+export function cleanFacetKeys(values: readonly string[] | undefined): string[] {
+  return cleanValues(values).filter((key) => {
+    const at = key.indexOf(":");
+    return at > 0 && isKnown(key.slice(0, at) as Facet, key.slice(at + 1));
+  });
 }
 
 /** Only shapes the gallery knows. */
@@ -176,6 +197,8 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const model = search.get("model");
   const tool = toolFor(search.get("tool"))?.id;
   const pattern = search.get("pattern");
+  const facets = cleanFacetKeys(search.getAll("f"));
+  const by = search.get("by");
   const sort = search.get("sort");
   const tab = search.get("tab");
   const lab = search.get("lab");
@@ -193,6 +216,8 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(isModel(model) ? { model } : {}),
     ...(tool ? { tool } : {}),
     ...(isPattern(pattern) ? { pattern } : {}),
+    ...(facets.length > 0 ? { facets } : {}),
+    ...(isBy(by) ? { by } : {}),
     ...(isSort(sort) && sort !== "newest" ? { sort } : {}),
     ...(isTab(tab) ? { tab } : {}),
     ...(isLab(lab) ? { lab } : {}),
@@ -205,7 +230,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, sort, tab, lab, report, active, dsort, build, q.
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), sort, tab, lab, report, active, dsort, build, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -219,6 +244,8 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const tool = toolFor(params.tool)?.id;
   if (tool) out.set("tool", tool);
   if (isPattern(params.pattern)) out.set("pattern", params.pattern);
+  for (const key of cleanFacetKeys(params.facets)) out.append("f", key);
+  if (isBy(params.by)) out.set("by", params.by);
   if (isSort(params.sort) && params.sort !== "newest") out.set("sort", params.sort);
   if (isTab(params.tab)) out.set("tab", params.tab);
   if (isLab(params.lab)) out.set("lab", params.lab);

@@ -30,6 +30,9 @@ import { MadeWithMarks } from "@/components/brand/MadeWithMarks";
 import { Plaque, type PlaqueBuild } from "@/components/brand/Plaque";
 import { PatternMarks } from "@/components/gallery/PatternMarks";
 import type { Pattern } from "@/lib/build/patterns";
+import { ClassificationLines, RegulatedTag } from "@/components/classify/ClassificationBits";
+import { classificationLines } from "@/lib/classify/lines";
+import type { Classification } from "@/lib/classify/types";
 import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { PostThread } from "@/components/post/PostThread";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -56,6 +59,8 @@ export interface FeedPostProps {
   plaqueBuild?: PlaqueBuild;
   /** CA-13 P12: the patterns the build uses; at most two are marked. */
   patterns?: readonly Pattern[];
+  /** CA-16 P6: the build's classification: two lines under the build line, and a Regulated area tag beside the title. Nothing when absent or empty. */
+  classification?: Classification | null;
   /** The open ask's line ("1 part unsolved · £120"), or null. Absent: none. */
   openAsk?: string | null;
   /** The reader's share of the page's engagement. Absent: no action row. */
@@ -86,6 +91,7 @@ export function FeedPost({
   modelsUsed,
   plaqueBuild,
   patterns,
+  classification,
   openAsk = null,
   engagement,
   now,
@@ -98,6 +104,7 @@ export function FeedPost({
   const name = (makerName ?? "").trim() || handle || "Maker";
   const profileHref = handle && !preview ? `/profile/${encodeURIComponent(handle)}` : null;
   const title = (build.title ?? "").trim() || "Untitled build";
+  const lines = useMemo(() => classificationLines(classification), [classification]);
 
   /* ── the thread ── */
 
@@ -276,6 +283,7 @@ export function FeedPost({
           <QuietLink to={preview ? null : `/b2/${build.slug}`} testId="feed-build-title" touch={phone} colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
             {title}
           </QuietLink>
+          {lines.regulated ? <RegulatedTag /> : null}
           {preview ? (
             <span data-testid="feed-draft" style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: 1.4, color: t.text2 }}>
               Draft
@@ -293,6 +301,11 @@ export function FeedPost({
             </span>
           ) : null}
         </div>
+        {lines.line1.length > 0 || lines.line2.length > 0 ? (
+          <div style={{ marginTop: 6 }}>
+            <ClassificationLines lines={lines} />
+          </div>
+        ) : null}
         {engagement ? (
           <EngagementRow
             variant="card"

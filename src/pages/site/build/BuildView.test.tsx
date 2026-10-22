@@ -297,3 +297,24 @@ describe("Download, once the build has a session setup (CA-04 P4)", () => {
     expect(within(dock).getByRole("button", { name: "Download" }).getAttribute("aria-haspopup")).toBeNull();
   });
 });
+
+describe("the Classification section (CA-16 P7)", () => {
+  it("sits under the hero and above The build, on a desktop and on a phone", () => {
+    const section = <section aria-label="Classification" data-testid="build-classification" />;
+    const { unmount } = mount(stepsProps("desktop", { classification: section }));
+    const hero = screen.getByTestId("build-hero");
+    const classification = screen.getByTestId("build-classification");
+    const steps = screen.getByTestId("build-steps-panel");
+    expect(hero.compareDocumentPosition(classification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(classification.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    unmount();
+    phone(true);
+    mount(stepsProps("mobile", { classification: section }));
+    expect(screen.getByTestId("build-classification")).toBeTruthy();
+  });
+
+  it("draws nothing extra without it", () => {
+    mount(stepsProps("desktop"));
+    expect(screen.queryByTestId("build-classification")).toBeNull();
+  });
+});

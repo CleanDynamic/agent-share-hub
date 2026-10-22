@@ -23,6 +23,8 @@ import { SearchField } from "@/components/brand/SearchField";
 import { Segmented } from "@/components/brand/Segmented";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
+import { ClassificationFilters, QuickChips, describeKey, type FacetCounts } from "@/components/gallery/ClassificationFilters";
+import type { Classification } from "@/lib/classify/types";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -99,6 +101,13 @@ export interface GalleryFeedViewProps {
   patterns?: readonly { value: Pattern; count: number }[];
   /** CA-13 P12. Each card's own patterns, by build id: asked for only once the column is live. */
   patternMarks?: Readonly<Record<string, readonly Pattern[]>>;
+  /**
+   * CA-16 P6. The classification filters, drawn only once `classification_facets` answered (the columns are live). Present:
+   * the filters, the two quick chips and the active chips show, and the Sort menu is not drawn. Absent: the Gallery is as it was.
+   */
+  classification?: { counts: FacetCounts; selected: readonly string[]; onToggle: (key: string) => void };
+  /** CA-16 P6. Each card's classification, by build id: asked for only once the columns are live. A build with none shows nothing new. */
+  classifications?: Readonly<Record<string, Classification>>;
   audience: string | null;
   onAudienceChange: (audience: string | null) => void;
   /** "Made for" options, with counts. */
@@ -264,7 +273,8 @@ export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
     { key: "tool", label: "Made with", value: tool ? tool.name : "Any", groups: toolGroups },
     ...patternMenu,
     { key: "for", label: "Made for", value: audienceLabel, groups: [{ options: audienceOptions }] },
-    { key: "sort", label: "Sort", value: sortLabel(sort), groups: [{ options: sortOptions }] },
+    // CA-16 P6: with the classification filters there is one order, said in the count line, and no sort control.
+    ...(props.classification ? [] : [{ key: "sort" as const, label: "Sort", value: sortLabel(sort), groups: [{ options: sortOptions }] }]),
   ];
 }
 
@@ -585,6 +595,7 @@ function ActiveFilters(props: GalleryFeedViewProps) {
     const label = audiences.find((option) => option.value === audience)?.label ?? audience;
     chips.push({ key: "for", label: `Made for ${label}`, onRemove: () => onAudienceChange(null) });
   }
+  for (const key of props.classification?.selected ?? []) chips.push({ key: `f:${key}`, label: describeKey(key), onRemove: () => props.classification?.onToggle(key) });
   if (chips.length === 0) return null;
 
   /* A labelled button draws no icon under refined: each chip is named "Remove …", as before. */
@@ -611,6 +622,7 @@ function Rows({
   engagement,
   now,
   patternMarks,
+  classifications,
 }: {
   section: FeedSectionView;
   srcByPath: GalleryFeedViewProps["srcByPath"];
@@ -618,6 +630,7 @@ function Rows({
   engagement?: Engagement;
   now?: number;
   patternMarks?: GalleryFeedViewProps["patternMarks"];
+  classifications?: GalleryFeedViewProps["classifications"];
 }) {
   return (
     <>
@@ -635,6 +648,7 @@ function Rows({
               modelsUsed={build.models_used}
               plaqueBuild={plaque}
               patterns={patternMarks?.[build.id]}
+              classification={classifications?.[build.id]}
               engagement={engagement ? engagementFor(engagement, build.id) : undefined}
               now={now}
             />
@@ -715,7 +729,7 @@ function FeedList(props: GalleryFeedViewProps) {
     list.kind === "all" ? list.list.rows.length === 0 : list.reproducedOn.rows.length === 0 && list.notYet.rows.length === 0;
   if (empty) return <EmptyFeed query={props.query} onClearAll={props.onClearAll} onNavigate={props.onNavigate} />;
 
-  const rowProps = { srcByPath, viewerId, engagement, now, patternMarks: props.patternMarks };
+  const rowProps = { srcByPath, viewerId, engagement, now, patternMarks: props.patternMarks, classifications: props.classifications };
   const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 16 };
 
   return (
@@ -777,6 +791,27 @@ function Heading({ props, phone }: { props: GalleryFeedViewProps; phone: boolean
 
 /* ── the page ── */
 
+/** CA-16 P6: "Filters", a disclosure on a desktop that opens the classification filters in place. */
+function FiltersDisclosure({ classification }: { classification: NonNullable<GalleryFeedViewProps["classification"]> }) {
+  const [open, setOpen] = useState(classification.selected.length > 0);
+  const id = "classification-filters-panel";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <Button variant="secondary" size={28} fontSize={12} aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
+          {open ? "Hide filters" : "Filters"}
+        </Button>
+        <QuickChips selected={classification.selected} onToggle={classification.onToggle} />
+      </div>
+      {open ? (
+        <section id={id} aria-label="Filters" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 8, boxShadow: t.moduleShadow, padding: 16, boxSizing: "border-box", minWidth: 0 }}>
+          <ClassificationFilters counts={classification.counts} selected={classification.selected} onToggle={classification.onToggle} phone={false} />
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
 function DesktopFeed(props: GalleryFeedViewProps) {
   const menus = menusFor(props);
   return (
@@ -789,6 +824,7 @@ function DesktopFeed(props: GalleryFeedViewProps) {
             <DesktopMenu key={menu.key} menu={menu} />
           ))}
         </div>
+        {props.classification ? <FiltersDisclosure classification={props.classification} /> : null}
         <ActiveFilters {...props} />
         <FeedList {...props} />
       </div>
@@ -799,6 +835,7 @@ function DesktopFeed(props: GalleryFeedViewProps) {
 function PhoneFeed(props: GalleryFeedViewProps) {
   const menus = menusFor(props);
   const [open, setOpen] = useState<FeedMenu["key"] | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   return (
     <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
       <Heading props={props} phone />
@@ -814,12 +851,19 @@ function PhoneFeed(props: GalleryFeedViewProps) {
             onClick={() => setOpen(menu.key)}
           />
         ))}
+        {props.classification ? <FilterChip data-testid="feed-menu-filters" label="Filters" on={filtersOpen} aria-haspopup="dialog" onClick={() => setFiltersOpen(true)} /> : null}
       </ScrollRow>
+      {props.classification ? <QuickChips selected={props.classification.selected} onToggle={props.classification.onToggle} /> : null}
       <ActiveFilters {...props} />
       <FeedList {...props} />
       {menus.map((menu) => (
         <SheetMenu key={menu.key} menu={menu} open={open === menu.key} onOpenChange={(next) => setOpen(next ? menu.key : null)} />
       ))}
+      {props.classification ? (
+        <BottomSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filters">
+          <ClassificationFilters counts={props.classification.counts} selected={props.classification.selected} onToggle={props.classification.onToggle} phone />
+        </BottomSheet>
+      ) : null}
     </div>
   );
 }

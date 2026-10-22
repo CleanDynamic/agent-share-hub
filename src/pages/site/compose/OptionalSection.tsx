@@ -47,11 +47,15 @@ export interface OptionalFieldProps {
   /** Reader views: the row is read, not edited. */
   readOnly?: boolean;
   phone?: boolean;
+  /** CA-16b: a count at the right, in mono, before the chevron ("2 suggestions"). Absent: none. */
+  count?: string;
+  /** CA-16b: a filled row's line is drawn in `--text` rather than `--label`. Absent: as it was. */
+  filledText?: boolean;
   children: ReactNode;
 }
 
 /** One closed-by-default row. */
-export function OptionalField({ name, description, summary, forceOpen = false, phone = false, children }: OptionalFieldProps) {
+export function OptionalField({ name, description, summary, forceOpen = false, phone = false, count, filledText = false, children }: OptionalFieldProps) {
   const [open, setOpen] = useState(false);
   const uid = useId();
   const region = useRef<HTMLDivElement>(null);
@@ -98,10 +102,15 @@ export function OptionalField({ name, description, summary, forceOpen = false, p
       >
         <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span style={text(13, 400, t.text)}>{name}</span>
-          <span data-testid="optional-line" style={{ ...text(12.5, 400, t.label), ...ellipsis }}>
+          <span data-testid="optional-line" style={{ ...text(12.5, 400, filled && !open && filledText ? t.text : t.label), ...ellipsis }}>
             {filled && !open ? summary : description}
           </span>
         </span>
+        {count ? (
+          <span data-testid="optional-row-count" style={{ fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.label, flexShrink: 0, whiteSpace: "nowrap" }}>
+            {count}
+          </span>
+        ) : null}
         <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0, color: t.label, transform: open ? "rotate(180deg)" : "none", transition: "transform 120ms" }}>
           <Glyph name="chevd" size={16} />
         </span>
@@ -118,22 +127,26 @@ export function OptionalField({ name, description, summary, forceOpen = false, p
 export interface OptionalSectionProps {
   /** `OptionalField`s; a `null` or `false` child is not a field and is not counted. */
   children: ReactNode;
+  /** CA-16b: said at the right of the heading in place of the field count ("Suggestions come from your build"). */
+  hint?: string;
+  /** CA-16b: the body's side padding to run the rules across ("bleed" 20 in a window padded 20): the section reaches the window's edges and pads its own rows back in. */
+  bleed?: number;
 }
 
 /** The section: its heading and count, then its rows split by hairlines. Draws nothing when it has no field. */
-export function OptionalSection({ children }: OptionalSectionProps) {
+export function OptionalSection({ children, hint, bleed = 0 }: OptionalSectionProps) {
   const rows = Children.toArray(children).filter(isValidElement);
   if (rows.length === 0) return null;
   return (
-    <section aria-label={OPTIONAL_COPY.heading} data-testid="optional-section" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, paddingBottom: 6, borderBottom: `1px solid ${t.hairline}` }}>
+    <section aria-label={OPTIONAL_COPY.heading} data-testid="optional-section" style={{ display: "flex", flexDirection: "column", minWidth: 0, ...(bleed ? { margin: `0 -${bleed}px` } : null) }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, paddingBottom: 6, borderBottom: `1px solid ${t.hairline}`, ...(bleed ? { padding: `14px ${bleed}px 6px` } : null) }}>
         <h3 style={{ ...text(13, 500, t.text), margin: 0 }}>{OPTIONAL_COPY.heading}</h3>
         <span data-testid="optional-count" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "normal", color: t.label, ...tnum }}>
-          {OPTIONAL_COPY.fields(rows.length)}
+          {hint ?? OPTIONAL_COPY.fields(rows.length)}
         </span>
       </div>
       {rows.map((row, index) => (
-        <div key={index} style={index === 0 ? undefined : { borderTop: `1px solid ${t.hairline}` }}>
+        <div key={index} style={{ ...(index === 0 ? null : { borderTop: `1px solid ${t.hairline}` }), ...(bleed ? { padding: `0 ${bleed}px` } : null) }}>
           {row}
         </div>
       ))}

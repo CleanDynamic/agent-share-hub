@@ -132,7 +132,12 @@ export interface Tool {
   readsOutside?: true;
   /** CA-05 P8: the tool runs models on the maker's own computer, so how it was run (size, where) is worth saying. */
   local?: true;
+  /** CA-16: how a build made in this tool was made, as a Build method id in `lib/classify/taxonomy.ts`. Set for the tools the classification reads. */
+  buildMethod?: BuildMethodId;
 }
+
+/** CA-16: the Build method values a tool can give (ids in the classification taxonomy). */
+export type BuildMethodId = "chat-assistant" | "app-builder" | "ai-coding-agent" | "automation-platform" | "local-models";
 
 /** Google AI Studio offers every current Google model, whatever it makes (Appendix B). */
 const GOOGLE_AI_STUDIO_MODELS: ToolModels = {
@@ -169,6 +174,7 @@ export const RUNTIME_HEADING = "Runtime models and services";
 const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   {
     id: "chatgpt", name: "ChatGPT", group: "chat", logo: "openai", aliases: ["chat gpt", "chatgpt.com"], client: "chatgpt",
+    buildMethod: "chat-assistant",
     kind: "chat",
     models: { mode: "fixed", ids: ["gpt-5-6-sol", "gpt-5-6-luna", "gpt-5-6-sol-pro", "gpt-6-pro", "gpt-6-sol", "gpt-6-luna", "gpt-6-astra", "gpt-5-6-terra", "gpt-image-2-5-sunburst"], other: false },
     steps: ["prompt", "session", "agent", "manual", "result"],
@@ -179,6 +185,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "gemini", name: "Gemini", group: "chat", logo: "gemini-color", aliases: ["google gemini", "gemini.google.com"],
+    buildMethod: "chat-assistant",
     kind: "chat",
     models: { mode: "fixed", ids: ["gemini-3-8-flash", "gemini-3-7-flash", "gemini-3-5-flash-lite", "nano-banana-2", "nano-banana-pro", "veo-3-1"], other: false },
     steps: ["prompt", "session", "manual", "result"],
@@ -209,6 +216,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "claude", name: "Claude", group: "chat", logo: "claude-color", aliases: ["claude.ai"], client: "claude",
+    buildMethod: "chat-assistant",
     kind: "chat",
     models: { mode: "fixed", ids: ["fable-5-1", "opus-5-5", "sonnet-5-5", "haiku-5-5", "opus-5", "sonnet-5", "fable-5", "opus-4-7", "opus-4-6", "sonnet-4-6"], other: false },
     steps: ["prompt", "session", "agent", "manual", "result"],
@@ -230,6 +238,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "ollama", name: "Ollama", group: "chat", logo: null, aliases: ["ollama.com", "ollama.ai"],
+    buildMethod: "local-models",
     kind: "chat",
     models: { mode: "any", suggested: [] },
     steps: ["prompt", "session", "agent", "result", "manual"],
@@ -262,6 +271,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "claude-code", name: "Claude Code", group: "coding", logo: "claudecode-color", aliases: ["claudecode"], client: "claude-code", projectFiles: ["CLAUDE.md", "SKILL.md"],
+    buildMethod: "ai-coding-agent",
     kind: "coding",
     models: { mode: "fixed", ids: ["fable-5-1", "fable-5", "opus-5-5", "sonnet-5-5", "haiku-5-5", "opus-5", "sonnet-5", "opus-4-8", "opus-4-7", "opus-4-6", "sonnet-4-6", "sonnet-4-5", "haiku-4-5"], other: true },
     steps: ["prompt", "session", "agent", "code", "manual", "result"],
@@ -290,6 +300,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "cursor", name: "Cursor", group: "coding", logo: "cursor", aliases: ["cursor ai", "cursor.com"], client: "cursor", projectFiles: [".cursor/rules/"],
+    buildMethod: "ai-coding-agent",
     kind: "coding",
     models: { mode: "fixed", ids: ["grok-4-7", "grok-4-6", "grok-4-5", "composer-2-5", "gpt-5-6-sol", "gpt-5-5", "opus-5", "fable-5"], other: true },
     steps: ["prompt", "session", "agent", "code", "manual", "result"],
@@ -336,6 +347,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "lovable", name: "Lovable", group: "builders", logo: "lovable-color", aliases: ["lovable.dev"],
+    buildMethod: "app-builder",
     kind: "builder",
     models: { mode: "hidden", note: "Lovable picks the model that builds your app" },
     steps: ["prompt", "session", "file", "manual", "result"],
@@ -354,6 +366,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "v0", name: "v0", group: "builders", logo: "v0", aliases: ["v0.dev", "v0.app", "v0 by vercel"],
+    buildMethod: "app-builder",
     kind: "builder",
     models: { mode: "tiers", tiers: ["v0 Mini", "v0 Pro", "v0 Max"] },
     steps: ["prompt", "session", "code", "manual", "result"],
@@ -363,6 +376,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "bolt", name: "Bolt", group: "builders", logo: "bolt-color", aliases: ["bolt.new"],
+    buildMethod: "app-builder",
     kind: "builder",
     models: { mode: "tiers", tiers: ["Standard", "Max"] },
     steps: ["prompt", "session", "code", "manual", "result"],
@@ -423,6 +437,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "n8n", name: "n8n", group: "automation", logo: "n8n-color", aliases: ["n8n.io"], importsFile: true,
+    buildMethod: "automation-platform",
     kind: "automation",
     models: { mode: "any", suggested: [] },
     steps: ["prompt", "agent", "file", "tool", "manual", "result"],
@@ -434,6 +449,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "zapier", name: "Zapier", group: "automation", logo: "zapier-color", aliases: ["zapier.com"],
+    buildMethod: "automation-platform",
     kind: "automation",
     models: { mode: "any", suggested: [] },
     steps: ["agent", "tool", "manual", "result"],
@@ -445,6 +461,7 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   },
   {
     id: "make", name: "Make", group: "automation", logo: "make-color", aliases: ["make.com", "integromat"],
+    buildMethod: "automation-platform",
     kind: "automation",
     models: { mode: "any", suggested: [] },
     steps: ["agent", "tool", "manual", "result"],

@@ -28,6 +28,9 @@ import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import type { ThreadDoc } from "./thread";
 import { normaliseQuery, searchBuildIds } from "./search";
+import { findAcross, isKnown, type Facet } from "@/lib/classify/taxonomy";
+import { hasClassification, readClassification } from "@/lib/classify/facets";
+import type { Classification } from "@/lib/classify/types";
 import {
   SHAPE_RULES,
   STALE_AFTER_DAYS,
@@ -781,6 +784,79 @@ export async function getGalleryFacets(): Promise<GalleryFacets> {
   };
 }
 
+/** CA-16 P6: how many gallery builds carry each classification facet value. */
+export interface ClassificationFacets {
+  /** `classification_facets` answered, so the columns exist and may be asked for. */
+  live: boolean;
+  /** `field:ai-ml` to a count. */
+  counts: Record<string, number>;
+}
+
+export const NO_CLASSIFICATION_FACETS: ClassificationFacets = { live: false, counts: {} };
+
+/**
+ * The classification facet counts, over the same builds `gallery_facets` counts. NEVER AN ERROR: until the CA-16 migration is
+ * applied the function does not exist and the answer is a failure, which reads as "not live" and leaves the Gallery as it was.
+ */
+export async function getClassificationFacets(): Promise<ClassificationFacets> {
+  const { data, error } = await (
+    supabase.rpc as unknown as (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+  )("classification_facets", { thresholds: GALLERY_THRESHOLD });
+  if (error || !Array.isArray(data)) return NO_CLASSIFICATION_FACETS;
+  const counts: Record<string, number> = {};
+  for (const entry of data as { value?: unknown; count?: unknown }[]) {
+    if (typeof entry.value === "string" && typeof entry.count === "number" && entry.count > 0) counts[entry.value] = entry.count;
+  }
+  return { live: true, counts };
+}
+
+/**
+ * CA-16 P6: the classification of the builds on the page, by build id. Asked for only once `classification_facets` answered, so the
+ * column exists. A build with nothing in it is left out, so its card shows nothing new.
+ */
+export async function getBuildClassifications(ids: readonly string[]): Promise<Record<string, Classification>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { in: (column: string, values: string[]) => PromiseLike<{ data: { id: string; classification: unknown }[] | null; error: unknown }> } } })
+    .from("builds")
+    .select("id, classification")
+    .in("id", [...ids]);
+  if (error || !data) return {};
+  const out: Record<string, Classification> = {};
+  for (const row of data) {
+    const read = readClassification(row.classification);
+    if (hasClassification(read)) out[row.id] = read;
+  }
+  return out;
+}
+
+/** CA-16b: how many people tried a build and how many got it working. */
+export interface BuildTries {
+  tried: number;
+  worked: number;
+}
+
+/**
+ * CA-16b: for each build id, how many reproductions were reported and how many of them worked, for the proof line
+ * ("3 of 4 people got it working"). One limited read of `build_reproductions`; a build nobody has tried is absent.
+ */
+export async function getBuildTries(ids: readonly string[]): Promise<Record<string, BuildTries>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { in: (column: string, values: string[]) => { limit: (count: number) => PromiseLike<{ data: { build_id: string; worked: boolean | null }[] | null; error: unknown }> } } } })
+    .from("build_reproductions")
+    .select("build_id, worked")
+    .in("build_id", [...ids])
+    .limit(2000);
+  if (error || !data) return {};
+  const out: Record<string, BuildTries> = {};
+  for (const row of data) {
+    const entry = out[row.build_id] ?? { tried: 0, worked: 0 };
+    entry.tried += 1;
+    if (row.worked === true) entry.worked += 1;
+    out[row.build_id] = entry;
+  }
+  return out;
+}
+
 /**
  * How many gallery builds carry an open bounty (NS-P52).
  *
@@ -1100,6 +1176,13 @@ export interface GalleryFeedParams {
   tool?: string;
   /** CA-13 P12. One of the three patterns. Only ever sent once the facets carried `patterns`, so the column exists. */
   pattern?: Pattern;
+  /**
+   * CA-16 P6. Classification facet keys (`field:ai-ml`, `skill:no-coding`): an OR within a facet and an AND across facets,
+   * matched with `facets && ARRAY[...]`. Only ever sent once `classification_facets` answered, so the column exists.
+   */
+  facets?: readonly string[];
+  /** CA-16 P6. The `facets` column exists, so a search also finds builds classified by a term ("NLP", "RAG", "Stata"). */
+  classified?: boolean;
   sort: GalleryFeedSort;
   q?: string;
   /** Zero-based. With a model it pages both lists. */
@@ -1187,6 +1270,22 @@ interface LightRow {
   last_confirmed_at: string | null;
 }
 
+/**
+ * CA-16 P6: the facet keys a query's terms name, by label or synonym ("NLP", "RAG", "Stata"): the whole query first, then
+ * each word. At most eight, so the address of the request stays short.
+ */
+export function classificationKeysFor(query: string): string[] {
+  const terms = [query, ...query.split(/\s+/)].map((term) => term.trim()).filter((term) => term.length >= 2);
+  const keys: string[] = [];
+  for (const term of new Set(terms)) {
+    for (const hit of findAcross(term)) {
+      const key = `${hit.facet}:${hit.value.id}`;
+      if (!keys.includes(key)) keys.push(key);
+    }
+  }
+  return keys.slice(0, 8);
+}
+
 /** A handle-shaped query: one word of handle characters, optionally with its @. */
 const HANDLE_SHAPE = /^@?[a-z0-9_.-]{2,30}$/i;
 
@@ -1201,7 +1300,7 @@ const HANDLE_SHAPE = /^@?[a-z0-9_.-]{2,30}$/i;
  * Returns one PostgREST `or` clause, or null when there is no query. Delete
  * this when the RPC is on live and the feed can take its ids as listGallery does.
  */
-async function feedSearchClause(raw: string | undefined): Promise<string | null> {
+async function feedSearchClause(raw: string | undefined, classified = false): Promise<string | null> {
   const q = normaliseQuery(raw);
   if (q === null) return null;
 
@@ -1213,6 +1312,10 @@ async function feedSearchClause(raw: string | undefined): Promise<string | null>
 
   const version = normaliseModel(q);
   if (version) clauses.push(`models_used.cs.{"${version.name}"}`);
+
+  // CA-16 P6: each term, mapped through the lists, also finds the builds classified that way, whatever their words.
+  const keys = classified ? classificationKeysFor(q) : [];
+  if (keys.length > 0) clauses.push(`facets.ov.{${keys.map((key) => `"${key}"`).join(",")}}`);
 
   if (HANDLE_SHAPE.test(q)) {
     const handle = q.replace(/^@/, "");
@@ -1252,6 +1355,7 @@ function feedBase(
   withCount = false,
   madeWith: readonly string[] = [],
   pattern?: Pattern,
+  facets: readonly string[] = [],
 ): FeedQuery {
   let query = feedTable("builds")
     .select(columns, withCount ? { count: "exact" } : undefined)
@@ -1262,8 +1366,24 @@ function feedBase(
   if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
   // CA-13 P12: only when a pattern was chosen, which the page offers only once the column is live.
   if (pattern) query = query.contains("patterns", [pattern]);
+  // CA-16 P6: one `facets && ARRAY[...]` per facet, so values in one facet are an OR and facets are an AND.
+  for (const values of facetGroups(facets).values()) query = query.overlaps("facets", values);
   if (search) query = query.or(search);
   return query;
+}
+
+/** CA-16 P6: the keys grouped by facet, unknown keys dropped: `{ field: [...], skill: [...] }` as a map. */
+export function facetGroups(keys: readonly string[]): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const key of keys) {
+    const at = key.indexOf(":");
+    if (at < 1 || !isKnown(key.slice(0, at) as Facet, key.slice(at + 1))) continue;
+    const facet = key.slice(0, at);
+    const list = out.get(facet) ?? [];
+    if (!list.includes(key)) list.push(key);
+    out.set(facet, list);
+  }
+  return out;
 }
 
 /** TF-14 — what made_with may hold for a tool: its name and its other spellings. Empty for an id the registry does not name. */
@@ -1455,11 +1575,12 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
   const version = params.model ? MODEL_VERSIONS.find((v) => v.id === params.model) ?? null : null;
   const madeWith = madeWithSpellings(params.tool);
 
-  const [search, counts] = await Promise.all([feedSearchClause(params.q), feedCounts()]);
+  const [search, counts] = await Promise.all([feedSearchClause(params.q, params.classified === true), feedCounts()]);
+  const facets = params.facets ?? [];
 
   if (version === null) {
     const query = withFeedEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern), params.sort)
+      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern, facets), params.sort)
     ).range(start, end);
     const { data, error, count } = await query;
     if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1492,7 +1613,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
   const light: LightRow[] = [];
   for (let i = 0; i < candidates.length; i += FEED_ID_CHUNK) {
     const chunk = candidates.slice(i, i + FEED_ID_CHUNK);
-    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search, false, madeWith, params.pattern)
+    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search, false, madeWith, params.pattern, facets)
       .in("id", chunk)
       .limit(chunk.length);
     if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1518,7 +1639,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   // notYet: the rest of the (capped) gallery, in the sort's overall order.
   const { data: populationData, error: populationError } = await feedOrder(
-    feedBase("id", audience, search, false, madeWith, params.pattern),
+    feedBase("id", audience, search, false, madeWith, params.pattern, facets),
     params.sort
   ).limit(FEED_POPULATION_CAP);
   if (populationError) throw buildLayerError("listGalleryFeed", populationError);

@@ -65,6 +65,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   compose: lazy(() => import("./ComposeDemo")),
   /* UI-P63 — the new composer's frame (no board image is compared). */
   sandbox: lazy(() => import("./SandboxDemo")),
+  /* CA-16 — the Classification Card, and the Gallery with the classification filters (no board is compared). */
+  classification: lazy(() => import("./ClassificationDemo")),
   /* UI-P37 — the Bounties board, for its four states (no reference board is compared). */
   "bounty-board": lazy(() => import("./BountyBoardDemo")),
   /* PT-03 — the post thread, closed, open and in page mode (no board is compared). */
@@ -97,6 +99,7 @@ const TRAILS: Record<string, readonly Crumb[]> = {
   home: [{ label: "Home" }],
   /* UI-P56: the Gallery board draws Home / Gallery, not the default trail's sample build. */
   "gallery-feed": [{ label: "Home", href: "/" }, { label: "Gallery" }],
+  classification: [{ label: "Home", href: "/" }, { label: "Gallery" }],
   "gallery-dashboard": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
   activity: [{ label: "Home", href: "/" }, { label: "Activity" }],
