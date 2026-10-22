@@ -1,54 +1,54 @@
-/* CA-02 P7 — Add › "Code".
+/* CA-02 P7, CA-15 P6 — Add › "Code": source code produced in this step, as it was used.
 
-   A Radix dialog, 420 wide, on the Card's surface tokens (a `BottomSheet` below 768), built like the manual step's:
+   The shared modal frame, 520 wide (a `BottomSheet` below 768). Required: the code, typed or uploaded.
 
    - The code: `CodeEditorField` (CA-11), a monospace well with a numbered gutter; Tab puts in two spaces.
-   - Language: a select over the code node type's enum, prefilled from the text (`codeLanguageFor`) until it is
-     chosen by hand; a .tsx, .jsx or .yml file name overrides the guess.
-   - File name, optional, 120 characters.
-   - Written with, optional: a tool for code and its model, by the Typed here rules (`ModelPicker`).
-   - Upload files: text files only. Each becomes its own code step named by its file; a file that is not text, or
+   - Upload files: text files only. Each file is added as a separate step, named by its path; a file that is not text, or
      over 100,000 characters, is refused by name.
-   - "Add", the one primary, and "Cancel".
+   - Language: a menu (`PickMenu`) showing the language's name ("TypeScript"), never a native select; the value it saves is the
+     schema's enum ("ts"). Prefilled from the text (`codeLanguageFor`) until it is chosen by hand; a .tsx, .jsx or .yml
+     file path overrides the guess.
 
-   NOTHING HERE RUNS CODE.
+   Optional section: File path (120 characters), Generated with (a tool for code and its model, by the Typed here rules).
 
-   CA-03 P2: the labels are the composer's `Field`; the language is a menu (`PickMenu`) showing the language's name
-   ("TypeScript"), never a native select, and the value it saves is the schema's enum as before ("ts"). Only code and
-   file names are in the data face. The dialog is the window recipe with a 15/500 title. */
+   NOTHING HERE RUNS CODE. Only code and file paths are in the data face. */
 
-import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useId, useRef, useState, type CSSProperties } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { IconButton } from "@/components/brand/IconButton";
 import { CodeEditorField } from "@/components/code/CodeEditorField";
-import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, type CodeLanguage } from "@/lib/build/graph";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
+import { toolName } from "@/lib/tools/registry";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } from "./codeModel";
 import { Field } from "./composeControls";
+import { FieldRow, FieldRows, ModalForm, ModalShell, firstMissing } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
+import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { PickMenu } from "./PickMenu";
-import { dialogTitle, tnum, typedField, windowStyle } from "./refinedStyles";
+import { tnum, typedField } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const CODE_DIALOG_COPY = {
   title: "Add code",
+  subtitle: "Source code produced in this step, as it was used",
   code: "Code",
   placeholder: "Paste or type the code",
   language: "Language",
-  filename: "File name, optional",
-  filenamePlaceholder: "app.ts",
-  writtenWith: "Written with, optional",
-  writtenWithTool: "Written with",
+  filename: "File path",
+  filenameLine: "Where the code lives in the project",
+  filenamePlaceholder: "e.g. src/app.ts",
+  writtenWith: "Generated with",
+  writtenWithLine: "The tool and model that produced the code",
+  writtenWithTool: "Generated with",
   upload: "Upload files",
-  uploadLine: "Text files only. Each one is its own step.",
+  uploadLine: "Text files only. Each file is added as a separate step.",
   remove: (name: string) => `Remove ${name}`,
   add: "Add",
   cancel: "Cancel",
@@ -125,15 +125,10 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
     onAdd({ steps, tool, model });
   };
 
+  const missing = firstMissing([[typed || files.length > 0, "code"]]);
+
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        submit();
-      }}
-      /* The global field rule makes a field inherit its size on a desktop, so the form sets the fields' 13 here. */
-      style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
-    >
+    <ModalForm phone={phone} missing={missing} blocked={tooLong || filename.length > CODE_FILENAME_MAX} onSubmit={submit} onCancel={onCancel}>
       <Field id={`${uid}-code`} label={CODE_DIALOG_COPY.code}>
         <CodeEditorField id={`${uid}-code`} testId="code-well" value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />
         {tooLong ? (
@@ -143,57 +138,6 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
         ) : typed ? (
           <span style={{ ...count, alignSelf: "flex-end" }}>{`${lineCount(source)} ${lineCount(source) === 1 ? "line" : "lines"}`}</span>
         ) : null}
-      </Field>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 120px", minWidth: 0 }}>
-          <Field id={`${uid}-language`} label={CODE_DIALOG_COPY.language}>
-            <span>
-              <PickMenu
-                id={`${uid}-language`}
-                label={CODE_DIALOG_COPY.language}
-                options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
-                value={language}
-                onChange={(next) => {
-                  if (isCodeLanguage(next)) setChosen(next);
-                }}
-                phone={phone}
-              />
-            </span>
-          </Field>
-        </div>
-        <div style={{ flex: "2 1 180px", minWidth: 0 }}>
-          <Field id={`${uid}-filename`} label={CODE_DIALOG_COPY.filename}>
-          <input
-            id={`${uid}-filename`}
-            type="text"
-            value={filename}
-            maxLength={CODE_FILENAME_MAX}
-            placeholder={CODE_DIALOG_COPY.filenamePlaceholder}
-            autoComplete="off"
-            onChange={(event) => setFilename(event.target.value)}
-            style={typedField(phone, { fontFamily: DM_MONO })}
-          />
-          </Field>
-        </div>
-      </div>
-
-      <Field id={`${uid}-written`} label={CODE_DIALOG_COPY.writtenWith} group>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <ToolPicker
-            label={CODE_DIALOG_COPY.writtenWithTool}
-            value={tool}
-            onChange={(next) => {
-              setTool(next);
-              setModel(nextModelAfterToolChange(next, model).model);
-            }}
-            inBuild={inBuild}
-            allowNone
-            phone={phone}
-            step="code"
-          />
-          <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} />
-        </div>
       </Field>
 
       <Field id={`${uid}-upload`} label={CODE_DIALOG_COPY.upload} group>
@@ -246,15 +190,57 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
         ) : null}
       </Field>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <Button variant="secondary" size={phone ? 44 : 30} onClick={onCancel}>
-          {CODE_DIALOG_COPY.cancel}
-        </Button>
-        <Button variant="primary" size={phone ? 44 : 30} type="submit" disabled={!ready}>
-          {CODE_DIALOG_COPY.add}
-        </Button>
-      </div>
-    </form>
+      <FieldRows>
+        <FieldRow id={`${uid}-language`} label={CODE_DIALOG_COPY.language} phone={phone}>
+          <span>
+            <PickMenu
+              id={`${uid}-language`}
+              label={CODE_DIALOG_COPY.language}
+              options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
+              value={language}
+              onChange={(next) => {
+                if (isCodeLanguage(next)) setChosen(next);
+              }}
+              phone={phone}
+            />
+          </span>
+        </FieldRow>
+      </FieldRows>
+
+      <OptionalSection>
+        <OptionalField name={CODE_DIALOG_COPY.filename} description={CODE_DIALOG_COPY.filenameLine} summary={summaryOf(filename)} phone={phone}>
+          <input
+            aria-label={CODE_DIALOG_COPY.filename}
+            type="text"
+            value={filename}
+            maxLength={CODE_FILENAME_MAX}
+            placeholder={CODE_DIALOG_COPY.filenamePlaceholder}
+            autoComplete="off"
+            onChange={(event) => setFilename(event.target.value)}
+            style={typedField(phone, { fontFamily: DM_MONO })}
+          />
+        </OptionalField>
+        <OptionalField name={CODE_DIALOG_COPY.writtenWith} description={CODE_DIALOG_COPY.writtenWithLine} summary={summaryOf(tool ? (toolName(tool) ?? tool) : null, model)} phone={phone}>
+          <Field id={`${uid}-written`} label={CODE_DIALOG_COPY.writtenWith} group>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <ToolPicker
+                label={CODE_DIALOG_COPY.writtenWithTool}
+                value={tool}
+                onChange={(next) => {
+                  setTool(next);
+                  setModel(nextModelAfterToolChange(next, model).model);
+                }}
+                inBuild={inBuild}
+                allowNone
+                phone={phone}
+                step="code"
+              />
+              <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} />
+            </div>
+          </Field>
+        </OptionalField>
+      </OptionalSection>
+    </ModalForm>
   );
 }
 
@@ -265,29 +251,10 @@ export function AddCodeDialog({ open, onOpenChange, onAdd, inBuild, seed = null 
     onAdd(input);
     close();
   };
-
-  if (phone) {
-    return (
-      <BottomSheet open={open} onOpenChange={onOpenChange} title={CODE_DIALOG_COPY.title}>
-        {open ? <Form inBuild={inBuild} seed={seed} onAdd={add} onCancel={close} phone /> : null}
-      </BottomSheet>
-    );
-  }
-
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
-        <Dialog.Content
-          aria-describedby={undefined}
-          data-testid="add-code-dialog"
-          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(420) }}
-        >
-          <Dialog.Title style={dialogTitle}>{CODE_DIALOG_COPY.title}</Dialog.Title>
-          <Form inBuild={inBuild} seed={seed} onAdd={add} onCancel={close} phone={false} />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <ModalShell open={open} onOpenChange={onOpenChange} title={CODE_DIALOG_COPY.title} subtitle={CODE_DIALOG_COPY.subtitle} width={520} testId="add-code-dialog">
+      <Form inBuild={inBuild} seed={seed} onAdd={add} onCancel={close} phone={phone} />
+    </ModalShell>
   );
 }
 
