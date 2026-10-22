@@ -264,12 +264,12 @@ describe("the toolbar", () => {
     expect(TOOL_SIZE).toBe(44);
   });
 
-  it("sits under the words behind a hairline, in the page, never docked", () => {
+  it("sits under the words with no line above it, as X has none, in the page, never docked", () => {
     const { editor } = mountPhone();
     expect(toolbar().style.position).toBe("");
     // jsdom drops colours written as var(); the line is read from the markup.
     const html = renderToStaticMarkup(<PostToolbar editor={editor} phone onInsertPicture={vi.fn()} notice={vi.fn()} />);
-    expect(html).toContain("border-top:1px solid var(--hairline)");
+    expect(html).not.toContain("border-top:1px solid var(--hairline)");
     expect(html).not.toContain("position:fixed");
   });
 
