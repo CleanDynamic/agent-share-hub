@@ -137,6 +137,12 @@ export const TOKEN_NAMES = [
   "control-on",
   "seg-track",
   "seg-border",
+  /** CA-15b: a selected segment's edge, the drop zone's dashed edge. */
+  "seg-on-border",
+  /** CA-15b: the modal's footer strip. */
+  "window-foot",
+  /** CA-15b: a disabled primary button's words. */
+  "text-disabled",
   "action-shadow",
   "tag-fill",
   "on-tag",
@@ -269,6 +275,9 @@ export const noon: Record<TokenName, string> = {
   "control-on": "#FFFFFF",
   "seg-track": "#E6E6E6",
   "seg-border": "#D9D9D9",
+  "seg-on-border": "#D9D9D9",
+  "window-foot": "#F4F4F4",
+  "text-disabled": "#A3A3A3",
   "action-shadow": "inset 0 1px 0 rgba(255,255,255,.1), 0 1px 2px rgba(0,0,0,.25)",
   "tag-fill": "#E9E9E9",
   "on-tag": "#575757",
@@ -398,6 +407,9 @@ export const dusk: Record<TokenName, string> = {
   "control-on": "#2F2F34",
   "seg-track": "#141416",
   "seg-border": "#27272B",
+  "seg-on-border": "#3A3A40",
+  "window-foot": "#1A1A1D",
+  "text-disabled": "#75757B",
   "action-shadow": "inset 0 -1px 0 rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.45)",
   "tag-fill": "#26262A",
   "on-tag": "#A0A0A6",

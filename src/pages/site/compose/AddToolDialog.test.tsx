@@ -116,7 +116,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     openRow("Actions performed");
     fireEvent.change(screen.getByLabelText("Actions performed"), { target: { value: "read issues" } });
     openRow("Actions performed");
-    expect(within(row("Actions performed")).getByTestId("optional-line").textContent).toBe("read issues");
+    expect(within(row("Actions performed")).getByTestId("optional-value").textContent).toBe("read issues");
   });
 
   it("with API key chosen, Setup steps says to name the key and never paste its value", () => {

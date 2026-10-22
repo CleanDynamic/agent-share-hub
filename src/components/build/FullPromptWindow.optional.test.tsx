@@ -71,10 +71,10 @@ describe("the prompt window's Optional section (maker)", () => {
 
   it("falls back to payload.model while settings.model is empty, and prefers settings.model when it is given", () => {
     open({ model: "Fable 5.1", settings: { model: "", effort: "default", instructions: "" } });
-    expect(within(row("Model settings")).getByTestId("optional-line").textContent).toMatch(/Fable/);
+    expect(within(row("Model settings")).getByTestId("optional-value").textContent).toMatch(/Fable/);
     cleanup();
     open({ model: "Fable 5.1", settings: { model: "Opus 5.5", effort: "high", instructions: "" } });
-    const line = within(row("Model settings")).getByTestId("optional-line").textContent ?? "";
+    const line = within(row("Model settings")).getByTestId("optional-value").textContent ?? "";
     expect(line).toMatch(/Opus/);
     expect(line).toMatch(/High effort/);
     expect(line).not.toMatch(/Fable/);
@@ -91,7 +91,7 @@ describe("the prompt window's Optional section (maker)", () => {
 
   it("lists the variables written in the prompt, and saves a description for one", () => {
     const props = open({});
-    expect(within(row("Variables")).getByTestId("optional-line").textContent).toBe("{customer}, {shop}");
+    expect(within(row("Variables")).getByTestId("optional-value").textContent).toBe("{customer}, {shop}");
     fireEvent.click(head("Variables"));
     const field = screen.getByLabelText("{customer}");
     fireEvent.change(field, { target: { value: " The customer's first name " } });

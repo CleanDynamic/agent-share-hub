@@ -247,8 +247,8 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
 
   it("opens with Add as an agent's tool and text, the instructions held in their Optional row", () => {
     const props = open({ seed: { harness: "hermes-agent", instructions: "Triage my inbox" } });
-    expect(within(rowOf("Host platform")).getByTestId("optional-line").textContent).toBe("Hermes Agent");
-    expect(within(rowOf("System instructions")).getByTestId("optional-line").textContent).toBe("Triage my inbox");
+    expect(within(rowOf("Host platform")).getByTestId("optional-value").textContent).toBe("Hermes Agent");
+    expect(within(rowOf("System instructions")).getByTestId("optional-value").textContent).toBe("Triage my inbox");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL, harness: "hermes-agent", tools: [], instructions: "Triage my inbox" });
   });
@@ -380,7 +380,7 @@ describe("limits, output, sample run and orchestration pattern (CA-15 P7)", () =
     expect(within(grid).getAllByRole("button").map((button) => button.textContent)).toEqual(["Sequential", "Lead with delegates", "Parallel then merged", "Writer and reviewer"]);
     fireEvent.click(within(grid).getByRole("button", { name: "Parallel then merged" }));
     fireEvent.click(rowOf("Orchestration pattern").querySelector("button") as HTMLButtonElement);
-    expect(within(rowOf("Orchestration pattern")).queryByTestId("optional-line")?.textContent).toBe("Parallel then merged");
+    expect(within(rowOf("Orchestration pattern")).queryByTestId("optional-value")?.textContent).toBe("Parallel then merged");
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.one) }));
     fireEvent.click(add());
     expect(vi.mocked(props.onAdd).mock.calls[0][0]).not.toHaveProperty("pattern");

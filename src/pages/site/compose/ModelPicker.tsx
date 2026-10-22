@@ -17,17 +17,20 @@
    the field label above it says what it is. Typed here has no field label, so it passes its own word ("model"). */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { harnessTool, modelMenu } from "@/lib/tools/modelRules";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
 import { TextButton } from "./composeControls";
 import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
+import { ELLIPSIS, PickerChevron, pickerFieldStyle } from "./modalRecipes";
 
 /** The longest model name a maker can type. */
 export const MODEL_TYPED_MAX = 40;
@@ -69,13 +72,26 @@ export interface ModelPickerProps {
   placeholder?: string;
   /** CA-03: the button fills its column, its chevron at the end, so a list of rows lines up. */
   block?: boolean;
+  /** CA-15b: drawn as the modals' picker field: full width, the well, the model or the placeholder, a chevron at the right. */
+  field?: boolean;
+}
+
+/** CA-15b: the picker field the modals draw: a button on the well, the value at the left, a chevron at the right. */
+function FieldButton({ value, placeholder, phone, open, style, ...rest }: { value: string | null; placeholder: string; phone: boolean; open?: boolean; style?: CSSProperties } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "style" | "value">) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled: rest.disabled });
+  return (
+    <button type="button" aria-haspopup="menu" aria-expanded={open} {...rest} {...handlers} style={{ ...pickerFieldStyle(phone, state, !value), ...ring(state.focusVisible), ...style }}>
+      <span style={ELLIPSIS}>{value || placeholder}</span>
+      <PickerChevron />
+    </button>
+  );
 }
 
 const labelStyle: CSSProperties = { ...text(11.5, 500, t.label), padding: "8px 12px 4px" };
 
 const quiet: CSSProperties = text(12, 400, t.text2);
 
-export function ModelPicker({ tool, value, onChange, phone, allowNone = true, name, openSignal, anyWithoutTool = false, placeholder = MODEL_PICKER_COPY.choose, block = false }: ModelPickerProps) {
+export function ModelPicker({ tool, value, onChange, phone, allowNone = true, name, openSignal, anyWithoutTool = false, placeholder = MODEL_PICKER_COPY.choose, block = false, field = false }: ModelPickerProps) {
   const menu = modelMenu(anyWithoutTool ? harnessTool(tool) : tool);
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -96,6 +112,7 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
   if (menu.state === "none") return null;
   if (menu.state === "hidden") return <span style={quiet}>{menu.note}</span>;
   if (menu.state === "pick-tool") {
+    if (field) return <FieldButton value={null} placeholder={placeholder} phone={phone} disabled aria-label={MODEL_PICKER_COPY.pickToolFirst} style={{ cursor: "default", filter: t.dimFilter }} />;
     return <MenuButton label={placeholder} value="" disabled aria-label={MODEL_PICKER_COPY.pickToolFirst} style={{ ...buttonStyle, cursor: "default", filter: t.dimFilter }} />;
   }
 
@@ -128,7 +145,11 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
   return (
     <Menu.Root open={open} onOpenChange={openChange}>
       <Menu.Trigger asChild>
-        <MenuButton aria-label={value ? `${word} ${value}` : word} label={value ? "" : placeholder} value={value ?? ""} open={open} style={buttonStyle} />
+        {field ? (
+          <FieldButton aria-label={value ? `${word} ${value}` : word} value={value} placeholder={placeholder} phone={phone} open={open} />
+        ) : (
+          <MenuButton aria-label={value ? `${word} ${value}` : word} label={value ? "" : placeholder} value={value ?? ""} open={open} style={buttonStyle} />
+        )}
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent

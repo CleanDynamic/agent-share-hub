@@ -23,6 +23,7 @@ import { t } from "@/lib/theme/tokens";
 import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 
 import { menuSurface, text, wellField } from "./refinedStyles";
+import { PickerChevron, pickerFieldStyle } from "./modalRecipes";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
 
 export interface ToolPickerProps {
@@ -49,6 +50,8 @@ export interface ToolPickerProps {
   runtime?: boolean;
   /** CA-14 P2: a text button in `--text2` (a session's "No app chosen"), not the boxed control. */
   quiet?: boolean;
+  /** CA-15b: drawn as the modals' picker field: full width, the well, the value at the left and a chevron at the right. */
+  field?: boolean;
 }
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.kind !== "note";
@@ -79,7 +82,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Select a tool", list = "ai", unpicked = false, runtime = false, quiet = false }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Select a tool", list = "ai", unpicked = false, runtime = false, quiet = false, field: asField = false }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -165,7 +168,8 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     ...text(15, 500, t.text2),
     ...ring(trigger.state.focusVisible),
   };
-  const triggerStyle: CSSProperties = quiet ? quietStyle : {
+  const fieldStyle: CSSProperties = { ...pickerFieldStyle(phone, trigger.state, !value), ...ring(trigger.state.focusVisible) };
+  const triggerStyle: CSSProperties = quiet ? quietStyle : asField ? fieldStyle : {
     ...CONTROL,
     ...(trigger.state.hovered ? CONTROL_HOVER : null),
     display: "inline-flex",
@@ -208,6 +212,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
           <span id={`${uid}-value`} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {shown}
           </span>
+          {asField ? <PickerChevron /> : null}
         </button>
       </Popover.Trigger>
       <Popover.Portal>

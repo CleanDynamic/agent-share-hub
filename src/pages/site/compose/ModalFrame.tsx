@@ -12,21 +12,41 @@
 
    `ModalShell` is the window (a Radix dialog on a computer, a `BottomSheet` below 768, as each dialog already was) and
    `ModalForm` is the form inside it: the body and the footer. Each dialog keeps its own state in its form, so a window
-   opens clean every time. The optional fields are `OptionalSection`'s. */
+   opens clean every time. The optional fields are `OptionalSection`'s.
+
+   CA-15b: every piece is drawn from `modalRecipes.tsx` (the frame, header, icon button, rows, footer, buttons). The form
+   provides `ModalInset` so its rows and blocks run edge to edge and pad themselves 20 in. */
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Children, useId, type CSSProperties, type ReactNode } from "react";
+import { Children, useId, type ReactNode } from "react";
 
-import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
-import { dialogTitle, text, windowStyle } from "./refinedStyles";
+import {
+  Alert,
+  FOOT_NOTE,
+  GroupHeading,
+  HEADER,
+  HEADER_ICONS,
+  HEADER_TEXT,
+  Hint as RecipeHint,
+  IconSquare,
+  MODAL_PAD,
+  MODAL_WIDTH,
+  ModalInset,
+  RecipeButton,
+  Row,
+  SUBTITLE,
+  TITLE,
+  bodyStyle,
+  footerStyle,
+  frameStyle,
+} from "./modalRecipes";
 
 export const MODAL_COPY = {
   close: "Close",
@@ -49,47 +69,19 @@ export interface ModalShellProps {
   title: string;
   /** What the tile is for, one grey line. */
   subtitle: string;
+  /** CA-15b: 560 for most tiles, 640 for the prompt window, code and decision. */
   width?: number;
   testId: string;
   children: ReactNode;
 }
 
-function CloseButton({ onClick }: { onClick?: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      aria-label={MODAL_COPY.close}
-      onClick={onClick}
-      {...handlers}
-      style={{
-        ...controlPaint(state),
-        width: 28,
-        height: 28,
-        padding: 0,
-        flexShrink: 0,
-        boxSizing: "border-box",
-        borderRadius: 6,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: t.text,
-        cursor: "pointer",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <Glyph name="x" size={14} />
-    </button>
-  );
-}
-
 /** The window. `children` is the form (`ModalForm`); it is mounted only while the window is open, so each opening starts clean. */
-export function ModalShell({ open, onOpenChange, title, subtitle, width = 520, testId, children }: ModalShellProps) {
+export function ModalShell({ open, onOpenChange, title, subtitle, width = MODAL_WIDTH.standard, testId, children }: ModalShellProps) {
   const phone = useIsPhone();
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={onOpenChange} title={title}>
-        <p data-testid="modal-subtitle" style={{ ...text(13, 400, t.text2), margin: 0 }}>
+        <p data-testid="modal-subtitle" style={{ ...SUBTITLE, margin: 0 }}>
           {subtitle}
         </p>
         {open ? children : null}
@@ -100,18 +92,17 @@ export function ModalShell({ open, onOpenChange, title, subtitle, width = 520, t
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
-        <Dialog.Content
-          data-testid={testId}
-          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(width), padding: 0, overflowY: "hidden", display: "flex", flexDirection: "column" }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "20px 20px 12px", flexShrink: 0 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, minWidth: 0 }}>
-              <Dialog.Title style={{ ...dialogTitle, margin: 0 }}>{title}</Dialog.Title>
-              <Dialog.Description data-testid="modal-subtitle" style={{ ...text(13, 400, t.text2), margin: 0 }}>
+        <Dialog.Content data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...frameStyle(width) }}>
+          <div data-testid="modal-header" style={HEADER}>
+            <div style={HEADER_TEXT}>
+              <Dialog.Title style={TITLE}>{title}</Dialog.Title>
+              <Dialog.Description data-testid="modal-subtitle" style={SUBTITLE}>
                 {subtitle}
               </Dialog.Description>
             </div>
-            <CloseButton onClick={() => onOpenChange(false)} />
+            <div style={HEADER_ICONS}>
+              <IconSquare glyph="x" label={MODAL_COPY.close} onClick={() => onOpenChange(false)} />
+            </div>
           </div>
           {open ? children : null}
         </Dialog.Content>
@@ -138,46 +129,34 @@ export interface ModalFormProps {
 
 export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false, addLabel = MODAL_COPY.add, alert, children }: ModalFormProps) {
   const ready = missing === null && !blocked;
-  const body: CSSProperties = phone
-    ? { display: "flex", flexDirection: "column", gap: 16 }
-    : { display: "flex", flexDirection: "column", gap: 16, flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "4px 20px 16px" };
-  const footer: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    flexShrink: 0,
-    borderTop: `1px solid ${t.hairline}`,
-    ...(phone
-      ? { position: "sticky", bottom: 0, background: t.window, padding: "12px 0 0", marginTop: 12, flexWrap: "wrap" }
-      : { padding: "12px 20px" }),
-  };
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
         if (ready) onSubmit();
       }}
-      /* The global field rule makes a field inherit its size on a computer, so the form sets the fields' 13 here. */
       style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13 }}
     >
-      <div data-testid="modal-body" style={body}>
-        {children}
-        {alert ? (
-          <span role="alert" style={text(12.5, 400, t.text)}>
-            {alert}
-          </span>
-        ) : null}
-      </div>
-      <div data-testid="modal-footer" style={footer}>
-        <span data-testid="modal-status" role="status" style={{ ...text(12.5, 400, t.label), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>
+      <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
+        <div data-testid="modal-body" style={bodyStyle(phone)}>
+          {children}
+          {alert ? (
+            <div style={{ padding: phone ? "8px 0 0" : `0 ${MODAL_PAD}px 14px` }}>
+              <Alert>{alert}</Alert>
+            </div>
+          ) : null}
+        </div>
+      </ModalInset.Provider>
+      <div data-testid="modal-footer" style={footerStyle(phone)}>
+        <span data-testid="modal-status" role="status" style={FOOT_NOTE}>
           {requiredLine(missing)}
         </span>
-        <Button variant="secondary" size={phone ? 44 : 30} onClick={onCancel}>
+        <RecipeButton phone={phone} onClick={onCancel}>
           {MODAL_COPY.cancel}
-        </Button>
-        <Button variant="primary" size={phone ? 44 : 30} type="submit" disabled={!ready}>
+        </RecipeButton>
+        <RecipeButton variant="primary" phone={phone} type="submit" disabled={!ready}>
           {addLabel}
-        </Button>
+        </RecipeButton>
       </div>
     </form>
   );
@@ -215,12 +194,10 @@ export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }:
   );
 }
 
-/* ── rows ── */
+/* ── rows (CA-15b: the recipes' pieces, under the names CA-15 gave them) ── */
 
 /** A heading inside a body: "Model", "Third-party repository". */
-export function SectionHeading({ children }: { children: ReactNode }) {
-  return <h3 style={{ ...text(13, 500, t.text), margin: 0 }}>{children}</h3>;
-}
+export const SectionHeading = GroupHeading;
 
 export interface FieldRowProps {
   /** The control's id, so the label points at it. With `group`, the label names a `role="group"` instead. */
@@ -228,56 +205,26 @@ export interface FieldRowProps {
   label: string;
   group?: boolean;
   phone: boolean;
+  hint?: string;
+  top?: boolean;
+  noRule?: boolean;
   children: ReactNode;
 }
 
 /** A short field: its label in a 148px column, its control beside it; stacked on a phone. */
-export function FieldRow({ id, label, group = false, phone, children }: FieldRowProps) {
-  return (
-    <div
-      role={group ? "group" : undefined}
-      aria-labelledby={group ? id : undefined}
-      data-testid="field-row"
-      style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "148px minmax(0, 1fr)", columnGap: 12, rowGap: 6, alignItems: "start", padding: "10px 0", minWidth: 0 }}
-    >
-      {group ? (
-        <span id={id} style={{ ...text(13, 400, t.text2), paddingTop: phone ? 0 : 6 }}>
-          {label}
-        </span>
-      ) : (
-        <label htmlFor={id} style={{ ...text(13, 400, t.text2), paddingTop: phone ? 0 : 6 }}>
-          {label}
-        </label>
-      )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>{children}</div>
-    </div>
-  );
+export function FieldRow(props: FieldRowProps) {
+  return <Row {...props} />;
 }
 
-/** Rows split by a 1px `--hairline`: the first has no line above it. */
+/** Rows one after another; each draws its own rule. */
 export function FieldRows({ children }: { children: ReactNode }) {
-  const rows = Children.toArray(children);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      {rows.map((row, index) => (
-        <div key={index} style={index === 0 ? undefined : { borderTop: `1px solid ${t.hairline}` }}>
-          {row}
-        </div>
-      ))}
-    </div>
-  );
+  return <>{Children.toArray(children)}</>;
 }
 
 /** A id for a row's control, stable for one form. */
 export const useRowId = (name: string): string => `${useId()}-${name}`;
 
 /** A one-line note under a control: 12 `--label`. */
-export function Hint({ children, testId }: { children: ReactNode; testId?: string }) {
-  return (
-    <span data-testid={testId} style={text(12, 400, t.label)}>
-      {children}
-    </span>
-  );
-}
+export const Hint = RecipeHint;
 
 export default ModalShell;
