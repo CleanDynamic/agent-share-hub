@@ -1,15 +1,15 @@
-/* CA-16 P5 — the Classification Card's preview: the gallery card as the Gallery draws it, under the title and the
-   summary, with no cover. The two lines and the Regulated area tag are the Gallery's own pieces. */
+/* CA-16 P5 — the Classification Card's preview: the Gallery card's build line as the Gallery draws it, with no cover. The
+   title, the Regulated area tag and the two lines are the Gallery's own pieces (FeedPost draws no summary, so neither
+   does this). */
 
 import { ClassificationLines, RegulatedTag } from "@/components/classify/ClassificationBits";
 import { classificationLines } from "@/lib/classify/lines";
 import type { Classification } from "@/lib/classify/types";
 import { t } from "@/lib/theme/tokens";
-import { display } from "@/lib/theme/type";
 
 import { text } from "./refinedStyles";
 
-export function CardPreview({ title, summary, classification }: { title: string; summary: string; classification: Classification | null }) {
+export function CardPreview({ title, classification }: { title: string; classification: Classification | null }) {
   const lines = classificationLines(classification);
   return (
     <section aria-label="Preview" data-testid="card-preview" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -18,7 +18,7 @@ export function CardPreview({ title, summary, classification }: { title: string;
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 8,
+          gap: 6,
           padding: "12px 14px 14px",
           boxSizing: "border-box",
           background: t.module,
@@ -28,22 +28,11 @@ export function CardPreview({ title, summary, classification }: { title: string;
           minWidth: 0,
         }}
       >
-        <h3 style={{ ...display(20), margin: 0, color: title.trim() ? t.text : t.label, textWrap: "balance", overflowWrap: "anywhere" }}>
-          {title.trim() || "Name your build"}
-          {lines.regulated ? (
-            <>
-              {" "}
-              <RegulatedTag />
-            </>
-          ) : null}
-        </h3>
-        {summary.trim() ? (
-          <p
-            style={{ margin: 0, ...text(14, 400, t.text2), lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}
-          >
-            {summary.trim()}
-          </p>
-        ) : null}
+        {/* The Gallery card's build line: the title at 13/500, the Regulated area tag beside it, the two lines under. */}
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 6, minWidth: 0 }}>
+          <span style={{ ...text(13, 500, title.trim() ? t.text : t.label), overflowWrap: "anywhere", lineHeight: 1.4 }}>{title.trim() || "Name your build"}</span>
+          {lines.regulated ? <RegulatedTag /> : null}
+        </div>
         <ClassificationLines lines={lines} />
       </article>
     </section>

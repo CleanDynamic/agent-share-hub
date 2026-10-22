@@ -16,6 +16,8 @@ const getGalleryFacets = vi.fn();
 const countGalleryLenses = vi.fn();
 const getGalleryStats = vi.fn();
 const listGalleryDashboard = vi.fn();
+const getClassificationFacets = vi.fn();
+const getBuildClassifications = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { storage: { from: () => ({ createSignedUrl: vi.fn().mockResolvedValue({ data: null, error: null }) }) } },
@@ -35,6 +37,8 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   countGalleryLenses: () => countGalleryLenses(),
   getGalleryStats: () => getGalleryStats(),
   listGalleryDashboard: (params: unknown) => listGalleryDashboard(params),
+  getClassificationFacets: () => getClassificationFacets(),
+  getBuildClassifications: (ids: unknown) => getBuildClassifications(ids),
 }));
 vi.mock("@/lib/build/sessions", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/sessions")>()),
@@ -134,6 +138,9 @@ const address = () => screen.getByTestId("address").textContent;
 beforeEach(() => {
   vi.clearAllMocks();
   listGalleryDashboard.mockResolvedValue(DASHBOARD_FIXTURE_ROWS);
+  // CA-16: the classification columns are not live, so the Gallery is exactly what it was.
+  getClassificationFacets.mockResolvedValue({ live: false, counts: {} });
+  getBuildClassifications.mockResolvedValue({});
   listGalleryFeed.mockResolvedValue(allPage(["a", "b", "c"]));
   getGalleryFacets.mockResolvedValue({
     roles: [

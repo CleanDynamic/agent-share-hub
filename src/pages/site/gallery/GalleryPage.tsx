@@ -31,7 +31,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { feedMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEngagement } from "@/hooks/useEngagement";
-import { galleryHref, getBuildPatterns, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
+import { galleryHref, getBuildClassifications, getBuildPatterns, getClassificationFacets, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
 import {
   listGalleryFeed,
   type GalleryFeed,
@@ -89,6 +89,7 @@ function GalleryFeedPage() {
   const audience = params.madeFor[0] ?? null;
   const toolId = params.tool ?? null;
   const patternId = params.pattern ?? null;
+  const chosenFacets = params.facets ?? [];
   const sort: GalleryFeedSort = params.sort ?? "newest";
   const { query } = params;
   const chosenTool = toolId ? (TOOLS.find((entry) => entry.id === toolId) ?? null) : null;
@@ -101,12 +102,18 @@ function GalleryFeedPage() {
       model: modelId ?? undefined,
       tool: toolId ?? undefined,
       pattern: patternId ?? undefined,
+      facets: chosenFacets,
       madeFor: audience ? [audience] : [],
       sort,
       query,
     }),
-    [view, modelId, toolId, patternId, audience, sort, query],
+    [view, modelId, toolId, patternId, chosenFacets, audience, sort, query],
   );
+
+  /* CA-16 P6: the classification filters exist once `classification_facets` answers. Until then the Gallery is exactly as it was. */
+  const classificationFacets = useQuery({ queryKey: ["gallery-classification-facets"], queryFn: getClassificationFacets, staleTime: FACETS_STALE_MS });
+  const classificationLive = classificationFacets.data?.live === true;
+  const activeFacets = classificationLive ? chosenFacets : [];
 
   /** Every change writes the address; the query keys follow it. */
   const go = (next: Partial<GalleryParams>) => navigate(galleryHref({ ...feedParams, ...next }));
@@ -123,7 +130,7 @@ function GalleryFeedPage() {
 
   /* ── the feed, a page at a time ── */
 
-  const filters = { model: modelId, tool: toolId, pattern: patternId, audience, sort, q: query };
+  const filters = { model: modelId, tool: toolId, pattern: patternId, facets: activeFacets, classified: classificationLive, audience, sort, q: query };
   const viewKey = JSON.stringify(filters);
   const [paging, setPaging] = useState<Paging>({ key: viewKey, first: 1, second: 1 });
   const shown: Paging = paging.key === viewKey ? paging : { key: viewKey, first: 1, second: 1 };
@@ -137,6 +144,8 @@ function GalleryFeedPage() {
           model: modelId ?? undefined,
           tool: toolId ?? undefined,
           pattern: patternId ?? undefined,
+          facets: activeFacets.length > 0 ? activeFacets : undefined,
+          classified: classificationLive ? true : undefined,
           audience: audience ?? undefined,
           sort,
           q: query ?? undefined,
@@ -233,6 +242,15 @@ function GalleryFeedPage() {
     staleTime: FACETS_STALE_MS,
   });
 
+  /* CA-16 P6: each card's classification, asked for only once the columns are known to be live. */
+  const classificationIds = useMemo(() => patternIds, [patternIds]);
+  const classifications = useQuery({
+    queryKey: ["build", "getBuildClassifications", classificationIds.join(",")],
+    queryFn: () => getBuildClassifications(classificationIds),
+    enabled: classificationLive && classificationIds.length > 0,
+    staleTime: FACETS_STALE_MS,
+  });
+
   /* Up to three makers whose names match the query: the one extra request, and only with a query. */
   const makers = useQuery({
     queryKey: ["gallery-makers", query],
@@ -276,6 +294,16 @@ function GalleryFeedPage() {
         onPatternChange={(next) => go({ pattern: next ?? undefined })}
         patterns={patterns}
         patternMarks={patternMarks.data}
+        classification={
+          classificationLive
+            ? {
+                counts: classificationFacets.data?.counts ?? {},
+                selected: activeFacets,
+                onToggle: (key) => go({ facets: activeFacets.includes(key) ? activeFacets.filter((entry) => entry !== key) : [...activeFacets, key] }),
+              }
+            : undefined
+        }
+        classifications={classificationLive ? classifications.data : undefined}
         audience={audience}
         onAudienceChange={(next) => go({ madeFor: next ? [next] : [] })}
         audiences={audiences}
@@ -291,7 +319,7 @@ function GalleryFeedPage() {
         viewerId={user?.id ?? null}
         engagement={engagement}
         aboveList={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
-        onClearAll={() => go({ query: null, model: undefined, tool: undefined, pattern: undefined, madeFor: [] })}
+        onClearAll={() => go({ query: null, model: undefined, tool: undefined, pattern: undefined, facets: [], madeFor: [] })}
         onNavigate={navigate}
         autoFocusSearch={focusSearch}
       />

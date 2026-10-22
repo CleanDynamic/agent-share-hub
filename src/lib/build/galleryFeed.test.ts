@@ -321,3 +321,51 @@ describe("listGalleryFeed with a model", () => {
     expect(feed.kind).toBe("all");
   });
 });
+
+describe("CA-16: classification facets in the feed", () => {
+  const cardsRequest = () => requests.filter(isCards)[0];
+  beforeEach(() => {
+    respond = (r) => (isCards(r) ? { data: [card("b0")] } : { data: [] });
+  });
+
+  it("asks for nothing extra when no facet is chosen", async () => {
+    await listGalleryFeed({ sort: "newest", page: 0 });
+    expect(callsOf(cardsRequest(), "overlaps")).toEqual([]);
+  });
+
+  it("makes one `facets &&` per facet: an OR within a facet and an AND across facets", async () => {
+    await listGalleryFeed({ sort: "newest", page: 0, facets: ["field:ai-ml", "field:medicine", "skill:no-coding", "skill:nope", "bad"] });
+    expect(callsOf(cardsRequest(), "overlaps").map((c) => c.args)).toEqual([
+      ["facets", ["field:ai-ml", "field:medicine"]],
+      ["facets", ["skill:no-coding"]],
+    ]);
+  });
+
+  it("finds builds classified by a term in a search, when the columns are live", async () => {
+    await listGalleryFeed({ sort: "newest", page: 0, q: "NLP", classified: true });
+    const clause = String(callsOf(cardsRequest(), "or")[1].args[0]);
+    expect(clause).toContain("title.ilike.%NLP%");
+    expect(clause).toMatch(/facets\.ov\.\{[^}]*"field:ai-ml\.nlp"/);
+    expect(clause).toContain('"task:analyse.text-analysis-nlp"');
+  });
+
+  it("maps RAG and Stata the same way, and does not touch facets when the columns are not live", async () => {
+    await listGalleryFeed({ sort: "newest", page: 0, q: "RAG", classified: true });
+    expect(String(callsOf(cardsRequest(), "or")[1].args[0])).toContain('"technique:retrieval-rag"');
+    requests = [];
+    await listGalleryFeed({ sort: "newest", page: 0, q: "Stata", classified: true });
+    expect(String(callsOf(cardsRequest(), "or")[1].args[0])).toContain('"stack:applications.stata"');
+    requests = [];
+    await listGalleryFeed({ sort: "newest", page: 0, q: "Stata" });
+    expect(String(callsOf(cardsRequest(), "or")[1].args[0])).not.toContain("facets.ov");
+  });
+
+  it("maps each word of a longer search, at most eight keys", async () => {
+    await listGalleryFeed({ sort: "newest", page: 0, q: "python stata rag nlp", classified: true });
+    const clause = String(callsOf(cardsRequest(), "or")[1].args[0]);
+    const keys = /facets\.ov\.\{([^}]*)\}/.exec(clause)?.[1].split(",") ?? [];
+    expect(keys.length).toBeGreaterThan(3);
+    expect(keys.length).toBeLessThanOrEqual(8);
+    expect(clause).toContain('"stack:languages.python"');
+  });
+});

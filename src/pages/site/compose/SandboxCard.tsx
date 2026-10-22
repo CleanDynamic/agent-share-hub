@@ -258,7 +258,7 @@ function CardBody(props: SandboxCardProps) {
   return (
     <>
       <div style={{ flexGrow: 1, overflowY: "auto", padding: phone ? 16 : 24, display: "flex", flexDirection: "column", gap: 24 }}>
-        <CardPreview title={title} summary={summary} classification={candidate} />
+        <CardPreview title={title} classification={candidate} />
 
         {data && !data.live ? (
           <p role="status" data-testid="classification-not-live" style={{ margin: 0, ...text(12.5, 400, t.text2) }}>

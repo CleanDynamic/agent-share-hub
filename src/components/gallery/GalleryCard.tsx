@@ -57,6 +57,7 @@ import { Link } from "react-router-dom";
 import { BuildCard, CardCredit, COVER_HEIGHT, type BuildCardTitleSize } from "@/components/brand/BuildCard";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import type { Pattern } from "@/lib/build/patterns";
+import type { Classification } from "@/lib/classify/types";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { gapEdge } from "@/components/brand/GapMarker";
 import { PictureLamp } from "@/components/brand/PictureLamp";
@@ -124,6 +125,8 @@ export interface GalleryCardProps {
   plaqueBuild?: PlaqueBuild;
   /** CA-13 P12: the patterns the build uses, from its own data: at most two are marked, with "+1" for a third. Row layout only. */
   patterns?: readonly Pattern[];
+  /** CA-16 P6: the build's classification: two lines under the title and a Regulated area tag. Absent, or with nothing in it: nothing is drawn. Row layout only. */
+  classification?: Classification | null;
   /** Frozen "now", for a fixture or a test. Row layout only. */
   now?: number;
   /**
@@ -157,6 +160,7 @@ export function GalleryCard({
   modelsUsed,
   plaqueBuild,
   patterns,
+  classification,
   now,
 }: GalleryCardProps) {
   if (layout === "row") {
@@ -170,6 +174,7 @@ export function GalleryCard({
         modelsUsed={modelsUsed ?? []}
         plaqueBuild={plaqueBuild ?? build}
         patterns={patterns}
+        classification={classification}
         openAsk={openBounty(build)}
         engagement={engagement}
         now={now}

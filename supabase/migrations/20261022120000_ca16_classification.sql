@@ -4,7 +4,8 @@
 -- builds.classification holds what the maker declared in the Classification Card, what the app read from the build's
 -- tiles, and where the maker disputed a read value (src/lib/classify/types.ts). builds.facets is computed from it by
 -- the app on every save, as `<facet>:<id>` strings (src/lib/classify/facets.ts); a Field value also carries every
--- ancestor, custom entries never appear, a disputed value replaces the derived one.
+-- ancestor (and a Task, a Setting or a tool its group, so a group counts each build once), custom entries never appear,
+-- a disputed value replaces the derived one.
 --
 -- WHAT THIS DOES, AND NOTHING ELSE
 --   1. adds builds.classification jsonb NOT NULL DEFAULT '{}' and builds.facets text[] NOT NULL DEFAULT '{}';

@@ -191,3 +191,21 @@ describe("CA-13 P12 — the pattern parameter", () => {
     expect(galleryHref(parse("pattern=structured-output"))).toBe("/gallery?pattern=structured-output");
   });
 });
+
+describe("CA-16: classification facets in the address", () => {
+  it("reads f as repeatable, keeps only keys the lists know, and without repeats", () => {
+    const params = parse("f=field:ai-ml&f=skill:no-coding&f=skill:nope&f=nofacet&f=field:ai-ml&f=cost%3Afree-plans-are-enough");
+    expect(params.facets).toEqual(["field:ai-ml", "skill:no-coding", "cost:free-plans-are-enough"]);
+  });
+
+  it("leaves facets out of the resting address", () => {
+    expect(parse("")).not.toHaveProperty("facets");
+    expect(galleryHref({ facets: [] })).toBe("/gallery");
+  });
+
+  it("writes f between pattern and sort, one per key, and a parse then write is a tidy", () => {
+    const href = galleryHref({ query: "nlp", sort: "rebuilt", pattern: "router", facets: ["field:ai-ml", "bad", "skill:no-coding"] });
+    expect(href).toBe("/gallery?pattern=router&f=field%3Aai-ml&f=skill%3Ano-coding&sort=rebuilt&q=nlp");
+    expect(galleryHref(parse(href.split("?")[1]))).toBe(href);
+  });
+});
