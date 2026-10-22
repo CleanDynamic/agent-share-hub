@@ -956,17 +956,35 @@ export function SandboxPage() {
     async (input: AddResultInput) => {
       showPending("result");
       try {
-        let made: ResultInput;
-        if (input.kind === "link") made = { kind: "link", url: input.url };
-        else if (input.kind === "model") made = { kind: "model", baseModel: input.baseModel, method: input.method };
-        else {
+        const caption = input.caption.trim() || undefined;
+        const upload = async (file: File) => {
           const build = await ensureBuild();
+          return nodes.run(() => uploadMedia({ buildId: build, file }));
+        };
+        let made: ResultInput;
+        if (input.kind === "link") made = { kind: "link", url: input.url, caption };
+        else if (input.kind === "deployed") made = { kind: "deployed", url: input.url, caption };
+        else if (input.kind === "model") made = { kind: "model", baseModel: input.baseModel, method: input.method, caption };
+        else if (input.kind === "text") made = { kind: "text", text: input.text, caption };
+        else if (input.kind === "message") made = { kind: "message", channel: input.channel, message: input.message, caption };
+        else if (input.kind === "external_change") made = { kind: "external_change", application: input.application, change: input.change, caption };
+        else if (input.kind === "metric") made = { kind: "metric", value: input.value, label: input.label, unit: input.unit, before: input.before, caption };
+        else if (input.kind === "audio") {
+          const media = await upload(input.file);
+          made = { kind: "audio", mediaId: media.id, name: input.file.name, size: input.file.size, mime: input.file.type || null, seconds: media.duration ?? null, caption };
+        } else if (input.kind === "table") {
+          const media = input.file ? await upload(input.file) : null;
+          made = { kind: "table", mediaId: media?.id ?? null, name: input.file?.name ?? null, size: input.file?.size ?? null, mime: input.file?.type || null, csv: input.csv, columns: input.columns, caption };
+        } else if (input.kind === "offline") {
+          const media = input.photo ? await upload(input.photo) : null;
+          made = { kind: "offline", description: input.description, photoId: media?.id ?? null, caption };
+        } else {
           const stored = [];
-          for (const file of input.kind === "file" ? [input.file] : input.files) stored.push({ file, media: await nodes.run(() => uploadMedia({ buildId: build, file })) });
+          for (const file of input.kind === "file" ? [input.file] : input.files) stored.push({ file, media: await upload(file) });
           made =
             input.kind === "file"
-              ? { kind: "file", mediaId: stored[0].media.id, name: stored[0].file.name, size: stored[0].file.size, mime: stored[0].file.type || null }
-              : { kind: "media", mediaIds: stored.map((one) => one.media.id), names: stored.map((one) => one.file.name) };
+              ? { kind: "file", mediaId: stored[0].media.id, name: stored[0].file.name, size: stored[0].file.size, mime: stored[0].file.type || null, caption }
+              : { kind: "media", mediaIds: stored.map((one) => one.media.id), names: stored.map((one) => one.file.name), caption };
         }
         const id = await prompts.addResultOf(made);
         if (id) {
@@ -1706,7 +1724,7 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
-      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} onAdd={(input) => void onAddResultInput(input)} />
+      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void onAddResultInput(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void onAddTool(input)} />
       <FullPromptWindow
         steps={steps}

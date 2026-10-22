@@ -2253,7 +2253,37 @@ export interface ResultFacts {
   mediaIds: string[];
   file: { name: string; kind: FileKind; size: number | null; mediaId: string } | null;
   model: { baseModel: string; method: string } | null;
+  /** CA-15 P3: what a result of one of the newer kinds holds. Absent for the four above and for a `kind` this build does not know. */
+  detail?: ResultDetail | null;
+  /** CA-15 P3: the one line under it, for every kind. */
+  caption?: string | null;
 }
+
+/** CA-15 P3: the output types added to a result, as stored in `payload.kind`. The older four read from what the payload holds. */
+export const RESULT_KINDS = ["text", "audio", "deployed", "table", "message", "external_change", "metric", "offline"] as const;
+export type ResultKindKey = (typeof RESULT_KINDS)[number];
+
+export const MESSAGE_CHANNELS = ["email", "slack", "text", "other"] as const;
+export type MessageChannel = (typeof MESSAGE_CHANNELS)[number];
+export const MESSAGE_CHANNEL_LABEL: Record<MessageChannel, string> = { email: "Email", slack: "Slack", text: "Text message", other: "Other" };
+
+export const RESULT_TEXT_MAX = 4000;
+export const RESULT_LINE_MAX = 280;
+export const RESULT_CAPTION_MAX = 140;
+export const RESULT_CSV_MAX = 20_000;
+export const METRIC_VALUE_MAX = 24;
+export const METRIC_LABEL_MAX = 80;
+export const METRIC_UNIT_MAX = 16;
+
+export type ResultDetail =
+  | { kind: "text"; text: string }
+  | { kind: "audio"; name: string; mediaId: string | null; seconds: number | null }
+  | { kind: "deployed"; link: ResultLink }
+  | { kind: "table"; name: string | null; columns: number | null }
+  | { kind: "message"; channel: MessageChannel; text: string }
+  | { kind: "external_change"; application: string; change: string }
+  | { kind: "metric"; value: string; label: string; unit: string; before: string }
+  | { kind: "offline"; description: string; mediaId: string | null };
 
 /** A link split for its card, or null when it is not an address. */
 export function resultLinkOf(url: string | null | undefined): ResultLink | null {
@@ -2270,7 +2300,36 @@ export function resultLinkOf(url: string | null | undefined): ResultLink | null 
   }
 }
 
-/** What a result holds. A model is read from `kind`; a file from `file_name`; pictures from `media_ids` (or the one `media_id` older results keep). */
+/** The payload's own words for a result's detail, read defensively; null for the four older kinds and for a kind this build does not know. */
+function resultDetailOf(payload: Payload): ResultDetail | null {
+  const text = (key: string) => stringOf(payload[key])?.trim() ?? "";
+  switch (payload.kind) {
+    case "text":
+      return text("text") ? { kind: "text", text: text("text") } : null;
+    case "audio":
+      return { kind: "audio", name: text("file_name") || text("summary") || "Audio", mediaId: stringOf(payload.media_id), seconds: numberOf(payload.duration) };
+    case "deployed": {
+      const link = resultLinkOf(stringOf(payload.url));
+      return link ? { kind: "deployed", link } : null;
+    }
+    case "table":
+      return { kind: "table", name: text("file_name") || null, columns: typeof payload.columns === "number" && Number.isInteger(payload.columns) && payload.columns > 0 ? payload.columns : null };
+    case "message": {
+      const channel = MESSAGE_CHANNELS.includes(payload.channel as MessageChannel) ? (payload.channel as MessageChannel) : "other";
+      return text("message") ? { kind: "message", channel, text: text("message") } : null;
+    }
+    case "external_change":
+      return text("application") || text("change") ? { kind: "external_change", application: text("application"), change: text("change") } : null;
+    case "metric":
+      return text("value") ? { kind: "metric", value: text("value"), label: text("label"), unit: text("unit"), before: text("before") } : null;
+    case "offline":
+      return text("description") ? { kind: "offline", description: text("description"), mediaId: stringOf(payload.media_id) } : null;
+    default:
+      return null;
+  }
+}
+
+/** What a result holds. A model is read from `kind`; a file from `file_name`; pictures from `media_ids` (or the one `media_id` older results keep). The newer kinds are read into `detail`. */
 export function resultFactsOf(node: Pick<BuildNode, "payload">): ResultFacts {
   const payload = payloadOf(node);
   const ids = Array.isArray(payload.media_ids) ? payload.media_ids.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
@@ -2278,19 +2337,53 @@ export function resultFactsOf(node: Pick<BuildNode, "payload">): ResultFacts {
   const fileName = stringOf(payload.file_name)?.trim() || null;
   const model = payload.kind === TRAINED_MODEL;
   const mediaIds = ids.length > 0 ? ids.slice(0, RESULT_MEDIA_MAX) : one && !fileName ? [one] : [];
+  const detail = model ? null : resultDetailOf(payload);
+  const caption = stringOf(payload.caption)?.trim().slice(0, RESULT_CAPTION_MAX) || null;
   return {
     link: model ? null : resultLinkOf(stringOf(payload.url)),
     mediaIds: model || fileName ? [] : mediaIds,
     file: !model && fileName && one ? { name: fileName, kind: fileKindOf(fileName, stringOf(payload.file_mime)), size: numberOf(payload.file_size), mediaId: one } : null,
     model: model ? { baseModel: stringOf(payload.base_model)?.trim() ?? "", method: stringOf(payload.method)?.trim() ?? "" } : null,
+    ...(detail ? { detail } : null),
+    ...(caption ? { caption } : null),
   };
 }
 
 /** Whether a result holds something to show. */
-export const resultHolds = (facts: ResultFacts): boolean => Boolean(facts.link || facts.mediaIds.length > 0 || facts.file || facts.model);
+export const resultHolds = (facts: ResultFacts): boolean => Boolean(facts.link || facts.mediaIds.length > 0 || facts.file || facts.model || facts.detail);
+
+/** CA-15 P3: the output type's name, as the Add dialog and the tile's type line say it. */
+export const RESULT_TYPE_LABEL: Record<"link" | "pictures" | "file" | "model" | ResultKindKey, string> = {
+  link: "Link",
+  pictures: "Image or video",
+  file: "File",
+  model: "Model",
+  text: "Text",
+  audio: "Audio",
+  deployed: "Deployed app or website",
+  table: "Data table",
+  message: "Sent message",
+  external_change: "Change in an external app",
+  metric: "Metric",
+  offline: "Offline outcome",
+};
+
+/** The output type a result is, for its tile's type line; null when it holds nothing yet. */
+export function resultTypeLabel(facts: ResultFacts): string | null {
+  if (facts.detail) return RESULT_TYPE_LABEL[facts.detail.kind];
+  if (facts.model) return RESULT_TYPE_LABEL.model;
+  if (facts.link) return RESULT_TYPE_LABEL.link;
+  if (facts.file) return RESULT_TYPE_LABEL.file;
+  if (facts.mediaIds.length > 0) return RESULT_TYPE_LABEL.pictures;
+  return null;
+}
 
 /** One line for what a result holds, for the rows that name it: never "text". */
 export function resultHoldsWord(facts: ResultFacts): string {
+  if (facts.detail) {
+    const words: Record<ResultKindKey, string> = { text: "some text", audio: "an audio file", deployed: "a deployed app", table: "a data table", message: "a sent message", external_change: "a change in another app", metric: "a metric", offline: "an offline outcome" };
+    return words[facts.detail.kind];
+  }
   if (facts.model) return "a trained model";
   if (facts.link) return "a link";
   if (facts.file) return "a file";
@@ -2299,35 +2392,73 @@ export function resultHoldsWord(facts: ResultFacts): string {
   return "Nothing added yet";
 }
 
-export type ResultInput =
+export type ResultInput = (
   | { kind: "link"; url: string }
   | { kind: "media"; mediaIds: readonly string[]; names: readonly string[] }
   | { kind: "file"; mediaId: string; name: string; size: number | null; mime: string | null }
-  | { kind: "model"; baseModel: string; method: string };
+  | { kind: "model"; baseModel: string; method: string }
+  | { kind: "text"; text: string }
+  | { kind: "audio"; mediaId: string; name: string; size: number | null; mime: string | null; seconds?: number | null }
+  | { kind: "deployed"; url: string }
+  | { kind: "table"; mediaId?: string | null; name?: string | null; size?: number | null; mime?: string | null; csv?: string; columns?: number | null }
+  | { kind: "message"; channel: MessageChannel; message: string }
+  | { kind: "external_change"; application: string; change: string }
+  | { kind: "metric"; value: string; label: string; unit?: string; before?: string }
+  | { kind: "offline"; description: string; photoId?: string | null }
+) & { /** CA-15 P3: one line under the result; optional for every kind. */ caption?: string };
 
 /** What a new result is called until its maker names it: the site, the file's name, "Trained model". */
 export function resultSummaryOf(input: ResultInput): string {
   if (input.kind === "link") return resultLinkOf(input.url)?.site ?? input.url.trim();
   if (input.kind === "media") return input.names.length > 1 ? `${input.names[0]} and ${input.names.length - 1} more` : (input.names[0] ?? "Picture");
   if (input.kind === "file") return input.name;
+  if (input.kind === "text") return firstLineOf(input.text) || "Text";
+  if (input.kind === "audio") return input.name;
+  if (input.kind === "deployed") return resultLinkOf(input.url)?.site ?? input.url.trim();
+  if (input.kind === "table") return input.name?.trim() || "Data table";
+  if (input.kind === "message") return `${MESSAGE_CHANNEL_LABEL[input.channel]}: ${firstLineOf(input.message, 60)}`;
+  if (input.kind === "external_change") return `${input.application.trim()}: ${firstLineOf(input.change, 60)}`;
+  if (input.kind === "metric") return input.label.trim() || "Metric";
+  if (input.kind === "offline") return firstLineOf(input.description) || "Offline outcome";
   return "Trained model";
 }
 
 /** Why a result cannot be added, or null. */
 export function resultRefusal(input: ResultInput): string | null {
-  if (input.kind === "link") return resultLinkOf(input.url) ? null : "Add a web address, like example.com/page.";
-  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add a picture or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `A result holds at most ${RESULT_MEDIA_MAX} pictures.` : null;
+  if ((input.caption ?? "").trim().length > RESULT_CAPTION_MAX) return `A caption is at most ${RESULT_CAPTION_MAX} characters.`;
+  if (input.kind === "link") return resultLinkOf(input.url) ? null : "Add a URL, like example.com/page.";
+  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add an image or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `A result holds at most ${RESULT_MEDIA_MAX} images or videos.` : null;
   if (input.kind === "file") return input.name.trim() && input.mediaId ? null : "Add a file.";
+  if (input.kind === "text") return !input.text.trim() ? "Add the text." : input.text.length > RESULT_TEXT_MAX ? `The text is at most ${RESULT_TEXT_MAX} characters.` : null;
+  if (input.kind === "audio") return input.name.trim() && input.mediaId ? null : "Add an audio file.";
+  if (input.kind === "deployed") return resultLinkOf(input.url) ? null : "Add the URL of the deployed app or website.";
+  if (input.kind === "table") {
+    if ((input.csv ?? "").length > RESULT_CSV_MAX) return `Pasted CSV is at most ${RESULT_CSV_MAX.toLocaleString("en-GB")} characters. Upload it as a file instead.`;
+    return (input.mediaId && input.name?.trim()) || (input.csv ?? "").trim() ? null : "Add a CSV file or paste the CSV.";
+  }
+  if (input.kind === "message") return !MESSAGE_CHANNELS.includes(input.channel) ? "Choose the channel." : !input.message.trim() ? "Add the message." : input.message.length > RESULT_TEXT_MAX ? `The message is at most ${RESULT_TEXT_MAX} characters.` : null;
+  if (input.kind === "external_change") return !input.application.trim() ? "Say which application." : !input.change.trim() ? "Say what changed." : input.change.length > RESULT_LINE_MAX ? `What changed is at most ${RESULT_LINE_MAX} characters.` : null;
+  if (input.kind === "metric") {
+    if (!input.value.trim()) return "Add the value.";
+    if (!input.label.trim()) return "Add the label.";
+    if (input.value.trim().length > METRIC_VALUE_MAX || (input.before ?? "").trim().length > METRIC_VALUE_MAX) return `A value is at most ${METRIC_VALUE_MAX} characters.`;
+    if (input.label.trim().length > METRIC_LABEL_MAX) return `The label is at most ${METRIC_LABEL_MAX} characters.`;
+    return (input.unit ?? "").trim().length > METRIC_UNIT_MAX ? `The unit is at most ${METRIC_UNIT_MAX} characters.` : null;
+  }
+  if (input.kind === "offline") return !input.description.trim() ? "Add a description." : input.description.length > RESULT_TEXT_MAX ? `The description is at most ${RESULT_TEXT_MAX} characters.` : null;
   if (input.baseModel.trim().length > BASE_MODEL_MAX) return `The base model is at most ${BASE_MODEL_MAX} characters.`;
-  if (input.method.trim().length > TRAINED_METHOD_MAX) return `How it was trained is at most ${TRAINED_METHOD_MAX} characters.`;
+  if (input.method.trim().length > TRAINED_METHOD_MAX) return `The training method is at most ${TRAINED_METHOD_MAX} characters.`;
   return input.baseModel.trim() || input.method.trim() ? null : "Say what it is based on, or how it was trained.";
 }
 
-/** CA-12 P9: add a result that holds the thing itself: a link, pictures or video, a file, or a model. */
+/** CA-12 P9, CA-15 P3: add a result that holds the thing itself: a link, pictures or video, a file, a model, or one of the newer kinds. */
 export async function addResultTile(buildId: string, tree: readonly NodeTree[], input: ResultInput): Promise<BuildNode> {
   const why = resultRefusal(input);
   if (why) throw refuse("addResultTile", why);
   const out: Record<string, Json> = { summary: resultSummaryOf(input) };
+  const put = (key: string, value: string | null | undefined) => {
+    if (value && value.trim()) out[key] = value.trim();
+  };
   if (input.kind === "link") out.url = resultLinkOf(input.url)?.url ?? input.url.trim();
   else if (input.kind === "media") {
     out.media_id = input.mediaIds[0];
@@ -2337,11 +2468,52 @@ export async function addResultTile(buildId: string, tree: readonly NodeTree[], 
     out.file_name = input.name.trim();
     if (input.size !== null) out.file_size = input.size;
     if (input.mime) out.file_mime = input.mime;
+  } else if (input.kind === "text") {
+    out.kind = "text";
+    out.text = input.text.trim();
+  } else if (input.kind === "audio") {
+    out.kind = "audio";
+    out.media_id = input.mediaId;
+    out.file_name = input.name.trim();
+    if (input.size !== null) out.file_size = input.size;
+    if (input.mime) out.file_mime = input.mime;
+    if (typeof input.seconds === "number" && Number.isFinite(input.seconds) && input.seconds > 0) out.duration = Math.round(input.seconds);
+  } else if (input.kind === "deployed") {
+    out.kind = "deployed";
+    out.url = resultLinkOf(input.url)?.url ?? input.url.trim();
+  } else if (input.kind === "table") {
+    out.kind = "table";
+    if (input.mediaId && input.name?.trim()) {
+      out.media_id = input.mediaId;
+      out.file_name = input.name.trim();
+      if (typeof input.size === "number") out.file_size = input.size;
+      if (input.mime) out.file_mime = input.mime;
+    } else put("csv", input.csv);
+    if (typeof input.columns === "number" && Number.isInteger(input.columns) && input.columns > 0) out.columns = input.columns;
+  } else if (input.kind === "message") {
+    out.kind = "message";
+    out.channel = input.channel;
+    out.message = input.message.trim();
+  } else if (input.kind === "external_change") {
+    out.kind = "external_change";
+    out.application = input.application.trim();
+    out.change = input.change.trim();
+  } else if (input.kind === "metric") {
+    out.kind = "metric";
+    out.value = input.value.trim();
+    out.label = input.label.trim();
+    put("unit", input.unit);
+    put("before", input.before);
+  } else if (input.kind === "offline") {
+    out.kind = "offline";
+    out.description = input.description.trim();
+    if (input.photoId) out.media_id = input.photoId;
   } else {
     out.kind = TRAINED_MODEL;
     if (input.baseModel.trim()) out.base_model = input.baseModel.trim();
     if (input.method.trim()) out.method = input.method.trim();
   }
+  put("caption", input.caption);
   return placeTopNode(buildId, tree, { type: RESULT_TYPE, title: null, payload: out as Json });
 }
 

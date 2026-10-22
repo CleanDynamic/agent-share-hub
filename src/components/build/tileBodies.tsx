@@ -9,7 +9,7 @@ import { type CSSProperties, type ReactNode, useState } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { CodeLines } from "@/components/code/CodeLines";
-import { CONNECTION_LABEL, RESULT_THUMBS, resultHolds, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
+import { CONNECTION_LABEL, MESSAGE_CHANNEL_LABEL, RESULT_THUMBS, resultHolds, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
 import { decisionHeadline, decisionLines, expectedLine } from "@/lib/build/decision";
 import { formatSize } from "@/lib/build/readerSteps";
@@ -17,9 +17,12 @@ import { t } from "@/lib/theme/tokens";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { ManualThumb } from "@/pages/site/compose/ManualThumb";
 import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
-import { ellipsis, text } from "@/pages/site/compose/refinedStyles";
+import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
+import { DM_MONO } from "@/lib/theme/type";
 
 export const TILE_COPY = {
+  deployed: "Deployed app",
+  pastedCsv: "Pasted CSV",
   noInstructions: "No instructions yet",
   readAll: "Read all",
   nothingAdded: "Nothing added yet",
@@ -28,6 +31,9 @@ export const TILE_COPY = {
   allPassed: "all passed",
   failing: "First failing case",
 } as const;
+
+/** 83 seconds is "1:23". */
+export const durationOf = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, "0")}`;
 
 const clamp = (lines: number): CSSProperties => ({ display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" });
 
@@ -235,6 +241,67 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
       </div>
     );
   }
+  const detail = facts.detail;
+  if (detail && detail.kind !== "deployed") {
+    const first = (value: string) => value.split(/\r?\n/).find((line) => line.trim()) ?? "";
+    return (
+      <div data-testid="result-tile" data-kind={detail.kind} style={{ ...wrap, gap: 4 }}>
+        {detail.kind === "text" ? (
+          <span data-testid="result-text" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>
+            {detail.text}
+          </span>
+        ) : null}
+        {detail.kind === "audio" ? (
+          <div data-testid="result-audio" style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{detail.name}</span>
+            {detail.seconds ? <span style={{ ...text(12, 400, t.label), fontFamily: DM_MONO, ...tnum }}>{durationOf(detail.seconds)}</span> : null}
+          </div>
+        ) : null}
+        {detail.kind === "table" ? (
+          <div data-testid="result-table" style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{detail.name ?? TILE_COPY.pastedCsv}</span>
+            {detail.columns ? <Quiet>{`${detail.columns} columns`}</Quiet> : null}
+          </div>
+        ) : null}
+        {detail.kind === "message" ? (
+          <>
+            <Quiet>{MESSAGE_CHANNEL_LABEL[detail.channel]}</Quiet>
+            <span data-testid="result-message" style={{ ...text(13, 400, t.text), ...ellipsis }}>
+              {first(detail.text)}
+            </span>
+          </>
+        ) : null}
+        {detail.kind === "external_change" ? (
+          <>
+            <div data-testid="result-app" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <ToolMark tool={detail.application} size={20} />
+              <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{detail.application}</span>
+            </div>
+            <span data-testid="result-change" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", ...clamp(2) }}>
+              {detail.change}
+            </span>
+          </>
+        ) : null}
+        {detail.kind === "metric" ? (
+          <>
+            <span data-testid="result-metric" style={{ fontFamily: DM_MONO, fontSize: 18, lineHeight: "24px", color: t.text, ...tnum }}>
+              {[detail.value, detail.unit].filter(Boolean).join(" ")}
+            </span>
+            {detail.label ? <span style={text(13, 400, t.text2)}>{detail.label}</span> : null}
+            {detail.before ? <Quiet>{`from ${detail.before}`}</Quiet> : null}
+          </>
+        ) : null}
+        {detail.kind === "offline" ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <span data-testid="result-offline" style={{ ...text(13, 400, t.text), ...ellipsis, flexGrow: 1 }}>
+              {first(detail.description)}
+            </span>
+            {detail.mediaId ? <ManualThumb mediaId={detail.mediaId} size={48} /> : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   if (facts.link) {
     const { link } = facts;
     return (
@@ -250,7 +317,7 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
           <SiteIcon host={link.host} />
           <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
             <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{link.site}</span>
-            {link.path ? <span style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>{link.path}</span> : null}
+            {detail?.kind === "deployed" ? <span style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>{TILE_COPY.deployed}</span> : link.path ? <span style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>{link.path}</span> : null}
           </span>
         </a>
       </div>

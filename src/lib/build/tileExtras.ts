@@ -29,6 +29,15 @@ export const linesOf = (text: string): string[] =>
 /** A finite number, or null. */
 export const finite = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
+/** How many columns a CSV or TSV's first line has, counting the delimiter that appears most (comma, tab, semicolon); null for an empty text or a single column. */
+export function csvColumns(head: string): number | null {
+  const first = head.split(/\r?\n/).find((line) => line.trim()) ?? "";
+  if (!first) return null;
+  const counts = [",", "\t", ";"].map((delimiter) => first.split(delimiter).length);
+  const columns = Math.max(...counts);
+  return columns > 1 ? columns : null;
+}
+
 /* ── a prompt: model settings and variables (P2) ── */
 
 export const EFFORTS = ["default", "low", "high"] as const;
