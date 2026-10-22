@@ -522,7 +522,7 @@ export function PostToolbar({
         </div>
       ) : null}
       {panel === "link" ? <LinkRow editor={editor} href={tools.href} hasLink={tools.link} onDone={() => setPanel(null)} field={linkField} /> : null}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, borderTop: `1px solid ${t.hairline}`, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div role="group" aria-label="Add to the post" style={{ display: "flex", alignItems: "center", gap: phone ? 0 : 2, flex: "1 1 auto", minWidth: 0, overflowX: "auto" }}>
           <ToolButton
             label="Picture or video"

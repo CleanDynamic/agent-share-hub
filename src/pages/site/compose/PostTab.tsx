@@ -487,11 +487,8 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           />
         </div>
       </div>
-      {editor && writing.posts < MAX_THREAD_POSTS ? (
-        <AddPostRow avatar={avatar} maker={draft.maker} phone={phone} onAdd={() => addPostAtEnd(editor, setNotice)} />
-      ) : null}
       {/* Under the words, not the avatar, as X lines its toolbar up; a phone gives the toolbar the whole width. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, marginLeft: phone ? 0 : avatar + RAIL_GAP.desktop }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, marginLeft: phone ? 0 : avatar + RAIL_GAP.desktop }}>
         {notice ? (
           <p role="status" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
             {notice}
