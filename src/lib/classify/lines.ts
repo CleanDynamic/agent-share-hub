@@ -1,4 +1,4 @@
-/* CA-16 P6 — the two lines a build's card carries under its summary, and the Regulated area tag.
+/* CA-16 P6: the two lines a build's card carries under its summary, and the Regulated area tag.
 
    PURE. The Gallery card, the Classification Card's preview and the build page all read these, so they cannot disagree.
    A build with no classification gives empty lines, and its card shows nothing new (P9).

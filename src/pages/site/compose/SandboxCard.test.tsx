@@ -1,4 +1,4 @@
-// CA-16 P5 — the Classification Card: the same dialog, ids, focus and phone behaviour as the Card it replaces, now with
+// CA-16 P5, the Classification Card: the same dialog, ids, focus and phone behaviour as the Card it replaces, now with
 // a preview, the Optional rows (every one closed), the classification pickers, "Read from your build" with disputes
 // and questions, and Save. The acceptance tests run the real data hook and the real storage layer over a mocked
 // database, so what they check is what would be written.

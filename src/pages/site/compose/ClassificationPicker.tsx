@@ -1,4 +1,4 @@
-/* CA-16 P4 — the typeahead picker: Field, Task, Setting, Data handled and Tools and stack.
+/* CA-16 P4: the typeahead picker: Field, Task, Setting, Data handled and Tools and stack.
 
    CHOSEN VALUES are chips with a remove button; a Field chip shows its full path, an entry of the maker's own has a
    dashed edge. SUGGESTIONS sit above the input as up to three dashed chips with "+"; nothing is pre-selected.

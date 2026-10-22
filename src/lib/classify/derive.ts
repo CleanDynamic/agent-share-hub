@@ -1,4 +1,4 @@
-/* CA-16 P3 — what a build says about itself, read from its tiles.
+/* CA-16 P3: what a build says about itself, read from its tiles.
 
    PURE. `deriveClassification(steps, build)` takes the `Step[]` the composer already builds and, in `build`, the node
    tree the steps came from (results, files and tool tiles at the top level are not steps, so only the tree has them)

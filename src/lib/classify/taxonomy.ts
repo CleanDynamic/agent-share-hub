@@ -1,4 +1,4 @@
-/* CA-16 P1 — the classification lists, in one versioned module.
+/* CA-16 P1: the classification lists, in one versioned module.
 
    HOW TO ADD A VALUE. Each list below is a block of indented text, one value per line. Indent two spaces to put a value
    under the one above it. After the label, ` | ` starts its synonyms (the terms people actually type, comma separated,

@@ -18,6 +18,9 @@ import {
   valueOf,
 } from "./taxonomy";
 
+/** U+2014, written as a code so this file holds none. */
+const EM_DASH = String.fromCharCode(0x2014);
+
 describe("taxonomy: shape", () => {
   it("has a version", () => {
     expect(TAXONOMY_VERSION).toBe(1);
@@ -34,9 +37,9 @@ describe("taxonomy: shape", () => {
   it("keeps a dash out of every label and synonym, and each parent real", () => {
     for (const facet of FACETS) {
       for (const value of TAXONOMY[facet]) {
-        expect(value.label.includes("—"), value.label).toBe(false);
+        expect(value.label.includes(EM_DASH), value.label).toBe(false);
         expect(value.label.includes("!"), value.label).toBe(false);
-        for (const synonym of value.synonyms) expect(synonym.includes("—")).toBe(false);
+        for (const synonym of value.synonyms) expect(synonym.includes(EM_DASH)).toBe(false);
         if (value.parent !== null) expect(isKnown(facet, value.parent), `${facet}:${value.id} parent`).toBe(true);
       }
     }

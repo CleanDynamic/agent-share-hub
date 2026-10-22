@@ -1,4 +1,4 @@
-// CA-16 P6 — the Gallery with the classification filters: drawn only once `classification_facets` answers, in the order
+// CA-16 P6, the Gallery with the classification filters: drawn only once `classification_facets` answers, in the order
 // the prompt gives, with the two quick chips, no Sort menu, the address as the state, and two lines on a card.
 
 import { HelmetProvider } from "react-helmet-async";

@@ -1,4 +1,4 @@
-/* CA-16 P5 — the Classification Card.
+/* CA-16 P5: the Classification Card.
 
    WHAT IT IS. The sheet where a build is described and filed in the Gallery. It was "Card" (UI-P94: Cover, Title, one-line
    summary, Who it's for, Made with, More details). The internal names stay (`SandboxCard`, `data-testid="sandbox-card"`,

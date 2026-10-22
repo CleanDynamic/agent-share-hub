@@ -1,4 +1,4 @@
-/* CA-16 P5 — the Card's Optional section: rows that start closed.
+/* CA-16 P5: the Card's Optional section: rows that start closed.
 
    CA-15 has not added its `OptionalSection` and `OptionalField` yet, so these are the equivalent: the same idea (an
    optional thing is one quiet line until it is wanted) on the refined recipes. A closed row shows its name, its value

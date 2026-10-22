@@ -1,4 +1,4 @@
-/* CA-16 P6 — the Gallery's classification filters.
+/* CA-16 P6: the Gallery's classification filters.
 
    IN THIS ORDER: Field (Areas and Domains with counts, each opening to its children), Task (groups, each opening to its
    tasks), What was built, Tools and stack (with its own search box). Then one closed group, More filters, holding Setting,

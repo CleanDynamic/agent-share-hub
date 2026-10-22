@@ -1,4 +1,4 @@
-/* CA-16 P5 — "Read from your build": every facet the tiles say, where it came from, and what the maker can correct.
+/* CA-16 P5: "Read from your build": every facet the tiles say, where it came from, and what the maker can correct.
 
    GAP QUESTIONS come first. They are questions, never errors: each has its action (Add code) and Dismiss. Under them,
    one row per derived facet: its name, its value (the maker's correction when there is one), a provenance dot (Derived,

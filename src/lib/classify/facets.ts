@@ -1,4 +1,4 @@
-/* CA-16 P2 — what is computed from a classification: its `facets` array, the Regulated area flag, the old `shape`.
+/* CA-16 P2: what is computed from a classification: its `facets` array, the Regulated area flag, the old `shape`.
 
    PURE. The `facets` array is rebuilt from `classification` on every save, so it can never disagree with it. */
 

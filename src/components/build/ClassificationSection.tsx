@@ -1,4 +1,4 @@
-/* CA-16 P7 — the build page's Classification section: three lines, a provenance dot on every value, and the Regulated area
+/* CA-16 P7: the build page's Classification section: three lines, a provenance dot on every value, and the Regulated area
    notice. Nothing at all for a build that has no classification (P9): old builds read exactly as before. */
 
 import type { CSSProperties, ReactNode } from "react";

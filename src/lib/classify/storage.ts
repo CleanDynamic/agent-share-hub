@@ -1,4 +1,4 @@
-/* CA-16 P2 — reading and writing `builds.classification` and `builds.facets`.
+/* CA-16 P2: reading and writing `builds.classification` and `builds.facets`.
 
    THE COLUMNS ARE NEWER THAN THE GENERATED TYPES, and until the CA-16 migration is applied they do not exist. The way
    CA-13 told for `patterns` is used here: a read that finds the column missing says `live: false`, a write that finds it

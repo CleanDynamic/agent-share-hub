@@ -1,5 +1,5 @@
 -- =============================================================================
--- buildgallery — the classification of a build (CA-16 Part 2 and Part 8)
+-- buildgallery, the classification of a build (CA-16 Part 2 and Part 8)
 -- =============================================================================
 -- builds.classification holds what the maker declared in the Classification Card, what the app read from the build's
 -- tiles, and where the maker disputed a read value (src/lib/classify/types.ts). builds.facets is computed from it by

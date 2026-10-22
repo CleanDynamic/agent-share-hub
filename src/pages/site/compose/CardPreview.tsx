@@ -1,4 +1,4 @@
-/* CA-16 P5 — the Classification Card's preview: the Gallery card's build line as the Gallery draws it, with no cover. The
+/* CA-16 P5: the Classification Card's preview: the Gallery card's build line as the Gallery draws it, with no cover. The
    title, the Regulated area tag and the two lines are the Gallery's own pieces (FeedPost draws no summary, so neither
    does this). */
 

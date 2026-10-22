@@ -1,4 +1,4 @@
-/* CA-16 P2 — the shape of `builds.classification`.
+/* CA-16 P2: the shape of `builds.classification`.
 
    `declared` is what the maker chose in the Classification Card. `derived` is read from the build's tiles, each value
    with the tile ids it came from. `disputes` is where the maker corrected a derived value, with a reason. Nothing here

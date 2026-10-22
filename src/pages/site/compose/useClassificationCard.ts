@@ -1,4 +1,4 @@
-/* CA-16 P5 — the Classification Card's data: what is stored, what the tiles say, and the two writes.
+/* CA-16 P5: the Classification Card's data: what is stored, what the tiles say, and the two writes.
 
    THE DERIVED VALUES ARE NEVER STALE. They are worked out from the tiles on every render, and while the composer is
    open they are written back (with the matching `facets`) a moment after they change, so the Gallery and the build

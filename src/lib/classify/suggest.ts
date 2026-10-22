@@ -1,4 +1,4 @@
-/* CA-16 P4 — the values the Card suggests, by rule and never by a model.
+/* CA-16 P4: the values the Card suggests, by rule and never by a model.
 
    PURE. A suggestion is a list value the build's own words or tiles point at: the derivation (an image result suggests
    the Task "Images"), and an exact match of the title, the summary and the prompts against a label or a synonym.

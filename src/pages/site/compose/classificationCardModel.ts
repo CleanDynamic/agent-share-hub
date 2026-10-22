@@ -1,4 +1,4 @@
-/* CA-16 P5 — what the Classification Card is given, and how its draft becomes a classification. PURE.
+/* CA-16 P5: what the Classification Card is given, and how its draft becomes a classification. PURE.
 
    The Card edits a DRAFT of the classification and writes it when the maker presses Save; Cancel drops it. The derived
    values and the gap questions are not part of the draft: they are read from the build every time (`derive.ts`). */

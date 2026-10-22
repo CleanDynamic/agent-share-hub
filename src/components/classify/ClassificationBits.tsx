@@ -1,4 +1,4 @@
-/* CA-16 — the small pieces every surface that shows a classification shares: the two card lines, the Regulated area tag
+/* CA-16: the small pieces every surface that shows a classification shares: the two card lines, the Regulated area tag
    and the provenance dot. The Gallery card, the Classification Card's preview and the build page all draw these, so the
    words and the look cannot drift apart. Tokens only; mono is Geist Mono. */
 
