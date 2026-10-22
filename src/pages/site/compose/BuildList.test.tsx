@@ -163,7 +163,7 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
 
   it("asks for a tool before it offers a model", () => {
     list(noToolFirst());
-    const button = screen.getByRole("button", { name: "Pick a tool first" });
+    const button = screen.getByRole("button", { name: "Select a tool first" });
     expect((button as HTMLButtonElement).disabled).toBe(true);
     expect(button.textContent).toContain("model");
   });

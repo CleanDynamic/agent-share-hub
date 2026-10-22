@@ -106,6 +106,7 @@ import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
 import type { ChangeRange } from "@/lib/build/changes";
 import type { RunsWhen } from "@/lib/build/decision";
 import type { Helper } from "@/lib/build/helpers";
+import type { AgentPattern } from "@/lib/build/tileExtras";
 import type { ModelRun } from "@/lib/build/modelRun";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { showMadeWithIn } from "./useComposeSessions";
@@ -171,6 +172,12 @@ export interface AgentInput extends AgentSetupInput {
   runs?: Runs;
   /** CA-04 P1: the session it was added to. */
   session?: string | null;
+  /** CA-15 P7: what it must not do, where its output goes, a pasted sample run, a trace link, and (a team) its orchestration pattern. */
+  limits?: string[];
+  output?: string;
+  sample?: string;
+  traceUrl?: string;
+  pattern?: AgentPattern;
 }
 
 export interface ComposePrompts {
@@ -714,7 +721,7 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
@@ -729,18 +736,25 @@ export function useComposePrompts({
           ...(runs ? { runs } : null),
           ...(session ? { session } : null),
         };
+        /** CA-13 P6, CA-15 P7: what the agent says beyond its setup, written to the agent itself (the one that leads a team). */
+        const dressed = async (agent: BuildNode): Promise<BuildNode> => {
+          let made = agent;
+          if (helpers?.length || traceUrl) made = await setRuntimeFields(made, { ...(helpers?.length ? { helpers } : null), ...(traceUrl ? { traceUrl } : null) });
+          const extras = { ...(limits?.length ? { limits } : null), ...(output?.trim() ? { output } : null), ...(sample?.trim() ? { sample } : null) };
+          return Object.keys(extras).length > 0 ? setExtras(made, extras) : made;
+        };
         if (kind === "agent") {
-          let created = await addAgent(build, nodes.current(), { name, model, ...setup });
-          // CA-13 P6: the helpers it used, written with the agent.
-          if (helpers?.length) created = await setRuntimeFields(created, { helpers });
+          const created = await dressed(await addAgent(build, nodes.current(), { name, model, ...setup }));
           nodes.record(created.id, created);
           noteTool(build, harness);
           return created.id;
         }
-        const { team } = await addTeam(build, nodes.current(), { name, model, ...setup });
+        const { team, agent } = await addTeam(build, nodes.current(), { name, model, ...setup });
+        await dressed(agent);
+        const made = pattern ? await setExtras(team, { pattern }) : team;
         noteTool(build, harness);
-        nodes.record(team.id, team);
-        return team.id;
+        nodes.record(made.id, made);
+        return made.id;
       })
       .catch((cause) => {
         failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Teams need the Deploy queue item from UI-P61." : `Couldn't add that ${kind}. Try again.`)(cause);

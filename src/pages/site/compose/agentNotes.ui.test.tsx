@@ -87,7 +87,7 @@ describe("Details", () => {
     return props;
   }
 
-  it("asks How it tidies its notes under What it remembers, up to 120 characters", () => {
+  it("asks How it tidies its notes under Memory, up to 120 characters", () => {
     const props = details();
     const well = screen.getByRole("textbox", { name: "How it tidies its notes" }) as HTMLInputElement;
     expect(well.placeholder).toBe("Every Sunday, keeps the 50 most useful notes");
@@ -95,7 +95,7 @@ describe("Details", () => {
     fireEvent.change(well, { target: { value: "Every Sunday, keeps the 50 most useful notes" } });
     fireEvent.keyDown(well, { key: "Enter" });
     expect(props.onAgentNotes).toHaveBeenCalledWith("a1", { memoryTidy: "Every Sunday, keeps the 50 most useful notes" });
-    const remembers = screen.getByRole("textbox", { name: "What it remembers" });
+    const remembers = screen.getByRole("textbox", { name: "Memory" });
     expect(remembers.compareDocumentPosition(well) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

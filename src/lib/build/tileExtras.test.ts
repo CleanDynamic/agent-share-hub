@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cleanExtras, markVariable, settingsOf, variableNamesIn, variablesFor, variablesOf } from "./tileExtras";
+import { agentExtrasOf, cleanExtras, markVariable, patternOf, settingsOf, variableNamesIn, variablesFor, variablesOf } from "./tileExtras";
 
 describe("a prompt's settings and variables (CA-15 P2)", () => {
   it("reads settings as given, and nothing when none of the three was", () => {
@@ -35,5 +35,28 @@ describe("a prompt's settings and variables (CA-15 P2)", () => {
     expect(cleanExtras("prompt", { variables: [{ name: "a", description: " one " }] })).toEqual({ variables: [{ name: "a", description: "one" }] });
     expect(() => cleanExtras("prompt", { colour: "red" })).toThrow(/not a field/);
     expect(() => cleanExtras("nope", { a: 1 })).toThrow(/no more fields/);
+  });
+});
+
+describe("an agent's limits, output and sample, and a team's pattern (CA-15 P7)", () => {
+  it("reads each only when given, trimmed, and nothing from the wrong shape", () => {
+    expect(agentExtrasOf({})).toEqual({});
+    expect(agentExtrasOf({ limits: [" a ", "", 3, "b"], output: " Slack ", sample: " User: hi " })).toEqual({ limits: ["a", "b"], output: "Slack", sample: "User: hi" });
+    expect(agentExtrasOf({ limits: "a, b", output: 7 })).toEqual({});
+  });
+
+  it("knows four patterns and no other", () => {
+    expect(["sequential", "lead", "parallel", "review"].map(patternOf)).toEqual(["sequential", "lead", "parallel", "review"]);
+    expect(patternOf("swarm")).toBeNull();
+    expect(patternOf(undefined)).toBeNull();
+  });
+
+  it("cleans limits from lines, refuses too many or too long, and takes empty ones off", () => {
+    expect(cleanExtras("agent_config", { limits: "one\n\n two ", output: " Slack ", sample: "" })).toEqual({ limits: ["one", "two"], output: "Slack", sample: null });
+    expect(() => cleanExtras("agent_config", { limits: Array.from({ length: 13 }, (_, i) => `l${i}`) })).toThrow(/at most 12/);
+    expect(() => cleanExtras("agent_config", { limits: ["x".repeat(201)] })).toThrow(/at most 200/);
+    expect(() => cleanExtras("agent_config", { output: "x".repeat(281) })).toThrow(/at most 280/);
+    expect(cleanExtras("team", { pattern: "lead" })).toEqual({ pattern: "lead" });
+    expect(cleanExtras("team", { pattern: "swarm" })).toEqual({ pattern: null });
   });
 });

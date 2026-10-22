@@ -229,7 +229,7 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
 
       <Field id={`${uid}-prov`} label={DECISION_COPY.provider} group>
         <div>
-          <ToolPicker label={DECISION_COPY.provider} value={draft.provider || null} onChange={(next) => set({ provider: next ?? "" })} inBuild={inBuild} phone={phone} step="agent" runtime placeholder="Pick a model or service" />
+          <ToolPicker label={DECISION_COPY.provider} value={draft.provider || null} onChange={(next) => set({ provider: next ?? "" })} inBuild={inBuild} phone={phone} step="agent" runtime placeholder="Select a model or service" />
         </div>
       </Field>
       <Field id={`${uid}-model`} label={DECISION_COPY.modelName}>
@@ -280,7 +280,7 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
             onChange={(reads) => set({ reads })}
           />
           {draft.reads === "step" ? (
-            <PickMenu label="Step it reads" phone={phone} placeholder="Pick a step" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
+            <PickMenu label="Step it reads" phone={phone} placeholder="Select a step" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
           ) : (
             <>
               <textarea aria-label={DECISION_COPY.state} rows={3} value={draft.stateSample} maxLength={STATE_SAMPLE_MAX} placeholder={DECISION_COPY.statePlaceholder} onChange={(e) => set({ stateSample: e.target.value })} style={typedArea(phone)} />

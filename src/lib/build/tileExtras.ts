@@ -196,12 +196,55 @@ export function checkExtrasOf(payload: Raw): { method?: CheckMethod; reviewer?: 
   };
 }
 
+/* ── an agent and a team (P7) ── */
+
+export const AGENT_PATTERNS = ["sequential", "lead", "parallel", "review"] as const;
+export type AgentPattern = (typeof AGENT_PATTERNS)[number];
+export const AGENT_PATTERN_LABEL: Record<AgentPattern, string> = { sequential: "Sequential", lead: "Lead with delegates", parallel: "Parallel then merged", review: "Writer and reviewer" };
+
+export const LIMITS_MAX = 12;
+export const LIMIT_LINE_MAX = 200;
+export const OUTPUT_MAX = 280;
+export const SAMPLE_MAX = 8000;
+
+/** What an agent says beyond its models and tools: its limits, where its output goes, and a pasted sample run. */
+export function agentExtrasOf(payload: Raw): { limits?: string[]; output?: string; sample?: string } {
+  const limits = cleanList(payload.limits, LIMIT_LINE_MAX, LIMITS_MAX);
+  const output = clean(payload.output, OUTPUT_MAX);
+  const sample = clean(payload.sample, SAMPLE_MAX);
+  return { ...(limits.length > 0 ? { limits } : null), ...(output ? { output } : null), ...(sample ? { sample } : null) };
+}
+
+/** A team's orchestration pattern; null when not given or not one of the four. */
+export const patternOf = (raw: unknown): AgentPattern | null => (AGENT_PATTERNS.includes(raw as AgentPattern) ? (raw as AgentPattern) : null);
+
 /* ── the writer ── */
 
 type Cleaner = (value: unknown) => Json | null;
 
 /** The keys each node type's extras write, and how each is cleaned: a cleaner returns the value to store, or null to take the key off. */
 const CLEANERS: Record<string, Record<string, Cleaner>> = {
+  agent_config: {
+    limits: (value) => {
+      const lines = Array.isArray(value) ? cleanList(value, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) : typeof value === "string" ? linesOf(value) : [];
+      if (lines.length > LIMITS_MAX) throw new Error(`Limits are at most ${LIMITS_MAX}, one per line.`);
+      if (lines.some((line) => line.length > LIMIT_LINE_MAX)) throw new Error(`A limit is at most ${LIMIT_LINE_MAX} characters.`);
+      return lines.length > 0 ? lines : null;
+    },
+    output: (value) => {
+      const said = clean(value);
+      if (said.length > OUTPUT_MAX) throw new Error(`Output and destination is at most ${OUTPUT_MAX} characters.`);
+      return said || null;
+    },
+    sample: (value) => {
+      const said = clean(value);
+      if (said.length > SAMPLE_MAX) throw new Error(`The sample transcript is at most ${SAMPLE_MAX.toLocaleString("en-GB")} characters.`);
+      return said || null;
+    },
+  },
+  team: {
+    pattern: (value) => patternOf(value),
+  },
   eval_run: {
     method: (value) => (CHECK_METHODS.includes(value as CheckMethod) ? (value as CheckMethod) : null),
     reviewer: (value) => (CHECK_REVIEWERS.includes(value as CheckReviewer) ? (value as CheckReviewer) : null),

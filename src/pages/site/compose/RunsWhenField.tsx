@@ -16,7 +16,7 @@ import { text } from "./refinedStyles";
 const NONE = "__none__";
 import type { RunsWhenView } from "./runtimeView";
 
-export const RUNS_WHEN_COPY = { label: "Runs when", always: "Always", decision: "Decision", question: "Question", value: "Value", pickDecision: "Pick a decision", pickQuestion: "Pick a question", pickValue: "Pick a value", none: "Add a decision above this step first" } as const;
+export const RUNS_WHEN_COPY = { label: "Runs when", always: "Always", decision: "Decision", question: "Question", value: "Value", pickDecision: "Select a decision", pickQuestion: "Select a question", pickValue: "Select a value", none: "Add a decision above this step first" } as const;
 
 const sameIs = (a: RunsWhenIs, b: RunsWhenIs) => JSON.stringify(a) === JSON.stringify(b);
 

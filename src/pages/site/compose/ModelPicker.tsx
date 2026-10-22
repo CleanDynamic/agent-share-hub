@@ -2,7 +2,7 @@
 
    It reads `modelMenu(tool)` and draws one of five things:
 
-   - pick-tool: the menu button, disabled, reading `model`, named "Pick a tool first".
+   - pick-tool: the menu button, disabled, reading `model`, named "Select a tool first".
    - options: a Radix menu. Each group is a menu label (the lab's name, 11.5/500, `--label`) over its models; when the
      tool takes a typed model, a last item "Other model…" turns the menu into a 40-character field with Save and
      Cancel. A typed model is saved as typed.
@@ -13,7 +13,7 @@
    Pure but for its own open state. The button keeps the accessible name the composer's model menu always had:
    "model", or "model {name}" once one is chosen ("model 2 Sonnet 5.5" for an agent's second row).
 
-   CA-03 P2: the button shows the chosen model alone ("Fable 5.1"), or a quiet "Choose a model" when there is none;
+   CA-03 P2: the button shows the chosen model alone ("Fable 5.1"), or a quiet "Select a model" when there is none;
    the field label above it says what it is. Typed here has no field label, so it passes its own word ("model"). */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
@@ -38,8 +38,8 @@ export const MODEL_CLEARED_MS = 6000;
 export const MODEL_PICKER_COPY = {
   model: "model",
   /** CA-03: the button while no model is chosen. */
-  choose: "Choose a model",
-  pickToolFirst: "Pick a tool first",
+  choose: "Select a model",
+  pickToolFirst: "Select a tool first",
   noModel: "No model",
   other: "Other model…",
   otherField: "Other model",
@@ -65,7 +65,7 @@ export interface ModelPickerProps {
   openSignal?: number;
   /** With no tool, offer every current text model and a typed one instead of asking for a tool (Details, where the tool cannot be picked). */
   anyWithoutTool?: boolean;
-  /** CA-03: what the button shows while no model is chosen, where no field label names it. Default "Choose a model". */
+  /** CA-03: what the button shows while no model is chosen, where no field label names it. Default "Select a model". */
   placeholder?: string;
   /** CA-03: the button fills its column, its chevron at the end, so a list of rows lines up. */
   block?: boolean;

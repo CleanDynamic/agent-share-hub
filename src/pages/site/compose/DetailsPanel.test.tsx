@@ -583,10 +583,10 @@ describe("an agent's harness, models and tools (CA-02 P5)", () => {
     };
   };
 
-  it("shows Runs in, each model with its role and the tools, with the same controls as the dialog", () => {
+  it("shows Host platform, each model with its role and the tools, with the same controls as the dialog", () => {
     const onAgentSetup = vi.fn();
     panel("agent", "bakery", { view: withSetup(), onAgentSetup });
-    expect(screen.getByRole("button", { name: "Runs in" }).textContent).toBe("Hermes Agent");
+    expect(screen.getByRole("button", { name: "Host platform" }).textContent).toBe("Hermes Agent");
     expect(screen.getByRole("button", { name: "model Opus 5.5" })).toBeTruthy();
     // CA-03: the role is a menu showing the role alone.
     expect(screen.getByRole("button", { name: "Role of model 2" }).textContent).toBe("other");
@@ -613,7 +613,7 @@ describe("an agent's harness, models and tools (CA-02 P5)", () => {
 
   it("shows an agent saved before CA-02 exactly as before", () => {
     panel("agent");
-    expect(screen.queryByRole("button", { name: "Runs in" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Host platform" })).toBeNull();
     expect(screen.getByText("Opus 5.5")).toBeTruthy();
   });
 });
@@ -748,7 +748,7 @@ describe("what an agent remembers, in Details (CA-03 P6)", () => {
     const base = sandboxDetailsProps("agent", "bakery");
     if (base.view?.kind !== "agent") throw new Error("fixture");
     panel("agent", "bakery", { view: { ...base.view, setup: { harness: null, models: [{ model: "Opus 5.5", role: "main" }], tools: [] } }, onAgentSetup });
-    const field = screen.getByLabelText("What it remembers");
+    const field = screen.getByLabelText("Memory");
     fireEvent.change(field, { target: { value: "the dishes it featured" } });
     expect(onAgentSetup).not.toHaveBeenCalled();
     fireEvent.blur(field);

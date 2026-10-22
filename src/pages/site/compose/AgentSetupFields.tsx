@@ -1,4 +1,4 @@
-/* CA-02 P5 — what an agent ran in, the models it used and the tools it could call.
+/* CA-02 P5, CA-15 P7 — the host platform an agent ran on, the models it used and the tools it could call.
 
    One set of controls, in the Add dialog and in Details:
 
@@ -10,6 +10,11 @@
    - Tools it can use: optional, the tool picker for a tool, several allowed, shown as removable chips.
 
    Controlled: the caller holds the value and decides when it is written.
+
+   CA-15 P7: the four fields are built once (`useAgentSetupFields`) and handed back as separate pieces, so Add › Agent can put
+   Models up front and the rest in its Optional section, and Details can lay them out in its own order (`AgentSetupFields`). The
+   words are the new ones: Host platform (was Runs in), Available tools (was Tools it can use), Memory (was What it remembers),
+   Primary (was Main).
 
    CA-03 P2: every label is the composer's `Field` (13/500, sentence case, 6 above its control), in the dialog and in
    Details alike. One row per model: its model menu, then its role menu (rows after the first; the first shows "Main"
@@ -35,19 +40,20 @@ import { chipStyle, text, typedArea } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const AGENT_SETUP_COPY = {
-  runsIn: "Runs in",
+  runsIn: "Host platform",
+  runsInLine: "The tool or framework it ran on",
   ownCode: "My own code (API)",
   notSure: "Not sure",
   models: "Models",
   addModel: "Add a model",
-  tools: "Tools it can use",
-  toolsLine: "Optional",
-  /** CA-03: where the first row's role menu would be. */
-  main: "Main",
+  tools: "Available tools",
+  toolsLine: "The applications it could call",
+  /** CA-03: where the first row's role menu would be; "main" is what is stored, "Primary" is what is shown. */
+  main: "Primary",
   /** CA-03 P6. */
-  memory: "What it remembers",
-  memoryHint: "Optional",
-  memoryPlaceholder: "Which dishes it featured, in a notes file it keeps",
+  memory: "Memory",
+  memoryLine: "What it remembers between runs",
+  memoryPlaceholder: "e.g. Which dishes it featured, in a notes file it keeps",
   role: (n: number) => `Role of model ${n}`,
   removeModel: (n: number) => `Remove model ${n}`,
   removeTool: (name: string) => `Remove ${name}`,
@@ -85,6 +91,9 @@ export function roleChoices(harness: string | null): string[] {
   return roles.includes("other") ? roles : [...roles, "other"];
 }
 
+/** CA-15 P7: how a stored role reads: "main" is "Primary"; any other role as saved. */
+export const roleLabel = (role: string): string => (role === "main" ? AGENT_SETUP_COPY.main : role);
+
 /** The role a new row starts on: the first one that is not main. */
 const nextRole = (harness: string | null): string => roleChoices(harness).find((role) => role !== "main") ?? "other";
 
@@ -118,16 +127,26 @@ export interface AgentSetupFieldsProps {
   openMainModel?: number;
   /**
    * CA-12 P11: the Add dialog's order: Model, Tools it can use, `between` (How does it start?), Runs in, Memory. "Runs in"
-   * has no default there: it says "Pick a tool" until chosen, and "Not sure" is a choice. Details keeps its own order.
+   * has no default there: it says "Select a tool" until chosen, and "Not sure" is a choice. Details keeps its own order.
    */
   dialog?: boolean;
   between?: ReactNode;
+  /** CA-15 P7: the Optional section's row names the field already; draw Host platform, Available tools and Memory without a label of their own. */
+  bare?: boolean;
+}
+
+/** The four fields, each drawn once, for a caller that lays them out itself. */
+export interface AgentSetupParts {
+  host: ReactNode;
+  models: ReactNode;
+  tools: ReactNode;
+  memory: ReactNode;
 }
 
 /** One row to three, as the words need: a line per 32 characters (the Details column is the narrowest) or line break. */
 export const memoryRows = (text: string): number => Math.min(3, Math.max(1, text.split("\n").reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 32)), 0)));
 
-export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel, dialog = false, between }: AgentSetupFieldsProps) {
+export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainModel, dialog = false, bare = false }: Omit<AgentSetupFieldsProps, "between">): AgentSetupParts {
   const [runsChosen, setRunsChosen] = useState(!dialog);
   const [cleared, setCleared] = useState<string | null>(null);
   const [memory, setMemory] = useState(value.memory ?? "");
@@ -147,8 +166,7 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
   const setRow = (index: number, row: Partial<SetupModelRow>) =>
     onChange({ ...value, models: value.models.map((entry, i) => (i === index ? { ...entry, ...row } : entry)) });
 
-  const runsInField = (
-      <Field id={`${uid}-runs-in`} label={AGENT_SETUP_COPY.runsIn} group>
+  const runsInPicker = (
         <span>
           <ToolPicker
             label={AGENT_SETUP_COPY.runsIn}
@@ -168,70 +186,16 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
             step="agent"
           />
         </span>
-      </Field>
+  );
+  const runsInField = bare ? (
+    runsInPicker
+  ) : (
+    <Field id={`${uid}-runs-in`} label={AGENT_SETUP_COPY.runsIn} group>
+      {runsInPicker}
+    </Field>
   );
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {dialog ? null : runsInField}
-
-      <Field id={`${uid}-models`} label={AGENT_SETUP_COPY.models} group>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {value.models.map((row, index) => (
-            <div key={index} data-testid="agent-model-row" style={{ display: "grid", gridTemplateColumns: several ? `minmax(0, 1fr) ${ROLE_WIDTH}px ${removeSide}px` : "minmax(0, 1fr)", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <ModelPicker
-                block
-                tool={tool}
-                value={row.model}
-                onChange={(model) => setRow(index, { model })}
-                phone={phone}
-                allowNone={false}
-                name={index === 0 ? undefined : `model ${index + 1}`}
-                openSignal={index === 0 ? openMainModel : undefined}
-              />
-              {several ? (
-                index > 0 ? (
-                  <PickMenu
-                    label={AGENT_SETUP_COPY.role(index + 1)}
-                    options={roles.filter((role) => role !== "main" || row.role === "main").map((role) => ({ value: role }))}
-                    value={row.role}
-                    onChange={(role) => setRow(index, { role })}
-                    phone={phone}
-                    style={{ width: "100%", justifyContent: "space-between" }}
-                  />
-                ) : (
-                  <span data-testid="agent-model-main" style={{ ...text(12.5, 400, t.text2), paddingLeft: 12 }}>
-                    {AGENT_SETUP_COPY.main}
-                  </span>
-                )
-              ) : null}
-              {index > 0 ? (
-                <IconButton
-                  icon={X}
-                  glyph="x"
-                  boxed={false}
-                  label={AGENT_SETUP_COPY.removeModel(index + 1)}
-                  size={26}
-                  onClick={() => onChange({ ...value, models: value.models.filter((_, i) => i !== index) })}
-                  style={{ width: removeSide, height: removeSide, flexShrink: 0 }}
-                />
-              ) : null}
-            </div>
-          ))}
-          {several && value.models.length < AGENT_MODELS_MAX ? (
-            <span>
-              <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onChange({ ...value, models: [...value.models, { model: null, role: nextRole(value.harness) }] })}>
-                {AGENT_SETUP_COPY.addModel}
-              </TextButton>
-            </span>
-          ) : null}
-          <div aria-live="polite" data-testid="agent-model-cleared">
-            {cleared ? <span style={text(12, 400, t.text2)}>{cleared}</span> : null}
-          </div>
-        </div>
-      </Field>
-
-      <Field id={`${uid}-tools`} label={AGENT_SETUP_COPY.tools} group>
+  const toolsBody = (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
           {value.tools.length > 0 ? (
             <div role="list" aria-label={AGENT_SETUP_COPY.tools} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -269,15 +233,21 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
             list="app"
           />
         </div>
-      </Field>
-
-      {between}
-
-      {dialog ? runsInField : null}
-
-      <Field id={`${uid}-memory`} label={AGENT_SETUP_COPY.memory} hint={AGENT_SETUP_COPY.memoryHint}>
+      
+  );
+  const tools = bare ? (
+    <div role="group" aria-label={AGENT_SETUP_COPY.tools}>
+      {toolsBody}
+    </div>
+  ) : (
+    <Field id={`${uid}-tools`} label={AGENT_SETUP_COPY.tools} group>
+      {toolsBody}
+    </Field>
+  );
+  const memoryBox = (
         <textarea
           id={`${uid}-memory`}
+          aria-label={bare ? AGENT_SETUP_COPY.memory : undefined}
           rows={memoryRows(memory)}
           maxLength={MEMORY_MAX}
           value={memory}
@@ -288,7 +258,84 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
           }}
           style={typedArea(phone, { resize: "none" })}
         />
+      
+  );
+  const memoryField = bare ? (
+    memoryBox
+  ) : (
+    <Field id={`${uid}-memory`} label={AGENT_SETUP_COPY.memory}>
+      {memoryBox}
+    </Field>
+  );
+  return { host: runsInField, models: (
+    <Field id={`${uid}-models`} label={AGENT_SETUP_COPY.models} group>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {value.models.map((row, index) => (
+            <div key={index} data-testid="agent-model-row" style={{ display: "grid", gridTemplateColumns: several ? `minmax(0, 1fr) ${ROLE_WIDTH}px ${removeSide}px` : "minmax(0, 1fr)", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <ModelPicker
+                block
+                tool={tool}
+                value={row.model}
+                onChange={(model) => setRow(index, { model })}
+                phone={phone}
+                allowNone={false}
+                name={index === 0 ? undefined : `model ${index + 1}`}
+                openSignal={index === 0 ? openMainModel : undefined}
+              />
+              {several ? (
+                index > 0 ? (
+                  <PickMenu
+                    label={AGENT_SETUP_COPY.role(index + 1)}
+                    options={roles.filter((role) => role !== "main" || row.role === "main").map((role) => ({ value: role, label: roleLabel(role) }))}
+                    value={row.role}
+                    onChange={(role) => setRow(index, { role })}
+                    phone={phone}
+                    style={{ width: "100%", justifyContent: "space-between" }}
+                  />
+                ) : (
+                  <span data-testid="agent-model-main" style={{ ...text(12.5, 400, t.text2), paddingLeft: 12 }}>
+                    {AGENT_SETUP_COPY.main}
+                  </span>
+                )
+              ) : null}
+              {index > 0 ? (
+                <IconButton
+                  icon={X}
+                  glyph="x"
+                  boxed={false}
+                  label={AGENT_SETUP_COPY.removeModel(index + 1)}
+                  size={26}
+                  onClick={() => onChange({ ...value, models: value.models.filter((_, i) => i !== index) })}
+                  style={{ width: removeSide, height: removeSide, flexShrink: 0 }}
+                />
+              ) : null}
+            </div>
+          ))}
+          {several && value.models.length < AGENT_MODELS_MAX ? (
+            <span>
+              <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onChange({ ...value, models: [...value.models, { model: null, role: nextRole(value.harness) }] })}>
+                {AGENT_SETUP_COPY.addModel}
+              </TextButton>
+            </span>
+          ) : null}
+          <div aria-live="polite" data-testid="agent-model-cleared">
+            {cleared ? <span style={text(12, 400, t.text2)}>{cleared}</span> : null}
+          </div>
+        </div>
       </Field>
+  ), tools, memory: memoryField };
+}
+
+export function AgentSetupFields({ between, ...props }: AgentSetupFieldsProps) {
+  const { host, models, tools, memory } = useAgentSetupFields(props);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {props.dialog ? null : host}
+      {models}
+      {tools}
+      {between}
+      {props.dialog ? host : null}
+      {memory}
     </div>
   );
 }

@@ -30,7 +30,7 @@ import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } f
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
-import { checkExtrasOf, cleanExtras, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
+import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
@@ -160,8 +160,14 @@ export interface Step {
   definedIn?: string[];
   /** CA-13 P5, an agent only: a trace link (https only). */
   traceUrl?: string;
-  /** CA-13 P14, an agent only: "How to install, optional", as the maker gave it. A decision keeps its own in `decision`. */
+  /** CA-13 P14, an agent only: "Installation command", as the maker gave it. A decision keeps its own in `decision`. */
   install?: string;
+  /** CA-15 P7, an agent only: what it must not do (`payload.limits`, one per entry), where its output goes (`payload.output`) and a pasted sample run (`payload.sample`). Each absent when not given. */
+  limits?: string[];
+  output?: string;
+  sample?: string;
+  /** CA-15 P7, a team only: how its agents work together (`payload.pattern`). */
+  pattern?: AgentPattern;
   /** CA-13 P7, a prompt or an agent: the shape its answer is forced into. */
   outputShape?: OutputShape;
   /** CA-13 P8: what it took to make (any tile) and what it costs to run (a runtime tile): never added together. */
@@ -590,7 +596,7 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
 }
 
 /** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound"> {
+function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound" | "limits" | "output" | "sample"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
@@ -604,6 +610,7 @@ function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRe
     ...(memory ? { memory } : null),
     ...(memoryTidy ? { memoryTidy } : null),
     ...(changesEachRound ? { changesEachRound } : null),
+    ...agentExtrasOf(payload),
   };
 }
 
@@ -804,6 +811,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
     ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
+    ...(kind === "team" && patternOf(payload.pattern) ? { pattern: patternOf(payload.pattern) as AgentPattern } : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload, cases) } : null),
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
@@ -877,6 +885,9 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     definedIn: undefined,
     traceUrl: undefined,
     install: undefined,
+    limits: undefined,
+    output: undefined,
+    sample: undefined,
     outputShape: undefined,
     buildCost: undefined,
     runCost: undefined,

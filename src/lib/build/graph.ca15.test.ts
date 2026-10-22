@@ -204,3 +204,25 @@ describe("a check's extras (CA-15 P5)", () => {
     expect(written()).toEqual({ tested: "t", passing: "p", passed: 1, total: 1 });
   });
 });
+
+describe("an agent's and a team's extras read back on the step (CA-15 P7)", () => {
+  it("reads limits, output and sample on an agent, and the pattern on a team", () => {
+    const [agent, team] = buildSteps([
+      node({ id: "a", position: 1, type: "agent_config", payload: { system_prompt: "x", model: "m", limits: ["Never deploys", " "], output: "Slack", sample: "User: hi" } }),
+      node({ id: "t", position: 2, type: "team", payload: { pattern: "parallel" } }),
+    ]);
+    expect(agent).toMatchObject({ limits: ["Never deploys"], output: "Slack", sample: "User: hi" });
+    expect(team.pattern).toBe("parallel");
+  });
+
+  it("an agent and a team saved before read as they did", () => {
+    const [agent, team] = buildSteps([
+      node({ id: "a", position: 1, type: "agent_config", payload: { system_prompt: "x", model: "m" } }),
+      node({ id: "t", position: 2, type: "team", payload: { pattern: "swarm" } }),
+    ]);
+    expect(agent.limits).toBeUndefined();
+    expect(agent.output).toBeUndefined();
+    expect(agent.sample).toBeUndefined();
+    expect(team.pattern).toBeUndefined();
+  });
+});
