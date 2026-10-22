@@ -271,7 +271,8 @@ describe("Classification Card: acceptance", () => {
     // dispute Skill needed
     fireEvent.click(row("Read from your build"));
     fireEvent.click(screen.getByRole("button", { name: "Dispute Skill needed" }));
-    fireEvent.change(screen.getByLabelText("Corrected value for Skill needed"), { target: { value: "writing-code" } });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Corrected value for Skill needed" }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Writing code" }));
     fireEvent.change(screen.getByLabelText("Reason for changing Skill needed"), { target: { value: "I wrote it by hand" } });
     fireEvent.click(screen.getByRole("button", { name: "Use this value" }));
     const skillRow = card().querySelector("[data-facet='skill']") as HTMLElement;

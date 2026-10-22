@@ -159,7 +159,7 @@ export const typeaheadList: CSSProperties = {
   borderRadius: 9,
   background: t.window,
   border: `1px solid ${t.controlBorder}`,
-  boxShadow: "0 8px 24px rgba(0,0,0,.5)",
+  boxShadow: t.windowShadow,
   maxHeight: 360,
   overflowY: "auto",
   boxSizing: "border-box",

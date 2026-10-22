@@ -23,7 +23,8 @@ import { SearchField } from "@/components/brand/SearchField";
 import { Segmented } from "@/components/brand/Segmented";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
-import { ClassificationFilters, QuickChips, describeKey, type FacetCounts } from "@/components/gallery/ClassificationFilters";
+import { ClassificationFilters, QuickFilters, describeKey, type FacetCounts } from "@/components/gallery/ClassificationFilters";
+import { GalleryBoard, type GalleryBoardExtras } from "./GalleryBoard";
 import type { Classification } from "@/lib/classify/types";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ScrollRow } from "@/components/shell/ScrollRow";
@@ -105,9 +106,11 @@ export interface GalleryFeedViewProps {
    * CA-16 P6. The classification filters, drawn only once `classification_facets` answered (the columns are live). Present:
    * the filters, the two quick chips and the active chips show, and the Sort menu is not drawn. Absent: the Gallery is as it was.
    */
-  classification?: { counts: FacetCounts; selected: readonly string[]; onToggle: (key: string) => void };
+  classification?: { counts: FacetCounts; selected: readonly string[]; onToggle: (key: string) => void; /** Chooses several at once (a collection). */ onApply?: (keys: string[]) => void };
   /** CA-16 P6. Each card's classification, by build id: asked for only once the columns are live. A build with none shows nothing new. */
   classifications?: Readonly<Record<string, Classification>>;
+  /** CA-16b. With the classification filters, the Gallery is the board: its tab, lens, proof figures and grouped tabs. Absent: the feed as it was. */
+  board?: GalleryBoardExtras;
   audience: string | null;
   onAudienceChange: (audience: string | null) => void;
   /** "Made for" options, with counts. */
@@ -801,7 +804,7 @@ function FiltersDisclosure({ classification }: { classification: NonNullable<Gal
         <Button variant="secondary" size={28} fontSize={12} aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
           {open ? "Hide filters" : "Filters"}
         </Button>
-        <QuickChips selected={classification.selected} onToggle={classification.onToggle} />
+        <QuickFilters selected={classification.selected} onToggle={classification.onToggle} />
       </div>
       {open ? (
         <section id={id} aria-label="Filters" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 8, boxShadow: t.moduleShadow, padding: 16, boxSizing: "border-box", minWidth: 0 }}>
@@ -853,7 +856,7 @@ function PhoneFeed(props: GalleryFeedViewProps) {
         ))}
         {props.classification ? <FilterChip data-testid="feed-menu-filters" label="Filters" on={filtersOpen} aria-haspopup="dialog" onClick={() => setFiltersOpen(true)} /> : null}
       </ScrollRow>
-      {props.classification ? <QuickChips selected={props.classification.selected} onToggle={props.classification.onToggle} /> : null}
+      {props.classification ? <QuickFilters selected={props.classification.selected} onToggle={props.classification.onToggle} phone /> : null}
       <ActiveFilters {...props} />
       <FeedList {...props} />
       {menus.map((menu) => (
@@ -870,6 +873,7 @@ function PhoneFeed(props: GalleryFeedViewProps) {
 
 export function GalleryFeedView(props: GalleryFeedViewProps) {
   const phone = useIsPhone();
+  if (props.classification && props.board) return <GalleryBoard {...props} classification={props.classification} board={props.board} />;
   return phone ? <PhoneFeed {...props} /> : <DesktopFeed {...props} />;
 }
 

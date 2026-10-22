@@ -48,7 +48,8 @@ describe("ReadFromBuild", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dispute Skill needed" }));
     const use = screen.getByRole("button", { name: "Use this value" }) as HTMLButtonElement;
     expect(use.disabled).toBe(true);
-    fireEvent.change(screen.getByLabelText("Corrected value for Skill needed"), { target: { value: "no-coding" } });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Corrected value for Skill needed" }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "No coding" }));
     fireEvent.change(screen.getByLabelText("Reason for changing Skill needed"), { target: { value: "No code at all" } });
     fireEvent.click(use);
     expect(props.onDispute).toHaveBeenCalledWith("skill", { values: ["no-coding"], reason: "No code at all", at: "2026-10-22T10:00:00Z" });
@@ -57,7 +58,8 @@ describe("ReadFromBuild", () => {
   it("confirms Free plans are enough with the reason Confirmed free, without typing it", () => {
     const props = mount(base({ derived: { cost: { values: ["cost-not-stated"], from: [] } } }));
     fireEvent.click(screen.getByRole("button", { name: "Dispute Cost to run" }));
-    fireEvent.change(screen.getByLabelText("Corrected value for Cost to run"), { target: { value: "free-plans-are-enough" } });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Corrected value for Cost to run" }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Free plans are enough" }));
     fireEvent.click(screen.getByRole("button", { name: "Use this value" }));
     expect(props.onDispute).toHaveBeenCalledWith("cost", { values: ["free-plans-are-enough"], reason: CONFIRMED_FREE, at: "2026-10-22T10:00:00Z" });
   });
