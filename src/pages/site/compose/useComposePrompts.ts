@@ -56,6 +56,7 @@ import {
   addMadeFile as writeMadeFile,
   addTool,
   addToolTile as addToolStep,
+  type ToolTileInput,
   addUse,
   dismissSuggestion,
   madeFileNamesOf,
@@ -231,7 +232,7 @@ export interface ComposePrompts {
   addResultOf: (input: ResultInput) => Promise<string | null>;
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
-  addToolTile: (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) => Promise<string | null>;
+  addToolTile: (input: ToolTileInput) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
   /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
@@ -684,7 +685,7 @@ export function useComposePrompts({
         return null;
       });
 
-  const addToolTile = (input: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null }) =>
+  const addToolTile = (input: ToolTileInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();

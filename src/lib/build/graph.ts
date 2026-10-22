@@ -30,7 +30,7 @@ import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } f
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
-import { cleanExtras, settingsOf, variablesOf, type PromptSettings, type PromptVariable } from "./tileExtras";
+import { cleanExtras, settingsOf, toolExtrasOf, variablesOf, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
@@ -175,6 +175,11 @@ export interface ToolTileFacts {
   runsAt: ToolRunsAt | null;
   /** What it was allowed or used to do: "read issues, open pull requests". */
   scopes: string | null;
+  /** CA-15 P4: what the connection let it do (`payload.permissions`), the plan it needed (`payload.plan`), the steps to set it up (`payload.setup`) and the tools it could have been (`payload.alternatives`). Absent when not given. */
+  permissions?: ToolPermission;
+  plan?: string;
+  setup?: string[];
+  alternatives?: string[];
 }
 
 /** CA-12 P8: the kinds of file a tile draws a mark for. */
@@ -656,7 +661,17 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
 }
 
 /** CA-12 P7: the connection words a Tool tile and its window say. */
-export const CONNECTION_LABEL: Record<ToolConnection, string> = { mcp: "MCP server", app: "Built into the app", code: "My own code" };
+export const CONNECTION_LABEL: Record<ToolConnection, string> = {
+  mcp: "MCP server",
+  app: "Native integration",
+  code: "Custom code",
+  extension: "Browser extension",
+  api_key: "API key",
+  automation: "Zapier, Make or n8n",
+  plugin: "Plugin or skill",
+  cli: "Command-line interface",
+  manual: "Manual copy and paste",
+};
 
 /** The most lines a manual step has, and the longest each is. */
 export const MANUAL_LINES_MAX = 12;
@@ -788,7 +803,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
     ...(kind === "prompt" && settingsOf(payload.settings) ? { settings: settingsOf(payload.settings) as PromptSettings } : null),
     ...(kind === "prompt" && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
-    ...(kind === "tool" ? { app: { ...toolConnectionOf(node), scopes: stringOf(payload.scopes)?.trim() ?? null } } : null),
+    ...(kind === "tool" ? { app: { ...toolConnectionOf(node), scopes: stringOf(payload.scopes)?.trim() ?? null, ...toolExtrasOf(payload) } } : null),
     ...(kind === "file" ? { fileFacts: fileFactsOf(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
@@ -2205,20 +2220,34 @@ export const TOOL_SCOPES_MAX = 200;
  * CA-12 P7: a tool as a tile in a session: the app, how it was connected and what it did. `step: true` is what makes it a
  * tile; a tool an agent names (`toolRefsFor`) is added with `addTool` and never is one.
  */
-export async function addToolTile(
-  buildId: string,
-  tree: readonly NodeTree[],
-  { service, connection, scopes, session }: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null },
-): Promise<BuildNode> {
+export interface ToolTileInput {
+  service: string;
+  connection?: ToolConnection | null;
+  scopes?: string;
+  session?: string | null;
+  permissions?: ToolPermission | null;
+  plan?: string;
+  setup?: readonly string[];
+  alternatives?: readonly string[];
+}
+
+export async function addToolTile(buildId: string, tree: readonly NodeTree[], { service, connection, scopes, session, permissions, plan, setup, alternatives }: ToolTileInput): Promise<BuildNode> {
   const name = service.trim();
-  if (!name) throw refuse("addToolTile", "A tool needs its app.");
+  if (!name) throw refuse("addToolTile", "A tool needs its application.");
   if (connection && !TOOL_CONNECTIONS.includes(connection)) throw refuse("addToolTile", "That is not a way to connect a tool.");
   const did = (scopes ?? "").trim();
-  if (did.length > TOOL_SCOPES_MAX) throw refuse("addToolTile", `What it did is at most ${TOOL_SCOPES_MAX} characters.`);
+  if (did.length > TOOL_SCOPES_MAX) throw refuse("addToolTile", `Actions performed is at most ${TOOL_SCOPES_MAX} characters.`);
   const payload: Payload = { service: name, step: true };
   if (connection) payload.connection = connection;
   if (did) payload.scopes = did;
   if (session) payload.session = session;
+  let extras: Record<string, Json | null>;
+  try {
+    extras = cleanExtras(TOOL_TYPE, { permissions: permissions ?? null, plan: plan ?? "", setup: setup ?? [], alternatives: alternatives ?? [] });
+  } catch (cause) {
+    throw refuse("addToolTile", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  for (const [key, value] of Object.entries(extras)) if (value !== null) payload[key] = value;
   return placeTopNode(buildId, tree, { type: TOOL_TYPE, title: null, payload: payload as Json });
 }
 
@@ -2526,9 +2555,10 @@ function compact(fields: Record<string, string | undefined>): Json {
 
 // --- how a tool was connected (CA-04 P5) ------------------------------------
 
-export type ToolConnection = "app" | "mcp" | "code";
+/** CA-15 P4: nine ways a tool was connected. `app`, `mcp` and `code` keep their stored keys; `app` now reads "Native integration" and `code` "Custom code". */
+export type ToolConnection = "app" | "mcp" | "code" | "extension" | "api_key" | "automation" | "plugin" | "cli" | "manual";
 export type ToolRunsAt = "web" | "local";
-export const TOOL_CONNECTIONS: readonly ToolConnection[] = ["app", "mcp", "code"];
+export const TOOL_CONNECTIONS: readonly ToolConnection[] = ["mcp", "app", "code", "extension", "api_key", "automation", "plugin", "cli", "manual"];
 export const TOOL_RUNS_AT: readonly ToolRunsAt[] = ["web", "local"];
 
 /** How a tool was connected, and where an MCP server ran, as saved; null for what was never said. */

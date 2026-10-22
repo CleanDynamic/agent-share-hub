@@ -12,7 +12,7 @@ vi.mock("./nodes", () => ({
 const getNodeType = vi.fn();
 vi.mock("./nodeTypes", () => ({ getNodeType: (...a: unknown[]) => getNodeType(...a) }));
 
-import { addResultTile, setExtras } from "./graph";
+import { CONNECTION_LABEL, addResultTile, addToolTile, buildSteps, setExtras } from "./graph";
 import type { Json } from "@/integrations/supabase/types";
 
 import type { BuildNode, NodeTree } from "./types";
@@ -97,5 +97,59 @@ describe("setExtras (CA-15)", () => {
   it("refuses a key the node type does not take, without writing", async () => {
     await expect(setExtras(prompt({ text: "x" }), { colour: "#fff" })).rejects.toThrow(/not a field/);
     expect(upsertNode).not.toHaveBeenCalled();
+  });
+});
+
+describe("a tool tile (CA-15 P4)", () => {
+  it("stores the connection under its key and the new keys only when they were given", async () => {
+    await addToolTile(BUILD, [], { service: "GitHub", connection: "api_key", scopes: "read issues", permissions: "delegated", plan: "Team", setup: ["Create a token", "Add GITHUB_TOKEN"], alternatives: ["GitLab", "GitLab", "Bitbucket"], session: "s1" });
+    expect(written()).toEqual({
+      service: "GitHub",
+      step: true,
+      connection: "api_key",
+      scopes: "read issues",
+      session: "s1",
+      permissions: "delegated",
+      plan: "Team",
+      setup: ["Create a token", "Add GITHUB_TOKEN"],
+      alternatives: ["GitLab", "Bitbucket"],
+    });
+    await addToolTile(BUILD, [], { service: "Stripe" });
+    expect(written()).toEqual({ service: "Stripe", step: true });
+  });
+
+  it("refuses an application that is missing, a connection that is not one, and actions that are too long", async () => {
+    await expect(addToolTile(BUILD, [], { service: " " })).rejects.toThrow("A tool needs its application.");
+    await expect(addToolTile(BUILD, [], { service: "X", connection: "telepathy" as never })).rejects.toThrow("That is not a way to connect a tool.");
+    await expect(addToolTile(BUILD, [], { service: "X", scopes: "x".repeat(201) })).rejects.toThrow(/at most 200/);
+    await expect(addToolTile(BUILD, [], { service: "X", plan: "x".repeat(81) })).rejects.toThrow(/at most 80/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("reads a tool saved before as it was: the stored 'app' and 'code' keep their keys and show under their new names", () => {
+    const [app, code] = buildSteps([
+      node({ id: "a", position: 1, type: "integration", payload: { service: "GitHub", step: true, connection: "app" } }),
+      node({ id: "b", position: 2, type: "integration", payload: { service: "Stripe", step: true, connection: "code", scopes: "charged cards" } }),
+    ]);
+    expect(app.app).toEqual({ connection: "app", runsAt: null, scopes: null });
+    expect(code.app).toEqual({ connection: "code", runsAt: null, scopes: "charged cards" });
+    expect(CONNECTION_LABEL.app).toBe("Native integration");
+    expect(CONNECTION_LABEL.code).toBe("Custom code");
+    expect(CONNECTION_LABEL.mcp).toBe("MCP server");
+  });
+
+  it("reads the new keys defensively, and reads nothing from ones that are not the shape expected", () => {
+    const [step] = buildSteps([node({ type: "integration", payload: { service: "GitHub", step: true, connection: "cli", permissions: "write", plan: "  Pro ", setup: ["a", 3, " ", "b"], alternatives: "GitLab" } })]);
+    expect(step.app).toEqual({ connection: "cli", runsAt: null, scopes: null, permissions: "write", plan: "Pro", setup: ["a", "b"] });
+    const [bad] = buildSteps([node({ type: "integration", payload: { service: "GitHub", step: true, permissions: "root" } })]);
+    expect(bad.app).toEqual({ connection: null, runsAt: null, scopes: null });
+  });
+
+  it("setExtras writes a tool's permissions, plan, setup and alternatives, and clears them", async () => {
+    const tool = node({ id: "t", type: "integration", payload: { service: "GitHub", step: true } }) as unknown as BuildNode;
+    await setExtras(tool, { permissions: "read", plan: " Pro ", setup: "one\n\ntwo", alternatives: ["GitLab", "GitLab"] });
+    expect(written()).toEqual({ service: "GitHub", step: true, permissions: "read", plan: "Pro", setup: ["one", "two"], alternatives: ["GitLab"] });
+    await setExtras(tool, { permissions: null, plan: "", setup: [], alternatives: [] });
+    expect(written()).toEqual({ service: "GitHub", step: true });
   });
 });

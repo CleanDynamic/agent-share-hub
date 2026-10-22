@@ -110,12 +110,55 @@ export function markVariable(text: string, start: number, end: number): string |
   return `${text.slice(0, from + lead)}{${picked.trim()}}${text.slice(to - trail)}`;
 }
 
+/* ── a tool (P4) ── */
+
+export const TOOL_PERMISSIONS = ["read", "write", "delegated"] as const;
+export type ToolPermission = (typeof TOOL_PERMISSIONS)[number];
+export const TOOL_PERMISSION_LABEL: Record<ToolPermission, string> = { read: "Read only", write: "Read and write", delegated: "Acting on your behalf" };
+
+export const TOOL_PLAN_MAX = 80;
+export const TOOL_SETUP_MAX = 12;
+export const TOOL_SETUP_LINE_MAX = 200;
+export const TOOL_ALTERNATIVES_MAX = 12;
+export const TOOL_ALTERNATIVE_MAX = 40;
+
+/** What a tool tile says beyond its connection and actions; each key only when given. */
+export function toolExtrasOf(payload: Raw): { permissions?: ToolPermission; plan?: string; setup?: string[]; alternatives?: string[] } {
+  const plan = clean(payload.plan, TOOL_PLAN_MAX);
+  const setup = cleanList(payload.setup, TOOL_SETUP_LINE_MAX, TOOL_SETUP_MAX);
+  const alternatives = cleanList(payload.alternatives, TOOL_ALTERNATIVE_MAX, TOOL_ALTERNATIVES_MAX);
+  return {
+    ...(TOOL_PERMISSIONS.includes(payload.permissions as ToolPermission) ? { permissions: payload.permissions as ToolPermission } : null),
+    ...(plan ? { plan } : null),
+    ...(setup.length > 0 ? { setup } : null),
+    ...(alternatives.length > 0 ? { alternatives } : null),
+  };
+}
+
 /* ── the writer ── */
 
 type Cleaner = (value: unknown) => Json | null;
 
 /** The keys each node type's extras write, and how each is cleaned: a cleaner returns the value to store, or null to take the key off. */
 const CLEANERS: Record<string, Record<string, Cleaner>> = {
+  integration: {
+    permissions: (value) => (TOOL_PERMISSIONS.includes(value as ToolPermission) ? (value as ToolPermission) : null),
+    plan: (value) => {
+      const plan = clean(value);
+      if (plan.length > TOOL_PLAN_MAX) throw new Error(`The required plan is at most ${TOOL_PLAN_MAX} characters.`);
+      return plan || null;
+    },
+    setup: (value) => {
+      const lines = Array.isArray(value) ? cleanList(value, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) : typeof value === "string" ? linesOf(value) : [];
+      if (lines.length > TOOL_SETUP_MAX) throw new Error(`Setup steps are at most ${TOOL_SETUP_MAX}.`);
+      if (lines.some((line) => line.length > TOOL_SETUP_LINE_MAX)) throw new Error(`A setup step is at most ${TOOL_SETUP_LINE_MAX} characters.`);
+      return lines.length > 0 ? lines : null;
+    },
+    alternatives: (value) => {
+      const names = cleanList(value, TOOL_ALTERNATIVE_MAX, TOOL_ALTERNATIVES_MAX);
+      return names.length > 0 ? [...new Set(names)] : null;
+    },
+  },
   prompt: {
     settings: (value) => {
       const raw = isRecord(value) ? value : {};
@@ -129,11 +172,6 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     },
   },
 };
-
-/** Registers the cleaners for another node type. Each part of CA-15 adds its own below. */
-export function addCleaners(type: string, cleaners: Record<string, Cleaner>): void {
-  CLEANERS[type] = { ...CLEANERS[type], ...cleaners };
-}
 
 /** The patch as it will be stored. Throws, with a plain sentence, for a key the type does not take or a value out of range. */
 export function cleanExtras(type: string, patch: Record<string, unknown>): Record<string, Json | null> {

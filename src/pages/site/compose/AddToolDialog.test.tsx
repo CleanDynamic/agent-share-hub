@@ -1,7 +1,7 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AddToolDialog, TOOL_DIALOG_COPY, type AddToolDialogProps } from "./AddToolDialog";
+import { AddToolDialog, CONNECTION_CHOICES, TOOL_DIALOG_COPY, type AddToolDialogProps } from "./AddToolDialog";
 
 let phone = false;
 beforeEach(() => {
@@ -19,18 +19,30 @@ function open(over: Partial<AddToolDialogProps> = {}) {
   return props;
 }
 
-const toolButton = () => screen.getByRole("button", { name: "Tool" });
+const toolButton = () => screen.getByRole("button", { name: "Application" });
 const find = () => screen.getByRole("combobox", { name: "Find an app" });
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
+const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => within(el).queryByText(name)) as HTMLElement;
+const openRow = (name: string) => fireEvent.click(within(row(name)).getByRole("button"));
 
-describe("Add › Tool (CA-02 P6, CA-12 P7)", () => {
-  it("is a dialog asking the app, how it was connected and what it did, with no default app", () => {
+function pickGitHub() {
+  fireEvent.click(toolButton());
+  fireEvent.change(find(), { target: { value: "github" } });
+  fireEvent.keyDown(find(), { key: "Enter" });
+}
+
+describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
+  it("is the shared frame asking only for an application, with no default, and the rest in Optional", () => {
     open();
     expect(screen.getByRole("dialog", { name: TOOL_DIALOG_COPY.title })).toBeTruthy();
-    expect(toolButton().textContent).toBe("Pick an app");
-    expect(screen.getAllByRole("group", { name: "How was it connected?" }).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("What did it do?")).toBeTruthy();
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("An external application the model used during the build");
+    expect(toolButton().textContent).toBe("Select an application");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required: an application");
     expect(add().disabled).toBe(true);
+    expect(screen.getByTestId("optional-count").textContent).toBe("6 fields");
+    expect(screen.getAllByTestId("optional-field").map((el) => within(el).getAllByRole("button")[0].getAttribute("aria-expanded"))).toEqual(Array(6).fill("false"));
+    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual(["Connection method", "Actions performed", "Permissions", "Required plan", "Setup steps", "Alternatives"]);
+    expect(document.body.textContent).not.toMatch(/How was it connected|What did it do|Pick an app/);
   });
 
   it("labels the field in sentence case, never in capitals", () => {
@@ -55,25 +67,90 @@ describe("Add › Tool (CA-02 P6, CA-12 P7)", () => {
     expect(screen.getByText("GitHub Copilot is an AI tool. Add it to a session or a prompt.")).toBeTruthy();
   });
 
-  it("hands back the app, how it was connected and what it did", () => {
+  it("offers nine connection methods, and the stored keys of the three it had are unchanged", () => {
+    expect(CONNECTION_CHOICES.map((choice) => [choice.value, choice.label])).toEqual([
+      ["mcp", "MCP server"],
+      ["app", "Native integration"],
+      ["code", "Custom code"],
+      ["extension", "Browser extension"],
+      ["api_key", "API key"],
+      ["automation", "Zapier, Make or n8n"],
+      ["plugin", "Plugin or skill"],
+      ["cli", "Command-line interface"],
+      ["manual", "Manual copy and paste"],
+    ]);
+    open();
+    openRow("Connection method");
+    expect(within(screen.getByRole("group", { name: "Connection method" })).getAllByRole("button")).toHaveLength(9);
+  });
+
+  it("hands back the application with the optional fields it was given", () => {
     const props = open();
-    fireEvent.click(toolButton());
-    fireEvent.change(find(), { target: { value: "github" } });
-    fireEvent.keyDown(find(), { key: "Enter" });
+    pickGitHub();
+    expect(screen.getByTestId("modal-status").textContent).toBe("All required fields complete");
+    openRow("Connection method");
     fireEvent.click(screen.getByRole("button", { name: "MCP server" }));
-    fireEvent.change(screen.getByLabelText("What did it do?"), { target: { value: " read issues " } });
+    openRow("Actions performed");
+    fireEvent.change(screen.getByLabelText("Actions performed"), { target: { value: " read issues " } });
+    openRow("Permissions");
+    fireEvent.click(screen.getByRole("radio", { name: "Read and write" }));
+    openRow("Required plan");
+    fireEvent.change(screen.getByLabelText("Required plan"), { target: { value: " Team plan " } });
+    openRow("Setup steps");
+    fireEvent.change(screen.getByLabelText("Setup steps"), { target: { value: "Create a token\n\n  Add GITHUB_TOKEN to the environment  " } });
     fireEvent.click(add());
-    expect(props.onAdd).toHaveBeenCalledWith({ service: "GitHub", connection: "mcp", scopes: "read issues" });
+    expect(props.onAdd).toHaveBeenCalledWith({
+      service: "GitHub",
+      connection: "mcp",
+      scopes: "read issues",
+      permissions: "write",
+      plan: "Team plan",
+      setup: ["Create a token", "Add GITHUB_TOKEN to the environment"],
+      alternatives: [],
+    });
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("takes a typed app as typed, with no connection when none is chosen", () => {
+  it("shows what a row holds in place of its description once it is filled and closed", () => {
+    open();
+    openRow("Actions performed");
+    fireEvent.change(screen.getByLabelText("Actions performed"), { target: { value: "read issues" } });
+    openRow("Actions performed");
+    expect(within(row("Actions performed")).getByTestId("optional-line").textContent).toBe("read issues");
+  });
+
+  it("with API key chosen, Setup steps says to name the key and never paste its value", () => {
+    open();
+    expect(screen.queryByText("Name the key, for example GITHUB_TOKEN. Never paste its value.")).toBeNull();
+    openRow("Connection method");
+    fireEvent.click(screen.getByRole("button", { name: "API key" }));
+    expect(within(row("Setup steps")).getByTestId("optional-line").textContent).toBe("Name the key, for example GITHUB_TOKEN. Never paste its value.");
+    openRow("Setup steps");
+    expect(screen.getByTestId("setup-key-hint").textContent).toBe("Name the key, for example GITHUB_TOKEN. Never paste its value.");
+  });
+
+  it("takes alternatives from the application picker, once each, never the application itself", () => {
+    const props = open();
+    pickGitHub();
+    openRow("Alternatives");
+    const picker = within(screen.getByRole("group", { name: "Alternatives" })).getByRole("button", { name: "Alternatives" });
+    for (const name of ["gitlab", "gitlab", "github"]) {
+      fireEvent.click(picker);
+      fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: name } });
+      fireEvent.keyDown(screen.getByRole("combobox", { name: "Find an app" }), { key: "Enter" });
+    }
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["GitLab"]);
+    fireEvent.click(add());
+    expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].alternatives).toEqual(["GitLab"]);
+  });
+
+  it("takes a typed app as typed, with nothing else when nothing else is given", () => {
     const typed = open();
     fireEvent.click(toolButton());
     fireEvent.change(find(), { target: { value: "  My CRM " } });
     fireEvent.keyDown(find(), { key: "Enter" });
     fireEvent.click(add());
-    expect(typed.onAdd).toHaveBeenCalledWith({ service: "My CRM", connection: null, scopes: "" });
+    expect(typed.onAdd).toHaveBeenCalledWith({ service: "My CRM", connection: null, scopes: "", permissions: null, plan: "", setup: [], alternatives: [] });
   });
 
   it("is a bottom sheet on a phone", () => {

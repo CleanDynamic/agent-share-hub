@@ -183,6 +183,38 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
   );
 }
 
+/** A small quiet glyph button, such as a chip's remove: 20 square (44 on a phone), never boxed, no icon library. */
+export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }: { glyph: "x" | "plus" | "pencil"; label: string; onClick: () => void; phone?: boolean; size?: number }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const side = phone ? 44 : size;
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      {...handlers}
+      style={{
+        width: side,
+        height: side,
+        padding: 0,
+        flexShrink: 0,
+        boxSizing: "border-box",
+        background: "transparent",
+        border: "1px solid transparent",
+        borderRadius: 6,
+        color: state.hovered ? t.text : t.label,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        ...ring(state.focusVisible),
+      }}
+    >
+      <Glyph name={glyph} size={12} />
+    </button>
+  );
+}
+
 /* ── rows ── */
 
 /** A heading inside a body: "Model", "Third-party repository". */

@@ -1012,7 +1012,7 @@ export function SandboxPage() {
   const onAddTool = useCallback(
     async (input: AddToolInput) => {
       const session = await sessionToWrite();
-      const id = await prompts.addToolTile({ service: input.service, connection: input.connection, scopes: input.scopes, session });
+      const id = await prompts.addToolTile({ ...input, session });
       if (id) {
         setSelectedId(id);
         setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
