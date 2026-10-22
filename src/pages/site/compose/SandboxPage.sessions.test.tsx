@@ -103,8 +103,10 @@ const LONG = "0e0e0e0e-0000-4000-8000-000000000003";
 const WAITING = "0e0e0e0e-0000-4000-8000-000000000001";
 const IN_DRAFT_1 = "0e0e0e0e-0000-4000-8000-000000000002";
 
+/** "Add a session", then "Add from your connected chats": the list. */
 async function openRow() {
   fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
+  fireEvent.click(await screen.findByRole("button", { name: /Add from your connected chats/ }));
   return screen.findByTestId("add-session-picker");
 }
 
@@ -125,11 +127,10 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     const rows = picker.getAllByRole("listitem");
     expect(rows).toHaveLength(3);
     expect(rows.map((row) => row.getAttribute("aria-label"))).toEqual([
-      expect.stringMatching(/^Claude Code, \d+ \w+ · 1 prompt$/),
-      expect.stringMatching(/^Claude, .* · 1 prompt, Also in 1 draft$/),
-      expect.stringMatching(/66 prompts$/),
+      "Claude Code, A waiting session., 9 Oct · 1 prompt",
+      "Claude, A session in a draft., 8 Oct · 1 prompt, In 1 draft",
+      "Claude Code, Prompt 1 of the long session., 1 Oct · 66 prompts",
     ]);
-    expect(picker.getByText("Start a new one here")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/expired/i);
   });
 
@@ -234,23 +235,46 @@ describe("CA-12 P5 · adding a session", () => {
     cleanup();
     mount("/compose/0d0d0d0d-0000-4000-8000-000000000004", { keep: true });
     await field();
-    const row = within(await openRow()).getByRole("listitem", { name: /66 prompts, Also in 1 draft$/ });
+    const row = within(await openRow()).getByRole("listitem", { name: /66 prompts, In 1 draft$/ });
     fireEvent.click(row);
     await waitFor(() => expect(tableRows("build_nodes").filter((node) => node.build_id === "0d0d0d0d-0000-4000-8000-000000000004")).toHaveLength(66), { timeout: 15_000 });
     expect(tableRows("build_nodes").filter((node) => node.build_id === DRAFT)).toHaveLength(66);
   });
 
-  it("start a new one here: the app picked is Session 1's when Session 1 is empty", async () => {
+  it("Start a new session on a new post uses the empty Session 1: still one session, none added", async () => {
     mount("/compose/new");
     await field();
-    const picker = within(await openRow());
-    fireEvent.click(picker.getByRole("button", { name: "Pick an app" }));
-    fireEvent.click(await screen.findByRole("option", { name: /Claude Code/ }));
-    await waitFor(() => {
-      const build = tableRows("builds").find((row) => !String(row.id).startsWith("0d0d") && row.status === "draft");
-      expect(Object.values(sessionsMetaOf(build?.making))).toEqual([expect.objectContaining({ tool: "claude-code" })]);
-    }, { timeout: 15_000 });
-    // Still one session.
+    fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
+    fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
+    await waitFor(() => expect(tableRows("builds").some((row) => !String(row.id).startsWith("0d0d") && row.status === "draft")).toBe(true), { timeout: 15_000 });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 500)));
     expect(tableRows("build_sessions").filter((row) => !String(row.build_id).startsWith("0d0d"))).toHaveLength(1);
+    expect(screen.getAllByTestId("session-head")).toHaveLength(1);
+  });
+
+  it("Start a new session adds an empty Session 2 at once: No app chosen, No tiles yet, kept in the table and the draft", async () => {
+    mount(`/compose/${DRAFT}`);
+    await field();
+    fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
+    await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
+    fireEvent.click(await screen.findByTestId("add-session-row"));
+    fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
+    expect(await screen.findByRole("group", { name: "Session 2 · No app chosen" }, { timeout: 10_000 })).toBeTruthy();
+    expect(screen.getByText("No tiles yet")).toBeTruthy();
+    await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 10_000 });
+    const making = tableRows("builds").find((row) => row.id === DRAFT)?.making as { session_order?: string[] };
+    expect(making.session_order).toHaveLength(2);
+    expect(document.querySelector('[data-session-key][data-lit="true"]')).toBeTruthy();
+  });
+
+  it("works before the table is live: with no build_sessions the new session is kept in the draft alone", async () => {
+    mount(`/compose/${DRAFT}`, { faults: [{ path: /^\/rest\/v1\/build_sessions/, answer: PG.missingTable("build_sessions") }] });
+    await field();
+    fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
+    fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
+    expect(await screen.findByRole("group", { name: "Session 1 · No app chosen" }, { timeout: 10_000 })).toBeTruthy();
+    // An empty draft shows Session 1's prompt box open, as Prompt 1 of it.
+    expect(await field()).toBeTruthy();
+    expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toEqual([]);
   });
 });

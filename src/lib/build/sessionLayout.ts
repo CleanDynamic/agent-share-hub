@@ -11,7 +11,7 @@
 
 import { insertBuildSession, isMissingTable, listBuildSessionRows, nextSessionPosition, reorderBuildSessions, setSessionCollapsed, orderOf, type BuildSessionRow } from "./buildSessions";
 import { groupKey, topSteps, type SessionGroup, type Step } from "./graph";
-import { patchMaking, readMaking, sessionOrderOf, sessionsCollapsedOf } from "./making";
+import { isLegacySession, isTypedSession, patchMaking, readMaking, sessionOrderOf, sessionsCollapsedOf } from "./making";
 import type { NodeMove } from "./nodes";
 import type { BuildNode } from "./types";
 
@@ -51,7 +51,8 @@ export async function setSessionOrder(buildId: string, keys: readonly string[]):
       let next = nextSessionPosition(rows);
       for (const key of keys) {
         if (have.has(key)) continue;
-        await insertBuildSession({ buildId, sessionKey: key, importId: null, position: next++ });
+        // An imported session's key is its import's id, so a row put back for one keeps the link to its import.
+        await insertBuildSession({ buildId, sessionKey: key, importId: isTypedSession(key) || isLegacySession(key) ? null : key, position: next++ });
       }
       await reorderBuildSessions(buildId, keys);
     }

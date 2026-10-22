@@ -56,6 +56,11 @@ export function sessionDate(iso: string, now: number): string {
   return `${at.getDate()} ${MONTHS[at.getMonth()]}`;
 }
 
+/** CA-14 P5: the app a session came from, as the client names it; null when the client is unknown. */
+export function sessionApp(session: Pick<SessionSummary, "client">): string | null {
+  return CLIENT_LABEL[session.client ?? ""] ?? null;
+}
+
 /** The model's name, or the client that sent the session when there is none. */
 export function sessionSource(session: Pick<SessionSummary, "modelName" | "client">): string {
   return session.modelName || CLIENT_LABEL[session.client ?? ""] || "No app chosen";

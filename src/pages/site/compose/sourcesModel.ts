@@ -17,7 +17,7 @@ import type { SessionSummary, UnfinishedSession } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
 import { isSetupPayload } from "@/lib/build/setup";
 import type { BuildNode } from "@/lib/build/types";
-import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
+import { sessionApp, sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
 export interface SourcePrompt {
   /** The step's id. */
@@ -78,6 +78,49 @@ export interface SourceLibraryItem {
   /** CA-12: the date as the line shows it, and the prompt count. */
   date: string;
   promptCount: number;
+  /** CA-14 P5: the app by name, or "Unknown app" when the client is not known; `appKnown` says which. */
+  app: string;
+  appKnown: boolean;
+  /** CA-14 P5: the model, shown under an unknown app; null for none. */
+  model: string | null;
+  /** CA-14 P5: when the session started, for "Today", "This week" and "Earlier". */
+  createdAt: string;
+  /** CA-14 P5: how many drafts hold it, this one included. */
+  draftCount: number;
+}
+
+/** CA-14 P5: what an unknown client reads as. */
+export const UNKNOWN_APP = "Unknown app";
+
+/** CA-14 P5: "In this draft", "In 2 drafts", "In 1 draft"; null when no draft holds it. */
+export function draftNote(item: Pick<SourceLibraryItem, "inThisDraft" | "draftCount">): string | null {
+  if (item.draftCount === 0) return null;
+  if (item.inThisDraft && item.draftCount === 1) return "In this draft";
+  return `In ${item.draftCount} ${item.draftCount === 1 ? "draft" : "drafts"}`;
+}
+
+/** CA-14 P5: the first prompt's opening words, at most 60 characters, cut with an ellipsis. */
+export function openingWords(prompt: string | null, max = 60): string {
+  const text = (prompt ?? "").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
+
+export type LibraryGroupLabel = "Today" | "This week" | "Earlier";
+
+/** CA-14 P5: the library under "Today", "This week" (the last seven days) and "Earlier", newest first inside each; empty groups left out. */
+export function groupLibrary<T extends Pick<SourceLibraryItem, "createdAt">>(items: readonly T[], now: number): { label: LibraryGroupLabel; items: T[] }[] {
+  const startOf = (value: number) => {
+    const at = new Date(value);
+    return new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime();
+  };
+  const today = startOf(now);
+  const groups: Record<LibraryGroupLabel, T[]> = { Today: [], "This week": [], Earlier: [] };
+  for (const item of items) {
+    const at = new Date(item.createdAt).getTime();
+    const days = Number.isNaN(at) ? Number.POSITIVE_INFINITY : Math.round((today - startOf(at)) / 86_400_000);
+    groups[days <= 0 ? "Today" : days < 7 ? "This week" : "Earlier"].push(item);
+  }
+  return (["Today", "This week", "Earlier"] as const).filter((label) => groups[label].length > 0).map((label) => ({ label, items: groups[label] }));
 }
 
 /** CA-12: an import that is not a session yet. */
@@ -250,6 +293,11 @@ export function librarySources(library: readonly SessionSummary[], adding: Reado
       firstPrompt: session.firstPrompt,
       date,
       promptCount: session.promptCount,
+      app: sessionApp(session) ?? UNKNOWN_APP,
+      appKnown: sessionApp(session) !== null,
+      model: session.modelName,
+      createdAt: session.createdAt,
+      draftCount: ids.length,
     };
   });
 }

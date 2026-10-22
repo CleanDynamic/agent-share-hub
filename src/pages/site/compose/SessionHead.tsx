@@ -235,6 +235,35 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
     </span>
   );
 
+  /** The title, the count while folded, the date, Setup and the colour: after the name on a computer, on a line of their own under the app's mark on a phone. */
+  const metaRow = (
+    <>
+      {maker ? (
+          <TitleField session={session} phone={phone} onSave={(title) => ops?.onTitle(session.key, title)} />
+        ) : session.title ? (
+          <span data-testid="session-title-text" style={{ ...text(15, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
+            {session.title}
+          </span>
+        ) : (
+          <span style={{ flex: "1 1 0", minWidth: 0 }} />
+        )}
+        {collapsed ? (
+          <span data-testid="session-count" style={quiet(t.text2)}>
+            {SESSION_HEAD_COPY.count(tiles)}
+          </span>
+        ) : null}
+        {session.date ? <span style={quiet(t.label)}>{session.date}</span> : null}
+        {session.setupCount && onOpenSetup ? (
+          <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
+            {`Setup ${session.setupCount}`}
+          </TextButton>
+        ) : null}
+        {session.colour && onColour && editable ? (
+          <ColourButton what={`Session ${session.number}`} colour={session.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(anchor)} />
+        ) : null}
+    </>
+  );
+
   return (
     <>
       <div
@@ -242,6 +271,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         role="group"
         aria-label={headName(session)}
         data-testid="session-head"
+        tabIndex={-1}
         data-takes={drop.takes ? "true" : undefined}
         data-collapsed={collapsed ? "true" : undefined}
         onMouseEnter={() => setHovered(true)}
@@ -253,6 +283,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         onKeyDown={onKeyDown}
         style={{
           position: "relative",
+          outline: "none",
           display: "flex",
           flexWrap: phone ? "wrap" : "nowrap",
           alignItems: "center",
@@ -284,31 +315,9 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           <ToolMark tool={session.tool} size={20} />
         )}
         {app}
+        {phone ? <div data-testid="session-head-meta" style={{ order: 3, flex: "1 1 100%", display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 8, rowGap: 4, minWidth: 0, paddingLeft: 40 }}>{metaRow}</div> : metaRow}
         {maker ? (
-          <TitleField session={session} phone={phone} onSave={(title) => ops?.onTitle(session.key, title)} />
-        ) : session.title ? (
-          <span data-testid="session-title-text" style={{ ...text(15, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
-            {session.title}
-          </span>
-        ) : (
-          <span style={{ flex: "1 1 0", minWidth: 0 }} />
-        )}
-        {collapsed ? (
-          <span data-testid="session-count" style={quiet(t.text2)}>
-            {SESSION_HEAD_COPY.count(tiles)}
-          </span>
-        ) : null}
-        {session.date ? <span style={quiet(t.label)}>{session.date}</span> : null}
-        {session.setupCount && onOpenSetup ? (
-          <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
-            {`Setup ${session.setupCount}`}
-          </TextButton>
-        ) : null}
-        {session.colour && onColour && editable ? (
-          <ColourButton what={`Session ${session.number}`} colour={session.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(anchor)} />
-        ) : null}
-        {maker ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: "auto" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: "auto", order: phone ? 2 : undefined }}>
             <span style={{ visibility: handleShown ? "visible" : "hidden", display: "inline-flex" }}>
               <DragHandle label={`Move Session ${session.number}`} nest={drag} testId="session-drag-handle" />
             </span>

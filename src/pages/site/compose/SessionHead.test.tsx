@@ -180,3 +180,60 @@ describe("the app", () => {
     expect(pick.textContent).toBe("No app chosen");
   });
 });
+
+describe("empty sessions and mixed tiles", () => {
+  it("draws an empty session where its number puts it, with No tiles yet", () => {
+    const base = sandboxListProps("bakery");
+    const heads = [...base.dividers.values()];
+    // The three sessions are numbered 2, 3 and 4; the empty one is Session 1, so it comes first.
+    const renumbered = new Map([...base.dividers.entries()].map(([step, head]) => [step, { ...head, number: head.number + 1 }]));
+    list({ dividers: renumbered, emptySessions: [{ key: "typed-empty", number: 1, tool: "No app chosen", detail: "", prompts: [], date: "22 Oct" }] });
+    const names = screen.getAllByTestId("session-head").map((el) => el.getAttribute("aria-label"));
+    expect(names[0]).toBe("Session 1 · No app chosen");
+    expect(names).toHaveLength(heads.length + 1);
+    const run = document.querySelector('[data-session-key="typed-empty"]') as HTMLElement;
+    expect(within(run).getByText("No tiles yet")).toBeTruthy();
+    expect(within(run).getByRole("button", { name: "Collapse Session 1" })).toBeTruthy();
+  });
+
+  it("keeps an agent that follows a session's head inside that session's tiles, and hides it when the session folds", () => {
+    const base = sandboxListProps("bakery");
+    const third = [...base.dividers.values()][2];
+    list();
+    const run = document.querySelector(`[data-session-key="${third.key}"]`) as HTMLElement;
+    expect(within(run).getAllByTestId("step-card").length + within(run).getAllByRole("group").length).toBeGreaterThan(1);
+    cleanup();
+    list({ collapsed: new Set([third.key]) });
+    const folded = document.querySelector(`[data-session-key="${third.key}"]`) as HTMLElement;
+    expect(within(folded).queryAllByTestId("step-card")).toHaveLength(0);
+    expect(within(folded).queryByRole("group", { name: /^Agent/ })).toBeNull();
+  });
+});
+
+describe("moving by drag", () => {
+  const handleOf = (n: number) => within(head(n)).getByTestId("session-drag-handle");
+
+  it("folds every session to its head while one is held, and opens them again once it is let go", async () => {
+    const props = list({ onDropSession: vi.fn() });
+    expect(screen.getAllByTestId("session-drag-handle")).toHaveLength(3);
+    expect(screen.getAllByTestId("step-card").length).toBeGreaterThan(0);
+    act(() => handleOf(2).focus());
+    fireEvent.keyDown(handleOf(2), { code: "Space", key: " " });
+    // Held: every session is a head and nothing else; each head says it is folded.
+    await screen.findByText(/Picked up Session 2/);
+    expect(screen.queryAllByTestId("step-card")).toHaveLength(0);
+    expect(screen.getAllByTestId("session-head").every((el) => el.getAttribute("data-collapsed") === "true")).toBe(true);
+    fireEvent.keyDown(handleOf(2), { code: "Escape", key: "Escape" });
+    await screen.findByText(/Put back where it was/);
+    expect(screen.getAllByTestId("step-card").length).toBeGreaterThan(0);
+    expect(props.onDropSession).not.toHaveBeenCalled();
+  });
+
+  it("names the handle for its session, and draws no handle for a reader", () => {
+    list({ onDropSession: vi.fn() });
+    expect(handleOf(1).getAttribute("aria-label")).toBe("Move Session 1");
+    cleanup();
+    list({ sessionOps: undefined, onDropSession: vi.fn() });
+    expect(screen.queryAllByTestId("session-drag-handle")).toHaveLength(0);
+  });
+});

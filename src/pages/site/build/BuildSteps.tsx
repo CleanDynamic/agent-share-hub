@@ -31,6 +31,7 @@ import { CodeLines } from "@/components/code/CodeLines";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
+import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { ChevronRight } from "lucide-react";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
@@ -655,7 +656,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
   const marked = markFor({ tool: chat.tool, model: chat.model }) !== null;
   const name = `Session ${chat.session}`;
   return (
-    <div role="group" aria-label={`${name} · ${chat.tool ?? "No app chosen"}`} data-testid="reader-session-head" style={{ display: "flex", flexWrap: fold.phone ? "wrap" : "nowrap", alignItems: "center", columnGap: 8, rowGap: 4, minHeight: 44, minWidth: 0 }}>
+    <div role="group" tabIndex={-1} aria-label={`${name} · ${chat.tool ?? "No app chosen"}`} data-testid="reader-session-head" style={{ outline: "none", display: "flex", flexWrap: fold.phone ? "wrap" : "nowrap", alignItems: "center", columnGap: 8, rowGap: 4, minHeight: 44, minWidth: 0 }}>
       <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} boxed={false} size={30} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
       {marked ? (
         <span style={{ display: "inline-flex", color: t.text }}>
@@ -1137,6 +1138,10 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   const runs = sessionRuns(groupsOf(steps, { onCopy: view.onCopy, announce, phone }));
   const firstRun = runs[0];
   const [foldedKeys, setFolded] = useState<ReadonlySet<string>>(() => new Set(runs.flatMap((run) => run.groups.flatMap((group) => (group.chat?.collapsed ? [group.chat.key] : [])))));
+  /* CA-14 P6: a build with three sessions or more has the session list for its readers; it costs them nothing, so it is always on. */
+  const jumpItems = runs.flatMap((run) => run.groups.flatMap((group) => (group.chat && group.chat.session !== null ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? "No app chosen" }] : [])));
+  const headOf = (key: string) => document.querySelector<HTMLElement>(`[data-reader-session="${key}"] [data-testid="reader-session-head"]`);
+  const inView = useCurrentSession(jumpItems.map((item) => item.key), headOf);
   const toggleFold = (key: string) =>
     setFolded((before) => {
       const next = new Set(before);
@@ -1240,6 +1245,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
         )}
       </div>
       <CostStrip steps={steps.map((entry) => entry.step)} groups={view.groups ?? []} audience="reader" />
+      {!map && jumpItems.length >= 3 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null}
       {map ? (
         <Suspense fallback={<div role="status" style={{ ...text(12, 400, t.text2), padding: "24px 0" }}>Drawing the map…</div>}>
           <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />

@@ -19,7 +19,7 @@ export async function openDraft(browser, size, theme, buildId, route = `/compose
   }, [STORAGE_KEY, value, theme]);
   const page = await context.newPage();
   await page.goto(`${SITE}${route}`, { waitUntil: "networkidle" });
-  await page.waitForSelector('[data-testid="build-list"]', { timeout: 20000 });
+  await page.waitForSelector(route.startsWith("/b2/") ? "main" : '[data-testid="build-list"]', { timeout: 20000 });
   return { context, page };
 }
 

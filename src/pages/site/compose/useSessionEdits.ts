@@ -202,7 +202,8 @@ export function useSessionEdits(input: SessionEditsInput) {
         const group = groups.find((entry) => groupKey(entry) === key);
         const before: SessionMeta = sessionsMetaOf(made)[real] ?? { tool: group?.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: isLegacySession(key) ? todayDay() : group?.startedAt && /^\d{4}-\d{2}-\d{2}$/.test(group.startedAt) ? group.startedAt : "" };
         const { title: _old, ...rest } = before;
-        await setSessionMeta(buildId, real, title.trim() ? { ...rest, title: title.trim() } : rest);
+        // In the node queue, behind any write already going: two saves in a row each read `making` as the one before left it.
+        await latest.current.nodes.run(() => setSessionMeta(buildId, real, title.trim() ? { ...rest, title: title.trim() } : rest));
         await refresh(buildId);
       }),
     [guard, refresh, stable],

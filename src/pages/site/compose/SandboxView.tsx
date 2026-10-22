@@ -24,6 +24,7 @@
    Map's legend, the map well and its footer line. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
+import * as Popover from "@radix-ui/react-popover";
 import { X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -102,6 +103,12 @@ export interface SandboxViewProps extends CardProps {
    */
   onAddPromptFocus?: () => boolean | void;
 
+  /** CA-14 P5: the sessions Add can put a tile in, for the "Add to which session?" question. */
+  addTargets?: AddTargets;
+  /** CA-14 P6: the View menu's two switches. Absent: no View menu. */
+  viewOptions?: ViewMenuProps;
+  /** CA-14 P6: the session list, a row under the header (a menu on a phone). Absent: nothing is drawn. */
+  sessionList?: ReactNode;
   /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
   onAddFile?: () => void;
 
@@ -174,9 +181,9 @@ export function notSavedLine(problem: SaveFailure): string {
   return `Not saved: ${problem.reason}.${problem.code ? ` Code ${problem.code}.` : ""}`;
 }
 
-export const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
+export const LIST_HINT = "Click a tile to see its details · double-click to read all of it";
 /** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. */
-export const LIST_HINT_PHONE = "Tap a prompt to see its details";
+export const LIST_HINT_PHONE = "Tap a tile to see its details";
 export const listHint = (phone: boolean) => (phone ? LIST_HINT_PHONE : LIST_HINT);
 
 export const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
@@ -251,17 +258,62 @@ const addItem = (enabled: boolean): CSSProperties => ({
   padding: "6px 12px",
 });
 
+/** CA-14 P5: where a new tile goes. With two or more sessions, every Add item first asks "Add to which session?". */
+export interface AddTargets {
+  sessions?: readonly { key: string; label: string }[];
+  /** The session last added to: chosen by default, so a tap or Enter goes straight on. */
+  session?: string | null;
+  /** Called, in the same tap, with the session chosen, just before the item runs. */
+  onSession?: (key: string) => void;
+}
+
+export const ADD_ASK_COPY = { title: "Add to which session?", row: "Add to this session" } as const;
+
+/** The small list that asks "Add to which session?": one row per session, the default under the cursor. */
+function SessionAsk({ sessions, current, onPick, phone }: { sessions: readonly { key: string; label: string }[]; current: string | null; onPick: (key: string) => void; phone: boolean }) {
+  const chosen = sessions.some((entry) => entry.key === current) ? current : (sessions[sessions.length - 1]?.key ?? null);
+  return (
+    <div role="radiogroup" aria-label={ADD_ASK_COPY.title} data-testid="add-ask" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {sessions.map((entry) => (
+        <button
+          key={entry.key}
+          type="button"
+          role="radio"
+          aria-checked={entry.key === chosen}
+          autoFocus={entry.key === chosen}
+          onClick={() => onPick(entry.key)}
+          style={{ ...menuItem(true, phone), ...bareButton, width: "100%", textAlign: "left", boxSizing: "border-box", gap: 8, ...(entry.key === chosen ? { background: t.selectedFill } : null) }}
+        >
+          <span style={{ width: 14, display: "inline-flex", flexShrink: 0 }}>{entry.key === chosen ? <Glyph name="check" size={14} /> : null}</span>
+          <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{entry.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /**
  * CA-10 (CA-09 F1, F2). On a computer, a dropdown that fits the screen (`MenuContent`, `menuSurface`) and is not
  * modal: a modal menu traps focus while it closes, so a row that puts the caret in a field would have it taken
  * straight back. A row that moves focus (Prompt) says so, and the menu then leaves focus where the row put it instead
  * of returning it to Add. On a phone, the same rows in a bottom sheet, 44pt each, under "Add".
+ *
+ * CA-14 P5: the same menu is the "+ Add to this session" row at the end of a session (`variant: "row"`, `fixedSession`),
+ * which already knows its session. The Add button at the top asks which session first when there are two or more
+ * (`targets`): a small list on a computer, and the first screen of the sheet on a phone.
  */
-function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
+export function AddMenu({ phone, targets, variant = "button", fixedSession, ...props }: AddMenuProps & { phone: boolean; targets?: AddTargets; variant?: "button" | "row"; fixedSession?: string }) {
   const [open, setOpen] = useState(false);
+  /** The item waiting for its session to be chosen (computer). */
+  const [asking, setAsking] = useState<AddEntry | null>(null);
+  /** The sheet's first screen asks for the session; the second lists the items (phone). */
+  const [picked, setPicked] = useState(false);
   /** Set by a row that moved focus, read once as the menu closes. */
   const moved = useRef(false);
   const addButton = useRef<HTMLButtonElement>(null);
+  const rowTrigger = useInteractive<HTMLButtonElement>();
+  const askBox = useRef<HTMLDivElement>(null);
+  const ask = variant === "button" && (targets?.sessions?.length ?? 0) > 1;
   /* As the menu or sheet closes: focus stays where a row put it, or goes back to Add WITHOUT SCROLLING, so a row that
      scrolled the page to what it added (Result, Session) is not undone. A tap does not focus a button on an iPhone,
      so Add is named, not "whatever had focus before". */
@@ -274,6 +326,50 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
     addButton.current?.focus({ preventScroll: true });
   };
   const entries = addEntries(props);
+  /** Run an item for a session: the session first, in the same tap. */
+  const run = (item: AddEntry, key?: string) => {
+    const session = key ?? fixedSession;
+    if (session) targets?.onSession?.(session);
+    return item.onSelect?.();
+  };
+
+  const trigger = (
+    variant === "row" ? (
+      <button
+        ref={addButton}
+        type="button"
+        data-testid="add-to-session"
+        data-hit=""
+        aria-haspopup={phone ? "dialog" : "menu"}
+        aria-expanded={open}
+        {...rowTrigger.handlers}
+        onClick={phone ? () => setOpen(true) : undefined}
+        style={{
+          ...bareButton,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          gap: 8,
+          width: "100%",
+          height: 36,
+          boxSizing: "border-box",
+          padding: "0 8px",
+          borderRadius: 6,
+          ...text(13, 500, t.text2),
+          cursor: "pointer",
+          ...(rowTrigger.state.hovered ? { background: t.controlOn } : null),
+          ...ring(rowTrigger.state.focusVisible),
+        }}
+      >
+        <span aria-hidden="true" style={{ display: "inline-flex" }}>
+          <Glyph name="plus" size={16} />
+        </span>
+        {ADD_ASK_COPY.row}
+      </button>
+    ) : (
+      <MenuButton ref={addButton} label="Add" value="" data-testid="sandbox-add" {...(phone ? { "aria-haspopup": "dialog" as const, "aria-expanded": open, style: { height: 44 }, onClick: () => setOpen(true) } : null)} />
+    )
+  );
 
   if (phone) {
     const choose = (item: Pick<AddEntry, "onSelect" | "movesFocus">) => {
@@ -288,41 +384,54 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
       closeNow(setOpen);
       if (item.onSelect?.() !== true) moved.current = false;
     };
+    const askFirst = ask && !picked;
     return (
       <>
-        <MenuButton
-          ref={addButton}
-          label="Add"
-          value=""
-          data-testid="sandbox-add"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          style={{ height: 44 }}
-          onClick={() => setOpen(true)}
-        />
-        <BrandBottomSheet open={open} onOpenChange={setOpen} title="Add" onCloseAutoFocus={backToAdd} data-testid="add-sheet">
-          {entries.map((item) => (
-            <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
-          ))}
+        {trigger}
+        <BrandBottomSheet
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next);
+            if (!next) setPicked(false);
+          }}
+          title={askFirst ? ADD_ASK_COPY.title : variant === "row" ? ADD_ASK_COPY.row : "Add"}
+          onCloseAutoFocus={backToAdd}
+          data-testid="add-sheet"
+        >
+          {askFirst && targets?.sessions ? (
+            <SessionAsk
+              sessions={targets.sessions}
+              current={targets.session ?? null}
+              phone
+              onPick={(key) => {
+                targets.onSession?.(key);
+                setPicked(true);
+              }}
+            />
+          ) : (
+            entries.map((item) => <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />)
+          )}
         </BrandBottomSheet>
       </>
     );
   }
 
-  return (
+  const menu = (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
-      <Menu.Trigger asChild>
-        <MenuButton ref={addButton} label="Add" value="" data-testid="sandbox-add" />
-      </Menu.Trigger>
+      <Menu.Trigger asChild>{trigger}</Menu.Trigger>
       <Menu.Portal>
-        <MenuContent align="end" sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={backToAdd}>
+        <MenuContent align={variant === "row" ? "start" : "end"} sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={asking ? (event) => event.preventDefault() : backToAdd}>
           {entries.map((item) => {
             return (
               <Menu.Item
                 key={item.key}
                 disabled={!item.enabled}
                 onSelect={() => {
-                  const result = item.onSelect?.();
+                  if (ask) {
+                    setAsking(item);
+                    return;
+                  }
+                  const result = run(item);
                   if (item.movesFocus && result === true) moved.current = true;
                 }}
                 style={addItem(item.enabled)}
@@ -331,6 +440,105 @@ function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
               </Menu.Item>
             );
           })}
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+  if (!ask) return menu;
+  return (
+    <Popover.Root open={asking !== null} onOpenChange={(next) => !next && setAsking(null)}>
+      <Popover.Anchor asChild>
+        <span style={{ display: "inline-flex" }}>{menu}</span>
+      </Popover.Anchor>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={6}
+          collisionPadding={16}
+          aria-label={ADD_ASK_COPY.title}
+          onOpenAutoFocus={(event) => {
+            // The session last added to is under the cursor, so Enter goes straight on.
+            event.preventDefault();
+            askBox.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+          }}
+          onCloseAutoFocus={backToAdd}
+          style={{ ...menuSurface(300), zIndex: 52, padding: 4 }}
+        >
+          <p style={{ ...text(12, 500, t.text2), margin: 0, padding: "6px 12px 4px" }}>{ADD_ASK_COPY.title}</p>
+          <div ref={askBox}>
+          {targets?.sessions ? (
+            <SessionAsk
+              sessions={targets.sessions}
+              current={targets.session ?? null}
+              phone={false}
+              onPick={(key) => {
+                const item = asking;
+                setAsking(null);
+                if (!item) return;
+                const result = run(item, key);
+                if (item.movesFocus && result === true) moved.current = true;
+              }}
+            />
+          ) : null}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
+/* ── View (CA-14 P6) ── */
+
+export interface ViewMenuProps {
+  sessionList: boolean;
+  splitMerge: boolean;
+  onChange: (patch: { sessionList?: boolean; splitMerge?: boolean }) => void;
+}
+
+export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge" } as const;
+
+/**
+ * "View", beside Add: two switches, both off until the maker turns them on, kept for them on this device. On a computer
+ * a menu of two checkable items that stays open while they are switched; on a phone the same two rows in a bottom sheet.
+ */
+function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
+  const [open, setOpen] = useState(false);
+  const rows = [
+    { key: "sessionList" as const, name: VIEW_COPY.sessionList, on: view.sessionList },
+    { key: "splitMerge" as const, name: VIEW_COPY.splitMerge, on: view.splitMerge },
+  ];
+  if (phone) {
+    return (
+      <>
+        <MenuButton label={VIEW_COPY.button} value="" data-testid="sandbox-view" aria-haspopup="dialog" aria-expanded={open} style={{ height: 44 }} onClick={() => setOpen(true)} />
+        <BrandBottomSheet open={open} onOpenChange={setOpen} title={VIEW_COPY.button} data-testid="view-sheet">
+          {rows.map((row) => (
+            <button key={row.key} type="button" role="menuitemcheckbox" aria-checked={row.on} onClick={() => view.onChange({ [row.key]: !row.on })} style={{ ...bareButton, ...menuItem(true, true), width: "100%", gap: 8, textAlign: "left" }}>
+              <span style={{ width: 16, display: "inline-flex" }}>{row.on ? <Glyph name="check" size={16} /> : null}</span>
+              {row.name}
+            </button>
+          ))}
+        </BrandBottomSheet>
+      </>
+    );
+  }
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
+      <Menu.Trigger asChild>
+        <MenuButton label={VIEW_COPY.button} value="" data-testid="sandbox-view" />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="end" sideOffset={6} style={menuSurface(220)}>
+          {rows.map((row) => (
+            <Menu.CheckboxItem key={row.key} checked={row.on} onCheckedChange={(next) => view.onChange({ [row.key]: next })} onSelect={(event) => event.preventDefault()} style={{ ...menuItem(true, false), gap: 8 }}>
+              <span style={{ width: 16, display: "inline-flex" }}>
+                <Menu.ItemIndicator>
+                  <Glyph name="check" size={16} />
+                </Menu.ItemIndicator>
+              </span>
+              {row.name}
+            </Menu.CheckboxItem>
+          ))}
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
@@ -659,6 +867,7 @@ export function SandboxView(props: SandboxViewProps) {
   const addMenu = (
     <AddMenu
       phone={phone}
+      targets={props.addTargets}
       onAddFile={props.onAddFile}
       onAddPromptFocus={props.onAddPromptFocus}
       onAddTool={props.onAddTool}
@@ -725,6 +934,7 @@ export function SandboxView(props: SandboxViewProps) {
               Details
             </Button>
             <span style={{ flexGrow: 1 }} />
+            {props.viewOptions ? <ViewMenu phone view={props.viewOptions} /> : null}
             {addMenu}
           </span>
         ) : null}
@@ -733,8 +943,10 @@ export function SandboxView(props: SandboxViewProps) {
             Back to build
           </Button>
         ) : null}
+        {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
         {phone ? null : addMenu}
       </div>
+      {lens === "list" ? props.sessionList : null}
       {lens === "map" ? (props.map ?? null) : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>)}
     </section>
   );

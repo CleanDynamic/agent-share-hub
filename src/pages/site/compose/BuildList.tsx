@@ -196,7 +196,7 @@ export interface BuildListProps {
   /** TF-08: the names of the files each step makes, by step id. */
   madeNames?: Readonly<Record<string, readonly string[]>>;
   /** CA-12 P4: "+ Add a session", the full-width row under the last session. Absent: no row. */
-  addSession?: Omit<AddSessionRowProps, "phone" | "inBuild">;
+  addSession?: Omit<AddSessionRowProps, "phone">;
   /** CA-14 P3: the sessions that are folded to their head, by key. Any session can be. */
   collapsed?: ReadonlySet<string>;
   /** CA-14 P3: folding or opening a session. Resolves once it is kept. */
@@ -1799,16 +1799,30 @@ function SessionRun({ head, phone: _phone, first, lit = false, children }: { hea
   );
 }
 
+/**
+ * The runs on the page. A session's head starts its run and every step after it, of any kind, belongs to it until the next
+ * head (CA-14: a session holds every kind of step, so an agent or a manual step in it is drawn inside it). Steps before any
+ * head, and every step of a draft that has no heads, stand on their own, as they did.
+ */
 function runsOf(steps: readonly Step[], dividers: BuildListProps["dividers"]): Run[] {
   const runs: Run[] = [];
   for (const step of steps) {
     const head = dividers.get(step.number) ?? null;
     const last = runs[runs.length - 1];
-    /* Agents, teams and manual steps stand on their own unless a session's head names them. */
-    if (head || !last || !last.head || step.kind !== "prompt") runs.push({ key: step.id, head, steps: [step] });
+    if (head || !last || !last.head) runs.push({ key: step.id, head, steps: [step] });
     else last.steps.push(step);
   }
   return runs;
+}
+
+/** CA-14 P1: sessions with no tile yet are drawn too, each in the place its number gives it: before the first session numbered after it. */
+function withEmptySessions(runs: readonly Run[], empties: readonly SourceSession[]): Run[] {
+  const out = [...runs];
+  for (const head of [...empties].sort((a, b) => a.number - b.number)) {
+    const at = out.findIndex((run) => run.head !== null && run.head.number > head.number);
+    out.splice(at < 0 ? out.length : at, 0, { key: `empty:${head.key}`, head, steps: [] });
+  }
+  return out;
 }
 
 export function BuildList(props: BuildListProps) {
@@ -1896,7 +1910,7 @@ export function BuildList(props: BuildListProps) {
       </div>
     );
   };
-  const runs = [...runsOf(steps, props.dividers), ...(props.emptySessions ?? []).map((head): Run => ({ key: `empty:${head.key}`, head, steps: [] }))];
+  const runs = withEmptySessions(runsOf(steps, props.dividers), props.emptySessions ?? []);
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
   const headed = runs.some((run) => run.head);
   const body = (
@@ -1995,7 +2009,7 @@ export function BuildList(props: BuildListProps) {
           inBuild={props.inBuild}
         />
       )}
-      {props.addSession ? <AddSessionRow phone={props.phone} inBuild={props.inBuild} {...props.addSession} /> : null}
+      {props.addSession ? <AddSessionRow phone={props.phone} {...props.addSession} /> : null}
     </div>
   );
   const sessionOf = new Map<string, string>();

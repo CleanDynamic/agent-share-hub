@@ -38,16 +38,17 @@ import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, re
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
-import { goalRefusal, type SessionGoal } from "@/lib/build/making";
+import { goalRefusal, patchMaking, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
-import { addSessionToBuild, emptyFirstSession } from "@/lib/build/addSession";
+import { addSessionToBuild } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
-import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessionOrder } from "@/lib/build/sessionLayout";
+import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, orderKeys } from "@/lib/build/sessionLayout";
+import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
 import { getNodeType } from "@/lib/build/nodeTypes";
@@ -58,7 +59,7 @@ import { useComposePage } from "./ComposePage";
 import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
-import { SandboxView, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
+import { AddMenu, SandboxView, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
 import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
@@ -538,37 +539,38 @@ export function SandboxPage() {
   }, [ringedSession]);
 
   /**
-   * CA-12 P4: "Start a new one here": an empty session with the app picked. If Session 1 is still empty and has no app,
-   * the app goes there instead and the session stays Session 1; otherwise the new session is the next one in order.
+   * CA-14 P5: "Start a new session": an empty session at the end, "No app chosen", at once. Its app is picked later in
+   * its head. If Session 1 is still empty and has no app, nothing new is made: Session 1 is the one to use. Written
+   * where a session made here is kept (`sessions_meta`, `build_sessions` when the table is there, `session_order`), so it
+   * works before the CA-12 table is live.
    */
-  const onStartSession = useCallback(
-    async (tool: string) => {
-      setStartingSession(true);
-      try {
-        const id = await ensureBuild();
-        const empty = buildId ? emptyFirstSession(sessions.rows, made, tree) : firstSession.current;
-        let key: string;
-        if (empty) {
-          key = empty;
-          const before = sessionsMetaOf(made)[key] ?? { tool: null, date: todayDay() };
-          await setSessionMeta(id, key, { ...before, tool });
-        } else {
-          key = newSessionKey();
-          await setSessionMeta(id, key, { tool, date: todayDay() });
-          await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
-        }
-        await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
-        setChosenSession(key);
-        setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
-      } catch (cause) {
-        console.error("[Sandbox] session not made", cause);
-        sayFailed(cause, "Couldn't make that session. Try again.");
-      } finally {
-        setStartingSession(false);
+  const onStartSession = useCallback(async () => {
+    setStartingSession(true);
+    try {
+      const fresh = !buildId;
+      const id = await ensureBuild();
+      const first = shown[0];
+      const emptyFirst = Boolean(first && groupKind(first) === "typed" && !first.tool && first.stepNumbers.length === 0);
+      let key: string;
+      if (fresh && firstSession.current) key = firstSession.current;
+      else if (emptyFirst && first) key = groupKey(first);
+      else {
+        key = newSessionKey();
+        const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
+        await setSessionMeta(id, key, { tool: null, date: todayDay() });
+        await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
+        await patchMaking(id, { session_order: [...keys, key] });
       }
-    },
-    [ensureBuild, buildId, sessions.rows, made, tree, firstSession, refreshRecord, queryClient],
-  );
+      await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
+      setChosenSession(key);
+      setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
+    } catch (cause) {
+      console.error("[Sandbox] session not made", cause);
+      sayFailed(cause, "Couldn't make that session. Try again.");
+    } finally {
+      setStartingSession(false);
+    }
+  }, [ensureBuild, buildId, shown, groups, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession]);
 
   /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
   const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
@@ -1356,6 +1358,40 @@ export function SandboxPage() {
     [addOneFile, addSetup, takeResultFiles],
   );
 
+  /* CA-14 P5: what the Add items do, shared by the Add button at the top and each session's "+ Add to this session". */
+  const addHandlers = {
+    onAddFile: pickTile,
+    onAddPromptFocus,
+    onAddTool: () => setAddToolOpen(true),
+    onAddResult,
+    onAddAgent: () => setAddAgentOpen(true),
+    onAddDecision: () => setAddDecisionOpen(true),
+    decisionAvailable,
+    onAddManual: () => setAddManualOpen(true),
+    onAddCode: () => setAddCodeOpen(true),
+    onAddCheck: () => setAddCheckOpen(true),
+    checkable: canCheck(steps),
+  };
+  /** Choosing a session for the next tile: at once, and a folded session is opened so the tile lands where it can be seen. */
+  const aimAt = (key: string) => {
+    setChosenSession(key);
+    if (collapsedKeys.has(key)) onToggleCollapsed(key, false);
+  };
+  /* CA-14 P6: the session list, when it is on and there are two sessions to jump between. */
+  const jumpItems = useMemo(() => sourceSessionRows.map((row) => ({ key: row.key, number: row.number, label: row.title ?? row.tool })), [sourceSessionRows]);
+  const headOf = useCallback((key: string) => document.querySelector<HTMLElement>(`[data-session-key="${key}"] [data-testid="session-head"]`), []);
+  const inView = useCurrentSession(
+    useMemo(() => jumpItems.map((item) => item.key), [jumpItems]),
+    headOf,
+    viewOptions.sessionList,
+  );
+  const sessionList = viewOptions.sessionList && jumpItems.length >= 2 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null;
+  const addTargets = {
+    sessions: sourceSessionRows.map((row) => ({ key: row.key, label: [`Session ${row.number} · ${row.tool}`, row.title].filter(Boolean).join(" · ") })),
+    session: currentSession,
+    onSession: aimAt,
+  };
+
   return (
     <>
       <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
@@ -1399,17 +1435,10 @@ export function SandboxPage() {
           />
         }
         threadNote={thread.hold}
-        onAddFile={pickTile}
-        onAddPromptFocus={onAddPromptFocus}
-        onAddTool={() => setAddToolOpen(true)}
-        onAddResult={onAddResult}
-        onAddAgent={() => setAddAgentOpen(true)}
-        onAddDecision={() => setAddDecisionOpen(true)}
-        decisionAvailable={decisionAvailable}
-        onAddManual={() => setAddManualOpen(true)}
-        onAddCode={() => setAddCodeOpen(true)}
-        onAddCheck={() => setAddCheckOpen(true)}
-        checkable={canCheck(steps)}
+        {...addHandlers}
+        addTargets={addTargets}
+        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions }}
+        sessionList={sessionList}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
         onTrail={onTrail}
@@ -1586,6 +1615,7 @@ export function SandboxPage() {
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={onAddPrompt}
+            addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
             sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined }}
             onDropSession={edits.onDrop}
             onSplitHere={viewOptions.splitMerge ? edits.onSplitHere : undefined}
@@ -1605,7 +1635,7 @@ export function SandboxPage() {
               onMore: sessions.libraryMore,
               adding: adding.size > 0 || startingSession,
               onAdd: (importId) => void onAddSession(importId),
-              onStartNew: (tool) => void onStartSession(tool),
+              onStartNew: () => void onStartSession(),
             }}
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
