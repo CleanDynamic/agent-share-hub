@@ -1044,7 +1044,7 @@ export function stepsMarkdown(
 
   for (const entry of steps) {
     const { step } = entry;
-    lines.push(`## Step ${step.number} · ${entry.title}`, "");
+    lines.push(step.kind === "prompt" && entry.isDefaultTitle ? `## Step ${step.number}` : `## Step ${step.number} · ${entry.title}`, "");
     // CA-13 P3: a runtime tile that runs only when a decision went a certain way says so, in the words the page uses.
     if (step.runsWhen) {
       const owner = steps.find((candidate) => candidate.step.id === step.runsWhen?.decision)?.step.decision;

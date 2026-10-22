@@ -50,7 +50,8 @@ import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
+import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
+import { GlyphButton } from "./ModalFrame";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -64,7 +65,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { SessionGroup, Step } from "@/lib/build/graph";
 import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
-import { checkHistoryLine, checkStatus, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkHistoryLine, checkStatus, promptPlace, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -101,7 +102,6 @@ import { AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestGap, NestList, TAKES, useNestTile, useSessionDragging, useTileNear, type NestTarget } from "./listNest";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
-import { titleRepeatsText } from "./buildListModel";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
   INDENT,
@@ -284,6 +284,8 @@ interface ListRefs {
   /** CA-14 P5, P7: the sessions a tile can move to, the one each top-level tile is in, and the first tile of each. */
   sessions?: readonly { key: string; label: string }[];
   sessionOf?: ReadonlyMap<string, string>;
+  /** The number of the session each top-level tile is in, for a prompt's name ("Prompt 3 · Session 2"). */
+  sessionNumbers?: ReadonlyMap<string, number>;
   firstOf?: ReadonlySet<string>;
   onMoveToSession?: BuildListProps["onMoveToSession"];
   onSplitHere?: BuildListProps["onSplitHere"];
@@ -937,6 +939,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const selected = selectedId === step.id;
   const title = stepTitle(step);
   const isDefault = step.title === null;
+  const sessionNumber = useContext(ListRefsContext).sessionNumbers?.get(step.id);
+  const place = promptPlace(step.number, sessionNumber);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [over, setOver] = useState(false);
@@ -973,7 +977,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     <div
       ref={cardRef}
       role="group"
-      aria-label={`Prompt ${step.number}: ${title}`}
+      aria-label={`Prompt ${step.number}: ${step.title ?? "untitled"}`}
       data-testid="step-card"
       data-kind="prompt"
       data-selected={selected ? "true" : undefined}
@@ -1013,11 +1017,22 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         title={
           renaming ? (
             <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
-          ) : isDefault && titleRepeatsText(step.text, title) ? (
-            /* CA-14 P8: an automatic title that only repeats the start of the text under it is not drawn; its place is kept. */
-            <span aria-hidden="true" data-testid="title-hidden" />
           ) : (
-            <StepTitle title={title} isDefault={isDefault} />
+            /* A prompt is called by its place on the build; the maker's own title sits next to it, and the pencil edits it here. */
+            <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+              <h3 data-default-title={isDefault ? "true" : undefined} title={[place, step.title].filter(Boolean).join(" ")} style={{ margin: 0, minWidth: 0, letterSpacing: "-0.005em" }}>
+                <PromptName place={place} title={step.title} />
+              </h3>
+              <GlyphButton
+                glyph="pencil"
+                label={`Rename prompt ${step.number}`}
+                phone={phone}
+                onClick={() => {
+                  setDraft(step.title ?? "");
+                  setRenaming(true);
+                }}
+              />
+            </div>
           )
         }
         menu={
@@ -2091,11 +2106,13 @@ export function BuildList(props: BuildListProps) {
     </div>
   );
   const sessionOf = new Map<string, string>();
+  const sessionNumbers = new Map<string, number>();
   const firstOf = new Set<string>();
   for (const run of runs) {
     if (!run.head || run.head.key.startsWith("typed-legacy-")) continue;
     run.steps.forEach((step, at) => {
       sessionOf.set(step.id, run.head?.key ?? "");
+      sessionNumbers.set(step.id, run.head?.number ?? 0);
       if (at === 0) firstOf.add(step.id);
     });
   }
@@ -2106,6 +2123,7 @@ export function BuildList(props: BuildListProps) {
     onColour: props.onColour,
     sessions: runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [{ key: run.head.key, label: [headName(run.head), run.head.title].filter(Boolean).join(" · ") }] : [])),
     sessionOf,
+    sessionNumbers,
     firstOf,
     onMoveToSession: props.onMoveToSession,
     onSplitHere: props.onSplitHere,

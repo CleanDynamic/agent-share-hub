@@ -77,19 +77,29 @@ describe("session dividers", () => {
 });
 
 describe("step cards", () => {
-  it("draws a default title in the quiet colour and a typed one in the strong colour, both at 500 (UI-P93)", () => {
+  it("calls a prompt by its place on the build, 'Prompt 1 · Session 1', with a typed title next to it (CA-15 follow-up)", () => {
     list();
     const card = (name: RegExp) => screen.getByRole("group", { name });
     const quiet = within(card(/^Prompt 2:/)).getByRole("heading", { level: 3 });
     const named = within(card(/^Prompt 1:/)).getByRole("heading", { level: 3 });
-    expect(quiet.textContent).toBe("Prompt 2");
-    // A default title is marked and drawn in `--text2` (the colour itself is not readable in jsdom); under the refined
-    // look both are 500 and only the ink differs.
+    expect(within(quiet).getByTestId("prompt-place").textContent).toMatch(/^Prompt 2 · Session \d+$/);
+    expect(within(quiet).queryByTestId("prompt-own-title")).toBeNull();
     expect(quiet.getAttribute("data-default-title")).toBe("true");
-    expect(quiet.getAttribute("style")).toMatch(/font-weight:\s*500/);
+    expect(within(named).getByTestId("prompt-place").textContent).toMatch(/^Prompt 1 · Session \d+$/);
+    expect(within(named).getByTestId("prompt-own-title").textContent).toBe("Homepage copy");
     expect(named.getAttribute("data-default-title")).toBeNull();
-    expect(named.getAttribute("style")).toMatch(/font-weight:\s*500/);
-    expect(named.textContent).toBe("Homepage copy");
+    expect(within(named).getByTestId("prompt-name").getAttribute("style")).toMatch(/font-weight:\s*500/);
+  });
+
+  it("edits the title on the tile itself: the pencil opens a field for the typed title, Enter saves it, and an empty one puts the place back", () => {
+    const props = list();
+    const tile = screen.getByRole("group", { name: /^Prompt 2:/ });
+    fireEvent.click(within(tile).getByRole("button", { name: "Rename prompt 2" }));
+    const field = within(tile).getByRole("textbox", { name: "Title of prompt 2" }) as HTMLInputElement;
+    expect(field.value).toBe("");
+    fireEvent.change(field, { target: { value: "Menu copy" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(props.onRename).toHaveBeenCalledWith("p2", "Menu copy");
   });
 
   it("has Open prompt as the footer link, only when the prompt can be opened, and it opens that prompt without selecting the tile (CA-15 P10)", () => {

@@ -103,7 +103,7 @@ describe("buildSteps", () => {
       node({ id: "b", position: 4, type: "manual_step", payload: { tool: "Figma", text: "Exported" } }),
     ]);
     expect(steps.map((s) => [s.id, s.number, s.kind, s.defaultTitle])).toEqual([
-      ["a", "1", "prompt", "one two three"],
+      ["a", "1", "prompt", "Prompt 1"],
       ["b", "2", "manual", "Exported"],
     ]);
     expect(steps[0]).toMatchObject({ text: "one two three", words: 3, title: null });
@@ -124,7 +124,7 @@ describe("buildSteps", () => {
     expect(step.children.map((c) => [c.id, c.number, c.kind, stepTitle(c), c.text])).toEqual([
       ["ag:instructions", "1.1", "prompt", "Instructions", "Be brief now"],
       ["p1", "1.2", "prompt", "Kick off", "first"],
-      ["p2", "1.3", "prompt", "second", "second"],
+      ["p2", "1.3", "prompt", "Prompt 1.3", "second"],
     ]);
   });
 
@@ -149,7 +149,7 @@ describe("buildSteps", () => {
     expect(team.children[0]).toMatchObject({ kind: "agent", text: "Agent 1 brief" });
     expect(team.children[0].children.map((c) => [c.number, c.defaultTitle, c.text])).toEqual([
       ["2.1.1", "Instructions", "Agent 1 brief"],
-      ["2.1.2", "hidden until opened", "hidden until opened"],
+      ["2.1.2", "Prompt 2.1.2", "hidden until opened"],
     ]);
   });
 
@@ -162,7 +162,7 @@ describe("buildSteps", () => {
 
   it("trims a typed title and falls back to the default for a blank one", () => {
     const [a, b] = buildSteps([node({ position: 1, title: "  Draft  " }), node({ position: 2, title: "   " })]);
-    expect([stepTitle(a), stepTitle(b)]).toEqual(["Draft", "one two three"]);
+    expect([stepTitle(a), stepTitle(b)]).toEqual(["Draft", "Prompt 2"]);
   });
 });
 
@@ -196,10 +196,10 @@ describe("CA-12 P6: tiles are named from what they hold", () => {
     expect(title("team", {})).toBe("Team");
   });
 
-  it("never repeats the number, and a title the maker typed wins", () => {
+  it("calls a prompt by its place, and a title the maker typed wins", () => {
     const [step, typed] = buildSteps([node({ position: 1, payload: { text: "Plan the app" } }), node({ position: 2, title: "Mine", payload: { text: "Plan the app" } })]);
-    expect(step.defaultTitle).toBe("Plan the app");
-    expect(step.defaultTitle).not.toMatch(/\d/);
+    // A prompt is called by its place on the build until its maker names it.
+    expect(step.defaultTitle).toBe("Prompt 1");
     expect(stepTitle(typed)).toBe("Mine");
   });
 
@@ -875,7 +875,7 @@ describe("code is a step (CA-02 P7)", () => {
     ];
     const steps = buildSteps(tree);
     expect(steps.map((step) => [step.id, step.kind, step.number, step.defaultTitle])).toEqual([
-      ["p1", "prompt", "1", "Plan the app"],
+      ["p1", "prompt", "1", "Prompt 1"],
       ["c1", "code", "2", "app.ts"],
       ["c2", "code", "3", "select 1;"],
     ]);
@@ -1037,7 +1037,7 @@ describe("CA-12 P7, P8: tool and file tiles", () => {
 
   it("a tool added from Add is a step with its app, how it was connected and what it did", () => {
     const steps = buildSteps([node({ id: "p", position: 1, payload: { text: "Plan" } }), toolNode("t", 2, { service: "GitHub", connection: "mcp", scopes: "read issues", step: true })]);
-    expect(steps.map((s) => [s.kind, s.number, s.defaultTitle])).toEqual([["prompt", "1", "Plan"], ["tool", "2", "GitHub"]]);
+    expect(steps.map((s) => [s.kind, s.number, s.defaultTitle])).toEqual([["prompt", "1", "Prompt 1"], ["tool", "2", "GitHub"]]);
     expect(steps[1]).toMatchObject({ tool: "GitHub", text: "read issues", app: { connection: "mcp", runsAt: null, scopes: "read issues" } });
   });
 

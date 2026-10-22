@@ -830,7 +830,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
                   ? (stringOf(payload.description) ?? "")
                   : (stringOf(payload.text) ?? "");
   // CA-12 P6: named from what it holds, never by repeating its number.
-  const defaultTitle = defaultTitleFor(kind, payload);
+  // A prompt is called by its place on the build until its maker names it: "Prompt 3".
+  const defaultTitle = kind === "prompt" ? `Prompt ${number}` : defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = kind === "tool" ? stringOf(payload.service) : stringOf(payload.tool);
   const where = kind === "manual" ? manualWhereOf(payload) : null;
@@ -1028,6 +1029,11 @@ export function withSentWith(step: Step): Step[] {
 }
 
 /** The title the maker typed, else the default. */
+/** A prompt's name by its place on the build: "Prompt 3 · Session 2", or "Prompt 3" when it is in no numbered session. The maker's own title, if any, is drawn next to it. */
+export function promptPlace(number: string, sessionNumber: number | null | undefined): string {
+  return sessionNumber ? `Prompt ${number} · Session ${sessionNumber}` : `Prompt ${number}`;
+}
+
 export function stepTitle(step: Pick<Step, "title" | "defaultTitle">): string {
   return step.title ?? step.defaultTitle;
 }

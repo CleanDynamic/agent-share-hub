@@ -42,7 +42,7 @@ import { CodeLines } from "@/components/code/CodeLines";
 import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/answerShape";
 import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
 import { REPLY_MAX } from "@/lib/build/composePrompts";
-import { groupKind, groupOfStep, promptNumbersOf, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
+import { groupKind, groupOfStep, promptNumbersOf, promptPlace, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
 import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_MAX, markVariable, variablesFor, type Effort, type PromptSettings } from "@/lib/build/tileExtras";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
@@ -53,6 +53,7 @@ import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
 
 import { FromPostNote } from "./PartWindow";
+import { PromptName } from "./tileBodies";
 
 export type FullPromptMode = "maker" | "reader";
 
@@ -97,6 +98,7 @@ export const FULL_PROMPT_COPY = {
   keepAsWritten: "Keep as written",
   prompt: "Prompt",
   response: "Response",
+  titlePlaceholder: "e.g. Welcome email",
   rename: "Rename prompt",
   modelSettings: "Model settings",
   modelSettingsLine: "The model, reasoning effort and instructions that applied",
@@ -159,6 +161,7 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   const dated = group ? groupKind(group) !== "legacy" : false;
   const when = dated && group ? longDate(group.startedAt) : "";
   /** CA-15 P2: one grey line, "Session 1 · Claude · 7 Oct 2026 · Prompt 1 of 3 in session". */
+  const name = promptPlace(step.number, dated && group ? group.number : null);
   const line = [
     dated && group ? `Session ${group.number}` : null,
     tool,
@@ -179,7 +182,7 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   });
   const goesInto = all.filter((candidate) => candidate.id !== step.id && candidate.uses.some((use) => use.kind === "output" && use.node_id === step.id));
   const before = uses.flatMap((use) => (use.paste ? [use.paste] : []));
-  return { previous, next, place, instructions, tool, model, line, uses, goesInto, before };
+  return { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before };
 }
 
 /* ── the refined look (UI-P94) ── */
@@ -218,14 +221,17 @@ function bare(element: HTMLInputElement | null) {
 }
 
 /** CA-15 P2: the editable title, 15/500 with a small rename button; it starts as the default and only the maker can change it. */
-function RefinedTitleField({ step, onTitle }: { step: Step; onTitle: (id: string, title: string) => void }) {
+function RefinedTitleField({ step, place, onTitle }: { step: Step; place: string; onTitle: (id: string, title: string) => void }) {
   const [draft, setDraft] = useState(step.title ?? "");
   const field = useRef<HTMLInputElement | null>(null);
   const save = () => {
     if (draft.trim() !== (step.title ?? "")) onTitle(step.id, draft);
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <span data-testid="prompt-place" style={{ ...geist(15, 500, t.text2), flexShrink: 0, whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
+        {place}
+      </span>
       <input
         ref={(element) => {
           field.current = element;
@@ -235,7 +241,7 @@ function RefinedTitleField({ step, onTitle }: { step: Step; onTitle: (id: string
         aria-label="Title"
         value={draft}
         maxLength={TITLE_MAX}
-        placeholder={step.defaultTitle}
+        placeholder={FULL_PROMPT_COPY.titlePlaceholder}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={save}
         onKeyDown={(event) => {
@@ -521,7 +527,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
   const existing = rangeAt(step.changes ?? [], picked ?? { start: -1, end: -1 });
   const markable = mode === "maker" && onChanges && !isInstructions(step) && picked !== null && (existing !== null || picked.end > picked.start);
   const textRef = useRef<HTMLDivElement>(null);
-  const { previous, next, place, instructions, tool, model, line, uses, goesInto, before } = bodyFacts(props, step, prompts);
+  const { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before } = bodyFacts(props, step, prompts);
 
   // Opening puts focus on the text box.
   useEffect(() => {
@@ -546,11 +552,11 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
               <Dialog.Title style={VISUALLY_HIDDEN}>
                 Prompt {step.number} of {prompts.length}
               </Dialog.Title>
-              <RefinedTitleField key={step.id} step={step} onTitle={onTitle} />
+              <RefinedTitleField key={step.id} step={step} place={name} onTitle={onTitle} />
             </>
           ) : (
-            <Dialog.Title style={{ ...geist(15, 500, step.title ? t.text : t.text2), margin: 0, letterSpacing: "-0.01em", overflowWrap: "anywhere" }} data-default-title={step.title ? undefined : "true"}>
-              {stepTitle(step)}
+            <Dialog.Title style={{ margin: 0, letterSpacing: "-0.01em", overflowWrap: "anywhere" }} data-default-title={step.title ? undefined : "true"}>
+              {instructions ? stepTitle(step) : <PromptName place={name} title={step.title} size={15} />}
             </Dialog.Title>
           )}
           <p data-testid="full-prompt-line" style={{ ...geist(13, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>

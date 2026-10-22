@@ -477,6 +477,25 @@ export function RepoTileBody({ step, indent = 0 }: { step: Step; indent?: number
   );
 }
 
+/**
+ * A prompt's name: its place on the build ("Prompt 3 · Session 2") in `--text2`, and, when the maker gave one, their title
+ * next to it in `--text`. One line, an ellipsis. Draw it inside the heading.
+ */
+export function PromptName({ place, title, size = 14 }: { place: string; title: string | null; size?: number }) {
+  return (
+    <span data-testid="prompt-name" style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0, ...text(size, 500, t.text2) }}>
+      <span data-testid="prompt-place" style={{ flexShrink: 0, whiteSpace: "nowrap" }}>
+        {place}
+      </span>
+      {title ? (
+        <span data-testid="prompt-own-title" style={{ color: t.text, minWidth: 0, ...ellipsis }}>
+          {title}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /** The type line a reader sees under a tile's title: the same words the composer draws above it. */
 export function TypeLine({ step, indent = 0 }: { step: Pick<Step, "kind"> & Parameters<typeof typeLineOf>[0]; indent?: number }) {
   return (

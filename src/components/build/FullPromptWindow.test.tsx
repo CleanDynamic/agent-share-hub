@@ -89,16 +89,24 @@ describe("the title", () => {
   it("saves an empty title as the default (an empty string, which the page turns back into the default)", () => {
     const props = open("p3");
     const field = screen.getByLabelText("Title") as HTMLInputElement;
-    expect(field.placeholder).toBe("Prompt 3");
+    expect(field.placeholder).toBe("e.g. Welcome email");
+    expect(screen.getByTestId("prompt-place").textContent).toMatch(/^Prompt 3/);
     fireEvent.change(field, { target: { value: "" } });
     fireEvent.blur(field);
     expect(props.onTitle).toHaveBeenCalledWith("p3", "");
   });
 
+  it("shows the prompt's place before the field, and the field is the maker's own title (CA-15 follow-up)", () => {
+    open("p3");
+    const place = screen.getByTestId("prompt-place");
+    expect(place.textContent).toMatch(/^Prompt 3/);
+    expect(place.compareDocumentPosition(screen.getByLabelText("Title")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("is a heading, with no field, for a reader", () => {
     open("p3", { mode: "reader", onTitle: undefined });
     expect(screen.queryByLabelText("Title")).toBeNull();
-    expect(screen.getByRole("heading", { name: "Fix the mobile layout" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^Prompt 3(?: · Session \d+)?(?: Fix the mobile layout)?$/ })).toBeTruthy();
     expect(screen.getByText("Before you send it")).toBeTruthy();
   });
 });

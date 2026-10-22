@@ -45,12 +45,12 @@ import { HelperChips, ShapeChip, TraceLink } from "@/components/build/RuntimeChi
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, TypeLine } from "@/components/build/tileBodies";
+import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, TypeLine } from "@/components/build/tileBodies";
 import { footerFactsOf, resultTypeLine } from "@/lib/build/tileLines";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
-import { groupKey, groupKind, shownGroups, type SessionGroup } from "@/lib/build/graph";
+import { groupKey, groupKind, groupOfStep, promptPlace, shownGroups, type SessionGroup } from "@/lib/build/graph";
 import { parseRefTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
 import { shortDate } from "@/lib/build/readerSteps";
@@ -63,7 +63,6 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { OutsideWarning } from "../compose/OutsideWarning";
-import { titleRepeatsText } from "../compose/buildListModel";
 import { CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
@@ -784,13 +783,14 @@ interface Ctx {
   seeMap?: (id: string) => void;
 }
 
-function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
+function Title({ entry, right, place }: { entry: ReaderStep; right: ReactNode; /** A prompt: its place on the build, before the maker's own title. */ place?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
       <NumberTile>{entry.step.number}</NumberTile>
-      {/* CA-14 P8: an automatic title that only repeats the start of the text under it is not drawn, as in the composer. */}
-      {entry.isDefaultTitle && entry.step.kind === "prompt" && titleRepeatsText(entry.step.text, entry.title) ? (
-        <span aria-hidden="true" data-testid="title-hidden" style={{ flexGrow: 1 }} />
+      {place ? (
+        <h3 data-default-title={entry.isDefaultTitle ? "true" : undefined} style={{ margin: 0, flexGrow: 1, minWidth: 0, letterSpacing: "-0.005em" }}>
+          <PromptName place={place} title={entry.isDefaultTitle ? null : entry.title} />
+        </h3>
       ) : (
         <h3
           style={{
@@ -809,6 +809,12 @@ function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
     </div>
   );
 }
+
+/** The number of the session a prompt is in, when it is in a numbered one. */
+const readerSession = (groups: StepsListProps["view"]["groups"], step: Step): number | null => {
+  const group = groupOfStep(groups ?? [], step);
+  return group && groupKind(group) !== "legacy" ? group.number : null;
+};
 
 function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { step } = entry;
@@ -923,7 +929,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
 
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
-      <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
+      <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <TypeLine step={step} indent={INDENT} />
       {step.kind === "code" ? <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} /> : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}

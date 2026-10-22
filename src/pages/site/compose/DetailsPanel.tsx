@@ -82,6 +82,7 @@ import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
 import { MenuContent } from "./ComposeMenu";
 import { ChoiceGrid } from "./ChoiceGrid";
+import { PromptName } from "@/components/build/tileBodies";
 import { AGENT_DIALOG_COPY } from "./AddAgentDialog";
 import { CODE_DIALOG_COPY } from "./AddCodeDialog";
 import { TOOL_DIALOG_COPY } from "./AddToolDialog";
@@ -132,6 +133,8 @@ export interface PromptView extends InputsView {
   defaultTitle: string;
   /** False for an agent's instructions: they are renamed through the agent. */
   editable: boolean;
+  /** Its name by its place on the build: "Prompt 3 · Session 2". Absent for an agent's instructions. */
+  place?: string;
   /** "Session 2 · Claude", or "Typed here · ChatGPT". */
   sessionLine: string;
   /** "Opus 5.5 · 4 Oct · prompt 2 of 5". */
@@ -608,7 +611,7 @@ const titleStyle = (quietTitle: boolean): CSSProperties => ({
   overflowWrap: "anywhere",
 });
 
-function Title({ id, title, fallback, editable, label, phone, onRename }: { id: string; title: string | null; fallback: string; editable: boolean; label: string; phone: boolean; onRename: (id: string, title: string) => void }) {
+function Title({ id, title, fallback, editable, label, phone, onRename, place }: { id: string; title: string | null; fallback: string; editable: boolean; label: string; phone: boolean; onRename: (id: string, title: string) => void; /** A prompt: its place on the build ("Prompt 3 · Session 2"), drawn before the maker's own title. */ place?: string }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const finish = (save: boolean) => {
@@ -623,7 +626,7 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
           aria-label={label}
           value={draft}
           maxLength={80}
-          placeholder={fallback}
+          placeholder={place ? "e.g. Welcome email" : fallback}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={() => finish(true)}
           onKeyDown={(event) => {
@@ -634,7 +637,7 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
         />
       ) : (
         <h3 data-default-title={title ? undefined : "true"} style={titleStyle(!title)}>
-          {title ?? fallback}
+          {place ? <PromptName place={place} title={title} size={18} /> : (title ?? fallback)}
         </h3>
       )}
       {editable && !editing ? (
@@ -954,7 +957,7 @@ function PromptDetails({ view, phone, focus, payload, inBuild, ...h }: { view: P
   return (
     <>
       <Head eyebrow={view.sentWithLine ?? `Prompt ${view.number}`}>
-        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable={view.editable} label={`Title of prompt ${view.number}`} phone={phone} onRename={h.onRename} />
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable={view.editable} label={`Title of prompt ${view.number}`} phone={phone} onRename={h.onRename} place={view.place} />
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <ToolMark tool={toolOf(view.sessionLine)} model={view.model} size={24} />
           <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>

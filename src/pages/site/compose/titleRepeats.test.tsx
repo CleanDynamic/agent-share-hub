@@ -37,19 +37,22 @@ describe("the List", () => {
     );
   };
 
-  it("hides an automatic title that repeats its text, keeping the row, and always shows a typed one", () => {
+  it("calls a prompt by its place, with a typed title next to it (CA-14 P8 is replaced: nothing is hidden)", () => {
     list([
-      step({ id: "a", number: "1", title: null, defaultTitle: "ccc", text: "ccc" }),
-      step({ id: "b", number: "2", title: "ccc", defaultTitle: "ccc", text: "ccc" }),
-      step({ id: "c", number: "3", title: null, defaultTitle: "Fix the layout", text: "A different opening" }),
+      step({ id: "a", number: "1", title: null, defaultTitle: "Prompt 1", text: "ccc" }),
+      step({ id: "b", number: "2", title: "ccc", defaultTitle: "Prompt 2", text: "ccc" }),
+      step({ id: "c", number: "3", title: null, defaultTitle: "Prompt 3", text: "A different opening" }),
     ]);
     const first = screen.getByRole("group", { name: /^Prompt 1:/ });
-    expect(within(first).queryByRole("heading", { level: 3 })).toBeNull();
-    expect(within(first).getByTestId("title-hidden")).toBeTruthy();
-    expect(within(first).getByText("ccc")).toBeTruthy();
-    expect(within(screen.getByRole("group", { name: /^Prompt 2:/ })).getByRole("heading", { level: 3 }).textContent).toBe("ccc");
-    expect(within(screen.getByRole("group", { name: /^Prompt 3:/ })).getByRole("heading", { level: 3 }).textContent).toBe("Fix the layout");
+    expect(within(first).queryByTestId("title-hidden")).toBeNull();
+    expect(within(first).getByTestId("prompt-place").textContent).toMatch(/^Prompt 1/);
+    expect(within(first).queryByTestId("prompt-own-title")).toBeNull();
+    const second = screen.getByRole("group", { name: /^Prompt 2:/ });
+    expect(within(second).getByTestId("prompt-place").textContent).toMatch(/^Prompt 2/);
+    expect(within(second).getByTestId("prompt-own-title").textContent).toBe("ccc");
+    expect(within(screen.getByRole("group", { name: /^Prompt 3:/ })).queryByTestId("prompt-own-title")).toBeNull();
   });
+
 });
 
 describe("the hint", () => {

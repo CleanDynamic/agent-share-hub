@@ -316,3 +316,20 @@ describe("a system prompt, a dataset and a GitHub repository in Details (CA-15 P
     expect(props.onRename).toHaveBeenCalledWith("ds", "Support tickets");
   });
 });
+
+describe("a prompt's name in Details (CA-15 follow-up)", () => {
+  it("is its place on the build with the typed title next to it, and the pencil edits only the typed title", () => {
+    const { props, view } = details([node("p1", "prompt", { text: "One" }), node("p2", "prompt", { text: "Two" }, { title: "Menu copy" })], "p2");
+    expect(view?.kind === "prompt" ? view.place : "").toBe("Prompt 2");
+    const heading = screen.getAllByRole("heading", { level: 3 })[0];
+    expect(within(heading).getByTestId("prompt-place").textContent).toBe("Prompt 2");
+    expect(within(heading).getByTestId("prompt-own-title").textContent).toBe("Menu copy");
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    const field = screen.getByRole("textbox", { name: "Title of prompt 2" }) as HTMLInputElement;
+    expect(field.value).toBe("Menu copy");
+    expect(field.placeholder).toBe("e.g. Welcome email");
+    fireEvent.change(field, { target: { value: "" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(props.onRename).toHaveBeenCalledWith("p2", "");
+  });
+});

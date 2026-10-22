@@ -83,7 +83,7 @@ describe("the refined window does what the window does", () => {
   it("is a heading for a reader, with Before you send it", () => {
     open("p3", { mode: "reader", onTitle: undefined });
     expect(screen.queryByLabelText("Title")).toBeNull();
-    expect(screen.getByRole("heading", { name: "Fix the mobile layout" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^Prompt 3(?: · Session \d+)?(?: Fix the mobile layout)?$/ })).toBeTruthy();
     expect(screen.getByText("Before you send it")).toBeTruthy();
   });
 });
