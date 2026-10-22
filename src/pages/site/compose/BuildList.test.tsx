@@ -92,14 +92,17 @@ describe("step cards", () => {
     expect(named.textContent).toBe("Homepage copy");
   });
 
-  it("shows Show full prompt only when the text is clamped", () => {
+  it("has Open prompt as the footer link, only when the prompt can be opened, and it opens that prompt without selecting the tile (CA-15 P10)", () => {
     list();
-    expect(screen.queryByText("Show full prompt")).toBeNull();
+    expect(screen.queryByText("Open prompt")).toBeNull();
     cleanup();
-    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(100);
-    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(42);
-    list();
-    expect(screen.getAllByText("Show full prompt").length).toBeGreaterThan(0);
+    const onOpenPrompt = vi.fn();
+    const props = list({ onOpenPrompt });
+    const link = within(screen.getByRole("group", { name: /^Prompt 2:/ })).getByRole("button", { name: "Open prompt" });
+    expect(link.closest('[data-testid="tile-footer"]')).toBeTruthy();
+    fireEvent.click(link);
+    expect(onOpenPrompt).toHaveBeenCalledWith("p2");
+    expect(props.onSelect).not.toHaveBeenCalled();
     expect(isClamped({ scrollHeight: 42, clientHeight: 42 })).toBe(false);
     expect(isClamped({ scrollHeight: 63, clientHeight: 42 })).toBe(true);
   });
@@ -285,17 +288,21 @@ describe("code (CA-02 P7)", () => {
     };
   };
 
-  // CA-11: the well is CodeLines now: numbered lines, and up to 8 lines (it was 6) before "Show all N lines".
-  it("shows Code, its file name, its line count and its first eight lines in a numbered mono well", () => {
+  // CA-11: the well is CodeLines now: numbered lines. CA-15 P10: three lines show, "Show all N lines" is the footer's link, and the file name is a footer fact.
+  it("shows Code, its language, its line count and its first three lines in a numbered mono well, with the file name in the footer", () => {
     const base = sandboxListProps("bakery");
     const step = codeStep();
     list({ steps: [...base.steps, step] });
     const card = screen.getByRole("group", { name: `Code ${step.number}: Code ${step.number}` });
     expect(card.getAttribute("data-kind")).toBe("code");
-    expect(within(card).getByTestId("code-eyebrow").textContent).toBe("Code · app.ts · 8 lines");
+    expect(within(card).getByTestId("code-eyebrow").textContent).toBe("Code · TypeScript · 8 lines");
     const well = within(card).getByTestId("code-lines");
-    expect(well.textContent).toBe("1\n2\n3\n4\n5\n6\n7\n8");
-    expect(within(card).getByTestId("code-gutter-numbers").textContent).toBe("1\n2\n3\n4\n5\n6\n7\n8");
+    expect(well.textContent).toBe("1\n2\n3");
+    expect(within(card).getByTestId("code-gutter-numbers").textContent).toBe("1\n2\n3");
+    expect(within(card).getByTestId("tile-footer-facts").textContent).toBe("app.ts");
+    fireEvent.click(within(card).getByRole("button", { name: "Show all 8 lines" }));
+    expect(within(card).getByTestId("code-lines").textContent).toBe("1\n2\n3\n4\n5\n6\n7\n8");
+    expect(within(card).getByRole("button", { name: "Show fewer lines" })).toBeTruthy();
     expect(well.style.fontFamily).toContain("--font-data");
     expect(within(card).getByRole("button", { name: `Code ${step.number} options` })).toBeTruthy();
   });
@@ -303,7 +310,7 @@ describe("code (CA-02 P7)", () => {
   it("names the language when the code has no file name", () => {
     const base = sandboxListProps("bakery");
     list({ steps: [...base.steps, codeStep({ filename: null, language: "sql", text: "select 1;" })] });
-    expect(screen.getByTestId("code-eyebrow").textContent).toBe("Code · sql · 1 line");
+    expect(screen.getByTestId("code-eyebrow").textContent).toBe("Code · SQL · 1 line");
   });
 });
 
@@ -401,7 +408,9 @@ describe("agents and teams (UI-P69)", () => {
 
     const withUses = { ...agent, uses: [{ kind: "output" as const, node_id: "p1" }, { kind: "output" as const, node_id: "p2" }] };
     list({ steps: base.steps.map((step) => (step.id === "a5" ? withUses : step)) });
-    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Agent · made in prompts 1 and 2 · Opus 5.5");
+    // CA-15 P10: the type line is "Agent · <model>"; where it was made is its Uses row.
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Agent · Opus 5.5");
+    expect(within(screen.getByRole("group", { name: /^Agent 5:/ })).getByText("Uses")).toBeTruthy();
   });
 
   it("draws an agent without 'made in' when it uses no step", () => {
@@ -412,7 +421,9 @@ describe("agents and teams (UI-P69)", () => {
   it("shows an agent's instructions first, and adds a prompt to it from a ghost row", async () => {
     const props = list();
     const card = screen.getByRole("group", { name: /^Agent 5:/ });
-    expect(within(card).getByText("Check the menu and reply with any item that has no price.")).toBeTruthy();
+    // CA-15 P10: one line of its instructions shows. It has no prompts of its own to fold, so the way to add one stays.
+    expect(within(card).getByTestId("agent-instructions-line").textContent).toBe("Check the menu and reply with any item that has no price.");
+    expect(within(card).queryByRole("button", { name: "Show prompts" })).toBeNull();
     fireEvent.click(within(card).getByRole("button", { name: "Add a prompt to this agent" }));
     const field = screen.getByLabelText("Add a prompt to agent 5") as HTMLTextAreaElement;
     // No tool or model chips: the agent's model applies.
@@ -436,11 +447,14 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.queryByTestId("agent-prompt-field")).toBeNull();
   });
 
-  it("draws a team's agents as inner cards, its lead first and the rest each 'Agent · {name}', with how each ran under it (CA-03)", () => {
+  it("draws a team's agents as a compact list, and as inner cards, its lead first and the rest each 'Agent · {name}', with how each ran under it, behind Show agents (CA-03, CA-15 P10)", () => {
     const { list: props } = sandboxTeamFixture();
     list({ ...props });
     const card = screen.getByRole("group", { name: /^Team 3:/ });
-    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · made in prompt 2");
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Multi-agent team");
+    expect(within(card).getAllByTestId("team-agent")).toHaveLength(4);
+    expect(within(card).queryAllByTestId("inner-card")).toHaveLength(0);
+    fireEvent.click(within(card).getByRole("button", { name: "Show agents" }));
     const inner = within(card).getAllByTestId("inner-card");
     expect(inner).toHaveLength(4);
     expect(inner[0].textContent).toMatch(/^Lead agent/);
@@ -453,8 +467,11 @@ describe("agents and teams (UI-P69)", () => {
 
   it("names a team's lead by what it ran in, and puts the others under Handed work to (CA-03 P4)", () => {
     list(shapeListProps("team"));
-    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · led by an agent in Claude Code");
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Multi-agent team");
     const card = screen.getByRole("group", { name: /^Team 1:/ });
+    // CA-15 P10: the lead's tool is on its row of the compact list.
+    expect(within(card).getAllByTestId("team-agent")[0].textContent).toContain("Lead · Claude Code");
+    fireEvent.click(within(card).getByRole("button", { name: "Show agents" }));
     const inner = within(card).getAllByTestId("inner-card");
     expect(inner.map((entry) => entry.firstElementChild?.textContent)).toEqual(["Lead agent", "Agent · Research", "Agent · Build", "Agent · Review"]);
     const handed = within(card).getByTestId("handed-work-to");
@@ -464,16 +481,18 @@ describe("agents and teams (UI-P69)", () => {
     expect(handed.compareDocumentPosition(inner[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("reads Team alone when the lead names no harness (CA-03 P4)", () => {
+  it("reads Multi-agent team alone when the team has no orchestration pattern, and says its lead without a tool plainly (CA-03 P4, CA-15 P10)", () => {
     const { list: props } = sandboxTeamFixture();
     list({ ...props });
-    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · made in prompt 2");
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Multi-agent team");
+    expect(screen.getAllByTestId("team-agent")[0].textContent).not.toContain(" in ");
   });
 
   it("adds an agent to a team from a ghost row", () => {
     const { list: props } = sandboxTeamFixture();
     const onAddAgentTo = vi.fn();
     list({ ...props, onAddAgentTo });
+    fireEvent.click(screen.getByRole("button", { name: "Show agents" }));
     fireEvent.click(screen.getByRole("button", { name: "Add an agent to this team" }));
     expect(onAddAgentTo).toHaveBeenCalledWith("t3");
   });
@@ -494,6 +513,7 @@ describe("agents and teams (UI-P69)", () => {
           },
     );
     list({ ...props, steps });
+    fireEvent.click(screen.getByRole("button", { name: "Show agents" }));
     expect(screen.getAllByRole("button", { name: /^Show its/ }).map((el) => el.textContent)).toEqual(["Show its prompt", "Show its 2 prompts"]);
     expect(screen.queryAllByTestId("inner-prompt")).toHaveLength(0);
 
@@ -517,12 +537,12 @@ describe("a manual step (UI-P70)", () => {
   };
   const card = () => screen.getByRole("group", { name: /^Manual step 3:/ });
 
-  it("is its own kind of card, headed 'Manual step · added by maker', with where it was done under it (CA-12 P10)", () => {
+  it("is its own kind of card, headed 'Manual step · <where>', with where it was done in that line (CA-12 P10, CA-15 P10)", () => {
     manualList();
     // The colours resolve in a browser, not here: the tier-3 spec reads them.
     expect(card().getAttribute("data-kind")).toBe("manual");
-    expect(screen.getByTestId("manual-eyebrow").textContent).toBe("Manual step · added by maker");
-    expect(within(card()).getByTestId("manual-where").textContent).toContain("Figma");
+    expect(screen.getByTestId("manual-eyebrow").textContent).toBe("Manual step · Figma");
+    expect(within(card()).queryByTestId("manual-where")).toBeNull();
     expect(within(card()).getByRole("heading", { level: 3 }).textContent).toBe("Manual step 3");
     expect(within(card()).getByRole("heading", { level: 3 }).getAttribute("data-default-title")).toBe("true");
   });
@@ -615,7 +635,7 @@ describe("the refined look (UI-P93)", () => {
     expect(markup()).toMatch(/width:7px;height:7px;border-radius:50%;background:var\(--label\)/);
     const add = within(agent).getByRole("button", { name: "Add a prompt to this agent" });
     expect(add.querySelector("svg")).toBeNull();
-    expect(markup()).toMatch(/border:1px dashed var\(--line\)[^"]*"[^>]*>Add a prompt to this agent</);
+    expect(add.textContent).toBe("Add a prompt to this agent");
   });
 
   it("has Attach a file after Read all of it, and calls onAttach for that prompt", async () => {
@@ -710,11 +730,11 @@ describe("a check in the List (CA-03 P5)", () => {
       ),
     )?.[1];
 
-  it("reads 'Check · how it checked its work', what it tested, and a passing status with an --evidence dot", () => {
+  it("reads 'Check', its pass criteria, and a passing status with an --evidence dot (CA-15 P10)", () => {
     list(withCheck(checkStep(14, 14, "2026-10-12")));
     const card = screen.getByRole("group", { name: /^Check 9/ });
-    expect(within(card).getByTestId("check-eyebrow").textContent).toBe("Check · how it checked its work");
-    expect(card.textContent).toContain("Places a test order for 2 sourdough loaves");
+    expect(within(card).getByTestId("check-eyebrow").textContent).toBe("Check");
+    expect(within(card).getByTestId("check-criteria").textContent).toBe("Pass criteria: The total shows £9.00");
     const status = within(card).getByTestId("check-status");
     expect(status.textContent).toBe("Passed 14 of 14 runs · since 12 Oct");
     expect(dotOf(checkStep(14, 14, "2026-10-12"))).toBe("evidence");
@@ -729,14 +749,13 @@ describe("a check in the List (CA-03 P5)", () => {
 });
 
 describe("what an agent remembers, in the List (CA-03 P6)", () => {
-  it("is one quiet line under the agent with a 7px --label dot: Remembers {memory}", () => {
+  it("is not drawn on the agent's tile: it is optional detail, which lives in the modal and in Details (CA-15 P10)", () => {
     const base = sandboxListProps("bakery");
     const steps = base.steps.map((step) => (step.kind === "agent" ? { ...step, memory: "which dishes it featured" } : step));
     list({ ...base, steps });
     const agent = screen.getByRole("group", { name: /^Agent 5/ });
-    const line = within(agent).getByTestId("memory-line");
-    expect(line.textContent).toBe("Remembers which dishes it featured");
-    expect((line.firstElementChild as HTMLElement).style.width).toBe("7px");
+    expect(within(agent).queryByTestId("memory-line")).toBeNull();
+    expect(agent.textContent).not.toContain("which dishes it featured");
   });
 
   it("says nothing for an agent that remembers nothing", () => {

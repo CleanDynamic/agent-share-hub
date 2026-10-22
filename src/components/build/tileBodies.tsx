@@ -28,6 +28,7 @@ export const TILE_COPY = {
   pastedCsv: "Pasted CSV",
   noInstructions: "No instructions yet",
   readAll: "Read all",
+  response: "Response",
   nothingAdded: "Nothing added yet",
   noPreview: "No preview",
   cases: (n: number) => `${n} ${n === 1 ? "case" : "cases"}`,
@@ -43,7 +44,7 @@ const clamp = (lines: number): CSSProperties => ({ display: "-webkit-box", Webki
 /* ── a tool ── */
 
 /** The app's mark and name, how it was connected, and what it did. Absent parts are not drawn. */
-export function ToolTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+export function ToolTileBody({ step, indent = 0, lean = false }: { step: Step; indent?: number; lean?: boolean }) {
   const name = step.tool ?? step.title ?? "Tool";
   const connection = step.app?.connection ? CONNECTION_LABEL[step.app.connection] : null;
   const where = step.app?.connection === "mcp" && step.app.runsAt ? (step.app.runsAt === "web" ? "at a web address" : "on the maker's computer") : null;
@@ -54,8 +55,8 @@ export function ToolTileBody({ step, indent = 0 }: { step: Step; indent?: number
         <ToolMark tool={name} size={20} />
         <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{name}</span>
       </div>
-      {how ? <span data-testid="tool-how" style={text(12.5, 400, t.text2)}>{how}</span> : null}
-      {step.app?.scopes ? <span data-testid="tool-scopes" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{step.app.scopes}</span> : null}
+      {how && !lean ? <span data-testid="tool-how" style={text(12.5, 400, t.text2)}>{how}</span> : null}
+      {step.app?.scopes ? <span data-testid="tool-scopes" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", ...(lean ? clamp(1) : null) }}>{step.app.scopes}</span> : null}
     </div>
   );
 }
@@ -67,17 +68,19 @@ export function ToolTileBody({ step, indent = 0 }: { step: Step; indent?: number
  * (2 of 3) · 71% confidence", "escalation → no · 0.18". With no answer recorded each line shows the question and its options in
  * `--label`. On a copied build the original's answer reads as the original's, never as the copier's result.
  */
-export function DecisionTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+export function DecisionTileBody({ step, indent = 0, lean = false }: { step: Step; indent?: number; lean?: boolean }) {
   const facts = step.decision;
   if (!facts) return null;
-  const lines = decisionLines(facts);
-  const expected = facts.expected && !facts.answer ? facts.questions.flatMap((q) => (facts.expected?.[q.id] ? [expectedLine(q, facts.expected[q.id])] : [])) : [];
+  const lines = lean ? decisionLines(facts).slice(0, 2) : decisionLines(facts);
+  const expected = !lean && facts.expected && !facts.answer ? facts.questions.flatMap((q) => (facts.expected?.[q.id] ? [expectedLine(q, facts.expected[q.id])] : [])) : [];
   return (
     <div data-testid="decision-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <ToolMark tool={facts.provider} size={20} />
-        <span data-testid="decision-headline" style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{decisionHeadline(facts)}</span>
-      </div>
+      {lean ? null : (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <ToolMark tool={facts.provider} size={20} />
+          <span data-testid="decision-headline" style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{decisionHeadline(facts)}</span>
+        </div>
+      )}
       {lines.map((line, index) => (
         <span key={index} data-testid="decision-line" data-answered={line.answered || undefined} style={{ ...text(13, 400, line.answered ? t.text : t.label), fontVariantNumeric: "tabular-nums", overflowWrap: "anywhere" }}>
           {line.text}
@@ -114,7 +117,7 @@ export function FileMark({ kind, size = 32 }: { kind: FileKind; size?: number })
 }
 
 /** The type mark, the file's name and size, and a preview: 4 lines of a text or code file, a thumbnail of a picture, the PDF mark for a PDF. */
-export function FileTileBody({ step, indent = 0 }: { step: Step; indent?: number }) {
+export function FileTileBody({ step, indent = 0, lean = false }: { step: Step; indent?: number; lean?: boolean }) {
   const facts = step.fileFacts;
   if (!facts) return null;
   const size = formatSize(facts.size);
@@ -124,37 +127,43 @@ export function FileTileBody({ step, indent = 0 }: { step: Step; indent?: number
         <FileMark kind={facts.kind} />
         <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
           <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{facts.name}</span>
-          <Quiet>{[FILE_WORD[facts.kind], size].filter(Boolean).join(" · ")}</Quiet>
+          {lean ? null : <Quiet>{[FILE_WORD[facts.kind], size].filter(Boolean).join(" · ")}</Quiet>}
         </span>
       </div>
       {facts.kind === "picture" && facts.mediaId ? (
         <ManualThumb mediaId={facts.mediaId} size={96} />
       ) : (facts.kind === "text" || facts.kind === "code" || facts.kind === "spreadsheet") && facts.preview.length > 0 ? (
-        <CodeLines text={facts.preview.join("\n")} maxLines={4} testId="file-preview" label={`${facts.name} preview`} />
+        <CodeLines text={facts.preview.join("\n")} maxLines={lean ? 2 : 4} hideToggle={lean} testId="file-preview" label={`${facts.name} preview`} />
       ) : null}
-      {step.text ? <span style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>{step.text}</span> : null}
+      {step.text ? <span style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere", ...(lean ? clamp(1) : null) }}>{step.text}</span> : null}
     </div>
   );
 }
 
 /* ── a manual step ── */
 
+/** How many of a manual step's steps a list tile shows before "Show all steps". */
+export const MANUAL_LEAN_LINES = 2;
+
 /** Where it was done (the app's or site's mark and name), then its steps as a numbered list, then its picture. */
-export function ManualTileBody({ step, indent = 0, picture = true }: { step: Step; indent?: number; picture?: boolean }) {
+export function ManualTileBody({ step, indent = 0, picture = true, lean = false, all = false }: { step: Step; indent?: number; picture?: boolean; lean?: boolean; all?: boolean }) {
   const where = step.where ?? (step.tool ? ({ kind: "app", name: step.tool, url: null } as const) : null);
   const label = manualWhereLabel(where);
   const markName = where?.kind === "app" || where?.kind === "site" ? label : step.tool;
   const site = where?.kind === "site" ? siteNameOf(where.url) : null;
-  const lines = step.lines ?? manualLinesOf(step.text);
+  const every = step.lines ?? manualLinesOf(step.text);
+  /* In a list tile (`lean`) the type line already says where, and the steps show two at a time until asked. */
+  const lines = lean && !all ? every.slice(0, MANUAL_LEAN_LINES) : every;
   return (
     <div data-testid="manual-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
-      <div data-testid="manual-where" style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-        {where?.kind === "app" ? <ToolMark tool={markName} size={14} /> : null}
-        
-        <span style={{ ...text(12.5, 500, t.text2), ...ellipsis }}>{label}</span>
-        {site && site !== label ? <Quiet>{site}</Quiet> : null}
-      </div>
-      {lines.length > 1 ? (
+      {lean ? null : (
+        <div data-testid="manual-where" style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          {where?.kind === "app" ? <ToolMark tool={markName} size={14} /> : null}
+          <span style={{ ...text(12.5, 500, t.text2), ...ellipsis }}>{label}</span>
+          {site && site !== label ? <Quiet>{site}</Quiet> : null}
+        </div>
+      )}
+      {every.length > 1 ? (
         <ol data-testid="manual-lines" style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 2, ...text(13.5, 400, t.text), lineHeight: "22px" }}>
           {lines.map((line, at) => (
             <li key={at} style={{ overflowWrap: "anywhere" }}>
@@ -181,8 +190,19 @@ export function startsLine(runs: string): string {
 
 /* ── a prompt's reply ── */
 
-/** What came back: its first 2 lines, indented under a 2px hairline, with "Read all" when there is more. */
-export function ReplyBlock({ reply, onRead, indent = 0 }: { reply: string; onRead?: () => void; indent?: number }): ReactNode {
+/**
+ * What came back. In a list tile (`lean`) it is one line: "Response" in `--label`, then the start of the reply. Elsewhere its
+ * first 2 lines, indented under a 2px hairline, with "Read all" when there is more.
+ */
+export function ReplyBlock({ reply, onRead, indent = 0, lean = false }: { reply: string; onRead?: () => void; indent?: number; lean?: boolean }): ReactNode {
+  if (lean) {
+    return (
+      <p data-testid="prompt-reply" style={{ ...text(13, 400, t.text2), margin: 0, marginLeft: indent, lineHeight: "20px", minWidth: 0, ...ellipsis }}>
+        <span style={{ color: t.label }}>{TILE_COPY.response} </span>
+        {reply.replace(/\s+/g, " ").trim()}
+      </p>
+    );
+  }
   const more = reply.split(/\r?\n/).length > 2 || reply.length > 180;
   return (
     <div data-testid="prompt-reply" style={{ marginLeft: indent, borderLeft: `2px solid ${t.hairline}`, paddingLeft: 12, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>

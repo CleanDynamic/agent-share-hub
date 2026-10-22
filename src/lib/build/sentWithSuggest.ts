@@ -12,6 +12,10 @@ export const SENT_WITH_COPY = {
   line: "Sent with this prompt in the chat. Keep it inside?",
   accept: "Accept",
   ignore: "Ignore",
+  /** CA-15 P10: the one row that stands for every offer on a prompt, and the button that opens them. */
+  found: (n: number) => (n === 1 ? "1 item sent with this prompt was found in the chat" : `${n} items sent with this prompt were found in the chat`),
+  review: "Review",
+  keep: "Keep each one inside this prompt?",
 } as const;
 
 export interface CodeSuggestion {

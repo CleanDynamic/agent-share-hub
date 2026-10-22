@@ -1,11 +1,14 @@
 <div data-testid="build-list" style="display:flex;flex-direction:column;gap:16px;min-width:0;font-size:13.5px">
 <p style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:12px;font-weight:400;line-height:normal;color:var(--label);margin:0">Click a tile to see its details · double-click to read all of it</p>
 <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
-<div role="group" aria-label="Prompt 1: Write a two-line poem about a fox in…" data-testid="step-card" data-selected="true" tabindex="0" style="background:var(--selected-fill);border:1px solid var(--selected-edge);border-radius:8px;box-shadow:var(--selected-ring);padding:16px;box-sizing:border-box;min-width:0;display:flex;flex-direction:column;gap:8px;outline:none;cursor:pointer">
-<div style="display:flex;align-items:center;gap:12px;min-width:0">
+<div role="group" aria-label="Prompt 1: Write a two-line poem about a fox in…" data-testid="step-card" data-kind="prompt" data-selected="true" tabindex="0" style="background:var(--selected-fill);border:1px solid var(--selected-edge);border-radius:8px;box-shadow:var(--selected-ring);padding:16px;box-sizing:border-box;min-width:0;display:flex;flex-direction:column;gap:8px;outline:none;cursor:pointer">
+<div style="display:flex;align-items:flex-start;gap:12px;min-width:0">
 <span aria-hidden="true" style="background:var(--control);border:1px solid var(--control-border);box-shadow:var(--control-shadow);flex-shrink:0;min-width:24px;height:24px;padding:0 4px;box-sizing:border-box;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-data, &#x27;Geist Mono&#x27;, ui-monospace, SFMono-Regular, Menlo, monospace);font-size:11px;line-height:normal;color:var(--text);font-variant-numeric:tabular-nums">1</span>
-<span aria-hidden="true" data-testid="title-hidden" style="flex-grow:1">
+<div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0">
+<span data-testid="prompt-eyebrow" style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:11.5px;font-weight:400;line-height:normal;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Prompt</span>
+<span aria-hidden="true" data-testid="title-hidden">
 </span>
+</div>
 <button data-ui="icon-button" type="button" aria-label="Prompt 1 options" id="radix-(id)" aria-haspopup="menu" aria-expanded="false" data-state="closed" style="box-sizing:border-box;width:26px;height:26px;border-radius:var(--r-control);background:transparent;border:1px solid transparent;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex-shrink:0">
 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
 <path d="M3.5 8h.01M8 8h.01M12.5 8h.01">
@@ -17,9 +20,9 @@
 <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-left:36px;min-height:22px">
 <span style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:11.5px;font-weight:400;line-height:normal;color:var(--label)">Goes into</span>
 <span data-ui="pill" data-tone="evidence" style="display:inline-flex;align-items:center;box-sizing:border-box;height:18px;padding:0 6px;border-radius:4px;font-family:var(--font-data, &#x27;Geist Mono&#x27;, ui-monospace, SFMono-Regular, Menlo, monospace);font-size:10.5px;line-height:normal;white-space:nowrap;background:var(--evidence-fill);color:var(--evidence)">Result</span>
-<span style="flex-grow:1">
-</span>
-<span style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:11.5px;font-weight:400;line-height:normal;color:var(--label);font-variant-numeric:tabular-nums">16 words</span>
+</div>
+<div data-testid="tile-footer" style="display:flex;align-items:center;gap:12px;min-width:0;padding-left:36px">
+<span data-testid="tile-footer-facts" style="font-family:var(--font-data, &#x27;Geist Mono&#x27;, ui-monospace, SFMono-Regular, Menlo, monospace);font-size:11.5px;line-height:18px;color:var(--label);flex-grow:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums">16 words</span>
 </div>
 </div>
 </div>
@@ -30,13 +33,15 @@
 </path>
 </svg>
 </span>
-<div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-<span style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:11.5px;font-weight:400;line-height:normal;color:var(--label)">Result</span>
-<span style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:14px;font-weight:500;line-height:normal;color:var(--text);overflow-wrap:anywhere">A two-line poem for the postcard</span>
+<div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex-grow:1">
+<span data-testid="result-eyebrow" style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:11.5px;font-weight:400;line-height:normal;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Result</span>
+<span title="A two-line poem for the postcard" style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:14px;font-weight:500;line-height:normal;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">A two-line poem for the postcard</span>
 <div data-testid="result-tile" style="display:flex;flex-direction:column;gap:8px;padding-left:0;min-width:0">
 <span data-testid="result-empty" style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:13px;font-weight:400;line-height:normal;color:var(--label)">Nothing added yet</span>
 </div>
-<span style="font-family:var(--font-ui, &#x27;Geist&#x27;, system-ui, -apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, sans-serif);font-size:11.5px;font-weight:400;line-height:normal;color:var(--label)">from prompt 1</span>
+<div data-testid="tile-footer" style="display:flex;align-items:center;gap:12px;min-width:0;padding-left:0">
+<span data-testid="tile-footer-facts" style="font-family:var(--font-data, &#x27;Geist Mono&#x27;, ui-monospace, SFMono-Regular, Menlo, monospace);font-size:11.5px;line-height:18px;color:var(--label);flex-grow:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums">from prompt 1</span>
+</div>
 </div>
 </div>
 <div aria-live="polite" data-testid="sessions-said" style="display:none">

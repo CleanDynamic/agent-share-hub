@@ -8,9 +8,10 @@
 // tile only as one of these counted facts, where it is useful; the rest lives in the modal and in Details.
 
 import { modelLabel } from "@/lib/models/registry";
+import { modelRunLine } from "./modelRun";
 import { toolName } from "@/lib/tools/registry";
 
-import { CONNECTION_LABEL, manualWhereLabel, type Step } from "./graph";
+import { CONNECTION_LABEL, manualWhereLabel, resultTypeLabel, type ResultFacts, type Step } from "./graph";
 import { formatSize } from "./readerSteps";
 import { AGENT_PATTERN_LABEL, CHECK_METHOD_LABEL, variableNamesIn } from "./tileExtras";
 import { DATASET_USE_LABEL, REPO_OWNERSHIP_LABEL, licenceLine } from "./sourceTiles";
@@ -32,7 +33,7 @@ export function typeLineOf(step: Step): string {
     case "prompt":
       return "Prompt";
     case "agent":
-      return dotted("Agent", step.model ? modelLabel(step.model) : null);
+      return dotted("Agent", step.model ? modelRunLine(modelLabel(step.model), step.modelRun) : null);
     case "team":
       return dotted("Multi-agent team", step.pattern ? AGENT_PATTERN_LABEL[step.pattern] : null);
     case "tool":
@@ -46,7 +47,7 @@ export function typeLineOf(step: Step): string {
     case "file":
       return dotted("File", step.fileFacts ? FILE_WORD[step.fileFacts.kind] : null, step.fileFacts ? formatSize(step.fileFacts.size) : null);
     case "manual":
-      return dotted("Manual step", step.where ? manualWhereLabel(step.where) : null);
+      return dotted("Manual step", manualWhereLabel(step.where ?? (step.tool ? { kind: "app", name: step.tool, url: null } : null)));
     case "decision": {
       const facts = step.decision;
       const service = facts ? (toolName(facts.provider) ?? facts.provider) : "";
@@ -73,7 +74,7 @@ export function footerFactsOf(step: Step): string[] {
       facts.push(counted(step.words, "word"), counted(variableNamesIn(step.text).length, "variable"));
       break;
     case "code":
-      facts.push(step.tool ? (toolName(step.tool) ?? step.tool) : null, step.model ? modelLabel(step.model) : null);
+      facts.push(step.filename ?? null, step.tool ? (toolName(step.tool) ?? step.tool) : null, step.model ? modelLabel(step.model) : null);
       break;
     case "check":
       facts.push(counted(step.check?.caseList?.length ?? step.check?.cases ?? 0, "test case"), step.check?.method ? CHECK_METHOD_LABEL[step.check.method] : null);
@@ -113,4 +114,9 @@ export function footerFactsOf(step: Step): string[] {
       break;
   }
   return facts.filter((fact): fact is string => Boolean(fact)).slice(0, 3);
+}
+
+/** A result's type line: "Result · Metric", or just "Result" while it holds nothing yet. */
+export function resultTypeLine(facts: ResultFacts): string {
+  return dotted("Result", resultTypeLabel(facts));
 }

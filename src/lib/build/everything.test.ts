@@ -161,12 +161,14 @@ describe("everything at once, on the build page", () => {
 });
 
 describe("everything at once, in the composer", () => {
-  it("draws the List with the lines a maker sees", () => {
+  it("draws the List with the lines a maker sees (CA-15 P10: lighter tiles)", () => {
     const { container } = render(createElement(MemoryRouter, null, createElement(BuildList, shapeListProps("everything"))));
     const text = container.textContent ?? "";
-    for (const line of ["Cost about £3.40 and 1.2 million tokens", "At the same time as Session 3 · own copy: fix-totals", "Tidies its notes: Every Sunday, keeps the 50 most useful notes", "Tested on 40 cases", "31 of 40 → 37 of 40 → 40 of 40", "changes its checklist each round", "Muse Spark Open · 4-bit · on my own computer"]) {
+    for (const line of ["Cost about £3.40 and 1.2 million tokens", "At the same time as Session 3 · own copy: fix-totals", "40 test cases", "31 of 40 → 37 of 40 → 40 of 40", "changes its checklist each round", "Muse Spark Open · 4-bit · on my own computer"]) {
       expect(text, line).toContain(line);
     }
+    // CA-15 P10: an agent's memory and tidying are optional detail, which the modal and Details hold, not its tile.
+    expect(text).not.toContain("Tidies its notes");
   });
 
   it("gives Session Details Started with, its settings in words, and the optional fields", () => {

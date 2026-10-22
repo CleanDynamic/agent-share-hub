@@ -120,12 +120,10 @@ describe("the lines", () => {
       </MemoryRouter>,
     );
 
-  it("puts the tidy line second, under the memory line, and the changes after the run line", () => {
+  it("draws the changes on the run line, and leaves the memory and tidy lines to the modal and Details (CA-15 P10)", () => {
     list(agent({ memory_tidy: "Every Sunday, keeps the 50 most useful notes", changes_each_round: "its checklist" }));
-    const memory = screen.getByTestId("memory-line");
-    const tidy = screen.getByTestId("memory-tidy-line");
-    expect(tidy.textContent).toBe("Tidies its notes: Every Sunday, keeps the 50 most useful notes");
-    expect(memory.compareDocumentPosition(tidy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId("memory-line")).toBeNull();
+    expect(screen.queryByTestId("memory-tidy-line")).toBeNull();
     expect(screen.getByTestId("runs-line").textContent).toBe("Again until the review has no changes · at most 3 times · changes its checklist each round");
   });
 

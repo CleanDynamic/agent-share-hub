@@ -35,9 +35,11 @@ export function HelperChips({ helpers, decisionName, indent = 0, style }: { help
 
 /** "Returns JSON · Order", next to the app and model. */
 export function ShapeChip({ shape, indent = 0 }: { shape: OutputShape; indent?: number }) {
+  const label = shapeChip(shape);
+  if (!label) return null;
   return (
     <span data-testid="shape-chip" style={{ ...chipStyle, alignSelf: "flex-start", marginLeft: indent }}>
-      {shapeChip(shape)}
+      {label}
     </span>
   );
 }

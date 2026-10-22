@@ -92,9 +92,10 @@ describe("the Check's lines", () => {
       </MemoryRouter>,
     );
 
-  it("are in the List: Tested on and the history", () => {
+  it("are in the List: the history is a line, and the cases are a counted fact in the footer (CA-15 P10)", () => {
     list(buildSteps(tree({ runs: RUNS }, [file("f1", "cases.csv", 40)])));
-    expect(screen.getByTestId("check-cases").textContent).toBe("Tested on 40 cases");
+    expect(screen.queryByTestId("check-cases")).toBeNull();
+    expect(within(screen.getByRole("group", { name: /^Check/ })).getByTestId("tile-footer-facts").textContent).toBe("40 test cases");
     expect(screen.getByTestId("check-history").textContent).toBe("31 of 40 → 37 of 40 → 40 of 40");
   });
 
