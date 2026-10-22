@@ -895,14 +895,26 @@ export function SandboxPage() {
   );
 
   const onAddCheck = useCallback(
-    async (input: AddCheckInput) => {
-      // A check uses the step it tested: the selected one, else the last agent, team or code.
-      const id = await prompts.addCheckStep({ ...input, testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
-      if (!id) return;
-      setSelectedId(id);
-      afterWrite();
+    async ({ evidenceFile, evidenceUrl, ...input }: AddCheckInput) => {
+      try {
+        // CA-15 P5: evidence is a URL, or one file stored through the same media path as every other file.
+        let evidence: { url?: string; mediaId?: string; name?: string } | null = null;
+        if (evidenceFile) {
+          const build = await ensureBuild();
+          const media = await nodes.run(() => uploadMedia({ buildId: build, file: evidenceFile }));
+          evidence = { mediaId: media.id, name: evidenceFile.name };
+        } else if (evidenceUrl) evidence = { url: evidenceUrl };
+        // A check uses the step it tested: the selected one, else the last agent, team or code.
+        const id = await prompts.addCheckStep({ ...input, ...(evidence ? { evidence } : null), testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
+        if (!id) return;
+        setSelectedId(id);
+        afterWrite();
+      } catch (cause) {
+        console.error("[Sandbox] check not added", cause);
+        sayFailed(cause, "Couldn't add that check. Try again.");
+      }
     },
-    [prompts, steps, afterStep, afterWrite, sessionToWrite],
+    [ensureBuild, nodes, prompts, steps, afterStep, afterWrite, sessionToWrite],
   );
 
   const onAddCode = useCallback(

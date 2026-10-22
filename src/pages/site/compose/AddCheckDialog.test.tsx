@@ -1,10 +1,15 @@
-// CA-03 P5 — Add › Check: the five questions in order, the one primary, and the refusals in plain words.
+// CA-03 P5, CA-15 P5 — Add › Check: the required fields in order, the Runs panel, the Optional section and the refusals in plain words.
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddCheckDialog, CHECK_DIALOG_COPY } from "./AddCheckDialog";
 
+let phone = false;
+beforeEach(() => {
+  phone = false;
+  vi.stubGlobal("matchMedia", (query: string) => ({ matches: phone && /max-width/.test(query), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+});
 afterEach(cleanup);
 
 function open() {
@@ -15,50 +20,173 @@ function open() {
 }
 
 const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
+const add = () => screen.getByRole("button", { name: CHECK_DIALOG_COPY.add }) as HTMLButtonElement;
+const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
+const openRow = (name: string) => fireEvent.click(within(row(name)).getByRole("button"));
+const status = () => screen.getByTestId("modal-status").textContent;
+
+function fill() {
+  type("Test description", " Places a test order ");
+  type("Pass criteria", "The total shows £9.00");
+  type("Passed", "14");
+  type("Total", "14");
+}
 
 describe("Add › Check", () => {
-  it("asks what it tested, what counts as passing, when it failed, its cases, its runs and its last run, in that order", () => {
+  it("asks the test description, the pass criteria and the runs, then keeps eight optional fields closed", () => {
     open();
     const dialog = screen.getByRole("dialog", { name: "Add a check" });
-    const labels = [...dialog.querySelectorAll("label, [role='group'] > div:first-child > span")].map((label) => label.textContent);
-    expect(labels).toEqual(["What it tested", "What counts as passing", "When it failed", "Cases", "Optional", "Runs", "Last run"]);
-    expect((screen.getByLabelText("What it tested") as HTMLTextAreaElement).rows).toBe(3);
-    expect((screen.getByLabelText("What counts as passing") as HTMLTextAreaElement).rows).toBe(2);
-    const failed = screen.getByLabelText("When it failed") as HTMLTextAreaElement;
-    expect(failed.rows).toBe(3);
-    expect(failed.placeholder).toBe("What went wrong, and what changed before it ran again");
-    expect(within(dialog).getByText("passed of")).toBeTruthy();
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("A test that verifies this part of the build");
+    expect([...dialog.querySelectorAll("label")].map((label) => label.textContent).slice(0, 2)).toEqual(["Test description", "Pass criteria"]);
+    expect((screen.getByLabelText("Test description") as HTMLTextAreaElement).rows).toBe(3);
+    expect((screen.getByLabelText("Pass criteria") as HTMLTextAreaElement).rows).toBe(2);
+    expect(within(dialog).getByText("passed out of")).toBeTruthy();
+    expect(screen.getByTestId("optional-count").textContent).toBe("8 fields");
+    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual([
+      "Test cases",
+      "Failure notes",
+      "Last run date",
+      "Test method",
+      "Reviewer",
+      "Scoring method",
+      "Model tested",
+      "Evidence",
+    ]);
+    expect(screen.getAllByTestId("optional-field").every((el) => el.querySelector("button")?.getAttribute("aria-expanded") === "false")).toBe(true);
     // Add is the one primary.
     expect(dialog.querySelectorAll('[data-variant="primary"]')).toHaveLength(1);
+    expect(document.body.textContent).not.toMatch(/What it tested|What counts as passing|When it failed|passed of\b/);
   });
 
-  it("waits for what it tested, what counts as passing and both counts, then hands them over", () => {
-    const { onAdd, onOpenChange } = open();
-    const add = screen.getByRole("button", { name: CHECK_DIALOG_COPY.add }) as HTMLButtonElement;
-    expect(add.disabled).toBe(true);
-    type("What it tested", " Places a test order ");
-    type("What counts as passing", "The total shows £9.00");
+  it("says the first missing thing, in order, and Add waits", () => {
+    open();
+    expect(status()).toBe("Required: a test description");
+    type("Test description", "Places a test order");
+    expect(status()).toBe("Required: pass criteria");
+    type("Pass criteria", "The total shows £9.00");
+    expect(status()).toBe("Required: runs or a test case");
+    expect(add().disabled).toBe(true);
     type("Passed", "14");
     type("Total", "14");
-    type("Last run", "2026-10-12");
-    expect(add.disabled).toBe(false);
-    fireEvent.click(add);
+    expect(status()).toBe("All required fields complete");
+    expect(add().disabled).toBe(false);
+  });
+
+  it("draws Runs as a nested panel with the pass rate in mono and a 6px bar filled to it", () => {
+    open();
+    const panel = screen.getByTestId("check-runs");
+    expect(panel.style.borderRadius).toBe("6px");
+    expect(screen.getByTestId("check-rate").textContent).toBe("");
+    type("Passed", "3");
+    type("Total", "4");
+    expect(screen.getByTestId("check-rate").textContent).toBe("75%");
+    expect(screen.getByTestId("check-bar").style.height).toBe("6px");
+    expect(screen.getByTestId("check-bar-fill").style.width).toBe("75%");
+  });
+
+  it("hands the three required answers over trimmed, with nothing else when nothing else was given", () => {
+    const { onAdd, onOpenChange } = open();
+    fill();
+    openRow("Last run date");
+    type("Last run date", "2026-10-12");
+    fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ tested: "Places a test order", passing: "The total shows £9.00", onFail: null, passed: 14, total: 14, runAt: "2026-10-12" });
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("test cases stand in for the runs, which are then worked out from them", () => {
+    const { onAdd } = open();
+    type("Test description", "Places a test order");
+    type("Pass criteria", "The total shows £9.00");
+    openRow("Test cases");
+    fireEvent.click(screen.getByRole("button", { name: "Add a test case" }));
+    fireEvent.change(screen.getByLabelText("In of case 1"), { target: { value: "2 loaves" } });
+    fireEvent.change(screen.getByLabelText("Expected of case 1"), { target: { value: "£9.00" } });
+    expect(status()).toBe("All required fields complete");
+    expect((screen.getByLabelText("Passed") as HTMLInputElement).value).toBe("1");
+    expect((screen.getByLabelText("Total") as HTMLInputElement).value).toBe("1");
+    expect(within(row("Test cases")).queryByText("Test cases")).toBeTruthy();
+    fireEvent.click(add());
+    expect(onAdd.mock.calls[0][0].cases).toEqual([{ input: "2 loaves", expected: "£9.00", actual: "", passed: true }]);
+  });
+
+  it("keeps failure notes, method, reviewer, scoring, model tested and evidence for the writer", () => {
+    const { onAdd } = open();
+    fill();
+    openRow("Failure notes");
+    type("Failure notes", " It showed £8.99. ");
+    openRow("Test method");
+    fireEvent.click(screen.getByRole("button", { name: "Peer review" }));
+    openRow("Reviewer");
+    fireEvent.click(screen.getByRole("radio", { name: "A client" }));
+    openRow("Scoring method");
+    fireEvent.click(screen.getByRole("button", { name: "Metric against a target" }));
+    type("Target", "95% correct");
+    openRow("Model tested");
+    type("Version", "2026-09-30");
+    openRow("Evidence");
+    type("Evidence URL", "example.com/results");
+    fireEvent.click(add());
+    expect(onAdd).toHaveBeenCalledWith({
+      tested: "Places a test order",
+      passing: "The total shows £9.00",
+      onFail: "It showed £8.99.",
+      passed: 14,
+      total: 14,
+      runAt: null,
+      method: "review",
+      reviewer: "client",
+      scoring: { how: "metric", target: "95% correct" },
+      modelTested: { model: "", version: "2026-09-30" },
+      evidenceUrl: "example.com/results",
+    });
+  });
+
+  it("scoring shows a target only for 'Metric against a target'", () => {
+    open();
+    openRow("Scoring method");
+    expect(screen.queryByLabelText("Target")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Rating" }));
+    expect(screen.queryByLabelText("Target")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Metric against a target" }));
+    expect(screen.getByLabelText("Target")).toBeTruthy();
+  });
+
+  it("takes one evidence file, or a URL, not both", () => {
+    const { onAdd } = open();
+    fill();
+    openRow("Evidence");
+    const file = new File(["x"], "results.csv", { type: "text/csv" });
+    fireEvent.change(screen.getByTestId("check-evidence-file"), { target: { files: [file] } });
+    expect((screen.getByLabelText("Evidence URL") as HTMLInputElement).disabled).toBe(true);
+    fireEvent.click(add());
+    expect(onAdd.mock.calls[0][0].evidenceFile).toBe(file);
+    expect(onAdd.mock.calls[0][0].evidenceUrl).toBeUndefined();
+  });
+
+  it("refuses an evidence file that holds keys, by name", () => {
+    open();
+    openRow("Evidence");
+    fireEvent.change(screen.getByTestId("check-evidence-file"), { target: { files: [new File(["x"], ".env", { type: "" })] } });
+    expect(screen.getByRole("alert").textContent).toContain("can hold keys or passwords");
+  });
+
   it("says why it refuses, in plain words, and adds nothing", () => {
     const { onAdd } = open();
-    type("What it tested", "Places a test order");
-    type("What counts as passing", "The total shows £9.00");
+    fill();
     type("Passed", "15");
-    type("Total", "14");
-    fireEvent.click(screen.getByRole("button", { name: CHECK_DIALOG_COPY.add }));
+    fireEvent.click(add());
     expect(screen.getByRole("alert").textContent).toBe("Passed can't be more than the total.");
     type("Passed", "14");
-    type("Last run", "2026-13-01");
-    fireEvent.click(screen.getByRole("button", { name: CHECK_DIALOG_COPY.add }));
-    expect(screen.getByRole("alert").textContent).toBe("Last run is a date, written as 2026-10-12.");
+    openRow("Last run date");
+    type("Last run date", "2026-13-01");
+    fireEvent.click(add());
+    expect(screen.getByRole("alert").textContent).toBe("The last run date is written as 2026-10-12.");
+    type("Last run date", "");
+    openRow("Evidence");
+    type("Evidence URL", "not a url");
+    fireEvent.click(add());
+    expect(screen.getByRole("alert").textContent).toBe("Evidence is a URL, like example.com/results.");
     expect(onAdd).not.toHaveBeenCalled();
   });
 
@@ -66,5 +194,11 @@ describe("Add › Check", () => {
     open();
     type("Passed", "1a4");
     expect((screen.getByLabelText("Passed") as HTMLInputElement).value).toBe("14");
+  });
+
+  it("is a bottom sheet on a phone", () => {
+    phone = true;
+    open();
+    expect(screen.getByTestId("bottom-sheet")).toBeTruthy();
   });
 });

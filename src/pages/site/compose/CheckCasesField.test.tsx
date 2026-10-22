@@ -9,12 +9,12 @@ describe("the check cases field (CA-12 P12)", () => {
   it("adds a case, ticks it, and reports every change", () => {
     const onChange = vi.fn();
     render(<CheckCasesField id="c" cases={[]} phone={false} onChange={onChange} />);
-    fireEvent.click(screen.getByRole("button", { name: "Add a case" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a test case" }));
     fireEvent.change(screen.getByLabelText("In of case 1"), { target: { value: "2 loaves" } });
     fireEvent.change(screen.getByLabelText("Expected of case 1"), { target: { value: "£9.00" } });
     fireEvent.click(screen.getByRole("button", { name: "Passed" }));
     expect(onChange).toHaveBeenLastCalledWith([{ input: "2 loaves", expected: "£9.00", actual: "", passed: false }]);
-    expect(screen.getByText("0 passed of 1")).toBeTruthy();
+    expect(screen.getByText("0 passed out of 1")).toBeTruthy();
   });
 
   it("saves only on blur or tick in Details, and removes a case", () => {
@@ -24,7 +24,7 @@ describe("the check cases field (CA-12 P12)", () => {
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.blur(screen.getByLabelText("Got of case 1"));
     expect(onChange).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Remove case 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove test case 1" }));
     expect(onChange).toHaveBeenLastCalledWith([]);
   });
 

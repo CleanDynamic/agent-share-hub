@@ -30,7 +30,7 @@ import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } f
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
-import { cleanExtras, settingsOf, toolExtrasOf, variablesOf, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
+import { checkExtrasOf, cleanExtras, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
@@ -228,6 +228,12 @@ export interface CheckFacts {
   cases?: number;
   /** CA-12 P12: the cases the maker wrote down, in order. Absent when there are none. */
   caseList?: CheckCase[];
+  /** CA-15 P5: how it was tested, who judged it, how it was scored, the model and version tested, and the evidence kept. Each absent when not given. */
+  method?: CheckMethod;
+  reviewer?: CheckReviewer;
+  scoring?: CheckScoring;
+  modelTested?: CheckModelTested;
+  evidence?: CheckEvidence;
 }
 
 /** CA-05 P7: one run of a check: the day and how many passed of how many. */
@@ -550,6 +556,7 @@ function checkFacts(payload: Payload, cases: readonly CheckCase[] = []): CheckFa
     runAt: stringOf(payload.run_at)?.trim() || null,
     ...(runs.length > 0 ? { runs } : null),
     ...(cases.length > 0 ? { caseList: [...cases] } : null),
+    ...checkExtrasOf(payload),
   };
 }
 
@@ -1809,6 +1816,13 @@ export interface CheckInput {
   session?: string | null;
   /** CA-12 P12: individual cases. When there are any, `passed` and `total` are worked out from them. */
   cases?: readonly CheckCase[];
+  /** CA-15 P5: the optional fields of the Add dialog; each stored in the check's own payload only when given. */
+  method?: CheckMethod | null;
+  reviewer?: CheckReviewer | null;
+  scoring?: { how: CheckScoring["how"]; target?: string } | null;
+  modelTested?: { model: string; version: string } | null;
+  /** A URL, or the id and name of one file already stored. */
+  evidence?: { url?: string; mediaId?: string; name?: string } | null;
 }
 
 /**
@@ -1858,11 +1872,11 @@ export function casesRefusal(cases: readonly CheckCase[] | undefined): string | 
 export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | null {
   const tested = input.tested.trim();
   const passing = input.passing.trim();
-  if (!tested) return "Say what it tested.";
-  if (tested.length > CHECK_TEXT_MAX) return `What it tested is at most ${CHECK_TEXT_MAX} characters.`;
-  if (!passing) return "Say what counts as passing.";
-  if (passing.length > CHECK_TEXT_MAX) return `What counts as passing is at most ${CHECK_TEXT_MAX} characters.`;
-  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `When it failed is at most ${CHECK_FAIL_MAX} characters.`;
+  if (!tested) return "Add the test description.";
+  if (tested.length > CHECK_TEXT_MAX) return `The test description is at most ${CHECK_TEXT_MAX} characters.`;
+  if (!passing) return "Add the pass criteria.";
+  if (passing.length > CHECK_TEXT_MAX) return `The pass criteria are at most ${CHECK_TEXT_MAX} characters.`;
+  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `The failure notes are at most ${CHECK_FAIL_MAX} characters.`;
   const why = casesRefusal(input.cases);
   if (why) return why;
   for (const n of input.cases?.length ? [] : [input.passed, input.total]) {
@@ -1870,7 +1884,7 @@ export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | nu
   }
   if (!input.cases?.length && input.passed > input.total) return "Passed can't be more than the total.";
   const day = (input.runAt ?? "").trim();
-  if (day && !isIsoDay(day)) return "Last run is a date, written as 2026-10-12.";
+  if (day && !isIsoDay(day)) return "The last run date is written as 2026-10-12.";
   return null;
 }
 
@@ -1953,6 +1967,19 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
     out.uses = [{ kind: "output", node_id: input.testedStep }] as unknown as Json;
   }
   if (input.session) out.session = input.session;
+  let extras: Record<string, Json | null>;
+  try {
+    extras = cleanExtras(CHECK_TYPE, {
+      method: input.method ?? null,
+      reviewer: input.reviewer ?? null,
+      scoring: input.scoring ?? null,
+      model_tested: input.modelTested ?? null,
+      evidence: input.evidence ? { url: input.evidence.url, media_id: input.evidence.mediaId, name: input.evidence.name } : null,
+    });
+  } catch (cause) {
+    throw refuse(operation, cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  for (const [key, value] of Object.entries(extras)) if (value !== null) out[key] = value;
   return out as Json;
 }
 

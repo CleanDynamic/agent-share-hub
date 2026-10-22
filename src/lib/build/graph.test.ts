@@ -917,15 +917,15 @@ describe("a check is a step (CA-03 P5)", () => {
   it("refuses in plain words, before anything is written", async () => {
     const base = { tested: "It loads", passing: "No errors", passed: 1, total: 2 };
     await expect(addCheck(BUILD, [], { ...base, passed: 3 })).rejects.toThrow("Passed can't be more than the total.");
-    await expect(addCheck(BUILD, [], { ...base, tested: " " })).rejects.toThrow("Say what it tested.");
-    await expect(addCheck(BUILD, [], { ...base, passing: "" })).rejects.toThrow("Say what counts as passing.");
-    await expect(addCheck(BUILD, [], { ...base, tested: "x".repeat(281) })).rejects.toThrow("What it tested is at most 280 characters.");
-    await expect(addCheck(BUILD, [], { ...base, passing: "x".repeat(281) })).rejects.toThrow("What counts as passing is at most 280 characters.");
-    await expect(addCheck(BUILD, [], { ...base, onFail: "x".repeat(601) })).rejects.toThrow("When it failed is at most 600 characters.");
+    await expect(addCheck(BUILD, [], { ...base, tested: " " })).rejects.toThrow("Add the test description.");
+    await expect(addCheck(BUILD, [], { ...base, passing: "" })).rejects.toThrow("Add the pass criteria.");
+    await expect(addCheck(BUILD, [], { ...base, tested: "x".repeat(281) })).rejects.toThrow("The test description is at most 280 characters.");
+    await expect(addCheck(BUILD, [], { ...base, passing: "x".repeat(281) })).rejects.toThrow("The pass criteria are at most 280 characters.");
+    await expect(addCheck(BUILD, [], { ...base, onFail: "x".repeat(601) })).rejects.toThrow("The failure notes are at most 600 characters.");
     await expect(addCheck(BUILD, [], { ...base, passed: 1.5 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
     await expect(addCheck(BUILD, [], { ...base, total: 10_001 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
     await expect(addCheck(BUILD, [], { ...base, passed: -1 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
-    await expect(addCheck(BUILD, [], { ...base, runAt: "2026-02-30" })).rejects.toThrow("Last run is a date, written as 2026-10-12.");
+    await expect(addCheck(BUILD, [], { ...base, runAt: "2026-02-30" })).rejects.toThrow("The last run date is written as 2026-10-12.");
     await expect(addCheck(BUILD, [work], { ...base, testedStep: "gone" })).rejects.toThrow("That is not a step of this build.");
     expect(upsertNode).not.toHaveBeenCalled();
     await addCheck(BUILD, [], { ...base, tested: "x".repeat(280), passing: "y".repeat(280), onFail: "z".repeat(600), passed: 10_000, total: 10_000 });

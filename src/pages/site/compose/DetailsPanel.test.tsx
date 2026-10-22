@@ -733,9 +733,9 @@ describe("a check (CA-03 P5)", () => {
     expect(screen.getByTestId("details-eyebrow").textContent).toBe("Check 9");
     expect(screen.getByTestId("check-status").textContent).toBe("Passed 14 of 14 runs · since 12 Oct");
     expect(screen.getAllByTestId("label-value").map((row) => [row.children[0].textContent, row.children[1].textContent])).toEqual([
-      ["What it tested", "Places a test order"],
-      ["What counts as passing", "The total shows £9.00"],
-      ["When it failed", "It showed £8.99."],
+      ["Test description", "Places a test order"],
+      ["Pass criteria", "The total shows £9.00"],
+      ["Failure notes", "It showed £8.99."],
     ]);
     expect(screen.getByText("Output of 3")).toBeTruthy();
     expect(screen.getByTestId("details-panel").textContent).not.toMatch(/verified|reproduc/i);

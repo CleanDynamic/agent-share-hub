@@ -68,7 +68,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TRAINED_METHOD_MAX, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { isIsoDay, TRAINED_METHOD_MAX, CONNECTION_LABEL, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -1401,10 +1401,7 @@ function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; ph
 }
 
 export const CONNECTION_COPY = {
-  title: "How it was connected",
-  app: "Built into the app",
-  mcp: "MCP server",
-  code: "My own code",
+  title: "Connection method",
   where: "Where it ran",
   web: "At a web address",
   local: "On my computer",
@@ -1425,7 +1422,7 @@ function ConnectionBlock({ view, phone, onToolConnection }: { view: ToolView; ph
             phone={phone}
             value={view.connection ?? ("" as ToolConnection)}
             onChange={(next) => onToolConnection(view.id, next, next === "mcp" ? (view.runsAt ?? null) : null)}
-            rows={TOOL_CONNECTIONS.map((value) => ({ value, label: CONNECTION_COPY[value] }))}
+            rows={TOOL_CONNECTIONS.map((value) => ({ value, label: CONNECTION_LABEL[value] }))}
           />
           {view.connection === "mcp" ? (
             <div style={{ paddingLeft: 24 }}>

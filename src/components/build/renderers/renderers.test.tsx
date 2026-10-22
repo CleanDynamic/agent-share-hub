@@ -1008,18 +1008,18 @@ describe("a check, drawn by the evidence renderer", () => {
     },
   } as Partial<NodeType> & { key: string; renderer: string });
 
-  it("draws what it tested, what counts as passing and when it failed under the existing fields, label over value", () => {
+  it("draws the test description, pass criteria and failure notes under the existing fields, label over value", () => {
     const node = makeNode({
       type: "eval_run",
       payload: { tested: "Places a test order", passing: "The total shows £9.00", on_fail: "It showed £8.99.", passed: 14, total: 14, run_at: "2026-10-12", uses: [{ kind: "output", node_id: "c1" }] },
     });
     const { container } = render(<NodeCard node={node} nodeType={evalRun} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
     const answers = screen.getByTestId("check-answers");
-    expect(within(answers).getByTestId("check-answer-tested").textContent).toBe("What it testedPlaces a test order");
-    expect(within(answers).getByTestId("check-answer-passing").textContent).toBe("What counts as passingThe total shows £9.00");
-    expect(within(answers).getByTestId("check-answer-on_fail").textContent).toBe("When it failedIt showed £8.99.");
+    expect(within(answers).getByTestId("check-answer-tested").textContent).toBe("Test descriptionPlaces a test order");
+    expect(within(answers).getByTestId("check-answer-passing").textContent).toBe("Pass criteriaThe total shows £9.00");
+    expect(within(answers).getByTestId("check-answer-on_fail").textContent).toBe("Failure notesIt showed £8.99.");
     // Under the existing fields: the passed figure comes first.
-    expect(container.textContent?.indexOf("14/14")).toBeLessThan(container.textContent?.indexOf("What it tested") ?? 0);
+    expect(container.textContent?.indexOf("14/14")).toBeLessThan(container.textContent?.indexOf("Test description") ?? 0);
     // Each key once: the answers are not drawn again among the rest.
     expect(container.textContent?.split("Places a test order").length).toBe(2);
     expect(container.textContent).not.toMatch(/verified|reproduc|lamp/i);

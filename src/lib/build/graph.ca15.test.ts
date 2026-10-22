@@ -12,7 +12,7 @@ vi.mock("./nodes", () => ({
 const getNodeType = vi.fn();
 vi.mock("./nodeTypes", () => ({ getNodeType: (...a: unknown[]) => getNodeType(...a) }));
 
-import { CONNECTION_LABEL, addResultTile, addToolTile, buildSteps, setExtras } from "./graph";
+import { CONNECTION_LABEL, addCheck, addResultTile, addToolTile, buildSteps, setExtras } from "./graph";
 import type { Json } from "@/integrations/supabase/types";
 
 import type { BuildNode, NodeTree } from "./types";
@@ -151,5 +151,56 @@ describe("a tool tile (CA-15 P4)", () => {
     expect(written()).toEqual({ service: "GitHub", step: true, permissions: "read", plan: "Pro", setup: ["one", "two"], alternatives: ["GitLab"] });
     await setExtras(tool, { permissions: null, plan: "", setup: [], alternatives: [] });
     expect(written()).toEqual({ service: "GitHub", step: true });
+  });
+});
+
+describe("a check's extras (CA-15 P5)", () => {
+  const base = { tested: "Places an order", passing: "Total shows £9.00", passed: 3, total: 4 };
+
+  it("stores method, reviewer, scoring, model tested and evidence only when given", async () => {
+    await addCheck(BUILD, [], { ...base, method: "suite", reviewer: "user", scoring: { how: "metric", target: "95% correct" }, modelTested: { model: "Opus 5.5", version: "2026-09-30" }, evidence: { url: "example.com/results" } });
+    expect(written()).toEqual({
+      tested: "Places an order",
+      passing: "Total shows £9.00",
+      passed: 3,
+      total: 4,
+      method: "suite",
+      reviewer: "user",
+      scoring: { how: "metric", target: "95% correct" },
+      model_tested: { model: "Opus 5.5", version: "2026-09-30" },
+      evidence: { url: "https://example.com/results" },
+    });
+    await addCheck(BUILD, [], base);
+    expect(written()).toEqual({ tested: "Places an order", passing: "Total shows £9.00", passed: 3, total: 4 });
+  });
+
+  it("keeps one evidence file by its id and name, and a target only for a metric", async () => {
+    await addCheck(BUILD, [], { ...base, scoring: { how: "rating", target: "ignored" }, evidence: { mediaId: "m1", name: "results.csv" } });
+    expect(written()).toMatchObject({ scoring: { how: "rating" }, evidence: { media_id: "m1", name: "results.csv" } });
+    expect((written().scoring as Record<string, unknown>).target).toBeUndefined();
+  });
+
+  it("refuses evidence that is not a URL, and an over-long target, saying so", async () => {
+    await expect(addCheck(BUILD, [], { ...base, evidence: { url: "not a url" } })).rejects.toThrow("Evidence is a URL, like example.com/results.");
+    await expect(addCheck(BUILD, [], { ...base, scoring: { how: "metric", target: "x".repeat(81) } })).rejects.toThrow(/at most 80/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("reads them back on the check's facts, and a check saved before reads as it did", () => {
+    const [, before, after] = buildSteps([
+      node({ id: "a", position: 1, type: "agent_config", payload: { system_prompt: "x", model: "m" } }),
+      node({ id: "c1", position: 2, type: "eval_run", payload: { tested: "t", passing: "p", passed: 1, total: 1 } }),
+      node({ id: "c2", position: 3, type: "eval_run", payload: { tested: "t", passing: "p", passed: 1, total: 1, method: "review", reviewer: "client", scoring: { how: "ab" }, model_tested: { model: "Opus 5.5", version: "" }, evidence: { url: "https://example.com/r" } } }),
+    ]);
+    expect(Object.keys(before.check ?? {}).sort()).toEqual(["onFail", "passed", "passing", "runAt", "tested", "total"]);
+    expect(after.check).toMatchObject({ method: "review", reviewer: "client", scoring: { how: "ab", target: "" }, modelTested: { model: "Opus 5.5", version: "" }, evidence: { url: "https://example.com/r", mediaId: null, name: null } });
+  });
+
+  it("setExtras writes and clears them on a saved check", async () => {
+    const check = node({ id: "c", type: "eval_run", payload: { tested: "t", passing: "p", passed: 1, total: 1 } }) as unknown as BuildNode;
+    await setExtras(check, { method: "manual", reviewer: "you", scoring: { how: "pass_fail" }, model_tested: { model: "Opus 5.5" } });
+    expect(written()).toMatchObject({ method: "manual", reviewer: "you", scoring: { how: "pass_fail" }, model_tested: { model: "Opus 5.5" } });
+    await setExtras(check, { method: null, reviewer: "robot", scoring: null, model_tested: { model: "", version: "" } });
+    expect(written()).toEqual({ tested: "t", passing: "p", passed: 1, total: 1 });
   });
 });
