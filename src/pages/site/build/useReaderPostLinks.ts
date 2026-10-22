@@ -10,7 +10,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { centre } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
-import { sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
 import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { parseRefTo } from "@/lib/build/thread";
 import type { NodeTree } from "@/lib/build/types";
@@ -33,7 +33,7 @@ export function useReaderPostLinks({
   const links = useMemo(() => {
     if (!enabled || !making) return null;
     const steps = buildSteps(tree);
-    const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(making));
+    const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(making), sessionOrderOf(making));
     const firstStep = (key: string) => {
       const group = groups.find((candidate) => groupKey(candidate) === key);
       return group ? (steps.find((step) => group.stepNumbers.includes(step.number))?.id ?? null) : null;

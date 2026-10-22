@@ -13,6 +13,7 @@ import { sandboxListProps, sandboxManualFixture, sandboxTeamFixture } from "@/de
 
 import type { BuildListProps } from "./BuildList";
 import { BuildList as BuildList } from "./BuildList";
+import { NO_APP } from "./sourcesModel";
 import { agentEyebrow, dividers, isClamped, madeIn, madeLine } from "./buildListModel";
 
 vi.mock("@/lib/build/media", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/media")>()), getMediaById: vi.fn(() => Promise.resolve(null)) }));
@@ -25,9 +26,19 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** The bakery list with its first session reading "No app chosen": its prompt box then starts with no tool. */
+function noToolFirst(): Partial<BuildListProps> {
+  const base = sandboxListProps("bakery");
+  const [first, ...rest] = [...base.dividers.entries()];
+  return { dividers: new Map([[first[0], { ...first[1], tool: NO_APP }], ...rest]) };
+}
+
 function list(over: Partial<BuildListProps> = {}) {
+  const base = sandboxListProps("bakery");
   const props: BuildListProps = {
-    ...sandboxListProps("bakery"),
+    ...base,
+    // CA-14 P5: the prompt box stands inside a session; most of these tests want one, so the first session has it open.
+    promptIn: [...base.dividers.values()][0]?.key ?? null,
     onSelect: vi.fn(),
     onRename: vi.fn(),
     onMove: vi.fn(),
@@ -53,7 +64,7 @@ describe("session dividers", () => {
     expect([...props.dividers.keys()]).toEqual(["1", "3", "4"]);
     expect(props.dividers.get("3")).toMatchObject({ number: 2, tool: "Claude Code" });
     list();
-    expect(screen.getAllByRole("separator").map((el) => el.getAttribute("aria-label"))).toEqual([
+    expect(screen.getAllByTestId("session-head").map((el) => el.getAttribute("aria-label"))).toEqual([
       "Session 1 · Claude",
       "Session 2 · Claude Code",
       "Session 3 · ChatGPT",
@@ -151,7 +162,7 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
   };
 
   it("asks for a tool before it offers a model", () => {
-    list();
+    list(noToolFirst());
     const button = screen.getByRole("button", { name: "Pick a tool first" });
     expect((button as HTMLButtonElement).disabled).toBe(true);
     expect(button.textContent).toContain("model");
@@ -307,7 +318,7 @@ describe("pasting code into Typed here (CA-02 P7)", () => {
 
   it("offers to keep pasted code as code, and never converts it by itself", async () => {
     const onKeepAsCode = vi.fn(() => Promise.resolve(true));
-    const props = list({ onKeepAsCode });
+    const props = list({ ...noToolFirst(), onKeepAsCode });
     const field = paste(CODE);
     expect(screen.getByText("This looks like code.")).toBeTruthy();
     expect(field.value).toBe(CODE);
@@ -331,7 +342,7 @@ describe("pasting code into Typed here (CA-02 P7)", () => {
 
   it("keeps the text when the code is not saved, and still lets it go as a prompt", async () => {
     const onKeepAsCode = vi.fn(() => Promise.resolve(false));
-    const props = list({ onKeepAsCode });
+    const props = list({ ...noToolFirst(), onKeepAsCode });
     const field = paste(CODE);
     fireEvent.click(screen.getByRole("button", { name: "Keep it as code" }));
     await waitFor(() => expect(onKeepAsCode).toHaveBeenCalled());
@@ -343,7 +354,7 @@ describe("pasting code into Typed here (CA-02 P7)", () => {
 
 describe("the add field", () => {
   it("adds on Enter, not on Shift+Enter, and clears once saved", async () => {
-    const props = list();
+    const props = list(noToolFirst());
     const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
     fireEvent.change(field, { target: { value: "Add a footer" } });
     fireEvent.keyDown(field, { key: "Enter", shiftKey: true });
@@ -579,7 +590,7 @@ describe("the refined look (UI-P93)", () => {
 
   it("leads each session with the tool's real mark, and draws prompts as modules, the selection the selected recipe", () => {
     list();
-    const heads = screen.getAllByRole("separator");
+    const heads = screen.getAllByTestId("session-head");
     expect(heads.map((head) => Boolean(head.querySelector("[data-mark]")))).toEqual([true, true, true]);
     const html = markup();
     expect(html).toMatch(/data-selected="true"[^>]*style="[^"]*background:var\(--selected-fill\);border:1px solid var\(--selected-edge\)/);
@@ -758,30 +769,21 @@ describe("an agent that reads content it doesn't control (CA-03 P7)", () => {
   });
 });
 
-describe("sessions are sittings (CA-04 P1)", () => {
-  const choices = [
-    { key: "typed-legacy-1", label: "Session 1 · Claude", tool: "Claude" },
-    { key: "typed-b", label: "Session 2 · Claude Code", tool: "Claude Code" },
-  ];
-
-  it("says where a new prompt goes, and its menu lists the sessions (a session is added from its own row)", async () => {
-    const onCurrentSession = vi.fn();
-    list({ sessionChoices: choices, currentSession: "typed-b", onCurrentSession });
-    const trigger = screen.getByTestId("adding-to");
-    expect(trigger.textContent).toContain("Adding to");
-    expect(trigger.textContent).toContain("Session 2 · Claude Code");
-    fireEvent.keyDown(trigger, { key: "Enter" });
-    const radios = await screen.findAllByRole("menuitemradio");
-    expect(radios.map((item) => item.textContent)).toEqual(["Session 1 · Claude", "Session 2 · Claude Code"]);
-    expect(radios[1].getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(radios[0]);
-    expect(onCurrentSession).toHaveBeenCalledWith("typed-legacy-1");
-    fireEvent.keyDown(screen.getByTestId("adding-to"), { key: "Enter" });
-    expect(screen.queryByRole("menuitem", { name: "New session" })).toBeNull();
+describe("sessions are sittings (CA-04 P1, CA-14 P5)", () => {
+  it("has no Adding to picker: the prompt box stands in its session", () => {
+    const props = sandboxListProps("bakery");
+    const second = props.dividers.get("3")?.key as string;
+    list({ promptIn: second });
+    expect(screen.queryByTestId("adding-to")).toBeNull();
+    const run = document.querySelector(`[data-session-key="${second}"]`) as HTMLElement;
+    expect(within(run).getByTestId("add-prompt")).toBeTruthy();
+    expect(screen.getAllByTestId("add-prompt")).toHaveLength(1);
   });
 
-  it("puts the current session's tool in the field", () => {
-    list({ sessionChoices: choices, currentSession: "typed-b" });
+  it("puts its session's tool in the field", () => {
+    const props = sandboxListProps("bakery");
+    const second = props.dividers.get("3")?.key as string;
+    list({ promptIn: second });
     expect(within(screen.getByTestId("add-prompt")).getByRole("button", { name: /Prompt tool · Claude Code/ })).toBeTruthy();
   });
 

@@ -39,7 +39,7 @@ import {
   type NodeType,
   type RebuildSummary,
 } from "@/lib/build";
-import { sessionsMetaOf, type Making, type MakingSession } from "@/lib/build/making";
+import { sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, type Making, type MakingSession } from "@/lib/build/making";
 import type { PortableCost } from "@/lib/build/portable";
 import type { NeedGroup, ReaderMapData, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 
@@ -278,7 +278,17 @@ export function asMaking(value: unknown): Making {
   const session_tools = Object.fromEntries(tools.filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim() !== ""));
   // CA-04 P1: the sessions made here, and what each session carries, read the same way.
   const sessions_meta = sessionsMetaOf(record);
-  return { sessions, excluded_models: excluded, session_tools, ...(Object.keys(sessions_meta).length > 0 ? { sessions_meta } : null) };
+  // CA-14 P1: the maker's order and the sessions they left folded, which a reader's build page follows.
+  const session_order = sessionOrderOf(record);
+  const sessions_collapsed = sessionsCollapsedOf(record);
+  return {
+    sessions,
+    excluded_models: excluded,
+    session_tools,
+    ...(Object.keys(sessions_meta).length > 0 ? { sessions_meta } : null),
+    ...(session_order.length > 0 ? { session_order } : null),
+    ...(sessions_collapsed.length > 0 ? { sessions_collapsed } : null),
+  };
 }
 
 export interface BuildTimelineView {
@@ -788,7 +798,7 @@ export function runBody(
      branches numbered 4a, 4b; and What you need adds the accounts, keys and installs. Any other build is returned as it always was. */
   const graph = buildSteps(tree);
   const making = asMaking(build.making);
-  const groups = sessionGroups(graph, making.sessions, making.session_tools ?? {}, sessionsMetaOf(build.making));
+  const groups = sessionGroups(graph, making.sessions, making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making));
   const needs = runtimeNeeds(graph, groups).map((need, index): RunPrerequisiteView => ({ id: `need:${index}`, title: need.title, requirement: need.steps.length ? `step${need.steps.length === 1 ? "" : "s"} ${need.steps.join(", ")}` : null }));
   if (!hasRuntimeFacts(graph) && needs.length === 0) {
     return { steps: base, prerequisites: prereqs, allText: runSequenceText(build, prerequisites, steps), words: runLayer ? layerSteps(runLayer, resolveNode) : null };

@@ -49,24 +49,24 @@ describe("StepsList · a pasted chat given its tool (TF-13)", () => {
 
   it("reads 'New chat' with no logo until a tool is chosen", () => {
     mountList(chatOnly({}));
-    expect(screen.getByText("New chat").parentElement?.querySelector("[data-mark]")).toBeNull();
+    // CA-14 P2: the reader's head reads "Session 1", with a neutral glyph while the app is unknown.
+    expect(screen.getByRole("group", { name: "Session 1 · No app chosen" }).querySelector("[data-mark]")).toBeNull();
   });
 
-  it("reads 'New chat in Perplexity' with Perplexity's logo once chosen", () => {
+  it("reads 'Session 1 · Perplexity' with Perplexity's logo once chosen", () => {
     mountList(chatOnly({ s9: "perplexity" }));
-    expect(screen.getByText("New chat in Perplexity").parentElement?.querySelector('[data-mark="perplexity-color"]')).not.toBeNull();
+    expect(screen.getByRole("group", { name: "Session 1 · Perplexity" }).querySelector('[data-mark="perplexity-color"]')).not.toBeNull();
   });
 });
 
 describe("StepsList", () => {
-  it("draws the list sample's five steps under four chat heads, each led by its tool's real mark", () => {
+  it("draws the list sample's five steps under four session heads, each led by its tool's real mark", () => {
     mountList(view("list"));
     const list = screen.getByTestId("build-steps");
     expect(screen.getAllByTestId("step-card")).toHaveLength(5);
-    expect(screen.getAllByText(/^New chat/)).toHaveLength(4);
-    const head = screen.getByText("New chat in ChatGPT").parentElement as HTMLElement;
-    expect(head.querySelector('[data-mark="openai"]')).not.toBeNull();
-    expect(screen.getByText("New chat in Claude Code").parentElement?.querySelector('[data-mark="claudecode-color"]')).not.toBeNull();
+    expect(screen.getAllByTestId("reader-session-head")).toHaveLength(4);
+    expect(screen.getByRole("group", { name: /^Session \d · ChatGPT$/ }).querySelector('[data-mark="openai"]')).not.toBeNull();
+    expect(screen.getByRole("group", { name: /^Session \d · Claude Code$/ }).querySelector('[data-mark="claudecode-color"]')).not.toBeNull();
     // No initial in a tile: the mark is the logo alone.
     expect(list.querySelector('[data-mark] span')).toBeNull();
     expect(screen.getByText("4 sessions · 5 prompts · 1 file · 3–6 Oct")).toBeTruthy();

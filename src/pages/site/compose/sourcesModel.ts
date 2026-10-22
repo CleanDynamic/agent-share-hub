@@ -17,7 +17,7 @@ import type { SessionSummary, UnfinishedSession } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
 import { isSetupPayload } from "@/lib/build/setup";
 import type { BuildNode } from "@/lib/build/types";
-import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
+import { sessionApp, sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
 export interface SourcePrompt {
   /** The step's id. */
@@ -51,6 +51,10 @@ export interface SourceSession {
   together?: string;
   /** CA-06 P4: the maker's colour for the session, "#RRGGBB"; absent when it has none. */
   colour?: string;
+  /** CA-14 P1: the maker's title for the session; absent when it has none. */
+  title?: string;
+  /** CA-14 P2: the session's day as the head shows it, "22 Oct"; "" for an old build's typed prompts. */
+  date?: string;
 }
 
 export interface SourceFile {
@@ -74,6 +78,49 @@ export interface SourceLibraryItem {
   /** CA-12: the date as the line shows it, and the prompt count. */
   date: string;
   promptCount: number;
+  /** CA-14 P5: the app by name, or "Unknown app" when the client is not known; `appKnown` says which. */
+  app: string;
+  appKnown: boolean;
+  /** CA-14 P5: the model, shown under an unknown app; null for none. */
+  model: string | null;
+  /** CA-14 P5: when the session started, for "Today", "This week" and "Earlier". */
+  createdAt: string;
+  /** CA-14 P5: how many drafts hold it, this one included. */
+  draftCount: number;
+}
+
+/** CA-14 P5: what an unknown client reads as. */
+export const UNKNOWN_APP = "Unknown app";
+
+/** CA-14 P5: "In this draft", "In 2 drafts", "In 1 draft"; null when no draft holds it. */
+export function draftNote(item: Pick<SourceLibraryItem, "inThisDraft" | "draftCount">): string | null {
+  if (item.draftCount === 0) return null;
+  if (item.inThisDraft && item.draftCount === 1) return "In this draft";
+  return `In ${item.draftCount} ${item.draftCount === 1 ? "draft" : "drafts"}`;
+}
+
+/** CA-14 P5: the first prompt's opening words, at most 60 characters, cut with an ellipsis. */
+export function openingWords(prompt: string | null, max = 60): string {
+  const text = (prompt ?? "").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
+
+export type LibraryGroupLabel = "Today" | "This week" | "Earlier";
+
+/** CA-14 P5: the library under "Today", "This week" (the last seven days) and "Earlier", newest first inside each; empty groups left out. */
+export function groupLibrary<T extends Pick<SourceLibraryItem, "createdAt">>(items: readonly T[], now: number): { label: LibraryGroupLabel; items: T[] }[] {
+  const startOf = (value: number) => {
+    const at = new Date(value);
+    return new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime();
+  };
+  const today = startOf(now);
+  const groups: Record<LibraryGroupLabel, T[]> = { Today: [], "This week": [], Earlier: [] };
+  for (const item of items) {
+    const at = new Date(item.createdAt).getTime();
+    const days = Number.isNaN(at) ? Number.POSITIVE_INFINITY : Math.round((today - startOf(at)) / 86_400_000);
+    groups[days <= 0 ? "Today" : days < 7 ? "This week" : "Earlier"].push(item);
+  }
+  return (["Today", "This week", "Earlier"] as const).filter((label) => groups[label].length > 0).map((label) => ({ label, items: groups[label] }));
 }
 
 /** CA-12: an import that is not a session yet. */
@@ -142,11 +189,13 @@ export function sourceSessions(
       number: group.number,
       tool: group.tool ?? NO_APP,
       detail: [model, when].filter(Boolean).join(" · "),
+      date: when,
       ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
       ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
       ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
       ...(group.colour ? { colour: group.colour } : null),
+      ...(group.title ? { title: group.title } : null),
       ...(factsOf(group, "maker") ? { facts: factsOf(group, "maker") as string } : null),
       ...(togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) ? { together: togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) as string } : null),
       prompts: mine.map((step) => ({
@@ -165,6 +214,7 @@ export function sourceSessions(
       number: grouped.length + at + 1,
       tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : NO_APP),
       detail: [session.modelName, shortDate(session.createdAt)].filter(Boolean).join(" · "),
+      date: shortDate(session.createdAt),
       pickTool: pickTool(session.id),
       prompts: [],
     }));
@@ -243,6 +293,11 @@ export function librarySources(library: readonly SessionSummary[], adding: Reado
       firstPrompt: session.firstPrompt,
       date,
       promptCount: session.promptCount,
+      app: sessionApp(session) ?? UNKNOWN_APP,
+      appKnown: sessionApp(session) !== null,
+      model: session.modelName,
+      createdAt: session.createdAt,
+      draftCount: ids.length,
     };
   });
 }

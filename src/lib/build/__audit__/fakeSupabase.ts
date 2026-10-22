@@ -128,6 +128,8 @@ export const PG = {
     body: { code: "23514", details: "Failing row contains (…).", hint: null, message: `new row for relation "${table}" violates check constraint "${constraint}"` },
   }),
   missingFunction: (signature: string): FaultAnswer => ({ status: 404, body: { code: "42883", details: null, hint: "No function matches the given name and argument types. You might need to add explicit type casts.", message: `function ${signature} does not exist` } }),
+  /** CA-14: a table the migration has not made yet, as PostgREST answers (PGRST205); `isMissingTable` reads it. */
+  missingTable: (table: string): FaultAnswer => ({ status: 404, body: { code: "PGRST205", details: null, hint: null, message: `Could not find the table 'public.${table}' in the schema cache` } }),
   zeroRows: (): FaultAnswer => ({ status: 406, body: { code: "PGRST116", details: "The result contains 0 rows", hint: null, message: "Cannot coerce the result to a single JSON object" } }),
 };
 

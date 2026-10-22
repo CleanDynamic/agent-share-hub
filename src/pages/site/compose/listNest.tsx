@@ -48,6 +48,9 @@ interface NestState {
 
 const NestContext = createContext<NestState | null>(null);
 
+/** CA-14 P4: a session's own drag. Its draggable id starts with this, so a tile's id (a node id) can never match it. */
+export const SESSION_DRAG = "sdrag:";
+export const isSessionDrag = (id: string | null | undefined): id is string => Boolean(id?.startsWith(SESSION_DRAG));
 const tileTarget = (id: string) => `tile:${id}`;
 const gapTarget = (index: number) => `gap:${index}`;
 const sessionTarget = (key: string) => `session:${key}`;
@@ -78,12 +81,18 @@ export function NestList({
   canTake,
   label,
   onDrop,
+  onDropSession,
+  sessionLabel,
   children,
 }: {
   phone: boolean;
   canTake: (id: string, parentId: string) => boolean;
   label: (id: string) => string;
   onDrop: (id: string, target: NestTarget) => void;
+  /** CA-14 P4: a session's head dropped on another's: move the first before (or after) the second. */
+  onDropSession?: (key: string, over: string) => void;
+  /** CA-14 P4: names a session for the drag's announcements and its floating chip. */
+  sessionLabel?: (key: string) => string;
   children: ReactNode;
 }) {
   const [active, setActive] = useState<string | null>(null);
@@ -94,6 +103,7 @@ export function NestList({
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
     useSensor(KeyboardSensor),
   );
+  const nameOf = (id: string) => (isSessionDrag(id) ? (sessionLabel?.(id.slice(SESSION_DRAG.length)) ?? "that session") : label(id));
   const end = () => {
     setActive(null);
     setOver(null);
@@ -111,32 +121,37 @@ export function NestList({
           const target = event.over ? targetOf(String(event.over.id)) : null;
           end();
           if (!target) return;
+          if (isSessionDrag(id)) {
+            const key = id.slice(SESSION_DRAG.length);
+            if (target.kind === "session" && target.key !== key) onDropSession?.(key, target.key);
+            return;
+          }
           if (target.kind === "tile" && (target.id === id || !canTake(id, target.id))) return;
           onDrop(id, target);
         }}
         accessibility={{
           announcements: {
-            onDragStart: ({ active: held }) => `Picked up ${label(String(held.id))}.`,
-            onDragOver: ({ over: under }) => (under ? `Over ${describe(String(under.id), label)}.` : "Not over a place to drop."),
-            onDragEnd: ({ over: under }) => (under ? `Dropped on ${describe(String(under.id), label)}.` : "Put back where it was."),
+            onDragStart: ({ active: held }) => `Picked up ${nameOf(String(held.id))}.`,
+            onDragOver: ({ over: under }) => (under ? `Over ${describe(String(under.id), nameOf, sessionLabel)}.` : "Not over a place to drop."),
+            onDragEnd: ({ over: under }) => (under ? `Dropped on ${describe(String(under.id), nameOf, sessionLabel)}.` : "Put back where it was."),
             onDragCancel: () => "Put back where it was.",
           },
           screenReaderInstructions: { draggable: "Press Space to pick up the tile, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
         }}
       >
         {children}
-        <DragOverlay dropAnimation={null}>{active ? <span style={{ ...chipStyle, boxShadow: t.shadowFloat }}>{label(active)}</span> : null}</DragOverlay>
+        <DragOverlay dropAnimation={null}>{active ? <span style={{ ...chipStyle, boxShadow: t.shadowFloat }}>{nameOf(active)}</span> : null}</DragOverlay>
       </DndContext>
     </NestContext.Provider>
   );
 }
 
-function describe(droppable: string, label: (id: string) => string): string {
+function describe(droppable: string, label: (id: string) => string, sessionLabel?: (key: string) => string): string {
   const target = targetOf(droppable);
   if (!target) return "a place to drop";
   if (target.kind === "tile") return label(target.id);
   if (target.kind === "gap") return `the place before step ${target.index + 1}`;
-  return "that session";
+  return sessionLabel?.(target.key) ?? "that session";
 }
 
 /**
@@ -165,7 +180,7 @@ export function useNestTile(id: string) {
 export const TAKES: CSSProperties = { background: t.selectedFill, borderColor: t.text2 };
 
 /** The `grip` at a tile's left: the only place a drag starts. 18 by 22; 44 high on a phone. */
-export function DragHandle({ label, nest }: { label: string; nest: ReturnType<typeof useNestTile> }) {
+export function DragHandle({ label, nest, testId = "drag-handle" }: { label: string; nest: Pick<ReturnType<typeof useNestTile>, "on" | "handle" | "held">; testId?: string }) {
   const state = useContext(NestContext);
   const { state: interactive, handlers } = useInteractive<HTMLButtonElement>();
   if (!nest.on) return null;
@@ -174,7 +189,7 @@ export function DragHandle({ label, nest }: { label: string; nest: ReturnType<ty
     <button
       type="button"
       ref={setActivator}
-      data-testid="drag-handle"
+      data-testid={testId}
       {...attributes}
       {...listeners}
       aria-label={label}
@@ -230,5 +245,18 @@ export function NestGap({ index, edge = "top" }: { index: number; edge?: "top" |
 export function useNestSession(key: string) {
   const state = useContext(NestContext);
   const drop = useDroppable({ id: sessionTarget(key), disabled: !state });
-  return { setRef: drop.setNodeRef, takes: Boolean(state?.active) && state?.over === sessionTarget(key) };
+  const sessionHeld = isSessionDrag(state?.active);
+  return { setRef: drop.setNodeRef, takes: Boolean(state?.active) && !sessionHeld && state?.over === sessionTarget(key), sessionHeld, overForSession: sessionHeld && state?.over === sessionTarget(key) && state?.active !== `${SESSION_DRAG}${key}` };
+}
+
+/** CA-14 P4: whether a session is being dragged. The List folds every session to its head while it is, and opens them after the drop. */
+export function useSessionDragging(): boolean {
+  return isSessionDrag(useContext(NestContext)?.active);
+}
+
+/** CA-14 P4: a session's head as something to drag. The `grip` in the head starts it, as a tile's does. */
+export function useNestSessionDrag(key: string) {
+  const state = useContext(NestContext);
+  const drag = useDraggable({ id: `${SESSION_DRAG}${key}`, disabled: !state });
+  return { on: Boolean(state), setRef: drag.setNodeRef, handle: { attributes: drag.attributes, listeners: drag.listeners, setActivator: drag.setActivatorNodeRef }, held: drag.isDragging, phone: Boolean(state?.phone) };
 }

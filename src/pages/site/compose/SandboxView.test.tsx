@@ -509,11 +509,11 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
 
 describe("CA-10 · words on a phone (CA-09 F12)", () => {
   it("never says click or double-click on a phone", () => {
-    expect(listHint(true)).toBe("Tap a prompt to see its details");
+    expect(listHint(true)).toBe("Tap a tile to see its details");
     expect(listHint(false)).toBe(LIST_HINT);
     stubWidth(390);
     view({ list: undefined, lens: "list" });
-    expect(screen.getByText("Tap a prompt to see its details")).toBeTruthy();
+    expect(screen.getByText("Tap a tile to see its details")).toBeTruthy();
     expect(screen.queryByText(/click/i)).toBeNull();
   });
 });

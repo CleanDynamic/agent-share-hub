@@ -60,7 +60,19 @@ export interface SessionMeta extends SessionExtras {
   runs?: unknown;
   /** CA-06 P4: the maker's colour for the session, "#RRGGBB". Absent when it has none. */
   colour?: string;
+  /** CA-14 P1: the maker's title for the session, 1 to 80 characters, trimmed. Absent when it has none. */
+  title?: string;
 }
+
+/** CA-14 P1: the longest session title. */
+export const SESSION_TITLE_MAX = 80;
+
+/** A session title as it is kept: trimmed, empty as none. Anything longer than the limit is left for `sessionMetaRefusal`. */
+export const cleanSessionTitle = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+};
 
 /** CA-04 P6: what a session worked until. Stored in `making.sessions_meta[key].goal`. */
 export interface SessionGoal {
@@ -124,6 +136,10 @@ export interface Making {
   session_tools?: Record<string, string>;
   /** CA-04 P1: a session's key to what it carries. */
   sessions_meta?: Record<string, SessionMeta>;
+  /** CA-14 P1: the sessions' keys in the maker's order. Kept beside `build_sessions.position` so a draft without that table still has an order. */
+  session_order?: string[];
+  /** CA-14 P1: the keys of the sessions the maker has folded. Kept beside `build_sessions.collapsed`. */
+  sessions_collapsed?: string[];
 }
 
 /** The key of a session made in the composer starts with this. */
@@ -167,6 +183,9 @@ export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
     // CA-06 P4: kept only as a colour reads; anything else is left where it is, never shown.
     const colour = normaliseHex(entry.colour);
     if (colour) meta.colour = colour;
+    // CA-14 P1: a title longer than the limit (written by hand) is cut when read, never shown whole.
+    const title = cleanSessionTitle(entry.title);
+    if (title) meta.title = title.slice(0, SESSION_TITLE_MAX);
     // CA-05: cost, tokens, background, started with, at the same time as, own copy.
     Object.assign(meta, extrasOf(entry));
     out[key] = meta;
@@ -429,6 +448,7 @@ export function sessionMetaRefusal(key: string, meta: SessionMeta): string | nul
   if (isTypedSession(key) && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
   if (meta.date && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
   if (meta.tool && meta.tool.trim().length > SESSION_TOOL_MAX) return `A tool name is at most ${SESSION_TOOL_MAX} characters.`;
+  if (meta.title !== undefined && meta.title.trim().length > SESSION_TITLE_MAX) return `A session title is at most ${SESSION_TITLE_MAX} characters.`;
   return extrasRefusal(meta);
 }
 
@@ -446,12 +466,37 @@ export async function setSessionMeta(buildId: string, key: string, meta: Session
   const entries = { ...sessionsMetaOf(making) };
   if (meta) {
     const tool = meta.tool?.trim() || null;
-    entries[key] = { ...meta, tool: tool ? (toolFor(tool)?.id ?? tool) : null };
+    const { title: _title, ...rest } = meta;
+    const title = cleanSessionTitle(meta.title);
+    entries[key] = { ...rest, tool: tool ? (toolFor(tool)?.id ?? tool) : null, ...(title ? { title } : null) };
   } else delete entries[key];
   await updateBuild(buildId, { making: { ...asObject(making), sessions_meta: entries } } as unknown as BuildPatch);
   const tool = meta?.tool?.trim();
   if (tool) await addMadeWithTools(buildId, [toolName(tool) ?? tool]).catch(() => console.warn("[setSessionMeta] Made with not updated", { buildId }));
   return entries;
+}
+
+/** CA-14 P1: `making.session_order`, read defensively: the keys that are strings, once each. */
+export function sessionOrderOf(making: unknown): string[] {
+  return [...new Set(asStrings(asObject(making).session_order))];
+}
+
+/** CA-14 P1: `making.sessions_collapsed`, read defensively. */
+export function sessionsCollapsedOf(making: unknown): string[] {
+  return [...new Set(asStrings(asObject(making).sessions_collapsed))];
+}
+
+/** CA-14 P1: the draft's `making`, as it stands. */
+export async function readMaking(buildId: string): Promise<unknown> {
+  return (await readMadeWith("readMaking", buildId)).making;
+}
+
+/** CA-14 P1: change some keys of `making` and keep the rest as it is. Resolves with the whole `making` as written. */
+export async function patchMaking(buildId: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const { making } = await readMadeWith("patchMaking", buildId);
+  const next = { ...asObject(making), ...patch };
+  await updateBuild(buildId, { making: next } as unknown as BuildPatch);
+  return next;
 }
 
 /** A code for the log, and only a code. */

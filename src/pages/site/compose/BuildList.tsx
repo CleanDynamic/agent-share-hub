@@ -97,7 +97,9 @@ import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker"
 import { CHECK_COPY, CheckExtraLines, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
-import { DragHandle, NestGap, NestList, TAKES, useNestSession, useNestTile, type NestTarget } from "./listNest";
+import { DragHandle, NestGap, NestList, TAKES, useNestTile, useSessionDragging, type NestTarget } from "./listNest";
+import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
+import { titleRepeatsText } from "./buildListModel";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
   INDENT,
@@ -112,23 +114,18 @@ import {
   tnum,
   wellField,
 } from "./refinedStyles";
-import { COLLAPSE_OVER, COLLAPSED_TILES } from "@/lib/build/buildSessions";
-import { isTypedSession } from "@/lib/build/making";
 import { NO_APP, type SourceSession } from "./sourcesModel";
-import { MenuContent } from "./ComposeMenu";
+import { MenuContent, MenuSubContent } from "./ComposeMenu";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
 export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
-  hint: "Click a prompt to see its details · double-click to read all of it",
+  hint: "Click a tile to see its details · double-click to read all of it",
   /** CA-10 (CA-09 F12): a phone has no double-click (the card's onDoubleClick is off there) and taps, not clicks. */
-  hintPhone: "Tap a prompt to see its details",
+  hintPhone: "Tap a tile to see its details",
   placeholder: "Paste or type a prompt…",
   showFull: "Show full prompt",
-  /** CA-12 P5: a collapsed session's toggle, and the one that closes it again. */
-  showAll: (count: number) => `Show all ${count} prompts`,
-  showFewer: "Show fewer",
   /** CA-03 P5: a check's eyebrow. */
   check: CHECK_COPY.eyebrow,
   /** CA-03 P6. */
@@ -198,20 +195,24 @@ export interface BuildListProps {
   onNameMade?: (id: string) => void;
   /** TF-08: the names of the files each step makes, by step id. */
   madeNames?: Readonly<Record<string, readonly string[]>>;
-  /**
-   * CA-04 P1: the sessions a new prompt can go into, "Session 2 · Claude Code", in order. Absent while the build has
-   * only the one session its typed prompts make: the field then reads as it always did.
-   */
-  sessionChoices?: readonly SessionChoice[];
-  /** CA-04 P1: the key of the session a new prompt goes into. */
-  currentSession?: string | null;
-  onCurrentSession?: (key: string) => void;
   /** CA-12 P4: "+ Add a session", the full-width row under the last session. Absent: no row. */
-  addSession?: Omit<AddSessionRowProps, "phone" | "inBuild">;
-  /** CA-12 P5: the sessions that are collapsed (their head, their first tiles, and "Show all n prompts"), by key. */
+  addSession?: Omit<AddSessionRowProps, "phone">;
+  /** CA-14 P3: the sessions that are folded to their head, by key. Any session can be. */
   collapsed?: ReadonlySet<string>;
-  /** CA-12 P5: opening or closing a long session. Absent: no toggle. */
+  /** CA-14 P3: folding or opening a session. Resolves once it is kept. */
   onToggleCollapsed?: (sessionKey: string, collapsed: boolean) => void;
+  /** CA-14 P2: what the maker can do to a session's head. Absent: heads show no maker controls. */
+  sessionOps?: SessionOps;
+  /** CA-14 P4: a session's head dropped on another's. */
+  onDropSession?: (key: string, over: string) => void;
+  /** CA-14 P5: the "+ Add to this session" row at the end of a session, drawn by the page (it holds the Add items). */
+  addToSession?: (sessionKey: string) => ReactNode;
+  /** CA-14 P5: the session whose prompt box is open. An empty draft has Session 1's open without it. */
+  promptIn?: string | null;
+  /** CA-14 P4: a polite line for a screen reader ("Session 3 moved to 2."). */
+  said?: string;
+  /** CA-14 P7: "Split session here" in a tile's menu. Absent: no item. */
+  onSplitHere?: (stepId: string) => void;
   /** CA-12 P5: the session just added is scrolled to and outlined once. `n` changes on every add. */
   ringedSession?: { key: string; n: number } | null;
   /**
@@ -277,14 +278,30 @@ interface ListRefs {
   onBack?: (to: string) => void;
   reveal: { id: string; n: number } | null;
   onColour?: BuildListProps["onColour"];
+  /** CA-14 P5, P7: the sessions a tile can move to, the one each top-level tile is in, and the first tile of each. */
+  sessions?: readonly { key: string; label: string }[];
+  sessionOf?: ReadonlyMap<string, string>;
+  firstOf?: ReadonlySet<string>;
+  onMoveToSession?: BuildListProps["onMoveToSession"];
+  onSplitHere?: BuildListProps["onSplitHere"];
 }
 
 const ListRefsContext = createContext<ListRefs>({ mentioned: new Set(), reveal: null });
 
 /** A tile's element, registered for the post's links as well as for moving tiles. */
 function useCardRef(id: string, nestRef: (el: HTMLDivElement | null) => void) {
-  return bothRefs<HTMLDivElement>(nestRef, usePartRef(refTo({ kind: "node", id })));
+  const both = bothRefs<HTMLDivElement>(nestRef, usePartRef(refTo({ kind: "node", id })));
+  /* CA-14: the colour picker anchors to the tile when "Colour…" is chosen in its menu, so the tile is findable by its id. */
+  return useCallback(
+    (element: HTMLDivElement | null) => {
+      both(element);
+      element?.setAttribute("data-node-id", id);
+    },
+    [both, id],
+  );
 }
+
+const cardOf = (id: string): HTMLElement | null => document.querySelector<HTMLElement>(`[data-node-id="${id}"]`);
 
 /** How a tile is named for its colour button: "Prompt 3", or by its title when it has no number ("Code order-form.tsx"). */
 export const partName = (step: Pick<Step, "kind" | "number" | "title" | "defaultTitle">): string =>
@@ -299,14 +316,15 @@ const colourEdge = (colour: string | undefined): CSSProperties | null => (colour
 /** The colour button at the right of a tile's top row: on a desktop, or wherever the tile has no menu to put it in. */
 function CardColour({ step, phone, inMenu = false }: { step: Step; phone: boolean; inMenu?: boolean }) {
   const { onColour } = useContext(ListRefsContext);
-  if (!onColour || (phone && inMenu)) return null;
+  /* CA-14 P2: no colour, nothing drawn: "Colour…" in the tile's menu (or Details) is how one is given. */
+  if (!onColour || !step.colour || (phone && inMenu)) return null;
   return <ColourButton what={partName(step)} colour={step.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(refTo({ kind: "node", id: step.id }), anchor, pickerName(step), step.colour ?? null)} />;
 }
 
-/** "Colour…" in a tile's menu, on a phone. The picker opens as a sheet there, so it needs no anchor but the menu's button. */
+/** "Colour…" in a tile's menu. The picker opens as a sheet on a phone and beside the tile on a computer. */
 function ColourMenuRow({ step, phone, anchor }: { step: Step; phone: boolean; anchor: () => HTMLElement | null }) {
   const { onColour } = useContext(ListRefsContext);
-  if (!onColour || !phone) return null;
+  if (!onColour) return null;
   return (
     <MenuRow
       phone={phone}
@@ -317,6 +335,40 @@ function ColourMenuRow({ step, phone, anchor }: { step: Step; phone: boolean; an
     >
       Colour…
     </MenuRow>
+  );
+}
+
+/**
+ * CA-14 P5, P7: "Move to session…" (the other sessions, in a submenu) and, with Split and merge on, "Split session here"
+ * (any tile but the first of its session). Nothing for a tile that is not in a session of its own, or with one session.
+ */
+function SessionTileRows({ step, phone }: { step: Step; phone: boolean }) {
+  const refs = useContext(ListRefsContext);
+  const mine = refs.sessionOf?.get(step.id);
+  if (!mine) return null;
+  const others = (refs.sessions ?? []).filter((session) => session.key !== mine);
+  return (
+    <>
+      {refs.onMoveToSession && others.length > 0 ? (
+        <Menu.Sub>
+          <Menu.SubTrigger style={menuItem(true, phone)}>Move to session…</Menu.SubTrigger>
+          <Menu.Portal>
+            <MenuSubContent sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()}>
+              {others.map((session) => (
+                <MenuRow key={session.key} phone={phone} onSelect={() => void refs.onMoveToSession?.(step.id, session.key)}>
+                  {session.label}
+                </MenuRow>
+              ))}
+            </MenuSubContent>
+          </Menu.Portal>
+        </Menu.Sub>
+      ) : null}
+      {refs.onSplitHere && !refs.firstOf?.has(step.id) ? (
+        <MenuRow phone={phone} onSelect={() => refs.onSplitHere?.(step.id)}>
+          Split session here
+        </MenuRow>
+      ) : null}
+    </>
   );
 }
 
@@ -560,65 +612,22 @@ const footRow = (indent: number): CSSProperties => ({
 
 const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 
-/* ── a session's head ── */
+/* ── a session's head (SessionHead.tsx) and what sits under it ── */
 
-function SessionHead({ session, phone, onOpenSetup, onPickApp, inBuild = [], count }: { session: SourceSession; phone: boolean; onOpenSetup?: (key: string) => void; onPickApp?: (key: string, tool: string | null) => void; inBuild?: readonly string[]; count?: number }) {
-  /* CA-04 P2: a tile dropped on a session's head goes into that session. */
-  const drop = useNestSession(session.key);
+/** CA-04 P6, CA-05: what the session worked until, when it runs, and how it went: one quiet line each, under an open session's head. */
+function SessionLines({ session }: { session: SourceSession }) {
   return (
     <>
-    <div
-      ref={drop.setRef}
-      role="separator"
-      aria-label={`Session ${session.number} · ${session.tool}`}
-      data-takes={drop.takes ? "true" : undefined}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        paddingTop: 8,
-        minWidth: 0,
-        ...(drop.takes ? { background: t.selectedFill, boxShadow: `inset 0 0 0 1px ${t.text2}`, borderRadius: 6 } : null),
-      }}
-    >
-      <ToolMark tool={session.tool} size={20} />
-      <span style={{ ...text(13, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
-        Session {session.number} · {session.tool}
-      </span>
-      <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{[session.detail, count ? `${count} prompts` : ""].filter(Boolean).join(" · ")}</span>
-      {/* CA-12 P3: a session made here with no app offers to pick one. */}
-      {onPickApp && session.tool === NO_APP && isTypedSession(session.key) ? (
-        <ToolPicker label={`Pick an app for session ${session.number}`} placeholder="Pick an app" value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
+      {session.goal ? (
+        <DotLine testId="goal-line" dot={session.goal.reached ? t.evidence : t.label}>
+          {session.goal.line}
+        </DotLine>
       ) : null}
-      <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
-      <SessionColour session={session} phone={phone} />
-      {session.setupCount && onOpenSetup ? (
-        <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
-          {`Setup ${session.setupCount}`}
-        </TextButton>
-      ) : null}
-    </div>
-    {/* CA-04 P6: what the session worked until, and when it runs, one quiet line each under its head. */}
-    {session.goal ? (
-      <DotLine testId="goal-line" dot={session.goal.reached ? t.evidence : t.label}>
-        {session.goal.line}
-      </DotLine>
-    ) : null}
-    {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
-    {/* CA-05 P2: how long, what it cost, and whether nobody was watching: one line, only the parts that exist. */}
-    {session.facts ? <DotLine testId="facts-line">{session.facts}</DotLine> : null}
-    {/* CA-05 P5: the sessions it ran beside, and its own copy of the code. */}
-    {session.together ? <DotLine testId="together-line">{session.together}</DotLine> : null}
+      {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
+      {session.facts ? <DotLine testId="facts-line">{session.facts}</DotLine> : null}
+      {session.together ? <DotLine testId="together-line">{session.together}</DotLine> : null}
     </>
   );
-}
-
-/** CA-06 P4: the colour button at the end of a session's head. Not for an old build's typed prompts: they are not saved as a session. */
-function SessionColour({ session, phone }: { session: SourceSession; phone: boolean }) {
-  const { onColour } = useContext(ListRefsContext);
-  if (!onColour || session.key.startsWith("typed-legacy-")) return null;
-  const what = `Session ${session.number}`;
-  return <ColourButton what={what} colour={session.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(refTo({ kind: "session", id: session.key }), anchor, what, session.colour ?? null)} />;
 }
 
 /* ── the uses row ── */
@@ -855,6 +864,9 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         <NumberTile>{step.number}</NumberTile>
         {renaming ? (
           <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
+        ) : isDefault && titleRepeatsText(step.text, title) ? (
+          /* CA-14 P8: an automatic title that only repeats the start of the text under it is not drawn; its place is kept. */
+          <span aria-hidden="true" data-testid="title-hidden" style={{ flexGrow: 1 }} />
         ) : (
           <StepTitle title={title} isDefault={isDefault} />
         )}
@@ -893,7 +905,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
                 <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-                <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
+                <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+              <SessionTileRows step={step} phone={phone} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
               </MenuContent>
             </Menu.Portal>
@@ -1273,7 +1286,8 @@ function PlainCard({ step, index, last, props, noun, eyebrow, body, foot }: { st
               <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-              <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
+              <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+              <SessionTileRows step={step} phone={phone} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
             </MenuContent>
           </Menu.Portal>
@@ -1401,7 +1415,8 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
               <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-              <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
+              <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+              <SessionTileRows step={step} phone={phone} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
             </MenuContent>
           </Menu.Portal>
@@ -1492,7 +1507,8 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
               <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-              <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
+              <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+              <SessionTileRows step={step} phone={phone} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
             </MenuContent>
           </Menu.Portal>
@@ -1596,53 +1612,6 @@ export interface AddAsAgentInput {
   instructions: string;
 }
 
-/** CA-04 P1: a session a new prompt can go into, and the tool its prompts are typed in. */
-export interface SessionChoice {
-  key: string;
-  label: string;
-  tool?: string | null;
-}
-
-export const SESSION_MENU_COPY = {
-  adding: "Adding to",
-} as const;
-
-/** CA-04 P1: "Adding to Session 2 · Claude Code": where a new prompt goes. The menu lists the sessions (CA-12: a session is added from its own row). */
-function SessionMenu({ phone, choices, current, onCurrent }: { phone: boolean; choices: readonly SessionChoice[]; current: string | null; onCurrent?: (key: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const chosen = choices.find((choice) => choice.key === current);
-  return (
-    <Menu.Root open={open} onOpenChange={setOpen}>
-      <Menu.Trigger asChild>
-        <MenuButton
-          data-testid="adding-to"
-          aria-label={`${SESSION_MENU_COPY.adding} ${chosen?.label ?? ""}`}
-          label={SESSION_MENU_COPY.adding}
-          value={chosen?.label ?? ""}
-          open={open}
-          style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }}
-        />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
-          <Menu.RadioGroup value={current ?? ""} onValueChange={(key) => onCurrent?.(key)}>
-            {choices.map((choice) => (
-              <Menu.RadioItem key={choice.key} value={choice.key} style={{ ...menuItem(true, phone), gap: 6 }}>
-                <span style={{ width: 14, display: "inline-flex" }}>
-                  <Menu.ItemIndicator>
-                    <Glyph name="check" size={14} />
-                  </Menu.ItemIndicator>
-                </span>
-                {choice.label}
-              </Menu.RadioItem>
-            ))}
-          </Menu.RadioGroup>
-        </MenuContent>
-      </Menu.Portal>
-    </Menu.Root>
-  );
-}
-
 function AddPrompt({
   phone,
   onAddPrompt,
@@ -1651,10 +1620,14 @@ function AddPrompt({
   addPromptRef,
   addPromptFlash = 0,
   inBuild = [],
-  sessionChoices,
-  currentSession = null,
-  onCurrentSession,
-}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "addPromptRef" | "addPromptFlash" | "inBuild" | "sessionChoices" | "currentSession" | "onCurrentSession">) {
+  sessionTool = null,
+  sessionKey = null,
+}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "addPromptRef" | "addPromptFlash" | "inBuild"> & {
+  /** The tool its session is typed in: the prompt starts with it, and the maker can still change it. */
+  sessionTool?: string | null;
+  /** The session the prompt box sits in; it is named by where it stands, so no "Adding to" picker is drawn. */
+  sessionKey?: string | null;
+}) {
   const [value, setValue] = useState("");
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
@@ -1682,14 +1655,12 @@ function AddPrompt({
     return () => window.clearTimeout(timer);
   }, [addPromptFlash]);
 
-  /* CA-04 P1: choosing a session puts its tool in the field; the maker can still change it. */
-  const sessionTool = sessionChoices?.find((choice) => choice.key === currentSession)?.tool ?? null;
-  const chosenSession = sessionChoices ? currentSession : null;
+  /* CA-04 P1, CA-14 P5: the session the box stands in gives it its tool; the maker can still change it. */
   useEffect(() => {
-    if (chosenSession === null) return;
+    if (sessionKey === null) return;
     setTool(sessionTool ? (toolFor(sessionTool)?.id ?? sessionTool) : null);
     setModel(null);
-  }, [chosenSession, sessionTool]);
+  }, [sessionKey, sessionTool]);
 
   useEffect(() => {
     if (!cleared) return;
@@ -1744,11 +1715,6 @@ function AddPrompt({
 
   return (
     <div data-testid="add-prompt" data-lit={lit || undefined} style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5, ...ring(lit) }}>
-      {sessionChoices && sessionChoices.length > 0 ? (
-        <div>
-          <SessionMenu phone={phone} choices={sessionChoices} current={currentSession} onCurrent={onCurrentSession} />
-        </div>
-      ) : null}
       <textarea
         ref={setField}
         aria-label="Add a prompt"
@@ -1800,6 +1766,14 @@ function AddPrompt({
 
 /* ── the list ── */
 
+/** CA-14 P4: while a session is dragged every session is folded to its head, so a long one can be moved; they open again after the drop. */
+function WhileDragging({ children }: { children: (dragging: boolean) => ReactNode }) {
+  return <>{children(useSessionDragging())}</>;
+}
+
+/** The tiles of a session: 16 in from its head, with the 2px line down their left, 8 in from their edge. */
+const bodyStyle: CSSProperties = { position: "relative", display: "flex", flexDirection: "column", gap: 8, minWidth: 0, marginLeft: 16 };
+
 /** A run of steps on the page: a session's head and the prompts that follow it, or one step that stands alone. */
 interface Run {
   key: string;
@@ -1808,27 +1782,47 @@ interface Run {
 }
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
-function SessionRun({ head, phone: _phone, lit = false, children }: { head: SourceSession | null; phone: boolean; lit?: boolean; children: ReactNode }) {
+function SessionRun({ head, phone: _phone, first, lit = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
   const colour = head?.colour;
   return (
-    <div ref={part} data-session-key={head?.key} data-lit={lit || undefined} data-session-colour={colour} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null) }}>
+    <div
+      ref={part}
+      data-session-key={head?.key}
+      data-lit={lit || undefined}
+      data-session-colour={colour}
+      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(head && !first ? { marginTop: 16 } : null), ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null) }}
+    >
       {children}
     </div>
   );
 }
 
+/**
+ * The runs on the page. A session's head starts its run and every step after it, of any kind, belongs to it until the next
+ * head (CA-14: a session holds every kind of step, so an agent or a manual step in it is drawn inside it). Steps before any
+ * head, and every step of a draft that has no heads, stand on their own, as they did.
+ */
 function runsOf(steps: readonly Step[], dividers: BuildListProps["dividers"]): Run[] {
   const runs: Run[] = [];
   for (const step of steps) {
     const head = dividers.get(step.number) ?? null;
     const last = runs[runs.length - 1];
-    /* Agents, teams and manual steps stand on their own unless a session's head names them. */
-    if (head || !last || !last.head || step.kind !== "prompt") runs.push({ key: step.id, head, steps: [step] });
+    if (head || !last || !last.head) runs.push({ key: step.id, head, steps: [step] });
     else last.steps.push(step);
   }
   return runs;
+}
+
+/** CA-14 P1: sessions with no tile yet are drawn too, each in the place its number gives it: before the first session numbered after it. */
+function withEmptySessions(runs: readonly Run[], empties: readonly SourceSession[]): Run[] {
+  const out = [...runs];
+  for (const head of [...empties].sort((a, b) => a.number - b.number)) {
+    const at = out.findIndex((run) => run.head !== null && run.head.number > head.number);
+    out.splice(at < 0 ? out.length : at, 0, { key: `empty:${head.key}`, head, steps: [] });
+  }
+  return out;
 }
 
 export function BuildList(props: BuildListProps) {
@@ -1916,40 +1910,81 @@ export function BuildList(props: BuildListProps) {
       </div>
     );
   };
+  const runs = withEmptySessions(runsOf(steps, props.dividers), props.emptySessions ?? []);
+  const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
+  const headed = runs.some((run) => run.head);
   const body = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
+    <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5 }}>
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
-      {[...runsOf(steps, props.dividers), ...(props.emptySessions ?? []).map((head): Run => ({ key: `empty:${head.key}`, head, steps: [] }))].map((run) => {
+      <WhileDragging>
+        {(dragging) =>
+      runs.map((run, at) => {
         const key = run.head?.key ?? null;
-        const total = run.head?.prompts.length ?? 0;
-        // CA-12 P5: a long session can be collapsed to its head and first tiles; the rest are not drawn until it is opened.
-        const long = key !== null && total > COLLAPSE_OVER && Boolean(props.onToggleCollapsed);
-        const closed = long && Boolean(key && props.collapsed?.has(key));
-        const shown = closed ? run.steps.slice(0, COLLAPSED_TILES) : run.steps;
+        const closed = key !== null && Boolean(props.onToggleCollapsed) && (dragging || Boolean(props.collapsed?.has(key)));
+        const tilesId = `session-tiles-${key ?? run.key}`;
+        const headed = run.head !== null;
+        const editable = headed && !run.head.key.startsWith("typed-legacy-");
+        const isFirstHead = headed && headOrder.indexOf(run.head.key) === 0;
+        const isLastHead = headed && headOrder.indexOf(run.head.key) === headOrder.length - 1;
+        const emptyDraft = steps.length === 0 && at === 0;
+        const promptHere = headed && (props.promptIn === key || emptyDraft);
         return (
-          <SessionRun key={run.key} head={run.head} phone={props.phone} lit={Boolean(key && props.ringedSession?.key === key)}>
-            {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} onPickApp={props.onPickApp} inBuild={props.inBuild} count={long ? total : undefined} /> : null}
-            {run.head ? <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} /> : null}
-            {drawBranches(shown, (step) => step, steps, placed)}
-            {long && key ? (
-              <div>
-                <TextButton
-                  target={props.phone}
-                  underline
-                  aria-expanded={!closed}
-                  style={text(12.5, 500, t.text2)}
-                  onClick={() => props.onToggleCollapsed?.(key, !closed)}
-                >
-                  {closed ? LIST_COPY.showAll(total) : LIST_COPY.showFewer}
-                </TextButton>
-              </div>
+          <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0} lit={Boolean(key && props.ringedSession?.key === key)}>
+            {run.head ? (
+              <SessionHead
+                session={run.head}
+                phone={props.phone}
+                tiles={run.steps.length}
+                collapsed={closed}
+                controls={tilesId}
+                onToggle={() => props.onToggleCollapsed?.(run.head.key, !closed)}
+                first={isFirstHead}
+                last={isLastHead}
+                ops={props.sessionOps}
+                editable={editable}
+                onOpenSetup={props.onOpenSetup}
+                onPickApp={props.onPickApp}
+                inBuild={props.inBuild}
+                onColour={props.onColour ? (anchor) => props.onColour?.(refTo({ kind: "session", id: run.head.key }), anchor, `Session ${run.head.number}`, run.head.colour ?? null) : undefined}
+              />
             ) : null}
+            {run.head ? (
+              <div id={tilesId} data-testid="session-tiles" hidden={closed} style={headed ? bodyStyle : undefined}>
+                {closed ? null : (
+                  <>
+                    {headed ? <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} /> : null}
+                    <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
+                    <SessionLines session={run.head} />
+                    {drawBranches(run.steps, (step) => step, steps, placed)}
+                    {run.steps.length === 0 && !promptHere ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {promptHere ? (
+                      <AddPrompt
+                        phone={props.phone}
+                        onAddPrompt={props.onAddPrompt}
+                        onAddAsAgent={props.onAddAsAgent}
+                        onKeepAsCode={props.onKeepAsCode}
+                        addPromptRef={props.addPromptRef}
+                        addPromptFlash={props.addPromptFlash}
+                        inBuild={props.inBuild}
+                        sessionTool={run.head.tool === NO_APP ? null : run.head.tool}
+                        sessionKey={run.head.key}
+                      />
+                    ) : null}
+                    {editable && props.addToSession ? props.addToSession(run.head.key) : null}
+                  </>
+                )}
+              </div>
+            ) : (
+              drawBranches(run.steps, (step) => step, steps, placed)
+            )}
           </SessionRun>
         );
-      })}
+      })
+        }
+      </WhileDragging>
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} />
       ))}
@@ -1959,27 +1994,55 @@ export function BuildList(props: BuildListProps) {
           {said ? <Quiet>{said}</Quiet> : null}
         </div>
       ) : null}
-      <AddPrompt
-        phone={props.phone}
-        onAddPrompt={props.onAddPrompt}
-        onAddAsAgent={props.onAddAsAgent}
-        onKeepAsCode={props.onKeepAsCode}
-        addPromptRef={props.addPromptRef}
-        addPromptFlash={props.addPromptFlash}
-        inBuild={props.inBuild}
-        sessionChoices={props.sessionChoices}
-        currentSession={props.currentSession}
-        onCurrentSession={props.onCurrentSession}
-      />
-      {props.addSession ? <AddSessionRow phone={props.phone} inBuild={props.inBuild} {...props.addSession} /> : null}
+      <div aria-live="polite" data-testid="sessions-said" style={props.said ? undefined : { display: "none" }}>
+        {props.said ? <Quiet>{props.said}</Quiet> : null}
+      </div>
+      {/* CA-14 P5: with session heads the prompt box stands in its session; an old draft with none keeps it at the foot, as it was. */}
+      {headed ? null : (
+        <AddPrompt
+          phone={props.phone}
+          onAddPrompt={props.onAddPrompt}
+          onAddAsAgent={props.onAddAsAgent}
+          onKeepAsCode={props.onKeepAsCode}
+          addPromptRef={props.addPromptRef}
+          addPromptFlash={props.addPromptFlash}
+          inBuild={props.inBuild}
+        />
+      )}
+      {props.addSession ? <AddSessionRow phone={props.phone} {...props.addSession} /> : null}
     </div>
   );
-  const refs: ListRefs = { mentioned: props.mentioned ?? NO_MENTIONS, onBack: props.onBackToPost, reveal: props.reveal ?? null, onColour: props.onColour };
-  if (!nest) return <ListRefsContext.Provider value={refs}>{body}</ListRefsContext.Provider>;
+  const sessionOf = new Map<string, string>();
+  const firstOf = new Set<string>();
+  for (const run of runs) {
+    if (!run.head || run.head.key.startsWith("typed-legacy-")) continue;
+    run.steps.forEach((step, at) => {
+      sessionOf.set(step.id, run.head?.key ?? "");
+      if (at === 0) firstOf.add(step.id);
+    });
+  }
+  const refs: ListRefs = {
+    mentioned: props.mentioned ?? NO_MENTIONS,
+    onBack: props.onBackToPost,
+    reveal: props.reveal ?? null,
+    onColour: props.onColour,
+    sessions: runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [{ key: run.head.key, label: [headName(run.head), run.head.title].filter(Boolean).join(" · ") }] : [])),
+    sessionOf,
+    firstOf,
+    onMoveToSession: props.onMoveToSession,
+    onSplitHere: props.onSplitHere,
+  };
+  const sessionLabel = (key: string) => {
+    const head = runs.find((run) => run.head?.key === key)?.head;
+    return head ? headName(head) : "that session";
+  };
+  /* Sessions move once there are two to put in order, even when no tile can move yet. */
+  const sessionsMove = Boolean(props.onDropSession) && headOrder.length > 1;
+  if (!nest && !sessionsMove) return <ListRefsContext.Provider value={refs}>{body}</ListRefsContext.Provider>;
   return (
     <ListRefsContext.Provider value={refs}>
       <ListNestContext.Provider value={nest}>
-        <NestList phone={props.phone} canTake={nest.canNest} label={label} onDrop={onDrop}>
+        <NestList phone={props.phone} canTake={nest?.canNest ?? (() => false)} label={label} onDrop={onDrop} onDropSession={props.onDropSession} sessionLabel={sessionLabel}>
           {body}
         </NestList>
       </ListNestContext.Provider>
