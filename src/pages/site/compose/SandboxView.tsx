@@ -618,7 +618,7 @@ export function SandboxView(props: SandboxViewProps) {
 
   const publishLabel = published ? "Published" : props.publishing ? "Publishing…" : "Publish";
   const publishDisabled = Boolean(published) || props.publishing;
-  /* The board draws Publish at full strength beside the missing part: the status line says what is missing. */
+  /* The board draws Publish at full strength whatever is still outstanding. */
   const previewTo = props.slug ? `/b2/${props.slug}` : null;
 
   const lensSwitch =
