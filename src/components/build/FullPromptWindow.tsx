@@ -31,10 +31,11 @@ import { X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelTag } from "@/components/brand/ModelTag";
+import { Segmented } from "@/components/brand/Segmented";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ChangedText } from "@/components/build/ChangedText";
 import { CodeLines } from "@/components/code/CodeLines";
@@ -42,9 +43,13 @@ import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/an
 import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
 import { REPLY_MAX } from "@/lib/build/composePrompts";
 import { groupKind, groupOfStep, promptNumbersOf, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
+import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_MAX, markVariable, variablesFor, type Effort, type PromptSettings } from "@/lib/build/tileExtras";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { Field } from "@/pages/site/compose/composeControls";
+import { ModelPicker } from "@/pages/site/compose/ModelPicker";
+import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
 
 import { FromPostNote } from "./PartWindow";
@@ -69,6 +74,10 @@ export interface FullPromptWindowProps {
   onChanges?: (id: string, ranges: ChangeRange[]) => void;
   /** CA-12 P12, maker mode: save what came back for a prompt; an empty text takes it off. */
   onReply?: (id: string, reply: string) => void;
+  /** CA-15 P2, maker mode: save a prompt's model settings and variables (`payload.settings`, `payload.variables`); null takes one off. */
+  onExtras?: (id: string, patch: Record<string, unknown>) => void;
+  /** CA-15 P2, maker mode: replace a prompt's text ("Mark selection as a variable"). */
+  onText?: (id: string, text: string) => void;
   /** Reader mode (UI-P74): the "Before you send it" panel for a step, under the text, in place of the plain lines. */
   renderBefore?: (step: Step) => ReactNode;
   /** CA-06 P3: opened from a link in the post; the footer offers Back to the post. */
@@ -79,21 +88,33 @@ export interface FullPromptWindowProps {
 }
 
 export const FULL_PROMPT_COPY = {
-  hint: "Esc closes · ← → move between prompts",
+  hint: "Esc Close · ← → Previous or next prompt",
   copied: "Copied",
   copy: "Copy prompt",
   done: "Done",
   before: "Before you send it",
   readerChanges: "A reader changes this",
   keepAsWritten: "Keep as written",
+  prompt: "Prompt",
+  response: "Response",
+  rename: "Rename prompt",
+  modelSettings: "Model settings",
+  modelSettingsLine: "The model, reasoning effort and instructions that applied",
+  model: "Model",
+  effort: "Reasoning effort",
+  instructions: "Custom instructions or project knowledge that applied",
+  variables: "Variables",
+  variablesLine: "The {names} written in the prompt, each with a line about it",
+  markVariable: "Mark selection as a variable",
+  noVariables: "No {variables} written in this prompt yet.",
 } as const;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function shortDate(iso: string | null | undefined): string {
+function longDate(iso: string | null | undefined): string {
   if (!iso) return "";
   const at = new Date(iso);
-  return Number.isNaN(at.getTime()) ? "" : `${at.getDate()} ${MONTHS[at.getMonth()]}`;
+  return Number.isNaN(at.getTime()) ? "" : `${at.getDate()} ${MONTHS[at.getMonth()]} ${at.getFullYear()}`;
 }
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
@@ -133,15 +154,19 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   const sessionPrompts = group ? promptNumbersOf(group, steps) : [];
   const inSession = sessionPrompts.indexOf(step.number) + 1;
   const tool = group?.tool ?? step.tool;
-  const model = step.model ? modelLabel(step.model) : group?.model ?? null;
+  // CA-15 P2: the model's own row is Model settings (`payload.settings.model`, else `payload.model`, else the session's).
+  const model = step.settings?.model || step.model || group?.model || null;
   const dated = group ? groupKind(group) !== "legacy" : false;
-  const when = dated && group ? shortDate(group.startedAt) : "";
-  const facts = [
-    group || tool ? [dated && group ? `Session ${group.number}` : null, tool].filter(Boolean).join(" · ") || null : null,
-    model,
+  const when = dated && group ? longDate(group.startedAt) : "";
+  /** CA-15 P2: one grey line, "Session 1 · Claude · 7 Oct 2026 · Prompt 1 of 3 in session". */
+  const line = [
+    dated && group ? `Session ${group.number}` : null,
+    tool,
     when || null,
-    group && inSession > 0 ? `prompt ${inSession} of ${sessionPrompts.length} in the session` : null,
-  ].filter((fact): fact is string => Boolean(fact));
+    group && inSession > 0 ? `Prompt ${inSession} of ${sessionPrompts.length} in session` : `Prompt ${place} of ${prompts.length}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const all = flatten(steps);
   const uses = step.uses.flatMap((use) => {
@@ -154,7 +179,7 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   });
   const goesInto = all.filter((candidate) => candidate.id !== step.id && candidate.uses.some((use) => use.kind === "output" && use.node_id === step.id));
   const before = uses.flatMap((use) => (use.paste ? [use.paste] : []));
-  return { previous, next, place, instructions, tool, model, facts, uses, goesInto, before };
+  return { previous, next, place, instructions, tool, model, line, uses, goesInto, before };
 }
 
 /* ── the refined look (UI-P94) ── */
@@ -162,20 +187,6 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
 const geist = (size: number, weight: 400 | 500, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: "normal", color });
 
 const WELL: CSSProperties = { background: t.well, border: `1px solid ${t.wellBorder}`, boxShadow: t.wellShadow, borderRadius: 6, boxSizing: "border-box" };
-
-/** A tag (22 high, radius 4, `--tag-fill`, 11.5 `--on-tag`): a fact with no mark. */
-const factTag: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  height: 22,
-  padding: "0 8px",
-  boxSizing: "border-box",
-  borderRadius: 4,
-  background: t.tagFill,
-  ...geist(11.5, 500, t.onTag),
-  lineHeight: 1,
-  whiteSpace: "nowrap",
-};
 
 /** A reference: the tile's fill and edge, 22 high, radius 4, 11.5. */
 const refChip: CSSProperties = {
@@ -206,43 +217,38 @@ function bare(element: HTMLInputElement | null) {
   element.style.setProperty("box-shadow", "none", "important");
 }
 
-function RefinedTitleField({ step, onTitle, phone }: { step: Step; onTitle: (id: string, title: string) => void; phone: boolean }) {
+/** CA-15 P2: the editable title, 15/500 with a small rename button; it starts as the default and only the maker can change it. */
+function RefinedTitleField({ step, onTitle }: { step: Step; onTitle: (id: string, title: string) => void }) {
   const [draft, setDraft] = useState(step.title ?? "");
-  const [focused, setFocused] = useState(false);
+  const field = useRef<HTMLInputElement | null>(null);
   const save = () => {
     if (draft.trim() !== (step.title ?? "")) onTitle(step.id, draft);
   };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ ...WELL, height: 44, display: "flex", alignItems: "center", gap: 8, padding: "0 8px 0 16px", ...(focused ? { borderColor: t.selectedEdge } : null) }}>
-        <input
-          ref={bare}
-          type="text"
-          aria-label="Title"
-          value={draft}
-          maxLength={TITLE_MAX}
-          placeholder={step.defaultTitle}
-          onChange={(event) => setDraft(event.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => {
-            setFocused(false);
+    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+      <input
+        ref={(element) => {
+          field.current = element;
+          bare(element);
+        }}
+        type="text"
+        aria-label="Title"
+        value={draft}
+        maxLength={TITLE_MAX}
+        placeholder={step.defaultTitle}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={save}
+        onKeyDown={(event) => {
+          // Esc closes the window and unmounts the field before it can blur, so it saves here too.
+          if (event.key === "Escape") save();
+          if (event.key === "Enter") {
+            event.preventDefault();
             save();
-          }}
-          onKeyDown={(event) => {
-            // Esc closes the window and unmounts the field before it can blur, so it saves here too.
-            if (event.key === "Escape") save();
-            if (event.key === "Enter") {
-              event.preventDefault();
-              save();
-            }
-          }}
-          style={{ flexGrow: 1, minWidth: 0, height: "100%", padding: 0, outline: "none", ...geist(phone ? 17 : 16, 500, t.text), letterSpacing: "-0.01em" }}
-        />
-        <span aria-hidden="true" style={{ width: 32, height: 32, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label }}>
-          <Glyph name="pencil" size={16} />
-        </span>
-      </div>
-      <p style={{ ...geist(12, 400, t.label), margin: 0 }}>Title · starts as "{step.defaultTitle}" · only you can change it</p>
+          }
+        }}
+        style={{ flexGrow: 1, minWidth: 0, height: 28, padding: 0, outline: "none", ...geist(15, 500, t.text), letterSpacing: "-0.01em" }}
+      />
+      <IconButton icon={X} glyph="pencil" label={FULL_PROMPT_COPY.rename} size={26} boxed={false} onClick={() => field.current?.focus()} />
     </div>
   );
 }
@@ -305,7 +311,6 @@ function RefinedTextBox({ text, changes, boxRef, phone, onPick }: { text: string
   );
 }
 
-/** CA-12 P12: "What came back". The maker edits it (up to 4,000 characters); a reader sees it as read-only text. */
 /** CA-13 P7: how the answer was constrained, where, the schema and the sample; and Copy the setting. */
 function ShapeRead({ shape }: { shape: OutputShape }) {
   const [said, setSaid] = useState("");
@@ -328,6 +333,7 @@ function ShapeRead({ shape }: { shape: OutputShape }) {
   );
 }
 
+/** CA-12 P12, CA-15 P2: "Response". The maker edits it (up to 4,000 characters); a reader sees it as read-only text. */
 function ReplyField({ step, onReply, phone }: { step: Step; onReply?: (id: string, reply: string) => void; phone: boolean }) {
   const [draft, setDraft] = useState(step.reply ?? "");
   const [focused, setFocused] = useState(false);
@@ -338,19 +344,18 @@ function ReplyField({ step, onReply, phone }: { step: Step; onReply?: (id: strin
     if (!step.reply) return null;
     return (
       <section data-testid="reply-read" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h3 style={{ ...EYEBROW, margin: 0 }}>What came back</h3>
+        <h3 style={{ ...geist(13, 500, t.text), margin: 0 }}>{FULL_PROMPT_COPY.response}</h3>
         <p style={{ ...geist(14, 400, t.text2), margin: 0, lineHeight: "22px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{step.reply}</p>
       </section>
     );
   }
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <label htmlFor={`reply-${step.id}`} style={{ ...EYEBROW, margin: 0 }}>
-        What came back
+      <label htmlFor={`reply-${step.id}`} style={{ ...geist(13, 500, t.text), margin: 0 }}>
+        {FULL_PROMPT_COPY.response}
       </label>
       <textarea
         id={`reply-${step.id}`}
-        aria-label="What came back"
         value={draft}
         maxLength={REPLY_MAX}
         rows={4}
@@ -368,15 +373,155 @@ function ReplyField({ step, onReply, phone }: { step: Step; onReply?: (id: strin
   );
 }
 
+/** One read-only line of a label and its value, for a reader's Optional rows. */
+function ReadLine({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      <span style={geist(12, 400, t.text2)}>{label}</span>
+      <span style={{ ...geist(13, 400, t.text), overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>{children}</span>
+    </div>
+  );
+}
+
+/** CA-15 P2: the Optional section of a prompt: Model settings and Variables. A reader sees only the rows that hold something. */
+function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: { props: FullPromptWindowProps; step: Step; tool: string | null; model: string | null; phone: boolean; picked: ChangeRange | null; onMarked: () => void }) {
+  const { mode, onExtras, onText } = props;
+  const maker = mode === "maker" && Boolean(onExtras);
+  const settings: PromptSettings = step.settings ?? { model: "", effort: "default", instructions: "" };
+  const [instructions, setInstructions] = useState(settings.instructions);
+  const [described, setDescribed] = useState<Record<string, string>>({});
+  const variables = variablesFor(step.text, step.variables ?? []);
+  const effortHeld = settings.effort !== "default";
+  const modelHeld = Boolean(model);
+  const settingsHeld = modelHeld || effortHeld || Boolean(settings.instructions);
+  const shownModel = model ? modelLabel(model) : null;
+  const settingsLine = summaryOf(shownModel, effortHeld ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions);
+  const variablesLine = summaryOf(variables.map((variable) => `{${variable.name}}`));
+  const saveSettings = (patch: Partial<PromptSettings>) => onExtras?.(step.id, { settings: { ...settings, ...patch } });
+  const saveVariables = (next: Record<string, string>) =>
+    onExtras?.(step.id, { variables: variables.map((variable) => ({ name: variable.name, description: (next[variable.name] ?? variable.description).trim() })) });
+  const canMark = Boolean(onText) && picked !== null && picked.end > picked.start && markVariable(step.text, picked.start, picked.end) !== null;
+
+  if (!maker) {
+    if (!settingsHeld && variables.length === 0) return null;
+    return (
+      <OptionalSection>
+        {settingsHeld ? (
+          <OptionalField name={FULL_PROMPT_COPY.modelSettings} description={FULL_PROMPT_COPY.modelSettingsLine} summary={settingsLine} phone={phone}>
+            {shownModel ? (
+              <ReadLine label={FULL_PROMPT_COPY.model}>
+                <ModelTag tool={tool} model={model}>
+                  {shownModel}
+                </ModelTag>
+              </ReadLine>
+            ) : null}
+            {effortHeld ? <ReadLine label={FULL_PROMPT_COPY.effort}>{EFFORT_LABEL[settings.effort]}</ReadLine> : null}
+            {settings.instructions ? <ReadLine label={FULL_PROMPT_COPY.instructions}>{settings.instructions}</ReadLine> : null}
+          </OptionalField>
+        ) : null}
+        {variables.length > 0 ? (
+          <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
+            {variables.map((variable) => (
+              <ReadLine key={variable.name} label={`{${variable.name}}`}>
+                {variable.description || "No description"}
+              </ReadLine>
+            ))}
+          </OptionalField>
+        ) : null}
+      </OptionalSection>
+    );
+  }
+
+  return (
+    <OptionalSection>
+      <OptionalField name={FULL_PROMPT_COPY.modelSettings} description={FULL_PROMPT_COPY.modelSettingsLine} summary={settingsLine} phone={phone}>
+        <Field id={`model-${step.id}`} label={FULL_PROMPT_COPY.model} group>
+          <div>
+            <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} />
+          </div>
+        </Field>
+        <Field id={`effort-${step.id}`} label={FULL_PROMPT_COPY.effort} group>
+          <div>
+            <Segmented<Effort>
+              label={FULL_PROMPT_COPY.effort}
+              semantics="radio"
+              size={phone ? 50 : 30}
+              fontSize={13}
+              items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))}
+              value={settings.effort}
+              onChange={(effort) => saveSettings({ effort })}
+            />
+          </div>
+        </Field>
+        <Field id={`instructions-${step.id}`} label={FULL_PROMPT_COPY.instructions}>
+          <textarea
+            id={`instructions-${step.id}`}
+            rows={3}
+            maxLength={SETTINGS_INSTRUCTIONS_MAX}
+            value={instructions}
+            onChange={(event) => setInstructions(event.target.value)}
+            onBlur={() => {
+              if (instructions.trim() !== settings.instructions) saveSettings({ instructions: instructions.trim() });
+            }}
+            style={{ ...WELL, padding: "6px 8px", resize: "vertical", outline: "none", width: "100%", ...geist(phone ? 16 : 13, 400, t.text), lineHeight: "20px" }}
+          />
+        </Field>
+      </OptionalField>
+      <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
+        {variables.length === 0 ? <span style={geist(12, 400, t.label)}>{FULL_PROMPT_COPY.noVariables}</span> : null}
+        {variables.map((variable) => (
+          <Field key={variable.name} id={`variable-${step.id}-${variable.name}`} label={`{${variable.name}}`}>
+            <input
+              id={`variable-${step.id}-${variable.name}`}
+              type="text"
+              maxLength={VARIABLE_DESCRIPTION_MAX}
+              value={described[variable.name] ?? variable.description}
+              placeholder="e.g. The customer's first name"
+              onChange={(event) => setDescribed((now) => ({ ...now, [variable.name]: event.target.value }))}
+              onBlur={() => saveVariables(described)}
+              style={{ ...WELL, height: phone ? 44 : 30, padding: "0 8px", width: "100%", outline: "none", ...geist(phone ? 16 : 13, 400, t.text) }}
+            />
+          </Field>
+        ))}
+        <div>
+          <Button
+            variant="secondary"
+            size={phone ? 44 : 30}
+            fontSize={12}
+            disabled={!canMark}
+            // The selection stays while the button is pressed.
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              if (!picked) return;
+              const marked = markVariable(step.text, picked.start, picked.end);
+              if (marked === null) return;
+              onText?.(step.id, marked);
+              onMarked();
+              window.getSelection()?.removeAllRanges();
+            }}
+          >
+            {FULL_PROMPT_COPY.markVariable}
+          </Button>
+        </div>
+      </OptionalField>
+    </OptionalSection>
+  );
+}
+
+/** A square 28 control for the header: Previous and Next. */
+function NavSquare({ glyph, label, onClick }: { glyph: "larr" | "rarr"; label: string; onClick: () => void }) {
+  return <IconButton icon={X} glyph={glyph} label={label} size={28} onClick={onClick} />;
+}
+
 function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
-  const { mode, onTitle, onClose, onNavigate, onChanges, onReply } = props;
+  const { mode, onTitle, onClose, onNavigate, onChanges, onReply, onText } = props;
   const [said, say] = useAnnouncer();
   /** CA-05 P1: what is selected in the text (or the caret), while the maker can mark words. */
   const [picked, setPicked] = useState<ChangeRange | null>(null);
   const existing = rangeAt(step.changes ?? [], picked ?? { start: -1, end: -1 });
   const markable = mode === "maker" && onChanges && !isInstructions(step) && picked !== null && (existing !== null || picked.end > picked.start);
   const textRef = useRef<HTMLDivElement>(null);
-  const { previous, next, place, instructions, tool, model, facts, uses, goesInto, before } = bodyFacts(props, step, prompts);
+  const { previous, next, place, instructions, tool, model, line, uses, goesInto, before } = bodyFacts(props, step, prompts);
 
   // Opening puts focus on the text box.
   useEffect(() => {
@@ -388,43 +533,69 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
   };
 
   const quiet = geist(11.5, 400, t.label);
-  const navButton = { variant: "ghost" as const, size: phone ? (48 as const) : (28 as const), fontSize: 12 as const };
-  const navLabel: CSSProperties = { maxWidth: phone ? 110 : 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+  const label = geist(13, 500, t.text);
+  const maker = mode === "maker" && Boolean(onTitle) && !instructions;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, minHeight: phone ? "100%" : undefined }}>
       <LiveRegion message={said} />
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Dialog.Title style={{ ...EYEBROW, margin: 0, flexGrow: 1 }}>
-          Prompt {step.number} of {prompts.length} · full prompt
-        </Dialog.Title>
-        <Dialog.Close asChild>
-          <IconButton icon={X} glyph="x" label="Close" size={28} />
-        </Dialog.Close>
-      </div>
-      {mode === "maker" && onTitle && !instructions ? (
-        <RefinedTitleField key={step.id} step={step} onTitle={onTitle} phone={phone} />
-      ) : (
-        <h2 style={{ ...geist(18, 500, step.title ? t.text : t.text2), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }} data-default-title={step.title ? undefined : "true"}>
-          {stepTitle(step)}
-        </h2>
-      )}
-      {facts.length > 0 ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {facts.map((fact) =>
-            fact === model ? (
-              <ModelTag key={fact} tool={tool} model={model}>
-                {fact}
-              </ModelTag>
-            ) : (
-              <span key={fact} style={factTag}>
-                {fact}
-              </span>
-            ),
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, minWidth: 0 }}>
+          {maker && onTitle ? (
+            <>
+              <Dialog.Title style={VISUALLY_HIDDEN}>
+                Prompt {step.number} of {prompts.length}
+              </Dialog.Title>
+              <RefinedTitleField key={step.id} step={step} onTitle={onTitle} />
+            </>
+          ) : (
+            <Dialog.Title style={{ ...geist(15, 500, step.title ? t.text : t.text2), margin: 0, letterSpacing: "-0.01em", overflowWrap: "anywhere" }} data-default-title={step.title ? undefined : "true"}>
+              {stepTitle(step)}
+            </Dialog.Title>
           )}
+          <p data-testid="full-prompt-line" style={{ ...geist(13, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
+            {line}
+          </p>
         </div>
-      ) : null}
-      <RefinedTextBox key={step.id} text={step.text} changes={step.changes} boxRef={textRef} phone={phone} onPick={mode === "maker" && onChanges ? setPicked : undefined} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {onNavigate && previous ? <NavSquare glyph="larr" label={`Previous prompt: ${stepTitle(previous)}`} onClick={() => onNavigate(previous.id)} /> : null}
+          {onNavigate && next ? <NavSquare glyph="rarr" label={`Next prompt: ${stepTitle(next)}`} onClick={() => onNavigate(next.id)} /> : null}
+          <Dialog.Close asChild>
+            <IconButton icon={X} glyph="x" label="Close" size={28} />
+          </Dialog.Close>
+        </div>
+      </div>
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span id={`prompt-label-${step.id}`} style={label}>
+            {FULL_PROMPT_COPY.prompt}
+          </span>
+          <span style={{ ...quiet, flexGrow: 1, fontVariantNumeric: "tabular-nums" }}>{step.words} words</span>
+          {markable ? (
+            <Button
+              variant="secondary"
+              size={phone ? 48 : 28}
+              fontSize={12}
+              // The selection stays while the button is pressed.
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                if (!picked) return;
+                const kept = existing ? removeRange(step.changes ?? [], picked) : addRange(step.changes ?? [], picked, step.text.length);
+                onChanges?.(step.id, kept);
+                setPicked(null);
+                window.getSelection()?.removeAllRanges();
+              }}
+            >
+              {existing ? FULL_PROMPT_COPY.keepAsWritten : FULL_PROMPT_COPY.readerChanges}
+            </Button>
+          ) : null}
+          <Button variant="secondary" size={phone ? 48 : 28} fontSize={12} onClick={() => void copy()}>
+            {FULL_PROMPT_COPY.copy}
+          </Button>
+        </div>
+        <RefinedTextBox key={step.id} text={step.text} changes={step.changes} boxRef={textRef} phone={phone} onPick={mode === "maker" && (onChanges || onText) ? setPicked : undefined} />
+      </section>
       {!isInstructions(step) && step.kind === "prompt" ? <ReplyField key={`reply-${step.id}`} step={step} onReply={mode === "maker" ? onReply : undefined} phone={phone} /> : null}
       {!isInstructions(step) && step.kind === "prompt" && step.outputShape ? <ShapeRead shape={step.outputShape} /> : null}
       {step.changes?.length ? (
@@ -432,30 +603,6 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           {changesLine(step.changes.length)}
         </p>
       ) : null}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ ...quiet, flexGrow: 1, fontVariantNumeric: "tabular-nums" }}>{step.words} words</span>
-        {markable ? (
-          <Button
-            variant="secondary"
-            size={phone ? 48 : 28}
-            fontSize={12}
-            // The selection stays while the button is pressed.
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              if (!picked) return;
-              const kept = existing ? removeRange(step.changes ?? [], picked) : addRange(step.changes ?? [], picked, step.text.length);
-              onChanges?.(step.id, kept);
-              setPicked(null);
-              window.getSelection()?.removeAllRanges();
-            }}
-          >
-            {existing ? FULL_PROMPT_COPY.keepAsWritten : FULL_PROMPT_COPY.readerChanges}
-          </Button>
-        ) : null}
-        <Button variant="secondary" size={phone ? 48 : 28} fontSize={12} onClick={() => void copy()}>
-          {FULL_PROMPT_COPY.copy}
-        </Button>
-      </div>
       {uses.length > 0 || goesInto.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           {uses.length > 0 ? <span style={quiet}>Uses</span> : null}
@@ -483,6 +630,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           ))}
         </section>
       ) : null}
+      {!isInstructions(step) && step.kind === "prompt" ? <PromptOptional key={`optional-${step.id}`} props={props} step={step} tool={tool} model={model} phone={phone} picked={picked} onMarked={() => setPicked(null)} /> : null}
       <div
         style={{
           paddingTop: 16,
@@ -490,22 +638,12 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
-          gap: 4,
+          gap: 12,
           ...(phone ? { position: "sticky", bottom: 0, background: t.window, paddingBottom: "calc(12px + env(safe-area-inset-bottom))", marginTop: "auto" } : null),
         }}
       >
         {props.fromPost && props.onBackToPost ? <FromPostNote onBack={props.onBackToPost} phone={phone} /> : null}
-        {onNavigate && previous ? (
-          <Button {...navButton} onClick={() => onNavigate(previous.id)} aria-label={`Previous prompt: ${stepTitle(previous)}`}>
-            <span style={navLabel}>← {stepTitle(previous)}</span>
-          </Button>
-        ) : null}
-        {onNavigate && next ? (
-          <Button {...navButton} onClick={() => onNavigate(next.id)} aria-label={`Next prompt: ${stepTitle(next)}`}>
-            <span style={navLabel}>{stepTitle(next)} →</span>
-          </Button>
-        ) : null}
-        <span style={{ flexGrow: 1, textAlign: "center", ...geist(12, 400, t.label) }}>{phone ? null : FULL_PROMPT_COPY.hint}</span>
+        <span style={{ flexGrow: 1, ...geist(12, 400, t.label) }}>{phone ? null : FULL_PROMPT_COPY.hint}</span>
         <Button size={phone ? 48 : 32} fontSize={13} onClick={onClose} style={phone ? undefined : { height: 30 }}>
           {FULL_PROMPT_COPY.done}
         </Button>

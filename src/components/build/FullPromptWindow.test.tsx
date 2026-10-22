@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
 
+import type { SessionGroup } from "@/lib/build/graph";
+
 import { FullPromptWindow, neighbours, windowPrompts, type FullPromptWindowProps } from "./FullPromptWindow";
 
 beforeEach(() => {
@@ -102,13 +104,28 @@ describe("the title", () => {
 });
 
 describe("the window", () => {
-  it("heads itself 'Prompt n of N · full prompt', shows the facts, the words and the uses", () => {
+  it("is named for its prompt, says its place in one grey line, and shows the words and the uses", () => {
     open("p3");
-    expect(screen.getByText("Prompt 3 of 5 · full prompt")).toBeTruthy();
+    expect(screen.getByTestId("full-prompt-line").textContent).toBe("Prompt 3 of 5");
+    expect(screen.getByRole("dialog", { name: "Prompt 3 of 5" })).toBeTruthy();
     expect(screen.getByText("19 words")).toBeTruthy();
     expect(screen.getByText("Output of 2 · Prompt 2")).toBeTruthy();
     expect(screen.getByText("menu.pdf")).toBeTruthy();
-    expect(screen.getByText("Esc closes · ← → move between prompts")).toBeTruthy();
+    expect(screen.getByText("Esc Close · ← → Previous or next prompt")).toBeTruthy();
+  });
+
+  it("says the session, the tool, the date and the place in the session in one grey line, with no model chip and no title hint", () => {
+    const group: SessionGroup = { key: "s1", kind: "import", sessionId: "s1", number: 1, tool: "Claude", model: "Sonnet 5.5", startedAt: "2026-10-07T12:00:00Z", stepNumbers: ["1", "2", "3"] };
+    open("p2", { groups: [group] });
+    expect(screen.getByTestId("full-prompt-line").textContent).toBe("Session 1 · Claude · 7 Oct 2026 · Prompt 2 of 3 in session");
+    expect(document.body.textContent).not.toMatch(/starts as/);
+  });
+
+  it("labels its two boxes Prompt and Response", () => {
+    open("p3", { onReply: vi.fn() });
+    expect(screen.getByText("Prompt")).toBeTruthy();
+    expect(screen.getByLabelText("Response")).toBeTruthy();
+    expect(screen.queryByText("What came back")).toBeNull();
   });
 
   it("puts focus on the text box", async () => {

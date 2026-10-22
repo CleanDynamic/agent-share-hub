@@ -1717,6 +1717,8 @@ export function SandboxPage() {
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
         onReply={prompts.setReply}
+        onExtras={prompts.setExtras}
+        onText={prompts.setTextOf}
         onNavigate={setOpenPromptId}
         onClose={() => {
           setOpenPromptId(null);

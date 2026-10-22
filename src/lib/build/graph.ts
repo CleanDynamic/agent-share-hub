@@ -30,6 +30,7 @@ import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } f
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
+import { cleanExtras, settingsOf, variablesOf, type PromptSettings, type PromptVariable } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
@@ -144,6 +145,9 @@ export interface Step {
   lines?: string[];
   /** CA-12 P12, a prompt only: what came back (`payload.reply`). */
   reply?: string;
+  /** CA-15 P2, a prompt or a system prompt: what it ran with (`payload.settings`), and the descriptions given to its `{variables}` (`payload.variables`). */
+  settings?: PromptSettings;
+  variables?: PromptVariable[];
   /** CA-12 P12, a check only: its cases, when it has any. */
   cases?: CheckCase[];
   /** CA-13 P2, a decision only: its questions, what it read and one real answer. */
@@ -782,6 +786,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "check" ? { check: checkFacts(payload, cases) } : null),
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
+    ...(kind === "prompt" && settingsOf(payload.settings) ? { settings: settingsOf(payload.settings) as PromptSettings } : null),
+    ...(kind === "prompt" && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
     ...(kind === "tool" ? { app: { ...toolConnectionOf(node), scopes: stringOf(payload.scopes)?.trim() ?? null } } : null),
     ...(kind === "file" ? { fileFacts: fileFactsOf(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
@@ -2483,6 +2489,26 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
     const hex = normaliseHex(colour);
     if (!hex) throw refuse("setNodeColour", `${HEX_HINT}.`);
     payload.colour = hex;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-15: set or clear the optional keys a tile's modal and Details write: a model's settings, a tool's permissions, a check's
+ * method. Only the keys `cleanExtras` knows for the node's type are accepted; each is cleaned and range-checked there. A null
+ * value takes the key off; every other key of the payload is written back as it was read.
+ */
+export async function setExtras(node: BuildNode, patch: Record<string, unknown>): Promise<BuildNode> {
+  let cleaned: Record<string, Json | null>;
+  try {
+    cleaned = cleanExtras(node.type, patch);
+  } catch (cause) {
+    throw refuse("setExtras", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  const payload = { ...payloadOf(node) };
+  for (const [key, value] of Object.entries(cleaned)) {
+    if (value === null) delete payload[key];
+    else payload[key] = value;
   }
   return upsertNode(withPayload(node, payload));
 }

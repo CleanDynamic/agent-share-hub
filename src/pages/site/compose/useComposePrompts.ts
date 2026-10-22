@@ -64,6 +64,7 @@ import {
   moveStep,
   placeStepAfter,
   removeUse,
+  setExtras,
   setNodeColour,
   setNodeFields,
   setInstructions,
@@ -200,6 +201,10 @@ export interface ComposePrompts {
   /** CA-05 P1: say which words of a prompt a reader changes. */
   setChanges: (id: string, ranges: readonly ChangeRange[]) => void;
   setReply: (id: string, reply: string) => void;
+  /** CA-15: set or clear a tile's optional keys (a prompt's settings and variables, a tool's permissions ...); null clears one. */
+  setExtras: (id: string, patch: Record<string, unknown>) => void;
+  /** CA-15 P2: replace a prompt's text now (the window's "Mark selection as a variable"), keeping everything else it carries. */
+  setTextOf: (id: string, text: string) => void;
   setCheckCases: (id: string, cases: readonly CheckCase[]) => void;
   /** UI-P65: take a suggested input. */
   accept: (id: string, use: Use, steps: readonly Step[]) => void;
@@ -591,6 +596,10 @@ export function useComposePrompts({
     void writeStep(id, "Couldn't save those words. Try again.", (node) => setPromptChanges(node, ranges));
   const setReply = (id: string, reply: string) =>
     void writeStep(id, "Couldn't save that. Try again.", (node) => setPromptReply(node, reply.trim() || null));
+  const setExtrasOf = (id: string, patch: Record<string, unknown>) =>
+    void writeStep(id, "Couldn't save that. Try again.", (node) => setExtras(node, patch));
+  const setTextOf = (id: string, text: string) =>
+    void writeStep(id, "Couldn't save that prompt. Try again.", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
     void writeStep(id, "Couldn't save those cases. Try again.", (node) => setCheckCases(node, keptCases(cases)));
   const setAgentNotesOf = (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) =>
@@ -939,5 +948,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }
