@@ -51,7 +51,7 @@ for (const width of [1280, 390]) {
       // 3. Read from your build, open, with a gap question
       await page.getByRole("button", { name: "Read from your build", exact: true }).click();
       await page.waitForTimeout(200);
-      await page.getByRole("region", { name: "Questions" }).scrollIntoViewIfNeeded();
+      await page.getByRole("region", { name: "Questions" }).first().scrollIntoViewIfNeeded();
       await shot(page, `3-card-read-from-build-${tag}.png`);
       await context.close();
     }

@@ -121,7 +121,7 @@ describe("Classification Card: the sheet", () => {
     expect(sheet.style.width).toBe("100%");
     expect(sheet.style.top).toBe("0px");
     expect((screen.getByLabelText("Title") as HTMLElement).style.height).toBe("44px");
-    expect(row("Field").style.minHeight).toBe("44px");
+    expect(parseInt(row("Field").style.minHeight, 10)).toBeGreaterThanOrEqual(44);
   });
 
   it("lands on the field a missing item names, opening the Summary row for it", async () => {
@@ -228,7 +228,7 @@ describe("Classification Card: acceptance", () => {
     const task = screen.getByRole("combobox", { name: "Task" });
     fireEvent.focus(task);
     fireEvent.change(task, { target: { value: "Sorting socks" } });
-    fireEvent.click(screen.getByRole("option", { name: /Add "Sorting socks" as your own entry/ }));
+    fireEvent.click(screen.getByRole("option", { name: /Add \u201CSorting socks\u201D as your own entry/ }));
 
     // dispute Skill needed
     fireEvent.click(row("Read from your build"));

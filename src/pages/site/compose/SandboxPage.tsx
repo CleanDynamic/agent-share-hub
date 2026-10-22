@@ -998,6 +998,7 @@ export function SandboxPage() {
   const classification = useMemo(
     () => ({
       ...classificationCard,
+      maker,
       onSelectSource: (id: string) => setSelectedId(id),
       onAction: (action: "add-code" | "add-run" | "add-cost" | "add-tool", question: { tileId?: string }) => {
         if (action === "add-code") setAddCodeOpen(true);
@@ -1006,7 +1007,7 @@ export function SandboxPage() {
         else if (question.tileId) setSelectedId(question.tileId);
       },
     }),
-    [classificationCard],
+    [classificationCard, maker],
   );
   useEffect(() => {
     if (!ringed) return;

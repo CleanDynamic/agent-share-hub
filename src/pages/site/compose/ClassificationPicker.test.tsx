@@ -85,7 +85,7 @@ describe("ClassificationPicker: combobox", () => {
     type(long);
     const options = screen.getAllByRole("option");
     const last = options[options.length - 1];
-    expect(last.textContent).toContain('Add "');
+    expect(last.textContent).toContain("Add \u201C");
     expect(last.textContent).toContain("as your own entry");
     expect(last.textContent).toContain(OWN_ENTRY_NOTE);
     fireEvent.click(last);

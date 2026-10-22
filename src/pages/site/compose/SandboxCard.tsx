@@ -48,6 +48,7 @@ import { MadeWithLine } from "./MadeWithLine";
 import { OptionalRow, OptionalSection } from "./OptionalSection";
 import { ReadFromBuild } from "./ReadFromBuild";
 import { text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
+import { DM_MONO } from "@/lib/theme/type";
 import { type ComposeViewProps } from "./ComposeView";
 import { type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
 
@@ -166,7 +167,7 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
   const money = (value: string) => (value.trim() ? `£${value}` : "");
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <OptionalRow rowId="card-known-issue" label="Known issue" value={details.symptom.trim() ? details.symptom : ""} phone={phone}>
+      <OptionalRow nested rowId="card-known-issue" label="Known issue" value={details.symptom.trim() ? details.symptom : ""} phone={phone}>
         <RefinedField id="card-problem" label="Problem">
           <textarea id="card-problem" rows={2} value={details.symptom} placeholder="e.g. exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} {...brokeRing.handlers} style={{ ...typedArea(phone), ...brokeRing.style }} />
         </RefinedField>
@@ -174,16 +175,16 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
           <textarea id="card-fix" rows={2} value={details.resolution} placeholder="e.g. Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} {...fixRing.handlers} style={{ ...typedArea(phone), ...fixRing.style }} />
         </RefinedField>
       </OptionalRow>
-      <OptionalRow rowId="card-build-cost" label="Build cost (£)" value={money(details.costSetup)} phone={phone}>
+      <OptionalRow nested rowId="card-build-cost" label="Build cost (£)" value={money(details.costSetup)} phone={phone}>
         <NumberInput id="card-build-cost-input" label="Build cost (£)" value={details.costSetup} phone={phone} onChange={(value) => onChange("costSetup", value)} />
       </OptionalRow>
-      <OptionalRow rowId="card-running-cost" label="Running cost per month (£)" value={money(details.costMonthly)} phone={phone}>
+      <OptionalRow nested rowId="card-running-cost" label="Running cost per month (£)" value={money(details.costMonthly)} phone={phone}>
         <NumberInput id="card-running-cost-input" label="Running cost per month (£)" value={details.costMonthly} phone={phone} onChange={(value) => onChange("costMonthly", value)} />
       </OptionalRow>
-      <OptionalRow rowId="card-first-result" label="Time to first result (minutes)" value={details.firstResult.trim() ? `${details.firstResult} min` : ""} phone={phone}>
+      <OptionalRow nested rowId="card-first-result" label="Time to first result (minutes)" value={details.firstResult.trim() ? `${details.firstResult} min` : ""} phone={phone}>
         <NumberInput id="card-first-result-input" label="Time to first result (minutes)" value={details.firstResult} whole phone={phone} onChange={(value) => onChange("firstResult", value)} />
       </OptionalRow>
-      <OptionalRow rowId="card-bounty" label="Open a bounty" value={details.gapOn ? (details.gapProblem.trim() ? details.gapProblem : "On") : ""} phone={phone}>
+      <OptionalRow nested rowId="card-bounty" label="Open a bounty" value={details.gapOn ? (details.gapProblem.trim() ? details.gapProblem : "On") : ""} phone={phone}>
         <BountySwitch on={details.gapOn} onChange={onGap} phone={phone} />
         {details.gapOn ? (
           <>
@@ -198,8 +199,11 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
   );
 }
 
+/** A row's line: a Field shows its path below the Area or Domain (as the chip above it shows in full). */
 const entriesLine = (facet: Facet, entries: readonly Entry[]): string =>
-  entries.map((entry) => (isCustomEntry(entry) ? entry.custom : facet === "field" ? pathOf(entry.id, facet) : labelFor(facet, entry.id))).join(", ");
+  entries
+    .map((entry) => (isCustomEntry(entry) ? entry.custom : facet === "field" ? pathOf(entry.id, facet).split(" \u203A ").slice(-2).join(" \u203A ") : labelFor(facet, entry.id)))
+    .join(", ");
 
 function CardBody(props: SandboxCardProps) {
   const { phone, classification: data } = props;
@@ -211,6 +215,7 @@ function CardBody(props: SandboxCardProps) {
   const titleRing = useRing<HTMLInputElement>();
   const summaryRing = useRing<HTMLTextAreaElement>();
   const fieldText = phone ? 16 : 13.5;
+  const pad = phone ? 16 : 24;
 
   const stored = data?.stored ?? null;
   const candidate = useMemo(() => (data ? applyDraft(stored, data.derived, draft) : null), [data, stored, draft]);
@@ -253,20 +258,23 @@ function CardBody(props: SandboxCardProps) {
   const builtLine = candidate ? [...shownValues(candidate, "built").values, ...shownValues(candidate, "role").values].map((id, index) => labelFor(index < shownValues(candidate, "built").values.length ? "built" : "role", id)).join(", ") : "";
   const open = (field: CardField) => props.field === field;
 
-  const suggestionCount = (facet: SuggestFacet) => (suggestions[facet].length > 0 ? plural(suggestions[facet].length, "suggestion", "suggestions") : undefined);
+  const suggestionCount = (facet: SuggestFacet) => plural(suggestions[facet].length, "suggestion", "suggestions");
 
   return (
     <>
-      <div style={{ flexGrow: 1, overflowY: "auto", padding: phone ? 16 : 24, display: "flex", flexDirection: "column", gap: 24 }}>
-        <CardPreview title={title} classification={candidate} />
+      <div style={{ flexGrow: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: `4px ${pad}px 20px` }}>
+          <CardPreview title={title} classification={candidate} maker={data?.maker} />
+        </div>
 
         {data && !data.live ? (
-          <p role="status" data-testid="classification-not-live" style={{ margin: 0, ...text(12.5, 400, t.text2) }}>
+          <p role="status" data-testid="classification-not-live" style={{ margin: 0, padding: `0 ${pad}px 16px`, ...text(12.5, 400, t.text2) }}>
             {NOT_LIVE_LINE}
           </p>
         ) : null}
 
-        <RefinedField id={CARD_FIELD_ID.title} label="Title">
+        <div style={{ padding: `16px ${pad}px 20px`, borderTop: `1px solid ${t.hairlineModule}` }}>
+        <RefinedField id={CARD_FIELD_ID.title} label="Title" right={<span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>Required</span>}>
           <input
             id={CARD_FIELD_ID.title}
             type="text"
@@ -278,9 +286,10 @@ function CardBody(props: SandboxCardProps) {
             style={{ ...wellField, height: phone ? 44 : 36, padding: "0 12px", ...text(fieldText, 500, t.text), ...titleRing.style }}
           />
         </RefinedField>
+        </div>
 
-        <OptionalSection>
-          <OptionalRow rowId="card-row-summary" label="Summary" value={summary} phone={phone} defaultOpen={open("summary")}>
+        <OptionalSection hint="Suggestions come from your build" phone={phone}>
+          <OptionalRow rowId="card-row-summary" label="Summary" value={summary} empty="One sentence on what the build does" phone={phone} defaultOpen={open("summary")}>
             <RefinedField
               id={CARD_FIELD_ID.summary}
               label="Summary"
@@ -321,7 +330,7 @@ function CardBody(props: SandboxCardProps) {
                 rowId="card-row-stack"
                 label="Tools and stack"
                 value={stackLine}
-                count={suggestions.stack.length > 0 ? suggestionCount("stack") : derivedStack.length > 0 ? "Read from your build" : undefined}
+                count={suggestions.stack.length === 0 && derivedStack.length > 0 ? "Read from your build" : suggestionCount("stack")}
                 phone={phone}
               >
                 {derivedStack.length > 0 ? (
@@ -387,7 +396,7 @@ function CardBody(props: SandboxCardProps) {
             </>
           ) : null}
 
-          <OptionalRow rowId="card-row-details" label="Build details" phone={phone}>
+          <OptionalRow rowId="card-row-details" label="Build details" value="Known issue, Build cost, Running cost per month, Time to first result, Open a bounty" phone={phone}>
             <BuildDetails phone={phone} details={details} onChange={(key, value) => setDetails((current) => ({ ...current, [key]: value }))} onGap={(on) => setDetails((current) => ({ ...current, gapOn: on }))} />
           </OptionalRow>
         </OptionalSection>
@@ -440,7 +449,7 @@ export function SandboxCard(props: SandboxCardProps) {
           }}
           style={content}
         >
-          <div style={{ minHeight: 56, flexShrink: 0, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 12, padding: "8px 16px 8px 24px", borderBottom: `1px solid ${t.hairlineModule}` }}>
+          <div style={{ minHeight: 56, flexShrink: 0, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 12px 24px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
               <Dialog.Title style={{ ...text(15, 500, t.text), margin: 0 }}>{CLASSIFICATION_CARD}</Dialog.Title>
               <Dialog.Description style={{ ...text(12, 400, t.text2), margin: 0 }}>{CARD_SUBTITLE}</Dialog.Description>

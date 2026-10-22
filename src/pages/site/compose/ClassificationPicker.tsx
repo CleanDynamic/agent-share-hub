@@ -17,7 +17,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
-import { CUSTOM_MAX_LENGTH, findValues, pathOf, valueOf, valueByLabel, type Facet, type TaxonomyValue } from "@/lib/classify/taxonomy";
+import { CUSTOM_MAX_LENGTH, findValues, isTechnicalField, pathOf, valueOf, valueByLabel, type Facet, type TaxonomyValue } from "@/lib/classify/taxonomy";
 import { isCustomEntry, type Entry } from "@/lib/classify/types";
 
 import { bareButton, ellipsis, text, wellField } from "./refinedStyles";
@@ -55,6 +55,18 @@ export function withPrimary(entries: readonly Entry[]): Entry[] {
 
 const labelOfEntry = (facet: Facet, entry: Entry): string => (isCustomEntry(entry) ? entry.custom : (valueOf(facet, entry.id)?.label ?? entry.id));
 const chipText = (facet: Facet, entry: Entry): string => (isCustomEntry(entry) ? entry.custom : facet === "field" ? pathOf(entry.id, facet) : labelOfEntry(facet, entry));
+
+/** The grey line at the right of a result: its path (a technical Field says so), or, for a synonym match, the root it sits under. */
+export function resultNote(facet: Facet, value: TaxonomyValue, query: string): string {
+  const q = query.trim().toLowerCase();
+  const byLabel = value.label.toLowerCase().includes(q);
+  if (!byLabel) {
+    const root = pathOf(value.id, facet).split(" \u203A ")[0];
+    return `Synonym match \u00B7 ${root}`;
+  }
+  const path = pathOf(value.id, facet);
+  return facet === "field" && isTechnicalField(value.id) ? `Technical \u203A ${path}` : path;
+}
 
 function Highlight({ label, query }: { label: string; query: string }) {
   const at = query ? label.toLowerCase().indexOf(query.toLowerCase()) : -1;
@@ -211,9 +223,10 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
   const shownSuggestions = atLimit ? [] : suggestions.filter((value) => !chosenIds.has(value.id)).slice(0, 3);
   const option = (index: number): CSSProperties => ({
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    gap: 2,
+    flexDirection: phone ? "column" : "row",
+    alignItems: phone ? "flex-start" : "center",
+    justifyContent: phone ? "center" : "space-between",
+    gap: phone ? 2 : 16,
     minHeight: phone ? 44 : 36,
     padding: "4px 12px",
     borderRadius: 6,
@@ -222,7 +235,7 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
     ...text(13, 400, t.text),
     ...(index === activeIndex ? { background: t.selectedFill } : null),
   });
-  const grey: CSSProperties = { fontFamily: DM_MONO, fontSize: 10.5, lineHeight: "normal", color: t.label, ...ellipsis };
+  const grey: CSSProperties = { fontFamily: DM_MONO, fontSize: 10.5, lineHeight: "normal", color: t.label, ...ellipsis, flexShrink: 1, minWidth: 0, textAlign: phone ? "left" : "right" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
@@ -244,7 +257,8 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
       ) : null}
 
       {shownSuggestions.length > 0 ? (
-        <ul aria-label={`${label}, suggestions`} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <ul aria-label={`${label}, suggestions`} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+          <li aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label, marginRight: 2 }}>Suggested</li>
           {shownSuggestions.map((value) => (
             <li key={value.id}>
               <button
@@ -304,10 +318,10 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
                 onClick={() => choose(index)}
                 style={option(index)}
               >
-                <span style={ellipsis}>
+                <span style={phone ? ellipsis : { ...ellipsis, flexShrink: 0, maxWidth: "55%" }}>
                   <Highlight label={value.label} query={trimmed} />
                 </span>
-                <span style={grey}>{pathOf(value.id, facet)}</span>
+                <span style={grey}>{resultNote(facet, value, trimmed)}</span>
               </li>
             ))}
             {ownEntry ? (
@@ -320,8 +334,8 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
                 onClick={() => choose(results.length)}
                 style={option(results.length)}
               >
-                <span style={ellipsis}>{`Add "${trimmed.slice(0, CUSTOM_MAX_LENGTH)}" as your own entry`}</span>
-                <span style={{ ...grey, fontFamily: undefined, fontSize: 11.5 }}>{OWN_ENTRY_NOTE}</span>
+                <span style={{ ...ellipsis, flexShrink: 0, maxWidth: "60%" }}>{`Add \u201C${trimmed.slice(0, CUSTOM_MAX_LENGTH)}\u201D as your own entry`}</span>
+                <span style={grey}>{OWN_ENTRY_NOTE}</span>
               </li>
             ) : null}
           </ul>

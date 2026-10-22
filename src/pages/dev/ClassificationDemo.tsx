@@ -87,6 +87,7 @@ function CardDemo() {
         derived: derivation.derived,
         questions: derivation.questions,
         texts: steps.filter((step) => step.kind === "prompt").map((step) => step.text),
+        maker: { id: "demo-maker", name: "Miles", handle: "neoscaleai", avatar: null },
         onSave: async () => ({ written: true, missing: false }),
       }}
     />

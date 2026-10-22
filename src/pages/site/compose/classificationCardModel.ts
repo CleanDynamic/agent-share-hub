@@ -37,6 +37,8 @@ export interface ClassificationCardData {
   questions: readonly GapQuestion[];
   /** The title, the summary and the prompt texts, for suggestions. */
   texts: readonly string[];
+  /** Who the preview is drawn as. Absent: no maker line. */
+  maker?: { id: string | null; name: string | null; handle: string | null; avatar: string | null };
   onSave: (draft: ClassificationDraft) => Promise<ClassificationSaved>;
   /** Selects the tile a derived value came from. */
   onSelectSource?: (tileId: string) => void;
