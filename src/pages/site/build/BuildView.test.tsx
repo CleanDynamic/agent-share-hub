@@ -213,15 +213,15 @@ describe("a check on the build page (CA-03 P5)", () => {
     return { proof, plaque };
   };
 
-  it("draws it as a step: what it tested, what counts as passing, when it failed, and its status", () => {
+  it("draws it as a step: the test description, pass criteria, failure notes and its status", () => {
     mount(withSteps([check]));
     const card = screen.getAllByTestId("step-card").find((entry) => entry.getAttribute("data-kind") === "check")!;
-    expect(card.textContent).toContain("Check · how it checked its work");
+    expect(card.textContent).toContain("CheckPassed 13 of 14 runs");
     expect(within(card).getByTestId("check-status").textContent).toBe("Passed 13 of 14 runs · since 12 Oct");
     expect(within(card).getAllByTestId("label-value").map((row) => row.textContent)).toEqual([
-      "What it testedPlaces a test order for 2 sourdough loaves",
-      "What counts as passingThe total shows £9.00",
-      "When it failedThe total showed £8.99.",
+      "Test descriptionPlaces a test order for 2 sourdough loaves",
+      "Pass criteriaThe total shows £9.00",
+      "Failure notesThe total showed £8.99.",
     ]);
     expect(card.textContent).not.toMatch(/verified|reproduc|ran it/i);
     expect(card.querySelector('[data-ui="plaque"]')).toBeNull();

@@ -228,6 +228,8 @@ export {
   galleryThreshold,
   getGalleryFacets,
   getClassificationFacets,
+  getBuildTries,
+  type BuildTries,
   getBuildClassifications,
   NO_CLASSIFICATION_FACETS,
   getBuildPatterns,

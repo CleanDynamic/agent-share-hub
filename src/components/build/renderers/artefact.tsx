@@ -159,7 +159,7 @@ export function ArtefactRenderer(props: NodeProps) {
 
         {source ? <CodeLines text={source} maxLines={24} testId="artefact-code" label="Code" /> : null}
 
-        {writtenWith ? <Caption>{`Written with ${writtenWith}`}</Caption> : null}
+        {writtenWith ? <Caption>{`Generated with ${writtenWith}`}</Caption> : null}
 
         {summary ? <Prose>{summary}</Prose> : null}
 

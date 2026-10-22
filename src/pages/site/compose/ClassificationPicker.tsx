@@ -1,14 +1,16 @@
-/* CA-16 P4: the typeahead picker: Field, Task, Setting, Data handled and Tools and stack.
+/* CA-16 P4 and CA-16b: the typeahead picker: Field, Task, Setting, Data handled and Tools and stack.
 
    CHOSEN VALUES are chips with a remove button; a Field chip shows its full path, an entry of the maker's own has a
-   dashed edge. SUGGESTIONS sit above the input as up to three dashed chips with "+"; nothing is pre-selected.
-   TYPING searches the list (`findValues`, at most 8) and shows each label with the matching part in weight 600 and its
-   path in grey mono. When the text is not an exact label, the last option is Add "<text>" as your own entry, kept as
-   `{ custom }` and cut to 60 characters. LIMITS: Field 3, Task 3 (the first chosen is Primary, and a chip menu can change
-   it), Setting 2; Data handled and Tools and stack have none. At the limit the input says "Remove one to add another".
+   dashed edge. SUGGESTIONS are one row above the input, "Suggested" and then up to three dashed chips with "+"; nothing is
+   pre-selected. TYPING searches the list (`findValues`, at most 8): each row has its name with the matching letters at 600
+   and, at the right, its path in the data face (a technical Field says "Technical ›", a synonym match says "Synonym
+   match ·"). When the text is not an exact label the last row is Add "<text>" as your own entry, kept as `{ custom }` and
+   cut to 60 characters. LIMITS: Field 3, Task 3 (the first chosen is Primary, and a chip menu changes it), Setting 2;
+   Data handled and Tools and stack have none. At the limit the input says "Remove one to add another".
 
-   It is a combobox: `role="combobox"`, `aria-expanded`, `aria-controls` the `role="listbox"`, `aria-activedescendant`
-   the active `role="option"`; ArrowDown, ArrowUp, Enter and Escape work. Touch targets are 44 high on a phone. */
+   It is a combobox: `role="combobox"`, `aria-expanded`, `aria-controls` the `role="listbox"`, `aria-activedescendant` the
+   active `role="option"`; ArrowDown, ArrowUp, Enter and Escape work. While typing, the field's edge and ring are the
+   focus ring. Touch targets are 44 high on a phone. The pieces are in `classificationPieces.tsx`. */
 
 import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
@@ -21,6 +23,7 @@ import { CUSTOM_MAX_LENGTH, findValues, isTechnicalField, pathOf, valueOf, value
 import { isCustomEntry, type Entry } from "@/lib/classify/types";
 
 import { bareButton, ellipsis, text, wellField } from "./refinedStyles";
+import { ChosenValue, Matched, SuggestedRow, Suggestion, ownEntryRow, typeaheadList, typeaheadNote, typeaheadRow } from "./classificationPieces";
 
 export const OWN_ENTRY_NOTE = "Shown on your build, reviewed for the list";
 export const AT_LIMIT = "Remove one to add another";
@@ -68,89 +71,24 @@ export function resultNote(facet: Facet, value: TaxonomyValue, query: string): s
   return facet === "field" && isTechnicalField(value.id) ? `Technical \u203A ${path}` : path;
 }
 
-function Highlight({ label, query }: { label: string; query: string }) {
-  const at = query ? label.toLowerCase().indexOf(query.toLowerCase()) : -1;
-  if (at < 0) return <>{label}</>;
+function TaskMenu({ label, phone, onMakePrimary }: { label: string; phone: boolean; onMakePrimary: () => void }) {
+  const [menu, setMenu] = useState(false);
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <>
-      {label.slice(0, at)}
-      <span style={{ fontWeight: 600 }}>{label.slice(at, at + query.length)}</span>
-      {label.slice(at + query.length)}
-    </>
-  );
-}
-
-function Chip({
-  facet,
-  entry,
-  phone,
-  primary,
-  isPrimary,
-  onRemove,
-  onMakePrimary,
-}: {
-  facet: Facet;
-  entry: Entry;
-  phone: boolean;
-  primary: boolean;
-  isPrimary: boolean;
-  onRemove: () => void;
-  onMakePrimary: () => void;
-}) {
-  const [menu, setMenu] = useState(false);
-  const label = chipText(facet, entry);
-  const removeHover = useInteractive<HTMLButtonElement>();
-  const menuHover = useInteractive<HTMLButtonElement>();
-  const custom = isCustomEntry(entry);
-  const size = phone ? 44 : 28;
-  const box: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 4,
-    minHeight: size,
-    maxWidth: "100%",
-    boxSizing: "border-box",
-    padding: "0 4px 0 10px",
-    borderRadius: 6,
-    background: t.tile,
-    borderWidth: 1,
-    borderStyle: custom ? "dashed" : "solid",
-    borderColor: custom ? t.line : t.tileBorder,
-    ...text(12.5, 400, t.text),
-    position: "relative",
-  };
-  return (
-    <li style={box} data-custom={custom ? "true" : undefined}>
-      <span style={{ ...ellipsis, minWidth: 0 }}>{label}</span>
-      {primary && isPrimary ? <span style={{ ...text(10.5, 500, t.label), textTransform: "uppercase", letterSpacing: ".06em" }}>Primary</span> : null}
-      {primary && !isPrimary ? (
-        <button
-          type="button"
-          aria-label={`Options for ${label}`}
-          aria-haspopup="menu"
-          aria-expanded={menu}
-          onClick={() => setMenu((v) => !v)}
-          {...menuHover.handlers}
-          style={{ ...bareButton, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: size, minHeight: size, borderRadius: 6, color: t.label, ...ring(menuHover.state.focusVisible) }}
-        >
-          <Glyph name="more" size={16} />
-        </button>
-      ) : null}
       <button
         type="button"
-        aria-label={`Remove ${label}`}
-        onClick={onRemove}
-        {...removeHover.handlers}
-        style={{ ...bareButton, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: size, minHeight: size, borderRadius: 6, color: t.label, ...ring(removeHover.state.focusVisible) }}
+        aria-label={`Options for ${label}`}
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        onClick={() => setMenu((v) => !v)}
+        {...handlers}
+        style={{ ...bareButton, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: phone ? 44 : 18, minHeight: phone ? 44 : 18, borderRadius: 4, color: t.text2, ...ring(state.focusVisible) }}
       >
-        <Glyph name="x" size={14} />
+        <Glyph name="more" size={14} />
       </button>
       {menu ? (
-        <div
-          role="menu"
-          aria-label={`${label} options`}
-          style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 20, padding: 4, borderRadius: 8, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow }}
-        >
+        <div role="menu" aria-label={`${label} options`} style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 20, padding: 4, borderRadius: 9, background: t.window, border: `1px solid ${t.controlBorder}`, boxShadow: "0 8px 24px rgba(0,0,0,.5)" }}>
           <button
             type="button"
             role="menuitem"
@@ -158,13 +96,13 @@ function Chip({
               onMakePrimary();
               setMenu(false);
             }}
-            style={{ ...bareButton, display: "flex", alignItems: "center", minHeight: phone ? 44 : 32, padding: "0 12px", borderRadius: 6, whiteSpace: "nowrap", ...text(13, 400, t.text) }}
+            style={{ ...bareButton, display: "flex", alignItems: "center", minHeight: phone ? 44 : 30, padding: "0 10px", borderRadius: 6, whiteSpace: "nowrap", ...text(13, 400, t.text) }}
           >
             Make primary
           </button>
         </div>
       ) : null}
-    </li>
+    </>
   );
 }
 
@@ -221,59 +159,43 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
   };
 
   const shownSuggestions = atLimit ? [] : suggestions.filter((value) => !chosenIds.has(value.id)).slice(0, 3);
-  const option = (index: number): CSSProperties => ({
-    display: "flex",
-    flexDirection: phone ? "column" : "row",
-    alignItems: phone ? "flex-start" : "center",
-    justifyContent: phone ? "center" : "space-between",
-    gap: phone ? 2 : 16,
-    minHeight: phone ? 44 : 36,
-    padding: "4px 12px",
-    borderRadius: 6,
-    cursor: "pointer",
-    boxSizing: "border-box",
-    ...text(13, 400, t.text),
-    ...(index === activeIndex ? { background: t.selectedFill } : null),
-  });
-  const grey: CSSProperties = { fontFamily: DM_MONO, fontSize: 10.5, lineHeight: "normal", color: t.label, ...ellipsis, flexShrink: 1, minWidth: 0, textAlign: phone ? "left" : "right" };
+  const typing = focused && trimmed !== "";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
       {entries.length > 0 ? (
         <ul aria-label={`${label}, chosen`} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {entries.map((entry, index) => (
-            <Chip
-              key={isCustomEntry(entry) ? `c:${entry.custom}` : entry.id}
-              facet={facet}
-              entry={entry}
-              phone={phone}
-              primary={primary}
-              isPrimary={index === 0}
-              onRemove={() => commit(entries.filter((_, at) => at !== index))}
-              onMakePrimary={() => commit([entries[index], ...entries.filter((_, at) => at !== index)])}
-            />
-          ))}
+          {entries.map((entry, index) => {
+            const name = chipText(facet, entry);
+            return (
+              <ChosenValue
+                key={isCustomEntry(entry) ? `c:${entry.custom}` : entry.id}
+                label={name}
+                own={isCustomEntry(entry)}
+                phone={phone}
+                removeLabel={`Remove ${labelOfEntry(facet, entry)}`}
+                onRemove={() => commit(entries.filter((_, at) => at !== index))}
+                menu={
+                  primary ? (
+                    index === 0 ? (
+                      <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, textTransform: "uppercase", letterSpacing: ".06em" }}>Primary</span>
+                    ) : (
+                      <TaskMenu label={name} phone={phone} onMakePrimary={() => commit([entries[index], ...entries.filter((_, at) => at !== index)])} />
+                    )
+                  ) : undefined
+                }
+              />
+            );
+          })}
         </ul>
       ) : null}
 
       {shownSuggestions.length > 0 ? (
-        <ul aria-label={`${label}, suggestions`} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-          <li aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label, marginRight: 2 }}>Suggested</li>
+        <SuggestedRow label={`${label}, suggestions`}>
           {shownSuggestions.map((value) => (
-            <li key={value.id}>
-              <button
-                type="button"
-                aria-label={`Add ${facet === "field" ? pathOf(value.id, facet) : value.label}`}
-                title={pathOf(value.id, facet)}
-                onClick={() => add({ id: value.id })}
-                style={{ ...bareButton, display: "inline-flex", alignItems: "center", gap: 6, minHeight: phone ? 44 : 28, padding: "0 10px", borderRadius: 6, borderWidth: 1, borderStyle: "dashed", borderColor: t.line, boxSizing: "border-box", ...text(12.5, 400, t.text2) }}
-              >
-                <span aria-hidden="true">+</span>
-                {value.label}
-              </button>
-            </li>
+            <Suggestion key={value.id} label={value.label} name={`Add ${facet === "field" ? pathOf(value.id, facet) : value.label}`} title={pathOf(value.id, facet)} phone={phone} onAdd={() => add({ id: value.id })} />
           ))}
-        </ul>
+        </SuggestedRow>
       ) : null}
 
       <div style={{ position: "relative" }}>
@@ -298,15 +220,10 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
           }}
           onKeyDown={onKeyDown}
           {...inputHandlers}
-          style={{ ...wellField, height: phone ? 44 : 36, padding: "0 12px", ...text(phone ? 16 : 13.5, 400, t.text), ...(atLimit ? { filter: t.dimFilter } : null), ...ring(inputState.focusVisible) }}
+          style={{ ...wellField, height: phone ? 44 : 32, padding: "0 12px", ...text(phone ? 16 : 13, 400, t.text), ...(atLimit ? { filter: t.dimFilter } : null), ...(typing ? { borderColor: t.focusRing, boxShadow: `0 0 0 2px ${t.focusRing}` } : ring(inputState.focusVisible)) }}
         />
         {open ? (
-          <ul
-            id={listId}
-            role="listbox"
-            aria-label={`${label}, matches`}
-            style={{ position: "absolute", left: 0, right: 0, top: "100%", marginTop: 4, zIndex: 30, listStyle: "none", padding: 4, margin: 0, borderRadius: 8, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow, maxHeight: 360, overflowY: "auto" }}
-          >
+          <ul id={listId} role="listbox" aria-label={`${label}, matches`} style={typeaheadList}>
             {results.map((value, index) => (
               <li
                 key={value.id}
@@ -316,12 +233,12 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActive(index)}
                 onClick={() => choose(index)}
-                style={option(index)}
+                style={typeaheadRow(index === activeIndex, phone)}
               >
                 <span style={phone ? ellipsis : { ...ellipsis, flexShrink: 0, maxWidth: "55%" }}>
-                  <Highlight label={value.label} query={trimmed} />
+                  <Matched label={value.label} query={trimmed} />
                 </span>
-                <span style={grey}>{resultNote(facet, value, trimmed)}</span>
+                <span style={typeaheadNote(phone)}>{resultNote(facet, value, trimmed)}</span>
               </li>
             ))}
             {ownEntry ? (
@@ -332,10 +249,10 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActive(results.length)}
                 onClick={() => choose(results.length)}
-                style={option(results.length)}
+                style={ownEntryRow(results.length === activeIndex, phone)}
               >
                 <span style={{ ...ellipsis, flexShrink: 0, maxWidth: "60%" }}>{`Add \u201C${trimmed.slice(0, CUSTOM_MAX_LENGTH)}\u201D as your own entry`}</span>
-                <span style={grey}>{OWN_ENTRY_NOTE}</span>
+                <span style={typeaheadNote(phone)}>{OWN_ENTRY_NOTE}</span>
               </li>
             ) : null}
           </ul>

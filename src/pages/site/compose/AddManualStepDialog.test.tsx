@@ -47,7 +47,7 @@ describe("the Add manual step dialog (CA-12 P10)", () => {
 
   it("an app comes from the apps list, with no AI tool in it, and no default", () => {
     open({ inBuild: ["GitHub"] });
-    expect(toolButton().textContent).toBe("Pick an app");
+    expect(toolButton().textContent).toBe("Select an application");
     expect(add().disabled).toBe(true);
     fireEvent.click(toolButton());
     fireEvent.click(screen.getByRole("option", { name: /^Show all/ }));

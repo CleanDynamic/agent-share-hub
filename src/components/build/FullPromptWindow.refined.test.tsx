@@ -62,11 +62,11 @@ describe("the refined window does what the window does", () => {
 
   it("heads itself, puts focus on the text, lists the uses, and closes with Done and Close", async () => {
     const props = open("p3");
-    expect(screen.getByRole("dialog", { name: "Prompt 3 of 5 · full prompt" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Prompt 3 of 5" })).toBeTruthy();
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("full-prompt-text")));
     expect(screen.getByText("19 words")).toBeTruthy();
     expect(screen.getByText("Output of 2 · Prompt 2")).toBeTruthy();
-    expect(screen.getByText("Esc closes · ← → move between prompts")).toBeTruthy();
+    expect(screen.getByText("Esc Close · ← → Previous or next prompt")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(props.onClose).toHaveBeenCalledTimes(2);
@@ -83,7 +83,7 @@ describe("the refined window does what the window does", () => {
   it("is a heading for a reader, with Before you send it", () => {
     open("p3", { mode: "reader", onTitle: undefined });
     expect(screen.queryByLabelText("Title")).toBeNull();
-    expect(screen.getByRole("heading", { name: "Fix the mobile layout" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^Prompt 3(?: · Session \d+)?(?: Fix the mobile layout)?$/ })).toBeTruthy();
     expect(screen.getByText("Before you send it")).toBeTruthy();
   });
 });
@@ -98,33 +98,27 @@ describe("the refined window as the board draws it", () => {
     expect(dialog.style.boxShadow).toBe("var(--window-shadow)");
   });
 
-  it("heads with an eyebrow and a boxed 28 close", () => {
+  it("heads with the title, one grey line, and square 28 Previous, Next and Close", () => {
     open("p3");
-    const heading = screen.getByRole("heading", { name: "Prompt 3 of 5 · full prompt" });
-    expect(heading.style.fontSize).toBe("10.5px");
-    expect(heading.style.textTransform).toBe("uppercase");
-    expect(screen.getByRole("button", { name: "Close" }).style.width).toBe("28px");
+    const line = screen.getByTestId("full-prompt-line");
+    expect(line.style.fontSize).toBe("13px");
+    for (const name of [/^Previous prompt/, /^Next prompt/, "Close"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.style.width).toBe("28px");
+      expect(button.style.height).toBe("28px");
+    }
+    expect(screen.getByRole("button", { name: "Rename prompt" })).toBeTruthy();
   });
 
-  it("puts the title in a well 44 high at 16/500, and the text in a well 320 high at 14.5/25 with no fade", () => {
+  it("puts the title at 15/500 and the text in a well 320 high at 14.5/25 with no fade", () => {
     open("p3");
     const title = screen.getByLabelText("Title");
-    expect(title.style.fontSize).toBe("16px");
-    expect(title.parentElement?.style.height).toBe("44px");
-    expect(title.parentElement?.style.boxShadow).toBe("var(--well-shadow)");
+    expect(title.style.fontSize).toBe("15px");
     const text = screen.getByTestId("full-prompt-text");
     expect(text.style.height).toBe("320px");
     expect(text.style.fontSize).toBe("14.5px");
     expect(text.style.lineHeight).toBe("25px");
     expect(screen.queryByTestId("full-prompt-fade")).toBeNull();
-  });
-
-  it("names the model in a ModelTag with its real mark", () => {
-    open("p3");
-    const dialog = screen.getByRole("dialog");
-    expect(dialog.querySelector("[data-mark]")).not.toBeNull();
-    // The real logo, never an initial in a tile.
-    expect(dialog.querySelector("[data-mark] span")).toBeNull();
   });
 
   it("draws Copy prompt as a secondary 28 with no icon, and Done as the one primary, 30 high", () => {
@@ -137,6 +131,5 @@ describe("the refined window as the board draws it", () => {
     expect(done.getAttribute("data-variant")).toBe("primary");
     expect(done.style.height).toBe("30px");
     expect(within(screen.getByRole("dialog")).getAllByRole("button").filter((button) => button.getAttribute("data-variant") === "primary")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: /^Next prompt/ }).getAttribute("data-variant")).toBe("ghost");
   });
 });

@@ -30,7 +30,26 @@ import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } f
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
-import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, type DecisionAnswer, type DecisionFacts, type DecisionQuestion, type DecisionRef, type RunsWhen } from "./decision";
+import {
+  datasetOf,
+  parseRepoUrl,
+  repoOf,
+  scopeOf,
+  scopeValue,
+  systemPromptOf,
+  type DatasetFacts,
+  type DatasetUse,
+  type RepoFacts,
+  type RepoFetched,
+  type RepoOwnership,
+  type RepoPinKind,
+  type RepoUsage,
+  type RepoVisibility,
+  type SystemPromptFacts,
+  type SystemPromptScope,
+} from "./sourceTiles";
+import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
+import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -38,6 +57,10 @@ export const MANUAL_STEP_TYPE = "manual_step";
 export const FILE_TYPE = "document";
 export const TOOL_TYPE = "integration";
 export const RESULT_TYPE = "result";
+/** CA-15 P9: a System prompt, a Dataset and a GitHub repository, as tiles. Existing node types; a node is a tile only when its payload says `step: true`. */
+export const SYSTEM_PROMPT_TYPE = "system_prompt";
+export const DATASET_TYPE = "dataset";
+export const REPO_TYPE = "repo";
 /** CA-02 P7: lines of code the maker wrote or ran. Never run here. */
 export const CODE_TYPE = "code";
 /**
@@ -47,7 +70,7 @@ export const CODE_TYPE = "code";
 export const CHECK_TYPE = "eval_run";
 
 /** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "system_prompt" | "dataset" | "repo";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -144,6 +167,15 @@ export interface Step {
   lines?: string[];
   /** CA-12 P12, a prompt only: what came back (`payload.reply`). */
   reply?: string;
+  /** CA-15 P2, a prompt or a system prompt: what it ran with (`payload.settings`), and the descriptions given to its `{variables}` (`payload.variables`). */
+  settings?: PromptSettings;
+  variables?: PromptVariable[];
+  /** CA-15 P9, a system prompt only: where it applies and its version; `appliesTo` is how many of the build's prompts that reaches. */
+  systemPrompt?: SystemPromptFacts & { appliesTo: number };
+  /** CA-15 P9, a dataset only: what it is, what it was used for and what it holds. */
+  dataset?: DatasetFacts;
+  /** CA-15 P9, a GitHub repository only: its address, ownership, what GitHub said and what the maker said. */
+  repo?: RepoFacts;
   /** CA-12 P12, a check only: its cases, when it has any. */
   cases?: CheckCase[];
   /** CA-13 P2, a decision only: its questions, what it read and one real answer. */
@@ -156,8 +188,14 @@ export interface Step {
   definedIn?: string[];
   /** CA-13 P5, an agent only: a trace link (https only). */
   traceUrl?: string;
-  /** CA-13 P14, an agent only: "How to install, optional", as the maker gave it. A decision keeps its own in `decision`. */
+  /** CA-13 P14, an agent only: "Installation command", as the maker gave it. A decision keeps its own in `decision`. */
   install?: string;
+  /** CA-15 P7, an agent only: what it must not do (`payload.limits`, one per entry), where its output goes (`payload.output`) and a pasted sample run (`payload.sample`). Each absent when not given. */
+  limits?: string[];
+  output?: string;
+  sample?: string;
+  /** CA-15 P7, a team only: how its agents work together (`payload.pattern`). */
+  pattern?: AgentPattern;
   /** CA-13 P7, a prompt or an agent: the shape its answer is forced into. */
   outputShape?: OutputShape;
   /** CA-13 P8: what it took to make (any tile) and what it costs to run (a runtime tile): never added together. */
@@ -171,6 +209,11 @@ export interface ToolTileFacts {
   runsAt: ToolRunsAt | null;
   /** What it was allowed or used to do: "read issues, open pull requests". */
   scopes: string | null;
+  /** CA-15 P4: what the connection let it do (`payload.permissions`), the plan it needed (`payload.plan`), the steps to set it up (`payload.setup`) and the tools it could have been (`payload.alternatives`). Absent when not given. */
+  permissions?: ToolPermission;
+  plan?: string;
+  setup?: string[];
+  alternatives?: string[];
 }
 
 /** CA-12 P8: the kinds of file a tile draws a mark for. */
@@ -219,6 +262,12 @@ export interface CheckFacts {
   cases?: number;
   /** CA-12 P12: the cases the maker wrote down, in order. Absent when there are none. */
   caseList?: CheckCase[];
+  /** CA-15 P5: how it was tested, who judged it, how it was scored, the model and version tested, and the evidence kept. Each absent when not given. */
+  method?: CheckMethod;
+  reviewer?: CheckReviewer;
+  scoring?: CheckScoring;
+  modelTested?: CheckModelTested;
+  evidence?: CheckEvidence;
 }
 
 /** CA-05 P7: one run of a check: the day and how many passed of how many. */
@@ -473,6 +522,9 @@ const KIND_NAME: Record<StepKind, string> = {
   file: "File",
   tool: "Tool",
   decision: "Decision",
+  system_prompt: "System prompt",
+  dataset: "Dataset",
+  repo: "GitHub repository",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -487,11 +539,14 @@ const isSetupNode = (payload: unknown): boolean => isRecord(payload) && isRecord
  * have no such key, so they are not tiles and nothing numbered moves.
  */
 export const isStepTile = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
-  (node.type === TOOL_TYPE || node.type === FILE_TYPE) && isRecord(node.payload) && node.payload.step === true && !isSetupNode(node.payload);
+  (node.type === TOOL_TYPE || node.type === FILE_TYPE || node.type in SOURCE_KIND) && isRecord(node.payload) && node.payload.step === true && !isSetupNode(node.payload);
+
+/** CA-15 P9: the node types that are tiles only when added from Add (`step: true`), so every node of these types saved before reads as it did. */
+const SOURCE_KIND: Record<string, StepKind> = { [SYSTEM_PROMPT_TYPE]: "system_prompt", [DATASET_TYPE]: "dataset", [REPO_TYPE]: "repo" };
 
 /** The kind a node is drawn as: a step tile's own, else the kind of its type; undefined for a node that is not a step. */
 const kindOfNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): StepKind | undefined =>
-  node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : KIND_OF_TYPE[node.type];
+  node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : node.type in SOURCE_KIND && isStepTile(node) ? SOURCE_KIND[node.type] : KIND_OF_TYPE[node.type];
 
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
   (node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload)) || isStepTile(node);
@@ -541,6 +596,7 @@ function checkFacts(payload: Payload, cases: readonly CheckCase[] = []): CheckFa
     runAt: stringOf(payload.run_at)?.trim() || null,
     ...(runs.length > 0 ? { runs } : null),
     ...(cases.length > 0 ? { caseList: [...cases] } : null),
+    ...checkExtrasOf(payload),
   };
 }
 
@@ -574,7 +630,7 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
 }
 
 /** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound"> {
+function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound" | "limits" | "output" | "sample"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
@@ -588,6 +644,7 @@ function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRe
     ...(memory ? { memory } : null),
     ...(memoryTidy ? { memoryTidy } : null),
     ...(changesEachRound ? { changesEachRound } : null),
+    ...agentExtrasOf(payload),
   };
 }
 
@@ -642,6 +699,14 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
       return named(str("title"));
     case "check":
       return named(firstLineOf(str("tested")));
+    case "system_prompt":
+      return named(firstLineOf(str("text")));
+    case "dataset":
+      return named(firstLineOf(str("description")));
+    case "repo": {
+      const parsed = parseRepoUrl(str("url"));
+      return parsed ? `${parsed.owner}/${parsed.name}` : KIND_NAME[kind];
+    }
     case "decision": {
       const ids = (Array.isArray(payload.questions) ? payload.questions : []).flatMap((q) => (isRecord(q) && typeof q.id === "string" && q.id ? [q.id] : []));
       return ids.length ? ids.slice(0, 3).join(", ") : KIND_NAME[kind];
@@ -652,7 +717,17 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
 }
 
 /** CA-12 P7: the connection words a Tool tile and its window say. */
-export const CONNECTION_LABEL: Record<ToolConnection, string> = { mcp: "MCP server", app: "Built into the app", code: "My own code" };
+export const CONNECTION_LABEL: Record<ToolConnection, string> = {
+  mcp: "MCP server",
+  app: "Native integration",
+  code: "Custom code",
+  extension: "Browser extension",
+  api_key: "API key",
+  automation: "Zapier, Make or n8n",
+  plugin: "Plugin or skill",
+  cli: "Command-line interface",
+  manual: "Manual copy and paste",
+};
 
 /** The most lines a manual step has, and the longest each is. */
 export const MANUAL_LINES_MAX = 12;
@@ -751,9 +826,12 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
               ? (stringOf(payload.scopes) ?? "")
               : kind === "decision"
                 ? (stringOf(payload.state_sample) ?? "")
-                : (stringOf(payload.text) ?? "");
+                : kind === "dataset" || kind === "repo"
+                  ? (stringOf(payload.description) ?? "")
+                  : (stringOf(payload.text) ?? "");
   // CA-12 P6: named from what it holds, never by repeating its number.
-  const defaultTitle = defaultTitleFor(kind, payload);
+  // A prompt is called by its place on the build until its maker names it: "Prompt 3".
+  const defaultTitle = kind === "prompt" ? `Prompt ${number}` : defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = kind === "tool" ? stringOf(payload.service) : stringOf(payload.tool);
   const where = kind === "manual" ? manualWhereOf(payload) : null;
@@ -778,11 +856,17 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
     ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
+    ...(kind === "team" && patternOf(payload.pattern) ? { pattern: patternOf(payload.pattern) as AgentPattern } : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload, cases) } : null),
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
-    ...(kind === "tool" ? { app: { ...toolConnectionOf(node), scopes: stringOf(payload.scopes)?.trim() ?? null } } : null),
+    ...(kind === "prompt" && settingsOf(payload.settings) ? { settings: settingsOf(payload.settings) as PromptSettings } : null),
+    ...((kind === "prompt" || kind === "system_prompt") && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
+    ...(kind === "system_prompt" ? { systemPrompt: { ...systemPromptOf(payload), appliesTo: 0 } } : null),
+    ...(kind === "dataset" ? { dataset: datasetOf(payload) } : null),
+    ...(kind === "repo" && repoOf(payload) ? { repo: repoOf(payload) as RepoFacts } : null),
+    ...(kind === "tool" ? { app: { ...toolConnectionOf(node), scopes: stringOf(payload.scopes)?.trim() ?? null, ...toolExtrasOf(payload) } } : null),
     ...(kind === "file" ? { fileFacts: fileFactsOf(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
@@ -849,6 +933,9 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     definedIn: undefined,
     traceUrl: undefined,
     install: undefined,
+    limits: undefined,
+    output: undefined,
+    sample: undefined,
     outputShape: undefined,
     buildCost: undefined,
     runCost: undefined,
@@ -910,7 +997,30 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0));
+  return withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0)));
+}
+
+/**
+ * CA-15 P9: how many of the build's prompts each system prompt applies to: every prompt, the prompts of one session, or the
+ * ones chosen. A prompt is a top-level prompt step or one inside an agent, never an agent's instructions.
+ */
+function withReach(steps: Step[]): Step[] {
+  const all = flattenSteps(steps);
+  if (!all.some((step) => step.kind === "system_prompt")) return steps;
+  const prompts = all.filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions"));
+  const reach = (step: Step): number => {
+    const scope = step.systemPrompt?.scope;
+    if (!scope || scope.kind === "all") return prompts.length;
+    if (scope.kind === "session") return prompts.filter((prompt) => prompt.session === scope.key).length;
+    return scope.ids.filter((id) => prompts.some((prompt) => prompt.id === id)).length;
+  };
+  const apply = (step: Step): Step => ({
+    ...step,
+    ...(step.kind === "system_prompt" && step.systemPrompt ? { systemPrompt: { ...step.systemPrompt, appliesTo: reach(step) } } : null),
+    children: step.children.map(apply),
+    ...(step.sentWith ? { sentWith: step.sentWith.map(apply) } : null),
+  });
+  return steps.map(apply);
 }
 
 /** CA-04 P2: a step and every tile sent with it, depth first, in order. */
@@ -919,6 +1029,11 @@ export function withSentWith(step: Step): Step[] {
 }
 
 /** The title the maker typed, else the default. */
+/** A prompt's name by its place on the build: "Prompt 3 · Session 2", or "Prompt 3" when it is in no numbered session. The maker's own title, if any, is drawn next to it. */
+export function promptPlace(number: string, sessionNumber: number | null | undefined): string {
+  return sessionNumber ? `Prompt ${number} · Session ${sessionNumber}` : `Prompt ${number}`;
+}
+
 export function stepTitle(step: Pick<Step, "title" | "defaultTitle">): string {
   return step.title ?? step.defaultTitle;
 }
@@ -1381,8 +1496,12 @@ export interface DecisionInput {
   questions: readonly DecisionQuestion[];
   answer?: Record<string, DecisionAnswer>;
   source?: "run" | "maker";
-  /** "How to install, optional", as given. */
+  /** "Installation command", as given. */
   install?: string;
+  /** CA-15 P8: input and expected output pairs. */
+  examples?: readonly DecisionExample[];
+  /** CA-15 P8: what to do when it is not confident. */
+  lowConfidence?: LowConfidence;
   session?: string | null;
 }
 
@@ -1400,8 +1519,9 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
       id: q.id.trim(),
       type: q.type,
       instructions: q.instructions.trim(),
-      ...(q.type === "choice" ? { options: (q.options ?? []).map((o) => ({ key: o.key.trim(), ...(o.line?.trim() ? { line: o.line.trim() } : null) })) } : null),
+      ...(takesOptions(q.type) ? { options: (q.options ?? []).map((o) => ({ key: o.key.trim(), ...(o.line?.trim() ? { line: o.line.trim() } : null) })) } : null),
       ...(q.type === "score" ? { levels: (q.levels ?? []).map((level) => level.trim()) } : null),
+      ...(q.type === "extract" ? { field: q.field ?? "text" } : null),
     })) as unknown as Json,
   };
   if (input.via) out.via = input.via;
@@ -1414,6 +1534,9 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
     out.source = input.source ?? "maker";
   }
   if (input.install?.trim()) out.install = input.install.trim();
+  const examples = (input.examples ?? []).map((example) => ({ input: example.input.trim(), output: example.output.trim() })).filter((example) => example.input || example.output);
+  if (examples.length > 0) out.examples = examples;
+  if (input.lowConfidence) out.low_confidence = input.lowConfidence as unknown as Json;
   return out;
 }
 
@@ -1433,7 +1556,7 @@ export async function setDecision(node: BuildNode, input: DecisionInput): Promis
   const keys = decisionPayload("setDecision", input);
   const old = payloadOf(node);
   const payload: Payload = { ...old };
-  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install"]) delete payload[key];
+  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install", "examples", "low_confidence"]) delete payload[key];
   Object.assign(payload, keys);
   // The state's Uses link follows "What it reads": the old output link goes, the new one is added.
   const kept = usesOf(node).filter((use) => !(use.kind === "output" && use.node_id === old.state_from));
@@ -1788,6 +1911,13 @@ export interface CheckInput {
   session?: string | null;
   /** CA-12 P12: individual cases. When there are any, `passed` and `total` are worked out from them. */
   cases?: readonly CheckCase[];
+  /** CA-15 P5: the optional fields of the Add dialog; each stored in the check's own payload only when given. */
+  method?: CheckMethod | null;
+  reviewer?: CheckReviewer | null;
+  scoring?: { how: CheckScoring["how"]; target?: string } | null;
+  modelTested?: { model: string; version: string } | null;
+  /** A URL, or the id and name of one file already stored. */
+  evidence?: { url?: string; mediaId?: string; name?: string } | null;
 }
 
 /**
@@ -1837,11 +1967,11 @@ export function casesRefusal(cases: readonly CheckCase[] | undefined): string | 
 export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | null {
   const tested = input.tested.trim();
   const passing = input.passing.trim();
-  if (!tested) return "Say what it tested.";
-  if (tested.length > CHECK_TEXT_MAX) return `What it tested is at most ${CHECK_TEXT_MAX} characters.`;
-  if (!passing) return "Say what counts as passing.";
-  if (passing.length > CHECK_TEXT_MAX) return `What counts as passing is at most ${CHECK_TEXT_MAX} characters.`;
-  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `When it failed is at most ${CHECK_FAIL_MAX} characters.`;
+  if (!tested) return "Add the test description.";
+  if (tested.length > CHECK_TEXT_MAX) return `The test description is at most ${CHECK_TEXT_MAX} characters.`;
+  if (!passing) return "Add the pass criteria.";
+  if (passing.length > CHECK_TEXT_MAX) return `The pass criteria are at most ${CHECK_TEXT_MAX} characters.`;
+  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `The failure notes are at most ${CHECK_FAIL_MAX} characters.`;
   const why = casesRefusal(input.cases);
   if (why) return why;
   for (const n of input.cases?.length ? [] : [input.passed, input.total]) {
@@ -1849,7 +1979,7 @@ export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | nu
   }
   if (!input.cases?.length && input.passed > input.total) return "Passed can't be more than the total.";
   const day = (input.runAt ?? "").trim();
-  if (day && !isIsoDay(day)) return "Last run is a date, written as 2026-10-12.";
+  if (day && !isIsoDay(day)) return "The last run date is written as 2026-10-12.";
   return null;
 }
 
@@ -1932,6 +2062,19 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
     out.uses = [{ kind: "output", node_id: input.testedStep }] as unknown as Json;
   }
   if (input.session) out.session = input.session;
+  let extras: Record<string, Json | null>;
+  try {
+    extras = cleanExtras(CHECK_TYPE, {
+      method: input.method ?? null,
+      reviewer: input.reviewer ?? null,
+      scoring: input.scoring ?? null,
+      model_tested: input.modelTested ?? null,
+      evidence: input.evidence ? { url: input.evidence.url, media_id: input.evidence.mediaId, name: input.evidence.name } : null,
+    });
+  } catch (cause) {
+    throw refuse(operation, cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  for (const [key, value] of Object.entries(extras)) if (value !== null) out[key] = value;
   return out as Json;
 }
 
@@ -2199,21 +2342,174 @@ export const TOOL_SCOPES_MAX = 200;
  * CA-12 P7: a tool as a tile in a session: the app, how it was connected and what it did. `step: true` is what makes it a
  * tile; a tool an agent names (`toolRefsFor`) is added with `addTool` and never is one.
  */
-export async function addToolTile(
-  buildId: string,
-  tree: readonly NodeTree[],
-  { service, connection, scopes, session }: { service: string; connection?: ToolConnection | null; scopes?: string; session?: string | null },
-): Promise<BuildNode> {
+export interface ToolTileInput {
+  service: string;
+  connection?: ToolConnection | null;
+  scopes?: string;
+  session?: string | null;
+  permissions?: ToolPermission | null;
+  plan?: string;
+  setup?: readonly string[];
+  alternatives?: readonly string[];
+}
+
+export async function addToolTile(buildId: string, tree: readonly NodeTree[], { service, connection, scopes, session, permissions, plan, setup, alternatives }: ToolTileInput): Promise<BuildNode> {
   const name = service.trim();
-  if (!name) throw refuse("addToolTile", "A tool needs its app.");
+  if (!name) throw refuse("addToolTile", "A tool needs its application.");
   if (connection && !TOOL_CONNECTIONS.includes(connection)) throw refuse("addToolTile", "That is not a way to connect a tool.");
   const did = (scopes ?? "").trim();
-  if (did.length > TOOL_SCOPES_MAX) throw refuse("addToolTile", `What it did is at most ${TOOL_SCOPES_MAX} characters.`);
+  if (did.length > TOOL_SCOPES_MAX) throw refuse("addToolTile", `Actions performed is at most ${TOOL_SCOPES_MAX} characters.`);
   const payload: Payload = { service: name, step: true };
   if (connection) payload.connection = connection;
   if (did) payload.scopes = did;
   if (session) payload.session = session;
+  let extras: Record<string, Json | null>;
+  try {
+    extras = cleanExtras(TOOL_TYPE, { permissions: permissions ?? null, plan: plan ?? "", setup: setup ?? [], alternatives: alternatives ?? [] });
+  } catch (cause) {
+    throw refuse("addToolTile", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  for (const [key, value] of Object.entries(extras)) if (value !== null) payload[key] = value;
   return placeTopNode(buildId, tree, { type: TOOL_TYPE, title: null, payload: payload as Json });
+}
+
+// --- CA-15 P9: a system prompt, a dataset and a GitHub repository as tiles ------
+
+const sourceTypeMissing = (what: string): string => `${what} are not available yet: their node type is not switched on in the database.`;
+
+/** The payload keys a source tile writes, cleaned by that type's own cleaners; a null value is a key not written. */
+function sourcePayload(operation: string, type: string, patch: Record<string, unknown>, session?: string | null): Payload {
+  let cleaned: Record<string, Json | null>;
+  try {
+    cleaned = cleanExtras(type, patch);
+  } catch (cause) {
+    throw refuse(operation, cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  const payload: Payload = { step: true };
+  for (const [key, value] of Object.entries(cleaned)) if (value !== null) payload[key] = value;
+  if (session) payload.session = session;
+  return payload;
+}
+
+export interface SystemPromptInput {
+  /** Its name: the tile's title. */
+  name: string;
+  text: string;
+  scope: SystemPromptScope;
+  model?: string;
+  version?: string;
+  variables?: readonly PromptVariable[];
+  session?: string | null;
+}
+
+/** Instructions that apply across prompts: a tile with a name, its text and where it applies (`scope`: `all`, `session:<key>` or `prompts:<id,id>`). */
+export async function addSystemPromptTile(buildId: string, tree: readonly NodeTree[], input: SystemPromptInput): Promise<BuildNode> {
+  await requireLiveType("addSystemPromptTile", SYSTEM_PROMPT_TYPE, sourceTypeMissing("System prompts"));
+  const name = input.name.trim();
+  if (!name) throw refuse("addSystemPromptTile", "A system prompt needs its name.");
+  if (name.length > TITLE_MAX) throw refuse("addSystemPromptTile", `A name is at most ${TITLE_MAX} characters.`);
+  if (input.scope.kind === "prompts") {
+    const known = new Set(flattenSteps(buildSteps(tree)).filter((step) => step.kind === "prompt").map((step) => step.id));
+    if (input.scope.ids.length === 0 || input.scope.ids.some((id) => !known.has(id))) throw refuse("addSystemPromptTile", "Choose prompts that are in this build.");
+  }
+  const payload = sourcePayload("addSystemPromptTile", SYSTEM_PROMPT_TYPE, { text: input.text, scope: scopeValue(input.scope), model: input.model, version: input.version, variables: input.variables ?? [] }, input.session);
+  return placeTopNode(buildId, tree, { type: SYSTEM_PROMPT_TYPE, title: name, payload: payload as Json });
+}
+
+export interface DatasetInput {
+  name: string;
+  description: string;
+  use?: DatasetUse | null;
+  format?: string;
+  recordCount?: number | string | null;
+  columns?: readonly string[] | string;
+  source?: string;
+  sample?: readonly string[] | string;
+  licence?: string;
+  /** Only kept when `use` is retrieval. */
+  chunkStrategy?: string;
+  chunkSize?: number | string | null;
+  chunkOverlap?: number | string | null;
+  embeddingModel?: string;
+  session?: string | null;
+}
+
+/** Data used for training, evaluation or retrieval: a tile with a name, a description and what is known of it. The chunking keys are kept only for retrieval. */
+export async function addDatasetTile(buildId: string, tree: readonly NodeTree[], input: DatasetInput): Promise<BuildNode> {
+  await requireLiveType("addDatasetTile", DATASET_TYPE, sourceTypeMissing("Datasets"));
+  const name = input.name.trim();
+  if (!name) throw refuse("addDatasetTile", "A dataset needs its name.");
+  if (name.length > TITLE_MAX) throw refuse("addDatasetTile", `A name is at most ${TITLE_MAX} characters.`);
+  const retrieval = input.use === "retrieval";
+  const payload = sourcePayload(
+    "addDatasetTile",
+    DATASET_TYPE,
+    {
+      description: input.description,
+      use: input.use ?? null,
+      format: input.format,
+      record_count: input.recordCount ?? null,
+      columns: input.columns ?? [],
+      source: input.source,
+      sample: input.sample ?? [],
+      licence: input.licence,
+      ...(retrieval ? { chunk_strategy: input.chunkStrategy, chunk_size: input.chunkSize ?? null, chunk_overlap: input.chunkOverlap ?? null, embedding_model: input.embeddingModel } : null),
+    },
+    input.session,
+  );
+  return placeTopNode(buildId, tree, { type: DATASET_TYPE, title: name, payload: payload as Json });
+}
+
+export interface RepoInput {
+  url: string;
+  ownership: RepoOwnership;
+  description?: string;
+  /** What GitHub said when the URL was entered; absent when it could not be reached. */
+  fetched?: RepoFetched | null;
+  /** Third-party only. */
+  author?: string;
+  usage?: readonly RepoUsage[];
+  modifications?: string;
+  /** Your own repository only (created here, or yours already). */
+  visibility?: RepoVisibility | null;
+  generatedWith?: string | null;
+  deployedUrl?: string;
+  pin?: { kind: RepoPinKind; value: string } | null;
+  path?: string;
+  keyFiles?: readonly string[] | string;
+  run?: readonly string[] | string;
+  session?: string | null;
+}
+
+/**
+ * A GitHub repository used in the build, owned by the maker or by a third party. The URL alone makes a valid tile; what GitHub
+ * said (`stars`, `default_branch`, `language`, `licence_spdx`, `pushed_at`, `fetched_at`) is kept when it was retrieved. The
+ * author, usage and modifications belong to a third party's repository; visibility, "generated with" and the deployed URL to
+ * the maker's own. A run instruction that looks as if it holds a key's value is refused.
+ */
+export async function addRepoTile(buildId: string, tree: readonly NodeTree[], input: RepoInput): Promise<BuildNode> {
+  await requireLiveType("addRepoTile", REPO_TYPE, sourceTypeMissing("GitHub repositories"));
+  const parsed = parseRepoUrl(input.url);
+  if (!parsed) throw refuse("addRepoTile", "A repository URL looks like github.com/owner/name.");
+  const third = input.ownership === "third_party";
+  const fetched = input.fetched;
+  const payload = sourcePayload(
+    "addRepoTile",
+    REPO_TYPE,
+    {
+      url: parsed.url,
+      ownership: input.ownership,
+      description: input.description,
+      ...(fetched ? { stars: fetched.stars, default_branch: fetched.defaultBranch, language: fetched.language, licence_spdx: fetched.licenceSpdx, licence_name: fetched.licenceName, pushed_at: fetched.pushedAt, fetched_at: fetched.fetchedAt } : null),
+      ...(third ? { author: input.author?.trim() || parsed.owner, usage: input.usage ?? [], modifications: input.modifications } : { visibility: input.visibility ?? null, generated_with: input.generatedWith, deployed_url: input.deployedUrl }),
+      pin: input.pin ?? null,
+      path: input.path,
+      key_files: input.keyFiles ?? [],
+      run: input.run ?? [],
+    },
+    input.session,
+  );
+  return placeTopNode(buildId, tree, { type: REPO_TYPE, title: null, payload: payload as Json });
 }
 
 /** The finished thing. */
@@ -2247,7 +2543,37 @@ export interface ResultFacts {
   mediaIds: string[];
   file: { name: string; kind: FileKind; size: number | null; mediaId: string } | null;
   model: { baseModel: string; method: string } | null;
+  /** CA-15 P3: what a result of one of the newer kinds holds. Absent for the four above and for a `kind` this build does not know. */
+  detail?: ResultDetail | null;
+  /** CA-15 P3: the one line under it, for every kind. */
+  caption?: string | null;
 }
+
+/** CA-15 P3: the output types added to a result, as stored in `payload.kind`. The older four read from what the payload holds. */
+export const RESULT_KINDS = ["text", "audio", "deployed", "table", "message", "external_change", "metric", "offline"] as const;
+export type ResultKindKey = (typeof RESULT_KINDS)[number];
+
+export const MESSAGE_CHANNELS = ["email", "slack", "text", "other"] as const;
+export type MessageChannel = (typeof MESSAGE_CHANNELS)[number];
+export const MESSAGE_CHANNEL_LABEL: Record<MessageChannel, string> = { email: "Email", slack: "Slack", text: "Text message", other: "Other" };
+
+export const RESULT_TEXT_MAX = 4000;
+export const RESULT_LINE_MAX = 280;
+export const RESULT_CAPTION_MAX = 140;
+export const RESULT_CSV_MAX = 20_000;
+export const METRIC_VALUE_MAX = 24;
+export const METRIC_LABEL_MAX = 80;
+export const METRIC_UNIT_MAX = 16;
+
+export type ResultDetail =
+  | { kind: "text"; text: string }
+  | { kind: "audio"; name: string; mediaId: string | null; seconds: number | null }
+  | { kind: "deployed"; link: ResultLink }
+  | { kind: "table"; name: string | null; columns: number | null }
+  | { kind: "message"; channel: MessageChannel; text: string }
+  | { kind: "external_change"; application: string; change: string }
+  | { kind: "metric"; value: string; label: string; unit: string; before: string }
+  | { kind: "offline"; description: string; mediaId: string | null };
 
 /** A link split for its card, or null when it is not an address. */
 export function resultLinkOf(url: string | null | undefined): ResultLink | null {
@@ -2264,7 +2590,36 @@ export function resultLinkOf(url: string | null | undefined): ResultLink | null 
   }
 }
 
-/** What a result holds. A model is read from `kind`; a file from `file_name`; pictures from `media_ids` (or the one `media_id` older results keep). */
+/** The payload's own words for a result's detail, read defensively; null for the four older kinds and for a kind this build does not know. */
+function resultDetailOf(payload: Payload): ResultDetail | null {
+  const text = (key: string) => stringOf(payload[key])?.trim() ?? "";
+  switch (payload.kind) {
+    case "text":
+      return text("text") ? { kind: "text", text: text("text") } : null;
+    case "audio":
+      return { kind: "audio", name: text("file_name") || text("summary") || "Audio", mediaId: stringOf(payload.media_id), seconds: numberOf(payload.duration) };
+    case "deployed": {
+      const link = resultLinkOf(stringOf(payload.url));
+      return link ? { kind: "deployed", link } : null;
+    }
+    case "table":
+      return { kind: "table", name: text("file_name") || null, columns: typeof payload.columns === "number" && Number.isInteger(payload.columns) && payload.columns > 0 ? payload.columns : null };
+    case "message": {
+      const channel = MESSAGE_CHANNELS.includes(payload.channel as MessageChannel) ? (payload.channel as MessageChannel) : "other";
+      return text("message") ? { kind: "message", channel, text: text("message") } : null;
+    }
+    case "external_change":
+      return text("application") || text("change") ? { kind: "external_change", application: text("application"), change: text("change") } : null;
+    case "metric":
+      return text("value") ? { kind: "metric", value: text("value"), label: text("label"), unit: text("unit"), before: text("before") } : null;
+    case "offline":
+      return text("description") ? { kind: "offline", description: text("description"), mediaId: stringOf(payload.media_id) } : null;
+    default:
+      return null;
+  }
+}
+
+/** What a result holds. A model is read from `kind`; a file from `file_name`; pictures from `media_ids` (or the one `media_id` older results keep). The newer kinds are read into `detail`. */
 export function resultFactsOf(node: Pick<BuildNode, "payload">): ResultFacts {
   const payload = payloadOf(node);
   const ids = Array.isArray(payload.media_ids) ? payload.media_ids.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
@@ -2272,19 +2627,53 @@ export function resultFactsOf(node: Pick<BuildNode, "payload">): ResultFacts {
   const fileName = stringOf(payload.file_name)?.trim() || null;
   const model = payload.kind === TRAINED_MODEL;
   const mediaIds = ids.length > 0 ? ids.slice(0, RESULT_MEDIA_MAX) : one && !fileName ? [one] : [];
+  const detail = model ? null : resultDetailOf(payload);
+  const caption = stringOf(payload.caption)?.trim().slice(0, RESULT_CAPTION_MAX) || null;
   return {
     link: model ? null : resultLinkOf(stringOf(payload.url)),
     mediaIds: model || fileName ? [] : mediaIds,
     file: !model && fileName && one ? { name: fileName, kind: fileKindOf(fileName, stringOf(payload.file_mime)), size: numberOf(payload.file_size), mediaId: one } : null,
     model: model ? { baseModel: stringOf(payload.base_model)?.trim() ?? "", method: stringOf(payload.method)?.trim() ?? "" } : null,
+    ...(detail ? { detail } : null),
+    ...(caption ? { caption } : null),
   };
 }
 
 /** Whether a result holds something to show. */
-export const resultHolds = (facts: ResultFacts): boolean => Boolean(facts.link || facts.mediaIds.length > 0 || facts.file || facts.model);
+export const resultHolds = (facts: ResultFacts): boolean => Boolean(facts.link || facts.mediaIds.length > 0 || facts.file || facts.model || facts.detail);
+
+/** CA-15 P3: the output type's name, as the Add dialog and the tile's type line say it. */
+export const RESULT_TYPE_LABEL: Record<"link" | "pictures" | "file" | "model" | ResultKindKey, string> = {
+  link: "Link",
+  pictures: "Image or video",
+  file: "File",
+  model: "Model",
+  text: "Text",
+  audio: "Audio",
+  deployed: "Deployed app or website",
+  table: "Data table",
+  message: "Sent message",
+  external_change: "Change in an external app",
+  metric: "Metric",
+  offline: "Offline outcome",
+};
+
+/** The output type a result is, for its tile's type line; null when it holds nothing yet. */
+export function resultTypeLabel(facts: ResultFacts): string | null {
+  if (facts.detail) return RESULT_TYPE_LABEL[facts.detail.kind];
+  if (facts.model) return RESULT_TYPE_LABEL.model;
+  if (facts.link) return RESULT_TYPE_LABEL.link;
+  if (facts.file) return RESULT_TYPE_LABEL.file;
+  if (facts.mediaIds.length > 0) return RESULT_TYPE_LABEL.pictures;
+  return null;
+}
 
 /** One line for what a result holds, for the rows that name it: never "text". */
 export function resultHoldsWord(facts: ResultFacts): string {
+  if (facts.detail) {
+    const words: Record<ResultKindKey, string> = { text: "some text", audio: "an audio file", deployed: "a deployed app", table: "a data table", message: "a sent message", external_change: "a change in another app", metric: "a metric", offline: "an offline outcome" };
+    return words[facts.detail.kind];
+  }
   if (facts.model) return "a trained model";
   if (facts.link) return "a link";
   if (facts.file) return "a file";
@@ -2293,35 +2682,73 @@ export function resultHoldsWord(facts: ResultFacts): string {
   return "Nothing added yet";
 }
 
-export type ResultInput =
+export type ResultInput = (
   | { kind: "link"; url: string }
   | { kind: "media"; mediaIds: readonly string[]; names: readonly string[] }
   | { kind: "file"; mediaId: string; name: string; size: number | null; mime: string | null }
-  | { kind: "model"; baseModel: string; method: string };
+  | { kind: "model"; baseModel: string; method: string }
+  | { kind: "text"; text: string }
+  | { kind: "audio"; mediaId: string; name: string; size: number | null; mime: string | null; seconds?: number | null }
+  | { kind: "deployed"; url: string }
+  | { kind: "table"; mediaId?: string | null; name?: string | null; size?: number | null; mime?: string | null; csv?: string; columns?: number | null }
+  | { kind: "message"; channel: MessageChannel; message: string }
+  | { kind: "external_change"; application: string; change: string }
+  | { kind: "metric"; value: string; label: string; unit?: string; before?: string }
+  | { kind: "offline"; description: string; photoId?: string | null }
+) & { /** CA-15 P3: one line under the result; optional for every kind. */ caption?: string };
 
 /** What a new result is called until its maker names it: the site, the file's name, "Trained model". */
 export function resultSummaryOf(input: ResultInput): string {
   if (input.kind === "link") return resultLinkOf(input.url)?.site ?? input.url.trim();
   if (input.kind === "media") return input.names.length > 1 ? `${input.names[0]} and ${input.names.length - 1} more` : (input.names[0] ?? "Picture");
   if (input.kind === "file") return input.name;
+  if (input.kind === "text") return firstLineOf(input.text) || "Text";
+  if (input.kind === "audio") return input.name;
+  if (input.kind === "deployed") return resultLinkOf(input.url)?.site ?? input.url.trim();
+  if (input.kind === "table") return input.name?.trim() || "Data table";
+  if (input.kind === "message") return `${MESSAGE_CHANNEL_LABEL[input.channel]}: ${firstLineOf(input.message, 60)}`;
+  if (input.kind === "external_change") return `${input.application.trim()}: ${firstLineOf(input.change, 60)}`;
+  if (input.kind === "metric") return input.label.trim() || "Metric";
+  if (input.kind === "offline") return firstLineOf(input.description) || "Offline outcome";
   return "Trained model";
 }
 
 /** Why a result cannot be added, or null. */
 export function resultRefusal(input: ResultInput): string | null {
-  if (input.kind === "link") return resultLinkOf(input.url) ? null : "Add a web address, like example.com/page.";
-  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add a picture or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `A result holds at most ${RESULT_MEDIA_MAX} pictures.` : null;
+  if ((input.caption ?? "").trim().length > RESULT_CAPTION_MAX) return `A caption is at most ${RESULT_CAPTION_MAX} characters.`;
+  if (input.kind === "link") return resultLinkOf(input.url) ? null : "Add a URL, like example.com/page.";
+  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add an image or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `A result holds at most ${RESULT_MEDIA_MAX} images or videos.` : null;
   if (input.kind === "file") return input.name.trim() && input.mediaId ? null : "Add a file.";
+  if (input.kind === "text") return !input.text.trim() ? "Add the text." : input.text.length > RESULT_TEXT_MAX ? `The text is at most ${RESULT_TEXT_MAX} characters.` : null;
+  if (input.kind === "audio") return input.name.trim() && input.mediaId ? null : "Add an audio file.";
+  if (input.kind === "deployed") return resultLinkOf(input.url) ? null : "Add the URL of the deployed app or website.";
+  if (input.kind === "table") {
+    if ((input.csv ?? "").length > RESULT_CSV_MAX) return `Pasted CSV is at most ${RESULT_CSV_MAX.toLocaleString("en-GB")} characters. Upload it as a file instead.`;
+    return (input.mediaId && input.name?.trim()) || (input.csv ?? "").trim() ? null : "Add a CSV file or paste the CSV.";
+  }
+  if (input.kind === "message") return !MESSAGE_CHANNELS.includes(input.channel) ? "Choose the channel." : !input.message.trim() ? "Add the message." : input.message.length > RESULT_TEXT_MAX ? `The message is at most ${RESULT_TEXT_MAX} characters.` : null;
+  if (input.kind === "external_change") return !input.application.trim() ? "Say which application." : !input.change.trim() ? "Say what changed." : input.change.length > RESULT_LINE_MAX ? `What changed is at most ${RESULT_LINE_MAX} characters.` : null;
+  if (input.kind === "metric") {
+    if (!input.value.trim()) return "Add the value.";
+    if (!input.label.trim()) return "Add the label.";
+    if (input.value.trim().length > METRIC_VALUE_MAX || (input.before ?? "").trim().length > METRIC_VALUE_MAX) return `A value is at most ${METRIC_VALUE_MAX} characters.`;
+    if (input.label.trim().length > METRIC_LABEL_MAX) return `The label is at most ${METRIC_LABEL_MAX} characters.`;
+    return (input.unit ?? "").trim().length > METRIC_UNIT_MAX ? `The unit is at most ${METRIC_UNIT_MAX} characters.` : null;
+  }
+  if (input.kind === "offline") return !input.description.trim() ? "Add a description." : input.description.length > RESULT_TEXT_MAX ? `The description is at most ${RESULT_TEXT_MAX} characters.` : null;
   if (input.baseModel.trim().length > BASE_MODEL_MAX) return `The base model is at most ${BASE_MODEL_MAX} characters.`;
-  if (input.method.trim().length > TRAINED_METHOD_MAX) return `How it was trained is at most ${TRAINED_METHOD_MAX} characters.`;
+  if (input.method.trim().length > TRAINED_METHOD_MAX) return `The training method is at most ${TRAINED_METHOD_MAX} characters.`;
   return input.baseModel.trim() || input.method.trim() ? null : "Say what it is based on, or how it was trained.";
 }
 
-/** CA-12 P9: add a result that holds the thing itself: a link, pictures or video, a file, or a model. */
+/** CA-12 P9, CA-15 P3: add a result that holds the thing itself: a link, pictures or video, a file, a model, or one of the newer kinds. */
 export async function addResultTile(buildId: string, tree: readonly NodeTree[], input: ResultInput): Promise<BuildNode> {
   const why = resultRefusal(input);
   if (why) throw refuse("addResultTile", why);
   const out: Record<string, Json> = { summary: resultSummaryOf(input) };
+  const put = (key: string, value: string | null | undefined) => {
+    if (value && value.trim()) out[key] = value.trim();
+  };
   if (input.kind === "link") out.url = resultLinkOf(input.url)?.url ?? input.url.trim();
   else if (input.kind === "media") {
     out.media_id = input.mediaIds[0];
@@ -2331,11 +2758,52 @@ export async function addResultTile(buildId: string, tree: readonly NodeTree[], 
     out.file_name = input.name.trim();
     if (input.size !== null) out.file_size = input.size;
     if (input.mime) out.file_mime = input.mime;
+  } else if (input.kind === "text") {
+    out.kind = "text";
+    out.text = input.text.trim();
+  } else if (input.kind === "audio") {
+    out.kind = "audio";
+    out.media_id = input.mediaId;
+    out.file_name = input.name.trim();
+    if (input.size !== null) out.file_size = input.size;
+    if (input.mime) out.file_mime = input.mime;
+    if (typeof input.seconds === "number" && Number.isFinite(input.seconds) && input.seconds > 0) out.duration = Math.round(input.seconds);
+  } else if (input.kind === "deployed") {
+    out.kind = "deployed";
+    out.url = resultLinkOf(input.url)?.url ?? input.url.trim();
+  } else if (input.kind === "table") {
+    out.kind = "table";
+    if (input.mediaId && input.name?.trim()) {
+      out.media_id = input.mediaId;
+      out.file_name = input.name.trim();
+      if (typeof input.size === "number") out.file_size = input.size;
+      if (input.mime) out.file_mime = input.mime;
+    } else put("csv", input.csv);
+    if (typeof input.columns === "number" && Number.isInteger(input.columns) && input.columns > 0) out.columns = input.columns;
+  } else if (input.kind === "message") {
+    out.kind = "message";
+    out.channel = input.channel;
+    out.message = input.message.trim();
+  } else if (input.kind === "external_change") {
+    out.kind = "external_change";
+    out.application = input.application.trim();
+    out.change = input.change.trim();
+  } else if (input.kind === "metric") {
+    out.kind = "metric";
+    out.value = input.value.trim();
+    out.label = input.label.trim();
+    put("unit", input.unit);
+    put("before", input.before);
+  } else if (input.kind === "offline") {
+    out.kind = "offline";
+    out.description = input.description.trim();
+    if (input.photoId) out.media_id = input.photoId;
   } else {
     out.kind = TRAINED_MODEL;
     if (input.baseModel.trim()) out.base_model = input.baseModel.trim();
     if (input.method.trim()) out.method = input.method.trim();
   }
+  put("caption", input.caption);
   return placeTopNode(buildId, tree, { type: RESULT_TYPE, title: null, payload: out as Json });
 }
 
@@ -2348,9 +2816,10 @@ function compact(fields: Record<string, string | undefined>): Json {
 
 // --- how a tool was connected (CA-04 P5) ------------------------------------
 
-export type ToolConnection = "app" | "mcp" | "code";
+/** CA-15 P4: nine ways a tool was connected. `app`, `mcp` and `code` keep their stored keys; `app` now reads "Native integration" and `code` "Custom code". */
+export type ToolConnection = "app" | "mcp" | "code" | "extension" | "api_key" | "automation" | "plugin" | "cli" | "manual";
 export type ToolRunsAt = "web" | "local";
-export const TOOL_CONNECTIONS: readonly ToolConnection[] = ["app", "mcp", "code"];
+export const TOOL_CONNECTIONS: readonly ToolConnection[] = ["mcp", "app", "code", "extension", "api_key", "automation", "plugin", "cli", "manual"];
 export const TOOL_RUNS_AT: readonly ToolRunsAt[] = ["web", "local"];
 
 /** How a tool was connected, and where an MCP server ran, as saved; null for what was never said. */
@@ -2483,6 +2952,26 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
     const hex = normaliseHex(colour);
     if (!hex) throw refuse("setNodeColour", `${HEX_HINT}.`);
     payload.colour = hex;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-15: set or clear the optional keys a tile's modal and Details write: a model's settings, a tool's permissions, a check's
+ * method. Only the keys `cleanExtras` knows for the node's type are accepted; each is cleaned and range-checked there. A null
+ * value takes the key off; every other key of the payload is written back as it was read.
+ */
+export async function setExtras(node: BuildNode, patch: Record<string, unknown>): Promise<BuildNode> {
+  let cleaned: Record<string, Json | null>;
+  try {
+    cleaned = cleanExtras(node.type, patch);
+  } catch (cause) {
+    throw refuse("setExtras", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  const payload = { ...payloadOf(node) };
+  for (const [key, value] of Object.entries(cleaned)) {
+    if (value === null) delete payload[key];
+    else payload[key] = value;
   }
   return upsertNode(withPayload(node, payload));
 }

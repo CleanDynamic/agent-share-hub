@@ -87,9 +87,9 @@ export function LabelValue({ label, children, testId }: { label: string; childre
 /** CA-03 P5: the words a check is shown with, in the composer and on the build page. */
 export const CHECK_COPY = {
   eyebrow: "Check · how it checked its work",
-  tested: "What it tested",
-  passing: "What counts as passing",
-  failed: "When it failed",
+  tested: "Test description",
+  passing: "Pass criteria",
+  failed: "Failure notes",
 } as const;
 
 /** CA-05 P7: the lines a check says beyond its status, only the ones it has: the cases it was tested on, and how its runs went. */

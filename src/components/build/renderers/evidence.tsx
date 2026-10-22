@@ -55,9 +55,9 @@ const STAT_KEYS = ["value", "score", "passed", "total", "duration"];
 
 /** CA-03 P5: the three answers a check gives, as the build page labels them. */
 export const CHECK_RENDERER_COPY = {
-  tested: "What it tested",
-  passing: "What counts as passing",
-  failed: "When it failed",
+  tested: "Test description",
+  passing: "Pass criteria",
+  failed: "Failure notes",
 } as const;
 
 const CHECK_KEYS: readonly { key: string; label: string }[] = [

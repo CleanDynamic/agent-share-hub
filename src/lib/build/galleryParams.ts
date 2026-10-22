@@ -76,6 +76,11 @@ export const DASHBOARD_ACTIVE: readonly DashboardActive[] = [7, 30, 90];
 /** UI-P50 — the two reporting toggles. */
 export type DashboardReport = "month" | "multi";
 
+/** CA-16b P3: the tabs after "All builds": the builds grouped by a facet's top-level values. */
+export type GalleryBy = "field" | "task" | "built" | "technique";
+export const GALLERY_BY: readonly GalleryBy[] = ["field", "task", "built", "technique"];
+const isBy = (value: string | null | undefined): value is GalleryBy => typeof value === "string" && (GALLERY_BY as readonly string[]).includes(value);
+
 /** Where the gallery lives. */
 const GALLERY_PATH = "/gallery";
 
@@ -103,6 +108,8 @@ export interface GalleryParams {
   pattern?: Pattern;
   /** CA-16 P6. Classification facet keys (`field:ai-ml`); present only when at least one is set. An OR within a facet, an AND across facets. */
   facets?: string[];
+  /** CA-16b P3. The Gallery's tab: absent is "All builds". */
+  by?: GalleryBy;
   /** UI-P49. Present only when it is not newest. */
   sort?: GalleryFeedSort;
   /** UI-P50. The dashboard's tab; present only when it is not Builds. */
@@ -191,6 +198,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const tool = toolFor(search.get("tool"))?.id;
   const pattern = search.get("pattern");
   const facets = cleanFacetKeys(search.getAll("f"));
+  const by = search.get("by");
   const sort = search.get("sort");
   const tab = search.get("tab");
   const lab = search.get("lab");
@@ -209,6 +217,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(tool ? { tool } : {}),
     ...(isPattern(pattern) ? { pattern } : {}),
     ...(facets.length > 0 ? { facets } : {}),
+    ...(isBy(by) ? { by } : {}),
     ...(isSort(sort) && sort !== "newest" ? { sort } : {}),
     ...(isTab(tab) ? { tab } : {}),
     ...(isLab(lab) ? { lab } : {}),
@@ -236,6 +245,7 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   if (tool) out.set("tool", tool);
   if (isPattern(params.pattern)) out.set("pattern", params.pattern);
   for (const key of cleanFacetKeys(params.facets)) out.append("f", key);
+  if (isBy(params.by)) out.set("by", params.by);
   if (isSort(params.sort) && params.sort !== "newest") out.set("sort", params.sort);
   if (isTab(params.tab)) out.set("tab", params.tab);
   if (isLab(params.lab)) out.set("lab", params.lab);

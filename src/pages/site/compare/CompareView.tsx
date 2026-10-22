@@ -29,7 +29,7 @@ export interface CompareViewProps {
   sentence: string;
 }
 
-const KIND: Record<Step["kind"], string> = { prompt: "Prompt", agent: "Agent", team: "Team", manual: "Manual step", code: "Code", check: "Check", file: "File", tool: "Tool", decision: "Decision" };
+const KIND: Record<Step["kind"], string> = { prompt: "Prompt", agent: "Agent", team: "Team", manual: "Manual step", code: "Code", check: "Check", file: "File", tool: "Tool", decision: "Decision", system_prompt: "System prompt", dataset: "Dataset", repo: "GitHub repository" };
 
 function Cell({ step }: { step: Step | null }) {
   if (!step) {

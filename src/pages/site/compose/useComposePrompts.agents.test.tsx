@@ -19,6 +19,8 @@ const graph = vi.hoisted(() => ({
   addTool: vi.fn(),
   setAgentSetup: vi.fn(),
   addCode: vi.fn(),
+  setExtras: vi.fn(),
+  setRuntimeFields: vi.fn(),
 }));
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
@@ -85,6 +87,44 @@ describe("adding an agent or a team (UI-P69)", () => {
     expect(graph.addTeam).toHaveBeenCalledWith("b1", [], { name: null, model: "Opus 5.5" });
     expect(record).toHaveBeenCalledWith("tm1", { id: "tm1" });
     expect(id).toBe("tm1");
+  });
+
+  it("writes an agent's limits, output, sample run and trace link to the agent itself (CA-15 P7)", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" });
+    graph.setRuntimeFields.mockResolvedValue({ id: "ag1", step: "traced" });
+    graph.setExtras.mockResolvedValue({ id: "ag1", step: "dressed" });
+    const { result, record } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "agent", name: null, model: "Opus 5.5", limits: ["Stops after 20 steps"], output: "A Slack post", sample: "User: hi", traceUrl: "https://smith.langchain.com/r/1" });
+    });
+    expect(graph.setRuntimeFields).toHaveBeenCalledWith({ id: "ag1" }, { traceUrl: "https://smith.langchain.com/r/1" });
+    expect(graph.setExtras).toHaveBeenCalledWith({ id: "ag1", step: "traced" }, { limits: ["Stops after 20 steps"], output: "A Slack post", sample: "User: hi" });
+    expect(record).toHaveBeenCalledWith("ag1", { id: "ag1", step: "dressed" });
+  });
+
+  it("writes nothing extra for an agent that gave none of them", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" });
+    const { result } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "agent", name: null, model: "Opus 5.5" });
+    });
+    expect(graph.setExtras).not.toHaveBeenCalled();
+    expect(graph.setRuntimeFields).not.toHaveBeenCalled();
+  });
+
+  it("puts a team's orchestration pattern on the team, and its limits and supporting models on the agent that leads it (CA-15 P7)", async () => {
+    graph.addTeam.mockResolvedValue({ team: { id: "tm1" }, agent: { id: "ag1" } });
+    graph.setRuntimeFields.mockResolvedValue({ id: "ag1" });
+    graph.setExtras.mockImplementation(async (node: { id: string }) => ({ ...node, extras: true }));
+    const helpers = [{ provider: "scaledown", job: "summarize" as const }];
+    const { result, record } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "team", name: null, model: "Opus 5.5", pattern: "review", limits: ["Never deploys"], helpers });
+    });
+    expect(graph.setRuntimeFields).toHaveBeenCalledWith({ id: "ag1" }, { helpers });
+    expect(graph.setExtras).toHaveBeenCalledWith({ id: "ag1" }, { limits: ["Never deploys"] });
+    expect(graph.setExtras).toHaveBeenCalledWith({ id: "tm1" }, { pattern: "review" });
+    expect(record).toHaveBeenCalledWith("tm1", { id: "tm1", extras: true });
   });
 
   it("says why a team could not be added while the node type is not live, and resolves null", async () => {

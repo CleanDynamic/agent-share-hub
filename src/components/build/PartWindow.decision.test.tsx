@@ -53,10 +53,10 @@ describe("a Decision's window (CA-13 P2)", () => {
     expect(screen.getByText("Decision · Jev 1.13")).toBeTruthy();
     expect(screen.getByText("Which team owns this?")).toBeTruthy();
     expect(screen.getAllByTestId("certainty")).toHaveLength(1);
-    expect(screen.getByTestId("certainty-words").textContent).toBe("92% sure");
+    expect(screen.getByTestId("certainty-words").textContent).toBe("92% confidence");
     expect(screen.getByText("From the run")).toBeTruthy();
     expect(screen.getByText("escalation")).toBeTruthy();
-    expect(screen.getByText("Yes or no (0 to 1) · Noul")).toBeTruthy();
+    expect(screen.getByText("Yes or no · Noul")).toBeTruthy();
     expect(screen.getByTestId("decision-state").textContent).toContain("I was charged twice.");
   });
 

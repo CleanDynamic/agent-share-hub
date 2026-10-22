@@ -42,7 +42,7 @@ describe("the run view's steps (CA-13 P13)", () => {
     expect(decision.copyText).toContain("Call Jev 1.13 with this message and these questions");
     expect(decision.copyText).toContain("I was charged twice.");
     expect(decision.copyText).toContain("$TYPESAFE_API_KEY");
-    expect(decision.copyText).toContain("On the example, the original answered: team → billing (92% sure).");
+    expect(decision.copyText).toContain("On the example, the original answered: team → billing (92% confidence).");
   });
 
   it("puts the maker's code first: a Code tile that calls the Decision is the step, and the Decision sits inside it as what it sets up", () => {

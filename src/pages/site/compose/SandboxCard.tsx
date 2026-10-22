@@ -23,12 +23,9 @@
    there; Setting replaces "Who it's for", and `made_for` is no longer written. Made with stays, inside Tools and stack:
    it is how a maker takes a model out of the list the sessions gave. */
 
-import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { IconButton } from "@/components/brand/IconButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -45,7 +42,9 @@ import { applyDraft, draftOf, type ClassificationCardData, type ClassificationDr
 import { useRing } from "./composeFields";
 import { DESCRIPTION_MAX } from "./composeModel";
 import { MadeWithLine } from "./MadeWithLine";
-import { OptionalRow, OptionalSection } from "./OptionalSection";
+import { ModalShell } from "./ModalFrame";
+import { OptionalField, OptionalSection } from "./OptionalSection";
+import { ChosenValue, WINDOW_FOOT } from "./classificationPieces";
 import { ReadFromBuild } from "./ReadFromBuild";
 import { text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
 import { DM_MONO } from "@/lib/theme/type";
@@ -167,24 +166,24 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
   const money = (value: string) => (value.trim() ? `£${value}` : "");
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <OptionalRow nested rowId="card-known-issue" label="Known issue" value={details.symptom.trim() ? details.symptom : ""} phone={phone}>
+      <OptionalField phone={phone} filledText name="Known issue" description="What broke and how it was fixed" summary={details.symptom}>
         <RefinedField id="card-problem" label="Problem">
           <textarea id="card-problem" rows={2} value={details.symptom} placeholder="e.g. exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} {...brokeRing.handlers} style={{ ...typedArea(phone), ...brokeRing.style }} />
         </RefinedField>
         <RefinedField id="card-fix" label="Fix">
           <textarea id="card-fix" rows={2} value={details.resolution} placeholder="e.g. Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} {...fixRing.handlers} style={{ ...typedArea(phone), ...fixRing.style }} />
         </RefinedField>
-      </OptionalRow>
-      <OptionalRow nested rowId="card-build-cost" label="Build cost (£)" value={money(details.costSetup)} phone={phone}>
+      </OptionalField>
+      <OptionalField phone={phone} filledText name="Build cost (£)" description="What it cost to make" summary={money(details.costSetup)}>
         <NumberInput id="card-build-cost-input" label="Build cost (£)" value={details.costSetup} phone={phone} onChange={(value) => onChange("costSetup", value)} />
-      </OptionalRow>
-      <OptionalRow nested rowId="card-running-cost" label="Running cost per month (£)" value={money(details.costMonthly)} phone={phone}>
+      </OptionalField>
+      <OptionalField phone={phone} filledText name="Running cost per month (£)" description="What it costs to keep running" summary={money(details.costMonthly)}>
         <NumberInput id="card-running-cost-input" label="Running cost per month (£)" value={details.costMonthly} phone={phone} onChange={(value) => onChange("costMonthly", value)} />
-      </OptionalRow>
-      <OptionalRow nested rowId="card-first-result" label="Time to first result (minutes)" value={details.firstResult.trim() ? `${details.firstResult} min` : ""} phone={phone}>
+      </OptionalField>
+      <OptionalField phone={phone} filledText name="Time to first result (minutes)" description="How soon someone sees it work" summary={details.firstResult.trim() ? `${details.firstResult} min` : ""}>
         <NumberInput id="card-first-result-input" label="Time to first result (minutes)" value={details.firstResult} whole phone={phone} onChange={(value) => onChange("firstResult", value)} />
-      </OptionalRow>
-      <OptionalRow nested rowId="card-bounty" label="Open a bounty" value={details.gapOn ? (details.gapProblem.trim() ? details.gapProblem : "On") : ""} phone={phone}>
+      </OptionalField>
+      <OptionalField phone={phone} filledText name="Open a bounty" description="Leave one part open for someone else to solve" summary={details.gapOn ? (details.gapProblem.trim() ? details.gapProblem : "On") : ""}>
         <BountySwitch on={details.gapOn} onChange={onGap} phone={phone} />
         {details.gapOn ? (
           <>
@@ -194,12 +193,11 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
             <p style={{ margin: 0, ...text(12, 400, t.text2) }}>Readers will see it as one part left open. You can add a reward on Bounties after publishing.</p>
           </>
         ) : null}
-      </OptionalRow>
+      </OptionalField>
     </div>
   );
 }
 
-/** A row's line: a Field shows its path below the Area or Domain (as the chip above it shows in full). */
 const entriesLine = (facet: Facet, entries: readonly Entry[]): string =>
   entries
     .map((entry) => (isCustomEntry(entry) ? entry.custom : facet === "field" ? pathOf(entry.id, facet).split(" \u203A ").slice(-2).join(" \u203A ") : labelFor(facet, entry.id)))
@@ -215,7 +213,7 @@ function CardBody(props: SandboxCardProps) {
   const titleRing = useRing<HTMLInputElement>();
   const summaryRing = useRing<HTMLTextAreaElement>();
   const fieldText = phone ? 16 : 13.5;
-  const pad = phone ? 16 : 24;
+  const pad = 20;
 
   const stored = data?.stored ?? null;
   const candidate = useMemo(() => (data ? applyDraft(stored, data.derived, draft) : null), [data, stored, draft]);
@@ -255,161 +253,184 @@ function CardBody(props: SandboxCardProps) {
 
   const derivedStack = data?.derived.stack?.values ?? [];
   const stackLine = candidate ? stackValuesOf(candidate).join(", ") : "";
-  const builtLine = candidate ? [...shownValues(candidate, "built").values, ...shownValues(candidate, "role").values].map((id, index) => labelFor(index < shownValues(candidate, "built").values.length ? "built" : "role", id)).join(", ") : "";
+  const readLine = candidate
+    ? (["built", "role", "technique", "skill"] as const)
+        .flatMap((facet) => {
+          const first = shownValues(candidate, facet).values[0];
+          return first ? [labelFor(facet, first)] : [];
+        })
+        .join(" \u00B7 ")
+    : "";
   const open = (field: CardField) => props.field === field;
 
   const suggestionCount = (facet: SuggestFacet) => plural(suggestions[facet].length, "suggestion", "suggestions");
 
+  /* Landing on a field a missing item names: the row opens itself, then the field takes focus. */
+  useEffect(() => {
+    if (!props.field) return;
+    let tries = 0;
+    const land = () => {
+      const target = document.getElementById(CARD_FIELD_ID[props.field as CardField]);
+      if (target) target.focus();
+      else if (tries < 10) {
+        tries += 1;
+        window.setTimeout(land, 30);
+      }
+    };
+    land();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const row = (name: string, description: string, summaryText: string, count: string | undefined, body: ReactNode, extra: { forceOpen?: boolean } = {}) => (
+    <OptionalField key={name} name={name} description={description} summary={summaryText} count={count} phone={phone} filledText forceOpen={extra.forceOpen}>
+      {body}
+    </OptionalField>
+  );
+
   return (
     <>
-      <div style={{ flexGrow: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: `4px ${pad}px 20px` }}>
+      <div data-testid="card-body" style={{ flex: "1 1 auto", minHeight: 0, overflowY: phone ? "visible" : "auto", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: `0 ${pad}px 16px` }}>
           <CardPreview title={title} classification={candidate} maker={data?.maker} />
-        </div>
-
-        {data && !data.live ? (
-          <p role="status" data-testid="classification-not-live" style={{ margin: 0, padding: `0 ${pad}px 16px`, ...text(12.5, 400, t.text2) }}>
-            {NOT_LIVE_LINE}
-          </p>
-        ) : null}
-
-        <div style={{ padding: `16px ${pad}px 20px`, borderTop: `1px solid ${t.hairlineModule}` }}>
-        <RefinedField id={CARD_FIELD_ID.title} label="Title" right={<span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>Required</span>}>
-          <input
-            id={CARD_FIELD_ID.title}
-            type="text"
-            value={title}
-            placeholder="Name your build"
-            autoComplete="off"
-            onChange={(event) => setTitle(event.target.value)}
-            {...titleRing.handlers}
-            style={{ ...wellField, height: phone ? 44 : 36, padding: "0 12px", ...text(fieldText, 500, t.text), ...titleRing.style }}
-          />
-        </RefinedField>
-        </div>
-
-        <OptionalSection hint="Suggestions come from your build" phone={phone}>
-          <OptionalRow rowId="card-row-summary" label="Summary" value={summary} empty="One sentence on what the build does" phone={phone} defaultOpen={open("summary")}>
-            <RefinedField
-              id={CARD_FIELD_ID.summary}
-              label="Summary"
-              right={
-                <span style={{ ...text(11.5, 400, t.label), ...tnum }}>
-                  {summary.length} / {DESCRIPTION_MAX}
-                </span>
-              }
-            >
-              <textarea
-                id={CARD_FIELD_ID.summary}
-                rows={3}
-                value={summary}
-                maxLength={DESCRIPTION_MAX}
-                placeholder="e.g. Turns a folder of receipts into a spreadsheet of expenses."
-                onChange={(event) => setSummary(event.target.value)}
-                {...summaryRing.handlers}
-                style={{ ...wellField, display: "block", height: 80, padding: "8px 12px", ...text(fieldText, 400, t.text), lineHeight: "21px", resize: "vertical", ...summaryRing.style }}
-              />
-            </RefinedField>
-          </OptionalRow>
-
-          {data ? (
-            <>
-              <OptionalRow rowId="card-row-field" label="Field" value={entriesLine("field", draft.field)} count={suggestionCount("field")} phone={phone}>
-                <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="e.g. Retrieval or Dentistry" onChange={(next) => set("field", next)} />
-              </OptionalRow>
-
-              <OptionalRow rowId="card-row-task" label="Task" value={entriesLine("task", draft.task)} count={suggestionCount("task")} phone={phone}>
-                <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="e.g. Summarising or Marking" onChange={(next) => set("task", next)} />
-              </OptionalRow>
-
-              <OptionalRow rowId="card-row-setting" label="Setting" value={entriesLine("setting", draft.setting)} count={suggestionCount("setting")} phone={phone}>
-                <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="e.g. School teacher or Small business" onChange={(next) => set("setting", next)} />
-              </OptionalRow>
-
-              <OptionalRow
-                rowId="card-row-stack"
-                label="Tools and stack"
-                value={stackLine}
-                count={suggestions.stack.length === 0 && derivedStack.length > 0 ? "Read from your build" : suggestionCount("stack")}
-                phone={phone}
-              >
-                {derivedStack.length > 0 ? (
-                  <ul aria-label="Tools and stack, read from your build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {derivedStack.map((id) => (
-                      <li key={id} style={{ display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 28, padding: "0 10px", boxSizing: "border-box", borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}`, ...text(12.5, 400, t.text) }}>
-                        {labelFor("stack", id)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                <ClassificationPicker id="card-stack" facet="stack" label="Tools and stack" entries={draft.stack} suggestions={suggestions.stack} phone={phone} placeholder="e.g. Python or Supabase" onChange={(next) => set("stack", next)} />
-                <MadeWithLine phone={phone} chips={props.madeWith} hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")} onToggle={props.onToggleMadeWith} onAdd={props.onAddMadeWith} />
-              </OptionalRow>
-
-              <OptionalRow rowId="card-row-data" label="Data handled" value={entriesLine("data", draft.data)} count={suggestionCount("data")} phone={phone}>
-                <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="e.g. Health data" onChange={(next) => set("data", next)} />
-              </OptionalRow>
-
-              <OptionalRow rowId="card-row-age" label="Age suitability" value={draft.age ? labelFor("age", draft.age) : ""} phone={phone}>
-                <Segmented
-                  label="Age suitability"
-                  items={AGE_VALUES.map((value) => ({ value: value.id, label: value.label }))}
-                  value={draft.age ?? ""}
-                  size={phone ? 50 : 32}
-                  fontSize={phone ? 13 : 12}
-                  fullWidth
-                  onChange={(value) => set("age", value)}
-                />
-                {draft.age ? (
-                  <button type="button" onClick={() => set("age", null)} style={{ alignSelf: "flex-start", border: 0, background: "none", cursor: "pointer", minHeight: phone ? 44 : 24, ...text(12, 400, t.text2), textDecoration: "underline" }}>
-                    Clear age suitability
-                  </button>
-                ) : null}
-              </OptionalRow>
-
-              <OptionalRow rowId="card-row-read" label="Read from your build" value={builtLine} count={questions.length > 0 ? plural(questions.length, "question", "questions") : "Read from your build"} phone={phone}>
-                {candidate ? (
-                  <ReadFromBuild
-                    classification={candidate}
-                    questions={questions}
-                    phone={phone}
-                    onDispute={(facet, dispute: Dispute | null) =>
-                      setDraft((current) => {
-                        const disputes = { ...current.disputes };
-                        if (dispute) disputes[facet] = dispute;
-                        else delete disputes[facet];
-                        return { ...current, disputes };
-                      })
-                    }
-                    onDismiss={(id) => setDraft((current) => ({ ...current, dismissed: [...current.dismissed, id] }))}
-                    onSource={(id) => {
-                      data.onSelectSource?.(id);
-                      props.onOpenChange(false);
-                    }}
-                    onAction={(action, question) => {
-                      data.onAction?.(action, question);
-                      props.onOpenChange(false);
-                    }}
-                  />
-                ) : null}
-              </OptionalRow>
-            </>
+          {data && !data.live ? (
+            <p role="status" data-testid="classification-not-live" style={{ margin: "12px 0 0", ...text(12.5, 400, t.text2) }}>
+              {NOT_LIVE_LINE}
+            </p>
           ) : null}
+        </div>
 
-          <OptionalRow rowId="card-row-details" label="Build details" value="Known issue, Build cost, Running cost per month, Time to first result, Open a bounty" phone={phone}>
-            <BuildDetails phone={phone} details={details} onChange={(key, value) => setDetails((current) => ({ ...current, [key]: value }))} onGap={(on) => setDetails((current) => ({ ...current, gapOn: on }))} />
-          </OptionalRow>
-        </OptionalSection>
+        <div style={{ padding: `14px ${pad}px 16px`, borderTop: `1px solid ${t.hairlineModule}` }}>
+          <RefinedField id={CARD_FIELD_ID.title} label="Title" right={<span style={{ fontFamily: DM_MONO, fontSize: 11.5, color: t.label }}>Required</span>}>
+            <input
+              id={CARD_FIELD_ID.title}
+              type="text"
+              value={title}
+              placeholder="Name your build"
+              autoComplete="off"
+              onChange={(event) => setTitle(event.target.value)}
+              {...titleRing.handlers}
+              style={{ ...wellField, height: phone ? 44 : 32, padding: "0 12px", ...text(fieldText, 400, t.text), ...titleRing.style }}
+            />
+          </RefinedField>
+        </div>
+
+        <div style={{ padding: `0 ${pad}px`, borderTop: `1px solid ${t.hairlineModule}` }}>
+          <OptionalSection hint="Suggestions come from your build" bleed={pad}>
+            {row(
+              "Summary",
+              "One sentence on what the build does",
+              summary,
+              undefined,
+              <RefinedField
+                id={CARD_FIELD_ID.summary}
+                label="Summary"
+                right={
+                  <span style={{ ...text(11.5, 400, t.label), ...tnum }}>
+                    {summary.length} / {DESCRIPTION_MAX}
+                  </span>
+                }
+              >
+                <textarea
+                  id={CARD_FIELD_ID.summary}
+                  rows={2}
+                  value={summary}
+                  maxLength={DESCRIPTION_MAX}
+                  placeholder="e.g. Answers customer questions from the help centre using keyword and vector search together"
+                  onChange={(event) => setSummary(event.target.value)}
+                  {...summaryRing.handlers}
+                  style={{ ...wellField, display: "block", minHeight: 52, padding: "8px 12px", ...text(fieldText, 400, t.text), lineHeight: "20px", resize: "vertical", ...summaryRing.style }}
+                />
+              </RefinedField>,
+              { forceOpen: open("summary") },
+            )}
+            {data
+              ? [
+                  row("Field", "Not set", entriesLine("field", draft.field), suggestionCount("field"), <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="Search fields or type your own" onChange={(next) => set("field", next)} />),
+                  row("Task", "Not set", entriesLine("task", draft.task), suggestionCount("task"), <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="Search tasks or type your own" onChange={(next) => set("task", next)} />),
+                  row("Setting", "Not set", entriesLine("setting", draft.setting), suggestionCount("setting"), <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="Search settings or type your own" onChange={(next) => set("setting", next)} />),
+                  row(
+                    "Tools and stack",
+                    "Not set",
+                    stackLine,
+                    suggestions.stack.length === 0 && derivedStack.length > 0 ? "Read from your build" : suggestionCount("stack"),
+                    <>
+                      {derivedStack.length > 0 ? (
+                        <ul aria-label="Tools and stack, read from your build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {derivedStack.map((id) => (
+                            <ChosenValue key={id} label={labelFor("stack", id)} phone={phone} removeLabel={`Read from your build: ${labelFor("stack", id)}`} onRemove={() => undefined} readOnly />
+                          ))}
+                        </ul>
+                      ) : null}
+                      <ClassificationPicker id="card-stack" facet="stack" label="Tools and stack" entries={draft.stack} suggestions={suggestions.stack} phone={phone} placeholder="Add a tool, language or framework" onChange={(next) => set("stack", next)} />
+                      <MadeWithLine phone={phone} chips={props.madeWith} hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")} onToggle={props.onToggleMadeWith} onAdd={props.onAddMadeWith} />
+                    </>,
+                  ),
+                  row("Data handled", "Not set", entriesLine("data", draft.data), undefined, <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="Search data types or type your own" onChange={(next) => set("data", next)} />),
+                  row(
+                    "Age suitability",
+                    "Not set",
+                    draft.age ? labelFor("age", draft.age) : "",
+                    undefined,
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                      <Segmented label="Age suitability" items={AGE_VALUES.map((value) => ({ value: value.id, label: value.label }))} value={draft.age ?? ""} size={phone ? 50 : 26} fontSize={12} onChange={(value) => set("age", value)} />
+                      {draft.age ? (
+                        <button type="button" onClick={() => set("age", null)} style={{ border: 0, background: "none", cursor: "pointer", minHeight: phone ? 44 : 24, ...text(12, 400, t.text2), textDecoration: "underline" }}>
+                          Clear age suitability
+                        </button>
+                      ) : null}
+                    </div>,
+                  ),
+                  row(
+                    "Read from your build",
+                    "Not set",
+                    readLine,
+                    questions.length > 0 ? plural(questions.length, "question", "questions") : "Read from your build",
+                    candidate ? (
+                      <ReadFromBuild
+                        classification={candidate}
+                        questions={questions}
+                        phone={phone}
+                        onDispute={(facet, dispute: Dispute | null) =>
+                          setDraft((current) => {
+                            const disputes = { ...current.disputes };
+                            if (dispute) disputes[facet] = dispute;
+                            else delete disputes[facet];
+                            return { ...current, disputes };
+                          })
+                        }
+                        onDismiss={(id) => setDraft((current) => ({ ...current, dismissed: [...current.dismissed, id] }))}
+                        onSource={(id) => {
+                          data.onSelectSource?.(id);
+                          props.onOpenChange(false);
+                        }}
+                        onAction={(action, question) => {
+                          data.onAction?.(action, question);
+                          props.onOpenChange(false);
+                        }}
+                      />
+                    ) : null,
+                  ),
+                ]
+              : null}
+            {row(
+              "Build details",
+              "Known issue, Build cost, Running cost per month, Time to first result, Open a bounty",
+              "",
+              undefined,
+              <BuildDetails phone={phone} details={details} onChange={(key, value) => setDetails((current) => ({ ...current, [key]: value }))} onGap={(on) => setDetails((current) => ({ ...current, gapOn: on }))} />,
+            )}
+          </OptionalSection>
+        </div>
       </div>
 
-      <div style={{ flexShrink: 0, minHeight: 64, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 12, padding: phone ? "8px 16px" : "0 24px", borderTop: `1px solid ${t.hairlineModule}` }}>
-        <span data-testid="card-required" style={{ ...text(12.5, 400, titleOk ? t.text2 : t.text), flexGrow: 1 }}>
+      <div style={{ flexShrink: 0, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 8, padding: "14px 20px", background: WINDOW_FOOT, borderTop: `1px solid ${t.hairlineModule}`, ...(phone ? { position: "sticky", bottom: 0 } : null) }}>
+        <span data-testid="card-required" style={{ ...text(12.5, 400, t.label), flexGrow: 1, minWidth: 0 }}>
           {titleOk ? "All required fields complete" : "Required: a title"}
         </span>
-        <Button variant="ghost" size={phone ? 44 : 32} fontSize={13} onClick={() => props.onOpenChange(false)}>
+        <Button variant="secondary" size={phone ? 44 : 30} fontSize={13} onClick={() => props.onOpenChange(false)}>
           Cancel
         </Button>
-        <Button size={phone ? 44 : 32} fontSize={13} disabled={!titleOk || saving} onClick={() => void onSave()}>
+        <Button size={phone ? 44 : 30} fontSize={13} disabled={!titleOk || saving} onClick={() => void onSave()}>
           Save
         </Button>
       </div>
@@ -418,50 +439,10 @@ function CardBody(props: SandboxCardProps) {
 }
 
 export function SandboxCard(props: SandboxCardProps) {
-  const { open, onOpenChange, field, phone } = props;
-
-  const content: CSSProperties = {
-    position: "fixed",
-    zIndex: 51,
-    boxSizing: "border-box",
-    display: "flex",
-    flexDirection: "column",
-    background: t.window,
-    border: `1px solid ${t.windowBorder}`,
-    boxShadow: t.sheetShadow,
-    color: t.text,
-    outline: "none",
-    ...(phone ? { top: 0, right: 0, bottom: 0, width: "100%", borderRadius: 0 } : { top: 6, right: 6, bottom: 6, width: 472, maxWidth: "calc(100vw - 12px)", borderRadius: 12 }),
-  };
-
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, zIndex: 50, background: t.scrim }} />
-        <Dialog.Content
-          data-testid="sandbox-card"
-          onOpenAutoFocus={(event) => {
-            if (!field) return;
-            const target = document.getElementById(CARD_FIELD_ID[field]);
-            if (!target) return;
-            event.preventDefault();
-            target.focus();
-          }}
-          style={content}
-        >
-          <div style={{ minHeight: 56, flexShrink: 0, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 12px 24px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-              <Dialog.Title style={{ ...text(15, 500, t.text), margin: 0 }}>{CLASSIFICATION_CARD}</Dialog.Title>
-              <Dialog.Description style={{ ...text(12, 400, t.text2), margin: 0 }}>{CARD_SUBTITLE}</Dialog.Description>
-            </div>
-            <Dialog.Close asChild>
-              <IconButton icon={X} glyph="x" label="Close" size={30} />
-            </Dialog.Close>
-          </div>
-          <CardBody {...props} />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <ModalShell open={props.open} onOpenChange={props.onOpenChange} title={CLASSIFICATION_CARD} subtitle={CARD_SUBTITLE} width={560} testId="sandbox-card">
+      <CardBody {...props} />
+    </ModalShell>
   );
 }
 

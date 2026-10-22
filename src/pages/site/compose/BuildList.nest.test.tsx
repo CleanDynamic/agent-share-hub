@@ -119,14 +119,18 @@ describe("the List (CA-04 P2)", () => {
     expect(screen.queryByTestId("nest-said")).toBeNull();
   });
 
-  it("offers code sent with an imported prompt as a dashed suggestion: Accept puts it inside, Ignore leaves it", () => {
+  it("offers code sent with an imported prompt as one row with Review; the panel lists each item: Accept puts it inside, Ignore leaves it (CA-15 P10)", () => {
     const ref = { source: "transcript", session_id: "e", index: 0, import_session_id: "imp" };
     const steps = buildSteps([node("p1", "prompt", { text: "Use this:\n```tsx order-form.tsx\nexport const A = 1;\n```" }, 1, null, [], ref), node("p2", "prompt", { text: "Next." }, 2)]);
     const onKeepSentWith = vi.fn();
     const onIgnoreSentWith = vi.fn();
     list(steps, { onKeepSentWith, onIgnoreSentWith });
+    const row = screen.getByTestId("sent-with-found");
+    expect(row.textContent).toContain("1 item sent with this prompt was found in the chat");
+    expect(screen.queryByTestId("sent-with-suggestion")).toBeNull();
+    fireEvent.click(within(row).getByRole("button", { name: "Review" }));
     const offer = screen.getByTestId("sent-with-suggestion");
-    expect(offer.textContent).toContain("Sent with this prompt in the chat. Keep it inside?");
+    expect(screen.getByTestId("sent-with-review").textContent).toContain("Keep each one inside this prompt?");
     expect(offer.textContent).toContain("Code · order-form.tsx · 1 line");
     fireEvent.click(within(offer).getByRole("button", { name: "Accept" }));
     expect(onKeepSentWith).toHaveBeenCalledWith({ key: "sent:0", stepId: "p1", source: "export const A = 1;", language: "tsx", filename: "order-form.tsx" });
@@ -201,12 +205,15 @@ describe("Details (CA-04 P2)", () => {
 });
 
 describe("CA-12 P12: what came back", () => {
-  it("shows a prompt's reply under it, indented under a hairline, with Read all when there is more", () => {
+  it("shows a prompt's reply as one line starting with Response, and Open prompt reads all of it (CA-15 P10)", () => {
     const steps = buildSteps([node("p1", "prompt", { text: "Plan the page.", reply: "First line\nSecond line\nThird line" }, 1)]);
-    list(steps, { onOpenPrompt: vi.fn() });
+    const props = list(steps, { onOpenPrompt: vi.fn() });
     const reply = screen.getByTestId("prompt-reply");
-    expect(reply.textContent).toContain("First line");
-    expect(within(reply).getByRole("button", { name: "Read all" })).toBeTruthy();
+    expect(reply.textContent).toBe("Response First line Second line Third line");
+    expect(reply.style.whiteSpace).toBe("nowrap");
+    expect(within(reply).queryByRole("button", { name: "Read all" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Open prompt" })).toBeTruthy();
+    void props;
   });
 
   it("shows nothing when nothing came back", () => {

@@ -145,7 +145,63 @@ describe("ClassificationPicker: chips, suggestions and limits", () => {
 
   it("gives chips and options 44 high targets on a phone", () => {
     render(<Harness phone initial={[{ id: "law" }]} />);
-    expect((screen.getByRole("button", { name: "Remove Law" }) as HTMLElement).style.minHeight).toBe("44px");
+    expect((screen.getByRole("button", { name: "Remove Law" }) as HTMLElement).style.height).toBe("44px");
     expect(input().style.height).toBe("44px");
+  });
+});
+
+describe("ClassificationPicker: as the board draws it (CA-16b)", () => {
+  it("puts the path at the right of each row, with Technical before a technical Field and Synonym match for a synonym", () => {
+    render(<Harness />);
+    type("retr");
+    const [first, second] = screen.getAllByRole("option");
+    expect(first.textContent).toContain("Retrieval systems");
+    expect(first.textContent).toContain("Technical › AI and machine learning › Retrieval systems");
+    expect(second.textContent).toContain("Synonym match · ");
+  });
+
+  it("draws the matched letters at 600 with no background", () => {
+    render(<Harness />);
+    type("rerank");
+    const first = screen.getAllByRole("option")[0];
+    const bold = first.querySelector("span[style*='font-weight: 600']") as HTMLElement;
+    expect(bold.textContent).toBe("Rerank");
+    expect(bold.style.background).toBe("");
+  });
+
+  it("draws a chosen value 28 tall with a remove button named Remove <value>, and an own entry dashed and transparent", () => {
+    render(<Harness initial={[{ id: "ai-ml.retrieval.hybrid-search" }, { custom: "Bee keeping" }]} />);
+    const chosen = screen.getByRole("list", { name: "Field, chosen" });
+    const chip = within(chosen).getByText("AI and machine learning › Retrieval systems › Hybrid search").closest("li") as HTMLElement;
+    expect(chip.style.minHeight).toBe("28px");
+    expect(chip.style.borderRadius).toBe("7px");
+    expect(within(chip).getByRole("button", { name: "Remove Hybrid search" }).style.width).toBe("18px");
+    const own = within(chosen).getByText("Bee keeping").closest("li") as HTMLElement;
+    expect(own.style.borderStyle).toBe("dashed");
+    expect(own.style.background).toBe("transparent");
+  });
+
+  it("says Suggested before the dashed suggestions, each reading + and its name", () => {
+    render(<Harness suggestions={[suggestion("field", "law")]} />);
+    const list = screen.getByRole("list", { name: "Field, suggestions" });
+    expect(list.textContent).toBe("Suggested+Law");
+    expect((within(list).getByRole("button") as HTMLElement).style.borderStyle).toBe("dashed");
+  });
+
+  it("shows the own-entry row last with a rule above it and its note at the right", () => {
+    render(<Harness />);
+    type("rerank");
+    const options = screen.getAllByRole("option");
+    const own = options[options.length - 1] as HTMLElement;
+    expect(own.textContent).toBe("Add “rerank” as your own entryShown on your build, reviewed for the list");
+    expect(own.style.marginTop).toBe("4px");
+  });
+
+  it("closes the list on Escape and chooses on Enter", () => {
+    const onEntries = vi.fn();
+    render(<Harness onEntries={onEntries} />);
+    type("rerank");
+    fireEvent.keyDown(input(), { key: "Enter" });
+    expect(onEntries).toHaveBeenCalledWith([{ id: "ai-ml.retrieval.reranking" }]);
   });
 });

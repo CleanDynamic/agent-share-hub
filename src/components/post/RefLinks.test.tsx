@@ -157,7 +157,7 @@ describe("the windows", () => {
 
   it("draws an agent's instructions and models", () => {
     open("node:o-build");
-    expect(screen.getByRole("region", { name: "Instructions" }).textContent).toContain("Build what the lead hands you");
+    expect(screen.getByRole("region", { name: "System instructions" }).textContent).toContain("Build what the lead hands you");
     expect(screen.getByRole("heading", { name: "Models" })).toBeTruthy();
   });
 
@@ -170,7 +170,7 @@ describe("the windows", () => {
 
   it("draws a check's three answers and its runs", () => {
     open("node:o-k1");
-    for (const label of ["What it tested", "What counts as passing", "When it failed", "Runs"]) expect(screen.getByRole("heading", { name: label })).toBeTruthy();
+    for (const label of ["Test description", "Pass criteria", "Failure notes", "Runs"]) expect(screen.getByRole("heading", { name: label })).toBeTruthy();
     expect(screen.getByText("14 Oct · 40 of 40 passed")).toBeTruthy();
   });
 

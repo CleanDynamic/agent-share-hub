@@ -7,7 +7,7 @@ import { decisionRefsOf, topIndexOf, type Step } from "@/lib/build/graph";
 import type { CostFigures, RunCost } from "@/lib/build/cost";
 import type { Helper } from "@/lib/build/helpers";
 import { schemaFileNames, type OutputShape } from "@/lib/build/answerShape";
-import { canRunWhen, runsWhenChoices, runsWhenLabel, runsWhenOf, runsWhenRefusal, type RunsWhen, type RunsWhenIs } from "@/lib/build/decision";
+import { canBranchOn, canRunWhen, runsWhenChoices, runsWhenLabel, runsWhenOf, runsWhenRefusal, type RunsWhen, type RunsWhenIs } from "@/lib/build/decision";
 
 export interface RunsWhenQuestion {
   id: string;
@@ -72,7 +72,7 @@ export function runsWhenViewOf(step: Step, steps: readonly Step[]): RunsWhenView
         return {
           id: ref.id,
           label: `${found.number} · ${found.title ?? found.defaultTitle}`,
-          questions: (ref.facts?.questions ?? []).map((q) => ({ id: q.id, choices: runsWhenChoices(q) })),
+          questions: (ref.facts?.questions ?? []).filter(canBranchOn).map((q) => ({ id: q.id, choices: runsWhenChoices(q) })),
         };
       }),
   };

@@ -122,6 +122,14 @@ export interface SandboxViewProps extends CardProps {
   onAddDecision?: () => void;
   /** CA-13 P1: the `decision` node type is live. False: Add › Decision is disabled and says so. */
   decisionAvailable?: boolean;
+  /** CA-15 P9: Add › System prompt, Add › Dataset and Add › GitHub repository open their dialogs. Absent, or while the node type is not live, the item stays disabled and says so. */
+  onAddSystemPrompt?: () => void;
+  onAddDataset?: () => void;
+  onAddRepo?: () => void;
+  /** CA-15 P9: the `system_prompt`, `dataset` and `repo` node types are live (active in the registry). */
+  systemPromptAvailable?: boolean;
+  datasetAvailable?: boolean;
+  repoAvailable?: boolean;
   /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
   onAddManual?: () => void;
   /** CA-02 P7: Add › Code opens the code dialog. Absent, the item stays disabled. */
@@ -150,7 +158,7 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
 }
 
-export type AddKey = "prompt" | "agent" | "decision" | "file" | "tool" | "manual" | "code" | "check" | "result";
+export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "code" | "check" | "result";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -158,16 +166,21 @@ export type AddKey = "prompt" | "agent" | "decision" | "file" | "tool" | "manual
  * disabled. UI-P76 turns the switch on only once they are all true.
  */
 export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; ready: boolean }[] = [
-  /* CA-12 P4: sessions are not in this menu: a session is a group of tiles, added with "+ Add a session" under the last one. */
-  { key: "prompt", name: "Prompt", line: "A message you sent", ready: true },
-  { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: true },
-  { key: "decision", name: "Decision", line: "A typed choice the app asks a model for", ready: true },
-  { key: "file", name: "File", line: "Something the AI read", ready: true },
-  { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
+  /* CA-12 P4: sessions are not in this menu: a session is a group of tiles, added with "+ Add a session" under the last one.
+     CA-15: the twelve, with the terms the modals use. System prompt, Dataset and GitHub repository are ready only once their
+     node type is live (`addEntries`). */
+  { key: "prompt", name: "Prompt", line: "A message sent to a model", ready: true },
+  { key: "agent", name: "Agent", line: "A single agent or a multi-agent team", ready: true },
+  { key: "decision", name: "Decision", line: "A structured classification your application requests from a model", ready: true },
+  { key: "system_prompt", name: "System prompt", line: "Instructions that apply across prompts", ready: false },
+  { key: "file", name: "File", line: "A file the model read", ready: true },
+  { key: "dataset", name: "Dataset", line: "Data used for training, evaluation or retrieval", ready: false },
+  { key: "tool", name: "Tool", line: "An external application the model used", ready: true },
+  { key: "repo", name: "GitHub repository", line: "A repository used in this build", ready: false },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
-  { key: "code", name: "Code", line: "Lines of code you wrote or ran", ready: true },
-  { key: "check", name: "Check", line: "How it tested its own work", ready: true },
-  { key: "result", name: "Result", line: "The finished thing", ready: true },
+  { key: "code", name: "Code", line: "Source code written or run", ready: true },
+  { key: "check", name: "Check", line: "A test that verifies part of the build", ready: true },
+  { key: "result", name: "Result", line: "The output the build produced", ready: true },
 ];
 
 /** CA-03 P5: the Add menu's own words. */
@@ -197,7 +210,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
 
 /** One item of the Add menu, wired: what it calls, whether it is enabled. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
@@ -213,8 +226,16 @@ export interface AddEntry {
 /** CA-13 P1: the line under Add › Decision while the database change is not live. */
 export const DECISION_OFF_LINE = "Decisions need the CA-13 database change. Ask Lovable to apply it.";
 
-export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
+/** CA-15 P9: the line under Add › System prompt, Dataset or GitHub repository while its node type is not live. */
+export const TILE_OFF_LINE = "Not available yet: the database has not switched this on";
+
+export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
+    if (item.key === "system_prompt" || item.key === "dataset" || item.key === "repo") {
+      const live = item.key === "system_prompt" ? systemPromptAvailable : item.key === "dataset" ? datasetAvailable : repoAvailable;
+      const handler = item.key === "system_prompt" ? onAddSystemPrompt : item.key === "dataset" ? onAddDataset : onAddRepo;
+      return { ...item, ready: live, line: live ? item.line : TILE_OFF_LINE, enabled: live && Boolean(handler), onSelect: handler };
+    }
     if (item.key === "decision") {
       return { ...item, line: decisionAvailable ? item.line : DECISION_OFF_LINE, enabled: item.ready && decisionAvailable && Boolean(onAddDecision), onSelect: onAddDecision };
     }
@@ -875,6 +896,12 @@ export function SandboxView(props: SandboxViewProps) {
       onAddAgent={props.onAddAgent}
       onAddDecision={props.onAddDecision}
       decisionAvailable={props.decisionAvailable}
+      onAddSystemPrompt={props.onAddSystemPrompt}
+      onAddDataset={props.onAddDataset}
+      onAddRepo={props.onAddRepo}
+      systemPromptAvailable={props.systemPromptAvailable}
+      datasetAvailable={props.datasetAvailable}
+      repoAvailable={props.repoAvailable}
       onAddManual={props.onAddManual}
       onAddCode={props.onAddCode}
       onAddCheck={props.onAddCheck}

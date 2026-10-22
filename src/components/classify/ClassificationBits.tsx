@@ -9,26 +9,26 @@ import type { Provenance } from "@/lib/classify/types";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-/** The two lines under a card's summary. Nothing at all for a build with no classification. */
-export function ClassificationLines({ lines, fontSize = 12 }: { lines: CardLines; fontSize?: number }) {
+/** The two lines under a build's title. Line one is in the data face at 11.5/17 `--text`; line two at 12 `--text2`, 3 below. Nothing at all for a build with no classification. */
+export function ClassificationLines({ lines, gap = 3 }: { lines: CardLines; gap?: number }) {
   if (lines.line1.length === 0 && lines.line2.length === 0) return null;
   return (
-    <div data-card-part="classification" style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+    <div data-card-part="classification" style={{ display: "flex", flexDirection: "column", gap, minWidth: 0 }}>
       {lines.line1.length > 0 ? (
-        <p data-card-part="classification-1" style={{ margin: 0, fontFamily: DM_MONO, fontSize, lineHeight: 1.5, color: t.text2, overflowWrap: "anywhere" }}>
-          {lines.line1.join(" · ")}
+        <p data-card-part="classification-1" style={{ margin: 0, fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "17px", color: t.text, overflowWrap: "anywhere" }}>
+          {lines.line1.join(" \u00B7 ")}
         </p>
       ) : null}
       {lines.line2.length > 0 ? (
-        <p data-card-part="classification-2" style={{ margin: 0, fontFamily: FIGTREE, fontSize: fontSize + 0.5, lineHeight: 1.5, color: t.text2, overflowWrap: "anywhere" }}>
-          {lines.line2.join(" · ")}
+        <p data-card-part="classification-2" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: "17px", color: t.text2, overflowWrap: "anywhere" }}>
+          {lines.line2.join(" \u00B7 ")}
         </p>
       ) : null}
     </div>
   );
 }
 
-/** A small neutral tag beside a title when the build works in a regulated area. */
+/** A small neutral tag beside a title when the build works in a regulated area: never amber. */
 export function RegulatedTag() {
   return (
     <span
@@ -36,16 +36,19 @@ export function RegulatedTag() {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        height: 20,
+        height: 18,
         padding: "0 6px",
         boxSizing: "border-box",
         borderRadius: 4,
-        background: t.tagFill,
+        background: t.control,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: `var(--seg-on-border, ${t.controlBorder})`,
         fontFamily: FIGTREE,
-        fontSize: 11.5,
+        fontSize: 11,
         fontWeight: 400,
         lineHeight: "normal",
-        color: t.text2,
+        color: t.text,
         whiteSpace: "nowrap",
         verticalAlign: "middle",
       }}

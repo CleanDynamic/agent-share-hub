@@ -192,7 +192,7 @@ function seedRows(): Record<string, Row[]> {
     { id: "0e0e0e0e-0000-4000-8000-000000000002", user_id: MAKER_ID, client: "claude", model: null, status: "claimed", build_id: builds[0].id, target_build_id: null, created_at: "2026-10-08T10:00:00Z", updated_at: "2026-10-08T10:00:00Z", proposal: proposal("A session in a draft.", "0e0e0e0e-0000-4000-8000-000000000002") },
     { id: "0e0e0e0e-0000-4000-8000-000000000003", user_id: MAKER_ID, client: "claude-code", model: null, status: "expired", build_id: null, target_build_id: null, created_at: "2026-10-01T10:00:00Z", updated_at: "2026-10-01T10:00:00Z", proposal: longProposal(66) },
   ];
-  const nodeTypes = ["prompt", "agent_config", "team", "manual_step", "decision", "document", "integration", "result", "code", "eval_run", "breakage", "gap", "recording", "screenshot"].map((key, sort) => ({
+  const nodeTypes = ["prompt", "agent_config", "team", "manual_step", "decision", "document", "integration", "result", "code", "eval_run", "breakage", "gap", "recording", "screenshot", "system_prompt", "dataset", "repo"].map((key, sort) => ({
     // No colour: the two flows never draw a type's colour, and src/ holds no raw colour literal (theme/compliance.test.ts).
     key, label: key, category: "process", colour: null, icon: "Box", renderer: "process", copyable: true, is_active: true, sort, schema: { fields: [] },
   }));

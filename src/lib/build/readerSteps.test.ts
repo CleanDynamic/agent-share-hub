@@ -187,7 +187,7 @@ describe("readerSteps · B1 the bakery", () => {
       Build the homepage. Follow CLAUDE.md.
       \`\`\`
 
-      ## Step 5 · Deploy it to Vercel.
+      ## Step 5
 
       Send in the same chat as step 4.
 

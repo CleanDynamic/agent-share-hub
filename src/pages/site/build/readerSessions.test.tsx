@@ -108,8 +108,8 @@ describe("the session list", () => {
   });
 });
 
-describe("a tile's automatic title", () => {
-  it("is not drawn when it only repeats the start of the text, and a typed title is", () => {
+describe("a prompt's name on the build page", () => {
+  it("is its place on the build, with a typed title next to it", () => {
     const tree = [
       { ...prompt("x1", 0, "typed-a"), payload: { text: "ccc", session: "typed-a" } },
       { ...prompt("x2", 1, "typed-a"), title: "ccc", payload: { text: "ccc", session: "typed-a" } },
@@ -119,8 +119,10 @@ describe("a tile's automatic title", () => {
     mount({ ...rest, steps, counts: buildCounts(steps) });
     const first = document.querySelector('[data-step="1"]') as HTMLElement;
     const second = document.querySelector('[data-step="2"]') as HTMLElement;
-    expect(within(first).queryByRole("heading", { level: 3 })).toBeNull();
-    expect(within(second).getByRole("heading", { level: 3 }).textContent).toBe("ccc");
+    expect(within(first).getByTestId("prompt-place").textContent).toMatch(/^Prompt 1(?: · Session \d+)?$/);
+    expect(within(first).queryByTestId("prompt-own-title")).toBeNull();
+    expect(within(second).getByTestId("prompt-place").textContent).toMatch(/^Prompt 2(?: · Session \d+)?$/);
+    expect(within(second).getByTestId("prompt-own-title").textContent).toBe("ccc");
   });
 });
 

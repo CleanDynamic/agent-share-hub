@@ -124,7 +124,7 @@ function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<A
         </div>
         {kind === "app" ? (
           <div>
-            <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Pick an app" />
+            <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Select an application" />
           </div>
         ) : null}
         {kind === "site" ? (

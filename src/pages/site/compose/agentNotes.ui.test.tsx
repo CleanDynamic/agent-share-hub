@@ -87,7 +87,7 @@ describe("Details", () => {
     return props;
   }
 
-  it("asks How it tidies its notes under What it remembers, up to 120 characters", () => {
+  it("asks How it tidies its notes under Memory, up to 120 characters", () => {
     const props = details();
     const well = screen.getByRole("textbox", { name: "How it tidies its notes" }) as HTMLInputElement;
     expect(well.placeholder).toBe("Every Sunday, keeps the 50 most useful notes");
@@ -95,7 +95,7 @@ describe("Details", () => {
     fireEvent.change(well, { target: { value: "Every Sunday, keeps the 50 most useful notes" } });
     fireEvent.keyDown(well, { key: "Enter" });
     expect(props.onAgentNotes).toHaveBeenCalledWith("a1", { memoryTidy: "Every Sunday, keeps the 50 most useful notes" });
-    const remembers = screen.getByRole("textbox", { name: "What it remembers" });
+    const remembers = screen.getByRole("textbox", { name: "Memory" });
     expect(remembers.compareDocumentPosition(well) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -120,12 +120,10 @@ describe("the lines", () => {
       </MemoryRouter>,
     );
 
-  it("puts the tidy line second, under the memory line, and the changes after the run line", () => {
+  it("draws the changes on the run line, and leaves the memory and tidy lines to the modal and Details (CA-15 P10)", () => {
     list(agent({ memory_tidy: "Every Sunday, keeps the 50 most useful notes", changes_each_round: "its checklist" }));
-    const memory = screen.getByTestId("memory-line");
-    const tidy = screen.getByTestId("memory-tidy-line");
-    expect(tidy.textContent).toBe("Tidies its notes: Every Sunday, keeps the 50 most useful notes");
-    expect(memory.compareDocumentPosition(tidy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId("memory-line")).toBeNull();
+    expect(screen.queryByTestId("memory-tidy-line")).toBeNull();
     expect(screen.getByTestId("runs-line").textContent).toBe("Again until the review has no changes · at most 3 times · changes its checklist each round");
   });
 

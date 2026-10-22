@@ -829,6 +829,34 @@ export async function getBuildClassifications(ids: readonly string[]): Promise<R
   return out;
 }
 
+/** CA-16b: how many people tried a build and how many got it working. */
+export interface BuildTries {
+  tried: number;
+  worked: number;
+}
+
+/**
+ * CA-16b: for each build id, how many reproductions were reported and how many of them worked, for the proof line
+ * ("3 of 4 people got it working"). One limited read of `build_reproductions`; a build nobody has tried is absent.
+ */
+export async function getBuildTries(ids: readonly string[]): Promise<Record<string, BuildTries>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { in: (column: string, values: string[]) => { limit: (count: number) => PromiseLike<{ data: { build_id: string; worked: boolean | null }[] | null; error: unknown }> } } } })
+    .from("build_reproductions")
+    .select("build_id, worked")
+    .in("build_id", [...ids])
+    .limit(2000);
+  if (error || !data) return {};
+  const out: Record<string, BuildTries> = {};
+  for (const row of data) {
+    const entry = out[row.build_id] ?? { tried: 0, worked: 0 };
+    entry.tried += 1;
+    if (row.worked === true) entry.worked += 1;
+    out[row.build_id] = entry;
+  }
+  return out;
+}
+
 /**
  * How many gallery builds carry an open bounty (NS-P52).
  *

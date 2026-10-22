@@ -67,7 +67,10 @@ import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
+import { AddDatasetDialog } from "./AddDatasetDialog";
 import { AddDecisionDialog } from "./AddDecisionDialog";
+import { AddRepoDialog } from "./AddRepoDialog";
+import { AddSystemPromptDialog } from "./AddSystemPromptDialog";
 import type { DecisionInput } from "@/lib/build/graph";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAdd } from "./BuildList";
@@ -203,6 +206,16 @@ export function SandboxPage() {
   const decisionType = useQuery({ queryKey: ["build", "getNodeType", "decision"], queryFn: () => getNodeType("decision"), staleTime: Infinity });
   const decisionAvailable = Boolean(decisionType.data?.is_active);
   const [addDecisionOpen, setAddDecisionOpen] = useState(false);
+  /** CA-15 P9: Add › System prompt, Dataset and GitHub repository, each disabled until its node type is live. */
+  const systemPromptType = useQuery({ queryKey: ["build", "getNodeType", "system_prompt"], queryFn: () => getNodeType("system_prompt"), staleTime: Infinity });
+  const datasetType = useQuery({ queryKey: ["build", "getNodeType", "dataset"], queryFn: () => getNodeType("dataset"), staleTime: Infinity });
+  const repoType = useQuery({ queryKey: ["build", "getNodeType", "repo"], queryFn: () => getNodeType("repo"), staleTime: Infinity });
+  const systemPromptAvailable = Boolean(systemPromptType.data?.is_active);
+  const datasetAvailable = Boolean(datasetType.data?.is_active);
+  const repoAvailable = Boolean(repoType.data?.is_active);
+  const [addSystemPromptOpen, setAddSystemPromptOpen] = useState(false);
+  const [addDatasetOpen, setAddDatasetOpen] = useState(false);
+  const [addRepoOpen, setAddRepoOpen] = useState(false);
   /** CA-02 P4: "Add as an agent" opens the dialog with the tool and the field's text, and waits to hear it was saved. */
   const [agentSeed, setAgentSeed] = useState<AgentSeed | null>(null);
   const seedDone = useRef<((saved: boolean) => void) | null>(null);
@@ -866,6 +879,19 @@ export function SandboxPage() {
     [prompts, afterWrite, sessionToWrite],
   );
 
+  /** CA-15 P9: a system prompt, a dataset or a repository is placed at the end of the current session and selected, as a tool is. */
+  const onAddSourceTile = useCallback(
+    async (add: (session: string | null) => Promise<string | null>) => {
+      const session = await sessionToWrite();
+      const id = await add(session);
+      if (!id) return;
+      setSelectedId(id);
+      setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+      afterWrite();
+    },
+    [afterWrite, sessionToWrite],
+  );
+
   const onAddAgentTo = useCallback(
     async (teamId: string) => {
       const team = steps.find((candidate) => candidate.id === teamId);
@@ -896,14 +922,26 @@ export function SandboxPage() {
   );
 
   const onAddCheck = useCallback(
-    async (input: AddCheckInput) => {
-      // A check uses the step it tested: the selected one, else the last agent, team or code.
-      const id = await prompts.addCheckStep({ ...input, testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
-      if (!id) return;
-      setSelectedId(id);
-      afterWrite();
+    async ({ evidenceFile, evidenceUrl, ...input }: AddCheckInput) => {
+      try {
+        // CA-15 P5: evidence is a URL, or one file stored through the same media path as every other file.
+        let evidence: { url?: string; mediaId?: string; name?: string } | null = null;
+        if (evidenceFile) {
+          const build = await ensureBuild();
+          const media = await nodes.run(() => uploadMedia({ buildId: build, file: evidenceFile }));
+          evidence = { mediaId: media.id, name: evidenceFile.name };
+        } else if (evidenceUrl) evidence = { url: evidenceUrl };
+        // A check uses the step it tested: the selected one, else the last agent, team or code.
+        const id = await prompts.addCheckStep({ ...input, ...(evidence ? { evidence } : null), testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
+        if (!id) return;
+        setSelectedId(id);
+        afterWrite();
+      } catch (cause) {
+        console.error("[Sandbox] check not added", cause);
+        sayFailed(cause, "Couldn't add that check. Try again.");
+      }
     },
-    [prompts, steps, afterStep, afterWrite, sessionToWrite],
+    [ensureBuild, nodes, prompts, steps, afterStep, afterWrite, sessionToWrite],
   );
 
   const onAddCode = useCallback(
@@ -957,17 +995,35 @@ export function SandboxPage() {
     async (input: AddResultInput) => {
       showPending("result");
       try {
-        let made: ResultInput;
-        if (input.kind === "link") made = { kind: "link", url: input.url };
-        else if (input.kind === "model") made = { kind: "model", baseModel: input.baseModel, method: input.method };
-        else {
+        const caption = input.caption.trim() || undefined;
+        const upload = async (file: File) => {
           const build = await ensureBuild();
+          return nodes.run(() => uploadMedia({ buildId: build, file }));
+        };
+        let made: ResultInput;
+        if (input.kind === "link") made = { kind: "link", url: input.url, caption };
+        else if (input.kind === "deployed") made = { kind: "deployed", url: input.url, caption };
+        else if (input.kind === "model") made = { kind: "model", baseModel: input.baseModel, method: input.method, caption };
+        else if (input.kind === "text") made = { kind: "text", text: input.text, caption };
+        else if (input.kind === "message") made = { kind: "message", channel: input.channel, message: input.message, caption };
+        else if (input.kind === "external_change") made = { kind: "external_change", application: input.application, change: input.change, caption };
+        else if (input.kind === "metric") made = { kind: "metric", value: input.value, label: input.label, unit: input.unit, before: input.before, caption };
+        else if (input.kind === "audio") {
+          const media = await upload(input.file);
+          made = { kind: "audio", mediaId: media.id, name: input.file.name, size: input.file.size, mime: input.file.type || null, seconds: media.duration ?? null, caption };
+        } else if (input.kind === "table") {
+          const media = input.file ? await upload(input.file) : null;
+          made = { kind: "table", mediaId: media?.id ?? null, name: input.file?.name ?? null, size: input.file?.size ?? null, mime: input.file?.type || null, csv: input.csv, columns: input.columns, caption };
+        } else if (input.kind === "offline") {
+          const media = input.photo ? await upload(input.photo) : null;
+          made = { kind: "offline", description: input.description, photoId: media?.id ?? null, caption };
+        } else {
           const stored = [];
-          for (const file of input.kind === "file" ? [input.file] : input.files) stored.push({ file, media: await nodes.run(() => uploadMedia({ buildId: build, file })) });
+          for (const file of input.kind === "file" ? [input.file] : input.files) stored.push({ file, media: await upload(file) });
           made =
             input.kind === "file"
-              ? { kind: "file", mediaId: stored[0].media.id, name: stored[0].file.name, size: stored[0].file.size, mime: stored[0].file.type || null }
-              : { kind: "media", mediaIds: stored.map((one) => one.media.id), names: stored.map((one) => one.file.name) };
+              ? { kind: "file", mediaId: stored[0].media.id, name: stored[0].file.name, size: stored[0].file.size, mime: stored[0].file.type || null, caption }
+              : { kind: "media", mediaIds: stored.map((one) => one.media.id), names: stored.map((one) => one.file.name), caption };
         }
         const id = await prompts.addResultOf(made);
         if (id) {
@@ -1020,7 +1076,7 @@ export function SandboxPage() {
   const onAddTool = useCallback(
     async (input: AddToolInput) => {
       const session = await sessionToWrite();
-      const id = await prompts.addToolTile({ service: input.service, connection: input.connection, scopes: input.scopes, session });
+      const id = await prompts.addToolTile({ ...input, session });
       if (id) {
         setSelectedId(id);
         setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
@@ -1393,6 +1449,12 @@ export function SandboxPage() {
     onAddAgent: () => setAddAgentOpen(true),
     onAddDecision: () => setAddDecisionOpen(true),
     decisionAvailable,
+    onAddSystemPrompt: () => setAddSystemPromptOpen(true),
+    onAddDataset: () => setAddDatasetOpen(true),
+    onAddRepo: () => setAddRepoOpen(true),
+    systemPromptAvailable,
+    datasetAvailable,
+    repoAvailable,
     onAddManual: () => setAddManualOpen(true),
     onAddCode: () => setAddCodeOpen(true),
     onAddCheck: () => setAddCheckOpen(true),
@@ -1584,6 +1646,10 @@ export function SandboxPage() {
             onSessionMeta={(key, change) => void onSessionMeta(key, change)}
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
+            onExtras={(id, patch) => {
+              prompts.setExtras(id, patch);
+              afterWrite();
+            }}
             onCheckRuns={prompts.setCheckRuns}
             onCheckCases={prompts.setCheckCases}
             onModelRun={prompts.setModelRun}
@@ -1723,6 +1789,15 @@ export function SandboxPage() {
         }}
         onAdd={(input) => void onAddDecision(input)}
       />
+      <AddSystemPromptDialog
+        open={addSystemPromptOpen}
+        onOpenChange={setAddSystemPromptOpen}
+        prompts={flatten(steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions")).map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }))}
+        session={currentSession}
+        onAdd={(input) => void onAddSourceTile((session) => prompts.addSystemPromptTile({ ...input, session }))}
+      />
+      <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void onAddSourceTile((session) => prompts.addDatasetTile({ ...input, session }))} />
+      <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void onAddSourceTile((session) => prompts.addRepoTile({ ...input, session }))} />
       <AddManualStepDialog
         open={addManualOpen}
         onOpenChange={setAddManualOpen}
@@ -1733,7 +1808,7 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
-      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} onAdd={(input) => void onAddResultInput(input)} />
+      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void onAddResultInput(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void onAddTool(input)} />
       <FullPromptWindow
         steps={steps}
@@ -1744,6 +1819,8 @@ export function SandboxPage() {
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
         onReply={prompts.setReply}
+        onExtras={prompts.setExtras}
+        onText={prompts.setTextOf}
         onNavigate={setOpenPromptId}
         onClose={() => {
           setOpenPromptId(null);

@@ -86,7 +86,7 @@ function mount(over: Partial<SandboxCardProps> = {}, tree?: NodeTree[]) {
 
 const live = () => maybeSingle.mockResolvedValue({ data: { classification: {}, facets: [] }, error: null });
 const card = () => screen.getByTestId("sandbox-card");
-const row = (name: string) => within(card()).getByRole("button", { name });
+const row = (name: string) => within(card()).getByRole("button", { name: new RegExp(`^${name.replace(/[()£]/g, "\\$&")}`) });
 
 describe("Classification Card: the sheet", () => {
   it("is a dialog named Classification Card, with its subtitle, a preview and the title", async () => {
@@ -101,27 +101,66 @@ describe("Classification Card: the sheet", () => {
     expect(within(dialog).queryByRole("button", { name: "Edit the post" })).toBeNull();
   });
 
-  it("is a side sheet 472 wide, inset 6, radius 12, the window recipe with the sheet shadow", async () => {
+  it("is the modal window, 560 wide, the title at 15/500 with its subtitle", async () => {
     live();
     mount();
     const sheet = await screen.findByTestId("sandbox-card");
-    expect(sheet.style.width).toBe("472px");
-    expect([sheet.style.top, sheet.style.right, sheet.style.bottom]).toEqual(["6px", "6px", "6px"]);
+    expect(sheet.style.width).toBe("560px");
     expect(sheet.style.borderRadius).toBe("12px");
-    expect(sheet.style.boxShadow).toBe("var(--sheet-shadow)");
+    expect(sheet.style.boxShadow).toBe("var(--window-shadow)");
     const title = screen.getByRole("heading", { name: "Classification Card" });
     expect(title.style.fontSize).toBe("15px");
     expect(title.style.fontWeight).toBe("500");
   });
 
-  it("keeps the full-height sheet and 44-high targets on a phone", async () => {
+  it("draws the blocks in the board's order: preview, title, Optional, footer", async () => {
     live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    const order = ["card-preview", "card-required"].map((id) => screen.getByTestId(id));
+    expect(order[0].compareDocumentPosition(screen.getByLabelText("Title")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByLabelText("Title").compareDocumentPosition(screen.getByTestId("optional-section")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("optional-section").compareDocumentPosition(order[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("Required")).toBeTruthy();
+    expect(screen.getByTestId("optional-count").textContent).toBe("Suggestions come from your build");
+    expect(screen.getByTestId("card-preview").textContent).toContain("Preview");
+    expect(screen.getByTestId("card-preview").textContent).toContain("Policy search");
+  });
+
+  it("names the rows in the board's order, each saying Not set or its value, and counts", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    const rows = within(card()).getAllByRole("button").filter((button) => button.hasAttribute("aria-expanded")).map((button) => button.textContent ?? "");
+    const names = ["Summary", "Field", "Task", "Setting", "Tools and stack", "Data handled", "Age suitability", "Read from your build", "Build details"];
+    names.forEach((name, index) => expect(rows[index].startsWith(name), `${name} is row ${index + 1}`).toBe(true));
+    expect(rows[0]).toContain("Finds the right policy.");
+    expect(rows[1]).toMatch(/Not set\d suggestions?$/);
+    expect(rows[3]).toMatch(/Not set0 suggestions$/);
+    expect(rows[5]).toBe("Data handledNot set");
+    expect(rows[6]).toBe("Age suitabilityNot set");
+    expect(rows[7]).toMatch(/Web app/);
+    expect(rows[7]).toMatch(/\d questions?$/);
+    expect(rows[8]).toContain("Known issue, Build cost, Running cost per month, Time to first result, Open a bounty");
+  });
+
+  it("shows a set Field as its last two levels, and a set Task and Tools line as values", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.click(row("Field"));
+    fireEvent.click(screen.getByRole("button", { name: "Add AI and machine learning › Retrieval systems › Hybrid search" }));
+    fireEvent.click(row("Field"));
+    expect(row("Field").textContent).toContain("Retrieval systems › Hybrid search");
+    expect(row("Field").textContent).not.toContain("AI and machine learning ›");
+  });
+
+  it("keeps 44-high targets on a phone", async () => {
+    live();
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: /max-width/.test(query), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
     mount({ phone: true });
-    const sheet = await screen.findByTestId("sandbox-card");
-    expect(sheet.style.width).toBe("100%");
-    expect(sheet.style.top).toBe("0px");
-    expect((screen.getByLabelText("Title") as HTMLElement).style.height).toBe("44px");
-    expect(parseInt(row("Field").style.minHeight, 10)).toBeGreaterThanOrEqual(44);
+    const title = await screen.findByLabelText("Title");
+    expect((title as HTMLElement).style.height).toBe("44px");
   });
 
   it("lands on the field a missing item names, opening the Summary row for it", async () => {
@@ -214,8 +253,7 @@ describe("Classification Card: acceptance", () => {
     expect(rows.map((button) => button.getAttribute("aria-label") ?? button.textContent).length).toBeGreaterThanOrEqual(9);
     for (const button of rows) expect(button.getAttribute("aria-expanded")).toBe("false");
     // the closed Field row says there are suggestions and that nothing is set
-    const described = row("Field").getAttribute("aria-describedby") ?? "";
-    expect(described.split(" ").map((id) => document.getElementById(id)?.textContent)).toEqual(["Not set", expect.stringMatching(/\d suggestions?$/)]);
+    expect(row("Field").textContent).toMatch(/Not set\d suggestions?$/);
 
     // a Field from a suggestion: nothing was pre-selected
     fireEvent.click(row("Field"));

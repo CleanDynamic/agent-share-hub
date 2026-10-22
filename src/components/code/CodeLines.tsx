@@ -31,12 +31,17 @@ export interface CodeLinesProps {
   empty?: string;
   /** Extra room for the well, e.g. a left margin. */
   style?: React.CSSProperties;
+  /** The caller owns "Show all": true shows every line, false the cap. Absent, the well keeps its own. */
+  expanded?: boolean;
+  /** The caller draws its own "Show all N lines" (a tile's footer link), so none is drawn under the well. */
+  hideToggle?: boolean;
 }
 
-export function CodeLines({ text, compact = false, maxLines, testId = "code-lines", label, empty, style }: CodeLinesProps) {
+export function CodeLines({ text, compact = false, maxLines, testId = "code-lines", label, empty, style, expanded, hideToggle = false }: CodeLinesProps) {
   const phone = useIsPhone();
   const metrics = codeMetrics(phone);
-  const [all, setAll] = useState(false);
+  const [own, setAll] = useState(false);
+  const all = expanded ?? own;
   const cap = maxLines ?? (compact ? COMPACT_LINES : null);
   const capped = cap !== null && !all;
   const { shown, total } = capped ? head(text, cap) : { shown: text, total: numberedLines(text) };
@@ -68,7 +73,7 @@ export function CodeLines({ text, compact = false, maxLines, testId = "code-line
           </pre>
         </div>
       </div>
-      {cap !== null && total > cap ? (
+      {cap !== null && total > cap && !hideToggle ? (
         <button
           type="button"
           aria-expanded={all}

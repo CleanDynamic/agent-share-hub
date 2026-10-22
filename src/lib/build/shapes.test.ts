@@ -111,7 +111,7 @@ describe.each(SHAPE_KEYS)("the %s shape", (key) => {
       if (typeof payload.model === "string" && entry.type !== "agent_config") expect(text, entry.id).toContain(payload.model);
       if (entry.type === "agent_config") {
         expect(text, entry.id).toContain(String(payload.model));
-        if (payload.harness) expect(text, entry.id).toContain("Runs in");
+        if (payload.harness) expect(text, entry.id).toContain("Host platform");
         for (const extra of agentModelsOf(payload).length > 1 ? agentModelsOf(payload) : []) expect(text, entry.id).toContain(`${extra.model} · ${extra.role}`);
         for (const ref of (payload.tools as { tool_ref: string }[] | undefined) ?? []) expect(text, entry.id).toContain(String((byId.get(ref.tool_ref)?.payload as { service?: string }).service));
       }
@@ -119,7 +119,7 @@ describe.each(SHAPE_KEYS)("the %s shape", (key) => {
         expect(text, entry.id).toContain(String(payload.filename));
         const written = flatten(steps).find((step) => step.id === entry.id);
         // CA-04 P2: code sent with a prompt is written with that prompt; only a top-level code step names its own.
-        if (written) expect(text, entry.id).toContain(`Written with ${written.tool} · ${written.model}`);
+        if (written) expect(text, entry.id).toContain(`Generated with ${written.tool} · ${written.model}`);
       }
       if (entry.type === "manual_step") expect(text, entry.id).toContain(String(payload.tool));
       if (entry.type === "document") expect(text, entry.id).toContain(String(payload.title));

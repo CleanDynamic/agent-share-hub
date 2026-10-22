@@ -7,7 +7,7 @@
 //   REMOVED   build_cost, run_cost (what it took and what it cost), helpers[].did (what each helper did on the original's run),
 //             trace_url (the original's trace): they are the original's, and a copy has run nowhere yet.
 //   RENAMED   a Decision's `answer` becomes `expected`, with source "original": in the copy it reads "The original answered billing
-//             (92% sure) on this example; check yours does too", not as the copier's result.
+//             (92% confidence) on this example; check yours does too", not as the copier's result.
 //   KEPT      questions, state_sample, runs_when, called_from, defined_in (the last three are rewritten to the copied tiles by
 //             rewritePayload), helpers' settings, output_shape, install, the agent's "Runs in".
 //

@@ -8,6 +8,7 @@
 // READERS NEVER SEE A SUGGESTION: nothing here reads `dismissed` or calls
 // suggest.ts. Only the uses the maker accepted are published.
 
+import { readerFacts, repoRetrievedLines, type ReaderFact } from "./readerFacts";
 import { readsOutsideContent } from "./outsideContent";
 import { modelLabel } from "@/lib/models/registry";
 import { projectFileOf, toolFor } from "@/lib/tools/registry";
@@ -193,6 +194,8 @@ export interface ReaderStep {
   sentWith: ReaderStep[];
   /** CA-04 P2, a file tile: the file to attach. */
   file?: ReaderFile | null;
+  /** CA-15 P12: the optional details the maker gave, as label and value (`readerFacts`). Absent when there are none: a reader never meets an empty row. Only these are read from the node, never its whole payload. */
+  facts?: ReaderFact[];
 }
 
 export interface NeedRow {
@@ -569,6 +572,16 @@ export function manualHeadline(step: Pick<Step, "tool" | "where">): string {
   }
 }
 
+/** The payload of the node with this id, at any depth; undefined when it has none. */
+function payloadAt(tree: readonly NodeTree[], id: string): Record<string, unknown> | undefined {
+  for (const node of tree) {
+    if (node.id === id) return isRecord(node.payload) ? node.payload : undefined;
+    const inner = node.children?.length ? payloadAt(node.children, id) : undefined;
+    if (inner) return inner;
+  }
+  return undefined;
+}
+
 function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
   const container = inside || step.kind === "agent" || step.kind === "team";
   const here = context.index.get(step.id) ?? -1;
@@ -624,6 +637,8 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     if (context.resultFrom.has(step.id)) loop.push("then the result");
   }
 
+  const payload = payloadAt(context.tree, step.id);
+  const facts = [...(step.kind === "repo" ? repoRetrievedLines(payload) : []), ...readerFacts(step, payload)];
   return {
     step: publicStep(step),
     title: stepTitle(step),
@@ -646,6 +661,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     children: step.children.map((child) => readerStep(child, context, container)),
     sentWith: (step.sentWith ?? []).map((tile) => readerStep(tile, context, container)),
     ...(step.kind === "file" ? { file: context.files.get(step.id) ?? null } : null),
+    ...(facts.length > 0 ? { facts } : null),
   };
 }
 
@@ -1028,7 +1044,7 @@ export function stepsMarkdown(
 
   for (const entry of steps) {
     const { step } = entry;
-    lines.push(`## Step ${step.number} · ${entry.title}`, "");
+    lines.push(step.kind === "prompt" && entry.isDefaultTitle ? `## Step ${step.number}` : `## Step ${step.number} · ${entry.title}`, "");
     // CA-13 P3: a runtime tile that runs only when a decision went a certain way says so, in the words the page uses.
     if (step.runsWhen) {
       const owner = steps.find((candidate) => candidate.step.id === step.runsWhen?.decision)?.step.decision;

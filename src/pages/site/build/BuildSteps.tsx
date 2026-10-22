@@ -45,11 +45,12 @@ import { HelperChips, ShapeChip, TraceLink } from "@/components/build/RuntimeChi
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { CheckCasesBody, FileTileBody, ManualTileBody, ReplyBlock, ResultTileBody, ToolTileBody, DecisionTileBody } from "@/components/build/tileBodies";
+import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, TypeLine } from "@/components/build/tileBodies";
+import { footerFactsOf, resultTypeLine } from "@/lib/build/tileLines";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
-import { groupKey, groupKind, shownGroups, type SessionGroup } from "@/lib/build/graph";
+import { groupKey, groupKind, groupOfStep, promptPlace, shownGroups, type SessionGroup } from "@/lib/build/graph";
 import { parseRefTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
 import { shortDate } from "@/lib/build/readerSteps";
@@ -62,8 +63,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { OutsideWarning } from "../compose/OutsideWarning";
-import { titleRepeatsText } from "../compose/buildListModel";
-import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
+import { CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
@@ -783,13 +783,14 @@ interface Ctx {
   seeMap?: (id: string) => void;
 }
 
-function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
+function Title({ entry, right, place }: { entry: ReaderStep; right: ReactNode; /** A prompt: its place on the build, before the maker's own title. */ place?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
       <NumberTile>{entry.step.number}</NumberTile>
-      {/* CA-14 P8: an automatic title that only repeats the start of the text under it is not drawn, as in the composer. */}
-      {entry.isDefaultTitle && entry.step.kind === "prompt" && titleRepeatsText(entry.step.text, entry.title) ? (
-        <span aria-hidden="true" data-testid="title-hidden" style={{ flexGrow: 1 }} />
+      {place ? (
+        <h3 data-default-title={entry.isDefaultTitle ? "true" : undefined} style={{ margin: 0, flexGrow: 1, minWidth: 0, letterSpacing: "-0.005em" }}>
+          <PromptName place={place} title={entry.isDefaultTitle ? null : entry.title} />
+        </h3>
       ) : (
         <h3
           style={{
@@ -809,6 +810,12 @@ function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
   );
 }
 
+/** The number of the session a prompt is in, when it is in a numbered one. */
+const readerSession = (groups: StepsListProps["view"]["groups"], step: Step): number | null => {
+  const group = groupOfStep(groups ?? [], step);
+  return group && groupKind(group) !== "legacy" ? group.number : null;
+};
+
 function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { step } = entry;
   const { view, phone, announce } = ctx;
@@ -820,9 +827,11 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     return (
       <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
         <Title entry={entry} right={null} />
-        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{CHECK_COPY.eyebrow}</div>
+        <TypeLine step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
         <CheckCasesBody cases={step.check.caseList} indent={INDENT} />
+        <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
+        <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );
@@ -839,9 +848,10 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
-        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>Decision · runs in the app</div>
+        <TypeLine step={step} indent={INDENT} />
         <DecisionTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
+        <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );
@@ -859,12 +869,35 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
+        <TypeLine step={step} indent={INDENT} />
         {step.kind === "tool" ? <ToolTileBody step={step} indent={INDENT} /> : <FileTileBody step={step} indent={INDENT} />}
-        {step.kind === "file" && file ? (
+        <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
+        {step.kind === "file" && file?.download ? (
           <div style={{ paddingLeft: INDENT }}>
             <AttachDownload file={file} />
           </div>
         ) : null}
+        <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
+      </article>
+    );
+  }
+
+  if (step.kind === "system_prompt" || step.kind === "dataset" || step.kind === "repo") {
+    /* CA-15 P9, P12: what the build was made from: a system prompt, a dataset or a GitHub repository, drawn as the composer draws them. */
+    return (
+      <article
+        id={stepDomId(step.id)}
+        data-testid="step-card"
+        data-step={step.number}
+        data-kind={step.kind}
+        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
+      >
+        <Title entry={entry} right={step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null} />
+        <TypeLine step={step} indent={INDENT} />
+        {step.kind === "system_prompt" ? <SystemPromptTileBody step={step} indent={INDENT} full /> : step.kind === "dataset" ? <DatasetTileBody step={step} indent={INDENT} /> : <RepoTileBody step={step} indent={INDENT} />}
+        <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
+        <TileFooter facts={footerFactsOf(step)} indent={INDENT} link={step.kind === "repo" && step.repo ? <OpenOnGitHub url={step.repo.url} /> : null} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );
@@ -880,8 +913,10 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
-        <ManualTileBody step={step} indent={INDENT} picture={false} />
+        <TypeLine step={step} indent={INDENT} />
+        <ManualTileBody step={step} indent={INDENT} picture={false} lean all />
         <SaveLines files={entry.makes} />
+        <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
         {entry.manual.mediaId ? (
           <div style={{ paddingLeft: INDENT }}>
@@ -894,13 +929,17 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
 
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
-      <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
-      <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
+      <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
+      <TypeLine step={step} indent={INDENT} />
+      {step.kind === "code" ? <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} /> : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
       {step.kind === "code" ? <LinkLines lines={[...callsOf(step.id, view.steps.map((candidate) => candidate.step)), ...definesOf(step.id, view.steps.map((candidate) => candidate.step))]} onOpen={ctx.go} indent={INDENT} /> : null}
       <SaveLines files={entry.makes} />
+      <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
+      {/* A prompt's words are said under its text already. */}
+      <TileFooter facts={footerFactsOf(step).filter((fact) => step.kind !== "prompt" || !/ words?$/.test(fact))} indent={INDENT} />
       <SentWith entries={entry.sentWith} ctx={ctx} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />
       {entry.chat?.kind === "same" ? <p style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>{entry.chat.text}</p> : null}
@@ -985,7 +1024,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { view, phone, announce } = ctx;
   const team = step.kind === "team";
   const agents = entry.children.filter((child) => child.step.kind === "agent").length;
-  const line = [team ? `Team · ${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : "Agent", entry.madeIn].filter(Boolean).join(" · ");
+  const line = [team ? `${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : null, entry.madeIn].filter(Boolean).join(" · ");
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ctx.ringed === step.id), ...colourEdge(step.colour, ctx.ringed === step.id) }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
@@ -994,7 +1033,8 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <span style={{ flexGrow: 1 }} />
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
       </div>
-      <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
+      <TypeLine step={step} indent={INDENT} />
+      {line ? <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div> : null}
       {entry.runs ? <DotLine testId="runs-line" style={{ paddingLeft: INDENT }}>{entry.runs}</DotLine> : null}
       {step.helpers?.length ? <HelperChips helpers={step.helpers} indent={INDENT} decisionName={(id) => ctx.view.steps.map((candidate) => candidate.step).find((candidate) => candidate.id === id)?.title ?? undefined} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
@@ -1002,6 +1042,8 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       {step.traceUrl ? <span style={{ paddingLeft: INDENT }}><TraceLink url={step.traceUrl} /></span> : null}
       <OutsideWarning names={entry.outside} style={{ marginLeft: INDENT }} />
       <SaveLines files={entry.makes} />
+      <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
+      <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
       <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {entry.children.map((child) => (
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />
@@ -1046,7 +1088,7 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
           <Glyph name="check" size={14} />
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span style={text(11.5, 400, t.label)}>Result</span>
+          <span data-testid="result-eyebrow" style={text(11.5, 400, t.label)}>{resultTypeLine(result.facts)}</span>
           {name}
           {/* CA-12 P9: the thing itself, as the maker's tile draws it. */}
           {result.trained ? null : <ResultTileBody facts={result.facts} />}

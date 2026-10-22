@@ -68,7 +68,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TRAINED_METHOD_MAX, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { isIsoDay, TRAINED_METHOD_MAX, CONNECTION_LABEL, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -81,6 +81,41 @@ import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, t
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
 import { MenuContent } from "./ComposeMenu";
+import { ChoiceGrid } from "./ChoiceGrid";
+import { PromptName } from "@/components/build/tileBodies";
+import { AGENT_DIALOG_COPY } from "./AddAgentDialog";
+import { CODE_DIALOG_COPY } from "./AddCodeDialog";
+import { TOOL_DIALOG_COPY } from "./AddToolDialog";
+import { DATASET_DIALOG_COPY } from "./AddDatasetDialog";
+import { REPO_DIALOG_COPY } from "./AddRepoDialog";
+import { SYSTEM_PROMPT_DIALOG_COPY } from "./AddSystemPromptDialog";
+import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
+import { ExtraRows, agentRows, checkRows, codeRows, datasetRows, promptRows, repoRows, resultRows, systemPromptRows, toolRows } from "./detailsOptional";
+import {
+  DATASET_DESCRIPTION_MAX,
+  DATASET_USES,
+  DATASET_USE_LABEL,
+  REPO_AUTHOR_MAX,
+  REPO_DESCRIPTION_MAX,
+  REPO_OWNERSHIPS,
+  REPO_OWNERSHIP_LABEL,
+  REPO_USAGES,
+  REPO_USAGE_LABEL,
+  REPO_VISIBILITIES,
+  SYSTEM_PROMPT_TEXT_MAX,
+  isPossiblyUnmaintained,
+  licenceLine,
+  repoDay,
+  repoOf,
+  scopeOf,
+  scopeValue,
+  systemPromptOf,
+  datasetOf,
+  type DatasetUse,
+  type RepoOwnership,
+  type RepoUsage,
+  type RepoVisibility,
+} from "@/lib/build/sourceTiles";
 
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
@@ -98,6 +133,8 @@ export interface PromptView extends InputsView {
   defaultTitle: string;
   /** False for an agent's instructions: they are renamed through the agent. */
   editable: boolean;
+  /** Its name by its place on the build: "Prompt 3 · Session 2". Absent for an agent's instructions. */
+  place?: string;
   /** "Session 2 · Claude", or "Typed here · ChatGPT". */
   sessionLine: string;
   /** "Opus 5.5 · 4 Oct · prompt 2 of 5". */
@@ -283,12 +320,52 @@ export interface DecisionView {
   stepChoices: readonly { id: string; label: string }[];
 }
 
-export type DetailsView = (PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView | DecisionView) & {
+/** CA-15 P9, P11: a system prompt as the Details panel shows it. Its facts are read from `payload`. */
+export interface SystemPromptView extends InputsView {
+  kind: "system_prompt";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  payload: Record<string, unknown>;
+  /** How many prompts it applies to now. */
+  appliesTo: number;
+  /** The build's prompts, for "Selected prompts". */
+  prompts: readonly { id: string; label: string }[];
+  /** The session the tile is in, for "This session"; null when it is in none. */
+  session: string | null;
+}
+
+/** CA-15 P9, P11: a dataset as the Details panel shows it. */
+export interface DatasetView extends InputsView {
+  kind: "dataset";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  payload: Record<string, unknown>;
+}
+
+/** CA-15 P9, P11: a GitHub repository as the Details panel shows it. */
+export interface RepoView extends InputsView {
+  kind: "repo";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  payload: Record<string, unknown>;
+}
+
+export type DetailsView = (PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView | DecisionView | SystemPromptView | DatasetView | RepoView) & {
   /** CA-13: the runtime side of the tile: when it runs. */
   runtime?: RuntimeView;
+  /** CA-15 P11: what the tile's node stores, for the Optional rows. */
+  payload?: Record<string, unknown>;
 };
 
 export interface DetailsHandlers {
+  /** CA-15 P11: change the keys an Optional row owns (null takes a key off). Absent: the Optional rows are not shown. */
+  onExtras?: (id: string, patch: Record<string, unknown>) => void;
   /** CA-13 P2: save a decision's settings. Absent: it is shown, not edited. */
   onDecision?: (id: string, input: DecisionInput) => void;
   /** CA-13 P3: set when a runtime tile runs (null: always). Absent: Runs when is not shown. */
@@ -452,6 +529,7 @@ function CommitField({
   max,
   phone,
   multiline = false,
+  rows = 2,
   onCommit,
 }: {
   label: string;
@@ -460,6 +538,7 @@ function CommitField({
   max?: number;
   phone: boolean;
   multiline?: boolean;
+  rows?: number;
   onCommit: (value: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
@@ -484,7 +563,7 @@ function CommitField({
     onKeyDown,
     ...handlers,
   };
-  return multiline ? <textarea rows={2} {...common} style={style} /> : <input type="text" {...common} style={style} />;
+  return multiline ? <textarea rows={rows} {...common} style={style} /> : <input type="text" {...common} style={style} />;
 }
 
 /** A field label over its control: the composer's `Field` look, the label wrapping the control it names. */
@@ -532,7 +611,7 @@ const titleStyle = (quietTitle: boolean): CSSProperties => ({
   overflowWrap: "anywhere",
 });
 
-function Title({ id, title, fallback, editable, label, phone, onRename }: { id: string; title: string | null; fallback: string; editable: boolean; label: string; phone: boolean; onRename: (id: string, title: string) => void }) {
+function Title({ id, title, fallback, editable, label, phone, onRename, place }: { id: string; title: string | null; fallback: string; editable: boolean; label: string; phone: boolean; onRename: (id: string, title: string) => void; /** A prompt: its place on the build ("Prompt 3 · Session 2"), drawn before the maker's own title. */ place?: string }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const finish = (save: boolean) => {
@@ -547,7 +626,7 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
           aria-label={label}
           value={draft}
           maxLength={80}
-          placeholder={fallback}
+          placeholder={place ? "e.g. Welcome email" : fallback}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={() => finish(true)}
           onKeyDown={(event) => {
@@ -558,7 +637,7 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
         />
       ) : (
         <h3 data-default-title={title ? undefined : "true"} style={titleStyle(!title)}>
-          {title ?? fallback}
+          {place ? <PromptName place={place} title={title} size={18} /> : (title ?? fallback)}
         </h3>
       )}
       {editable && !editing ? (
@@ -871,14 +950,14 @@ function Makes({ id, rows, phone, focus, h }: { id: string; rows: readonly Makes
   return <MakesList stepId={id} rows={rows} phone={phone} focus={focus} onAdd={h.onAddMade} onRename={(fileId, name) => h.onFields(fileId, { title: name })} onRemove={(fileId) => h.onRemoveMade?.(fileId)} />;
 }
 
-function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: boolean; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
+function PromptDetails({ view, phone, focus, payload, inBuild, ...h }: { view: PromptView; phone: boolean; focus: DetailsPanelProps["focusMakes"]; payload?: Record<string, unknown>; inBuild?: readonly string[] } & DetailsHandlers) {
   const open = h.onOpenPrompt ? () => h.onOpenPrompt?.(view.id) : undefined;
   /** CA-02 P8: "Change the model" opens the model menu. */
   const [openModel, setOpenModel] = useState(0);
   return (
     <>
       <Head eyebrow={view.sentWithLine ?? `Prompt ${view.number}`}>
-        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable={view.editable} label={`Title of prompt ${view.number}`} phone={phone} onRename={h.onRename} />
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable={view.editable} label={`Title of prompt ${view.number}`} phone={phone} onRename={h.onRename} place={view.place} />
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <ToolMark tool={toolOf(view.sessionLine)} model={view.model} size={24} />
           <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -913,6 +992,7 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
         <span style={{ flexGrow: 1 }} />
         <span style={{ ...quiet(), ...tnum }}>{view.words} words</span>
       </div>
+      {view.editable ? <ExtraRows id={view.id} rows={promptRows(payload ?? {}, view.text)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} /> : null}
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       {view.editable ? <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} /> : null}
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
@@ -980,10 +1060,10 @@ export const CODE_DETAILS_COPY = {
   copy: "Copy",
   copied: "Copied",
   copyFailed: "Couldn't copy that. Select the code and copy it by hand.",
-  writtenWith: "Written with",
+  writtenWith: CODE_DIALOG_COPY.writtenWith,
 } as const;
 
-function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: boolean; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
+function CodeDetails({ view, phone, focus, payload, inBuild, ...h }: { view: CodeView; phone: boolean; focus: DetailsPanelProps["focusMakes"]; payload?: Record<string, unknown>; inBuild?: readonly string[] } & DetailsHandlers) {
   const [said, setSaid] = useState("");
   const copy = async () => {
     try {
@@ -993,18 +1073,12 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
       setSaid(CODE_DETAILS_COPY.copyFailed);
     }
   };
-  const written = [view.tool, view.model].filter(Boolean).join(" · ");
   return (
     <>
       <Head eyebrow={view.sentWithLine ?? `Code ${view.number}`}>
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of code ${view.number}`} phone={phone} onRename={h.onRename} />
         <span style={text(12, 400, t.text2)}>{[view.filename, view.language, `${view.lines} ${view.lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
       </Head>
-      {written ? (
-        <div>
-          <KeyValue label={CODE_DETAILS_COPY.writtenWith}>{written}</KeyValue>
-        </div>
-      ) : null}
       <CodeLines text={view.source} compact testId="details-code" label="Code" />
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void copy()} style={phone ? undefined : { height: 26 }}>
@@ -1014,6 +1088,7 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
           {said}
         </span>
       </div>
+      <ExtraRows id={view.id} rows={codeRows(payload ?? {})} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
@@ -1058,7 +1133,7 @@ function DecisionDetails({ view, phone, inBuild, ...h }: { view: DecisionView; p
 
 /* ── a check (CA-03 P5) ── */
 
-function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean } & DetailsHandlers) {
+function CheckDetails({ view, phone, payload, inBuild, ...h }: { view: CheckView; phone: boolean; payload?: Record<string, unknown>; inBuild?: readonly string[] } & DetailsHandlers) {
   return (
     <>
       <Head eyebrow={view.sentWithLine ?? `Check ${view.number}`}>
@@ -1067,6 +1142,7 @@ function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean }
       <CheckBlock check={view.check} />
       {h.onCheckCases ? <CheckCasesField key={`${view.id}:cases:${(view.check.caseList ?? []).length}`} id={view.id} cases={view.check.caseList ?? []} phone={phone} onBlurOnly onChange={(cases) => h.onCheckCases?.(view.id, cases)} /> : null}
       {h.onCheckRuns ? <CheckRunsField key={`${view.id}:${(view.check.runs ?? []).map((run) => `${run.at}${run.passed}${run.total}`).join(",")}`} id={view.id} runs={view.check.runs ?? []} phone={phone} onChange={(runs) => h.onCheckRuns?.(view.id, runs)} /> : null}
+      <ExtraRows id={view.id} rows={checkRows(payload ?? {})} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
@@ -1401,10 +1477,7 @@ function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; ph
 }
 
 export const CONNECTION_COPY = {
-  title: "How it was connected",
-  app: "Built into the app",
-  mcp: "MCP server",
-  code: "My own code",
+  title: "Connection method",
   where: "Where it ran",
   web: "At a web address",
   local: "On my computer",
@@ -1425,7 +1498,7 @@ function ConnectionBlock({ view, phone, onToolConnection }: { view: ToolView; ph
             phone={phone}
             value={view.connection ?? ("" as ToolConnection)}
             onChange={(next) => onToolConnection(view.id, next, next === "mcp" ? (view.runsAt ?? null) : null)}
-            rows={TOOL_CONNECTIONS.map((value) => ({ value, label: CONNECTION_COPY[value] }))}
+            rows={TOOL_CONNECTIONS.map((value) => ({ value, label: CONNECTION_LABEL[value] }))}
           />
           {view.connection === "mcp" ? (
             <div style={{ paddingLeft: 24 }}>
@@ -1458,17 +1531,18 @@ function ConnectionBlock({ view, phone, onToolConnection }: { view: ToolView; ph
   );
 }
 
-function ToolDetails({ view, phone, onFields, onSelect, onToolConnection }: { view: ToolView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onSelect" | "onToolConnection">) {
+function ToolDetails({ view, phone, onFields, onSelect, onToolConnection, onExtras, payload, inBuild }: { view: ToolView; phone: boolean; payload?: Record<string, unknown>; inBuild?: readonly string[] } & Pick<DetailsHandlers, "onFields" | "onSelect" | "onToolConnection" | "onExtras">) {
   return (
     <>
       <Head eyebrow="Tool" />
-      <FieldBlock label="Service">
-        <CommitField key={`${view.id}:service`} label="Service" value={view.service} phone={phone} max={80} onCommit={(value) => onFields(view.id, { service: value })} />
+      <FieldBlock label={TOOL_DIALOG_COPY.tool}>
+        <CommitField key={`${view.id}:service`} label={TOOL_DIALOG_COPY.tool} value={view.service} phone={phone} max={80} onCommit={(value) => onFields(view.id, { service: value })} />
       </FieldBlock>
-      <FieldBlock label="What it was used for">
-        <CommitField key={`${view.id}:scopes`} label="What it was used for" value={view.scopes} placeholder="read, label, draft" phone={phone} max={140} onCommit={(value) => onFields(view.id, { scopes: value })} />
+      <FieldBlock label={TOOL_DIALOG_COPY.did}>
+        <CommitField key={`${view.id}:scopes`} label={TOOL_DIALOG_COPY.did} value={view.scopes} placeholder={TOOL_DIALOG_COPY.didPlaceholder} phone={phone} max={140} onCommit={(value) => onFields(view.id, { scopes: value })} />
       </FieldBlock>
       <ConnectionBlock view={view} phone={phone} onToolConnection={onToolConnection} />
+      <ExtraRows id={view.id} rows={toolRows(payload ?? {})} phone={phone} inBuild={inBuild} onExtras={onExtras} />
       <RowList title="Used by" rows={view.usedBy} phone={phone} onSelect={onSelect} />
     </>
   );
@@ -1762,7 +1836,7 @@ function AgentSetupLines({ setup }: { setup: AgentSetupValue }) {
   );
 }
 
-function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
+function AgentDetails({ view, phone, inBuild = [], payload, ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[]; payload?: Record<string, unknown> } & DetailsHandlers) {
   const word = view.kind === "agent" ? "Agent" : "Team";
   /* CA-03 P4: a team's first agent is its lead. */
   const lead = view.kind === "agent" && view.parent !== null && view.number.endsWith(".1");
@@ -1789,15 +1863,16 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
         )
       ) : null}
       {view.kind === "agent" ? (
-        <FieldBlock label="Instructions">
+        <FieldBlock label={AGENT_DIALOG_COPY.instructions}>
           {h.onInstructions ? (
-            <CommitField key={`${view.id}:instructions`} label="Instructions" value={view.instructions} placeholder="What this agent is told" multiline phone={phone} onCommit={(value) => h.onInstructions?.(view.id, value)} />
+            <CommitField key={`${view.id}:instructions`} label={AGENT_DIALOG_COPY.instructions} value={view.instructions} placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder} multiline phone={phone} onCommit={(value) => h.onInstructions?.(view.id, value)} />
           ) : (
             <p style={{ ...wellField, padding: 12, margin: 0, lineHeight: "21px", fontSize: 13, overflowWrap: "anywhere" }}>{view.instructions}</p>
           )}
         </FieldBlock>
       ) : null}
       <RunsGroup view={view} phone={phone} onRuns={h.onRuns} onAgentNotes={h.onAgentNotes} />
+      <ExtraRows id={view.id} rows={agentRows(payload ?? {}, view.kind === "team")} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
       <Section title={`Inside ${view.inside}`}>
         {view.insideRows.map((row) => (
           <div key={row.id} style={listRow(44)}>
@@ -1815,11 +1890,11 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
 /* ── a result ── */
 
 export const RESULT_COPY = {
-  what: "What it is",
-  link: "A link",
-  picture: "A picture",
-  file: "A file",
-  trained: "A trained model",
+  what: "Output type",
+  link: "Link",
+  picture: "Image or video",
+  file: "File",
+  trained: "Model",
   basedOn: "Based on",
   trainedOn: "Trained on",
   trainedOnLine: "The ratings or examples it learned from.",
@@ -1828,7 +1903,8 @@ export const RESULT_COPY = {
   removeFile: "Remove the file",
   how: "How it was trained",
   howHint: "Rated answers, ranked by me",
-  optional: "Optional",
+  howLine: "How the model was trained",
+  url: "URL",
 } as const;
 
 const WHAT_ROWS: readonly { value: ResultWhat; label: string }[] = [
@@ -1838,7 +1914,7 @@ const WHAT_ROWS: readonly { value: ResultWhat; label: string }[] = [
   { value: "trained-model", label: RESULT_COPY.trained },
 ];
 
-function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTrainedOn, onRemoveInside }: { view: ResultView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onAddPicture" | "onUseAsCover" | "onTrainedOn" | "onRemoveInside">) {
+function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTrainedOn, onRemoveInside, onExtras, payload }: { view: ResultView; phone: boolean; payload?: Record<string, unknown> } & Pick<DetailsHandlers, "onFields" | "onAddPicture" | "onUseAsCover" | "onTrainedOn" | "onRemoveInside" | "onExtras">) {
   const picker = useRef<HTMLInputElement>(null);
   const trainedPicker = useRef<HTMLInputElement>(null);
   const what: ResultWhat = view.what ?? (view.pictures.length > 0 ? "picture" : "link");
@@ -1900,13 +1976,15 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTr
               ) : null}
             </div>
           </Field>
-          <Field id={`${view.id}-method`} label={RESULT_COPY.how} hint={RESULT_COPY.optional}>
-            <CommitField key={`${view.id}:method`} label={RESULT_COPY.how} value={trained.method} placeholder={RESULT_COPY.howHint} max={TRAINED_METHOD_MAX} phone={phone} onCommit={(value) => onFields(view.id, { method: value })} />
-          </Field>
+          <OptionalSection>
+            <OptionalField name={RESULT_COPY.how} description={RESULT_COPY.howLine} summary={summaryOf(trained.method)} phone={phone}>
+              <CommitField key={`${view.id}:method`} label={RESULT_COPY.how} value={trained.method} placeholder={RESULT_COPY.howHint} max={TRAINED_METHOD_MAX} phone={phone} onCommit={(value) => onFields(view.id, { method: value })} />
+            </OptionalField>
+          </OptionalSection>
         </>
       ) : null}
-      <FieldBlock label="Link">
-        <CommitField key={`${view.id}:url`} label="Link" value={view.url} placeholder="https://" phone={phone} max={300} onCommit={(value) => onFields(view.id, { url: value })} />
+      <FieldBlock label={RESULT_COPY.url}>
+        <CommitField key={`${view.id}:url`} label={RESULT_COPY.url} value={view.url} placeholder="https://" phone={phone} max={300} onCommit={(value) => onFields(view.id, { url: value })} />
       </FieldBlock>
       <Section title="Pictures" count={view.pictures.length}>
         {view.pictures.map((picture) => (
@@ -1935,6 +2013,159 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTr
           </Button>
         </div>
       </Section>
+      <ExtraRows id={view.id} rows={resultRows(payload ?? {})} phone={phone} onExtras={onExtras} />
+    </>
+  );
+}
+
+/* ── a system prompt, a dataset and a GitHub repository (CA-15 P9, P11) ── */
+
+/** The head of a tile that has its name as its title: an eyebrow, the title and a line under it. */
+function SourceHead({ eyebrow, view, noun, line, phone, onRename }: { eyebrow: string; view: { id: string; number: string; title: string | null; defaultTitle: string; sentWithLine?: string }; noun: string; line?: ReactNode; phone: boolean; onRename: DetailsHandlers["onRename"] }) {
+  return (
+    <Head eyebrow={view.sentWithLine ?? eyebrow}>
+      <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of ${noun} ${view.number}`} phone={phone} onRename={onRename} />
+      {line ? <span style={text(12, 400, t.text2)}>{line}</span> : null}
+    </Head>
+  );
+}
+
+type Applies = "all" | "session" | "prompts";
+
+function SystemPromptDetails({ view, phone, inBuild, ...h }: { view: SystemPromptView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
+  const facts = systemPromptOf(view.payload);
+  const scope = scopeOf(view.payload.scope);
+  const [mode, setMode] = useState<Applies>(scope.kind);
+  const [picked, setPicked] = useState<string[]>(scope.kind === "prompts" ? scope.ids : []);
+  const save = (patch: Record<string, unknown>) => h.onExtras?.(view.id, patch);
+  const choose = (next: Applies) => {
+    setMode(next);
+    if (next === "all") save({ scope: scopeValue({ kind: "all" }) });
+    if (next === "session" && view.session) save({ scope: scopeValue({ kind: "session", key: view.session }) });
+    if (next === "prompts" && picked.length > 0) save({ scope: scopeValue({ kind: "prompts", ids: picked }) });
+  };
+  const tick = (id: string, on: boolean) => {
+    const next = on ? [...picked, id] : picked.filter((one) => one !== id);
+    setPicked(next);
+    if (next.length > 0) save({ scope: scopeValue({ kind: "prompts", ids: next }) });
+  };
+  return (
+    <>
+      <SourceHead eyebrow={`System prompt ${view.number}`} view={view} noun="system prompt" line={`Applies to ${view.appliesTo} ${view.appliesTo === 1 ? "prompt" : "prompts"}`} phone={phone} onRename={h.onRename} />
+      <FieldBlock label={SYSTEM_PROMPT_DIALOG_COPY.text}>
+        <CommitField key={`${view.id}:text`} label={SYSTEM_PROMPT_DIALOG_COPY.text} value={facts.text} multiline rows={6} max={SYSTEM_PROMPT_TEXT_MAX} phone={phone} placeholder={SYSTEM_PROMPT_DIALOG_COPY.textPlaceholder} onCommit={(value) => save({ text: value })} />
+      </FieldBlock>
+      <Field id={`${view.id}-applies`} label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo} group>
+        <ChoiceRows<Applies>
+          label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo}
+          name={`applies-${view.id}`}
+          phone={phone}
+          value={mode}
+          onChange={choose}
+          rows={[
+            { value: "all", label: SYSTEM_PROMPT_DIALOG_COPY.all },
+            ...(view.session ? [{ value: "session" as const, label: SYSTEM_PROMPT_DIALOG_COPY.session }] : []),
+            ...(view.prompts.length > 0 ? [{ value: "prompts" as const, label: SYSTEM_PROMPT_DIALOG_COPY.selected }] : []),
+          ]}
+        />
+        {mode === "prompts" ? (
+          <div role="group" aria-label={SYSTEM_PROMPT_DIALOG_COPY.selected} style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 24 }}>
+            {view.prompts.map((prompt) => (
+              <label key={prompt.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28 }}>
+                <Checkbox checked={picked.includes(prompt.id)} onChange={(event) => tick(prompt.id, event.target.checked)} />
+                <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{prompt.label}</span>
+              </label>
+            ))}
+            {picked.length === 0 ? <span style={quiet()}>Choose at least one prompt for it to apply to.</span> : null}
+          </div>
+        ) : null}
+      </Field>
+      <ExtraRows id={view.id} rows={systemPromptRows(view.payload)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
+function DatasetDetails({ view, phone, inBuild, ...h }: { view: DatasetView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
+  const facts = datasetOf(view.payload);
+  const save = (patch: Record<string, unknown>) => h.onExtras?.(view.id, patch);
+  return (
+    <>
+      <SourceHead eyebrow={`Dataset ${view.number}`} view={view} noun="dataset" line={facts.use ? DATASET_USE_LABEL[facts.use] : undefined} phone={phone} onRename={h.onRename} />
+      <FieldBlock label={DATASET_DIALOG_COPY.description}>
+        <CommitField key={`${view.id}:description`} label={DATASET_DIALOG_COPY.description} value={facts.description} multiline rows={3} max={DATASET_DESCRIPTION_MAX} phone={phone} placeholder={DATASET_DIALOG_COPY.descriptionPlaceholder} onCommit={(value) => save({ description: value })} />
+      </FieldBlock>
+      <Field id={`${view.id}-use`} label={DATASET_DIALOG_COPY.use} group>
+        <ChoiceGrid<DatasetUse> bare label={DATASET_DIALOG_COPY.use} items={DATASET_USES.map((value) => ({ value, label: DATASET_USE_LABEL[value] }))} value={facts.use} onChange={(next) => save({ use: next })} phone={phone} allowClear />
+      </Field>
+      <ExtraRows id={view.id} rows={datasetRows(view.payload)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
+function RepoDetails({ view, phone, inBuild = [], ...h }: { view: RepoView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
+  const facts = repoOf(view.payload);
+  const save = (patch: Record<string, unknown>) => h.onExtras?.(view.id, patch);
+  if (!facts) return <SourceHead eyebrow={`GitHub repository ${view.number}`} view={view} noun="repository" phone={phone} onRename={h.onRename} />;
+  const third = facts.ownership === "third_party";
+  const own = facts.ownership === "created" || facts.ownership === "owned";
+  const licence = facts.fetched.fetchedAt ? licenceLine(facts.fetched.licenceSpdx, facts.fetched.licenceName) : null;
+  return (
+    <>
+      <SourceHead eyebrow={`GitHub repository ${view.number}`} view={view} noun="repository" line={facts.ownership ? REPO_OWNERSHIP_LABEL[facts.ownership] : undefined} phone={phone} onRename={h.onRename} />
+      <FieldBlock label={REPO_DIALOG_COPY.url}>
+        <CommitField key={`${view.id}:url`} label={REPO_DIALOG_COPY.url} value={facts.url} phone={phone} placeholder={REPO_DIALOG_COPY.urlPlaceholder} onCommit={(value) => save({ url: value })} />
+      </FieldBlock>
+      <Field id={`${view.id}-ownership`} label={REPO_DIALOG_COPY.ownership} group>
+        <ChoiceGrid<RepoOwnership> bare label={REPO_DIALOG_COPY.ownership} items={REPO_OWNERSHIPS.map((value) => ({ value, label: REPO_OWNERSHIP_LABEL[value] }))} value={facts.ownership} onChange={(next) => save({ ownership: next })} phone={phone} />
+      </Field>
+      <FieldBlock label={REPO_DIALOG_COPY.description}>
+        <CommitField key={`${view.id}:description`} label={REPO_DIALOG_COPY.description} value={facts.description ?? ""} multiline rows={3} max={REPO_DESCRIPTION_MAX} phone={phone} placeholder={REPO_DIALOG_COPY.descriptionPlaceholder} onCommit={(value) => save({ description: value })} />
+      </FieldBlock>
+      {facts.fetched.fetchedAt ? (
+        <div data-testid="repo-retrieved">
+          <KeyValue label={REPO_DIALOG_COPY.retrieved}>{`Retrieved ${repoDay(facts.fetched.fetchedAt)}`}</KeyValue>
+          {facts.fetched.language ? <KeyValue label={REPO_DIALOG_COPY.language}>{facts.fetched.language}</KeyValue> : null}
+          {licence ? <KeyValue label={REPO_DIALOG_COPY.licence}>{licence.reuse ? `${licence.text} · ${licence.reuse}` : licence.text}</KeyValue> : null}
+          {facts.fetched.pushedAt ? <KeyValue label={REPO_DIALOG_COPY.lastCommit}>{`${repoDay(facts.fetched.pushedAt)}${isPossiblyUnmaintained(facts.fetched.pushedAt) ? ` · ${REPO_DIALOG_COPY.unmaintained}` : ""}`}</KeyValue> : null}
+        </div>
+      ) : null}
+      {third ? (
+        <>
+          <FieldBlock label={REPO_DIALOG_COPY.author}>
+            <CommitField key={`${view.id}:author`} label={REPO_DIALOG_COPY.author} value={facts.author ?? ""} max={REPO_AUTHOR_MAX} phone={phone} onCommit={(value) => save({ author: value })} />
+          </FieldBlock>
+          <Field id={`${view.id}-usage`} label={REPO_DIALOG_COPY.usage} group>
+            {REPO_USAGES.map((value) => (
+              <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28 }}>
+                <Checkbox checked={facts.usage.includes(value)} onChange={(event) => save({ usage: REPO_USAGES.filter((use: RepoUsage) => (use === value ? event.target.checked : facts.usage.includes(use))) })} />
+                <span style={text(13, 400, t.text)}>{REPO_USAGE_LABEL[value]}</span>
+              </label>
+            ))}
+          </Field>
+        </>
+      ) : null}
+      {own ? (
+        <>
+          <Field id={`${view.id}-visibility`} label={REPO_DIALOG_COPY.visibility} group>
+            <ChoiceGrid<RepoVisibility> bare label={REPO_DIALOG_COPY.visibility} items={REPO_VISIBILITIES.map((value) => ({ value, label: value === "public" ? REPO_DIALOG_COPY.public : REPO_DIALOG_COPY.private }))} value={facts.visibility} onChange={(next) => save({ visibility: next })} phone={phone} allowClear columns={2} />
+          </Field>
+          <Field id={`${view.id}-generated`} label={REPO_DIALOG_COPY.generatedWith} group>
+            <div>
+              <ToolPicker label={REPO_DIALOG_COPY.generatedWith} value={facts.generatedWith} onChange={(next) => save({ generated_with: next })} inBuild={inBuild} allowNone phone={phone} step="code" placeholder={REPO_DIALOG_COPY.selectTool} />
+            </div>
+          </Field>
+          <FieldBlock label={REPO_DIALOG_COPY.deployed}>
+            <CommitField key={`${view.id}:deployed`} label={REPO_DIALOG_COPY.deployed} value={facts.deployedUrl ?? ""} placeholder={REPO_DIALOG_COPY.deployedPlaceholder} phone={phone} onCommit={(value) => save({ deployed_url: value })} />
+          </FieldBlock>
+        </>
+      ) : null}
+      <ExtraRows id={view.id} rows={repoRows(view.payload)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
   );
 }
@@ -1947,14 +2178,17 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
   return (
     <DetailsColourContext.Provider value={colour}>
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
-      {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
+      {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} payload={view.payload} inBuild={inBuild} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
-      {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
-      {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
+      {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} payload={view.sentWithLine?.startsWith("Setup") ? undefined : view.payload} inBuild={inBuild} {...(view.sentWithLine?.startsWith("Setup") ? { ...h, onExtras: undefined } : h)} /> : null}
+      {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} payload={view.payload} inBuild={inBuild} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} onSessionExtras={h.onSessionExtras} onSessionTogether={h.onSessionTogether} focusSetup={focusSetup} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
-      {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
-      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
+      {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} onExtras={h.onExtras} payload={view.payload} inBuild={inBuild} /> : null}
+      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} payload={view.payload} {...h} /> : null}
+      {view.kind === "system_prompt" ? <SystemPromptDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
+      {view.kind === "dataset" ? <DatasetDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
+      {view.kind === "repo" ? <RepoDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "decision" ? <DecisionDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.runtime && h.onRuntime && view.kind !== "session" ? (
         <RuntimeFields key={`${view.id}:runtime`} id={view.id} runtime={view.runtime} phone={phone} onRuntime={h.onRuntime} onReadHelpers={h.onReadHelpers} />
@@ -1962,7 +2196,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.runtime?.runsWhen && h.onRunsWhen && view.kind !== "prompt" ? (
         <RunsWhenField key={`${view.kind === "session" ? view.key : view.id}:when:${view.runtime.runsWhen.currentLabel ?? ""}`} view={view.runtime.runsWhen} phone={phone} onChange={(next) => h.onRunsWhen?.(view.kind === "session" ? view.key : view.id, next)} />
       ) : null}
-      {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} onTrainedOn={h.onTrainedOn} onRemoveInside={h.onRemoveInside} /> : null}
+      {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} onTrainedOn={h.onTrainedOn} onRemoveInside={h.onRemoveInside} onExtras={h.onExtras} payload={view.payload} /> : null}
     </div>
     </DetailsColourContext.Provider>
   );
