@@ -6,8 +6,8 @@
    Card (drawn by `SandboxCard`, UI-P94), the same order of parts and the same accessible names. The page and
    the dev page choose with `useLook()`, and hand this the refined forks of the panels.
 
-   THE TITLE ROW, under a hairline: the draft's title 20/500 and its status line 12.5 `--text2` with the missing part
-   underlined; List / Map with "Map is now available" under it; Card and Preview (secondary 30) and Publish (primary
+   THE TITLE ROW, under a hairline: the draft's title 20/500 and its status line 12.5 `--text2`; List / Map with
+   "Map is now available" under it; Card and Preview (secondary 30) and Publish (primary
    30), the view's one primary. THE COLUMNS, a wrapping row with gap 24: Sources on the surface with a hairline on its
    right (`flex: 1 1 216px`, max 232), Build (`flex: 999 1 480px`), Details as a module (`flex: 1 1 280px`, max 300).
    A phone keeps today's order: the title, the Build panel with Sources and Details behind two buttons, and the action
@@ -15,8 +15,8 @@
 
    PT-05: THE POST SITS ABOVE THE BUILD, as X's composer sits above a timeline: the `post` slot (the thread written as
    one page) heads the Build column, above the first prompt, with a hairline under it. There are no tabs: the post and
-   the build are one page. The Card's Cover is one line and a button that comes here; "a cover picture or video" in
-   Missing does too, scrolling to the post and putting the caret in it.
+   the build are one page. The Card's Cover is one line and a button that comes here, scrolling to the post and putting
+   the caret in it.
 
    MAP (UI-P94, `refined/{dusk,noon}/composer-map.html`). Sources folds to its rail as today, drawn as a module 52
    wide (padding `8px 0`): ghost 40-wide buttons, 36 high, 44 with a count under the glyph (10.5/500, tabular),
@@ -96,7 +96,7 @@ export interface SandboxViewProps extends CardProps {
   onUseResultPicture?: () => void;
 
   /**
-   * Puts the cursor in the Build panel's add field: Add › Prompt, and the "a prompt" missing item. CA-10: it runs
+   * Puts the cursor in the Build panel's add field: Add › Prompt. CA-10: it runs
    * inside the tap's own handler (so an iPhone raises the keyboard) and returns true once focus has moved, so the
    * menu does not take it back.
    */
@@ -537,7 +537,7 @@ const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: 
 
 export function SandboxView(props: SandboxViewProps) {
   const phone = useIsPhone();
-  const { status, published, missing, save } = props;
+  const { status, published, save } = props;
 
   const [cardOpen, setCardOpen] = useState(false);
   const [cardField, setCardField] = useState<CardField | null>(null);
@@ -559,7 +559,6 @@ export function SandboxView(props: SandboxViewProps) {
   if (status === "notFound") return <NotFound />;
 
   const untitled = isUntitled(props.title);
-  const needs = missing.length > 0 && !published;
   // Map is for desktop; a phone is always the list.
   const lens: SandboxLens = phone ? "list" : props.lens;
 
@@ -580,15 +579,6 @@ export function SandboxView(props: SandboxViewProps) {
     }, 0);
   };
 
-  const onMissing = (key: SandboxMissingItem["key"]) => {
-    if (key.startsWith("runtime-")) return;
-    if (key === "evidence") return openPost();
-    if (key === "title") return openCard("title");
-    if (key === "outcome") return openCard("summary");
-    // CA-10: the field is focused in this tap; the Build panel takes focus only when there is no field to give it to.
-    if (props.onAddPromptFocus?.() === true) return;
-    buildRef.current?.focus();
-  };
 
   const statusLine = (
     <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
@@ -614,19 +604,6 @@ export function SandboxView(props: SandboxViewProps) {
       {props.threadNote ? ` · ${props.threadNote}` : null}
       {/* CA-03 P8: what kind of build it is, once it has more than one step. */}
       {props.summary ? <span data-testid="sandbox-summary">{` · ${props.summary}`}</span> : null}
-      {needs ? (
-        <>
-          {" · Missing: "}
-          {missing.map((item, index) => (
-            <span key={item.key}>
-              {index > 0 ? ", " : null}
-              <TextButton underline onClick={() => onMissing(item.key)} target={phone} style={underlined}>
-                {item.label}
-              </TextButton>
-            </span>
-          ))}
-        </>
-      ) : null}
     </p>
   );
 
@@ -641,7 +618,7 @@ export function SandboxView(props: SandboxViewProps) {
 
   const publishLabel = published ? "Published" : props.publishing ? "Publishing…" : "Publish";
   const publishDisabled = Boolean(published) || props.publishing;
-  /* The board draws Publish at full strength beside the missing part: the status line says what is missing. */
+  /* The board draws Publish at full strength whatever is still outstanding. */
   const previewTo = props.slug ? `/b2/${props.slug}` : null;
 
   const lensSwitch =

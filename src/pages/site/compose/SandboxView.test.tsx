@@ -78,13 +78,6 @@ describe("SandboxView frame", () => {
     expect(screen.getByTestId("sandbox-counts").textContent).toBe("3 sessions · 12 prompts · 2 files");
   });
 
-  it("names what is missing and opens the Card at that field", () => {
-    view({ missing: [{ key: "title", label: "a title" }] });
-    expect(screen.getByTestId("sandbox-status").textContent).toContain("Missing: a title");
-    fireEvent.click(screen.getByRole("button", { name: "a title" }));
-    const card = screen.getByTestId("sandbox-card");
-    expect(within(card).getByLabelText("Title")).toBe(document.activeElement);
-  });
 
   it("shows the List and Map switch only when Map is available, with the one-time line", () => {
     view();
@@ -369,19 +362,6 @@ describe("the Card and the post", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("puts the caret in the post from a missing cover, and does not open the Card", () => {
-    viewAt("/compose/x");
-    fireEvent.click(screen.getByRole("button", { name: "a cover picture or video" }));
-    vi.runAllTimers();
-    expect(screen.queryByTestId("sandbox-card")).toBeNull();
-    expect(document.activeElement?.textContent).toBe("the post body");
-  });
-
-  it("still opens the Card at the field for a missing title", () => {
-    viewAt("/compose/x", { missing: [{ key: "title", label: "a title" }] });
-    fireEvent.click(screen.getByRole("button", { name: "a title" }));
-    expect(screen.getByTestId("sandbox-card")).toBeTruthy();
-  });
 
   it("says the cover is the first picture of the post, and Edit the post closes the sheet and goes to the post", () => {
     viewAt("/compose/x");
