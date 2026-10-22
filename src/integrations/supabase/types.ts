@@ -921,6 +921,7 @@ export type Database = {
           monetisation_type: string | null
           outcome: string | null
           parent_build_id: string | null
+          patterns: string[]
           post_doc: Json | null
           price_gbp: number | null
           prompt_count: number
@@ -966,6 +967,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          patterns?: string[]
           post_doc?: Json | null
           price_gbp?: number | null
           prompt_count?: number
@@ -1011,6 +1013,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          patterns?: string[]
           post_doc?: Json | null
           price_gbp?: number | null
           prompt_count?: number
@@ -5634,6 +5637,7 @@ export type Database = {
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
       expire_import_sessions: { Args: never; Returns: number }
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
+      gallery_facets_base: { Args: { thresholds?: Json }; Returns: Json }
       get_build_feed: {
         Args: { before?: string; page_size?: number }
         Returns: {
