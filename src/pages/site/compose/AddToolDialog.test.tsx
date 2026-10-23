@@ -124,7 +124,8 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     expect(screen.queryByText("Name the key, for example GITHUB_TOKEN. Never paste its value.")).toBeNull();
     openRow("Connection method");
     fireEvent.click(screen.getByRole("button", { name: "API key" }));
-    expect(within(row("Setup steps")).getByTestId("optional-line").textContent).toBe("Name the key, for example GITHUB_TOKEN. Never paste its value.");
+    // CA-15b: the row's grey line is the board's; the key's warning is said inside the row.
+    expect(within(row("Setup steps")).getByTestId("optional-line").textContent).toBe("The steps required to connect it");
     openRow("Setup steps");
     expect(screen.getByTestId("setup-key-hint").textContent).toBe("Name the key, for example GITHUB_TOKEN. Never paste its value.");
   });
@@ -133,7 +134,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     const props = open();
     pickGitHub();
     openRow("Alternatives");
-    const picker = within(screen.getByRole("group", { name: "Alternatives" })).getByRole("button", { name: "Alternatives" });
+    const picker = within(screen.getByRole("region", { name: /Alternatives/ })).getByRole("button", { name: "Alternatives" });
     for (const name of ["gitlab", "gitlab", "github"]) {
       fireEvent.click(picker);
       fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: name } });

@@ -23,7 +23,7 @@ import { t } from "@/lib/theme/tokens";
 import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 
 import { menuSurface, text, wellField } from "./refinedStyles";
-import { PickerChevron, pickerFieldStyle } from "./modalRecipes";
+import { PickerChevron, pickerFieldStyle, smallButtonStyle } from "./modalRecipes";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
 
 export interface ToolPickerProps {
@@ -52,6 +52,8 @@ export interface ToolPickerProps {
   quiet?: boolean;
   /** CA-15b: drawn as the modals' picker field: full width, the well, the value at the left and a chevron at the right. */
   field?: boolean;
+  /** CA-15b: drawn as the modals' small button (Alternatives' "Select applications"), the placeholder its words. */
+  small?: boolean;
 }
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.kind !== "note";
@@ -82,7 +84,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Select a tool", list = "ai", unpicked = false, runtime = false, quiet = false, field: asField = false }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Select a tool", list = "ai", unpicked = false, runtime = false, quiet = false, field: asField = false, small = false }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -169,7 +171,8 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     ...ring(trigger.state.focusVisible),
   };
   const fieldStyle: CSSProperties = { ...pickerFieldStyle(phone, trigger.state, !value), ...ring(trigger.state.focusVisible) };
-  const triggerStyle: CSSProperties = quiet ? quietStyle : asField ? fieldStyle : {
+  const smallStyle: CSSProperties = { ...smallButtonStyle(phone, trigger.state), ...ring(trigger.state.focusVisible) };
+  const triggerStyle: CSSProperties = quiet ? quietStyle : asField ? fieldStyle : small ? smallStyle : {
     ...CONTROL,
     ...(trigger.state.hovered ? CONTROL_HOVER : null),
     display: "inline-flex",

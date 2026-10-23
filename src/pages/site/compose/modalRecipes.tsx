@@ -454,6 +454,28 @@ export function PickerChevron() {
   );
 }
 
+export interface PickerFieldButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "value" | "children"> {
+  value: string | null;
+  placeholder: string;
+  phone: boolean;
+  open?: boolean;
+  ref?: Ref<HTMLButtonElement>;
+}
+
+/** The picker field as a button that opens a menu: the value or the placeholder, then the chevron. */
+export function PickerFieldButton({ value, placeholder, phone, open, style, ...rest }: PickerFieldButtonProps) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled: rest.disabled });
+  return (
+    <button type="button" aria-haspopup="menu" aria-expanded={open} {...rest} {...handlers} style={{ ...pickerFieldStyle(phone, state, !value), ...ring(state.focusVisible), ...style }}>
+      <span style={ELLIPSIS}>{value || placeholder}</span>
+      <PickerChevron />
+    </button>
+  );
+}
+
+/** A picker field with something beside it (a model and its "Primary" tag): the field takes the room, 8 apart. */
+export const PICKER_ROW: CSSProperties = { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", alignItems: "center", gap: 8, minWidth: 0 };
+
 /* ── segmented ── */
 
 export interface SegmentedFieldItem<V extends string> {
@@ -659,6 +681,23 @@ export function RecipeButton({ variant = "secondary", small = false, phone = fal
   );
 }
 
+/** The small button's paint, for a trigger another component draws (a picker opened by "Select applications"). */
+export const smallButtonStyle = (phone: boolean, state: { hovered?: boolean; pressed?: boolean }): CSSProperties => ({
+  ...controlPaint(state),
+  boxSizing: "border-box",
+  display: "inline-flex",
+  alignItems: "center",
+  alignSelf: "flex-start",
+  gap: 6,
+  maxWidth: "100%",
+  height: phone ? 44 : 28,
+  padding: "0 10px",
+  borderRadius: 8,
+  whiteSpace: "nowrap",
+  cursor: "pointer",
+  ...type(12.5, 500, t.text),
+});
+
 /** A text link: 12.5 `--text2`, underlined 3 below in `--label` at half strength. */
 export function TextLink({ children, onClick, phone = false, disabled, ...aria }: { children: ReactNode; onClick: () => void; phone?: boolean; disabled?: boolean; "aria-label"?: string }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled });
@@ -750,6 +789,15 @@ export function Alert({ children }: { children: ReactNode }) {
   );
 }
 
+/** A line the modal says back after an action (what an import read): 12 `--label`, or `--text` when it is a problem. */
+export function StatusLine({ children, strong = false }: { children: ReactNode; strong?: boolean }) {
+  return (
+    <span role="status" style={{ ...HINT, ...(strong ? { color: t.text } : null) }}>
+      {children}
+    </span>
+  );
+}
+
 /* ── the optional section (drawn by OptionalSection.tsx) ── */
 
 export const OPTIONAL = {
@@ -781,6 +829,7 @@ export const OPTIONAL = {
   /** Focus: a 2px outline inset by 2, so the row's own edges never cut it. */
   focus: (visible: boolean): CSSProperties => (visible ? { outline: `2px solid ${t.focusRing}`, outlineOffset: -2 } : { outline: "none" }),
   title: type(13, 400, t.text, 18),
+  titleLine: { display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 } as CSSProperties,
   hint: { ...type(12.5, 400, t.label, 17), marginTop: 1 } as CSSProperties,
   /** CA-16b's card: a filled row's line in `--text`. */
   filledLine: { color: t.text } as CSSProperties,
@@ -801,6 +850,15 @@ export function Panel({ children, label, testId, padding = 0 }: { children: Reac
     </div>
   );
 }
+
+/** A field that takes the room left in a line. */
+export const GROW: CSSProperties = { flex: "1 1 0", minWidth: 0 };
+
+/** A panel's head: the grip, its title at 13/500, and a button at the right. */
+export const PANEL_HEAD: CSSProperties = { display: "grid", gridTemplateColumns: "16px minmax(0, 1fr) auto", alignItems: "center", gap: 8, minHeight: 28, paddingBottom: 6 };
+export const PANEL_TITLE: CSSProperties = type(13, 500, t.text, 18);
+/** A list inside a panel or a row: a column, 8 apart. */
+export const PANEL_LIST: CSSProperties = { display: "flex", flexDirection: "column", gap: 8, minWidth: 0 };
 
 /** A question field row inside a panel: a 96 label column, gap 12, padding 10 0, a hairline above. */
 export function QuestionRow({ label, id, group = false, top = false, first = false, phone, children }: { label: string; id: string; group?: boolean; top?: boolean; first?: boolean; phone: boolean; children?: ReactNode }) {
@@ -829,6 +887,11 @@ export const optionRowStyle = (phone: boolean): CSSProperties => ({ display: "gr
 
 /** The grip that drags an option, 16 wide. */
 export const GRIP: CSSProperties = { appearance: "none", background: "none", border: 0, padding: 0, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label, cursor: "grab" };
+
+/** The list fact rows sit in. */
+export function FactList({ children }: { children: ReactNode }) {
+  return <dl style={{ margin: 0, display: "flex", flexDirection: "column", minWidth: 0 }}>{children}</dl>;
+}
 
 /** A fact row: space-between, padding 9 14, a hairline between rows; the key `--text2`, the value in the data face. */
 export function FactRow({ label, children, first = false, testId }: { label: string; children: ReactNode; first?: boolean; testId?: string }) {
@@ -912,6 +975,21 @@ export function FileButton({ children, accept, multiple = false, onFiles, phone,
       />
     </>
   );
+}
+
+/** A panel's content: a column, 12 apart. */
+export function PanelBody({ children }: { children: ReactNode }) {
+  return <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>{children}</div>;
+}
+
+/** Two things at either end of one line. */
+export function Spread({ children }: { children: ReactNode }) {
+  return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", minWidth: 0 }}>{children}</div>;
+}
+
+/** Plain label words beside a control ("passed out of"): 13 `--text2`. */
+export function LabelText({ children }: { children: ReactNode }) {
+  return <span style={LABEL}>{children}</span>;
 }
 
 /** A line of small controls side by side, wrapping, 8 apart. */

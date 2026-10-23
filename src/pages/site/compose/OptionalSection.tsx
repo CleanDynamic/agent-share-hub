@@ -50,13 +50,15 @@ export interface OptionalFieldProps {
   phone?: boolean;
   /** CA-16b: a count at the right, in mono, before the chevron ("2 suggestions"). Absent: none. */
   count?: string;
+  /** CA-15b: a count 6 after the title ("Multi-agent only"). */
+  titleCount?: string;
   /** CA-16b: a filled row's line is drawn in `--text` rather than `--label`. Absent: as it was. */
   filledText?: boolean;
   children: ReactNode;
 }
 
 /** One closed-by-default row. */
-export function OptionalField({ name, description, summary, forceOpen = false, phone = false, count, filledText = false, children }: OptionalFieldProps) {
+export function OptionalField({ name, description, summary, forceOpen = false, phone = false, count, titleCount, filledText = false, children }: OptionalFieldProps) {
   const [open, setOpen] = useState(false);
   const uid = useId();
   const region = useRef<HTMLDivElement>(null);
@@ -96,7 +98,16 @@ export function OptionalField({ name, description, summary, forceOpen = false, p
         style={{ ...OPTIONAL.summary(inset, state.hovered && inset > 0, phone), ...OPTIONAL.focus(state.focusVisible) }}
       >
         <span style={{ display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 }}>
-          <span style={OPTIONAL.title}>{name}</span>
+          <span style={OPTIONAL.titleLine}>
+            <span data-testid="optional-title" style={OPTIONAL.title}>
+              {name}
+            </span>
+            {titleCount ? (
+              <span data-testid="optional-title-count" style={OPTIONAL.count}>
+                {titleCount}
+              </span>
+            ) : null}
+          </span>
           <span data-testid="optional-line" style={{ ...OPTIONAL.hint, ...ELLIPSIS, ...(filledText && filled && !open ? OPTIONAL.filledLine : null) }}>
             {line}
           </span>

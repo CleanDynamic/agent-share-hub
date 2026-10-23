@@ -85,7 +85,7 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
 
   it("an API-key tool's setup row says to name the key, never paste its value", () => {
     expect(toolRows({ connection: "api_key" })[2].description).toBe("Name the key, for example GITHUB_TOKEN. Never paste its value.");
-    expect(toolRows({ connection: "mcp" })[2].description).toBe("How it was set up, one step per line");
+    expect(toolRows({ connection: "mcp" })[2].description).toBe("The steps required to connect it");
   });
 
   it("code: File path and Generated with; a result: Caption", () => {

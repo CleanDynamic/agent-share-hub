@@ -36,10 +36,10 @@ const picture = (type: string, size = 100, name = "hero.png") => {
 };
 
 describe("the Add manual step dialog (CA-12 P10)", () => {
-  it("is a 420-wide dialog saying where the step will go, and asks 'Where was it done?'", () => {
+  it("is a 560-wide dialog saying where the step will go, and asks 'Where was it done?'", () => {
     open();
     expect(screen.getByRole("dialog", { name: MANUAL_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-manual-dialog").style.width).toBe("420px");
+    expect(screen.getByTestId("add-manual-dialog").style.width).toBe("560px");
     expect(screen.getByText("Goes after 3 · Fix the mobile layout")).toBeTruthy();
     expect(screen.getAllByText("Where was it done?").length).toBeGreaterThan(0);
     for (const name of ["An app or website", "A terminal", "On a phone", "Offline, in person", "Another website"]) expect(screen.getByRole("button", { name })).toBeTruthy();

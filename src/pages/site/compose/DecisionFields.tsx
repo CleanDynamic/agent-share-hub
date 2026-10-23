@@ -1,35 +1,56 @@
-/* CA-13 P2, CA-15 P8: the Decision form's fields, shared by Add › Decision and Details.
+/* CA-13 P2, CA-15 P8, CA-15b P2: the Decision form's fields, shared by Add › Decision and Details.
 
-   In this order:
+   Built from `modalRecipes` as the board "Add a decision" draws it. In this order:
 
-   1. A "Model" heading: Model or service (from the Runtime models and services subcategory), Version, and Invocation (Direct,
-      or Through an adapter).
-   2. Questions, a builder: Key, Type (Single choice, Multiple choice, Score, Ranking, Yes or no, Extraction), then what the type
-      takes: options (with a drag handle each), levels, or an extraction's field type (Text, Number, Date, Amount).
-   3. The Optional section: Import from a logged request and response (the fast route, through `parseDecisionCall`; Import,
-      and Read from a Code tile), Calling code, Input, Recorded answer, Installation command, Examples (input and expected
-      output pairs) and Low-confidence handling (a confidence threshold from 0 to 1, or Escalate to a person).
+   1. A "Model" group heading, then rows: Model or service (a picker field, from the Runtime models and services
+      subcategory), Version (the data face, 200 wide) and Invocation (Direct, or Through an adapter).
+   2. Questions ("1 question"): a panel per question. Its head is the grip, "Question 1" and its remove button; its rows are
+      Key, Type (Single choice, Multiple choice, Score, Ranking, Yes or no, Extraction), Instructions, then what the type
+      takes: Options (a grip, the key, the description and a remove button each, then "Add an option"), Levels, or an
+      extraction's Field type (Text, Number, Date, Amount). "Add a question" follows the panels.
+   3. The Optional section: Import from a logged request and response (through `parseDecisionCall`; Import, and Read from a
+      Code tile), Calling code, Input, Recorded answer, Installation command, Examples (input and expected output pairs) and
+      Low-confidence handling (a confidence threshold from 0 to 1, or Escalate to a person).
 
    It never runs anything and never keeps a key. */
 
 import { useId, useState, type DragEvent, type KeyboardEvent } from "react";
 
-import { Button } from "@/components/brand/Button";
-import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
-import { Segmented } from "@/components/brand/Segmented";
 import { applyImport, blankQuestion, type AnswerDraft, type DecisionDraft, type QuestionDraft } from "@/lib/build/decisionDraft";
 import { EXAMPLES_MAX, EXAMPLE_TEXT_MAX, EXTRACT_FIELDS, EXTRACT_FIELD_LABEL, QUESTION_TYPES, QUESTIONS_MAX, STATE_SAMPLE_MAX, isTypeSafe, questionTypeLabel, takesOptions, type ExtractField, type QuestionType } from "@/lib/build/decision";
 import { KEY_REMOVED_LINE, parseDecisionCall } from "@/lib/build/decisionImport";
 import { firstLineOf } from "@/lib/build/graph";
-import { t } from "@/lib/theme/tokens";
 
 import { ChoiceGrid } from "./ChoiceGrid";
-import { Field, TextButton } from "./composeControls";
-import { FieldRow, FieldRows, Hint, SectionHeading } from "./ModalFrame";
+import {
+  Block,
+  BlockHead,
+  Count,
+  FieldArea,
+  FieldInput,
+  GRIP,
+  GroupHeading,
+  Hint,
+  IconSquare,
+  Inline,
+  NARROW,
+  OptionGrid,
+  Panel,
+  PANEL_HEAD,
+  PANEL_LIST,
+  PANEL_TITLE,
+  QuestionRow,
+  RecipeButton,
+  Row,
+  SegmentedField,
+  Spread,
+  StatusLine,
+  TextLink,
+  optionRowStyle,
+} from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { PickMenu } from "./PickMenu";
-import { text as type, tnum, typedArea, typedField } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 const NONE = "__none__";
@@ -48,42 +69,51 @@ export const DECISION_COPY = {
   key: "Key",
   keyPlaceholder: "e.g. team",
   paste: "Import from a logged request and response",
-  pasteLine: "Fills in the questions, and an answer when the response is included",
-  pastePlaceholder: "e.g. The JSON request body and response, a curl command, or Python with every value written out",
+  pasteLine: "Populates the fields above from JSON, a curl command or Python",
+  pastePlaceholder: "The JSON request body and response, a curl command, or Python with every value written out",
   import: "Import",
   readCode: "Read from a Code tile",
   callingCode: "Calling code",
-  callingCodeLine: "The Code tiles that make the call",
+  callingCodeLine: "The code that sends the request, added as a Code tile",
   noCode: "Add the code that calls it as a Code tile, so people copying this get the real thing",
   addCode: "Add code",
   input: "Input",
-  inputLine: "What the decision reads",
+  inputLine: "The output of another step, or sample text",
   fromStep: "Output of another step",
   fromText: "Sample text",
   state: "Sample text",
   statePlaceholder: "e.g. Customer: I was charged twice for my order.",
   answer: "Recorded answer",
-  answerLine: "An answer the decision actually gave",
+  answerLine: "One real answer the model returned",
+  answerHint: "One value and confidence per question.",
   confidence: "Confidence",
   install: "Installation command",
-  installLine: "Exactly as you would type it",
+  installLine: "Exactly as you typed it",
   installPlaceholder: "e.g. pip install typesafe",
   examples: "Examples",
-  examplesLine: "Inputs with the output expected for each",
+  examplesLine: "Real inputs with the output returned for each",
   addExample: "Add an example",
   exampleInput: "Input",
   exampleOutput: "Expected output",
   lowConfidence: "Low-confidence handling",
-  lowConfidenceLine: "What happens when the decision is not confident",
+  lowConfidenceLine: "A confidence threshold, or escalation to a person",
   threshold: "Confidence threshold",
   escalate: "Escalate to a person",
   thresholdPlaceholder: "e.g. 0.6",
   optionDescription: "Description (optional)",
   fieldType: "Field type",
+  questionsCount: (n: number) => `${n} ${n === 1 ? "question" : "questions"}`,
+  question: (n: number) => `Question ${n}`,
+  removeQuestion: (n: number) => `Remove question ${n}`,
+  type: "Type",
+  instructions: "Instructions",
+  instructionsPlaceholder: "e.g. Which team should handle this message?",
+  options: "Options",
+  levels: "Levels",
+  addOption: "Add an option",
+  addLevel: "Add a level",
+  importCode: "Import from the code",
 } as const;
-
-const phoneSize = (phone: boolean) => (phone ? 44 : 32);
-const segSize = (phone: boolean) => (phone ? 50 : 32);
 
 export interface DecisionFieldsProps {
   draft: DecisionDraft;
@@ -99,9 +129,7 @@ export interface DecisionFieldsProps {
   open?: Partial<Record<"import" | "calling" | "input" | "answer" | "install" | "examples" | "low", boolean>>;
 }
 
-const quiet = type(12, 400, t.label);
-
-/** One option: a drag handle, its key, its description and Remove. The handle drags; the arrow keys move it too. */
+/** One option: a drag handle, its key, its description and its remove button. The handle drags; the arrow keys move it too. */
 function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, label }: { index: number; count: number; option: { key: string; line: string }; onChange: (next: { key: string; line: string }) => void; onRemove: () => void; onMove: (from: number, to: number) => void; phone: boolean; label: string }) {
   const onKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowUp" && index > 0) {
@@ -121,7 +149,7 @@ function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, la
         const from = Number(event.dataTransfer.getData("text/plain"));
         if (Number.isInteger(from) && from !== index) onMove(from, index);
       }}
-      style={{ display: "flex", gap: 6, alignItems: "center" }}
+      style={optionRowStyle(phone)}
     >
       <button
         type="button"
@@ -129,17 +157,13 @@ function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, la
         aria-label={`Move ${label.toLowerCase()} ${index + 1}. Drag, or use the up and down arrow keys.`}
         onDragStart={(event) => event.dataTransfer.setData("text/plain", String(index))}
         onKeyDown={onKey}
-        style={{ appearance: "none", background: "none", border: 0, padding: 0, width: phone ? 44 : 20, height: phone ? 44 : 28, flexShrink: 0, color: t.label, cursor: "grab", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+        style={GRIP}
       >
         <Glyph name="grip" size={14} />
       </button>
-      <input aria-label={`${label} ${index + 1}`} type="text" value={option.key} maxLength={80} placeholder="e.g. billing" onChange={(e) => onChange({ ...option, key: e.target.value })} style={typedField(phone, { flex: "0 0 36%", minWidth: 0 })} />
-      <input aria-label={`Description of ${label.toLowerCase()} ${index + 1}`} type="text" value={option.line} maxLength={200} placeholder={DECISION_COPY.optionDescription} onChange={(e) => onChange({ ...option, line: e.target.value })} style={typedField(phone, { flex: 1, minWidth: 0 })} />
-      {count > 2 ? (
-        <TextButton target={phone} onClick={onRemove} aria-label={`Remove ${label.toLowerCase()} ${index + 1}`}>
-          Remove
-        </TextButton>
-      ) : null}
+      <FieldInput phone={phone} mono aria-label={`${label} ${index + 1}`} value={option.key} maxLength={80} placeholder="e.g. billing" onChange={(e) => onChange({ ...option, key: e.target.value })} />
+      <FieldInput phone={phone} aria-label={`Description of ${label.toLowerCase()} ${index + 1}`} value={option.line} maxLength={200} placeholder={DECISION_COPY.optionDescription} onChange={(e) => onChange({ ...option, line: e.target.value })} />
+      {count > 2 ? <IconSquare glyph="x" phone={phone} label={`Remove ${label.toLowerCase()} ${index + 1}`} onClick={onRemove} /> : <span />}
     </div>
   );
 }
@@ -154,76 +178,76 @@ function QuestionEditor({ q, index, onChange, onRemove, phone, provider, canRemo
     onChange({ ...q, options: next });
   };
   return (
-    <div role="group" aria-label={`Question ${index + 1}`} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: t.tile, border: `1px solid ${t.tileBorder}`, borderRadius: 6 }}>
-      <Field id={`${uid}-key`} label={DECISION_COPY.key}>
-        <input id={`${uid}-key`} type="text" value={q.id} maxLength={40} placeholder={DECISION_COPY.keyPlaceholder} onChange={(e) => onChange({ ...q, id: e.target.value })} style={typedField(phone)} />
-      </Field>
-      <ChoiceGrid<QuestionType>
-        label={`Type of question ${index + 1}`}
-        items={QUESTION_TYPES.map((value) => ({ value, label: value === "yesno" && isTypeSafe(provider) ? "Yes or no (Noul)" : questionTypeLabel(value) }))}
-        value={q.type}
-        onChange={(next) => next && onChange({ ...q, type: next })}
-        phone={phone}
-      />
-      <Field id={`${uid}-ins`} label="Instructions">
-        <textarea id={`${uid}-ins`} rows={2} value={q.instructions} maxLength={600} onChange={(e) => onChange({ ...q, instructions: e.target.value })} style={typedArea(phone)} />
-      </Field>
+    <Panel label={DECISION_COPY.question(index + 1)} padding="10px 14px 14px">
+      <div style={PANEL_HEAD}>
+        <span aria-hidden="true" style={GRIP}>
+          <Glyph name="grip" size={14} />
+        </span>
+        <span style={PANEL_TITLE}>{DECISION_COPY.question(index + 1)}</span>
+        {canRemove ? <IconSquare glyph="x" phone={phone} label={DECISION_COPY.removeQuestion(index + 1)} onClick={onRemove} /> : null}
+      </div>
+      <QuestionRow id={`${uid}-key`} label={DECISION_COPY.key} phone={phone}>
+        <FieldInput phone={phone} mono id={`${uid}-key`} value={q.id} maxLength={40} placeholder={DECISION_COPY.keyPlaceholder} onChange={(e) => onChange({ ...q, id: e.target.value })} />
+      </QuestionRow>
+      <QuestionRow id={`${uid}-type`} label={DECISION_COPY.type} group phone={phone}>
+        <SegmentedField<QuestionType>
+          label={`Type of question ${index + 1}`}
+          phone={phone}
+          items={QUESTION_TYPES.map((value) => ({ value, label: value === "yesno" && isTypeSafe(provider) ? "Yes or no (Noul)" : questionTypeLabel(value) }))}
+          value={q.type}
+          onChange={(next) => onChange({ ...q, type: next })}
+        />
+      </QuestionRow>
+      <QuestionRow id={`${uid}-ins`} label={DECISION_COPY.instructions} top phone={phone}>
+        <FieldArea phone={phone} id={`${uid}-ins`} rows={2} value={q.instructions} maxLength={600} placeholder={DECISION_COPY.instructionsPlaceholder} onChange={(e) => onChange({ ...q, instructions: e.target.value })} />
+      </QuestionRow>
       {takesOptions(q.type) ? (
-        <div role="group" aria-label={`Options of question ${index + 1}`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {q.type === "rank" ? <span style={quiet}>The answer puts every option in order.</span> : null}
-          {q.options.map((option, i) => (
-            <OptionRow
-              key={i}
-              index={i}
-              count={q.options.length}
-              option={option}
-              label={optionLabel}
-              phone={phone}
-              onMove={move}
-              onChange={(next) => onChange({ ...q, options: q.options.map((o, j) => (j === i ? next : o)) })}
-              onRemove={() => onChange({ ...q, options: q.options.filter((_, j) => j !== i) })}
-            />
-          ))}
-          <div>
-            <Button variant="secondary" size={phoneSize(phone)} onClick={() => onChange({ ...q, options: [...q.options, { key: "", line: "" }] })}>
-              Add an option
-            </Button>
+        <>
+          <QuestionRow id={`${uid}-options`} label={DECISION_COPY.options} group top phone={phone}>
+            {q.type === "rank" ? <Hint>The answer puts every option in order.</Hint> : null}
+          </QuestionRow>
+          <div role="group" aria-label={`Options of question ${index + 1}`} style={PANEL_LIST}>
+            {q.options.map((option, i) => (
+              <OptionRow
+                key={i}
+                index={i}
+                count={q.options.length}
+                option={option}
+                label={optionLabel}
+                phone={phone}
+                onMove={move}
+                onChange={(next) => onChange({ ...q, options: q.options.map((o, j) => (j === i ? next : o)) })}
+                onRemove={() => onChange({ ...q, options: q.options.filter((_, j) => j !== i) })}
+              />
+            ))}
+            <TextLink phone={phone} onClick={() => onChange({ ...q, options: [...q.options, { key: "", line: "" }] })}>
+              {DECISION_COPY.addOption}
+            </TextLink>
           </div>
-        </div>
+        </>
       ) : null}
       {q.type === "score" ? (
-        <div role="group" aria-label={`Levels of question ${index + 1}, lowest to highest`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={quiet}>Lowest to highest</span>
-          {q.levels.map((level, i) => (
-            <div key={i} style={{ display: "flex", gap: 6 }}>
-              <input aria-label={`Level ${i + 1}`} type="text" value={level} maxLength={60} placeholder={i === 0 ? "e.g. Calm" : "e.g. Annoyed"} onChange={(e) => onChange({ ...q, levels: q.levels.map((l, j) => (j === i ? e.target.value : l)) })} style={typedField(phone, { flex: 1, minWidth: 0 })} />
-              {q.levels.length > 2 ? (
-                <TextButton target={phone} onClick={() => onChange({ ...q, levels: q.levels.filter((_, j) => j !== i) })} aria-label={`Remove level ${i + 1}`}>
-                  Remove
-                </TextButton>
-              ) : null}
-            </div>
-          ))}
-          <div>
-            <Button variant="secondary" size={phoneSize(phone)} onClick={() => onChange({ ...q, levels: [...q.levels, ""] })}>
-              Add a level
-            </Button>
+        <QuestionRow id={`${uid}-levels`} label={DECISION_COPY.levels} group top phone={phone}>
+          <div role="group" aria-label={`Levels of question ${index + 1}, lowest to highest`} style={PANEL_LIST}>
+            <Hint>Lowest to highest</Hint>
+            {q.levels.map((level, i) => (
+              <Spread key={i}>
+                <FieldInput phone={phone} aria-label={`Level ${i + 1}`} value={level} maxLength={60} placeholder={i === 0 ? "e.g. Calm" : "e.g. Annoyed"} onChange={(e) => onChange({ ...q, levels: q.levels.map((l, j) => (j === i ? e.target.value : l)) })} />
+                {q.levels.length > 2 ? <IconSquare glyph="x" phone={phone} label={`Remove level ${i + 1}`} onClick={() => onChange({ ...q, levels: q.levels.filter((_, j) => j !== i) })} /> : null}
+              </Spread>
+            ))}
+            <TextLink phone={phone} onClick={() => onChange({ ...q, levels: [...q.levels, ""] })}>
+              {DECISION_COPY.addLevel}
+            </TextLink>
           </div>
-        </div>
+        </QuestionRow>
       ) : null}
       {q.type === "extract" ? (
-        <Field id={`${uid}-field`} label={DECISION_COPY.fieldType} group>
+        <QuestionRow id={`${uid}-field`} label={DECISION_COPY.fieldType} group phone={phone}>
           <ChoiceGrid<ExtractField> bare label={`Field type of question ${index + 1}`} items={EXTRACT_FIELDS.map((value) => ({ value, label: EXTRACT_FIELD_LABEL[value] }))} value={q.field} onChange={(next) => next && onChange({ ...q, field: next })} phone={phone} columns={4} />
-        </Field>
+        </QuestionRow>
       ) : null}
-      {canRemove ? (
-        <div>
-          <TextButton target={phone} onClick={onRemove} aria-label={`Remove question ${index + 1}`}>
-            Remove question
-          </TextButton>
-        </div>
-      ) : null}
-    </div>
+    </Panel>
   );
 }
 
@@ -234,42 +258,22 @@ function AnswerEditor({ q, answer, onChange, phone }: { q: QuestionDraft; answer
   const options = q.options.filter((o) => o.key.trim());
   const levels = q.levels.filter((level) => level.trim());
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
-      <Field id={`${uid}-v`} label={q.id.trim() || "Question"}>
+    <QuestionRow id={`${uid}-v`} label={q.id.trim() || "Question"} first phone={phone}>
+      <Inline>
         {q.type === "choice" ? (
-          <PickMenu
-            id={`${uid}-v`}
-            label={`Answer to ${q.id}`}
-            phone={phone}
-            placeholder="No answer"
-            value={value || null}
-            options={[{ value: NONE, label: "No answer" }, ...options.map((o) => ({ value: o.key, label: o.key }))]}
-            onChange={(next) => (next === NONE ? onChange(null) : set({ value: next }))}
-          />
+          <PickMenu field id={`${uid}-v`} label={`Answer to ${q.id}`} phone={phone} placeholder="No answer" value={value || null} options={[{ value: NONE, label: "No answer" }, ...options.map((o) => ({ value: o.key, label: o.key }))]} onChange={(next) => (next === NONE ? onChange(null) : set({ value: next }))} />
         ) : q.type === "score" ? (
-          <PickMenu
-            id={`${uid}-v`}
-            label={`Answer to ${q.id}`}
-            phone={phone}
-            placeholder="No answer"
-            value={value || null}
-            options={[{ value: NONE, label: "No answer" }, ...levels.map((level, i) => ({ value: String(i), label: level }))]}
-            onChange={(next) => (next === NONE ? onChange(null) : set({ value: next }))}
-          />
+          <PickMenu field id={`${uid}-v`} label={`Answer to ${q.id}`} phone={phone} placeholder="No answer" value={value || null} options={[{ value: NONE, label: "No answer" }, ...levels.map((level, i) => ({ value: String(i), label: level }))]} onChange={(next) => (next === NONE ? onChange(null) : set({ value: next }))} />
         ) : q.type === "multi" || q.type === "rank" ? (
-          <input id={`${uid}-v`} aria-label={`Answer to ${q.id}`} type="text" value={value} placeholder={q.type === "rank" ? "e.g. every option, in order, comma separated" : "e.g. billing, support"} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} style={typedField(phone)} />
+          <FieldInput phone={phone} id={`${uid}-v`} aria-label={`Answer to ${q.id}`} value={value} placeholder={q.type === "rank" ? "e.g. every option, in order, comma separated" : "e.g. billing, support"} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
         ) : q.type === "extract" ? (
-          <input id={`${uid}-v`} aria-label={`Answer to ${q.id}`} type="text" value={value} placeholder={`e.g. the ${EXTRACT_FIELD_LABEL[q.field].toLowerCase()} it pulled out`} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} style={typedField(phone)} />
+          <FieldInput phone={phone} id={`${uid}-v`} aria-label={`Answer to ${q.id}`} value={value} placeholder={`e.g. the ${EXTRACT_FIELD_LABEL[q.field].toLowerCase()} it pulled out`} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
         ) : (
-          <input id={`${uid}-v`} type="text" inputMode="decimal" value={value} placeholder="e.g. 0 to 1" onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} style={typedField(phone, tnum)} />
+          <FieldInput phone={phone} mono id={`${uid}-v`} aria-label={`Answer to ${q.id}`} inputMode="decimal" value={value} placeholder="e.g. 0 to 1" onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
         )}
-      </Field>
-      {q.type !== "yesno" ? (
-        <Field id={`${uid}-s`} label={DECISION_COPY.confidence} hint="Percent">
-          <input id={`${uid}-s`} type="text" inputMode="numeric" value={answer?.sure ?? ""} disabled={!value} onChange={(e) => set({ sure: e.target.value })} style={typedField(phone, { width: 80, ...tnum })} />
-        </Field>
-      ) : null}
-    </div>
+        {q.type !== "yesno" ? <FieldInput phone={phone} mono width={NARROW.date} aria-label={`${DECISION_COPY.confidence}, percent`} inputMode="numeric" placeholder="Percent" value={answer?.sure ?? ""} disabled={!value} onChange={(e) => set({ sure: e.target.value })} /> : null}
+      </Inline>
+    </QuestionRow>
   );
 }
 
@@ -278,6 +282,7 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
   const [pasted, setPasted] = useState("");
   const [note, setNote] = useState<{ text: string; problem: boolean } | null>(null);
   const [codeId, setCodeId] = useState("");
+  const [fromCode, setFromCode] = useState(false);
   const set = (patch: Partial<DecisionDraft>) => onChange({ ...draft, ...patch });
 
   const read = (source: string) => {
@@ -298,120 +303,102 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
   const setExample = (at: number, patch: Partial<{ input: string; output: string }>) => set({ examples: examples.map((example, i) => (i === at ? { ...example, ...patch } : example)) });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}>
-      <SectionHeading>{DECISION_COPY.model}</SectionHeading>
-      <FieldRows>
-        <FieldRow id={`${uid}-prov`} label={DECISION_COPY.provider} group phone={phone}>
-          <div>
-            <ToolPicker label={DECISION_COPY.provider} value={draft.provider || null} onChange={(next) => set({ provider: next ?? "" })} inBuild={inBuild} phone={phone} step="agent" runtime placeholder={DECISION_COPY.selectProvider} />
-          </div>
-        </FieldRow>
-        <FieldRow id={`${uid}-version`} label={DECISION_COPY.version} phone={phone}>
-          <input id={`${uid}-version`} type="text" value={draft.model} maxLength={80} placeholder={DECISION_COPY.versionPlaceholder} onChange={(e) => set({ model: e.target.value })} style={typedField(phone)} />
-        </FieldRow>
-        <FieldRow id={`${uid}-via`} label={DECISION_COPY.invocation} group phone={phone}>
-          <Segmented<"api" | "adapter">
-            label={DECISION_COPY.invocation}
-            semantics="radio"
-            size={segSize(phone)}
-            fontSize={13}
-            items={[{ value: "api", label: DECISION_COPY.direct }, { value: "adapter", label: DECISION_COPY.adapter }]}
-            value={draft.via}
-            onChange={(via) => set({ via })}
-          />
-        </FieldRow>
-      </FieldRows>
+    <>
+      <GroupHeading>{DECISION_COPY.model}</GroupHeading>
+      <Row id={`${uid}-prov`} label={DECISION_COPY.provider} group noRule phone={phone}>
+        <ToolPicker label={DECISION_COPY.provider} value={draft.provider || null} onChange={(next) => set({ provider: next ?? "" })} inBuild={inBuild} phone={phone} step="agent" runtime placeholder={DECISION_COPY.selectProvider} field />
+      </Row>
+      <Row id={`${uid}-version`} label={DECISION_COPY.version} phone={phone}>
+        <FieldInput phone={phone} mono width={NARROW.version} id={`${uid}-version`} value={draft.model} maxLength={80} placeholder={DECISION_COPY.versionPlaceholder} onChange={(e) => set({ model: e.target.value })} />
+      </Row>
+      <Row id={`${uid}-via`} label={DECISION_COPY.invocation} group phone={phone}>
+        <SegmentedField<"api" | "adapter"> label={DECISION_COPY.invocation} phone={phone} items={[{ value: "api", label: DECISION_COPY.direct }, { value: "adapter", label: DECISION_COPY.adapter }]} value={draft.via} onChange={(via) => set({ via })} />
+      </Row>
 
-      <Field id={`${uid}-qs`} label={DECISION_COPY.questions} group>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {draft.questions.map((q, index) => (
-            <QuestionEditor
-              key={index}
-              q={q}
-              index={index}
-              phone={phone}
-              provider={draft.provider}
-              canRemove={draft.questions.length > 1}
-              onChange={(next) => set({ questions: draft.questions.map((candidate, i) => (i === index ? next : candidate)) })}
-              onRemove={() => set({ questions: draft.questions.filter((_, i) => i !== index) })}
-            />
-          ))}
-          <div>
-            <Button variant="secondary" size={phoneSize(phone)} disabled={draft.questions.length >= QUESTIONS_MAX} onClick={() => set({ questions: [...draft.questions, blankQuestion()] })}>
-              {DECISION_COPY.addQuestion}
-            </Button>
-          </div>
-        </div>
-      </Field>
+      <Block label={DECISION_COPY.questions}>
+        <BlockHead label={DECISION_COPY.questions} heading count={DECISION_COPY.questionsCount(draft.questions.length)} />
+        {draft.questions.map((q, index) => (
+          <QuestionEditor
+            key={index}
+            q={q}
+            index={index}
+            phone={phone}
+            provider={draft.provider}
+            canRemove={draft.questions.length > 1}
+            onChange={(next) => set({ questions: draft.questions.map((candidate, i) => (i === index ? next : candidate)) })}
+            onRemove={() => set({ questions: draft.questions.filter((_, i) => i !== index) })}
+          />
+        ))}
+        <Inline>
+          <RecipeButton small phone={phone} disabled={draft.questions.length >= QUESTIONS_MAX} onClick={() => set({ questions: [...draft.questions, blankQuestion()] })}>
+            {DECISION_COPY.addQuestion}
+          </RecipeButton>
+        </Inline>
+      </Block>
 
       <OptionalSection>
         <OptionalField name={DECISION_COPY.paste} description={DECISION_COPY.pasteLine} forceOpen={open.import} phone={phone}>
-          <textarea aria-label={DECISION_COPY.paste} rows={4} value={pasted} placeholder={DECISION_COPY.pastePlaceholder} onChange={(e) => setPasted(e.target.value)} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <Button variant="secondary" size={phoneSize(phone)} disabled={!pasted.trim()} onClick={() => read(pasted)}>
-              {DECISION_COPY.import}
-            </Button>
-            {codeTiles.length > 0 ? (
-              <>
-                <PickMenu label={DECISION_COPY.readCode} phone={phone} placeholder={DECISION_COPY.readCode} value={codeId || null} options={codeTiles.map((tile) => ({ value: tile.id, label: tile.label }))} onChange={setCodeId} style={{ maxWidth: 220 }} />
-                <Button variant="secondary" size={phoneSize(phone)} disabled={!codeId} onClick={() => read(codeTiles.find((tile) => tile.id === codeId)?.source ?? "")}>
-                  Import from the code
-                </Button>
-              </>
-            ) : null}
-          </div>
-          {note ? (
-            <span role="status" style={type(12, 400, note.problem ? t.text : t.label)}>
-              {note.text}
-            </span>
+          <FieldArea phone={phone} rows={3} mono aria-label={DECISION_COPY.paste} value={pasted} placeholder={DECISION_COPY.pastePlaceholder} onChange={(e) => setPasted(e.target.value)} />
+          {codeTiles.length > 0 ? (
+            <TextLink phone={phone} onClick={() => setFromCode(!fromCode)}>
+              {DECISION_COPY.readCode}
+            </TextLink>
           ) : null}
+          {fromCode && codeTiles.length > 0 ? (
+            <Inline>
+              <PickMenu field label={DECISION_COPY.readCode} phone={phone} placeholder={DECISION_COPY.readCode} value={codeId || null} options={codeTiles.map((tile) => ({ value: tile.id, label: tile.label }))} onChange={setCodeId} />
+              <RecipeButton small phone={phone} disabled={!codeId} onClick={() => read(codeTiles.find((tile) => tile.id === codeId)?.source ?? "")}>
+                {DECISION_COPY.importCode}
+              </RecipeButton>
+            </Inline>
+          ) : null}
+          <Inline>
+            <RecipeButton small phone={phone} disabled={!pasted.trim()} onClick={() => read(pasted)}>
+              {DECISION_COPY.import}
+            </RecipeButton>
+          </Inline>
+          {note ? <StatusLine strong={note.problem}>{note.text}</StatusLine> : null}
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.callingCode} description={DECISION_COPY.callingCodeLine} summary={summaryOf(called)} forceOpen={open.calling} phone={phone}>
           {codeTiles.length > 0 ? (
-            <div role="group" aria-label={DECISION_COPY.callingCode} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {codeTiles.map((tile) => (
-                <label key={tile.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 24 }}>
-                  <Checkbox checked={draft.calledFrom.includes(tile.id)} onChange={(e) => set({ calledFrom: e.target.checked ? [...draft.calledFrom, tile.id] : draft.calledFrom.filter((id) => id !== tile.id) })} />
-                  <span style={type(13, 400, t.text)}>{tile.label}</span>
-                </label>
-              ))}
-            </div>
+            <OptionGrid
+              label={DECISION_COPY.callingCode}
+              phone={phone}
+              multiple
+              columns={2}
+              items={codeTiles.map((tile) => ({ value: tile.id, label: tile.label }))}
+              chosen={draft.calledFrom}
+              onPick={(id) => set({ calledFrom: draft.calledFrom.includes(id) ? draft.calledFrom.filter((other) => other !== id) : [...draft.calledFrom, id] })}
+            />
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-              <span style={quiet}>{DECISION_COPY.noCode}</span>
-              {onAddCode ? (
-                <Button variant="secondary" size={phoneSize(phone)} onClick={onAddCode}>
-                  {DECISION_COPY.addCode}
-                </Button>
-              ) : null}
-            </div>
+            <Hint>{DECISION_COPY.noCode}</Hint>
           )}
+          {onAddCode ? (
+            <Inline>
+              <RecipeButton small phone={phone} onClick={onAddCode}>
+                {DECISION_COPY.addCode}
+              </RecipeButton>
+            </Inline>
+          ) : null}
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.input} description={DECISION_COPY.inputLine} summary={draft.reads === "step" ? summaryOf(stepChoices.find((choice) => choice.id === draft.stateFrom)?.label) : summaryOf(firstLineOf(draft.stateSample, 80))} forceOpen={open.input} phone={phone}>
-          <Segmented<"step" | "paste">
-            label={DECISION_COPY.input}
-            semantics="radio"
-            size={segSize(phone)}
-            fontSize={13}
-            items={[{ value: "step", label: DECISION_COPY.fromStep, disabled: stepChoices.length === 0 }, { value: "paste", label: DECISION_COPY.fromText }]}
-            value={draft.reads}
-            onChange={(reads) => set({ reads })}
-          />
+          <SegmentedField<"step" | "paste"> label={DECISION_COPY.input} phone={phone} items={[{ value: "step", label: DECISION_COPY.fromStep, disabled: stepChoices.length === 0 }, { value: "paste", label: DECISION_COPY.fromText }]} value={draft.reads} onChange={(reads) => set({ reads })} />
           {draft.reads === "step" ? (
-            <PickMenu label="Step it reads" phone={phone} placeholder="Select a step" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
+            <PickMenu field label="Step it reads" phone={phone} placeholder="Select a step" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
           ) : (
             <>
-              <textarea aria-label={DECISION_COPY.state} rows={3} value={draft.stateSample} maxLength={STATE_SAMPLE_MAX} placeholder={DECISION_COPY.statePlaceholder} onChange={(e) => set({ stateSample: e.target.value })} style={typedArea(phone)} />
-              <span style={{ ...quiet, ...tnum, alignSelf: "flex-end" }}>
+              <FieldArea phone={phone} rows={3} aria-label={DECISION_COPY.state} value={draft.stateSample} maxLength={STATE_SAMPLE_MAX} placeholder={DECISION_COPY.statePlaceholder} onChange={(e) => set({ stateSample: e.target.value })} />
+              <Count>
                 {draft.stateSample.length.toLocaleString("en-GB")} / {STATE_SAMPLE_MAX.toLocaleString("en-GB")}
-              </span>
+              </Count>
             </>
           )}
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.answer} description={DECISION_COPY.answerLine} summary={summaryOf(answered.map((q) => `${q.id} → ${draft.answer[q.id].value}`))} forceOpen={open.answer} phone={phone}>
+          <Hint>{DECISION_COPY.answerHint}</Hint>
           {draft.questions.filter((q) => q.id.trim()).map((q) => (
             <AnswerEditor
               key={q.id}
@@ -427,38 +414,29 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
             />
           ))}
           {Object.keys(draft.answer).length > 0 ? (
-            <Segmented<"run" | "maker">
-              label="Where the answer came from"
-              size={segSize(phone)}
-              fontSize={13}
-              items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]}
-              value={draft.source}
-              onChange={(source) => set({ source })}
-            />
+            <SegmentedField<"run" | "maker"> label="Where the answer came from" phone={phone} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={draft.source} onChange={(source) => set({ source })} />
           ) : null}
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.install} description={DECISION_COPY.installLine} summary={summaryOf(draft.install)} forceOpen={open.install} phone={phone}>
-          <input aria-label={DECISION_COPY.install} type="text" value={draft.install} maxLength={400} placeholder={DECISION_COPY.installPlaceholder} onChange={(e) => set({ install: e.target.value })} style={typedField(phone)} />
+          <FieldInput phone={phone} mono aria-label={DECISION_COPY.install} value={draft.install} maxLength={400} placeholder={DECISION_COPY.installPlaceholder} onChange={(e) => set({ install: e.target.value })} />
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.examples} description={DECISION_COPY.examplesLine} summary={examples.length > 0 ? `${examples.length} ${examples.length === 1 ? "example" : "examples"}` : null} forceOpen={open.examples} phone={phone}>
           {examples.map((example, at) => (
-            <div key={at} role="group" aria-label={`Example ${at + 1}`} data-testid="decision-example" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <input aria-label={`${DECISION_COPY.exampleInput} of example ${at + 1}`} type="text" maxLength={EXAMPLE_TEXT_MAX} value={example.input} placeholder="e.g. I was charged twice" onChange={(e) => setExample(at, { input: e.target.value })} style={typedField(phone)} />
-              <input aria-label={`${DECISION_COPY.exampleOutput} of example ${at + 1}`} type="text" maxLength={EXAMPLE_TEXT_MAX} value={example.output} placeholder="e.g. team = billing" onChange={(e) => setExample(at, { output: e.target.value })} style={typedField(phone)} />
-              <div>
-                <TextButton target={phone} onClick={() => set({ examples: examples.filter((_, i) => i !== at) })} aria-label={`Remove example ${at + 1}`}>
-                  Remove
-                </TextButton>
-              </div>
+            <div key={at} role="group" aria-label={`Example ${at + 1}`} data-testid="decision-example" style={PANEL_LIST}>
+              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleInput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.input} placeholder="e.g. I was charged twice" onChange={(e) => setExample(at, { input: e.target.value })} />
+              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleOutput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.output} placeholder="e.g. team = billing" onChange={(e) => setExample(at, { output: e.target.value })} />
+              <TextLink phone={phone} onClick={() => set({ examples: examples.filter((_, i) => i !== at) })} aria-label={`Remove example ${at + 1}`}>
+                Remove
+              </TextLink>
             </div>
           ))}
-          <div>
-            <Button variant="secondary" size={phoneSize(phone)} disabled={examples.length >= EXAMPLES_MAX} onClick={() => set({ examples: [...examples, { input: "", output: "" }] })}>
+          <Inline>
+            <RecipeButton small phone={phone} disabled={examples.length >= EXAMPLES_MAX} onClick={() => set({ examples: [...examples, { input: "", output: "" }] })}>
               {DECISION_COPY.addExample}
-            </Button>
-          </div>
+            </RecipeButton>
+          </Inline>
         </OptionalField>
 
         <OptionalField
@@ -468,23 +446,21 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
           forceOpen={open.low}
           phone={phone}
         >
-          <ChoiceGrid<"threshold" | "escalate">
+          <SegmentedField<"threshold" | "escalate">
             label={DECISION_COPY.lowConfidence}
+            phone={phone}
             items={[{ value: "threshold", label: DECISION_COPY.threshold }, { value: "escalate", label: DECISION_COPY.escalate }]}
             value={low.mode === "" ? null : low.mode}
-            onChange={(next) => set({ lowConfidence: { ...low, mode: next ?? "" } })}
-            phone={phone}
-            columns={2}
-            allowClear
+            onChange={(next) => set({ lowConfidence: { ...low, mode: next === low.mode ? "" : next } })}
           />
           {low.mode === "threshold" ? (
             <>
-              <input aria-label={DECISION_COPY.threshold} type="text" inputMode="decimal" value={low.threshold} placeholder={DECISION_COPY.thresholdPlaceholder} onChange={(e) => set({ lowConfidence: { ...low, threshold: e.target.value.replace(/[^0-9.]/g, "") } })} style={typedField(phone, { width: 120, ...tnum })} />
+              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.threshold} inputMode="decimal" value={low.threshold} placeholder={DECISION_COPY.thresholdPlaceholder} onChange={(e) => set({ lowConfidence: { ...low, threshold: e.target.value.replace(/[^0-9.]/g, "") } })} />
               <Hint>A number from 0 to 1. Below it, the answer is not trusted.</Hint>
             </>
           ) : null}
         </OptionalField>
       </OptionalSection>
-    </div>
+    </>
   );
 }

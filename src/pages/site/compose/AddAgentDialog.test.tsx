@@ -25,13 +25,13 @@ function open(over: Partial<AddAgentDialogProps> = {}) {
   return props;
 }
 
-const rowOf = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
+const rowOf = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("[data-testid=optional-title]")?.textContent === name) as HTMLElement;
 /** The Optional rows are closed when the window opens; a press on the row opens it (and leaves it open). */
 const openRow = (name: string) => {
   const head = rowOf(name).querySelector("button") as HTMLButtonElement;
   if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
 };
-const names = () => screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent);
+const names = () => screen.getAllByTestId("optional-field").map((el) => el.querySelector("[data-testid=optional-title]")?.textContent);
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const status = () => screen.getByTestId("modal-status").textContent;
 
@@ -56,9 +56,9 @@ describe("the Add dialog", () => {
     expect(document.body.textContent).not.toMatch(/One agent|A team of agents|Add an agent or a team/);
   });
 
-  it("is 520 wide", () => {
+  it("is 560 wide", () => {
     open();
-    expect(screen.getByTestId("add-agent-dialog").style.width).toBe("520px");
+    expect(screen.getByTestId("add-agent-dialog").style.width).toBe("560px");
   });
 
   it("shows Name and Models up front and keeps everything else in Optional, closed, in order, ten fields for a team and nine for a single agent", () => {
@@ -143,7 +143,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
   it("has no default for Host platform (it asks), and an unchosen host takes any model", () => {
     open();
     openRow("Host platform");
-    expect(screen.getByRole("button", { name: "Host platform" }).textContent).toBe("Select a tool");
+    expect(screen.getByRole("button", { name: "Host platform" }).textContent).toBe("Select a platform");
     openModel(`model ${DEFAULT_AGENT_MODEL}`);
     expect(screen.getByRole("menuitem", { name: "Other model…" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Grok 4.7" })).toBeTruthy();
@@ -264,15 +264,13 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
 });
 
 describe("memory (CA-03 P6)", () => {
-  it("is optional: one row growing to three, up to 200 characters", () => {
+  it("is optional: one field, up to 200 characters (CA-15b: the board's one line)", () => {
     open();
     openRow("Memory");
-    const field = screen.getByLabelText("Memory") as HTMLTextAreaElement;
-    expect(field.placeholder).toBe("e.g. Which dishes it featured, in a notes file it keeps");
+    const field = screen.getByLabelText("Memory") as HTMLInputElement;
+    expect(field.tagName).toBe("INPUT");
+    expect(field.placeholder).toBe("e.g. Dishes already featured, stored in a notes file");
     expect(field.maxLength).toBe(200);
-    expect(field.rows).toBe(1);
-    fireEvent.change(field, { target: { value: "x".repeat(120) } });
-    expect(field.rows).toBe(3);
   });
 
   it("is saved with the agent when it says something, and left out when it is empty", () => {
@@ -298,11 +296,11 @@ describe("the trigger and the system instructions (CA-12 P11, CA-15 P7)", () => 
     expect(within(screen.getByRole("radiogroup", { name: "Trigger" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Manual", "Scheduled", "Event"]);
   });
 
-  it("System instructions is the largest field, 6 lines, asking what the agent is told to do", () => {
+  it("System instructions is the largest field, 4 lines, asking what the agent is told to do", () => {
     open();
     openRow("System instructions");
     const box = screen.getByLabelText("System instructions") as HTMLTextAreaElement;
-    expect(box.rows).toBe(6);
+    expect(box.rows).toBe(4);
     expect(box.placeholder).toMatch(/^e\.g\. /);
   });
 

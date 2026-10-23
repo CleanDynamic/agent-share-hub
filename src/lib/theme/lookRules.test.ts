@@ -412,13 +412,45 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/OptionalSection.tsx",
   "src/components/build/FullPromptWindow.optional.test.tsx",
   "src/pages/site/compose/AddToolDialog.test.tsx",
+  // CA-15b P2
+  "src/pages/site/compose/AddDatasetDialog.tsx",
+  "src/pages/site/compose/AddRepoDialog.tsx",
+  "src/pages/site/compose/AddResultDialog.tsx",
+  "src/pages/site/compose/AddSystemPromptDialog.tsx",
+  "src/pages/site/compose/AddDecisionDialog.tsx",
+  "src/pages/site/compose/DecisionFields.tsx",
+  "src/pages/site/compose/AddSourceDialogs.test.tsx",
+  "src/pages/site/compose/AddResultDialog.test.tsx",
+  "src/pages/site/compose/AddDecisionDialog.test.tsx",
+  "src/pages/site/compose/AddManualStepDialog.test.tsx",
+  "src/pages/site/compose/modalBoards.test.tsx",
+  "src/pages/site/compose/detailsOptional.test.tsx",
+  "src/pages/site/compose/PickMenu.tsx",
+  "src/pages/site/compose/ModelPicker.tsx",
+  "src/pages/site/compose/AgentSetupFields.tsx",
+  "src/components/build/FullPromptWindow.tsx",
+  "src/components/build/FullPromptWindow.refined.test.tsx",
 ];
 
 /**
  * CA-15b: the modal files. Each is built only from `modalRecipes.tsx`: none sets a colour, a size or a radius of its own.
  * The recipes are the one place a modal's measures live.
  */
-export const MODAL_FILES: readonly string[] = ["src/pages/site/compose/ChoiceGrid.tsx", "src/pages/site/compose/OptionalSection.tsx"];
+export const MODAL_FILES: readonly string[] = [
+  "src/pages/site/compose/ChoiceGrid.tsx",
+  "src/pages/site/compose/OptionalSection.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AddCheckDialog.tsx",
+  "src/pages/site/compose/AddCodeDialog.tsx",
+  "src/pages/site/compose/AddDatasetDialog.tsx",
+  "src/pages/site/compose/AddDecisionDialog.tsx",
+  "src/pages/site/compose/AddManualStepDialog.tsx",
+  "src/pages/site/compose/AddRepoDialog.tsx",
+  "src/pages/site/compose/AddResultDialog.tsx",
+  "src/pages/site/compose/AddSystemPromptDialog.tsx",
+  "src/pages/site/compose/AddToolDialog.tsx",
+  "src/pages/site/compose/DecisionFields.tsx",
+];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
 const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx"];

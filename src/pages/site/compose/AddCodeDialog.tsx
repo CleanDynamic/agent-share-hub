@@ -1,6 +1,7 @@
-/* CA-02 P7, CA-15 P6: Add › "Code": source code produced in this step, as it was used.
+/* CA-02 P7, CA-15 P6, CA-15b P2: Add › "Code": source code produced in this step, as it was used.
 
-   The shared modal frame, 520 wide (a `BottomSheet` below 768). Required: the code, typed or uploaded.
+   Built from `modalRecipes` as the board "Add code" draws it, 640 wide (a `BottomSheet` below 768). Required: the code,
+   typed or uploaded, in a block headed "Code" with its line count at the right, then "Upload files" and its note.
 
    - The code: `CodeEditorField` (CA-11), a monospace well with a numbered gutter; Tab puts in two spaces.
    - Upload files: text files only. Each file is added as a separate step, named by its path; a file that is not text, or
@@ -13,26 +14,20 @@
 
    NOTHING HERE RUNS CODE. Only code and file paths are in the data face. */
 
-import { X } from "lucide-react";
-import { useId, useRef, useState, type CSSProperties } from "react";
+import { useId, useState } from "react";
 
-import { Button } from "@/components/brand/Button";
-import { IconButton } from "@/components/brand/IconButton";
 import { CodeEditorField } from "@/components/code/CodeEditorField";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, type CodeLanguage } from "@/lib/build/graph";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
-import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } from "./codeModel";
-import { Field } from "./composeControls";
-import { FieldRow, FieldRows, ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
+import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, MODAL_WIDTH, Row } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { PickMenu } from "./PickMenu";
-import { tnum, typedField } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const CODE_DIALOG_COPY = {
@@ -42,13 +37,15 @@ export const CODE_DIALOG_COPY = {
   placeholder: "Paste or type the code",
   language: "Language",
   filename: "File path",
-  filenameLine: "Where the code lives in the project",
-  filenamePlaceholder: "e.g. src/app.ts",
+  filenameLine: "Where the file lives in the project",
+  filenamePlaceholder: "e.g. src/editor/shortcuts.ts",
   writtenWith: "Generated with",
-  writtenWithLine: "The tool and model that produced the code",
+  writtenWithLine: "The tool and model that wrote it",
   writtenWithTool: "Generated with",
   upload: "Upload files",
-  uploadLine: "Text files only. Each file is added as a separate step.",
+  uploadLine: "Or upload text files. Each file is added as a separate step.",
+  lines: (n: number) => `${n} ${n === 1 ? "line" : "lines"}`,
+  selectTool: "Select a tool",
   remove: (name: string) => `Remove ${name}`,
   add: "Add",
   cancel: "Cancel",
@@ -102,7 +99,6 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
   const [model, setModel] = useState<string | null>(null);
   const [files, setFiles] = useState<CodeStepInput[]>([]);
   const [refused, setRefused] = useState<string[]>([]);
-  const picker = useRef<HTMLInputElement>(null);
   const uid = useId();
 
   const language = chosen ?? codeLanguageFor(source, filename);
@@ -110,10 +106,9 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
   const tooLong = source.length > CODE_MAX;
   const ready = (typed || files.length > 0) && !tooLong && filename.length <= CODE_FILENAME_MAX;
 
-  const quiet: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
-  const count: CSSProperties = { fontFamily: FIGTREE, fontSize: 11.5, color: t.text2, ...tnum };
-
-  const take = async (picked: File[]) => {
+  const take = async (list: FileList | null) => {
+    const picked = Array.from(list ?? []);
+    if (picked.length === 0) return;
     const read = await Promise.all(picked.map(readCodeFile));
     setFiles((list) => [...list, ...read.flatMap((entry) => ("reason" in entry ? [] : [{ source: entry.source, language: entry.language, filename: entry.filename }]))]);
     setRefused(read.flatMap((entry) => ("reason" in entry ? [`${entry.filename}: ${entry.reason}`] : [])));
@@ -129,115 +124,63 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
 
   return (
     <ModalForm phone={phone} missing={missing} blocked={tooLong || filename.length > CODE_FILENAME_MAX} onSubmit={submit} onCancel={onCancel}>
-      <Field id={`${uid}-code`} label={CODE_DIALOG_COPY.code}>
+      <Block noRule>
+        <BlockHead label={CODE_DIALOG_COPY.code} htmlFor={`${uid}-code`} count={typed ? CODE_DIALOG_COPY.lines(lineCount(source)) : null} />
         <CodeEditorField id={`${uid}-code`} testId="code-well" value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />
-        {tooLong ? (
-          <span role="alert" style={quiet}>
-            {CODE_COPY.tooLong}
-          </span>
-        ) : typed ? (
-          <span style={{ ...count, alignSelf: "flex-end" }}>{`${lineCount(source)} ${lineCount(source) === 1 ? "line" : "lines"}`}</span>
-        ) : null}
-      </Field>
-
-      <Field id={`${uid}-upload`} label={CODE_DIALOG_COPY.upload} group>
-        <input
-          ref={picker}
-          type="file"
-          multiple
-          hidden
-          accept="text/*,.ts,.tsx,.js,.jsx,.mjs,.py,.sql,.json,.yml,.yaml,.sh,.html,.css,.md,.toml"
-          data-testid="code-files"
-          onChange={(event) => {
-            const picked = Array.from(event.target.files ?? []);
-            event.target.value = "";
-            if (picked.length) void take(picked);
-          }}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <Button variant="secondary" size={phone ? 44 : 30} fontSize={13} onClick={() => picker.current?.click()}>
+        {tooLong ? <Alert>{CODE_COPY.tooLong}</Alert> : null}
+        <Inline>
+          <FileButton phone={phone} multiple accept="text/*,.ts,.tsx,.js,.jsx,.mjs,.py,.sql,.json,.yml,.yaml,.sh,.html,.css,.md,.toml" onFiles={(list) => void take(list)} testId="code-files" inputLabel={CODE_DIALOG_COPY.upload}>
             {CODE_DIALOG_COPY.upload}
-          </Button>
-          <span style={quiet}>{CODE_DIALOG_COPY.uploadLine}</span>
-        </div>
+          </FileButton>
+        </Inline>
+        <Hint>{CODE_DIALOG_COPY.uploadLine}</Hint>
         {files.length > 0 ? (
-          <ul aria-label={CODE_DIALOG_COPY.upload} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+          <ul aria-label={CODE_DIALOG_COPY.upload} style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {files.map((file, index) => (
-              <li key={`${file.filename}-${index}`} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 32 }}>
-                <span style={{ fontFamily: DM_MONO, fontSize: 12.5, color: t.text, overflowWrap: "anywhere", flexGrow: 1 }}>{file.filename}</span>
-                <span style={count}>{`${CODE_DIALOG_COPY.languages[file.language]} · ${lineCount(file.source)} lines`}</span>
-                <IconButton
-                  icon={X}
-                  glyph="x"
-                  boxed={false}
-                  size={26}
-                  label={CODE_DIALOG_COPY.remove(file.filename ?? "")}
-                  onClick={() => setFiles((list) => list.filter((_, i) => i !== index))}
-                  style={{ width: phone ? 44 : 26, height: phone ? 44 : 26, flexShrink: 0 }}
-                />
+              <li key={`${file.filename}-${index}`}>
+                <FileLine name={`${file.filename} · ${CODE_DIALOG_COPY.languages[file.language]} · ${CODE_DIALOG_COPY.lines(lineCount(file.source))}`} removeLabel={CODE_DIALOG_COPY.remove(file.filename ?? "")} onRemove={() => setFiles((list) => list.filter((_, i) => i !== index))} phone={phone} />
               </li>
             ))}
           </ul>
         ) : null}
-        {refused.length > 0 ? (
-          <div role="alert" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {refused.map((line) => (
-              <span key={line} style={quiet}>
-                {line}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </Field>
+        {refused.length > 0 ? <Alert>{refused.join(" ")}</Alert> : null}
+      </Block>
 
-      <FieldRows>
-        <FieldRow id={`${uid}-language`} label={CODE_DIALOG_COPY.language} phone={phone}>
-          <span>
-            <PickMenu
-              id={`${uid}-language`}
-              label={CODE_DIALOG_COPY.language}
-              options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
-              value={language}
-              onChange={(next) => {
-                if (isCodeLanguage(next)) setChosen(next);
-              }}
-              phone={phone}
-            />
-          </span>
-        </FieldRow>
-      </FieldRows>
+      <Row id={`${uid}-language`} label={CODE_DIALOG_COPY.language} phone={phone}>
+        <PickMenu
+          id={`${uid}-language`}
+          label={CODE_DIALOG_COPY.language}
+          options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
+          value={language}
+          onChange={(next) => {
+            if (isCodeLanguage(next)) setChosen(next);
+          }}
+          phone={phone}
+          field
+        />
+      </Row>
 
       <OptionalSection>
         <OptionalField name={CODE_DIALOG_COPY.filename} description={CODE_DIALOG_COPY.filenameLine} summary={summaryOf(filename)} phone={phone}>
-          <input
-            aria-label={CODE_DIALOG_COPY.filename}
-            type="text"
-            value={filename}
-            maxLength={CODE_FILENAME_MAX}
-            placeholder={CODE_DIALOG_COPY.filenamePlaceholder}
-            autoComplete="off"
-            onChange={(event) => setFilename(event.target.value)}
-            style={typedField(phone, { fontFamily: DM_MONO })}
-          />
+          <FieldInput phone={phone} mono aria-label={CODE_DIALOG_COPY.filename} value={filename} maxLength={CODE_FILENAME_MAX} placeholder={CODE_DIALOG_COPY.filenamePlaceholder} autoComplete="off" onChange={(event) => setFilename(event.target.value)} />
         </OptionalField>
         <OptionalField name={CODE_DIALOG_COPY.writtenWith} description={CODE_DIALOG_COPY.writtenWithLine} summary={summaryOf(tool ? (toolName(tool) ?? tool) : null, model)} phone={phone}>
-          <Field id={`${uid}-written`} label={CODE_DIALOG_COPY.writtenWith} group>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <ToolPicker
-                label={CODE_DIALOG_COPY.writtenWithTool}
-                value={tool}
-                onChange={(next) => {
-                  setTool(next);
-                  setModel(nextModelAfterToolChange(next, model).model);
-                }}
-                inBuild={inBuild}
-                allowNone
-                phone={phone}
-                step="code"
-              />
-              <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} />
-            </div>
-          </Field>
+          <ToolPicker
+            label={CODE_DIALOG_COPY.writtenWithTool}
+            value={tool}
+            onChange={(next) => {
+              setTool(next);
+              setModel(nextModelAfterToolChange(next, model).model);
+            }}
+            inBuild={inBuild}
+            allowNone
+            unpicked={tool === null}
+            phone={phone}
+            step="code"
+            placeholder={CODE_DIALOG_COPY.selectTool}
+            field
+          />
+          <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} field />
         </OptionalField>
       </OptionalSection>
     </ModalForm>
@@ -252,7 +195,7 @@ export function AddCodeDialog({ open, onOpenChange, onAdd, inBuild, seed = null 
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={CODE_DIALOG_COPY.title} subtitle={CODE_DIALOG_COPY.subtitle} width={520} testId="add-code-dialog">
+    <ModalShell open={open} onOpenChange={onOpenChange} title={CODE_DIALOG_COPY.title} subtitle={CODE_DIALOG_COPY.subtitle} width={MODAL_WIDTH.wide} testId="add-code-dialog">
       <Form inBuild={inBuild} seed={seed} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );

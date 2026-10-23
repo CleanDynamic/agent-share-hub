@@ -1,6 +1,8 @@
-/* CA-15 P9: Add › "GitHub repository": a repository used in this build, owned by you or by a third party.
+/* CA-15 P9, CA-15b P2: Add › "GitHub repository": a repository used in this build, owned by you or by a third party.
 
-   The shared modal frame, 520 wide (a `BottomSheet` below 768). Required:
+   Built from `modalRecipes` as the board "Add a GitHub repository" draws it, 560 wide (a `BottomSheet` below 768): the URL
+   row, the facts panel retrieved from GitHub with its note, Ownership, Description, then for a third-party repository a
+   group heading with Author and Usage ("Select all that apply"). Required:
 
    - Repository URL: `github.com/owner/name`, with or without `https://`.
    - Ownership: Created in this build, Your existing repository, or Third-party repository.
@@ -18,8 +20,6 @@
 
 import { useEffect, useId, useState } from "react";
 
-import { Segmented } from "@/components/brand/Segmented";
-import { Checkbox } from "@/components/brand/Checkbox";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { RepoInput } from "@/lib/build/graph";
 import {
@@ -48,14 +48,10 @@ import {
   type RepoVisibility,
 } from "@/lib/build/sourceTiles";
 import { linesOf } from "@/lib/build/tileExtras";
-import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
 
-import { ChoiceGrid } from "./ChoiceGrid";
-import { Field } from "./composeControls";
-import { FieldRow, FieldRows, Hint, ModalForm, ModalShell, SectionHeading, firstMissing } from "./ModalFrame";
+import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { Block, BlockHead, FactList, FactRow, FieldArea, FieldInput, GroupHeading, Hint, MODAL_WIDTH, OptionGrid, Panel, Row, SegmentedField, StatusLine } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
-import { text, tnum, typedArea, typedField } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const REPO_DIALOG_COPY = {
@@ -65,7 +61,9 @@ export const REPO_DIALOG_COPY = {
   urlPlaceholder: "e.g. github.com/owner/name",
   ownership: "Ownership",
   description: "Description",
-  descriptionPlaceholder: "e.g. The helpdesk router, as it was when this build was made",
+  descriptionPlaceholder: "e.g. Rich text editor the composer is built on. Its keyboard shortcut extension was used.",
+  retrievedNote: "Retrieved from GitHub when the URL is entered. Repositories with no recent commits are flagged as possibly unmaintained.",
+  selectAll: "Select all that apply",
   retrieved: "Retrieved from GitHub",
   reading: "Reading from GitHub",
   repository: "Repository",
@@ -86,21 +84,21 @@ export const REPO_DIALOG_COPY = {
   deployed: "Deployed URL",
   deployedPlaceholder: "e.g. example.com",
   pinned: "Pinned version",
-  pinnedLine: "The branch, tag or commit that was used",
+  pinnedLine: "A branch, tag or commit, so copies stay identical",
   pinValue: "Pinned value",
-  pinPlaceholder: "e.g. v1.4.2",
+  pinPlaceholder: "e.g. v2.10.0",
   path: "Path",
-  pathLine: "The folder inside the repository that was used",
-  pathPlaceholder: "e.g. packages/router",
+  pathLine: "A folder or file, when only part of the repository was used",
+  pathPlaceholder: "e.g. packages/extension-underline",
   modifications: "Modifications",
   modificationsLine: "What was changed from the original",
-  modificationsPlaceholder: "e.g. Replaced the Slack client with the email one",
+  modificationsPlaceholder: "e.g. None, used unmodified",
   keyFiles: "Key files",
-  keyFilesLine: "The files that matter most, one per line",
-  keyFilesPlaceholder: "e.g. src/router.ts\nREADME.md",
+  keyFilesLine: "README, CLAUDE.md, agent configuration, skills folder",
+  keyFilesPlaceholder: "One path per line",
   run: "Run instructions",
-  runLine: "How to run it, one command per line",
-  runPlaceholder: "e.g. npm install\nnpm run dev",
+  runLine: "Clone command, dependencies, start command, and environment variable names only",
+  runPlaceholder: "One command per line. Name keys, never paste their values.",
   runSecret: "A run instruction looks as if it holds a key's value. Name the key instead, for example GITHUB_TOKEN.",
   add: "Add",
   cancel: "Cancel",
@@ -121,59 +119,33 @@ export interface AddRepoDialogProps {
 type RetrievedState = { key: string; facts: RepoFetched | null } | null;
 
 function Retrieved({ facts, owner, name, status }: { facts: RepoFetched | null; owner: string; name: string; status: "loading" | "done" }) {
-  const rows: { label: string; value: React.ReactNode; testId: string }[] = [];
-  if (status === "done" && facts) {
-    const licence = licenceLine(facts.licenceSpdx, facts.licenceName);
-    rows.push({ label: REPO_DIALOG_COPY.repository, value: `${owner}/${name}`, testId: "repo-name" });
-    if (facts.language) rows.push({ label: REPO_DIALOG_COPY.language, value: facts.language, testId: "repo-language" });
-    rows.push({
-      label: REPO_DIALOG_COPY.licence,
-      testId: "repo-licence",
-      value: licence.reuse ? (
-        <>
-          {licence.text} · <span style={{ color: t.evidence }}>{licence.reuse}</span>
-        </>
-      ) : (
-        licence.text
-      ),
-    });
-    if (facts.pushedAt) {
-      rows.push({
-        label: REPO_DIALOG_COPY.lastCommit,
-        testId: "repo-pushed",
-        value: (
-          <>
-            <span style={tnum}>{repoDay(facts.pushedAt)}</span>
-            {isPossiblyUnmaintained(facts.pushedAt) ? <span style={{ color: t.label }}> · {REPO_DIALOG_COPY.unmaintained}</span> : null}
-          </>
-        ),
-      });
-    }
-  }
+  if (status === "loading") return <StatusLine>{REPO_DIALOG_COPY.reading}</StatusLine>;
+  if (!facts)
+    return (
+      <span data-testid="repo-unreachable">
+        <StatusLine>{REPO_DIALOG_COPY.unreachable}</StatusLine>
+      </span>
+    );
+  const licence = licenceLine(facts.licenceSpdx, facts.licenceName);
   return (
-    <div role="group" aria-label={REPO_DIALOG_COPY.retrieved} data-testid="repo-retrieved" style={{ background: t.flat, border: `1px solid ${t.line}`, borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <SectionHeading>{REPO_DIALOG_COPY.retrieved}</SectionHeading>
-      {status === "loading" ? (
-        <span role="status" style={text(12.5, 400, t.label)}>
-          {REPO_DIALOG_COPY.reading}
-        </span>
-      ) : !facts ? (
-        <span role="status" data-testid="repo-unreachable" style={text(12.5, 400, t.text2)}>
-          {REPO_DIALOG_COPY.unreachable}
-        </span>
-      ) : (
-        <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", columnGap: 12, rowGap: 4 }}>
-          {rows.map((row) => (
-            <div key={row.label} style={{ display: "contents" }}>
-              <dt style={text(12.5, 400, t.text2)}>{row.label}</dt>
-              <dd data-testid={row.testId} style={{ ...text(13, 400, t.text), margin: 0, overflowWrap: "anywhere" }}>
-                {row.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </div>
+    <Panel label={REPO_DIALOG_COPY.retrieved} testId="repo-retrieved">
+      <FactList>
+        <FactRow label={REPO_DIALOG_COPY.repository} first testId="repo-name">{`${owner}/${name}`}</FactRow>
+        {facts.language ? (
+          <FactRow label={REPO_DIALOG_COPY.language} testId="repo-language">
+            {facts.language}
+          </FactRow>
+        ) : null}
+        <FactRow label={REPO_DIALOG_COPY.licence} testId="repo-licence">
+          {licence.reuse ? `${licence.text} · ${licence.reuse}` : licence.text}
+        </FactRow>
+        {facts.pushedAt ? (
+          <FactRow label={REPO_DIALOG_COPY.lastCommit} testId="repo-pushed">
+            {`${repoDay(facts.pushedAt)}${isPossiblyUnmaintained(facts.pushedAt) ? ` · ${REPO_DIALOG_COPY.unmaintained}` : ""}`}
+          </FactRow>
+        ) : null}
+      </FactList>
+    </Panel>
   );
 }
 
@@ -242,90 +214,87 @@ function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo }: Pick<AddRepoD
 
   return (
     <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} alert={tried && runSecret ? REPO_DIALOG_COPY.runSecret : null}>
-      <FieldRows>
-        <FieldRow id={`${uid}-url`} label={REPO_DIALOG_COPY.url} phone={phone}>
-          <input id={`${uid}-url`} type="text" inputMode="url" autoComplete="off" value={url} placeholder={REPO_DIALOG_COPY.urlPlaceholder} onChange={(event) => setUrl(event.target.value)} style={typedField(phone, { fontFamily: DM_MONO })} />
-        </FieldRow>
-        <FieldRow id={`${uid}-ownership`} label={REPO_DIALOG_COPY.ownership} group phone={phone}>
-          <ChoiceGrid<RepoOwnership> bare label={REPO_DIALOG_COPY.ownership} items={REPO_OWNERSHIPS.map((value) => ({ value, label: REPO_OWNERSHIP_LABEL[value] }))} value={ownership} onChange={setOwnership} phone={phone} />
-        </FieldRow>
-      </FieldRows>
+      <Row id={`${uid}-url`} label={REPO_DIALOG_COPY.url} phone={phone}>
+        <FieldInput phone={phone} mono id={`${uid}-url`} inputMode="url" autoComplete="off" value={url} placeholder={REPO_DIALOG_COPY.urlPlaceholder} onChange={(event) => setUrl(event.target.value)} />
+      </Row>
 
-      <Field id={`${uid}-description`} label={REPO_DIALOG_COPY.description}>
-        <textarea id={`${uid}-description`} rows={3} maxLength={REPO_DESCRIPTION_MAX} value={description} placeholder={REPO_DIALOG_COPY.descriptionPlaceholder} onChange={(event) => setDescription(event.target.value)} style={typedArea(phone)} />
-        <span style={{ ...text(11.5, 400, t.text2), ...tnum, alignSelf: "flex-end" }}>
-          {description.length} / {REPO_DESCRIPTION_MAX}
-        </span>
-      </Field>
+      <Block>
+        {parsed ? <Retrieved facts={here?.facts ?? null} owner={parsed.owner} name={parsed.name} status={here ? "done" : "loading"} /> : null}
+        <Hint>{REPO_DIALOG_COPY.retrievedNote}</Hint>
+      </Block>
 
-      {parsed ? <Retrieved facts={here?.facts ?? null} owner={parsed.owner} name={parsed.name} status={here ? "done" : "loading"} /> : null}
+      <Block label={REPO_DIALOG_COPY.ownership}>
+        <BlockHead label={REPO_DIALOG_COPY.ownership} />
+        <SegmentedField<RepoOwnership> label={REPO_DIALOG_COPY.ownership} phone={phone} items={REPO_OWNERSHIPS.map((value) => ({ value, label: REPO_OWNERSHIP_LABEL[value] }))} value={ownership} onChange={setOwnership} />
+      </Block>
+
+      <Block>
+        <BlockHead label={REPO_DIALOG_COPY.description} htmlFor={`${uid}-description`} count={`${description.length} / ${REPO_DESCRIPTION_MAX}`} />
+        <FieldArea phone={phone} id={`${uid}-description`} rows={3} maxLength={REPO_DESCRIPTION_MAX} value={description} placeholder={REPO_DIALOG_COPY.descriptionPlaceholder} onChange={(event) => setDescription(event.target.value)} />
+      </Block>
 
       {third ? (
         <>
-          <SectionHeading>{REPO_DIALOG_COPY.thirdParty}</SectionHeading>
-          <FieldRows>
-            <FieldRow id={`${uid}-author`} label={REPO_DIALOG_COPY.author} phone={phone}>
-              <input id={`${uid}-author`} type="text" maxLength={REPO_AUTHOR_MAX} value={shownAuthor} onChange={(event) => setAuthor(event.target.value)} style={typedField(phone)} />
-              <Hint>{REPO_DIALOG_COPY.authorLine}</Hint>
-            </FieldRow>
-            <FieldRow id={`${uid}-usage`} label={REPO_DIALOG_COPY.usage} group phone={phone}>
-              {REPO_USAGES.map((value) => (
-                <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28 }}>
-                  <Checkbox checked={usage.includes(value)} onChange={(event) => setUsage((now) => (event.target.checked ? [...now, value] : now.filter((one) => one !== value)))} />
-                  <span style={text(13, 400, t.text)}>{REPO_USAGE_LABEL[value]}</span>
-                </label>
-              ))}
-            </FieldRow>
-          </FieldRows>
+          <GroupHeading>{REPO_DIALOG_COPY.thirdParty}</GroupHeading>
+          <Row id={`${uid}-author`} label={REPO_DIALOG_COPY.author} hint={REPO_DIALOG_COPY.authorLine} noRule phone={phone}>
+            <FieldInput phone={phone} id={`${uid}-author`} maxLength={REPO_AUTHOR_MAX} value={shownAuthor} onChange={(event) => setAuthor(event.target.value)} />
+          </Row>
+          <Block>
+            <BlockHead label={REPO_DIALOG_COPY.usage} count={REPO_DIALOG_COPY.selectAll} />
+            <OptionGrid<RepoUsage>
+              label={REPO_DIALOG_COPY.usage}
+              phone={phone}
+              multiple
+              items={REPO_USAGES.map((value) => ({ value, label: REPO_USAGE_LABEL[value] }))}
+              chosen={usage}
+              onPick={(value) => setUsage((now) => (now.includes(value) ? now.filter((one) => one !== value) : [...now, value]))}
+            />
+          </Block>
         </>
       ) : null}
 
       {own ? (
-        <FieldRows>
-          <FieldRow id={`${uid}-visibility`} label={REPO_DIALOG_COPY.visibility} group phone={phone}>
-            <Segmented<RepoVisibility>
+        <>
+          <Row id={`${uid}-visibility`} label={REPO_DIALOG_COPY.visibility} group phone={phone}>
+            <SegmentedField<RepoVisibility>
               label={REPO_DIALOG_COPY.visibility}
-              semantics="radio"
-              size={phone ? 50 : 30}
-              fontSize={13}
+              phone={phone}
               items={[{ value: "public", label: REPO_DIALOG_COPY.public }, { value: "private", label: REPO_DIALOG_COPY.private }]}
-              value={visibility ?? ("" as RepoVisibility)}
+              value={visibility}
               onChange={(next) => setVisibility((current) => (current === next ? null : next))}
             />
-          </FieldRow>
-          <FieldRow id={`${uid}-generated`} label={REPO_DIALOG_COPY.generatedWith} group phone={phone}>
-            <div>
-              <ToolPicker label={REPO_DIALOG_COPY.generatedWith} value={generated} onChange={setGenerated} inBuild={inBuild} allowNone phone={phone} step="code" placeholder={REPO_DIALOG_COPY.selectTool} />
-            </div>
-          </FieldRow>
-          <FieldRow id={`${uid}-deployed`} label={REPO_DIALOG_COPY.deployed} phone={phone}>
-            <input id={`${uid}-deployed`} type="text" inputMode="url" value={deployed} placeholder={REPO_DIALOG_COPY.deployedPlaceholder} onChange={(event) => setDeployed(event.target.value)} style={typedField(phone)} />
-          </FieldRow>
-        </FieldRows>
+          </Row>
+          <Row id={`${uid}-generated`} label={REPO_DIALOG_COPY.generatedWith} group phone={phone}>
+            <ToolPicker label={REPO_DIALOG_COPY.generatedWith} value={generated} onChange={setGenerated} inBuild={inBuild} allowNone unpicked={generated === null} phone={phone} step="code" placeholder={REPO_DIALOG_COPY.selectTool} field />
+          </Row>
+          <Row id={`${uid}-deployed`} label={REPO_DIALOG_COPY.deployed} phone={phone}>
+            <FieldInput phone={phone} mono id={`${uid}-deployed`} inputMode="url" value={deployed} placeholder={REPO_DIALOG_COPY.deployedPlaceholder} onChange={(event) => setDeployed(event.target.value)} />
+          </Row>
+        </>
       ) : null}
 
       <OptionalSection>
         <OptionalField name={REPO_DIALOG_COPY.pinned} description={REPO_DIALOG_COPY.pinnedLine} summary={pinKind && pinValue.trim() ? `${REPO_PIN_LABEL[pinKind]} ${pinValue.trim()}` : null} phone={phone}>
-          <ChoiceGrid<RepoPinKind> label={REPO_DIALOG_COPY.pinned} items={REPO_PIN_KINDS.map((value) => ({ value, label: REPO_PIN_LABEL[value] }))} value={pinKind} onChange={setPinKind} phone={phone} allowClear />
-          {pinKind ? <input aria-label={REPO_DIALOG_COPY.pinValue} type="text" maxLength={REPO_PIN_VALUE_MAX} value={pinValue} placeholder={REPO_DIALOG_COPY.pinPlaceholder} onChange={(event) => setPinValue(event.target.value)} style={typedField(phone, { fontFamily: DM_MONO })} /> : null}
+          <SegmentedField<RepoPinKind> label={REPO_DIALOG_COPY.pinned} phone={phone} items={REPO_PIN_KINDS.map((value) => ({ value, label: REPO_PIN_LABEL[value] }))} value={pinKind} onChange={(next) => setPinKind((current) => (current === next ? null : next))} />
+          {pinKind ? <FieldInput phone={phone} mono aria-label={REPO_DIALOG_COPY.pinValue} maxLength={REPO_PIN_VALUE_MAX} value={pinValue} placeholder={REPO_DIALOG_COPY.pinPlaceholder} onChange={(event) => setPinValue(event.target.value)} /> : null}
         </OptionalField>
 
         <OptionalField name={REPO_DIALOG_COPY.path} description={REPO_DIALOG_COPY.pathLine} summary={summaryOf(path)} phone={phone}>
-          <input aria-label={REPO_DIALOG_COPY.path} type="text" maxLength={REPO_PATH_MAX} value={path} placeholder={REPO_DIALOG_COPY.pathPlaceholder} onChange={(event) => setPath(event.target.value)} style={typedField(phone, { fontFamily: DM_MONO })} />
+          <FieldInput phone={phone} mono aria-label={REPO_DIALOG_COPY.path} maxLength={REPO_PATH_MAX} value={path} placeholder={REPO_DIALOG_COPY.pathPlaceholder} onChange={(event) => setPath(event.target.value)} />
         </OptionalField>
 
         {third ? (
           <OptionalField name={REPO_DIALOG_COPY.modifications} description={REPO_DIALOG_COPY.modificationsLine} summary={summaryOf(modifications)} phone={phone}>
-            <textarea aria-label={REPO_DIALOG_COPY.modifications} rows={3} maxLength={REPO_MODIFICATIONS_MAX} value={modifications} placeholder={REPO_DIALOG_COPY.modificationsPlaceholder} onChange={(event) => setModifications(event.target.value)} style={typedArea(phone)} />
+            <FieldInput phone={phone} aria-label={REPO_DIALOG_COPY.modifications} maxLength={REPO_MODIFICATIONS_MAX} value={modifications} placeholder={REPO_DIALOG_COPY.modificationsPlaceholder} onChange={(event) => setModifications(event.target.value)} />
           </OptionalField>
         ) : null}
 
         <OptionalField name={REPO_DIALOG_COPY.keyFiles} description={REPO_DIALOG_COPY.keyFilesLine} summary={summaryOf(linesOf(keyFiles))} phone={phone}>
-          <textarea aria-label={REPO_DIALOG_COPY.keyFiles} rows={3} value={keyFiles} placeholder={REPO_DIALOG_COPY.keyFilesPlaceholder} onChange={(event) => setKeyFiles(event.target.value)} style={typedArea(phone, { fontFamily: DM_MONO })} />
+          <FieldArea phone={phone} rows={2} mono aria-label={REPO_DIALOG_COPY.keyFiles} value={keyFiles} placeholder={REPO_DIALOG_COPY.keyFilesPlaceholder} onChange={(event) => setKeyFiles(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={REPO_DIALOG_COPY.run} description={REPO_DIALOG_COPY.runLine} summary={summaryOf(linesOf(run))} forceOpen={tried && Boolean(runSecret)} phone={phone}>
-          <textarea aria-label={REPO_DIALOG_COPY.run} rows={4} value={run} placeholder={REPO_DIALOG_COPY.runPlaceholder} onChange={(event) => setRun(event.target.value)} style={typedArea(phone, { fontFamily: DM_MONO })} />
+          <FieldArea phone={phone} rows={3} mono aria-label={REPO_DIALOG_COPY.run} value={run} placeholder={REPO_DIALOG_COPY.runPlaceholder} onChange={(event) => setRun(event.target.value)} />
           <Hint>{RUN_HINT}</Hint>
         </OptionalField>
       </OptionalSection>
@@ -341,7 +310,7 @@ export function AddRepoDialog({ open, onOpenChange, onAdd, inBuild, fetchRepo }:
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={REPO_DIALOG_COPY.title} subtitle={REPO_DIALOG_COPY.subtitle} width={520} testId="add-repo-dialog">
+    <ModalShell open={open} onOpenChange={onOpenChange} title={REPO_DIALOG_COPY.title} subtitle={REPO_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-repo-dialog">
       <Form onAdd={add} onCancel={close} phone={phone} inBuild={inBuild} fetchRepo={fetchRepo ?? fetchRepoFacts} />
     </ModalShell>
   );
