@@ -1,5 +1,6 @@
 // CA-06 P5 — the colour picker: the wheel's numbers, lightness redrawing it, the hex field, Recent and Favourites,
-// Cancel putting the colour back, and a session's "Also colour its tiles that have no colour".
+// Cancel putting the colour back, and a session's "Also colour its tiles that have no colour". CA-19 P4 drew the picker
+// again (Favourites are Saved on screen, the close square is Cancel); these hold it to what it kept.
 
 import { act, cleanup, fireEvent, render, renderHook, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -108,15 +109,15 @@ describe("Recent and Favourites", () => {
     expect(toggleFavourite(full, "#ABCDEF")).toEqual(full);
   });
 
-  it("says Save as favourite, or Remove from favourites when it is one", () => {
+  it("saves the colour with the dashed circle at the end of Saved (CA-19: Favourites are Saved on screen)", () => {
     const onSwatches = vi.fn();
     picker({ initial: "#7FA7D9", onSwatches });
-    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.save }));
+    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.saveThis }));
     expect(onSwatches).toHaveBeenCalledWith({ recent: [], favourites: ["#7FA7D9"] });
     cleanup();
     picker({ initial: "#7FA7D9", swatches: { recent: [], favourites: ["#7FA7D9"] } });
-    expect(screen.getByRole("button", { name: COLOUR_PICKER_COPY.unsave })).toBeTruthy();
-    expect(within(screen.getByRole("group", { name: COLOUR_PICKER_COPY.favourites })).getByRole("button", { name: "#7FA7D9" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: COLOUR_PICKER_COPY.saveThis })).toBeDisabled();
+    expect(within(screen.getByRole("group", { name: COLOUR_PICKER_COPY.saved })).getByRole("button", { name: "#7FA7D9" })).toBeTruthy();
   });
 });
 
@@ -176,10 +177,10 @@ describe("the picker", () => {
     expect(document.activeElement).toBe(second);
   });
 
-  it("puts the colour back on Cancel and on Escape, and keeps it on Done", () => {
+  it("puts the colour back on the close square and on Escape, and keeps it on Done", () => {
     const props = picker({ initial: "#7FA7D9" });
     fireEvent.click(screen.getByRole("button", { name: "#D98C8C" }));
-    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.cancel }));
+    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.close }));
     expect(props.onCancel).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(screen.getByRole("slider", { name: COLOUR_PICKER_COPY.wheel }), { key: "Escape" });
     expect(props.onCancel).toHaveBeenCalledTimes(2);
@@ -263,7 +264,7 @@ describe("a session's tiles", () => {
     render(<>{result.current.picker}</>);
     fireEvent.click(screen.getByRole("button", { name: "#8FBFB8" }));
     expect(setPreview).toHaveBeenLastCalledWith({ to: "node:o-p1", colour: "#8FBFB8", alsoTiles: false });
-    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.cancel }));
+    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.close }));
     expect(setPreview).toHaveBeenLastCalledWith(null);
     expect(write).not.toHaveBeenCalled();
   });

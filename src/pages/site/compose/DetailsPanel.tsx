@@ -15,6 +15,7 @@ import { Copy } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { ColourDot } from "@/components/brand/ColourButton";
+import { MemberLabel, useGroupOf } from "./groupLabels";
 import { Button } from "@/components/brand/Button";
 import { ChangedText } from "@/components/build/ChangedText";
 import { IconButton } from "@/components/brand/IconButton";
@@ -398,6 +399,8 @@ export interface DetailsColour {
   what: string;
   colour: string | null;
   onPick: (anchor: HTMLElement) => void;
+  /** CA-19 P5: the selected component's ref, for its group's label. */
+  to?: string;
 }
 
 
@@ -603,6 +606,17 @@ export function DetailsSection({ section, first, view, onSelect, clamp, onReadAl
   );
 }
 
+/** "In Login flow" under the header line, 6 below, for a member of a named group; nothing otherwise. */
+function MemberGroupLine({ to }: { to: string }) {
+  const group = useGroupOf(to);
+  if (!group?.name) return null;
+  return (
+    <span data-testid="details-group" style={{ display: "flex", marginTop: 6, minWidth: 0 }}>
+      <MemberLabel to={to} inside testId="details-group-label" />
+    </span>
+  );
+}
+
 /** The head: the tool's mark, the title and the modal's header line (a colour dot before it when set), Edit at the right. */
 export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colour?: DetailsColour | null; onEdit?: () => void }) {
   const head = headOf(view);
@@ -622,6 +636,8 @@ export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colou
           {colour?.colour ? <ColourDot colour={colour.colour} size={8} /> : null}
           <span>{head.line}</span>
         </p>
+        {/* CA-19 P5: a member of a named group: "In Login flow", under the header line. */}
+        {colour?.to ? <MemberGroupLine to={colour.to} /> : null}
       </div>
       {onEdit && editable ? (
         <Button variant="secondary" size={28} fontSize={12} onClick={onEdit} style={EDIT_BUTTON}>

@@ -8,6 +8,7 @@
 import { groupKey, groupKind, groupOfStep, shownGroups, stepTitle, type SessionGroup, type Step } from "./graph";
 import { partLabelsOf } from "./making";
 import { dayRange } from "./stages";
+import { GROUP_MIN_MEMBERS, groupTo, type ReferenceGroup } from "./referenceGroups";
 import { refTo } from "./thread";
 import { workstreamLabel, workstreamMark, workstreamTitle, workstreamsOf } from "./workstreams";
 
@@ -37,6 +38,8 @@ export interface RefEntry {
   id: string;
   /** For a tile: the step kind. */
   stepKind?: Step["kind"];
+  /** CA-19: a reference group's colour, notes and members, for its hover card. */
+  group?: { id: string; colour: string; name?: string; notes?: string; members: (Pick<RefEntry, "to" | "number" | "title" | "kind"> & { shown: string })[] };
 }
 
 /** A session's entries, led by its own row; `key` null holds the steps an old build has before any session. With two or more parts (CA-17), a part's own row stands in a group of its own, and its sessions' groups follow it, a level in. */
@@ -237,4 +240,86 @@ export function partColours(steps: readonly Step[]): Map<string, string> {
   };
   walk(steps);
   return out;
+}
+
+/* ── reference groups (CA-19 P3) ── */
+
+/** What follows a group's linked words, and names it where it has no name of its own. */
+export const GROUP_REF_COPY = { kind: "Reference group", number: "Group", noName: "No name" } as const;
+
+/** A component as the screen names it: "Session 2", "Code 4", "Part B", or a tile's title. */
+export function shownName(entry: Pick<RefEntry, "kind" | "number" | "title" | "eyebrow"> | undefined): string {
+  if (!entry) return "";
+  if (entry.kind === "Session" || entry.kind === "Part") return entry.eyebrow;
+  if (entry.kind === GROUP_REF_COPY.kind) return entry.title;
+  return entry.number ? `${entry.kind} ${entry.number}` : entry.title;
+}
+
+/** Each group of two or more as a link target: its colour, its name after the words, and its members for the hover card. */
+export function groupRefEntries(groups: readonly ReferenceGroup[], lookup: ReadonlyMap<string, RefEntry>): RefEntry[] {
+  return groups
+    .filter((group) => group.members.length >= GROUP_MIN_MEMBERS)
+    .map((group) => {
+      const members = group.members.flatMap((ref) => {
+        const entry = lookup.get(ref);
+        return entry ? [{ to: entry.to, number: entry.number, title: entry.kind === "Session" || entry.kind === "Part" ? shownName(entry) : entry.title, kind: entry.kind, shown: shownName(entry) }] : [];
+      });
+      const title = group.name ?? GROUP_REF_COPY.noName;
+      return {
+        to: groupTo(group.id),
+        number: group.name ?? GROUP_REF_COPY.number,
+        title,
+        kind: GROUP_REF_COPY.kind,
+        depth: 0,
+        colour: group.colour,
+        name: (group.name ?? "group").toLowerCase(),
+        eyebrow: GROUP_REF_COPY.kind,
+        body: group.notes ?? "",
+        heading: title,
+        id: group.id,
+        group: { id: group.id, colour: group.colour, ...(group.name ? { name: group.name } : null), ...(group.notes ? { notes: group.notes } : null), members },
+      };
+    });
+}
+
+/** The lookup with every group as a target too. */
+export function withGroupEntries(lookup: ReadonlyMap<string, RefEntry>, groups: readonly ReferenceGroup[]): Map<string, RefEntry> {
+  const out = new Map(lookup);
+  for (const entry of groupRefEntries(groups, lookup)) out.set(entry.to, entry);
+  return out;
+}
+
+/** One group in the link panel. */
+export interface PanelGroup {
+  entry: RefEntry;
+  /** "Session 2, Code 4, Check 5". */
+  members: string;
+  count: number;
+}
+
+/** One part, session or tile in the link panel, indented by kind: a part 0, a session 12, a tile 24. */
+export interface PanelRow {
+  entry: RefEntry;
+  indent: 0 | 12 | 24;
+}
+
+/**
+ * The link panel's two lists: the groups (each with its members by name), then the parts, sessions and tiles in build
+ * order. Grouped components are left out of the second list; they show only as names under their group. With one part
+ * there is no part row (refGroups already leaves it out). Both lists answer the search.
+ */
+export function linkPanelLists(groups: readonly RefGroup[], lookup: ReadonlyMap<string, RefEntry>, query = ""): { groups: PanelGroup[]; rows: PanelRow[] } {
+  const groupEntries = [...lookup.values()].filter((entry) => entry.group);
+  const grouped = new Set(groupEntries.flatMap((entry) => entry.group?.members.map((member) => member.to) ?? []));
+  const panelGroups = groupEntries
+    .map((entry) => ({ entry, members: (entry.group?.members ?? []).map((member) => member.shown).join(", "), count: entry.group?.members.length ?? 0 }))
+    .filter((group) => !query.trim() || refMatches({ title: `${group.entry.title} ${group.members}`, kind: group.entry.kind, number: "" }, query));
+  const rows: PanelRow[] = [];
+  for (const group of groups) {
+    for (const entry of group.entries) {
+      if (grouped.has(entry.to) || !refMatches(entry, query)) continue;
+      rows.push({ entry, indent: entry.kind === "Part" ? 0 : entry.kind === "Session" ? 12 : 24 });
+    }
+  }
+  return { groups: panelGroups, rows };
 }

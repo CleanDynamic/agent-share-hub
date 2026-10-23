@@ -10,7 +10,7 @@
    preview sheet and the two things drawn over the text: the format bar (desktop) and the slash menu. */
 
 import { EditorContent, useEditorState, type Editor } from "@tiptap/react";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { IconButton } from "@/components/brand/IconButton";
@@ -22,8 +22,8 @@ import { addPictures, postAtCaret, type EditRequest } from "@/components/post/ed
 import { EditMediaDialog } from "@/components/post/media/EditMediaDialog";
 import { withoutGoneSteps } from "@/lib/build/gridSteps";
 import { addPostAtEnd, PostToolbar, removePost } from "@/components/post/editor/PostToolbar";
-import { REFERENCE_COPY, ReferencePicker } from "@/components/post/editor/ReferencePicker";
-import { applyRef, readRefSpot, removeRef, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
+import { LinkPanel } from "@/components/post/editor/LinkPanel";
+import { readRefSpot, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
 import { SlashMenu, type InsertPicture } from "@/components/post/editor/SlashMenu";
 import { usePostEditor } from "@/components/post/editor/usePostEditor";
 import { PostPreview, type PreviewMaker } from "@/components/post/PostPreview";
@@ -36,7 +36,13 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 import { RefCard, refPaint, useRefCard } from "@/components/post/RefLinks";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { hasPartRows, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
+import { refLookup, shownName, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
+import { extraLinks, insertLinked, LINK_RULES_COPY, linkOf, linkRanges, linkWords, postAt, rangeRefusal, removeExtraLinks, trimRange, unlinkAt } from "@/lib/build/linkRules";
+import { NOTICE_COPY } from "@/lib/build/referenceHistory";
+import { TextLink } from "./modalRecipes";
+import { DANGER, PAD, words as pieceWords } from "./referencePieces";
+import { TextButton } from "./composeControls";
+import { useHistoryKeys, type LinkEdit, type ReferenceHistoryControls } from "./useReferenceHistory";
 import type { Build } from "@/lib/build/types";
 import type { GalleryMedia } from "@/lib/build";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
@@ -71,6 +77,16 @@ export interface PostReferences {
   onGo?: (to: string, el: HTMLElement) => void;
   /** The parts the post links to, every time the post changes. */
   onMentions?: (tos: string[]) => void;
+  /** CA-19 P2: the composer's one history of colour and link steps. Absent: links change straight in the editor. */
+  history?: ReferenceHistoryControls;
+  /** CA-19 P2: the editor, as it is built and rebuilt, for the history and the colour picker's linked text. */
+  onEditor?: (editor: Editor | null) => void;
+  /** CA-19 P3: the screen's name for a target ("Data model", "Session 3", "Login flow"). */
+  nameOf?: (to: string) => string;
+  /** CA-19 P4: the colour picker's "Select words in the post instead": the post asks for one stretch to link to this. */
+  selecting?: { to: string; name: string } | null;
+  /** The words were linked, or Cancel or Escape ended it. */
+  onSelectingDone?: () => void;
 }
 
 /** The parts of the draft that are not the thread. */
@@ -221,6 +237,25 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   });
   const host = controls.pictures;
   const pictures = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot);
+  /* CA-19 P2: the composer's history and the colour picker reach the post through the editor. */
+  const onEditor = references?.onEditor;
+  useEffect(() => {
+    onEditor?.(editor);
+    return () => onEditor?.(null);
+  }, [editor, onEditor]);
+  const history = references?.history;
+  /** A link change as one step of the history; without one (a dev page), straight in the editor. */
+  const runLink = useCallback(
+    (sentence: string, edit: LinkEdit): boolean => {
+      if (history) return history.step(sentence, { edit });
+      if (!editor || editor.isDestroyed) return false;
+      const tr = editor.state.tr;
+      if (edit(tr) === false || !tr.docChanged) return false;
+      editor.view.dispatch(tr);
+      return true;
+    },
+    [history, editor],
+  );
   // Read at the moment an upload needs them, so a render never holds a stale one.
   host.ensureBuild.current = thread.ensureBuild;
   host.notice.current = setNotice;
@@ -283,14 +318,115 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   controls.openRefs ??= { current: null };
   controls.openRefs.current = references ? openRefs : null;
   const closeRefs = useCallback(() => setRefSpot(null), []);
+  // CA-19 P2: Ctrl or Cmd Z, and Shift Z, step through the colour and link history while the panel is open.
+  useHistoryKeys(Boolean(refSpot && history), { undo: () => history?.undo(), redo: () => history?.redo() });
+  /* CA-19 P3: the link panel's words, their post, and why they cannot be linked; read as it opens. */
+  const allTargets = useMemo(() => references?.lookup ?? refLookup(references?.groups ?? []), [references?.lookup, references?.groups]);
+  const nameFor = references?.nameOf;
+  const nameOf = useCallback((to: string) => nameFor?.(to) ?? shownName(allTargets.get(to)), [nameFor, allTargets]);
+  const spotFacts = useMemo(() => {
+    if (!refSpot || !editor || editor.isDestroyed) return null;
+    const doc = editor.state.doc;
+    const { from, to, current } = refSpot.spot;
+    const range = current ? linkRanges(doc).find((candidate) => candidate.to === current && candidate.from <= from && candidate.end >= to) ?? null : null;
+    const refusal = range ? null : rangeRefusal(doc, from, to);
+    const trimmed = !range && !refusal && from !== to ? trimRange(doc, from, to) : null;
+    if (trimmed && trimmed.from >= trimmed.to) return { range, refusal: LINK_RULES_COPY.oneStretch, words: "", post: postAt(doc, from) };
+    const words = range ? range.text : trimmed ? doc.textBetween(trimmed.from, trimmed.to, "\n", "\n") : "";
+    return { range, refusal, words, post: postAt(doc, from) };
+  }, [refSpot, editor]);
+  /** A target's linked text somewhere other than the words the panel is on. */
+  const linkedElsewhere = useCallback(
+    (to: string) => {
+      if (!editor || editor.isDestroyed) return null;
+      const range = linkOf(editor.state.doc, to);
+      if (!range || (spotFacts?.range && spotFacts.range.from === range.from)) return null;
+      return { words: range.text, post: range.post };
+    },
+    [editor, spotFacts],
+  );
   const chooseRef = (entry: RefEntry) => {
-    if (editor && refSpot) applyRef(editor, refSpot.spot, entry);
+    if (!editor || !refSpot || spotFacts?.refusal) return;
+    const { spot } = refSpot;
+    const name = nameOf(entry.to);
+    const moving = linkedElsewhere(entry.to);
+    const sentence = moving ? NOTICE_COPY.moved(name) : NOTICE_COPY.linked(spotFacts?.words || entry.name, name);
+    let end = spot.to;
+    runLink(sentence, (tr) => {
+      const range = spotFacts?.range;
+      if (range) {
+        const done = linkWords(tr, range.from, range.end, entry.to);
+        if (!done.ok) return false;
+        end = done.to;
+        return undefined;
+      }
+      if (spot.from !== spot.to) {
+        const done = linkWords(tr, spot.from, spot.to, entry.to);
+        if (!done.ok) return false;
+        end = done.to;
+        return undefined;
+      }
+      const done = insertLinked(tr, spot.from, entry.name, entry.to);
+      end = done.to + 1;
+      return { inserted: { at: done.from, size: entry.name.length + 1 } };
+    });
     closeRefs();
+    if (!editor.isDestroyed) editor.chain().focus().setTextSelection(Math.min(end, editor.state.doc.content.size)).run();
   };
   const removeRefHere = () => {
-    if (editor && refSpot) removeRef(editor, refSpot.spot);
+    if (editor && refSpot) {
+      const { from, to } = refSpot.spot;
+      runLink(NOTICE_COPY.removed, (tr) => (unlinkAt(tr, from, to).length ? undefined : false));
+    }
     closeRefs();
+    editor?.commands.focus();
   };
+  /* CA-19 P4: select words to link to a component. Highlighting one stretch links it at once, as one step, and the bar goes. */
+  const selecting = references?.selecting ?? null;
+  const onSelectingDone = references?.onSelectingDone;
+  const [selectRefusal, setSelectRefusal] = useState<string | null>(null);
+  const postTop = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setSelectRefusal(null);
+    if (!selecting) return;
+    postTop.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      onSelectingDone?.();
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [selecting, onSelectingDone]);
+  useEffect(() => {
+    const dom = viewDom(editor);
+    if (!selecting || !dom || !editor) return;
+    const settle = () => {
+      const { from, to } = editor.state.selection;
+      if (from === to) return;
+      const refusal = rangeRefusal(editor.state.doc, from, to);
+      const trimmed = refusal ? null : trimRange(editor.state.doc, from, to);
+      if (refusal || !trimmed || trimmed.from >= trimmed.to) {
+        setSelectRefusal(refusal ?? LINK_RULES_COPY.oneStretch);
+        return;
+      }
+      const words = editor.state.doc.textBetween(trimmed.from, trimmed.to, "\n", "\n");
+      if (runLink(NOTICE_COPY.linked(words, selecting.name), (tr) => (linkWords(tr, from, to, selecting.to).ok ? undefined : false))) onSelectingDone?.();
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift" || event.shiftKey) settle();
+    };
+    dom.addEventListener("mouseup", settle);
+    dom.addEventListener("keyup", onKeyUp);
+    return () => {
+      dom.removeEventListener("mouseup", settle);
+      dom.removeEventListener("keyup", onKeyUp);
+    };
+  }, [selecting, editor, runLink, onSelectingDone]);
+
+  /* CA-19 P1: an old post's extra links, and the one step that removes them. */
+  const extras = useEditorState({ editor, selector: ({ editor: current }) => (current && !current.isDestroyed ? extraLinks(current.state.doc).length : 0) }) ?? 0;
+  const removeExtras = () => runLink(NOTICE_COPY.removedExtra(extras), (tr) => (removeExtraLinks(tr) ? undefined : false));
   /* CA-06 P3: the links' paint, what clicking one does, and the card over one. */
   const theme = useResolvedTheme();
   const { open: cardOpen, control: card, keep: keepCard } = useRefCard();
@@ -379,7 +515,8 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
       : { top: (tops[dropPost] ?? 0) + FIRST_LINE_DROP - 4, bottom: dropPost + 1 < tops.length ? tops[dropPost + 1] - BLOCK_GAP + 4 : Math.max(editorHeight, (tops[dropPost] ?? 0) + 40) + 4 };
 
   return (
-    <div data-testid="post-tab" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+    <div ref={postTop} data-testid="post-tab" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+      {selecting ? <SelectWordsBar name={selecting.name} refusal={selectRefusal} onCancel={() => onSelectingDone?.()} /> : null}
       <div style={{ display: "flex", alignItems: "stretch", gap: phone ? RAIL_GAP.phone : RAIL_GAP.desktop, minWidth: 0 }}>
         <ThreadRail editor={editor} maker={draft.maker} size={avatar} focused={writing.post} onTops={setTops} />
         {/* The first line starts 8 below the avatar's top, as X sets it; room at the right for the remove button. */}
@@ -457,6 +594,14 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
             {notice}
           </p>
         ) : null}
+        {references && extras > 0 ? (
+          <p data-testid="extra-links" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, lineHeight: "normal", color: t.label }}>
+            {LINK_RULES_COPY.alsoLinked}
+            <TextLink phone={phone} onClick={removeExtras}>
+              {LINK_RULES_COPY.removeExtra}
+            </TextLink>
+          </p>
+        ) : null}
         <PostToolbar
           editor={editor}
           phone={phone}
@@ -464,7 +609,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           notice={setNotice}
           onPreview={() => setPreview(true)}
           onReference={references ? () => void openRefs(false) : undefined}
-          referenceLabel={references && hasPartRows(references.groups) ? REFERENCE_COPY.buttonWithParts : undefined}
+          referenceOpen={Boolean(refSpot)}
         />
       </div>
       <FormatBar editor={editor} controls={controls} phone={phone} />
@@ -487,22 +632,29 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           onRemove={() => {
             card.close();
             const spot = spotOf(cardOpen.to, cardOpen.el);
-            if (spot && editor) removeRef(editor, spot);
+            if (spot) runLink(NOTICE_COPY.removed, (tr) => (unlinkAt(tr, spot.from).length ? undefined : false));
           }}
           onEnter={keepCard}
           onLeave={card.leave}
         />
       ) : null}
       {references ? (
-        <ReferencePicker
+        <LinkPanel
           open={Boolean(refSpot)}
           groups={references.groups}
+          lookup={allTargets}
           current={refSpot?.spot.current ?? null}
+          words={spotFacts?.words ?? ""}
+          post={spotFacts?.post ?? 1}
+          refusal={spotFacts?.refusal ?? null}
+          linkedElsewhere={linkedElsewhere}
+          nameOf={nameOf}
           anchor={refSpot?.anchor ?? null}
           phone={phone}
           onChoose={chooseRef}
           onRemove={removeRefHere}
           onClose={escapeRefs}
+          history={history ? { canUndo: history.canUndo, canRedo: history.canRedo, onUndo: history.undo, onRedo: history.redo } : undefined}
         />
       ) : null}
       <EditMediaDialog request={editRequest} editor={editor} host={host} phone={phone} onClose={() => setEditRequest(null)} />
@@ -511,6 +663,23 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           <PostPreview doc={liveDoc} build={draft.build} title={draft.title} maker={draft.maker} media={pictures.rows} src={pictures.src} variant="sheet" />
         ) : null}
       </BottomSheet>
+    </div>
+  );
+}
+
+export const SELECT_WORDS_COPY = {
+  ask: (name: string) => `Select words to link to ${name}`,
+  cancel: "Cancel",
+} as const;
+
+/** CA-19 P4: the bar at the top of the post while it asks for words: `--tile`, padding 10 14, 12.5, Cancel at 500 at the right. */
+function SelectWordsBar({ name, refusal, onCancel }: { name: string; refusal: string | null; onCancel: () => void }) {
+  return (
+    <div role="status" data-testid="select-words-bar" style={{ display: "flex", alignItems: "center", gap: 12, background: t.tile, borderRadius: 8, padding: PAD.bar, minWidth: 0 }}>
+      <span style={{ ...pieceWords(12.5, 400, refusal ? DANGER : t.text), flexGrow: 1, minWidth: 0 }}>{refusal ?? SELECT_WORDS_COPY.ask(name)}</span>
+      <TextButton style={pieceWords(12.5, 500, t.text)} onClick={onCancel}>
+        {SELECT_WORDS_COPY.cancel}
+      </TextButton>
     </div>
   );
 }

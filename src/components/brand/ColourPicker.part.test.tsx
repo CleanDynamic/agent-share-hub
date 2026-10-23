@@ -75,7 +75,8 @@ describe("what Done writes", () => {
     render(<>{result.current.picker}</>);
     fireEvent.click(screen.getByRole("button", { name: "#8FBFB8" }));
     expect(setPreview).toHaveBeenLastCalledWith({ to: "workstream:ws-b", colour: "#8FBFB8", alsoTiles: false });
-    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.cancel }));
+    // CA-19 P4: the window's close square is Cancel.
+    fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.close }));
     expect(setPreview).toHaveBeenLastCalledWith(null);
     expect(write).not.toHaveBeenCalled();
   });

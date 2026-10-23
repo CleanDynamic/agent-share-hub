@@ -58,7 +58,7 @@ export type ThreadMark =
   | { type: "italic" }
   | { type: "underline" }
   | { type: "link"; attrs: { href: string } }
-  /** CA-06 P1: words that point at a tile or a session of this build. `to` is `refTo`'s: `node:<id>`, `session:<key>` or `workstream:<key>`. */
+  /** CA-06 P1: words that point at a tile or a session of this build. `to` is `refTo`'s: `node:<id>`, `session:<key>`, `workstream:<key>` or (CA-19) `group:<id>`. */
   | { type: "ref"; attrs: { to: string } };
 
 export interface ThreadText {
@@ -213,10 +213,14 @@ export const THREAD_MARK_TYPES: ReadonlySet<string> = new Set(["bold", "italic",
 
 // --- references (CA-06 P1) ----------------------------------------------------
 
-/** What a reference points at: a node of the build (a tile), a session by the key CA-04 gives it, or (CA-17) a whole part by its key (`ws-<uuid>`). */
+/**
+ * What a reference points at: a node of the build (a tile), a session by the key CA-04 gives it, (CA-17) a whole part by
+ * its key (`ws-<uuid>`), or (CA-19) a reference group by its id (`rg-<uuid>`). A link whose group is gone is drawn as plain
+ * words, like a missing tile.
+ */
 export interface RefTarget {
-  kind: "node" | "session" | "workstream";
-  /** A build_nodes id, a session key (an import_sessions id, or `typed-<uuid>`), or a part's key. */
+  kind: "node" | "session" | "workstream" | "group";
+  /** A build_nodes id, a session key (an import_sessions id, or `typed-<uuid>`), a part's key, or a group's id. */
   id: string;
 }
 
@@ -225,7 +229,7 @@ const REF_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
 /** An old build's run of typed prompts is read as a session but never stored, so nothing can point at it. */
 const UNSTORED_SESSION = "typed-legacy-";
 
-/** The `to` of a reference: `node:<id>`, `session:<key>` or `workstream:<key>`. */
+/** The `to` of a reference: `node:<id>`, `session:<key>`, `workstream:<key>` or `group:<id>`. */
 export function refTo(target: RefTarget): string {
   return `${target.kind}:${target.id}`;
 }
@@ -236,7 +240,7 @@ export function parseRefTo(to: unknown): RefTarget | null {
   const at = to.indexOf(":");
   const kind = to.slice(0, at);
   const id = to.slice(at + 1);
-  if ((kind !== "node" && kind !== "session" && kind !== "workstream") || !REF_ID.test(id)) return null;
+  if ((kind !== "node" && kind !== "session" && kind !== "workstream" && kind !== "group") || !REF_ID.test(id)) return null;
   if (kind === "session" && id.startsWith(UNSTORED_SESSION)) return null;
   return { kind, id };
 }
@@ -484,7 +488,7 @@ export type ThreadProblemCode =
   | "unknown_node"
   | "unknown_mark"
   | "bad_link"
-  /** CA-06 P1: a reference whose `to` is not `node:<id>`, `session:<key>` or `workstream:<key>`, or one that is also a web link. */
+  /** CA-06 P1: a reference whose `to` is not `node:<id>`, `session:<key>`, `workstream:<key>` or `group:<id>`, or one that is also a web link. */
   | "bad_ref"
   /** A picture with no mediaId, a width outside 25 to 100, or a row of other than 2 or 3. */
   | "bad_picture"

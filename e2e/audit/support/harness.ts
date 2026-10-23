@@ -821,6 +821,12 @@ export const ROUTES: AuditRoute[] = [
     { id: `links-composer-${room}`, path: `/dev/kit/pages/sandbox?build=links&fit=content&presets=1&theme=${room}` },
     { id: `links-reader-${room}`, path: `/dev/kit/pages/build-steps?build=links&presets=1&theme=${room}` },
   ]),
+  /* CA-19 P8: "References": every group label (a name through nameColourFor on --hairline), the group link and the
+     single colours, in the List with Code 4 selected (Details' "In Login flow"), and on the map. */
+  ...(["noon", "dusk"] as const).flatMap((room) => [
+    { id: `references-composer-${room}`, path: `/dev/kit/pages/sandbox?build=references&fit=content&select=rf-c4&theme=${room}` },
+    { id: `references-map-${room}`, path: `/dev/kit/pages/sandbox?build=references&fit=content&lens=map&theme=${room}` },
+  ]),
   { id: "home", path: "/" },
   { id: "gallery", path: "/gallery" },
   { id: "build", path: `/b2/${BUILD_SLUG}` },

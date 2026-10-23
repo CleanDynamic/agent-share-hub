@@ -138,7 +138,7 @@ it("the picker works with saving switched off", () => {
   render(<Harness />);
   expect(screen.getByRole("group", { name: COLOUR_PICKER_COPY.recent })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "#8FBFB8" }));
-  fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.save }));
+  fireEvent.click(screen.getByRole("button", { name: COLOUR_PICKER_COPY.saveThis }));
   expect(screen.getAllByRole("button", { name: "#8FBFB8" })).toHaveLength(2);
   expect(update).not.toHaveBeenCalled();
 });
