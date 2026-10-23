@@ -1,4 +1,4 @@
-/* CA-18b P2 — the build and the post in the dead centre, Sources to their left, Details to their right.
+/* CA-18b P2: the build and the post in the dead centre, Sources to their left, Details to their right.
 
    At 1280, 1440, 1600, 1920 and 2560 wide by 900 tall, with nothing selected and then with a long prompt selected: Build's
    centre is the window's centre, Build's left and width are the same in both states, no column overlaps another, Details stays

@@ -1,4 +1,4 @@
-/* CA-18b P3 — colour and references at the foot of Details, at 1440 wide, in the References fixture.
+/* CA-18b P3: colour and references at the foot of Details, at 1440 wide, in the References fixture.
 
    Code 4 (in Login flow), Data model (a single colour), Prompt 1 (uncoloured, with linked text), Session 2 (in the group) and a tile
    with nothing: the section is the last thing in Details, under a hairline with 22 above and below, and nothing in it can be typed into.
