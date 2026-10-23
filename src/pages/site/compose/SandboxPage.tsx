@@ -542,7 +542,20 @@ export function SandboxPage() {
     setPromptSession((current) => (current === key ? null : current));
   } });
   /* CA-20: removing (and, later, selecting, duplicating, converting and grouping) in one place, for the menus, the keys and the bars. */
-  const { actions, dialogs: actionDialogs } = useBuildActions({ nodes, history: buildHistory, bridge, steps, groups, removeSessions: edits.onRemoveSessions });
+  const { actions, dialogs: actionDialogs } = useBuildActions({
+    buildId,
+    made,
+    onCleared: () => {
+      setChosenSession(null);
+      setPromptSession(null);
+    },
+    nodes,
+    history: buildHistory,
+    bridge,
+    steps,
+    groups,
+    removeSessions: edits.onRemoveSessions,
+  });
   /* CA-20 P3: choosing several tiles and sessions. The order is how the List draws them: a session's head, then its top-level tiles. */
   const drawn = useMemo<Drawn>(
     () => ({

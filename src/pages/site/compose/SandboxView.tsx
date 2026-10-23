@@ -61,6 +61,7 @@ import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
+import { BuildTitleActions } from "./BuildTitleActions";
 import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
@@ -1098,6 +1099,7 @@ export function SandboxView(props: SandboxViewProps) {
             {heading}
             {statusLine}
           </div>
+          <BuildTitleActions phone />
         </div>
         {banner}
         {buildColumn}
@@ -1154,6 +1156,7 @@ export function SandboxView(props: SandboxViewProps) {
         </div>
         {tabs}
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
+          <BuildTitleActions />
           <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
             Card
           </Button>

@@ -123,3 +123,40 @@ export const SESSION_WINDOW_COPY = {
   keepNone: "No other session to move them to",
   all: "Remove all",
 } as const;
+
+/* ── the build's menu (CA-20 P4) ── */
+
+/** What "Clear the build" would take away. */
+export interface ClearCounts {
+  parts: number;
+  sessions: number;
+  tiles: number;
+  files: number;
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** "2 parts, 6 sessions, 18 tiles and 3 files", leaving out what is zero. */
+export function clearList(counts: ClearCounts): string {
+  const parts = [
+    counts.parts > 0 ? plural(counts.parts, "part", "parts") : "",
+    counts.sessions > 0 ? plural(counts.sessions, "session", "sessions") : "",
+    counts.tiles > 0 ? plural(counts.tiles, "tile", "tiles") : "",
+    counts.files > 0 ? plural(counts.files, "file", "files") : "",
+  ].filter(Boolean);
+  if (parts.length <= 1) return parts.join("");
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
+export const CLEAR_COPY = {
+  menu: "Clear the build…",
+  title: "Clear the build?",
+  body: (counts: ClearCounts) => `Removes ${clearList(counts)}, with their colours, groups and links. The title, the post's words and the Classification Card stay.`,
+  cancel: "Cancel",
+  confirm: "Clear the build",
+  /** Greyed while there is nothing in the build. */
+  nothing: "The build is empty",
+  options: "Build options",
+  recentlyRemoved: "Recently removed…",
+  shortcuts: "Keyboard shortcuts",
+} as const;

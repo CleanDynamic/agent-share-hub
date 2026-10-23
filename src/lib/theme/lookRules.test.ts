@@ -616,6 +616,9 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/buildSelection.ts",
   "src/pages/site/compose/ca20.p3.test.tsx",
   "src/pages/site/compose/useBuildSelection.ts",
+  "src/pages/site/compose/BuildTitleActions.tsx",
+  "src/pages/site/compose/ClearBuildDialog.tsx",
+  "src/pages/site/compose/ca20.p4.test.tsx",
 ];
 
 /**

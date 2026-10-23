@@ -10,24 +10,35 @@
    one next to it. A file goes at once, and out of the tiles that use it. What points at a component (its group, its colour, the
    words in the post that link to it) is let go first, through the reference bridge, and comes back with it on Undo. */
 
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 import { kindsIn, type Chosen } from "@/lib/build/buildSelection";
-import { REMOVE_COPY } from "@/lib/build/componentMenus";
-import { groupKey, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
+import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import { deleteBuildSession, listBuildSessionRows } from "@/lib/build/buildSessions";
+import { REMOVE_COPY, type ClearCounts } from "@/lib/build/componentMenus";
+import { FILE_TYPE, groupKey, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
+import { patchMaking, refreshMakingStats, storedWorkstreamsOf } from "@/lib/build/making";
 import { REF_KIND } from "@/lib/build/postRefs";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 import { dropFile, dropNodes, goingWith } from "@/lib/build/removeNodes";
-import { tilesOfSession } from "@/lib/build/sessionEdit";
+import { flatRows, tilesOfSession } from "@/lib/build/sessionEdit";
 import { orderKeys } from "@/lib/build/sessionLayout";
 import { refTo } from "@/lib/build/thread";
 
+import { ClearBuildDialog } from "./ClearBuildDialog";
 import { SessionRemoveWindow, type SessionRemoval } from "./removePieces";
+import { buildSessionRowsKey } from "./useComposeSessions";
 import type { BuildHistoryApi } from "./useBuildHistory";
 import type { ComposeNodes } from "./useComposeNodes";
 
 /** What the page hands the actions. */
 export interface BuildActionsInput {
+  buildId: string | undefined;
+  /** `builds.making` as saved: the parts, for what clearing would take. */
+  made: unknown;
+  /** The page lets go of a session it was adding to, once the build is cleared. */
+  onCleared?: () => void;
   nodes: ComposeNodes;
   history: BuildHistoryApi;
   bridge: ReferenceBridge;
@@ -48,6 +59,15 @@ export interface BuildActions {
   askRemoveSessions: (keys: readonly string[]) => void;
   /** What is chosen, as one step: tiles go at once; with sessions among them the session window asks, worded for all. */
   removeSelection: (items: readonly Chosen[]) => void;
+  /** CA-20 P6: Recently removed, in the build's menu. Absent: the item is not drawn. */
+  recentlyRemoved?: { count: number; open: () => void };
+  /** CA-20 P4: Clear the build, from the build's menu. */
+  clear: {
+    /** What clearing would take; all zero when the build is empty. */
+    counts: ClearCounts;
+    /** Opens the window that asks. */
+    ask: () => void;
+  };
 }
 
 export const BuildActionsContext = createContext<BuildActions | null>(null);
@@ -66,8 +86,10 @@ function insideOf(step: Step): { count: number; what: "agents" | "tiles" } {
   return { count: flatten([...step.children, ...(step.sentWith ?? [])]).length, what: "tiles" };
 }
 
-export function useBuildActions({ nodes, history, bridge, steps, groups, removeSessions }: BuildActionsInput): { actions: BuildActions; dialogs: ReactNode } {
+export function useBuildActions({ buildId, made, onCleared, nodes, history, bridge, steps, groups, removeSessions }: BuildActionsInput): { actions: BuildActions; dialogs: ReactNode } {
+  const queryClient = useQueryClient();
   const [removal, setRemoval] = useState<SessionRemoval | null>(null);
+  const [clearing, setClearing] = useState(false);
 
   const removeTiles = useCallback(
     (ids: readonly string[]) => {
@@ -154,9 +176,62 @@ export function useBuildActions({ nodes, history, bridge, steps, groups, removeS
     [groups, steps, removeTiles, removeSessions],
   );
 
-  const actions = useMemo<BuildActions>(() => ({ removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection }), [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection]);
+  /* ── Clear the build ── */
+
+  const clearCounts = useMemo<ClearCounts>(() => {
+    const tree = nodes.tree;
+    return {
+      parts: storedWorkstreamsOf(made).length,
+      sessions: orderKeys(groups).length,
+      tiles: flatten(steps).filter((step) => step.kind !== "file").length,
+      files: tree.filter((node) => node.type === FILE_TYPE && node.parent_id === null).length,
+    };
+  }, [nodes.tree, made, groups, steps]);
+
+  const clearBuild = useCallback(async () => {
+    if (!buildId) return;
+    await history
+      .track(
+        REMOVE_COPY.cleared,
+        async () => {
+          const tree = nodes.current();
+          // Everything that points at something that is going is let go first: its groups, and the words that link to it.
+          const refs = [
+            ...flatRows(tree).map((row) => refTo({ kind: "node", id: row.id })),
+            ...orderKeys(groups).map((key) => refTo({ kind: "session", id: key })),
+            ...storedWorkstreamsOf(made).map((part) => refTo({ kind: "workstream", id: part.key })),
+          ];
+          bridge.release(refs);
+          await nodes.run(async () => {
+            await dropNodes(nodes, tree.map((node) => node.id));
+            for (const row of await listBuildSessionRows(buildId).catch(() => [])) await deleteBuildSession(buildId, row.sessionKey).catch(() => undefined);
+            await patchMaking(buildId, { sessions_meta: {}, session_order: [], workstreams: [], sessions_collapsed: [] });
+          });
+          await refreshMakingStats(buildId).catch(() => undefined);
+          onCleared?.();
+          await Promise.all([queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) }), queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
+        },
+        { notice: true },
+      )
+      .catch((cause) => console.error("[Compose] build not cleared", cause));
+  }, [buildId, history, nodes, groups, made, bridge, onCleared, queryClient]);
+
+  const actions = useMemo<BuildActions>(
+    () => ({ removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, clear: { counts: clearCounts, ask: () => setClearing(true) } }),
+    [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, clearCounts],
+  );
 
   const dialogs = (
+    <>
+      <ClearBuildDialog
+        open={clearing}
+        counts={clearCounts}
+        onClose={() => setClearing(false)}
+        onConfirm={() => {
+          setClearing(false);
+          void clearBuild();
+        }}
+      />
     <SessionRemoveWindow
       removal={removal}
       onClose={() => setRemoval(null)}
@@ -166,6 +241,7 @@ export function useBuildActions({ nodes, history, bridge, steps, groups, removeS
         if (asked) void removeSessions(asked.keys, mode, asked.alsoIds);
       }}
     />
+    </>
   );
 
   return { actions, dialogs };
