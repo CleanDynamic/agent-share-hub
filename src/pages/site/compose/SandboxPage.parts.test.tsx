@@ -335,3 +335,33 @@ describe("CA-17 P4 · the map in the composer", () => {
     expect(screen.queryByTestId("session-map")).toBeNull();
   });
 });
+
+describe("CA-17 P5 · a part's colour", () => {
+  it("is given from Colour… in the part's menu, kept on Done, and given to its uncoloured sessions only when asked", async () => {
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }), putImageData: vi.fn() })) as never;
+    await twoParts();
+    const [first] = storedWorkstreamsOf(draftRow()?.making);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Part 1 options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Colour…" }));
+    // The picker previews on the head at once, then Done keeps it.
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Also colour its sessions that have no colour" }));
+    fireEvent.click(screen.getByRole("button", { name: "#8FBFB8" }));
+    expect(await screen.findByRole("button", { name: "Colour for Part 1: #8FBFB8" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(storedWorkstreamsOf(draftRow()?.making)[0].colour).toBe("#8FBFB8"), { timeout: 15_000 });
+    await waitFor(() => expect(sessionsMetaOf(draftRow()?.making)[WAITING]?.colour).toBe("#8FBFB8"), { timeout: 15_000 });
+    expect(sessionsMetaOf(draftRow()?.making)[LONG]?.colour).toBe("#8FBFB8");
+    expect(first.key).toBeTruthy();
+  });
+
+  it("is kept alone with the box off", async () => {
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }), putImageData: vi.fn() })) as never;
+    await twoParts();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Part 1 options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Colour…" }));
+    fireEvent.click(await screen.findByRole("button", { name: "#D98C8C" }));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(storedWorkstreamsOf(draftRow()?.making)[0].colour).toBe("#D98C8C"), { timeout: 15_000 });
+    expect(sessionsMetaOf(draftRow()?.making)[WAITING]?.colour).toBeUndefined();
+  });
+});

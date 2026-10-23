@@ -3,7 +3,8 @@
 // A popover on the menu surface, 264 wide, padding 14, gap 12 (a BottomSheet on a phone). Top to bottom: the head
 // ("Colour" and what it colours), the wheel, lightness, the hex field with Copy, Pick from the screen (only where the
 // browser can), Suggested, Recent, Favourites, No colour, then Cancel and Done under a hairline. A session's picker
-// also offers "Also colour its tiles that have no colour", off to start.
+// also offers "Also colour its tiles that have no colour", off to start; a part's (CA-17) offers "Also colour its sessions
+// that have no colour" in the same place.
 //
 // THE WHEEL IS A CANVAS, drawn pixel by pixel (no CSS gradient anywhere): angle is hue, distance from the centre is
 // saturation from 0 to 70%, at the lightness the slider sets. Drag or click picks; with the canvas focused the arrow
@@ -65,6 +66,7 @@ export const COLOUR_PICKER_COPY = {
   cancel: "Cancel",
   done: "Done",
   alsoTiles: "Also colour its tiles that have no colour",
+  alsoSessions: "Also colour its sessions that have no colour",
   hint: HEX_HINT,
 } as const;
 
@@ -87,6 +89,8 @@ export interface ColourPickerProps {
   initial: string | null;
   /** A session: offers "Also colour its tiles that have no colour". */
   session?: boolean;
+  /** CA-17 P5, a part: offers "Also colour its sessions that have no colour" instead. */
+  part?: boolean;
   swatches: Swatches;
   onSwatches: (next: Swatches) => void;
   /** Every change, as it happens: the page draws it on the part and its links. */
@@ -318,7 +322,7 @@ function SwatchRow({ label, colours, current, onPick, onRemove }: { label: strin
 
 /* ── the body ── */
 
-function PickerBody({ what, initial, session = false, swatches, onSwatches, onPreview, onDone, onCancel, phone }: Omit<ColourPickerProps, "open" | "anchor">) {
+function PickerBody({ what, initial, session = false, part = false, swatches, onSwatches, onPreview, onDone, onCancel, phone }: Omit<ColourPickerProps, "open" | "anchor">) {
   const [colour, setColour] = useState<string | null>(initial);
   const [lightness, setLightness] = useState(() => (initial ? lightnessOf(hexToHsl(initial)?.l ?? LIGHTNESS_START) : LIGHTNESS_START));
   const [typed, setTyped] = useState(initial ?? "");
@@ -471,7 +475,7 @@ function PickerBody({ what, initial, session = false, swatches, onSwatches, onPr
           {COLOUR_PICKER_COPY.none}
         </TextButton>
       </div>
-      {session ? (
+      {session || part ? (
         <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", ...quiet, color: t.text }}>
           <Checkbox
             checked={alsoTiles}
@@ -480,7 +484,7 @@ function PickerBody({ what, initial, session = false, swatches, onSwatches, onPr
               onPreview(colour, event.target.checked);
             }}
           />
-          {COLOUR_PICKER_COPY.alsoTiles}
+          {part ? COLOUR_PICKER_COPY.alsoSessions : COLOUR_PICKER_COPY.alsoTiles}
         </label>
       ) : null}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 12, borderTop: `1px solid ${t.hairlineModule}` }}>

@@ -261,3 +261,27 @@ describe("moving by the handle", () => {
     expect(screen.getByTestId("workstream-name-text").textContent).toBe("Tenant portal");
   });
 });
+
+describe("a part's colour", () => {
+  it("draws the colour button only when the part has a colour, and opens the picker from it and from Colour… in the menu", async () => {
+    const onColour = vi.fn();
+    const parts = partsOf({ onColour });
+    parts.parts[0].view.colour = "#8FBFB8";
+    list({ parts });
+    const button = screen.getByRole("button", { name: "Colour for Part A: #8FBFB8" });
+    expect(screen.queryByRole("button", { name: /^Colour for Part B/ })).toBeNull();
+    fireEvent.click(button);
+    expect(onColour).toHaveBeenLastCalledWith("ws-a", expect.any(HTMLElement), "Part A · Tenant portal", "#8FBFB8");
+    openMenu("Part B options");
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Colour…" }));
+    expect(onColour).toHaveBeenLastCalledWith("ws-b", expect.any(HTMLElement), "Part B", null);
+  });
+  it("draws the label and name in the colour it is given, or --text", () => {
+    const parts = partsOf();
+    parts.parts[0].view.nameColour = "#457871";
+    list({ parts });
+    const [first, second] = screen.getAllByTestId("workstream-label");
+    expect(first.getAttribute("style")).toContain("rgb(69, 120, 113)");
+    expect(second.getAttribute("style")).not.toContain("rgb(");
+  });
+});

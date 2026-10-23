@@ -483,6 +483,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/build/ReaderMap.test.tsx",
   "src/pages/dev/DevMap.tsx",
   "src/pages/site/build/ReaderMap.tsx",
+  // CA-17 P5
+  "src/lib/build/postRefs.parts.test.ts",
+  "src/components/post/RefLinks.parts.test.tsx",
+  "src/components/post/editor/ReferencePicker.parts.test.tsx",
+  "src/components/brand/ColourPicker.part.test.tsx",
+  "src/pages/site/compose/partsModel.test.ts",
 ];
 
 /**

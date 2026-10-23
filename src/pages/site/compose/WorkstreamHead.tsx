@@ -12,11 +12,13 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { ColourButton } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { WORKSTREAM_NAME_MAX } from "@/lib/build/making";
+import { refTo } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -266,13 +268,14 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
   const [focused, setFocused] = useState(false);
   const [removing, setRemoving] = useState(false);
   const head = useRef<HTMLDivElement | null>(null);
+  const registered = usePartRef(refTo({ kind: "workstream", id: part.key }));
   const maker = Boolean(ops);
   const handleShown = phone || hovered || focused || drag.held;
-  const setRefs = (element: HTMLDivElement | null) => {
+  const setRefs = bothRefs<HTMLDivElement>((element) => {
     head.current = element;
     drop.setRef(element);
     drag.setRef(element);
-  };
+  }, registered);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!maker || !event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
     if (event.target instanceof HTMLInputElement && event.target.getAttribute("data-testid") !== "workstream-name") return;

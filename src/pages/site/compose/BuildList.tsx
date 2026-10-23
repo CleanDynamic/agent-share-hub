@@ -2147,6 +2147,7 @@ export function BuildList(props: BuildListProps) {
           joins={neighbour?.view.label ?? ""}
           onColour={parts?.onColour ? (anchor) => parts.onColour?.(view.key, anchor, part.title, view.colour ?? null) : undefined}
         />
+        <MentionedLine to={refTo({ kind: "workstream", id: view.key })} phone={props.phone} />
         <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed} style={WORKSTREAM_BODY}>
           {view.collapsed ? null : mine.length > 0 ? (
             mine.map((run) => drawRun(run, runs.indexOf(run), dragging, part))

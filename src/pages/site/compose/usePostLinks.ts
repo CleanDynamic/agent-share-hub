@@ -92,6 +92,17 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
       const target = parseRefTo(to);
       if (!target || !lookup.has(to)) return;
       shownTo.current = to;
+      // CA-17 P5: a whole part has no window: its head (the List) or its label (the Map) comes to the middle and is outlined.
+      if (target.kind === "workstream") {
+        afterPaint(() => {
+          const el = elementFor(to);
+          if (el) {
+            centre(el);
+            flashOutline(el);
+          }
+        });
+        return;
+      }
       if (target.kind === "node") {
         const path = pathTo(steps, target.id);
         const containers = path.slice(0, -1).filter((step) => step.kind === "agent" || step.kind === "team");

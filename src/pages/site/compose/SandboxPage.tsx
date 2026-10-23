@@ -44,7 +44,7 @@ import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/tes
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
-import { defaultWorkstream, orderByWorkstream, orderWithNewSession, workstreamKeyOf } from "@/lib/build/workstreams";
+import { defaultWorkstream, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamsOf } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionToBuild } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
@@ -100,7 +100,7 @@ import { allParts, PartWindow } from "@/components/build/PartWindow";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import { usePostLinks } from "./usePostLinks";
 import { useColourPicking } from "./useColourPicking";
-import { previewColours, type ColourPreview } from "@/lib/build/colourPreview";
+import { previewColours, previewWorkstreams, type ColourPreview } from "@/lib/build/colourPreview";
 import { sayFailed } from "./draftStart";
 
 /** builds.making.sessions, read defensively: it is a json column. */
@@ -193,7 +193,10 @@ export function SandboxPage() {
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
   }, [tree, made, order]);
-  const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview), [savedSteps, savedGroups, colourPreview]);
+  /* CA-17 P5: the sessions of a part, for its picker's "Also colour its sessions that have no colour", and the parts with the previewed colour on. */
+  const sessionsOfPart = useCallback((workstream: string): readonly string[] => workstreamsOf(made, orderKeys(savedGroups)).find((part) => part.key === workstream)?.sessions ?? [], [made, savedGroups]);
+  const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview, sessionsOfPart), [savedSteps, savedGroups, colourPreview, sessionsOfPart]);
+  const madeShown = useMemo(() => previewWorkstreams(made, colourPreview), [made, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
@@ -377,7 +380,7 @@ export function SandboxPage() {
   }, [tree]);
   const dividerRows = useMemo(() => dividers(steps, groups, setupCounts, runsWhen), [steps, groups, setupCounts, runsWhen]);
   /** CA-06 P2: what the post's words can link to: each session, then its tiles. */
-  const postRefGroups = useMemo(() => refGroups({ steps, groups }), [steps, groups]);
+  const postRefGroups = useMemo(() => refGroups({ steps, groups, making: madeShown }), [steps, groups, madeShown]);
 
   /* ── Sources ── */
 
@@ -479,7 +482,7 @@ export function SandboxPage() {
   const [promptSession, setPromptSession] = useState<string | null>(null);
   /* CA-17 P2: the build's parts, when it has two or more. */
   const theme = useResolvedTheme();
-  const partsModel = useMemo(() => listPartsOf(made, groups, theme), [made, groups, theme]);
+  const partsModel = useMemo(() => listPartsOf(madeShown, groups, theme), [madeShown, groups, theme]);
   /** CA-17 P3: the parts "Add to" can choose; none until the build has two. */
   const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
   const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, onGone: (key) => {
@@ -692,14 +695,15 @@ export function SandboxPage() {
         const group = groups.find((candidate) => groupKey(candidate) === key);
         const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
         const { colour: _old, ...rest } = before;
-        await setSessionMeta(id, key, colour ? { ...rest, colour } : rest);
+        // In the node queue, behind any write already going: a part's colour and its sessions' are written one after another.
+        await nodes.run(() => setSessionMeta(id, key, colour ? { ...rest, colour } : rest));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session colour not saved", cause);
         sayFailed(cause, "Couldn't save that colour. Try again.");
       }
     },
-    [ensureBuild, groups, made, refreshRecord],
+    [ensureBuild, groups, made, refreshRecord, nodes],
   );
 
   /** CA-12 P3: "Pick an app" on a session made here. On a post with no draft yet, the draft and its Session 1 are made first. */
@@ -791,15 +795,16 @@ export function SandboxPage() {
       const target = parseRefTo(to);
       if (!target) return;
       if (target.kind === "session") void onSessionColour(target.id, colour);
+      else if (target.kind === "workstream") void edits.onPartColour(target.id, colour);
       else {
         prompts.setColour(target.id, colour);
         afterWrite();
       }
     },
-    [onSessionColour, prompts, afterWrite],
+    [onSessionColour, prompts, afterWrite, edits],
   );
   /* CA-06 P5: the picker the colour buttons open. */
-  const { onColour, picker: colourPicker } = useColourPicking({ preview: colourPreview, setPreview: setColourPreview, savedSteps, savedGroups, write: writeColour, phone });
+  const { onColour, picker: colourPicker } = useColourPicking({ preview: colourPreview, setPreview: setColourPreview, savedSteps, savedGroups, write: writeColour, phone, sessionsOfPart });
   /** Details' colour: the selected tile's or session's, with its button. */
   const detailsColour = useMemo(() => {
     if (!selectedId) return null;
@@ -1458,7 +1463,7 @@ export function SandboxPage() {
   /* ── CA-17 P4: the map of sessions ── */
   const published = (build as { status?: string } | null)?.status !== undefined && (build as { status?: string } | null)?.status !== "draft";
   const mapSettings = makerMapOf(made, published);
-  const mapModel = useMemo(() => sessionMapFor({ groups, steps, files: mapFiles, making: made }), [groups, steps, mapFiles, made]);
+  const mapModel = useMemo(() => sessionMapFor({ groups, steps, files: mapFiles, making: madeShown }), [groups, steps, mapFiles, madeShown]);
   /** The map's selected session: a session's key held in the page's selection (a link to a session selects it too). */
   const mapSelected = selectedId && mapModel.sessions.some((session) => session.key === selectedId) ? selectedId : null;
   const mapActive = Boolean(mapSettings?.on);
@@ -1722,6 +1727,7 @@ export function SandboxPage() {
                     parts: partsModel.list,
                     withAbove: partsModel.withAbove,
                     onToggle: edits.onPartFold,
+                    onColour: (key, anchor, what, colour) => onColour(refTo({ kind: "workstream", id: key }), anchor, what, colour),
                     ops: { onName: edits.onPartName, onMove: edits.onPartMove, onRemove: edits.onPartRemove, onStartsAfter: edits.onPartStartsAfter },
                   }
                 : undefined

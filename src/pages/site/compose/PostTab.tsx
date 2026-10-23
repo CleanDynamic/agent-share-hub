@@ -22,7 +22,7 @@ import { addPictures, postAtCaret, type EditRequest } from "@/components/post/ed
 import { EditMediaDialog } from "@/components/post/media/EditMediaDialog";
 import { withoutGoneSteps } from "@/lib/build/gridSteps";
 import { addPostAtEnd, PostToolbar, removePost } from "@/components/post/editor/PostToolbar";
-import { ReferencePicker } from "@/components/post/editor/ReferencePicker";
+import { REFERENCE_COPY, ReferencePicker } from "@/components/post/editor/ReferencePicker";
 import { applyRef, readRefSpot, removeRef, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
 import { SlashMenu, type InsertPicture } from "@/components/post/editor/SlashMenu";
 import { usePostEditor } from "@/components/post/editor/usePostEditor";
@@ -36,7 +36,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 import { RefCard, refPaint, useRefCard } from "@/components/post/RefLinks";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
+import { hasPartRows, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import type { Build } from "@/lib/build/types";
 import type { GalleryMedia } from "@/lib/build";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
@@ -464,6 +464,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           notice={setNotice}
           onPreview={() => setPreview(true)}
           onReference={references ? () => void openRefs(false) : undefined}
+          referenceLabel={references && hasPartRows(references.groups) ? REFERENCE_COPY.buttonWithParts : undefined}
         />
       </div>
       <FormatBar editor={editor} controls={controls} phone={phone} />
