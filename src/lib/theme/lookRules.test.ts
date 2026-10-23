@@ -454,6 +454,12 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/onePrompt.snapshot.test.tsx",
   // CA-15b P4
   "src/pages/dev/ModalsDemo.tsx",
+  // CA-17 P1
+  "src/lib/build/making.ts",
+  "src/lib/build/workstreams.ts",
+  "src/lib/build/workstreams.test.ts",
+  "src/lib/build/stages.ts",
+  "src/lib/build/stages.test.ts",
 ];
 
 /**
