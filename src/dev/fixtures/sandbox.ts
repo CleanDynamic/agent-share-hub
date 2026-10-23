@@ -10,7 +10,7 @@ import { PUBLISH_WORDS } from "@/pages/site/compose/composeModel";
 import type { SandboxViewProps } from "@/pages/site/compose/SandboxView";
 import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { BuildListProps } from "@/pages/site/compose/BuildList";
-import type { BuildMapProps } from "@/pages/site/compose/BuildMap";
+import type { MapPieceLike } from "@/lib/build/sessionMap";
 import type { DetailsPanelProps, DetailsView } from "@/pages/site/compose/DetailsPanel";
 import { dividers } from "@/pages/site/compose/buildListModel";
 import type { SourcesPanelProps } from "@/pages/site/compose/SourcesPanel";
@@ -228,16 +228,19 @@ export function sandboxDetailsProps(kind: SandboxDetails = "prompt", which: Sand
   return { phone: false, view: views[kind], ...handlers };
 }
 
+/** CA-17 P4: what the map of sessions is drawn from on a dev page: the steps, their sessions and the files each step makes. */
+export interface MapFixture {
+  steps: readonly Step[];
+  groups: readonly SessionGroup[];
+  files: readonly MapPieceLike[];
+  /** The session or tile a dev page starts with selected. */
+  selectedId?: string | null;
+}
+
 export type SandboxMapFixture = SandboxFixture | "big";
 
 /** The Map for each build; `big` is 60 steps over six sessions, for the long-task measurement. */
-export function sandboxMapProps(which: SandboxMapFixture = "fox"): BuildMapProps {
-  const base = {
-    suggestions: [],
-    onSelect: noop,
-    onClear: noop,
-    onConnect: noop,
-  };
+export function sandboxMapProps(which: SandboxMapFixture = "fox"): MapFixture {
   if (which === "big") {
     const steps: Step[] = Array.from({ length: 60 }, (_, at) =>
       step({ id: `b${at}`, number: String(at + 1), sessionId: `s${at % 6}`, text: "Write the next part of the page, keeping the voice of the earlier parts.", model: "opus-5-5", uses: at > 0 ? [{ kind: "output", node_id: `b${at - 1}` }] : [] }),
@@ -250,22 +253,15 @@ export function sandboxMapProps(which: SandboxMapFixture = "fox"): BuildMapProps
       startedAt: `2026-03-0${at + 1}T10:00:00`,
       stepNumbers: steps.filter((candidate) => candidate.sessionId === `s${at}`).map((candidate) => candidate.number),
     }));
-    return { ...base, steps, groups, files: [], tools: [], results: [{ id: "r1", title: "The finished site", fromId: "b59" }], selectedId: "b30" };
+    return { steps, groups, files: [], selectedId: "b30" };
   }
   const list = sandboxListProps(which);
   const fox = which === "fox";
   return {
-    ...base,
     steps: list.steps,
     groups: sandboxGroups(which),
     files: fox ? [] : [{ id: "f1", name: "menu.pdf" }],
-    tools: fox ? [] : [{ id: "t1", name: "Gmail" }],
-    results: [{ id: "r1", title: list.results[0].title, fromId: fox ? "p1" : "a5" }],
-    suggestions: fox ? [] : [{ stepId: "p4", use: { kind: "output", node_id: "p1" }, label: "Output of 1" }],
     selectedId: fox ? "p1" : "p3",
-    onSelect: noop,
-    onClear: noop,
-    onConnect: noop,
   };
 }
 
@@ -275,7 +271,7 @@ export function sandboxMapProps(which: SandboxMapFixture = "fox"): BuildMapProps
  * sends work back until it is approved, and a finisher), then a prompt that uses
  * the team, and the result. The writer has two prompts of its own.
  */
-export function sandboxTeamFixture(): { list: BuildListProps; map: BuildMapProps } {
+export function sandboxTeamFixture(): { list: BuildListProps; map: MapFixture } {
   const agent = (id: string, number: string, title: string | null, text: string, extra: Partial<Step> = {}) =>
     step({ id, number, kind: "agent", title, defaultTitle: `Agent ${number}`, text, model: "opus-5-5", ...extra });
   const out = (id: string) => ({ kind: "output" as const, node_id: id });
@@ -320,21 +316,7 @@ export function sandboxTeamFixture(): { list: BuildListProps; map: BuildMapProps
     onAddAgentPrompt: () => Promise.resolve(true),
     onAddAgentTo: noop,
   };
-  const map: BuildMapProps = {
-    steps,
-    groups,
-    files: [{ id: "f1", name: "menu.pdf" }],
-    tools: [],
-    results: [{ id: "r1", title: "plumandrye.example", fromId: "t3" }],
-    suggestions: [],
-    selectedId: "t3",
-    onSelect: noop,
-    onClear: noop,
-    onConnect: noop,
-    onOpenContainer: noop,
-    onBack: noop,
-    onLeave: noop,
-  };
+  const map: MapFixture = { steps, groups, files: [{ id: "f1", name: "menu.pdf" }], selectedId: "t3" };
   return { list, map };
 }
 
@@ -343,7 +325,7 @@ export function sandboxTeamFixture(): { list: BuildListProps; map: BuildMapProps
  * step between them (laying out the hero in Figma, with a screenshot), and a
  * prompt that uses its output.
  */
-export function sandboxManualFixture(): { list: BuildListProps; map: BuildMapProps } {
+export function sandboxManualFixture(): { list: BuildListProps; map: MapFixture } {
   const out = (id: string) => ({ kind: "output" as const, node_id: id });
   const steps: Step[] = [
     step({ id: "p1", number: "1", title: "Brand brief", text: BRIEF, sessionId: "s1", model: "opus-5-5" }),
@@ -371,6 +353,6 @@ export function sandboxManualFixture(): { list: BuildListProps; map: BuildMapPro
     onAddAgentPrompt: () => Promise.resolve(true),
     onAddAgentTo: noop,
   };
-  const map: BuildMapProps = { steps, groups, files: [], tools: [], results: [], suggestions: [], selectedId: "m3", onSelect: noop, onClear: noop, onConnect: noop };
+  const map: MapFixture = { steps, groups, files: [], selectedId: "m3" };
   return { list, map };
 }

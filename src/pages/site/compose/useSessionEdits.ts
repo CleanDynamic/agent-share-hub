@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession, listBuildSessionRows } from "@/lib/build/buildSessions";
 import { buildSteps, groupKey, topSteps, type SessionGroup, type Step } from "@/lib/build/graph";
-import { isLegacySession, newSessionKey, patchMaking, readMaking, refreshMakingStats, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, newSessionKey, patchMaking, readMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta } from "@/lib/build/making";
 import { reorderNodes } from "@/lib/build/nodes";
 import { droppedKey, movedKey, orderKeys, setSessionOrder, stackBySessionMoves } from "@/lib/build/sessionLayout";
 import { dayOfNode, flatRows, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, removeTopNodes, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
@@ -435,6 +435,18 @@ export function useSessionEdits(input: SessionEditsInput) {
     [guard, refresh],
   );
 
+  /** CA-17 P4, P6: Create a map, Remove map, the direction and Show on build page. */
+  const onMapSettings = useCallback(
+    (next: MapSettings) =>
+      void guard("Couldn't save that. Try again.", async () => {
+        const { buildId, nodes } = latest.current;
+        if (!buildId) return;
+        await nodes.run(() => setMapSettings(buildId, next).then(() => undefined));
+        await refresh(buildId);
+      }),
+    [guard, refresh],
+  );
+
   /** "Label parts": 1, 2, 3 or A, B, C for the whole build. */
   const onLabels = useCallback(
     (labels: PartLabels) =>
@@ -579,5 +591,5 @@ export function useSessionEdits(input: SessionEditsInput) {
       .catch((cause) => console.warn("[Sessions] a new tile was not put with its session", cause));
   }, [topCount, editableKeys, queryClient]);
 
-  return { onTitle, onMove, onDrop, onRemove, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels };
+  return { onTitle, onMove, onDrop, onRemove, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };
 }

@@ -48,6 +48,7 @@ import { TextButton } from "./composeControls";
 import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
+import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -110,6 +111,8 @@ export interface SandboxViewProps extends CardProps {
   viewOptions?: ViewMenuProps;
   /** CA-14 P6: the session list, a row under the header (a menu on a phone). Absent: nothing is drawn. */
   sessionList?: ReactNode;
+  /** CA-17 P4: the map's panel, beside the map in the Map view where Details was. */
+  mapPanel?: ReactNode;
   /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
   onAddFile?: () => void;
 
@@ -142,10 +145,6 @@ export interface SandboxViewProps extends CardProps {
   /** CA-03 P8: one line that says what kind of build it is, for the status line. Absent until it has more than one step. */
   summary?: string;
 
-  /** UI-P69: the agents and teams opened in the Map, outermost first. Empty: the build itself. */
-  trail?: readonly { id: string; title: string }[];
-  /** Go up to `depth` levels open: 0 is the build, 1 the first of the trail. */
-  onTrail?: (depth: number) => void;
 
   /** PT-05: the post, drawn above the build. Absent, nothing is drawn there. */
   post?: ReactNode;
@@ -906,7 +905,6 @@ export function SandboxView(props: SandboxViewProps) {
     </div>
   ) : null;
 
-  const trail = lens === "map" ? (props.trail ?? []) : [];
   const detailsBody = props.selection ?? <p style={quiet}>{DETAILS_EMPTY}</p>;
   const sourcesBody = props.sources ?? <DefaultSources />;
 
@@ -933,7 +931,6 @@ export function SandboxView(props: SandboxViewProps) {
       checkable={props.checkable}
     />
   );
-  const trailLink: CSSProperties = { ...bareButton, ...underlined, fontSize: 13.5, fontWeight: 500, color: t.text2 };
   const buildPanel = (
     <section
       ref={buildRef}
@@ -945,34 +942,10 @@ export function SandboxView(props: SandboxViewProps) {
         display: "flex",
         flexDirection: "column",
         gap: 12,
-        /* UI-P94: in Map, Build is a module beside the rail. */
-        ...(lens === "map" && !phone ? moduleStyle() : null),
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
-        {trail.length > 0 ? (
-          <h2 data-testid="sandbox-trail" style={{ ...text(13.5, 500, t.text), margin: 0, display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", gap: 6 }}>
-            <button type="button" onClick={() => props.onTrail?.(0)} style={trailLink}>
-              Build
-            </button>
-            {trail.map((entry, at) => (
-              <span key={entry.id} style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
-                <span aria-hidden="true" style={{ color: t.label }}>
-                  ›
-                </span>
-                {at < trail.length - 1 ? (
-                  <button type="button" onClick={() => props.onTrail?.(at + 1)} style={trailLink}>
-                    {entry.title}
-                  </button>
-                ) : (
-                  <span aria-current="page">{entry.title}</span>
-                )}
-              </span>
-            ))}
-          </h2>
-        ) : (
-          <PanelTitle>Build</PanelTitle>
-        )}
+        <PanelTitle>Build</PanelTitle>
         <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0 }}>
           {countsLine(props.counts)}
         </span>
@@ -990,23 +963,18 @@ export function SandboxView(props: SandboxViewProps) {
             {addMenu}
           </span>
         ) : null}
-        {trail.length > 0 ? (
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => props.onTrail?.(trail.length - 1)}>
-            Back to build
-          </Button>
-        ) : null}
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
         {phone ? null : addMenu}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {lens === "map" ? (props.map ?? null) : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>)}
+      {props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>}
     </section>
   );
 
   /* PT-05: the post heads the Build column, above the first prompt, under nothing but its own hairline. Not while an
      agent or team is open in the Map: the trail is about that one part. */
   const postSection =
-    props.post && trail.length === 0 ? (
+    props.post ? (
       <section
         ref={postRef}
         aria-label="Post"
@@ -1025,7 +993,7 @@ export function SandboxView(props: SandboxViewProps) {
         display: "flex",
         flexDirection: "column",
         gap: 20,
-        flex: lens === "map" && !phone ? "999 1 560px" : "999 1 480px",
+        flex: "999 1 480px",
       }}
     >
       {postSection}
@@ -1113,11 +1081,21 @@ export function SandboxView(props: SandboxViewProps) {
         <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
           {sourcesBody}
         </SourcesFrame>
-        {buildColumn}
-        <section aria-label="Details" style={{ ...moduleStyle(), flex: "1 1 280px", maxWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
-          <PanelTitle>Details</PanelTitle>
-          {detailsBody}
-        </section>
+        {lens === "map" ? (
+          /* CA-17 P4: Details is not shown in the Map view: the map column fills, then 48, then the map's panel, 312 wide. */
+          <div data-testid="map-view" style={MAP_AND_PANEL}>
+            <div style={MAP_COLUMN}>{props.map ?? null}</div>
+            {props.mapPanel}
+          </div>
+        ) : (
+          <>
+            {buildColumn}
+            <section aria-label="Details" style={{ ...moduleStyle(), flex: "1 1 280px", maxWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
+              <PanelTitle>Details</PanelTitle>
+              {detailsBody}
+            </section>
+          </>
+        )}
       </div>
       {card}
     </div>

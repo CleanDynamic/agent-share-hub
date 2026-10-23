@@ -138,38 +138,7 @@ describe("SandboxView on a phone", () => {
   });
 });
 
-describe("the Build panel's head when an agent or a team is opened (UI-P69)", () => {
-  const trail = [{ id: "t3", title: "Copy team" }, { id: "t3b", title: "Writer" }];
-
-  it("reads 'Build › {title}', with Build a link back and a Back to build beside Add", () => {
-    const props = view({ lens: "map", trail: [trail[0]], onTrail: vi.fn() });
-    const head = screen.getByTestId("sandbox-trail");
-    expect(head.textContent).toBe("Build›Copy team");
-    expect(within(head).getByText("Copy team").getAttribute("aria-current")).toBe("page");
-    fireEvent.click(within(head).getByRole("button", { name: "Build" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(0);
-    fireEvent.click(screen.getByRole("button", { name: "Back to build" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(0);
-  });
-
-  it("reads 'Build › {team} › {agent}' one level further in, and Back goes up one level", () => {
-    const props = view({ lens: "map", trail, onTrail: vi.fn() });
-    expect(screen.getByTestId("sandbox-trail").textContent).toBe("Build›Copy team›Writer");
-    fireEvent.click(within(screen.getByTestId("sandbox-trail")).getByRole("button", { name: "Copy team" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(1);
-    fireEvent.click(screen.getByRole("button", { name: "Back to build" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(1);
-  });
-
-  it("is the plain 'Build' title with nothing opened, and in List even when something is", () => {
-    view({ lens: "map", trail: [] });
-    expect(screen.queryByTestId("sandbox-trail")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Back to build" })).toBeNull();
-    cleanup();
-    view({ lens: "list", trail });
-    expect(screen.queryByTestId("sandbox-trail")).toBeNull();
-  });
-
+describe("the Add menu (UI-P69)", () => {
   it("opens the Add dialog from Add › Agent", async () => {
     const onAddAgent = vi.fn();
     view({ onAddAgent });
@@ -301,11 +270,17 @@ describe("the refined Map and Card (UI-P94)", () => {
     expect(markup({ lens: "map" })).toContain("width:28px;height:1px;background:var(--hairline-module)");
   });
 
-  it("makes Build a module beside the rail in Map, and leaves it on the surface in List", () => {
-    expect(markup({ lens: "map" })).toMatch(/aria-label="Build" tabindex="-1" style="[^"]*background:var\(--module\)/);
-    expect(markup({ lens: "map" })).toContain("flex:999 1 560px");
-    expect(markup({ lens: "list" })).not.toMatch(/aria-label="Build" tabindex="-1" style="[^"]*background:var\(--module\)/);
-    expect(markup({ lens: "list" })).not.toContain("flex:999 1 560px");
+  it("draws the map column and its panel beside the rail in Map, with no Build panel and no Details; the List keeps them (CA-17 P4)", () => {
+    const map = markup({ lens: "map", map: <p>the map</p>, mapPanel: <aside>the panel</aside> });
+    expect(map).toContain('data-testid="map-view"');
+    expect(map).toContain("the map");
+    expect(map).toContain("the panel");
+    expect(map).not.toContain('aria-label="Build"');
+    expect(map).not.toContain('aria-label="Details"');
+    const list = markup({ lens: "list" });
+    expect(list).not.toContain('data-testid="map-view"');
+    expect(list).toContain('aria-label="Build"');
+    expect(list).toContain('aria-label="Details"');
   });
 
   it("opens the Card as the modal window", () => {
@@ -353,11 +328,11 @@ describe("the post above the build", () => {
     expect(style).not.toContain("background");
   });
 
-  it("is not drawn without a post, nor while an agent or a team is open in the Map", () => {
+  it("is not drawn without a post, nor in the Map view", () => {
     viewAt("/compose/x", { post: undefined });
     expect(screen.queryByRole("region", { name: "Post" })).toBeNull();
     cleanup();
-    viewAt("/compose/x", { lens: "map", trail: [{ id: "t3", title: "Research team" }] });
+    viewAt("/compose/x", { lens: "map" });
     expect(screen.queryByRole("region", { name: "Post" })).toBeNull();
   });
 

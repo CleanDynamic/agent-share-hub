@@ -24,7 +24,7 @@ import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type Sh
 import { refGroups } from "@/lib/build/postRefs";
 import type { ThreadDoc } from "@/lib/build/thread";
 import { BuildList, partName } from "@/pages/site/compose/BuildList";
-import { BuildMap } from "@/pages/site/compose/BuildMap";
+import { useDevMap } from "./DevMap";
 import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
 import { PostTab } from "@/pages/site/compose/PostTab";
 import { SandboxView, type SandboxLens } from "@/pages/site/compose/SandboxView";
@@ -71,7 +71,6 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
   const [lens, setLens] = useState<SandboxLens>(params.get("lens") === "map" ? "map" : "list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openPromptId, setOpenPromptId] = useState<string | null>(null);
-  const [trail, setTrail] = useState<readonly string[]>([]);
   const registry = useRef<PartRegistry>(new Map()).current;
   const groups = useMemo(() => refGroups({ steps: shown.steps, groups: shown.groups }), [shown]);
   const { onColour, picker } = useColourPicking({
@@ -82,11 +81,11 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
     write: (to, colour) => setKept((previous) => ({ ...previous, [to]: colour })),
     phone,
   });
-  const links = usePostLinks({ steps: build.steps, groups: build.groups, refGroups: groups, registry, lens: phone ? "list" : lens, phone, setSelectedId, setOpenPromptId, setTrail });
+  const links = usePostLinks({ steps: build.steps, groups: build.groups, refGroups: groups, registry, lens: phone ? "list" : lens, phone, setSelectedId, setOpenPromptId });
   const thread = useMemo(() => demoThread(linksPost), []);
   const list = { ...shapeListProps("one-sitting", source), steps: shown.steps };
-  const map = { ...shapeMapProps("one-sitting", source), steps: shown.steps, groups: shown.groups };
-  const opened = trail.length ? (build.steps.find((step) => step.id === trail[trail.length - 1]) ?? null) : null;
+  const mapData = { ...shapeMapProps("one-sitting", source), steps: shown.steps, groups: shown.groups };
+  const devMap = useDevMap({ fixture: mapData, selected: selectedId, onSelect: setSelectedId });
   const { counts } = sessionFacts(fixture.tree);
   const detailsColour = useMemo(() => {
     const group = shown.groups.find((candidate) => groupKey(candidate) === selectedId);
@@ -109,8 +108,6 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
         lens={lens}
         onLens={setLens}
         mapAvailable
-        trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
-        onTrail={(depth) => setTrail((previous) => previous.slice(0, depth))}
         list={
           <BuildList
             {...list}
@@ -125,22 +122,8 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
             dividers={dividers(shown.steps, shown.groups, counts, {})}
           />
         }
-        map={
-          <BuildMap
-            {...map}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onClear={() => setSelectedId(null)}
-            onOpenPrompt={setOpenPromptId}
-            opened={opened}
-            onOpenContainer={(id) => setTrail((previous) => [...previous, id])}
-            onBack={() => setTrail((previous) => previous.slice(0, -1))}
-            onLeave={(id) => {
-              setTrail([]);
-              setSelectedId(id);
-            }}
-          />
-        }
+        map={devMap.column}
+        mapPanel={devMap.panel}
         selection={selectedId ? <DetailsPanel {...shapeDetailsProps("one-sitting", selectedId, source)} phone={phone} onSelect={setSelectedId} onOpenPrompt={setOpenPromptId} colour={detailsColour} /> : undefined}
         post={
           <PostTab

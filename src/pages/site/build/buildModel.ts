@@ -246,7 +246,7 @@ export interface BuildStepsView {
   need: readonly NeedGroup[];
   /** `buildCounts(steps)`. */
   counts: string;
-  /** CONCEPT §5: two sessions or an agent. */
+  /** CA-17 P6: two or more sessions, and the maker has put the map on the build page (a build from before the map has it on). */
   mapAvailable: boolean;
   /** What the read-only Map draws besides the steps (UI-P74). */
   map: ReaderMapData;
@@ -265,6 +265,8 @@ export interface BuildStepsView {
   onBackToPost?: () => void;
   /** CA-06 P3: the build's sessions, for the session window. */
   groups?: readonly SessionGroup[];
+  /** CA-17: `builds.making` as stored, for the parts, their labels and the map's settings. */
+  making?: unknown;
 }
 
 /** builds.making is jsonb the maker can write: keep only what has the shape. */

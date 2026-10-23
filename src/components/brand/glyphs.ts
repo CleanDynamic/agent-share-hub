@@ -60,6 +60,8 @@ export const GLYPHS = {
   shapeSquare: "M3.5 3.5h9v9h-9z",
   /** CA-07: step, drawn in its neighbours' style. */
   step: "M2.5 2.5h11v11h-11zM7 6l1.25-1v6",
+  /** CA-17: fit to screen, four corners, drawn in its neighbours' style. */
+  fit: "M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10",
 } as const;
 
 export type GlyphName = keyof typeof GLYPHS;

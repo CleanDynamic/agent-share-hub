@@ -40,8 +40,6 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AddManualStepDialog.tsx",
   "src/pages/site/compose/AgentSetupFields.tsx",
   "src/pages/site/compose/BuildList.tsx",
-  "src/pages/site/compose/BuildMap.test.tsx",
-  "src/pages/site/compose/BuildMap.tsx",
   "src/pages/site/compose/ChoiceRows.tsx",
   "src/pages/site/compose/composeControls.tsx",
   "src/pages/site/compose/DetailsPanel.test.tsx",
@@ -52,7 +50,6 @@ export const CA03_FILES: readonly string[] = [
   // P3
   "src/lib/build/graph.test.ts",
   "src/lib/build/graph.ts",
-  "src/lib/build/mapLayout.ts",
   "src/lib/build/readerSteps.test.ts",
   "src/lib/build/readerSteps.ts",
   "src/pages/site/build/BuildSteps.test.tsx",
@@ -63,7 +60,6 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/detailsModel.ts",
   "src/pages/site/compose/refinedPieces.tsx",
   // P4
-  "src/lib/build/mapLayout.test.ts",
   "src/pages/site/compose/buildListModel.ts",
   // P5
   "src/components/build/renderers/evidence.tsx",
@@ -340,7 +336,6 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/DecisionFields.tsx",
   "src/pages/site/compose/AddDecisionDialog.tsx",
   "src/pages/site/compose/RunsWhenField.tsx",
-  "src/pages/site/compose/BuildMap.tsx",
   "src/pages/site/compose/toolPickerModel.ts",
   // CA-13 P5 to P8
   "src/components/build/RuntimeChips.tsx",
@@ -477,6 +472,17 @@ export const CA03_FILES: readonly string[] = [
   "src/components/brand/MenuButton.tsx",
   "src/pages/site/compose/SourcesPanel.tsx",
   "src/pages/site/compose/AddSessionRow.parts.test.tsx",
+  // CA-17 P4
+  "src/lib/build/sessionMap.ts",
+  "src/lib/build/sessionMap.test.ts",
+  "src/components/brand/glyphs.ts",
+  "src/pages/site/compose/SessionMap.tsx",
+  "src/pages/site/compose/SessionMapPanel.tsx",
+  "src/pages/site/compose/mapRecipes.ts",
+  "src/pages/site/compose/SessionMap.test.tsx",
+  "src/pages/site/build/ReaderMap.test.tsx",
+  "src/pages/dev/DevMap.tsx",
+  "src/pages/site/build/ReaderMap.tsx",
 ];
 
 /**
@@ -500,7 +506,7 @@ export const MODAL_FILES: readonly string[] = [
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 
@@ -738,6 +744,11 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: `padding: compact ? "0 9px" : "0 12px",`,
+    why: "The map's direction switch (CA-17 P4, board \"Map: horizontal\"): its items are 22 tall with 0 9 of padding, in a 2px well. Only the compact switch spends it; every other Segmented keeps 0 12.",
+  },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
     text: `<div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>`,

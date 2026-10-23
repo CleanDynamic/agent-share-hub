@@ -253,6 +253,30 @@ export function mapOf(making: unknown): MapSettings | null {
   return { on: raw.on, direction: raw.direction === "vertical" ? "vertical" : "horizontal", onBuildPage: raw.onBuildPage === true };
 }
 
+/** Whether `making` has a `map` key at all, whatever it holds. A build that predates the map has none. */
+export const hasMapKey = (making: unknown): boolean => Object.prototype.hasOwnProperty.call(asObject(making), "map");
+
+/**
+ * The map as its maker sees it. Stored settings are used as they are. A published build whose `making` has no `map` key
+ * predates the map: its maker sees it as created, with "Show on build page" ticked, and nothing is written to it. A draft
+ * with none has no map yet (null): "Create a map" makes one.
+ */
+export function makerMapOf(making: unknown, published: boolean): MapSettings | null {
+  const stored = mapOf(making);
+  if (stored) return stored;
+  return published && !hasMapKey(making) ? { on: true, direction: "horizontal", onBuildPage: true } : null;
+}
+
+/** Whether readers see the map: only when it is on and on the build page. A build with no `map` key keeps showing it, as it always did. */
+export function readerSeesMap(making: unknown): boolean {
+  if (!hasMapKey(making)) return true;
+  const stored = mapOf(making);
+  return Boolean(stored?.on && stored.onBuildPage);
+}
+
+/** The direction readers see: the maker's, horizontal when none is stored. */
+export const readerMapDirection = (making: unknown): MapSettings["direction"] => mapOf(making)?.direction ?? "horizontal";
+
 /** Why the map settings cannot be saved, or null. */
 export function mapRefusal(map: MapSettings): string | null {
   if (typeof map.on !== "boolean" || typeof map.onBuildPage !== "boolean") return "The map settings are on or off.";

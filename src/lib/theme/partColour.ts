@@ -132,3 +132,8 @@ export function nameColourFor(hex: string, theme: ThemeKey): string {
   }
   return last;
 }
+
+/** A small swatch of a maker's colour (a legend's square or bar): the fill, and nothing else. */
+export function swatchFor(hex: string): CSSProperties {
+  return { background: hex };
+}

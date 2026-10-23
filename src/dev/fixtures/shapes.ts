@@ -24,10 +24,10 @@ import { sessionsMetaOf, type Making } from "@/lib/build/making";
 import { runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { setupItemsOf } from "@/lib/build/setup";
 import { buildSteps, FILE_TYPE, madeFilesOf, nestRefusal, RESULT_TYPE, resultFactsOf, resultHoldsWord, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
-import type { MapPiece, MapResult } from "@/lib/build/mapLayout";
+import type { MapPieceLike } from "@/lib/build/sessionMap";
+import type { MapFixture } from "@/dev/fixtures/sandbox";
 import type { NodeTree, NodeType } from "@/lib/build/types";
 import type { BuildListProps } from "@/pages/site/compose/BuildList";
-import type { BuildMapProps } from "@/pages/site/compose/BuildMap";
 import type { DetailsPanelProps } from "@/pages/site/compose/DetailsPanel";
 import { dividers, type ListResult } from "@/pages/site/compose/buildListModel";
 import { pieces, resolveView } from "@/pages/site/compose/detailsView";
@@ -639,15 +639,12 @@ export function shapeListProps(key: ShapeKey, source: ShapeSource = SHAPES[key])
   };
 }
 
-export function shapeMapProps(key: ShapeKey, source: ShapeSource = SHAPES[key]): BuildMapProps {
+export function shapeMapProps(key: ShapeKey, source: ShapeSource = SHAPES[key]): MapFixture {
   const { tree, steps, groups } = stepsOf(key, source);
   const all = pieces(tree, []);
   const made = madeFilesOf(tree);
-  const files: MapPiece[] = all.files.map((entry) => ({ id: entry.id, name: entry.name, madeBy: made.get(entry.id) ?? null }));
-  const results: MapResult[] = tree
-    .filter((entry) => entry.type === RESULT_TYPE && entry.parent_id === null)
-    .map((entry) => ({ id: entry.id, title: strOf(entry.payload, "summary") ?? "Result", fromId: usesOf(entry).find((use) => use.kind === "output")?.node_id ?? null }));
-  return { steps, groups, files, tools: all.tools, results, suggestions: [], made, selectedId: source.selected, onSelect: noop, onClear: noop, onConnect: noop };
+  const files: MapPieceLike[] = all.files.map((entry) => ({ id: entry.id, name: entry.name, madeBy: made.get(entry.id) ?? null }));
+  return { steps, groups, files, selectedId: source.selected };
 }
 
 /** Details for the shape's selected node, or for `selectedId`. */

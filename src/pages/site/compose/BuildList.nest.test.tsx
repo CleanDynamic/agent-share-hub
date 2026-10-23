@@ -6,14 +6,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildSteps, type Step } from "@/lib/build/graph";
-import { layoutMap, MAP_SIZES } from "@/lib/build/mapLayout";
+import { sessionMapFor } from "@/lib/build/sessionMap";
 import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed } from "@/lib/build/readerSteps";
 import type { NodeTree } from "@/lib/build/types";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
 import { StepsList } from "@/pages/site/build/BuildSteps";
 
 import { BuildList, NEST_LIST_COPY, type BuildListProps } from "./BuildList";
-import { BuildMap } from "./BuildMap";
+import { SessionMapColumn } from "./SessionMap";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -139,22 +139,14 @@ describe("the List (CA-04 P2)", () => {
   });
 });
 
-describe("the Map (CA-04 P2)", () => {
-  it("draws tiles inside a step as small rows in its box, not as boxes, and grows the box to hold them", () => {
+describe("the Map (CA-04 P2, CA-17 P4)", () => {
+  it("does not draw tiles inside a step: the Map shows sessions only, and the panel lists a session's tiles", () => {
     const steps = buildSteps(tree());
-    const layout = layoutMap(steps, [], [], [], []);
-    const [first, second] = layout.boxes;
-    expect(layout.boxes.map((box) => box.id)).toEqual(["p1", "p2"]);
-    expect(second.sentWith).toEqual([
-      { id: "c1", kind: "Code", name: "order-form.tsx" },
-      { id: "f1", kind: "File", name: "menu.pdf" },
-    ]);
-    expect(second.h - first.h).toBe(2 * MAP_SIZES.sentRow);
-    const html = renderToStaticMarkup(<BuildMap steps={steps} groups={[]} files={[]} tools={[]} results={[]} suggestions={[]} selectedId={null} onSelect={() => undefined} onClear={() => undefined} onConnect={() => undefined} />);
-    expect(html).toContain("Code · order-form.tsx");
-    expect(html).toContain("File · menu.pdf");
-    expect(html).toContain("font-size:12px");
-    expect(html).not.toContain('data-testid="map-box-c1"');
+    const model = sessionMapFor({ groups: [{ key: "s1", kind: "typed", sessionId: null, number: 1, tool: "Claude", model: null, startedAt: "2026-10-09", stepNumbers: steps.map((step) => step.number) }], steps, files: [], making: {} });
+    expect(model.tiles.s1.map((tile) => tile.title)).toEqual(steps.map((step) => step.title ?? step.defaultTitle));
+    render(<SessionMapColumn model={model} direction="horizontal" selected={null} onSelect={() => undefined} />);
+    expect(screen.getAllByTestId("map-box")).toHaveLength(1);
+    expect(document.body.textContent).not.toContain("order-form.tsx");
   });
 });
 

@@ -76,6 +76,8 @@ export interface SegmentedProps<V extends string = string> {
   semantics?: "buttons" | "radio";
   /** The track takes the full width and the items share it (the composer's tabs on a phone, PT-05). */
   fullWidth?: boolean;
+  /** CA-17: the map's direction switch. Items `0 9px`, radius 5, in a well of radius 7; the sizes are the track's, as always. */
+  compact?: boolean;
 }
 
 function Segment({
@@ -86,6 +88,7 @@ function Segment({
   href,
   semantics,
   fullWidth,
+  compact = false,
   disabled = false,
   tabStop,
   onSelect,
@@ -98,6 +101,7 @@ function Segment({
   href?: string;
   semantics: "buttons" | "radio";
   fullWidth: boolean;
+  compact?: boolean;
   disabled?: boolean;
   /** The radio group's one tab stop: the current segment, or the first that can be chosen when none is. */
   tabStop: boolean;
@@ -111,9 +115,9 @@ function Segment({
   const style: CSSProperties = {
     boxSizing: "border-box",
     height: height + 2,
-    padding: "0 12px",
+    padding: compact ? "0 9px" : "0 12px",
     border: "1px solid transparent",
-    borderRadius: r.chip,
+    borderRadius: compact ? 5 : r.chip,
     fontFamily: FIGTREE,
     fontSize: 12,
     fontWeight: 500,
@@ -170,6 +174,7 @@ export function Segmented<V extends string = string>({
   readOnly = false,
   semantics = "buttons",
   fullWidth = false,
+  compact = false,
 }: SegmentedProps<V>) {
   const radio = semantics === "radio";
   const stop = items.some((item) => item.value === value) ? value : items.find((item) => !item.disabled)?.value;
@@ -208,7 +213,7 @@ export function Segmented<V extends string = string>({
           height: size,
           gap: 2,
           padding: 2,
-          borderRadius: r.control,
+          borderRadius: compact ? 7 : r.control,
           background: t.segTrack,
           border: `1px solid ${t.segBorder}`,
         }
@@ -224,6 +229,7 @@ export function Segmented<V extends string = string>({
           href={item.href}
           semantics={semantics}
           fullWidth={fullWidth}
+          compact={compact}
           disabled={item.disabled}
           tabStop={item.value === stop}
           onSelect={() => onChange?.(item.value)}

@@ -80,11 +80,15 @@ import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAd
 import { useComposerScrollPadding } from "./composeChrome";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
-import { BuildMap } from "./BuildMap";
 import { attachFiles } from "./attachFiles";
 import { DetailsPanel } from "./DetailsPanel";
 import { pieces, resolveView, type MediaFacts } from "./detailsView";
-import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
+import { sessionMapFor, type MapPieceLike } from "@/lib/build/sessionMap";
+import { centre, partElement } from "@/components/build/partNav";
+import { flashOutline } from "@/components/post/RefLinks";
+import { SessionMapColumn, NoMap } from "./SessionMap";
+import { SessionMapPanel } from "./SessionMapPanel";
+import { makerMapOf, type MapSettings } from "@/lib/build/making";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
@@ -198,7 +202,7 @@ export function SandboxPage() {
     return names.filter((name): name is string => Boolean(name));
   }, [steps, groups]);
 
-  const mapAvailable = sessionCount >= 2 || hasAgent;
+  const mapAvailable = sessionCount >= 2;
 
   /* ── agents and teams (UI-P69) ── */
 
@@ -285,30 +289,6 @@ export function SandboxPage() {
   );
   const manualType = useQuery({ queryKey: ["build", "getNodeType", "manual_step"], queryFn: () => getNodeType("manual_step"), staleTime: Infinity });
   const manualAvailable = Boolean(manualType.data?.is_active);
-  /** Ids of the agents and teams opened in the Map, outermost first. */
-  const [trail, setTrail] = useState<readonly string[]>([]);
-  const trailSteps = useMemo(() => {
-    const all = flatten(steps);
-    const found: Step[] = [];
-    for (const id of trail) {
-      const step = all.find((candidate) => candidate.id === id && (candidate.kind === "agent" || candidate.kind === "team"));
-      if (!step) break;
-      found.push(step);
-    }
-    return found;
-  }, [steps, trail]);
-  const opened = trailSteps.length > 0 ? trailSteps[trailSteps.length - 1] : null;
-  const onOpenContainer = useCallback(
-    (id: string) =>
-      setTrail((previous) => {
-        const at = previous.indexOf(id);
-        return at >= 0 ? previous.slice(0, at + 1) : [...previous, id];
-      }),
-    [],
-  );
-  const onBack = useCallback(() => setTrail((previous) => previous.slice(0, -1)), []);
-  const onTrail = useCallback((depth: number) => setTrail((previous) => previous.slice(0, depth)), []);
-
   /* ── List (UI-P65) ── */
 
   /* CA-10 (CA-09 F2): Add › Prompt focuses the add field INSIDE THE TAP that chose it, so an iPhone raises the
@@ -369,8 +349,8 @@ export function SandboxPage() {
     }
     return out;
   }, [madeFiles, madeNames]);
-  /** The Map's files: a made file says which step makes it, so the Map places it after that step. */
-  const mapFiles = useMemo<MapPiece[]>(() => mapPieces.files.map((file) => ({ id: file.id, name: file.name, madeBy: madeFiles.get(file.id) ?? null })), [mapPieces.files, madeFiles]);
+  /** The files, each with the step that makes it: a tile that reads a made file reads from that step's session. */
+  const mapFiles = useMemo<MapPieceLike[]>(() => mapPieces.files.map((file) => ({ id: file.id, name: file.name, madeBy: madeFiles.get(file.id) ?? null })), [mapPieces.files, madeFiles]);
   // UI-P71: exact facts only — a file named word for word in a prompt.
   const suggestions: ListSuggestion[] = useMemo(
     () =>
@@ -382,21 +362,6 @@ export function SandboxPage() {
         madeFiles,
       ).map((suggestion) => ({ ...suggestion, label: listFacts.names[suggestion.use.node_id] ?? "File" })),
     [steps, tree, listFacts.names, madeFiles],
-  );
-  const mapSuggestions: MapSuggestion[] = useMemo(
-    () => suggestions.map(({ stepId, use, label }) => ({ stepId, use, label })),
-    [suggestions],
-  );
-  const mapResults = useMemo<MapResult[]>(
-    () =>
-      tree
-        .filter((node) => node.type === RESULT_TYPE && node.parent_id === null)
-        .map((node) => {
-          const payload = (node.payload ?? {}) as Record<string, unknown>;
-          const text = (key: string) => (typeof payload[key] === "string" && (payload[key] as string).trim() ? (payload[key] as string) : null);
-          return { id: node.id, title: text("summary") ?? text("url") ?? "Result", fromId: usesOf(node).find((use) => use.kind === "output")?.node_id ?? null };
-        }),
-    [tree],
   );
   /** CA-04 P4: each session's setup, and how many items it holds. */
   const setupCounts = useMemo(() => {
@@ -463,7 +428,6 @@ export function SandboxPage() {
     phone,
     setSelectedId,
     setOpenPromptId,
-    setTrail,
   });
 
   /* ── sessions (CA-04 P1) ── */
@@ -1491,6 +1455,63 @@ export function SandboxPage() {
     onSession: aimAt,
   };
 
+  /* ── CA-17 P4: the map of sessions ── */
+  const published = (build as { status?: string } | null)?.status !== undefined && (build as { status?: string } | null)?.status !== "draft";
+  const mapSettings = makerMapOf(made, published);
+  const mapModel = useMemo(() => sessionMapFor({ groups, steps, files: mapFiles, making: made }), [groups, steps, mapFiles, made]);
+  /** The map's selected session: a session's key held in the page's selection (a link to a session selects it too). */
+  const mapSelected = selectedId && mapModel.sessions.some((session) => session.key === selectedId) ? selectedId : null;
+  const mapActive = Boolean(mapSettings?.on);
+  const changeMap = (next: MapSettings) => edits.onMapSettings(next);
+  /** "Open in the build": the List, with the session's head in the middle of the window and outlined. */
+  const openInBuild = useCallback(
+    (key: string) => {
+      setLens("list");
+      setSelectedId(key);
+      window.setTimeout(() => {
+        const el = partElement(registry, refTo({ kind: "session", id: key }));
+        if (el) {
+          centre(el);
+          flashOutline(el);
+        }
+      }, 60);
+    },
+    [registry],
+  );
+  const openTileInBuild = useCallback(
+    (tileId: string) => {
+      setLens("list");
+      setSelectedId(tileId);
+      window.setTimeout(() => {
+        const el = partElement(registry, refTo({ kind: "node", id: tileId }));
+        if (el) {
+          centre(el);
+          flashOutline(el);
+        }
+      }, 60);
+    },
+    [registry],
+  );
+  const mapColumn =
+    mapSettings && mapActive ? (
+      <SessionMapColumn
+        model={mapModel}
+        direction={mapSettings.direction}
+        selected={mapSelected}
+        onSelect={setSelectedId}
+        shownLine={mapSettings.onBuildPage ? "Shown on build page" : "Not on build page"}
+        controls={{
+          onDirection: (direction) => changeMap({ ...mapSettings, direction }),
+          onBuildPage: mapSettings.onBuildPage,
+          onToggleBuildPage: (onBuildPage) => changeMap({ ...mapSettings, onBuildPage }),
+          onRemove: () => changeMap({ ...mapSettings, on: false }),
+        }}
+      />
+    ) : (
+      <NoMap onCreate={() => changeMap({ on: true, direction: "horizontal", onBuildPage: false })} />
+    );
+  const mapPanel = mapSettings && mapActive ? <SessionMapPanel model={mapModel} selected={mapSelected} onOpenInBuild={openInBuild} onOpenTile={openTileInBuild} /> : null;
+
   return (
     <>
       <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
@@ -1540,35 +1561,8 @@ export function SandboxPage() {
         viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined }}
         sessionList={sessionList}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
-        trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
-        onTrail={onTrail}
-        map={
-          <BuildMap
-            steps={steps}
-            groups={groups}
-            files={mapFiles}
-            tools={mapPieces.tools}
-            results={mapResults}
-            suggestions={mapSuggestions}
-            made={madeFiles}
-            madeNames={madeNames}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onClear={() => setSelectedId(null)}
-            onOpenPrompt={setOpenPromptId}
-            opened={opened}
-            onOpenContainer={onOpenContainer}
-            onBack={onBack}
-            onLeave={(id) => {
-              setTrail([]);
-              setSelectedId(id);
-            }}
-            onConnect={(toId, use) => {
-              prompts.accept(toId, use, steps);
-              afterWrite();
-            }}
-          />
-        }
+        map={mapColumn}
+        mapPanel={mapPanel}
         selection={
           <DetailsPanel
             phone={phone}

@@ -1,17 +1,16 @@
 // CA-15 P12: the words the reader-facing surfaces use, in the terms the modals use.
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PART_WINDOW_COPY } from "@/components/build/PartWindow";
 import { HelperChips } from "@/components/build/RuntimeChips";
-import { sandboxMapProps } from "@/dev/fixtures/sandbox";
 import { buildSteps } from "@/lib/build/graph";
-import { layoutMap } from "@/lib/build/mapLayout";
+import { sessionMapFor } from "@/lib/build/sessionMap";
 import { REF_KIND } from "@/lib/build/postRefs";
 import type { NodeTree } from "@/lib/build/types";
 
-import { BuildMap, type BuildMapProps } from "./BuildMap";
+import { SessionMapPanel } from "./SessionMapPanel";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -44,20 +43,18 @@ describe("references to the three new tiles", () => {
   });
 });
 
-describe("the Map's boxes for the three new tiles", () => {
-  it("say what each is in place of a word count, and never '0 words'", () => {
+describe("the map's panel for the three new tiles", () => {
+  it("names each by what it is in place of a word count, and never '0 words'", () => {
     const steps = buildSteps([
       node("sp", "system_prompt", { step: true, text: "Be brief" }),
       node("ds", "dataset", { step: true, description: "Support tickets" }),
       node("rp", "repo", { step: true, url: "github.com/acme/shop" }),
     ]);
-    const base = sandboxMapProps("bakery");
-    const props: BuildMapProps = { ...base, steps, groups: [], files: [], tools: [], results: [], suggestions: [], selectedId: null, onSelect: vi.fn(), onClear: vi.fn(), onConnect: vi.fn(), onOpenPrompt: vi.fn() };
-    expect(layoutMap(steps, [], [], [], []).boxes.map((box) => box.stepKind)).toEqual(["system_prompt", "dataset", "repo"]);
-    render(<BuildMap {...props} />);
-    expect(within(screen.getByTestId("map-box-sp")).getByText("System prompt")).toBeTruthy();
-    expect(within(screen.getByTestId("map-box-ds")).getByText("Dataset")).toBeTruthy();
-    expect(within(screen.getByTestId("map-box-rp")).getByText("GitHub repository")).toBeTruthy();
+    const groups = [{ key: "s1", kind: "typed" as const, sessionId: null, number: 1, tool: "Claude", model: null, startedAt: "2026-10-09", stepNumbers: steps.map((step) => step.number) }];
+    const model = sessionMapFor({ groups, steps, files: [], making: {} });
+    render(<SessionMapPanel model={model} selected="s1" />);
+    const kinds = screen.getAllByTestId("panel-tile-row").map((row) => row.lastElementChild?.textContent);
+    expect(kinds).toEqual(["System prompt", "Dataset", "GitHub repository"]);
     expect(document.body.textContent).not.toMatch(/\b0 words\b/);
   });
 });

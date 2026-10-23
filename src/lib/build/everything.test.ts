@@ -17,7 +17,7 @@ import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
 import { bracketed } from "./changes";
 import { copyTogether } from "./copyTogether";
 import { buildSteps, groupKey, sessionGroups, stepRunsLabel, trainedModelOf } from "./graph";
-import { layoutMap } from "./mapLayout";
+import { sessionMapFor } from "./sessionMap";
 import { sessionsMetaOf } from "./making";
 import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed } from "./readerSteps";
 import { setupItemsOf } from "./setup";
@@ -77,15 +77,11 @@ describe("everything at once, read back", () => {
     expect(trainedModelOf(result)).toEqual({ baseModel: "muse-spark-open", method: "Rated answers, ranked by me", trainedOn: { id: "e-tr", name: "ratings.csv", rows: 1200 } });
   });
 
-  it("lays sessions 2 and 3 out one above the other in one column", () => {
+  it("puts sessions 2 and 3, which ran at the same time, in one stage of the map", () => {
     const map = shapeMapProps("everything");
-    const layout = layoutMap(map.steps, map.groups, map.files, map.tools, map.results, map.suggestions);
-    const lane = (label: string) => layout.lanes.findIndex((entry) => entry.label === label);
-    expect(Math.abs(lane("Session 2") - lane("Session 3"))).toBe(1);
-    expect(layout.lanes[lane("Session 2")].together).toBe(layout.lanes[lane("Session 3")].together);
-    const column = (id: string) => layout.boxes.find((box) => box.id === id)?.column;
-    // The agents have lanes of their own; the first step in each session's lane starts together.
-    expect(column("e-chk")).toBe(column("e-p3"));
+    const model = sessionMapFor({ groups: map.groups, steps: map.steps, files: map.files, making });
+    // CA-05's "at the same time as" is read as "same stage as the session above" when the partner sits directly above.
+    expect(model.stages.stageOf[groupKey(g2)]).toBe(model.stages.stageOf[groupKey(g3)]);
   });
 });
 

@@ -100,7 +100,8 @@ import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, what
 import { setupFolder } from "@/lib/build/setupFolder";
 import { runtimeFolder } from "@/lib/build/runtimeFolder";
 import { hasRuntimeFacts } from "@/lib/build/runSequence";
-import type { Step } from "@/lib/build/graph";
+import { shownGroups, type Step } from "@/lib/build/graph";
+import { readerSeesMap } from "@/lib/build/making";
 import { toast } from "sonner";
 import { writeZip } from "@/lib/build/zip";
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
@@ -556,13 +557,16 @@ export function BuildPage() {
     const making = asMaking(build.making);
     const steps = readerSteps(tree, making, files);
     if (steps.length === 0) return null;
+    const map = readerMap(tree, making, files);
     return {
       steps,
       results: readerResults(tree, files),
       need: whatYouNeed(steps, tree, making, files),
       counts: buildCounts(steps),
-      map: readerMap(tree, making, files),
-      mapAvailable: making.sessions.length >= 2 || steps.some((entry) => entry.step.kind === "agent" || entry.step.kind === "team"),
+      map,
+      making: build.making,
+      // CA-17 P6: two or more sessions, and the maker has put the map on the build page (a build from before the map has it on).
+      mapAvailable: shownGroups(map.groups).length >= 2 && readerSeesMap(build.making),
     };
   }, [build, tree, media.data]);
   const stepsOn = reader !== null;

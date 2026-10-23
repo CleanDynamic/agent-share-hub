@@ -166,7 +166,6 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
   const [lens, setLens] = useState<"list" | "map">("list");
   const [ringed, setRinged] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
-  const [start, setStart] = useState<{ opened: string | null; selected: string | null } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -190,14 +189,6 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
 
   const raw = useMemo(() => steps.map((entry) => entry.step), [steps]);
   const names = useMemo(() => namesIn(steps), [steps]);
-  const seeMap = useCallback(
-    (id: string) => {
-      const inside = steps.find((entry) => entry.step.id === id)?.children.filter((child) => !child.step.id.endsWith(":instructions"));
-      setStart({ opened: id, selected: inside?.[0]?.step.id ?? id });
-      setLens("map");
-    },
-    [steps],
-  );
   const toolOf = useMemo(() => {
     const tools = new Map<string, string | null>();
     let current: string | null = null;
@@ -214,7 +205,7 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
     return out;
   }, [steps]);
   const map = lens === "map" && !phone && view.mapAvailable;
-  return { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap: phone || !view.mapAvailable ? undefined : seeMap, toolOf, flat, map };
+  return { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map };
 }
 
 /** The column to the right of The build: tools and models, files, how it runs, time and other parts. */
@@ -780,7 +771,6 @@ interface Ctx {
   ringed: string | null;
   go: (id: string) => void;
   read: (id: string) => void;
-  seeMap?: (id: string) => void;
 }
 
 function Title({ entry, right, place }: { entry: ReaderStep; right: ReactNode; /** A prompt: its place on the build, before the maker's own title. */ place?: string }) {
@@ -1049,12 +1039,6 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />
         ))}
       </div>
-      {ctx.seeMap ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: INDENT }}>
-          <ReadAll label={`See the ${team ? "team" : "agent"} in Map`} onRead={() => ctx.seeMap?.(step.id)} />
-          <span style={text(11.5, 400, t.label)}>shows who passes work to whom</span>
-        </div>
-      ) : null}
     </article>
   );
 }
@@ -1212,8 +1196,8 @@ function sessionRuns(groups: readonly Group[]): { key: string; colour?: string; 
 
 export function StepsList({ view, phone, announce }: StepsListProps) {
   const { steps, results } = view;
-  const { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap, toolOf, flat, map } = useStepsList(view, phone);
-  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
+  const { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map } = useStepsList(view, phone);
+  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen };
 
   /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
   const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));
@@ -1309,10 +1293,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
               { value: "map", label: "Map" },
             ]}
             value={lens}
-            onChange={(next) => {
-              if (next === "list") setStart(null);
-              setLens(next);
-            }}
+            onChange={setLens}
             size={28}
             fontSize={12}
           />
@@ -1321,7 +1302,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
         {phone ? null : (
           <>
             <span style={{ flexGrow: 1 }} />
-            <span style={{ ...text(12, 400, t.label), textAlign: "right" }}>{map ? "click a box to read it · Esc clears" : headNote(steps)}</span>
+            <span style={{ ...text(12, 400, t.label), textAlign: "right" }}>{map ? "click a session to see what joins it · Esc clears" : headNote(steps)}</span>
           </>
         )}
       </div>
@@ -1329,7 +1310,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
       {!map && jumpItems.length >= 3 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null}
       {map ? (
         <Suspense fallback={<div role="status" style={{ ...text(12, 400, t.text2), padding: "24px 0" }}>Drawing the map…</div>}>
-          <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
+          <ReaderMap view={view} announce={announce} onRead={setOpen} />
         </Suspense>
       ) : (
         runs.map((run) => {
