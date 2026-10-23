@@ -1,6 +1,6 @@
 // CA-05 P2 — session facts on screen: Session Details saves them; the List and the build page say them under the head.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,11 +12,13 @@ import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
 import { BuildList } from "./BuildList";
 import { dividers } from "./buildListModel";
-import { DetailsPanel, type SessionView } from "./DetailsPanel";
+import type { SessionView } from "./DetailsPanel";
+import { SessionDialog } from "./SessionDialog";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
 });
+const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -27,7 +29,7 @@ const meta = (extra: Record<string, unknown>) => ({ "typed-a": { tool: "claude-c
 
 const session = (over: Partial<SessionView> = {}): SessionView => ({ kind: "session", key: "typed-a", number: 1, tool: "Claude Code", model: "", date: "12 Oct", inBuild: 1, total: 1, status: "ready", checklist: [], ...over });
 const mount = (view: SessionView, onSessionExtras = vi.fn()) => {
-  render(<DetailsPanel phone={false} view={view} onSessionExtras={onSessionExtras} onRename={vi.fn()} onModel={vi.fn()} onAddUse={vi.fn()} onRemoveUse={vi.fn()} onRuns={vi.fn()} onRemoveInside={vi.fn()} onToggleSessionPrompt={vi.fn()} onDownload={vi.fn()} onFields={vi.fn()} onAddPicture={vi.fn()} onUseAsCover={vi.fn()} />);
+  render(<SessionDialog view={view} onClose={vi.fn()} handlers={{ onSessionExtras: onSessionExtras, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() }} />);
   return onSessionExtras;
 };
 
@@ -51,12 +53,13 @@ const renderPage = (sessionsMeta: Record<string, unknown>) => {
   );
 };
 
-describe("Session Details › What it cost, Show readers and How did you work?", () => {
+describe("Session window › What it cost, Show readers and How did you work?", () => {
   it("saves a cost in pounds, labelled with the rest of the entry kept", () => {
     const onSessionExtras = mount(session({ extras: { background: true } }));
     const field = screen.getByRole("textbox", { name: "What it cost" });
     fireEvent.change(field, { target: { value: "3.4" } });
-    fireEvent.keyDown(field, { key: "Enter" });
+    fireEvent.blur(field);
+    save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { background: true, cost: 3.4, currency: "GBP" });
   });
 
@@ -64,7 +67,8 @@ describe("Session Details › What it cost, Show readers and How did you work?",
     const onSessionExtras = mount(session());
     const field = screen.getByRole("textbox", { name: "What it cost" });
     fireEvent.change(field, { target: { value: "lots" } });
-    fireEvent.keyDown(field, { key: "Enter" });
+    fireEvent.blur(field);
+    save();
     expect(onSessionExtras).not.toHaveBeenCalled();
     expect(screen.getByText(/Cost is a number/)).toBeTruthy();
   });
@@ -74,6 +78,7 @@ describe("Session Details › What it cost, Show readers and How did you work?",
     const box = screen.getByRole("checkbox", { name: "Show readers" }) as HTMLInputElement;
     expect(box.checked).toBe(false);
     fireEvent.click(box);
+    save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { cost: 2, currency: "GBP", showCost: true });
   });
 
@@ -81,6 +86,7 @@ describe("Session Details › What it cost, Show readers and How did you work?",
     const onSessionExtras = mount(session());
     expect((screen.getByRole("radio", { name: "With me watching" }) as HTMLInputElement).checked).toBe(true);
     fireEvent.click(screen.getByRole("radio", { name: "In the background" }));
+    save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { background: true });
   });
 });

@@ -232,7 +232,7 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
         : kind === "file"
           ? [[files.length > 0 || Boolean(edit), "a file"]]
           : kind === "model"
-            ? [[base.trim().length > 0 || method.trim().length > 0, "a base model or a training method"]]
+            ? [[base.trim().length > 0 || method.trim().length > 0 || Boolean(edit), "a base model or a training method"]]
             : kind === "text"
               ? [[body.trim().length > 0, "the text"]]
               : kind === "audio"

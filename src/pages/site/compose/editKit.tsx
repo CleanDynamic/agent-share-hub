@@ -270,7 +270,7 @@ export function InsideBlock({ label, rows: initial, phone, handlers }: { label: 
   if (rows.length === 0) return null;
   return (
     <Block label={EDIT_BLOCK_COPY.inside} testId="edit-inside">
-      <BlockHead label={`${EDIT_BLOCK_COPY.inside} ${label}`} />
+      <BlockHead label={EDIT_BLOCK_COPY.inside} count={label} />
       <div style={PANEL_LIST}>
         {rows.map((row) => (
           <FileLine
@@ -381,19 +381,27 @@ export function TrainedBlock({ id, trainedOn, phone, handlers }: { id: string; t
   );
 }
 
-/** Where an MCP server ran (`onToolConnection`), and the tools it was seen calling, which are read and never changed. */
-export function WhereRanBlock({ runsAt, onChange, toolsUsed, phone }: { runsAt: "web" | "local" | null; onChange: (next: "web" | "local") => void; toolsUsed: readonly { name: string; count: number }[]; phone: boolean }) {
+/** Where an MCP server ran (`onToolConnection`). */
+export function WhereRanBlock({ runsAt, onChange, phone }: { runsAt: "web" | "local" | null; onChange: (next: "web" | "local") => void; phone: boolean }) {
   return (
     <Block label={EDIT_BLOCK_COPY.whereRan} testId="edit-where-ran">
       <BlockHead label={EDIT_BLOCK_COPY.whereRan} />
       <SegmentedField<"web" | "local"> label={EDIT_BLOCK_COPY.whereRan} phone={phone} value={runsAt} onChange={onChange} items={[{ value: "web", label: EDIT_BLOCK_COPY.web }, { value: "local", label: EDIT_BLOCK_COPY.local }]} />
-      {toolsUsed.length > 0 ? (
-        <TagList label={EDIT_BLOCK_COPY.toolsUsed}>
-          {toolsUsed.map((tool) => (
-            <Tag key={tool.name}>{`${tool.name} ${tool.count}`}</Tag>
-          ))}
-        </TagList>
-      ) : null}
+    </Block>
+  );
+}
+
+/** The tools it was seen calling, with how many times: read from what was saved, never typed. */
+export function ToolsUsedBlock({ toolsUsed }: { toolsUsed: readonly { name: string; count: number }[] }) {
+  if (toolsUsed.length === 0) return null;
+  return (
+    <Block label={EDIT_BLOCK_COPY.toolsUsed} testId="edit-tools-used">
+      <BlockHead label={EDIT_BLOCK_COPY.toolsUsed} count={EDIT_COPY.count(toolsUsed.length, "tool", "tools")} />
+      <TagList label={EDIT_BLOCK_COPY.toolsUsed}>
+        {toolsUsed.map((tool) => (
+          <Tag key={tool.name}>{`${tool.name} ${tool.count}`}</Tag>
+        ))}
+      </TagList>
     </Block>
   );
 }

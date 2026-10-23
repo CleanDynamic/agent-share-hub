@@ -1,6 +1,6 @@
 // CA-05 P9 — what an agent tidies and what changes each round: Details writes them, the List and the build page say them.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,7 +12,8 @@ import { readerSteps, stepsMarkdown } from "@/lib/build/readerSteps";
 import type { BuildNode, NodeTree } from "@/lib/build/types";
 
 import { BuildList } from "./BuildList";
-import { DetailsPanel, type DetailsPanelProps } from "./DetailsPanel";
+import type { DetailsHandlers } from "./DetailsPanel";
+import { TileEditDialog } from "./TileEditDialog";
 import { resolveView } from "./detailsView";
 
 beforeEach(() => {
@@ -78,36 +79,47 @@ describe("writing them", () => {
   });
 });
 
-describe("Details", () => {
-  function details(extra: Record<string, unknown> = {}, runs: Record<string, unknown> | null = UNTIL) {
+describe("The agent's window (CA-18: its notes are written there)", () => {
+  function windowFor(extra: Record<string, unknown> = {}, runs: Record<string, unknown> | null = UNTIL) {
     const tree = agent(extra, runs);
     const view = resolveView({ selectedId: "a1", steps: buildSteps(tree), groups: [], tree, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined });
-    const props: DetailsPanelProps = { phone: false, view, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onAgentSetup: vi.fn(), onAgentNotes: vi.fn() };
-    render(<DetailsPanel {...props} />);
-    return props;
+    const handlers = { onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onAgentSetup: vi.fn(), onAgentNotes: vi.fn() } as unknown as DetailsHandlers & { onAgentNotes: ReturnType<typeof vi.fn> };
+    render(<TileEditDialog view={view} handlers={handlers} onClose={vi.fn()} />);
+    return handlers;
   }
+  const openRow = (name: string) => fireEvent.click(within(screen.getAllByTestId("optional-field").find((el) => within(el).queryByText(name)) as HTMLElement).getAllByRole("button")[0]);
+  const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
   it("asks How it tidies its notes under Memory, up to 120 characters", () => {
-    const props = details();
+    const props = windowFor();
+    openRow("Memory");
     const well = screen.getByRole("textbox", { name: "How it tidies its notes" }) as HTMLInputElement;
     expect(well.placeholder).toBe("Every Sunday, keeps the 50 most useful notes");
     expect(well.maxLength).toBe(120);
     fireEvent.change(well, { target: { value: "Every Sunday, keeps the 50 most useful notes" } });
     fireEvent.keyDown(well, { key: "Enter" });
+    expect(props.onAgentNotes).not.toHaveBeenCalled();
+    save();
     expect(props.onAgentNotes).toHaveBeenCalledWith("a1", { memoryTidy: "Every Sunday, keeps the 50 most useful notes" });
+    cleanup();
+    windowFor();
+    openRow("Memory");
     const remembers = screen.getByRole("textbox", { name: "Memory" });
-    expect(remembers.compareDocumentPosition(well) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(remembers.compareDocumentPosition(screen.getByRole("textbox", { name: "How it tidies its notes" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("asks What it changes each round only for an agent that runs again until a condition was met", () => {
-    const props = details();
+    const props = windowFor();
+    openRow("Trigger");
     const well = screen.getByRole("textbox", { name: "What it changes each round" }) as HTMLInputElement;
     expect(well.placeholder).toBe("Its own review checklist");
     fireEvent.change(well, { target: { value: "its checklist" } });
     fireEvent.keyDown(well, { key: "Enter" });
+    save();
     expect(props.onAgentNotes).toHaveBeenCalledWith("a1", { changesEachRound: "its checklist" });
     cleanup();
-    details({}, null);
+    windowFor({}, null);
+    openRow("Trigger");
     expect(screen.queryByRole("textbox", { name: "What it changes each round" })).toBeNull();
   });
 });

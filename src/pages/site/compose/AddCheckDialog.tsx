@@ -149,7 +149,8 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
   const shownPassed = fromCases ? String(casesCount) : passed;
   const shownTotal = fromCases ? String(given.length) : total;
   const input = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt, ...(fromCases ? { cases: given } : null) };
-  const why = checkRefusal(input) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
+  // A check that is there keeps its counts as they are (nothing in Details wrote them), so only what Save writes can be refused.
+  const why = (edit ? null : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
   const missing = firstMissing([
     [tested.trim().length > 0, "a test description"],
     [passing.trim().length > 0, "pass criteria"],
@@ -196,7 +197,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
   };
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} addLabel={edit ? MODAL_COPY.save : undefined} alert={tried && why ? why : null}>
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={edit ? null : missing} addLabel={edit ? MODAL_COPY.save : undefined} alert={tried && why ? why : null}>
       {edit?.before ? edit.before(input as never) : null}
       <Block noRule>
         <BlockHead label={CHECK_DIALOG_COPY.tested} htmlFor={`${uid}-tested`} count={`${tested.length} / ${CHECK_TEXT_MAX}`} />

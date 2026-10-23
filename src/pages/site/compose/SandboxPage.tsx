@@ -81,7 +81,7 @@ import { BuildMap } from "./BuildMap";
 import { attachFiles } from "./attachFiles";
 import { DetailsPanel, type DetailsHandlers } from "./DetailsPanel";
 import { TileEditDialog } from "./TileEditDialog";
-import { pieces, resolveView, type MediaFacts } from "./detailsView";
+import { buildFactsOf, pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
@@ -821,6 +821,8 @@ export function SandboxPage() {
         : null,
     [editId, steps, groups, tree, sourceSessionRows, sourceFileRows, sessions.promptsState, listFacts.intoResult, mediaFacts],
   );
+  /** CA-18: how Details names the other tiles a section points at. */
+  const buildFacts = useMemo(() => buildFactsOf({ steps, groups, names: listFacts.names, results: listFacts.results }), [steps, groups, listFacts.names, listFacts.results]);
   /** CA-18: a prompt as Details reads it, for the prompt window's Model, Uses and Makes. */
   const promptDetails = useCallback(
     (id: string) => {
@@ -1701,7 +1703,7 @@ export function SandboxPage() {
           />
         }
         selection={
-          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} {...detailsHandlers} />
+          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsHandlers} />
         }
         list={
           <BuildList

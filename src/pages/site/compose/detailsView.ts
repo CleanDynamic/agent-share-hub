@@ -50,6 +50,7 @@ import { runtimeViewOf } from "./runtimeView";
 import { draftFromFacts } from "@/lib/build/decisionDraft";
 import type { AgentView, CheckView, DatasetView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, RepoView, ResultView, SessionView, SystemPromptView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
+import type { BuildFacts } from "@/lib/build/tileSections";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
 
 export interface MediaFacts {
@@ -471,4 +472,38 @@ function resolveBase(ctx: ViewContext): DetailsView | null {
   if (node?.type === TOOL_TYPE) return toolView(node, ctx);
   if (node?.type === RESULT_TYPE) return resultView(node, ctx);
   return null;
+}
+
+
+const KIND_WORD: Record<string, string> = {
+  prompt: "Prompt",
+  agent: "Agent",
+  team: "Team",
+  manual: "Manual step",
+  code: "Code",
+  check: "Check",
+  decision: "Decision",
+  system_prompt: "System prompt",
+  dataset: "Dataset",
+  repo: "GitHub repository",
+  file: "File",
+  tool: "Tool",
+};
+
+/** CA-18: how Details names the other tiles a section points at: their number, kind and session. */
+export function buildFactsOf({ steps, groups, names, results = [] }: { steps: readonly Step[]; groups: readonly SessionGroup[]; names: Readonly<Record<string, string>>; results?: readonly { id: string; title: string }[] }): BuildFacts {
+  const all = flatten(steps);
+  return {
+    ref: (id) => {
+      const step = all.find((candidate) => candidate.id === id);
+      if (step) {
+        const group = groupOfStep(groups, step);
+        const dated = group && groupKind(group) !== "legacy";
+        return { id, number: step.number, name: stepTitle(step), kind: KIND_WORD[step.kind] ?? null, session: dated && group ? `Session ${group.number}` : null };
+      }
+      const result = results.find((candidate) => candidate.id === id);
+      if (result) return { id, number: null, name: result.title, kind: "Result", session: null };
+      return names[id] ? { id, number: null, name: names[id], kind: null, session: null } : null;
+    },
+  };
 }

@@ -41,7 +41,7 @@ describe("the Session modal", () => {
     expect(screen.getByTestId("modal-eyebrow").textContent).toBe("Edit");
     expect(screen.getByRole("dialog", { name: "Session 2 · Claude Code" })).toBeTruthy();
     const text = dialog().textContent ?? "";
-    const order = ["App and model", "Date", "Worked until", "Cost and tokens", "Started with", "Own copy", "At the same time as", "Setup", "Prompts shared"].map((label) => text.indexOf(label));
+    const order = ["App and model", "Date", "Worked until", "Cost and tokens", "Started with", "Own copy of the code", "At the same time as", "Setup", "Prompts shared"].map((label) => text.indexOf(label));
     expect(order.every((at) => at >= 0)).toBe(true);
     expect([...order]).toEqual([...order].sort((a, b) => a - b));
   });

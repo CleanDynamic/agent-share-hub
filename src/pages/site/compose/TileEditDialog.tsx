@@ -27,7 +27,7 @@ import { CheckRunsField } from "./SessionExtrasFields";
 import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import { WriteBuffer } from "./editBuffer";
 import { bufferedHandlers } from "./editHandlers";
-import { GoesBlock, InsideBlock, MakesBlock, PicturesBlock, RuntimeBlocks, SummaryRow, TitleRow, TrainedBlock, UsesBlock, WhereRanBlock } from "./editKit";
+import { GoesBlock, InsideBlock, MakesBlock, PicturesBlock, RuntimeBlocks, SummaryRow, TitleRow, ToolsUsedBlock, TrainedBlock, UsesBlock, WhereRanBlock } from "./editKit";
 import { ModelRunFields } from "./ModelRunFields";
 import { SessionDialog } from "./SessionDialog";
 import { RunsGroup } from "./RunsFields";
@@ -125,7 +125,8 @@ function ToolEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { 
         },
         after: (input) => (
           <>
-            {input.connection === "mcp" || (view.toolsUsed ?? []).length > 0 ? <WhereRanBlock runsAt={input.connection === "mcp" ? runsAt : null} onChange={setRunsAt} toolsUsed={view.toolsUsed ?? []} phone={phone} /> : null}
+            {input.connection === "mcp" ? <WhereRanBlock runsAt={runsAt} onChange={setRunsAt} phone={phone} /> : null}
+            <ToolsUsedBlock toolsUsed={view.toolsUsed ?? []} />
             <GoesBlock rows={view.usedBy} label="Used by" />
             <RuntimeBlocks view={view} phone={phone} handlers={h} />
           </>

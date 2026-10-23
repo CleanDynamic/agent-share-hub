@@ -70,7 +70,7 @@ export interface ListItem {
 }
 
 export type SectionValue =
-  | { type: "prose"; text: string; count: string | null; muted?: boolean; copy?: boolean; code?: boolean }
+  | { type: "prose"; text: string; count: string | null; muted?: boolean; copy?: boolean; code?: boolean; /** The words a reader changes, as ranges of `text`. */ changes?: readonly { start: number; end: number }[] }
   | { type: "rows"; rows: { label: string; value: string }[]; count: string | null }
   | { type: "list"; items: ListItem[]; count: string | null }
   | { type: "chips"; chips: string[]; count: string | null }
@@ -121,7 +121,9 @@ const numbered = (lines: readonly string[], one_: string): SectionValue | null =
 
 const refItem = (build: BuildFacts, id: string, fallback: string): ListItem => {
   const ref = build.ref(id);
-  return ref ? { id, badge: ref.number, name: ref.name, kind: ref.kind, value: ref.session } : { id, badge: null, name: fallback };
+  if (!ref) return { id, badge: null, name: fallback };
+  // A tool is drawn as its mark in place of a number.
+  return { id, badge: ref.number, name: ref.name, kind: ref.kind, value: ref.session, ...(ref.kind === "Tool" ? { tool: ref.name, kind: null } : null) };
 };
 
 const tiles = (n: number) => noun(n, "tile");
@@ -216,7 +218,7 @@ const MODEL_RUN = S("modelRun", "How it was run", "Where the model ran, and its 
 const textOf = (tile: DetailsView): string => ("text" in tile ? tile.text : "");
 
 const PROMPT: readonly SectionDef[] = [
-  S("prompt", "Prompt", "What you sent to the model", (tile) => (tile.kind === "prompt" ? prose(tile.text, wordsCount(tile.words), { copy: true }) : null), true),
+  S("prompt", "Prompt", "What you sent to the model", (tile) => (tile.kind === "prompt" ? prose(tile.text, wordsCount(tile.words), { copy: true, ...(tile.changes?.length ? { changes: tile.changes } : null) }) : null), true),
   S("response", "Response", "What came back", (tile) => {
     const reply = str(payloadOf(tile).reply);
     return prose(reply, `${reply.length.toLocaleString("en-GB")} characters`, { muted: true });
@@ -309,20 +311,40 @@ const CHECK: readonly SectionDef[] = [
 ];
 
 const DECISION: readonly SectionDef[] = [
+  S("provider", "Model or service", "The model or service the application asks", (tile) => (tile.kind === "decision" ? one("Model or service", tile.draft.provider ? (toolName(tile.draft.provider) ?? tile.draft.provider) : null) : null), true),
+  S("version", "Version", "The version of the model or service", (tile) => (tile.kind === "decision" ? one("Version", tile.draft.model) : null)),
+  S("invocation", "Invocation", "Direct, or through an adapter", (tile) => (tile.kind === "decision" && tile.draft.provider ? one("Invocation", tile.draft.via === "adapter" ? "Through an adapter" : "Direct") : null)),
   S("questions", "Questions", "What the decision asks, and how it is answered", (tile) => {
     if (tile.kind !== "decision") return null;
-    const questions = tile.draft.questions ?? [];
-    return questions.length === 0 ? null : { type: "list", items: questions.map((question, at) => ({ badge: String(at + 1), name: question.id || question.instructions || `Question ${at + 1}`, detail: QUESTION_TYPE_LABEL[question.type] ?? question.type })), count: noun(questions.length, "question") };
+    const questions = tile.draft.questions.filter((question) => question.id.trim());
+    return questions.length === 0 ? null : { type: "list", items: questions.map((question, at) => ({ badge: String(at + 1), name: question.id, detail: QUESTION_TYPE_LABEL[question.type] ?? question.type })), count: noun(questions.length, "question") };
   }, true),
-  S("reads", "Reads", "The steps and code it reads from", (tile) => {
+  S("callingCode", "Calling code", "The code that sends the request, added as a Code tile", (tile) => {
+    if (tile.kind !== "decision") return null;
+    return chips(tile.draft.calledFrom.map((id) => tile.codeTiles.find((code) => code.id === id)?.label ?? id), "");
+  }),
+  S("input", "Input", "The output of another step, or sample text", (tile) => {
     if (tile.kind !== "decision") return null;
     const draft = tile.draft;
-    const called = draft.calledFrom.map((id) => tile.codeTiles.find((code) => code.id === id)?.label ?? id);
-    const from = draft.stateFrom ? tile.stepChoices.find((step) => step.id === draft.stateFrom)?.label : null;
-    return chips([...called, ...(from ? [from] : [])]);
+    return draft.reads === "step" ? one("Output of another step", tile.stepChoices.find((step) => step.id === draft.stateFrom)?.label) : prose(draft.stateSample, null);
+  }),
+  S("recorded", "Recorded answer", "One real answer the model returned", (tile) => {
+    if (tile.kind !== "decision") return null;
+    const answers = Object.entries(tile.draft.answer).filter(([, answer]) => answer.value.trim());
+    return answers.length === 0 ? null : { type: "rows", rows: answers.map(([id, answer]) => ({ label: id, value: answer.sure ? `${answer.value} · ${answer.sure}%` : answer.value })), count: null };
+  }),
+  S("install", "Installation command", "Exactly as you typed it", (tile) => (tile.kind === "decision" ? prose(tile.draft.install, null, { code: true, copy: true }) : null)),
+  S("examples", "Examples", "Real inputs with the output returned for each", (tile) => {
+    if (tile.kind !== "decision") return null;
+    const examples = tile.draft.examples ?? [];
+    return examples.length === 0 ? null : { type: "list", items: examples.map((example, at) => ({ badge: String(at + 1), name: example.input })), count: noun(examples.length, "example") };
+  }),
+  S("lowConfidence", "Low-confidence handling", "A confidence threshold, or escalation to a person", (tile) => {
+    if (tile.kind !== "decision") return null;
+    const low = tile.draft.lowConfidence;
+    return low.mode === "threshold" && low.threshold.trim() ? one("Confidence threshold", low.threshold) : low.mode === "escalate" ? one("Low confidence", "Escalate to a person") : null;
   }),
   RUNTIME.runsWhen,
-  RUNTIME.install,
   RUNTIME.buildCost,
   RUNTIME.runCost,
 ];
@@ -389,20 +411,22 @@ const AGENT_SECTIONS = (team: boolean): readonly SectionDef[] => [
 ];
 
 const RESULT: readonly SectionDef[] = [
+  S("summary", "Summary", "What the result is", (tile) => (tile.kind === "result" ? prose(tile.summary) : null)),
   S("outputType", "Output type", "A link, a picture, a file or a trained model", (tile) => {
     if (tile.kind !== "result") return null;
     const label = { link: "Link", picture: "Image or video", file: "File", "trained-model": "Model" } as const;
     return one("Output type", label[tile.what ?? (tile.pictures.length > 0 ? "picture" : "link")]);
   }, true),
-  S("summary", "Summary", "What the result is", (tile) => (tile.kind === "result" ? prose(tile.summary) : null)),
   S("url", "URL", "Where to see it", (tile) => (tile.kind === "result" ? one("URL", tile.url) : null)),
-  S("pictures", "Images and videos", "Pictures kept with the result", (tile) => (tile.kind === "result" && tile.pictures.length > 0 ? { type: "list", items: tile.pictures.map((picture, at) => ({ id: picture.id, badge: String(at + 1), name: picture.name })), count: noun(tile.pictures.length, "file") } : null)),
-  S("trained", "Trained model", "The base model, its method and what it was trained on", (tile) => {
-    if (tile.kind !== "result" || !tile.trained) return null;
-    const trained = tile.trained;
-    return rows([["Based on", trained.baseModel ? modelLabel(trained.baseModel) : null], ["Trained on", trained.trainedOn ? `${trained.trainedOn.name}${trained.trainedOn.rows ? ` · ${trained.trainedOn.rows.toLocaleString("en-GB")} rows` : ""}` : null], ["How it was trained", trained.method]]);
-  }),
+  S("baseModel", "Base model", "The model it was trained from", (tile) => (tile.kind === "result" && tile.trained ? one("Base model", tile.trained.baseModel ? modelLabel(tile.trained.baseModel) : null) : null)),
+  S("method", "Training method", "How the model was trained", (tile) => (tile.kind === "result" && tile.trained ? one("Training method", tile.trained.method) : null)),
   S("caption", "Caption", "One line describing what the output shows", (tile) => one("Caption", str(payloadOf(tile).caption))),
+  S("pictures", "Images and videos", "Pictures kept with the result", (tile) => (tile.kind === "result" && tile.pictures.length > 0 ? { type: "list", items: tile.pictures.map((picture, at) => ({ id: picture.id, badge: String(at + 1), name: picture.name })), count: noun(tile.pictures.length, "file") } : null)),
+  S("trainedOn", "Trained on", "The ratings or examples it learned from", (tile) => {
+    if (tile.kind !== "result" || !tile.trained?.trainedOn) return null;
+    const on = tile.trained.trainedOn;
+    return { type: "list", items: [{ id: on.id, badge: "1", name: on.name, value: on.rows ? `${on.rows.toLocaleString("en-GB")} rows` : null }], count: null };
+  }),
 ];
 
 const SYSTEM_PROMPT: readonly SectionDef[] = [
@@ -501,7 +525,7 @@ const SESSION: readonly SectionDef[] = [
     return rows([["Cost", extras.cost !== undefined ? `about ${money(extras)}` : null], ["Tokens", extras.tokens !== undefined ? extras.tokens.toLocaleString("en-GB") : null], ["Background", extras.background ? "Ran in the background" : null]]);
   }),
   S("started", "Started with", "The command that opened the session", (tile) => (tile.kind === "session" ? prose(tile.extras?.startedWith ?? "", null, { code: true, copy: true }) : null)),
-  S("own", "Own copy", "The branch or folder it worked in", (tile) => (tile.kind === "session" ? one("Own copy", tile.extras?.ownCopy) : null)),
+  S("own", "Own copy of the code", "The branch or folder it worked in", (tile) => (tile.kind === "session" ? one("Own copy of the code", tile.extras?.ownCopy) : null)),
   S("together", "At the same time as", "The sessions it ran beside", (tile) => {
     if (tile.kind !== "session") return null;
     const keys = tile.extras?.parallelWith ?? [];
@@ -560,4 +584,58 @@ export function readSections(tile: DetailsView, build: BuildFacts): { sections: 
 export function notSetLine(notSet: readonly string[]): string | null {
   if (notSet.length === 0) return null;
   return `Not set: ${notSet.join(", ")}. Edit to add them.`;
+}
+
+/* ── the head ── */
+
+export interface TileHead {
+  /** The tile's own title, or its default while the maker has not named it. */
+  title: string;
+  /** True while the title is the default. */
+  untitled: boolean;
+  /** The modal's header line: "Session 2 · Claude Code · 8 Oct 2026 · Prompt 3, 1 of 1 in session". */
+  line: string;
+  /** The tool whose mark leads the head, when the tile has one. */
+  tool: string | null;
+  model: string | null;
+}
+
+const join = (...parts: (string | null | undefined | false)[]): string => parts.filter(Boolean).join(" · ");
+
+/** The head Details draws: the mark's tool, the title and the line under it. */
+export function headOf(tile: DetailsView): TileHead {
+  const named = (title: string | null, fallback: string) => ({ title: title ?? fallback, untitled: !title });
+  switch (tile.kind) {
+    case "prompt":
+      return { ...named(tile.title, tile.defaultTitle), line: join(tile.sessionLine, tile.detailLine), tool: tile.sessionLine.split(" · ").pop() || null, model: tile.model };
+    case "manual":
+      return { ...named(tile.title, tile.defaultTitle), line: join(`Manual step ${tile.number}`, tile.tool), tool: tile.tool || null, model: null };
+    case "code":
+      return { ...named(tile.title ?? tile.filename, tile.defaultTitle), line: join(`Code ${tile.number}`, tile.language, noun(tile.lines, "line")), tool: tile.tool, model: tile.model };
+    case "check":
+      return { ...named(tile.title, tile.defaultTitle), line: join(`Check ${tile.number}`, tile.check.passed !== null && tile.check.total !== null ? `${tile.check.passed} of ${tile.check.total} passed` : null), tool: null, model: null };
+    case "decision":
+      return { ...named(tile.title, tile.defaultTitle), line: join(`Decision ${tile.number}`, "runs in the app"), tool: null, model: null };
+    case "file":
+      return { title: tile.name, untitled: false, line: join("File", tile.size), tool: null, model: null };
+    case "tool":
+      return { title: tile.service, untitled: false, line: join(tile.number ? `Tool ${tile.number}` : "Tool", tile.connection ? CONNECTION_LABEL[tile.connection] : null), tool: tile.service, model: null };
+    case "agent":
+    case "team":
+      return { ...named(tile.name, tile.defaultName), line: join(`${tile.kind === "team" ? "Team" : "Agent"} ${tile.number}`, tile.parent ?? tile.model), tool: tile.kind === "agent" ? (tile.setup?.harness ?? null) : null, model: null };
+    case "result":
+      return { title: tile.summary || tile.url || "Result", untitled: !(tile.summary || tile.url), line: join(tile.number ? `Result ${tile.number}` : "Result"), tool: null, model: null };
+    case "system_prompt":
+      return { ...named(tile.title, tile.defaultTitle), line: join(`System prompt ${tile.number}`, `Applies to ${noun(tile.appliesTo, "prompt")}`), tool: null, model: null };
+    case "dataset": {
+      const use = datasetOf(tile.payload).use;
+      return { ...named(tile.title, tile.defaultTitle), line: join(`Dataset ${tile.number}`, use ? DATASET_USE_LABEL[use] : null), tool: null, model: null };
+    }
+    case "repo": {
+      const ownership = repoOf(tile.payload)?.ownership;
+      return { ...named(tile.title, tile.defaultTitle), line: join(`GitHub repository ${tile.number}`, ownership ? REPO_OWNERSHIP_LABEL[ownership] : null), tool: null, model: null };
+    }
+    case "session":
+      return { title: `Session ${tile.number}`, untitled: false, line: join(tile.tool, tile.model ? modelLabel(tile.model) : null, tile.date), tool: tile.tool, model: tile.model || null };
+  }
 }

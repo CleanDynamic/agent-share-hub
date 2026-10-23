@@ -459,6 +459,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/tileSections.test.ts",
   "src/dev/fixtures/detailsKinds.ts",
   // CA-18 P2
+  "src/pages/site/compose/detailsRecipes.ts",
   "src/pages/site/compose/editBuffer.ts",
   "src/pages/site/compose/editBuffer.test.ts",
   "src/pages/site/compose/editHandlers.ts",
@@ -468,6 +469,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/TileEditDialog.test.tsx",
   "src/pages/site/compose/SessionDialog.tsx",
   "src/pages/site/compose/SessionDialog.test.tsx",
+  "src/pages/site/compose/tileSections.match.test.tsx",
   "src/pages/site/compose/BuildList.edit.test.tsx",
   "src/components/build/FullPromptWindow.sections.test.tsx",
   "src/pages/site/compose/SessionExtrasFields.tsx",
@@ -517,7 +519,7 @@ export const MODAL_FILES: readonly string[] = [
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 

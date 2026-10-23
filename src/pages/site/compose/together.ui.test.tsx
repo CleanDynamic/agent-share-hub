@@ -1,7 +1,7 @@
 // CA-05 P5 — sessions at the same time on screen: Session Details names them and the copy of the code; the List and
 // the build page say it under the head.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,11 +13,14 @@ import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
 import { BuildList } from "./BuildList";
 import { dividers } from "./buildListModel";
-import { DetailsPanel, type SessionView } from "./DetailsPanel";
+import type { SessionView } from "./DetailsPanel";
+import { SessionDialog } from "./SessionDialog";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
 });
+// The menu of sessions stays open while more are ticked, and hides the window from the tree: Save is found through it.
+const save = () => fireEvent.click(within(screen.getByRole("dialog", { hidden: true })).getByRole("button", { name: "Save", hidden: true }));
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -40,11 +43,11 @@ const OTHERS = [
 function mount(view: SessionView) {
   const onSessionExtras = vi.fn();
   const onSessionTogether = vi.fn();
-  render(<DetailsPanel phone={false} view={view} onSessionExtras={onSessionExtras} onSessionTogether={onSessionTogether} onRename={vi.fn()} onModel={vi.fn()} onAddUse={vi.fn()} onRemoveUse={vi.fn()} onRuns={vi.fn()} onRemoveInside={vi.fn()} onToggleSessionPrompt={vi.fn()} onDownload={vi.fn()} onFields={vi.fn()} onAddPicture={vi.fn()} onUseAsCover={vi.fn()} />);
+  render(<SessionDialog view={view} onClose={vi.fn()} handlers={{ onSessionExtras: onSessionExtras, onSessionTogether: onSessionTogether, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() }} />);
   return { onSessionExtras, onSessionTogether };
 }
 
-describe("Session Details › Ran at the same time as, Own copy of the code", () => {
+describe("Session window › Ran at the same time as, Own copy of the code", () => {
   it("lists the other sessions and allows more than one", () => {
     const { onSessionTogether } = mount(session({ others: OTHERS, extras: { parallelWith: ["typed-c"] } }));
     fireEvent.keyDown(screen.getByRole("button", { name: "Ran at the same time as" }), { key: "Enter" });
@@ -52,6 +55,7 @@ describe("Session Details › Ran at the same time as, Own copy of the code", ()
     expect(items.map((item) => item.textContent)).toEqual(["Session 1 · Claude Code", "Session 3 · Claude Code"]);
     expect(items[1].getAttribute("aria-checked")).toBe("true");
     fireEvent.click(items[0]);
+    save();
     expect(onSessionTogether).toHaveBeenCalledWith("typed-b", ["typed-c", "typed-a"]);
   });
 
@@ -64,7 +68,8 @@ describe("Session Details › Ran at the same time as, Own copy of the code", ()
     const { onSessionExtras } = mount(session({ extras: { cost: 2, currency: "GBP" } }));
     const field = screen.getByRole("textbox", { name: "Own copy of the code" });
     fireEvent.change(field, { target: { value: "fix-totals" } });
-    fireEvent.keyDown(field, { key: "Enter" });
+    fireEvent.blur(field);
+    save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-b", { cost: 2, currency: "GBP", ownCopy: "fix-totals" });
   });
 });
