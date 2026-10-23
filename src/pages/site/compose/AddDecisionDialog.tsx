@@ -1,6 +1,6 @@
 /* CA-13 P2, CA-15 P8: Add › "Decision": a structured classification your application requests from a model.
 
-   The shared modal frame, 520 wide (a `BottomSheet` below 768). The fields are `DecisionFields`: a Model block (Model or
+   CA-15b: built from `modalRecipes` as the board "Add a decision" draws it, 640 wide (a `BottomSheet` below 768). The fields are `DecisionFields`: a Model block (Model or
    service, Version, Invocation), the Questions block, then the Optional section. This holds the draft and the one primary,
    "Add", which waits for a model or service and for every question to have its key and what its type takes (`decisionMissing`).
    What else a draft refuses (an answer that is not one of the options, a threshold out of range) is said as a line under the
@@ -14,6 +14,7 @@ import type { DecisionInput } from "@/lib/build/graph";
 
 import { DecisionFields, type DecisionFieldsProps } from "./DecisionFields";
 import { ModalForm, ModalShell } from "./ModalFrame";
+import { MODAL_WIDTH } from "./modalRecipes";
 
 export const DECISION_DIALOG_COPY = {
   title: "Add a decision",
@@ -72,7 +73,7 @@ export function AddDecisionDialog({ open, onOpenChange, onAdd, ...fields }: AddD
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={DECISION_DIALOG_COPY.title} subtitle={DECISION_DIALOG_COPY.subtitle} width={520} testId="add-decision-dialog">
+    <ModalShell open={open} onOpenChange={onOpenChange} title={DECISION_DIALOG_COPY.title} subtitle={DECISION_DIALOG_COPY.subtitle} width={MODAL_WIDTH.wide} testId="add-decision-dialog">
       <Form {...fields} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );

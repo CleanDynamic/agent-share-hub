@@ -14,22 +14,22 @@
    the only way one is made.
 
    CA-03 P2: the labels are the composer's `Field`; the line under the title and the counter are Geist, with tabular
-   numbers; the dialog is the window recipe with a 15/500 title. */
+   numbers; the dialog is the window recipe with a 15/500 title.
 
-import * as Dialog from "@radix-ui/react-dialog";
+   CA-15b: it has no board, so it is built from `modalRecipes` in the boards' pattern, on the shared frame (`ModalShell`,
+   `ModalForm`), 560 wide: a block for where it was done (an option grid, then the application's picker field or the
+   website's link), a block for what was done (numbered lines, "Add a line", the count at the right), a block for the
+   picture, and the footer, which says what is still required. */
+
 import { useId, useRef, useState } from "react";
 
-import { Button } from "@/components/brand/Button";
-import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { MANUAL_LINES_MAX, MANUAL_TEXT_MAX, MANUAL_TOOL_MAX, type ManualWhere, type WhereKind } from "@/lib/build/graph";
 import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor } from "@/lib/build/media";
-import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
 
-import { Field } from "./composeControls";
-import { dialogTitle, text as type, tnum, typedField, windowStyle } from "./refinedStyles";
+import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, GROW, Inline, LabelText, MODAL_WIDTH, OptionGrid, PANEL_LIST, TextLink } from "./modalRecipes";
 import { ToolPicker } from "./ToolPicker";
 
 export const MANUAL_DIALOG_COPY = {
@@ -40,6 +40,12 @@ export const MANUAL_DIALOG_COPY = {
   whatWasDone: "What was done",
   addLine: "Add a line",
   siteLink: "Link to the website",
+  subtitle: "Work done outside AI, put between two prompts",
+  after: (step: string) => `Goes after ${step}`,
+  picture: "Picture, optional",
+  addPicture: "Add a picture",
+  anotherPicture: "Choose another",
+  lines: (n: number) => `${n} / ${MANUAL_LINES_MAX} lines`,
 } as const;
 
 /** CA-12 P10: where a manual step can have been done. "App or website" takes an app from the apps list. */
@@ -70,22 +76,25 @@ export interface AddManualStepDialogProps {
   inBuild?: readonly string[];
 }
 
-function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<AddManualStepDialogProps, "after" | "available" | "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
+function Form({ available, onAdd, onCancel, phone, inBuild = [] }: Pick<AddManualStepDialogProps, "available" | "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
   const [kind, setKind] = useState<WhereKind>("app");
   const [picked, setPicked] = useState<string | null>(null);
   const [site, setSite] = useState("");
   const [lines, setLines] = useState<string[]>([""]);
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
-  const picker = useRef<HTMLInputElement>(null);
   const lineRefs = useRef<(HTMLInputElement | null)[]>([]);
   const uid = useId();
 
   const appName = picked ? (toolName(picked) ?? picked.trim()) : "";
   const kept = lines.map((line) => line.trim()).filter(Boolean);
   const placeOk = kind === "app" ? appName.length > 0 && appName.length <= MANUAL_TOOL_MAX : kind === "site" ? site.trim().length > 0 : true;
-  const ready = available && placeOk && kept.length > 0 && kept.length <= MANUAL_LINES_MAX;
+  const missing = firstMissing([
+    [placeOk, kind === "site" ? "a link to the website" : "an application"],
+    [kept.length > 0, "what was done"],
+  ]);
   const where = (): ManualWhere => ({ kind, name: kind === "app" ? appName : null, url: kind === "site" ? site.trim() : null });
+
   const setLine = (at: number, value: string) => setLines((current) => current.map((line, i) => (i === at ? value : line)));
   const addLine = (focus = true) => {
     if (lines.length >= MANUAL_LINES_MAX) return;
@@ -93,7 +102,8 @@ function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<A
     if (focus) window.setTimeout(() => lineRefs.current[lines.length]?.focus(), 0);
   };
 
-  const choose = (picked: File | undefined) => {
+  const choose = (list: FileList | null) => {
+    const picked = list?.[0];
     if (!picked) return;
     if (mediaKindFor(picked.type) !== "image") setFileError(`${picked.name} is not a picture.`);
     else if (picked.size > MEDIA_MAX_BYTES) setFileError(`${picked.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
@@ -104,114 +114,61 @@ function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<A
   };
 
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (ready) onAdd({ where: where(), lines: kept, file });
-      }}
-      /* The global field rule makes a field inherit its size on a desktop, so the form sets the fields' 13 here. */
-      style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
-    >
-      {after ? <p style={{ ...type(12.5, 400, t.text2), margin: 0 }}>Goes after {after}</p> : null}
+    <ModalForm phone={phone} missing={missing} blocked={!available || kept.length > MANUAL_LINES_MAX} alert={available ? null : MANUAL_DIALOG_COPY.missing} onCancel={onCancel} onSubmit={() => onAdd({ where: where(), lines: kept, file })}>
+      <Block label={MANUAL_DIALOG_COPY.where} noRule>
+        <BlockHead label={MANUAL_DIALOG_COPY.where} />
+        <OptionGrid<WhereKind> label={MANUAL_DIALOG_COPY.where} bare phone={phone} items={WHERE_CHOICES} chosen={[kind]} onPick={setKind} />
+        {kind === "app" ? <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Select an application" field /> : null}
+        {kind === "site" ? <FieldInput phone={phone} mono inputMode="url" aria-label={MANUAL_DIALOG_COPY.siteLink} placeholder="https://" value={site} onChange={(event) => setSite(event.target.value)} /> : null}
+      </Block>
 
-      <Field id={`${uid}-where`} label={MANUAL_DIALOG_COPY.where} group>
-        <div role="radiogroup" aria-label={MANUAL_DIALOG_COPY.where} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {WHERE_CHOICES.map((choice) => (
-            <Button key={choice.value} variant={kind === choice.value ? "primary" : "secondary"} size={phone ? 44 : 30} fontSize={13} aria-pressed={kind === choice.value} onClick={() => setKind(choice.value)}>
-              {choice.label}
-            </Button>
-          ))}
-        </div>
-        {kind === "app" ? (
-          <div>
-            <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Select an application" />
-          </div>
-        ) : null}
-        {kind === "site" ? (
-          <input type="text" inputMode="url" aria-label={MANUAL_DIALOG_COPY.siteLink} placeholder="https://" value={site} onChange={(event) => setSite(event.target.value)} style={typedField(phone)} />
-        ) : null}
-      </Field>
-
-      <Field id={`${uid}-text`} label={MANUAL_DIALOG_COPY.whatWasDone} group>
-        <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+      <Block label={MANUAL_DIALOG_COPY.whatWasDone}>
+        <BlockHead label={MANUAL_DIALOG_COPY.whatWasDone} count={MANUAL_DIALOG_COPY.lines(lines.length)} countTestId="manual-counter" />
+        <ol style={{ ...PANEL_LIST, margin: 0, padding: 0, listStyle: "none" }}>
           {lines.map((line, at) => (
-            <li key={at} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ ...type(12, 400, t.text2), ...tnum, minWidth: 16 }}>{at + 1}</span>
-              <input
-                ref={(el) => {
-                  lineRefs.current[at] = el;
-                }}
-                type="text"
-                aria-label={`Line ${at + 1}`}
-                value={line}
-                maxLength={MANUAL_TEXT_MAX}
-                placeholder={at === 0 ? MANUAL_DIALOG_COPY.placeholder : ""}
-                onChange={(event) => setLine(at, event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-                    // Enter adds the next line instead of sending the form; an empty line sends nothing.
-                    event.preventDefault();
-                    if (line.trim()) addLine();
-                  }
-                }}
-                style={{ ...typedField(phone), flexGrow: 1 }}
-              />
+            <li key={at}>
+              <Inline>
+                <LabelText>{at + 1}</LabelText>
+                <span style={GROW}>
+                  <FieldInput
+                    phone={phone}
+                    ref={(el) => {
+                      lineRefs.current[at] = el;
+                    }}
+                    aria-label={`Line ${at + 1}`}
+                    value={line}
+                    maxLength={MANUAL_TEXT_MAX}
+                    placeholder={at === 0 ? MANUAL_DIALOG_COPY.placeholder : ""}
+                    onChange={(event) => setLine(at, event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                        // Enter adds the next line instead of sending the form; an empty line sends nothing.
+                        event.preventDefault();
+                        if (line.trim()) addLine();
+                      }
+                    }}
+                  />
+                </span>
+              </Inline>
             </li>
           ))}
         </ol>
-        <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Button variant="ghost" size={phone ? 44 : 30} fontSize={13} disabled={lines.length >= MANUAL_LINES_MAX} onClick={() => addLine()}>
-            {MANUAL_DIALOG_COPY.addLine}
-          </Button>
-          <span data-testid="manual-counter" style={{ ...type(11.5, 400, t.text2), ...tnum }}>
-            {lines.length} / {MANUAL_LINES_MAX} lines
-          </span>
-        </span>
-      </Field>
+        <TextLink phone={phone} disabled={lines.length >= MANUAL_LINES_MAX} onClick={() => addLine()}>
+          {MANUAL_DIALOG_COPY.addLine}
+        </TextLink>
+      </Block>
 
-      <Field id={`${uid}-picture`} label="Picture, optional" group>
-        <input
-          ref={picker}
-          type="file"
-          accept="image/*"
-          hidden
-          data-testid="manual-picture"
-          onChange={(event) => {
-            choose(event.target.files?.[0]);
-            event.target.value = "";
-          }}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <Button variant="secondary" size={phone ? 44 : 30} fontSize={13} onClick={() => picker.current?.click()}>
-            {file ? "Choose another" : "Add a picture"}
-          </Button>
-          {file ? (
-            <>
-              <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text, overflowWrap: "anywhere" }}>{file.name}</span>
-              <Button variant="ghost" size={phone ? 44 : 30} fontSize={13} onClick={() => setFile(null)}>
-                Remove
-              </Button>
-            </>
-          ) : null}
-        </div>
-        {fileError ? (
-          <span role="alert" style={{ fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
-            {fileError}
-          </span>
-        ) : null}
-      </Field>
-
-      {!available ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>{MANUAL_DIALOG_COPY.missing}</p> : null}
-
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <Button variant="secondary" size={phone ? 44 : 30} onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button variant="primary" size={phone ? 44 : 30} type="submit" disabled={!ready}>
-          Add
-        </Button>
-      </div>
-    </form>
+      <Block label={MANUAL_DIALOG_COPY.picture}>
+        <BlockHead label={MANUAL_DIALOG_COPY.picture} />
+        <Inline>
+          <FileButton phone={phone} accept="image/*" onFiles={choose} testId="manual-picture" inputLabel={MANUAL_DIALOG_COPY.addPicture}>
+            {file ? MANUAL_DIALOG_COPY.anotherPicture : MANUAL_DIALOG_COPY.addPicture}
+          </FileButton>
+        </Inline>
+        {file ? <FileLine name={file.name} removeLabel="Remove" onRemove={() => setFile(null)} phone={phone} /> : null}
+        {fileError ? <Alert>{fileError}</Alert> : null}
+      </Block>
+    </ModalForm>
   );
 }
 
@@ -222,29 +179,10 @@ export function AddManualStepDialog({ open, onOpenChange, after, available, onAd
     onAdd(input);
     close();
   };
-
-  if (phone) {
-    return (
-      <BottomSheet open={open} onOpenChange={onOpenChange} title={MANUAL_DIALOG_COPY.title}>
-        {open ? <Form after={after} available={available} inBuild={inBuild} onAdd={add} onCancel={close} phone /> : null}
-      </BottomSheet>
-    );
-  }
-
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
-        <Dialog.Content
-          aria-describedby={undefined}
-          data-testid="add-manual-dialog"
-          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(420) }}
-        >
-          <Dialog.Title style={dialogTitle}>{MANUAL_DIALOG_COPY.title}</Dialog.Title>
-          <Form after={after} available={available} inBuild={inBuild} onAdd={add} onCancel={close} phone={false} />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <ModalShell open={open} onOpenChange={onOpenChange} title={MANUAL_DIALOG_COPY.title} subtitle={after ? MANUAL_DIALOG_COPY.after(after) : MANUAL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-manual-dialog">
+      <Form available={available} inBuild={inBuild} onAdd={add} onCancel={close} phone={phone} />
+    </ModalShell>
   );
 }
 

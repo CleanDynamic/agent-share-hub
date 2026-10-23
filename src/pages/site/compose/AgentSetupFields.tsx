@@ -22,7 +22,12 @@
    role is a menu, never a native select.
 
    CA-03 P6: under Tools it can use, What it remembers: optional, one well that grows from one row to three, up to 200
-   characters, saved as `payload.memory`. It hands its words over when the field is left, not on every key. */
+   characters, saved as `payload.memory`. It hands its words over when the field is left, not on every key.
+
+   CA-15b: in the Add dialog (`dialog` and `bare`) the pieces are the modal recipes, as the board "Add an agent" draws them:
+   Models is a top-aligned row, each model a picker field with the "Primary" tag beside the first and "Add a model" as a
+   text link under them; Host platform a picker field ("Select a platform"); Available tools a small "Select tools" button
+   with the chosen tools as tags; Memory one field. Details keeps its own look. */
 
 import { X } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
@@ -38,6 +43,7 @@ import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker"
 import { PickMenu } from "./PickMenu";
 import { chipStyle, text, typedArea } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
+import { FieldInput, Hint, IconSquare, PICKER_ROW, RemovableTag, Row, Tag, TagList, TextLink } from "./modalRecipes";
 
 export const AGENT_SETUP_COPY = {
   runsIn: "Host platform",
@@ -54,6 +60,10 @@ export const AGENT_SETUP_COPY = {
   memory: "Memory",
   memoryLine: "What it remembers between runs",
   memoryPlaceholder: "e.g. Which dishes it featured, in a notes file it keeps",
+  /** CA-15b: the Add dialog's words. */
+  memoryDialogPlaceholder: "e.g. Dishes already featured, stored in a notes file",
+  selectPlatform: "Select a platform",
+  selectTools: "Select tools",
   role: (n: number) => `Role of model ${n}`,
   removeModel: (n: number) => `Remove model ${n}`,
   removeTool: (name: string) => `Remove ${name}`,
@@ -187,7 +197,29 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
           />
         </span>
   );
-  const runsInField = bare ? (
+  const recipes = dialog && bare;
+  const runsInRecipe = (
+    <ToolPicker
+      label={AGENT_SETUP_COPY.runsIn}
+      value={value.harness}
+      onChange={(next) => {
+        const result = withHarness(value, next);
+        setCleared(result.cleared);
+        setRunsChosen(true);
+        onChange(result.value);
+      }}
+      inBuild={inBuild}
+      runtime
+      allowNone
+      noneLabel={AGENT_SETUP_COPY.notSure}
+      unpicked={!runsChosen}
+      phone={phone}
+      step="agent"
+      placeholder={AGENT_SETUP_COPY.selectPlatform}
+      field
+    />
+  );
+  const runsInField = recipes ? runsInRecipe : bare ? (
     runsInPicker
   ) : (
     <Field id={`${uid}-runs-in`} label={AGENT_SETUP_COPY.runsIn} group>
@@ -235,7 +267,30 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
         </div>
       
   );
-  const tools = bare ? (
+  const addTool = (next: string | null) => {
+    if (!next) return;
+    const id = toolFor(next)?.id ?? next;
+    if (value.tools.some((entry) => (toolFor(entry)?.id ?? entry).toLowerCase() === id.toLowerCase())) return;
+    onChange({ ...value, tools: [...value.tools, id] });
+  };
+  const toolsRecipe = (
+    <div role="group" aria-label={AGENT_SETUP_COPY.tools}>
+      {value.tools.length > 0 ? (
+        <TagList label={AGENT_SETUP_COPY.tools}>
+          {value.tools.map((entry) => {
+            const name = toolName(entry) ?? entry;
+            return (
+              <RemovableTag key={entry} removeLabel={AGENT_SETUP_COPY.removeTool(name)} phone={phone} onRemove={() => onChange({ ...value, tools: value.tools.filter((other) => other !== entry) })}>
+                {name}
+              </RemovableTag>
+            );
+          })}
+        </TagList>
+      ) : null}
+      <ToolPicker label={AGENT_SETUP_COPY.tools} value={null} onChange={addTool} inBuild={inBuild} phone={phone} step="tool" list="app" placeholder={AGENT_SETUP_COPY.selectTools} small />
+    </div>
+  );
+  const tools = recipes ? toolsRecipe : bare ? (
     <div role="group" aria-label={AGENT_SETUP_COPY.tools}>
       {toolsBody}
     </div>
@@ -260,13 +315,69 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
         />
       
   );
-  const memoryField = bare ? (
+  const memoryRecipe = (
+    <FieldInput
+      phone={phone}
+      id={`${uid}-memory`}
+      aria-label={AGENT_SETUP_COPY.memory}
+      maxLength={MEMORY_MAX}
+      value={memory}
+      placeholder={AGENT_SETUP_COPY.memoryDialogPlaceholder}
+      onChange={(event) => setMemory(event.target.value)}
+      onBlur={() => {
+        if (memory.trim() !== (value.memory ?? "").trim()) onChange({ ...value, memory: memory.trim() });
+      }}
+    />
+  );
+  const memoryField = recipes ? memoryRecipe : bare ? (
     memoryBox
   ) : (
     <Field id={`${uid}-memory`} label={AGENT_SETUP_COPY.memory}>
       {memoryBox}
     </Field>
   );
+  const addModel = () => onChange({ ...value, models: [...value.models, { model: null, role: nextRole(value.harness) }] });
+  const modelsRecipe = (
+    <Row id={`${uid}-models`} label={AGENT_SETUP_COPY.models} group top phone={phone}>
+      {value.models.map((row, index) => (
+        <div key={index} data-testid="agent-model-row" style={PICKER_ROW}>
+          <ModelPicker
+            field
+            tool={tool}
+            value={row.model}
+            onChange={(model) => setRow(index, { model })}
+            phone={phone}
+            allowNone={false}
+            name={index === 0 ? undefined : `model ${index + 1}`}
+            openSignal={index === 0 ? openMainModel : undefined}
+          />
+          {index === 0 ? (
+            <Tag testId="agent-model-main">{AGENT_SETUP_COPY.main}</Tag>
+          ) : (
+            <>
+              <PickMenu
+                label={AGENT_SETUP_COPY.role(index + 1)}
+                options={roles.filter((role) => role !== "main" || row.role === "main").map((role) => ({ value: role, label: roleLabel(role) }))}
+                value={row.role}
+                onChange={(role) => setRow(index, { role })}
+                phone={phone}
+              />
+              <IconSquare glyph="x" label={AGENT_SETUP_COPY.removeModel(index + 1)} phone={phone} onClick={() => onChange({ ...value, models: value.models.filter((_, i) => i !== index) })} />
+            </>
+          )}
+        </div>
+      ))}
+      {several && value.models.length < AGENT_MODELS_MAX ? (
+        <TextLink phone={phone} onClick={addModel}>
+          {AGENT_SETUP_COPY.addModel}
+        </TextLink>
+      ) : null}
+      <div aria-live="polite" data-testid="agent-model-cleared">
+        {cleared ? <Hint>{cleared}</Hint> : null}
+      </div>
+    </Row>
+  );
+  if (recipes) return { host: runsInField, models: modelsRecipe, tools, memory: memoryField };
   return { host: runsInField, models: (
     <Field id={`${uid}-models`} label={AGENT_SETUP_COPY.models} group>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

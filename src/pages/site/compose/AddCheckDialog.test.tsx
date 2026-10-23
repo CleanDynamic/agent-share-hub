@@ -38,7 +38,7 @@ describe("Add › Check", () => {
     const dialog = screen.getByRole("dialog", { name: "Add a check" });
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("A test that verifies this part of the build");
     expect([...dialog.querySelectorAll("label")].map((label) => label.textContent).slice(0, 2)).toEqual(["Test description", "Pass criteria"]);
-    expect((screen.getByLabelText("Test description") as HTMLTextAreaElement).rows).toBe(3);
+    expect((screen.getByLabelText("Test description") as HTMLTextAreaElement).rows).toBe(2);
     expect((screen.getByLabelText("Pass criteria") as HTMLTextAreaElement).rows).toBe(2);
     expect(within(dialog).getByText("passed out of")).toBeTruthy();
     expect(screen.getByTestId("optional-count").textContent).toBe("8 fields");
@@ -72,14 +72,15 @@ describe("Add › Check", () => {
     expect(add().disabled).toBe(false);
   });
 
-  it("draws Runs as a nested panel with the pass rate in mono and a 6px bar filled to it", () => {
+  it("draws Runs as a panel with the pass rate in mono and a 6px bar filled to it", () => {
     open();
-    const panel = screen.getByTestId("check-runs");
-    expect(panel.style.borderRadius).toBe("6px");
+    const panel = screen.getByTestId("check-runs").children[1] as HTMLElement;
+    expect(getComputedStyle(panel).borderRadius).toBe("10px");
+    expect(within(screen.getByTestId("check-runs")).getByText("Or add test cases below")).toBeTruthy();
     expect(screen.getByTestId("check-rate").textContent).toBe("");
     type("Passed", "3");
     type("Total", "4");
-    expect(screen.getByTestId("check-rate").textContent).toBe("75%");
+    expect(screen.getByTestId("check-rate").textContent).toBe("75% pass rate");
     expect(screen.getByTestId("check-bar").style.height).toBe("6px");
     expect(screen.getByTestId("check-bar-fill").style.width).toBe("75%");
   });
@@ -116,11 +117,11 @@ describe("Add › Check", () => {
     openRow("Failure notes");
     type("Failure notes", " It showed £8.99. ");
     openRow("Test method");
-    fireEvent.click(screen.getByRole("button", { name: "Peer review" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Peer review" }));
     openRow("Reviewer");
     fireEvent.click(screen.getByRole("radio", { name: "A client" }));
     openRow("Scoring method");
-    fireEvent.click(screen.getByRole("button", { name: "Metric against a target" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Metric against a target" }));
     type("Target", "95% correct");
     openRow("Model tested");
     type("Version", "2026-09-30");
@@ -146,9 +147,9 @@ describe("Add › Check", () => {
     open();
     openRow("Scoring method");
     expect(screen.queryByLabelText("Target")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Rating" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Rating" }));
     expect(screen.queryByLabelText("Target")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Metric against a target" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Metric against a target" }));
     expect(screen.getByLabelText("Target")).toBeTruthy();
   });
 

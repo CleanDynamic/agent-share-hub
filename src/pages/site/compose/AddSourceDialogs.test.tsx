@@ -38,10 +38,10 @@ describe("Add › System prompt", () => {
     return props;
   };
 
-  it("is a 520-wide dialog in the shared frame, saying what is required until the name and text are there", () => {
+  it("is a 560-wide dialog in the shared frame, saying what is required until the name and text are there", () => {
     open();
     expect(screen.getByRole("dialog", { name: SYSTEM_PROMPT_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-system-prompt-dialog").style.width).toBe("520px");
+    expect(screen.getByTestId("add-system-prompt-dialog").style.width).toBe("560px");
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("Instructions that apply across prompts");
     expect(status()).toBe("Required: a name");
     expect(add().disabled).toBe(true);
@@ -89,7 +89,7 @@ describe("Add › System prompt", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Selected prompts" }));
     expect(status()).toBe("Required: at least one prompt for it to apply to");
     expect(add().disabled).toBe(true);
-    fireEvent.click(screen.getByRole("checkbox", { name: "2 Check the tone" }));
+    fireEvent.click(screen.getByRole("button", { name: "2 Check the tone" }));
     expect(add().disabled).toBe(false);
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ scope: { kind: "prompts", ids: ["p2"] } }));
@@ -134,10 +134,10 @@ describe("Add › Dataset", () => {
     return props;
   };
 
-  it("is a 520-wide dialog that asks for a name and a description", () => {
+  it("is a 560-wide dialog that asks for a name and a description", () => {
     open();
     expect(screen.getByRole("dialog", { name: DATASET_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-dataset-dialog").style.width).toBe("520px");
+    expect(screen.getByTestId("add-dataset-dialog").style.width).toBe("560px");
     expect(status()).toBe("Required: a name");
     type("Name", "Tickets");
     expect(status()).toBe("Required: a description");
@@ -208,12 +208,12 @@ describe("Add › GitHub repository", () => {
     render(<AddRepoDialog {...props} />);
     return props;
   };
-  const owner = (label: string) => fireEvent.click(screen.getByRole("button", { name: label }));
+  const owner = (label: string) => fireEvent.click(screen.getByRole("radio", { name: label }));
 
-  it("is a 520-wide dialog that asks for a URL and an ownership", () => {
+  it("is a 560-wide dialog that asks for a URL and an ownership", () => {
     open();
     expect(screen.getByRole("dialog", { name: REPO_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-repo-dialog").style.width).toBe("520px");
+    expect(screen.getByTestId("add-repo-dialog").style.width).toBe("560px");
     expect(status()).toBe("Required: a repository URL");
     type("Repository URL", "github.com/acme/shop");
     expect(status()).toBe("Required: an ownership");
@@ -269,7 +269,7 @@ describe("Add › GitHub repository", () => {
     owner("Third-party repository");
     expect((screen.getByLabelText("Author") as HTMLInputElement).value).toBe("acme");
     expect(screen.queryByText("Visibility")).toBeNull();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Copied source code" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copied source code" }));
     await screen.findByTestId("repo-name");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ url: "https://github.com/acme/shop", ownership: "third_party", author: "acme", usage: ["copied"], fetched: facts }));
@@ -313,7 +313,7 @@ describe("Add › GitHub repository", () => {
     type("Repository URL", "github.com/acme/shop");
     owner("Your existing repository");
     openRow("Pinned version");
-    fireEvent.click(screen.getByRole("button", { name: "Tag" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Tag" }));
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenLastCalledWith({ url: "https://github.com/acme/shop", ownership: "owned" });
     type("Pinned value", "v1.4.2");

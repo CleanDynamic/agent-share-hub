@@ -89,13 +89,13 @@ describe("the refined window does what the window does", () => {
 });
 
 describe("the refined window as the board draws it", () => {
-  it("is the window recipe, 760 wide, radius 12, padding 20px 24px", () => {
+  it("is the frame recipe (CA-15b): 640 wide, radius 12, overflow hidden, the header padded 20 20 18", () => {
     open("p3");
     const dialog = screen.getByTestId("full-prompt-window");
-    expect(dialog.style.width).toBe("760px");
+    expect(dialog.style.width).toBe("640px");
     expect(dialog.style.borderRadius).toBe("12px");
-    expect(dialog.style.padding).toBe("20px 24px");
-    expect(dialog.style.boxShadow).toBe("var(--window-shadow)");
+    expect(dialog.style.overflow).toBe("hidden");
+    expect(dialog.style.maxHeight).toBe("calc(100dvh - 80px)");
   });
 
   it("heads with the title, one grey line, and square 28 Previous, Next and Close", () => {
@@ -110,18 +110,18 @@ describe("the refined window as the board draws it", () => {
     expect(screen.getByRole("button", { name: "Rename prompt" })).toBeTruthy();
   });
 
-  it("puts the title at 15/500 and the text in a well 320 high at 14.5/25 with no fade", () => {
+  it("puts the title in a field and the text in a 5-row area at 13/20 with no fade (CA-15b)", () => {
     open("p3");
     const title = screen.getByLabelText("Title");
-    expect(title.style.fontSize).toBe("15px");
+    expect(title.style.height).toBe("32px");
     const text = screen.getByTestId("full-prompt-text");
-    expect(text.style.height).toBe("320px");
-    expect(text.style.fontSize).toBe("14.5px");
-    expect(text.style.lineHeight).toBe("25px");
+    expect(text.style.height).toBe("120px");
+    expect(text.style.fontSize).toBe("13px");
+    expect(text.style.lineHeight).toBe("20px");
     expect(screen.queryByTestId("full-prompt-fade")).toBeNull();
   });
 
-  it("draws Copy prompt as a secondary 28 with no icon, and Done as the one primary, 30 high", () => {
+  it("draws Copy prompt as a small secondary 28 with no icon, and Done as the one primary, 32 high", () => {
     open("p3");
     const copy = screen.getByRole("button", { name: "Copy prompt" });
     expect(copy.getAttribute("data-variant")).toBe("secondary");
@@ -129,7 +129,7 @@ describe("the refined window as the board draws it", () => {
     expect(copy.querySelector("svg")).toBeNull();
     const done = screen.getByRole("button", { name: "Done" });
     expect(done.getAttribute("data-variant")).toBe("primary");
-    expect(done.style.height).toBe("30px");
+    expect(done.style.height).toBe("32px");
     expect(within(screen.getByRole("dialog")).getAllByRole("button").filter((button) => button.getAttribute("data-variant") === "primary")).toHaveLength(1);
   });
 });

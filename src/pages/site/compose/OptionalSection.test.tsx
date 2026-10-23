@@ -69,11 +69,11 @@ describe("OptionalSection (CA-15 P1)", () => {
     expect(screen.queryByLabelText("Failure notes field")).toBeNull();
   });
 
-  it("shows a filled row's value in place of its description", () => {
+  it("shows a filled row's value at the right, and keeps its description (CA-15b)", () => {
     section({ notesSummary: "The total showed 0.00" });
     const first = rows()[0];
-    expect(within(first).getByTestId("optional-line").textContent).toBe("The total showed 0.00");
-    expect(within(first).queryByText(/What went wrong/)).toBeNull();
+    expect(within(first).getByTestId("optional-value").textContent).toBe("The total showed 0.00");
+    expect(within(first).getByTestId("optional-line").textContent).toMatch(/What went wrong/);
     // An empty row still says what goes there.
     expect(within(rows()[1]).getByTestId("optional-line").textContent).toBe("Who judged it");
   });

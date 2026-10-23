@@ -1,12 +1,13 @@
-/* CA-03 P5, CA-15 P5: Add › "Check": a test that verifies this part of the build.
+/* CA-03 P5, CA-15 P5, CA-15b P2: Add › "Check": a test that verifies this part of the build.
 
-   The shared modal frame, 520 wide (a `BottomSheet` below 768). Required, in this order:
+   Built from `modalRecipes` as the board "Add a check" draws it, 560 wide (a `BottomSheet` below 768). Required, in this
+   order, each a block:
 
-   - Test description: a well, 3 rows, 1 to 280 characters.
-   - Pass criteria: a well, 2 rows, 1 to 280.
-   - Runs: a nested panel (`--flat` fill, `--line` edge) with two small number fields, "{passed} passed out of {total}", whole
-     numbers from 0 to 10,000, the pass rate in mono and a 6px bar filled to the rate in `--evidence` on a `--bar-base` track.
-     With test cases given, the numbers are worked out from them and Runs need not be typed (today's rule, kept).
+   - Test description: a text area, 2 rows, 1 to 280 characters, its count at the right ("42 / 280").
+   - Pass criteria: a text area, 2 rows, 1 to 280.
+   - Runs ("Or add test cases below"): a panel with "80% pass rate" at the left and two 56-wide number fields, "{passed}
+     passed out of {total}", whole numbers from 0 to 10,000, then a 6px bar filled to the rate in `--evidence`. With test
+     cases given, the numbers are worked out from them and Runs need not be typed (today's rule, kept).
 
    Optional, in this order: Test cases, Failure notes, Last run date (typed as 2026-10-12, no browser date picker), Test method,
    Reviewer, Scoring method, Model tested, Evidence (a URL or one file).
@@ -14,9 +15,8 @@
    A field it refuses says why in plain words ("Passed can't be more than the total."), with the same words `addCheck` refuses
    with. A check is evidence the maker gives: it never touches the lamp, the plaque or a reproduction. */
 
-import { useId, useRef, useState, type CSSProperties } from "react";
+import { useId, useState } from "react";
 
-import { Segmented } from "@/components/brand/Segmented";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CHECK_FAIL_MAX, CHECK_TEXT_MAX, checkRefusal, type CheckCase, type CheckInput } from "@/lib/build/graph";
 import { MEDIA_MAX_BYTES, fileKindFor } from "@/lib/build/media";
@@ -34,16 +34,12 @@ import {
   type CheckReviewer,
   type ScoringHow,
 } from "@/lib/build/tileExtras";
-import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
 
 import { CheckCasesField, keptCases } from "./CheckCasesField";
-import { ChoiceGrid } from "./ChoiceGrid";
-import { Field, TextButton } from "./composeControls";
-import { ModalForm, ModalShell, SectionHeading, firstMissing } from "./ModalFrame";
+import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
+import { Alert, Block, BlockHead, Count, FieldArea, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, Panel, PanelBody, RateBar, SegmentedField, Spread } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
-import { text, tnum, typedArea, typedField } from "./refinedStyles";
 
 export const CHECK_DIALOG_COPY = {
   title: "Add a check",
@@ -53,35 +49,37 @@ export const CHECK_DIALOG_COPY = {
   passing: "Pass criteria",
   passingPlaceholder: "e.g. The total shows £9.00",
   runs: "Runs",
+  runsLine: "Or add test cases below",
+  rateLine: (percent: number) => `${percent}% pass rate`,
   passed: "Passed",
   total: "Total",
   passedOf: "passed out of",
   passRate: "Pass rate",
   fromCases: "Worked out from the test cases",
   failed: "Failure notes",
-  failedLine: "What went wrong, and what changed before it ran again",
+  failedLine: "What failed, and what was changed before the next run",
   failedPlaceholder: "e.g. The total showed 0.00 until the basket was refreshed",
   lastRun: "Last run date",
-  lastRunLine: "The day it last ran, written as 2026-10-12",
+  lastRunLine: "When the test last ran",
   lastRunPlaceholder: "e.g. 2026-10-12",
-  casesLine: "What went in, what was expected, what came out",
+  casesLine: "Inputs, expected outputs and actual outputs",
   method: "Test method",
-  methodLine: "How the test was carried out",
+  methodLine: "Manual, automated, test suite, peer review or comparison",
   reviewer: "Reviewer",
-  reviewerLine: "Who judged the result",
+  reviewerLine: "You, a user or a client",
   scoring: "Scoring method",
-  scoringLine: "How the result was scored",
+  scoringLine: "Pass or fail, a metric against a target, a rating, or an A/B comparison",
   target: "Target",
   targetPlaceholder: "e.g. 95% of answers correct",
   modelTested: "Model tested",
-  modelTestedLine: "The model, and its version, the test ran against",
+  modelTestedLine: "The model and version the test ran against",
   version: "Version",
   versionPlaceholder: "e.g. 2026-09-30",
   evidence: "Evidence",
-  evidenceLine: "A URL, or one file, that shows the result",
+  evidenceLine: "A log, a screenshot, or a link to the test run",
   evidenceUrl: "Evidence URL",
-  evidenceUrlPlaceholder: "e.g. example.com/results",
-  evidenceFile: "Choose an evidence file",
+  evidenceUrlPlaceholder: "Link to the test run",
+  evidenceFile: "Upload a file",
   evidenceBad: "Evidence is a URL, like example.com/results.",
   remove: "Remove",
   add: "Add",
@@ -121,7 +119,6 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [fileWrong, setFileWrong] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
-  const picker = useRef<HTMLInputElement>(null);
   const uid = useId();
 
   const given = keptCases(cases);
@@ -142,18 +139,8 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
     const n = Number(shownTotal);
     return shownPassed !== "" && shownTotal !== "" && n > 0 && p <= n ? p / n : null;
   })();
-  const count: CSSProperties = { ...text(11.5, 400, t.text2), ...tnum, alignSelf: "flex-end" };
   const small = (value: string, set: (next: string) => void, label: string) => (
-    <input
-      type="text"
-      inputMode="numeric"
-      aria-label={label}
-      maxLength={5}
-      value={value}
-      readOnly={fromCases}
-      onChange={(event) => set(event.target.value.replace(/[^0-9]/g, ""))}
-      style={typedField(phone, { width: 72, ...tnum })}
-    />
+    <FieldInput phone={phone} mono width={NARROW.count} inputMode="numeric" aria-label={label} maxLength={5} value={value} readOnly={fromCases} onChange={(event) => set(event.target.value.replace(/[^0-9]/g, ""))} />
   );
 
   const chooseEvidence = (list: FileList | null) => {
@@ -188,32 +175,33 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
 
   return (
     <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} alert={tried && why ? why : null}>
-      <Field id={`${uid}-tested`} label={CHECK_DIALOG_COPY.tested}>
-        <textarea id={`${uid}-tested`} rows={3} maxLength={CHECK_TEXT_MAX} value={tested} placeholder={CHECK_DIALOG_COPY.testedPlaceholder} onChange={(event) => setTested(event.target.value)} style={typedArea(phone)} />
-        <span style={count}>
-          {tested.length} / {CHECK_TEXT_MAX}
-        </span>
-      </Field>
+      <Block noRule>
+        <BlockHead label={CHECK_DIALOG_COPY.tested} htmlFor={`${uid}-tested`} count={`${tested.length} / ${CHECK_TEXT_MAX}`} />
+        <FieldArea phone={phone} id={`${uid}-tested`} rows={2} maxLength={CHECK_TEXT_MAX} value={tested} placeholder={CHECK_DIALOG_COPY.testedPlaceholder} onChange={(event) => setTested(event.target.value)} />
+      </Block>
 
-      <Field id={`${uid}-passing`} label={CHECK_DIALOG_COPY.passing}>
-        <textarea id={`${uid}-passing`} rows={2} maxLength={CHECK_TEXT_MAX} value={passing} placeholder={CHECK_DIALOG_COPY.passingPlaceholder} onChange={(event) => setPassing(event.target.value)} style={typedArea(phone)} />
-      </Field>
+      <Block>
+        <BlockHead label={CHECK_DIALOG_COPY.passing} htmlFor={`${uid}-passing`} />
+        <FieldArea phone={phone} id={`${uid}-passing`} rows={2} maxLength={CHECK_TEXT_MAX} value={passing} placeholder={CHECK_DIALOG_COPY.passingPlaceholder} onChange={(event) => setPassing(event.target.value)} />
+      </Block>
 
-      <div role="group" aria-label={CHECK_DIALOG_COPY.runs} data-testid="check-runs" style={{ background: t.flat, border: `1px solid ${t.line}`, borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-        <SectionHeading>{CHECK_DIALOG_COPY.runs}</SectionHeading>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {small(shownPassed, setPassed, CHECK_DIALOG_COPY.passed)}
-          <span style={text(13, 400, t.text2)}>{CHECK_DIALOG_COPY.passedOf}</span>
-          {small(shownTotal, setTotal, CHECK_DIALOG_COPY.total)}
-          <span data-testid="check-rate" aria-label={CHECK_DIALOG_COPY.passRate} style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 13, color: t.text, ...tnum }}>
-            {rate === null ? "" : `${Math.round(rate * 100)}%`}
-          </span>
-        </div>
-        <div aria-hidden="true" data-testid="check-bar" style={{ height: 6, borderRadius: 3, background: t.barBase, overflow: "hidden" }}>
-          <div data-testid="check-bar-fill" style={{ height: "100%", width: `${Math.round((rate ?? 0) * 100)}%`, background: t.evidence }} />
-        </div>
-        {fromCases ? <span style={text(12, 400, t.label)}>{CHECK_DIALOG_COPY.fromCases}</span> : null}
-      </div>
+      <Block label={CHECK_DIALOG_COPY.runs} testId="check-runs">
+        <BlockHead label={CHECK_DIALOG_COPY.runs} count={CHECK_DIALOG_COPY.runsLine} />
+        <Panel padding="12px 14px">
+          <PanelBody>
+            <Spread>
+              <Count testId="check-rate">{rate === null ? "" : CHECK_DIALOG_COPY.rateLine(Math.round(rate * 100))}</Count>
+              <Inline>
+                {small(shownPassed, setPassed, CHECK_DIALOG_COPY.passed)}
+                <LabelText>{CHECK_DIALOG_COPY.passedOf}</LabelText>
+                {small(shownTotal, setTotal, CHECK_DIALOG_COPY.total)}
+              </Inline>
+            </Spread>
+            <RateBar rate={rate ?? 0} />
+            {fromCases ? <Hint>{CHECK_DIALOG_COPY.fromCases}</Hint> : null}
+          </PanelBody>
+        </Panel>
+      </Block>
 
       <OptionalSection>
         <OptionalField name="Test cases" description={CHECK_DIALOG_COPY.casesLine} summary={fromCases ? `${given.length} ${given.length === 1 ? "test case" : "test cases"}, ${casesCount} passed` : null} phone={phone}>
@@ -221,93 +209,40 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.failed} description={CHECK_DIALOG_COPY.failedLine} summary={summaryOf(failed)} phone={phone}>
-          <textarea aria-label={CHECK_DIALOG_COPY.failed} rows={3} maxLength={CHECK_FAIL_MAX} value={failed} placeholder={CHECK_DIALOG_COPY.failedPlaceholder} onChange={(event) => setFailed(event.target.value)} style={typedArea(phone)} />
+          <FieldArea phone={phone} rows={2} aria-label={CHECK_DIALOG_COPY.failed} maxLength={CHECK_FAIL_MAX} value={failed} placeholder={CHECK_DIALOG_COPY.failedPlaceholder} onChange={(event) => setFailed(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.lastRun} description={CHECK_DIALOG_COPY.lastRunLine} summary={summaryOf(runAt)} phone={phone}>
-          <input
-            aria-label={CHECK_DIALOG_COPY.lastRun}
-            type="text"
-            inputMode="numeric"
-            maxLength={10}
-            value={runAt}
-            placeholder={CHECK_DIALOG_COPY.lastRunPlaceholder}
-            onChange={(event) => setRunAt(event.target.value.replace(/[^0-9-]/g, ""))}
-            style={typedField(phone, { width: 128, ...tnum })}
-          />
+          <FieldInput phone={phone} mono width={NARROW.date} aria-label={CHECK_DIALOG_COPY.lastRun} inputMode="numeric" maxLength={10} value={runAt} placeholder={CHECK_DIALOG_COPY.lastRunPlaceholder} onChange={(event) => setRunAt(event.target.value.replace(/[^0-9-]/g, ""))} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.method} description={CHECK_DIALOG_COPY.methodLine} summary={method ? CHECK_METHOD_LABEL[method] : null} phone={phone}>
-          <ChoiceGrid<CheckMethod> label={CHECK_DIALOG_COPY.method} items={CHECK_METHODS.map((value) => ({ value, label: CHECK_METHOD_LABEL[value] }))} value={method} onChange={setMethod} phone={phone} allowClear />
+          <SegmentedField<CheckMethod> label={CHECK_DIALOG_COPY.method} phone={phone} items={CHECK_METHODS.map((value) => ({ value, label: CHECK_METHOD_LABEL[value] }))} value={method} onChange={(next) => setMethod((current) => (current === next ? null : next))} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.reviewer} description={CHECK_DIALOG_COPY.reviewerLine} summary={reviewer ? CHECK_REVIEWER_LABEL[reviewer] : null} phone={phone}>
-          <Segmented<CheckReviewer>
-            label={CHECK_DIALOG_COPY.reviewer}
-            semantics="radio"
-            size={phone ? 50 : 30}
-            fontSize={13}
-            fullWidth
-            items={CHECK_REVIEWERS.map((value) => ({ value, label: CHECK_REVIEWER_LABEL[value] }))}
-            value={reviewer ?? ("" as CheckReviewer)}
-            onChange={(next) => setReviewer((current) => (current === next ? null : next))}
-          />
+          <SegmentedField<CheckReviewer> label={CHECK_DIALOG_COPY.reviewer} phone={phone} items={CHECK_REVIEWERS.map((value) => ({ value, label: CHECK_REVIEWER_LABEL[value] }))} value={reviewer} onChange={(next) => setReviewer((current) => (current === next ? null : next))} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.scoring} description={CHECK_DIALOG_COPY.scoringLine} summary={summaryOf(scoring ? SCORING_LABEL[scoring] : null, scoring === "metric" ? target : null)} phone={phone}>
-          <ChoiceGrid<ScoringHow> label={CHECK_DIALOG_COPY.scoring} items={SCORING_HOWS.map((value) => ({ value, label: SCORING_LABEL[value] }))} value={scoring} onChange={setScoring} phone={phone} columns={2} allowClear />
-          {scoring === "metric" ? (
-            <input aria-label={CHECK_DIALOG_COPY.target} type="text" maxLength={SCORING_TARGET_MAX} value={target} placeholder={CHECK_DIALOG_COPY.targetPlaceholder} onChange={(event) => setTarget(event.target.value)} style={typedField(phone)} />
-          ) : null}
+          <SegmentedField<ScoringHow> label={CHECK_DIALOG_COPY.scoring} phone={phone} items={SCORING_HOWS.map((value) => ({ value, label: SCORING_LABEL[value] }))} value={scoring} onChange={(next) => setScoring((current) => (current === next ? null : next))} />
+          {scoring === "metric" ? <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.target} maxLength={SCORING_TARGET_MAX} value={target} placeholder={CHECK_DIALOG_COPY.targetPlaceholder} onChange={(event) => setTarget(event.target.value)} /> : null}
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.modelTested} description={CHECK_DIALOG_COPY.modelTestedLine} summary={summaryOf(model, version)} phone={phone}>
-          <Field id={`${uid}-model`} label="Model" group>
-            <div>
-              <ModelPicker tool={null} anyWithoutTool value={model} onChange={setModel} phone={phone} />
-            </div>
-          </Field>
-          <Field id={`${uid}-version`} label={CHECK_DIALOG_COPY.version}>
-            <input id={`${uid}-version`} type="text" maxLength={MODEL_VERSION_MAX} value={version} placeholder={CHECK_DIALOG_COPY.versionPlaceholder} onChange={(event) => setVersion(event.target.value)} style={typedField(phone)} />
-          </Field>
+          <ModelPicker tool={null} anyWithoutTool value={model} onChange={setModel} phone={phone} field />
+          <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.version} maxLength={MODEL_VERSION_MAX} value={version} placeholder={CHECK_DIALOG_COPY.versionPlaceholder} onChange={(event) => setVersion(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.evidence} description={CHECK_DIALOG_COPY.evidenceLine} summary={summaryOf(evidenceFile?.name, evidenceFile ? null : evidenceUrl)} phone={phone}>
-          <input
-            aria-label={CHECK_DIALOG_COPY.evidenceUrl}
-            type="text"
-            inputMode="url"
-            disabled={Boolean(evidenceFile)}
-            value={evidenceUrl}
-            placeholder={CHECK_DIALOG_COPY.evidenceUrlPlaceholder}
-            onChange={(event) => setEvidenceUrl(event.target.value)}
-            style={typedField(phone)}
-          />
-          <input
-            ref={picker}
-            data-testid="check-evidence-file"
-            type="file"
-            aria-label={CHECK_DIALOG_COPY.evidenceFile}
-            disabled={evidenceUrl.trim().length > 0}
-            onChange={(event) => {
-              chooseEvidence(event.target.files);
-              event.target.value = "";
-            }}
-            style={{ ...text(13, 400, t.text), maxWidth: "100%" }}
-          />
-          {evidenceFile ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{evidenceFile.name}</span>
-              <TextButton target={phone} onClick={() => setEvidenceFile(null)} style={text(12, 500, t.text2)}>
-                {`${CHECK_DIALOG_COPY.remove} ${evidenceFile.name}`}
-              </TextButton>
-            </div>
-          ) : null}
-          {fileWrong ? (
-            <span role="alert" style={text(12.5, 400, t.text2)}>
-              {fileWrong}
-            </span>
-          ) : null}
+          <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.evidenceUrl} inputMode="url" disabled={Boolean(evidenceFile)} value={evidenceUrl} placeholder={CHECK_DIALOG_COPY.evidenceUrlPlaceholder} onChange={(event) => setEvidenceUrl(event.target.value)} />
+          <Inline>
+            <FileButton phone={phone} onFiles={chooseEvidence} testId="check-evidence-file" inputLabel={CHECK_DIALOG_COPY.evidenceFile} disabled={evidenceUrl.trim().length > 0}>
+              {CHECK_DIALOG_COPY.evidenceFile}
+            </FileButton>
+          </Inline>
+          {evidenceFile ? <FileLine name={evidenceFile.name} removeLabel={`${CHECK_DIALOG_COPY.remove} ${evidenceFile.name}`} onRemove={() => setEvidenceFile(null)} phone={phone} /> : null}
+          {fileWrong ? <Alert>{fileWrong}</Alert> : null}
         </OptionalField>
       </OptionalSection>
     </ModalForm>
@@ -322,7 +257,7 @@ export function AddCheckDialog({ open, onOpenChange, onAdd }: AddCheckDialogProp
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={CHECK_DIALOG_COPY.title} subtitle={CHECK_DIALOG_COPY.subtitle} width={520} testId="add-check-dialog">
+    <ModalShell open={open} onOpenChange={onOpenChange} title={CHECK_DIALOG_COPY.title} subtitle={CHECK_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-check-dialog">
       <Form onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );

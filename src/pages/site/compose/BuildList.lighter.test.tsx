@@ -161,8 +161,8 @@ describe("every tile, with every optional field given (CA-15 P10)", () => {
       }
     }
     expect(footerFactsOf(steps[0])).toEqual(["8 words", "4 variables"]);
-    expect(footerFactsOf(steps.find((step) => step.id === "ag") as never)).toEqual(["2 supporting models", "4 tools", "2 limits"]);
-    expect(footerFactsOf(steps.find((step) => step.id === "ck") as never)).toEqual(["2 test cases", "Automated"]);
+    expect(footerFactsOf(steps.find((step) => step.id === "ag") as never)).toEqual(["1 prompt", "2 supporting models"]);
+    expect(footerFactsOf(steps.find((step) => step.id === "ck") as never)).toEqual(["2 test cases"]);
   });
 
   it("shows at most two lines of the thing itself in the body", () => {

@@ -39,7 +39,7 @@ const openRow = (name: string) => {
 };
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const status = () => screen.getByTestId("modal-status").textContent;
-const type = (name: string) => fireEvent.click(within(screen.getByRole("group", { name: "Type of question 1" })).getByRole("button", { name }));
+const type = (name: string) => fireEvent.click(within(screen.getByRole("radiogroup", { name: "Type of question 1" })).getByRole("radio", { name }));
 
 /** A complete single choice: a key and two options, on the default model or service. */
 function fillChoice(option = "Option") {
@@ -68,13 +68,13 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     ]);
     expect(screen.getAllByTestId("optional-field").every((el) => el.querySelector("button")?.getAttribute("aria-expanded") === "false")).toBe(true);
     // The old words are gone.
-    expect(document.body.textContent).not.toMatch(/Called directly|Called from|What it reads|One real answer|How to install|Paste a logged|Read it\b|Pick a/);
+    expect(document.body.textContent).not.toMatch(/Called directly|Called from|What it reads|How to install|Paste a logged|Read it\b|Pick a/);
   });
 
   it("offers six question types, with the new names, and Yes or no without '(0 to 1)' (TypeSafe's own word, Noul, only for TypeSafe)", () => {
     open();
-    const grid = within(screen.getByRole("group", { name: "Type of question 1" }));
-    expect(grid.getAllByRole("button").map((button) => button.textContent)).toEqual(["Single choice", "Multiple choice", "Score", "Ranking", "Yes or no (Noul)", "Extraction"]);
+    const grid = within(screen.getByRole("radiogroup", { name: "Type of question 1" }));
+    expect(grid.getAllByRole("radio").map((button) => button.textContent)).toEqual(["Single choice", "Multiple choice", "Score", "Ranking", "Yes or no (Noul)", "Extraction"]);
     expect(questionTypeLabel("yesno")).toBe("Yes or no");
     expect(document.body.textContent).not.toMatch(/0 to 1\)/);
   });
@@ -107,7 +107,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
   it("with code lists each Code tile to pick as the calling code", () => {
     const props = open({ codeTiles: [{ id: "c1", label: "router.py", source: "x" }] });
     openRow("Calling code");
-    fireEvent.click(screen.getByRole("checkbox", { name: /router\.py/ }));
+    fireEvent.click(screen.getByRole("button", { name: /router\.py/ }));
     fillChoice();
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ calledFrom: ["c1"] });
@@ -186,7 +186,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     expect(screen.getByRole("alert").textContent).toBe("Each example needs an input and an expected output.");
     fireEvent.change(screen.getByLabelText("Expected output of example 1"), { target: { value: "team = billing" } });
     openRow("Low-confidence handling");
-    fireEvent.click(screen.getByRole("button", { name: "Confidence threshold" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Confidence threshold" }));
     fireEvent.change(screen.getByLabelText("Confidence threshold"), { target: { value: "0.6" } });
     fireEvent.click(add());
     const input = (props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0];
@@ -198,11 +198,11 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     const props = open();
     fillChoice();
     openRow("Low-confidence handling");
-    fireEvent.click(screen.getByRole("button", { name: "Confidence threshold" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Confidence threshold" }));
     fireEvent.change(screen.getByLabelText("Confidence threshold"), { target: { value: "1.5" } });
     fireEvent.click(add());
     expect(screen.getByRole("alert").textContent).toBe("The confidence threshold is a number from 0 to 1.");
-    fireEvent.click(screen.getByRole("button", { name: "Escalate to a person" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Escalate to a person" }));
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].lowConfidence).toEqual({ escalate: true });
   });
@@ -211,7 +211,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Add a question" }));
     expect(screen.getAllByRole("group", { name: /^Question \d$/ })).toHaveLength(2);
-    fireEvent.click(within(screen.getByRole("group", { name: "Type of question 2" })).getByRole("button", { name: "Score" }));
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Type of question 2" })).getByRole("radio", { name: "Score" }));
     expect(screen.getByRole("group", { name: "Levels of question 2, lowest to highest" })).toBeTruthy();
   });
 
@@ -222,7 +222,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
     expect(within(rowOf("Import from a logged request and response")).getByRole("status").textContent).toMatch(/Read 2 questions and an answer/);
     expect((screen.getByLabelText("Version") as HTMLInputElement).value).toBe("jev-1.13.0");
-    expect(screen.getAllByRole("button", { name: "Yes or no (Noul)" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("radio", { name: "Yes or no (Noul)" }).length).toBeGreaterThan(0);
     fireEvent.click(add());
     const input = (props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(input.questions.map((q: { id: string }) => q.id)).toEqual(["team", "escalation"]);
