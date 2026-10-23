@@ -19,6 +19,8 @@
 import { Fragment, Slice, type Mark, type MarkType, type Node as PMNode } from "@tiptap/pm/model";
 import type { Transaction } from "@tiptap/pm/state";
 
+import type { RefChange } from "./referenceHistory";
+
 export const LINK_RULES_COPY = {
   oneStretch: "Linked text has to be one stretch inside one post.",
   pictures: "Pictures and videos can't be linked.",
@@ -252,6 +254,85 @@ export function setRuns(tr: Transaction, from: number, to: number, runs: readonl
   const clamp = (pos: number) => Math.max(0, Math.min(size, pos));
   if (to > from) tr.removeMark(clamp(from), clamp(to), type);
   for (const run of runs) if (run.to > run.from) tr.addMark(clamp(run.from), clamp(run.to), type.create({ to: run.target }));
+}
+
+/**
+ * Puts a history step's changes back the other way (undo, or redo of an inverse): each change, last first, through the
+ * positions the transaction has moved so far. Returns the inverse step's changes, in the positions the transaction leaves.
+ */
+export function applyRefChanges(tr: Transaction, changes: readonly RefChange[]): RefChange[] {
+  const schema = tr.doc.type.schema;
+  const done: { change: RefChange; at: number }[] = [];
+  for (const change of [...changes].reverse()) {
+    const map = (pos: number, assoc = 1) => tr.mapping.map(pos, assoc);
+    if (change.kind === "runs") {
+      const from = map(change.from);
+      const to = Math.max(from, map(change.to, -1));
+      const shift = (run: RefRun): RefRun => ({ ...run, from: map(run.from), to: map(run.to, -1) });
+      const before = change.before.map(shift);
+      const after = change.after.map(shift);
+      setRuns(tr, from, to, before);
+      done.push({ change: { kind: "runs", from, to, before: after, after: before }, at: tr.steps.length });
+    } else if (change.kind === "insert") {
+      const at = map(change.at);
+      const end = Math.max(at, map(change.at + change.size, -1));
+      tr.delete(at, end);
+      done.push({ change: { kind: "remove", at, size: end - at, content: change.content }, at: tr.steps.length });
+    } else {
+      const at = map(change.at, -1);
+      const fragment = Fragment.fromJSON(schema, change.content as Parameters<typeof Fragment.fromJSON>[1]);
+      tr.insert(at, fragment);
+      done.push({ change: { kind: "insert", at, size: fragment.size, content: change.content }, at: tr.steps.length });
+    }
+  }
+  // Each inverse in the positions the whole transaction leaves.
+  return done.map(({ change, at }) => {
+    const rest = tr.mapping.slice(at);
+    const map = (pos: number, assoc = 1) => rest.map(pos, assoc);
+    if (change.kind === "runs") {
+      const shift = (run: RefRun): RefRun => ({ ...run, from: map(run.from), to: map(run.to, -1) });
+      return { ...change, from: map(change.from), to: map(change.to, -1), before: change.before.map(shift), after: change.after.map(shift) };
+    }
+    return { ...change, at: map(change.at, change.kind === "remove" ? -1 : 1) };
+  });
+}
+
+/** The link on the character at `pos`, or null. */
+function targetAt(doc: PMNode, pos: number): string | null {
+  const node = doc.nodeAt(pos);
+  return node && node.isInline ? refOf(node.marks) : null;
+}
+
+/**
+ * What a link action changed, as history changes: each stretch whose links differ, before and after, in the positions the
+ * transaction leaves, and the words it wrote in (`inserted`, in those positions too). The transaction changes marks, and
+ * at most writes one run of words.
+ */
+export function refChangesOf(before: PMNode, tr: Transaction, inserted?: { at: number; size: number }): RefChange[] {
+  const after = tr.doc;
+  const back = tr.mapping.invert();
+  const inInsert = (pos: number) => Boolean(inserted && pos >= inserted.at && pos < inserted.at + inserted.size);
+  const regions: { from: number; to: number }[] = [];
+  for (let pos = 0; pos < after.content.size; pos += 1) {
+    if (inInsert(pos)) continue;
+    const node = after.nodeAt(pos);
+    if (!node || !node.isInline) continue;
+    if (targetAt(after, pos) === targetAt(before, back.map(pos, 1))) continue;
+    const last = regions.at(-1);
+    if (last && last.to === pos) last.to = pos + 1;
+    else regions.push({ from: pos, to: pos + 1 });
+  }
+  const map = (pos: number, assoc = 1) => tr.mapping.map(pos, assoc);
+  const changes: RefChange[] = regions.map(({ from, to }) => {
+    const start = back.map(from, 1);
+    const end = back.map(to, -1);
+    const shift = (run: RefRun): RefRun => ({ ...run, from: map(run.from), to: map(run.to, -1) });
+    return { kind: "runs", from, to, before: refRuns(before, start, end).map(shift), after: refRuns(after, from, to) };
+  });
+  if (inserted && inserted.size > 0) {
+    changes.push({ kind: "insert", at: inserted.at, size: inserted.size, content: after.slice(inserted.at, inserted.at + inserted.size).content.toJSON() });
+  }
+  return changes;
 }
 
 /** One place a phrase is found in the post: the picker's "Find words in the post". */

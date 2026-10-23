@@ -62,6 +62,9 @@ export const GLYPHS = {
   step: "M2.5 2.5h11v11h-11zM7 6l1.25-1v6",
   /** CA-17: fit to screen, four corners, drawn in its neighbours' style. */
   fit: "M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10",
+  /** CA-19: Undo and Redo, drawn in their neighbours' style. */
+  undo: "M5.5 4 3 6.5 5.5 9M3 6.5h6.25a3.5 3.5 0 0 1 0 7H7",
+  redo: "M10.5 4 13 6.5 10.5 9M13 6.5H6.75a3.5 3.5 0 0 0 0 7H9",
 } as const;
 
 export type GlyphName = keyof typeof GLYPHS;
