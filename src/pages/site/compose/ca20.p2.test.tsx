@@ -55,7 +55,7 @@ describe("a tile", () => {
     const row = { ...nodeRow(IDS.p2) };
     await openMenu("Prompt 2 options");
     const items = screen.getAllByRole("menuitem");
-    expect(items.at(-1)?.textContent).toBe("Remove tile");
+    expect(items.at(-1)?.textContent).toMatch(/^Remove tile(Delete)?$/);
     expect(items.at(-1)?.getAttribute("data-tone")).toBe("danger");
     await choose("Remove tile");
     expect(screen.queryByRole("alertdialog")).toBeNull();

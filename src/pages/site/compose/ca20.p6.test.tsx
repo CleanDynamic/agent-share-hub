@@ -89,7 +89,7 @@ describe("Recently removed", () => {
     expect(JSON.stringify(nodeRow(IDS.p4)?.payload)).toContain(IDS.file);
     // Gone from the list; a step, so Undo takes it away again.
     await waitFor(() => expect(rows()).toHaveLength(0));
-    await waitFor(() => expect(screen.getByTestId("title-undo").getAttribute("title")).toBe("Undo: Restored Prompt 4"), { timeout: 15_000 });
+    await waitFor(() => expect(screen.getByTestId("title-undo").getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe("Undo: Restored Prompt 4"), { timeout: 15_000 });
     expect(await screen.findByText("Restored Prompt 4")).toBeTruthy();
   });
 

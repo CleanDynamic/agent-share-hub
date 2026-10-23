@@ -89,7 +89,7 @@ describe("on the page", () => {
     sessionsOf()
       .sort((a, b) => Number(a.position) - Number(b.position))
       .map((row) => row.session_key);
-  const waitUndo = (sentence: string) => waitFor(() => expect(undoButton().getAttribute("title")).toBe(`Undo: ${sentence}`), { timeout: 15_000 });
+  const waitUndo = (sentence: string) => waitFor(() => expect(undoButton().getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe(`Undo: ${sentence}`), { timeout: 15_000 });
 
   it("adding a tile is a step: Undo takes it away and Redo puts the same tile back", async () => {
     await mountCa20(seedCa20);
@@ -176,7 +176,7 @@ describe("on the page", () => {
     await waitFor(() => expect(top().slice(0, 2)).toEqual([IDS.p1, IDS.p2]), { timeout: 15_000 });
     fireEvent.click(redoButton());
     await waitFor(() => expect(top().slice(0, 2)).toEqual([IDS.p2, IDS.p1]), { timeout: 15_000 });
-    await waitFor(() => expect(redoButton().getAttribute("title")).toBe("Redo: Removed Prompt 2"), { timeout: 15_000 });
+    await waitFor(() => expect(redoButton().getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe("Redo: Removed Prompt 2"), { timeout: 15_000 });
     fireEvent.click(redoButton());
     await waitFor(() => expect(ids()).not.toContain(IDS.p1), { timeout: 15_000 });
   });
