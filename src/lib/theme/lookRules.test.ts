@@ -489,6 +489,9 @@ export const CA03_FILES: readonly string[] = [
   "src/components/post/editor/ReferencePicker.parts.test.tsx",
   "src/components/brand/ColourPicker.part.test.tsx",
   "src/pages/site/compose/partsModel.test.ts",
+  // CA-17 P6
+  "src/pages/site/compose/tabRowRecipes.ts",
+  "src/pages/site/build/readerParts.test.tsx",
 ];
 
 /**
@@ -512,7 +515,7 @@ export const MODAL_FILES: readonly string[] = [
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 

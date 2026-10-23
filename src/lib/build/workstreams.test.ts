@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { WORKSTREAM_MAX, mapOf, partLabelsOf, sessionMetaRefusal, sessionsMetaOf, storedWorkstreamsOf, workstreamsRefusal } from "./making";
+import { WORKSTREAM_MAX, hasMapKey, makerMapOf, mapOf, partLabelsOf, readerMapDirection, readerSeesMap, sessionMetaRefusal, sessionsMetaOf, storedWorkstreamsOf, workstreamsRefusal } from "./making";
 import { stackBySessionMoves } from "./sessionLayout";
 import {
   IMPLICIT_WORKSTREAM,
@@ -225,5 +225,45 @@ describe("what is read", () => {
   it("sets one part's own fields", () => {
     const next = withWorkstream([{ key: "a", name: "A", collapsed: true }], "a", { name: undefined, collapsed: false, colour: "#7FA7D9" });
     expect(next).toEqual([{ key: "a", colour: "#7FA7D9" }]);
+  });
+});
+
+describe("the map is optional (CA-17 P6)", () => {
+  const on = { map: { on: true, direction: "vertical", onBuildPage: true } };
+
+  it("is the maker's to create: a draft with no map key has none yet", () => {
+    expect(makerMapOf({}, false)).toBeNull();
+    expect(hasMapKey({})).toBe(false);
+  });
+
+  it("shows a build from before the map to its maker as created, with Show on build page ticked, and writes nothing", () => {
+    const old = { sessions: [], excluded_models: [] };
+    expect(makerMapOf(old, true)).toEqual({ on: true, direction: "horizontal", onBuildPage: true });
+    expect(old).not.toHaveProperty("map");
+  });
+
+  it("uses what is stored once there is a map key, even when the map is off", () => {
+    expect(makerMapOf(on, true)).toEqual(on.map);
+    expect(makerMapOf({ map: { on: false, direction: "vertical", onBuildPage: true } }, true)).toEqual({ on: false, direction: "vertical", onBuildPage: true });
+    expect(makerMapOf({ map: { on: "no" } }, true)).toBeNull();
+  });
+
+  it("is seen by readers only when it is on and on the build page", () => {
+    expect(readerSeesMap(on)).toBe(true);
+    expect(readerSeesMap({ map: { on: true, direction: "horizontal", onBuildPage: false } })).toBe(false);
+    expect(readerSeesMap({ map: { on: false, direction: "horizontal", onBuildPage: true } })).toBe(false);
+    expect(readerSeesMap({ map: { on: true } })).toBe(false);
+    expect(readerSeesMap({ map: "yes" })).toBe(false);
+  });
+
+  it("keeps showing its map to readers when the build has no map key at all, as it always did", () => {
+    expect(readerSeesMap({})).toBe(true);
+    expect(readerSeesMap({ sessions: [] })).toBe(true);
+    expect(readerSeesMap(null)).toBe(true);
+  });
+
+  it("draws the maker's direction for readers, horizontal when none", () => {
+    expect(readerMapDirection(on)).toBe("vertical");
+    expect(readerMapDirection({})).toBe("horizontal");
   });
 });

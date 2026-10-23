@@ -603,6 +603,15 @@ export function BuildPage() {
       }
       return;
     }
+    // CA-17 P5: #workstream-<key> is that part's head, centred and rung.
+    if (record && hash.startsWith("#workstream-") && reader) {
+      const key = decodeURIComponent(hash.slice("#workstream-".length));
+      if (key) {
+        setTab("anatomy");
+        setFocus((current) => ({ id: key, n: (current?.n ?? 0) + 1 }));
+      }
+      return;
+    }
     if (!record || !hash.startsWith("#node-")) return;
     const id = hash.slice("#node-".length);
     if (reader) {

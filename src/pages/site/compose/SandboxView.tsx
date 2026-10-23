@@ -49,6 +49,7 @@ import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } fro
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
 import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
+import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_HINT, TAB_ROW, tabStyle } from "./tabRowRecipes";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -596,8 +597,8 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
 function LinkButton({ to, phone, children }: { to: string | null; phone: boolean; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const common: CSSProperties = {
-    height: phone ? 48 : 30,
-    padding: "0 16px",
+    height: phone ? 48 : 28,
+    padding: phone ? "0 16px" : "0 12px",
     borderRadius: 6,
     boxSizing: "border-box",
     display: "inline-flex",
@@ -607,7 +608,7 @@ function LinkButton({ to, phone, children }: { to: string | null; phone: boolean
     whiteSpace: "nowrap",
     flexShrink: 0,
     ...controlPaint(state),
-    ...text(13, 500, t.text),
+    ...text(phone ? 13 : 12.5, 500, t.text),
   };
   if (!to) {
     return (
@@ -874,23 +875,17 @@ export function SandboxView(props: SandboxViewProps) {
   /* The board draws Publish at full strength whatever is still outstanding. */
   const previewTo = props.slug ? `/b2/${props.slug}` : null;
 
-  const lensSwitch =
-    props.mapAvailable && !phone ? (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-        <Segmented
-          label="Build view"
-          size={28}
-          fontSize={12}
-          value={props.lens}
-          onChange={props.onLens}
-          items={[
-            { value: "list", label: "List" },
-            { value: "map", label: "Map" },
-          ]}
-        />
-        {props.mapHint ? <span style={text(11.5, 400, t.label)}>Map is now available</span> : null}
-      </div>
-    ) : null;
+  /* CA-17 P6: List and Map are the tabs of the row across the top; Map shows only when there is a map to make (two or more sessions). */
+  const tabs = (
+    <div role="group" aria-label="Build view" data-testid="sandbox-tabs" style={TAB_GROUP}>
+      {(props.mapAvailable && !phone ? (["list", "map"] as const) : (["list"] as const)).map((value) => (
+        <button key={value} type="button" aria-pressed={props.lens === value} data-testid={`sandbox-tab-${value}`} onClick={() => props.onLens(value)} style={tabStyle(props.lens === value)}>
+          {value === "list" ? "List" : "Map"}
+        </button>
+      ))}
+      {props.mapAvailable && !phone && props.mapHint ? <span style={TAB_HINT}>Map is now available</span> : null}
+    </div>
+  );
 
   const banner = published ? (
     <div
@@ -996,6 +991,12 @@ export function SandboxView(props: SandboxViewProps) {
         flex: "999 1 480px",
       }}
     >
+      {phone ? null : (
+        <div data-testid="sandbox-build-head" style={BUILD_HEAD}>
+          {heading}
+          {statusLine}
+        </div>
+      )}
       {postSection}
       {buildPanel}
     </div>
@@ -1058,20 +1059,16 @@ export function SandboxView(props: SandboxViewProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 16, paddingBottom: 20, borderBottom: `1px solid ${t.hairline}` }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
-          {heading}
-          {statusLine}
-        </div>
-        {lensSwitch}
-        <div style={{ display: "flex", gap: 8, alignSelf: "flex-start", paddingTop: 2 }}>
-          <Button variant="secondary" size={32} fontSize={13} onClick={() => openCard(null)} style={{ height: 30 }}>
-            Classification Card
+      <div data-testid="sandbox-tabrow" style={TAB_ROW}>
+        {tabs}
+        <div style={TAB_ACTIONS}>
+          <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
+            Card
           </Button>
           <LinkButton to={previewTo} phone={false}>
             Preview
           </LinkButton>
-          <Button size={32} fontSize={13} disabled={publishDisabled} onClick={props.onPublish} style={{ height: 30 }}>
+          <Button size={28} fontSize={12} disabled={publishDisabled} onClick={props.onPublish}>
             {publishLabel}
           </Button>
         </div>

@@ -39,7 +39,7 @@ import {
   type NodeType,
   type RebuildSummary,
 } from "@/lib/build";
-import { sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, type Making, type MakingSession } from "@/lib/build/making";
+import { mapOf, partLabelsOf, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, storedWorkstreamsOf, type Making, type MakingSession } from "@/lib/build/making";
 import type { PortableCost } from "@/lib/build/portable";
 import type { NeedGroup, ReaderMapData, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 
@@ -283,6 +283,9 @@ export function asMaking(value: unknown): Making {
   // CA-14 P1: the maker's order and the sessions they left folded, which a reader's build page follows.
   const session_order = sessionOrderOf(record);
   const sessions_collapsed = sessionsCollapsedOf(record);
+  // CA-17: the parts, how they are labelled and the map's settings, read the same way.
+  const workstreams = storedWorkstreamsOf(record);
+  const map = mapOf(record);
   return {
     sessions,
     excluded_models: excluded,
@@ -290,6 +293,9 @@ export function asMaking(value: unknown): Making {
     ...(Object.keys(sessions_meta).length > 0 ? { sessions_meta } : null),
     ...(session_order.length > 0 ? { session_order } : null),
     ...(sessions_collapsed.length > 0 ? { sessions_collapsed } : null),
+    ...(workstreams.length > 0 ? { workstreams } : null),
+    ...(partLabelsOf(record) === "letters" ? { part_labels: "letters" as const } : null),
+    ...(map ? { map } : null),
   };
 }
 

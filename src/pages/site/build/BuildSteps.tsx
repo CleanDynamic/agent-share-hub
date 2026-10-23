@@ -32,6 +32,7 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { ChevronRight } from "lucide-react";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
@@ -63,6 +64,9 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { OutsideWarning } from "../compose/OutsideWarning";
+import { listPartsOf } from "../compose/partsModel";
+import { WorkstreamHead } from "../compose/WorkstreamHead";
+import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "../compose/workstreamRecipes";
 import { CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
@@ -1203,8 +1207,22 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));
   const firstRun = runs[0];
   const [foldedKeys, setFolded] = useState<ReadonlySet<string>>(() => new Set(runs.flatMap((run) => run.groups.flatMap((group) => (group.chat?.collapsed ? [group.chat.key] : [])))));
+  /* CA-17 P6: with two or more parts each part has its head, as in the composer, without its controls. */
+  const theme = useResolvedTheme();
+  const partsModel = useMemo(() => listPartsOf(view.making, view.groups ?? [], theme), [view.making, view.groups, theme]);
+  const [foldedParts, setFoldedParts] = useState<ReadonlySet<string>>(() => new Set((partsModel?.list ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)));
+  const partOfRun = (run: { groups: Group[] }): string | undefined => {
+    const key = run.groups[0]?.chat?.key ?? run.groups[0]?.session ?? undefined;
+    return key ? partsModel?.partOf.get(key) : undefined;
+  };
   /* CA-14 P6: a build with three sessions or more has the session list for its readers; it costs them nothing, so it is always on. */
-  const jumpItems = runs.flatMap((run) => run.groups.flatMap((group) => (group.chat && group.chat.session !== null ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? "No app chosen" }] : [])));
+  const jumpItems = runs.flatMap((run) =>
+    run.groups.flatMap((group) =>
+      group.chat && group.chat.session !== null
+        ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? "No app chosen", ...(partsModel ? { group: partsModel.titles.get(partOfRun(run) ?? partsModel.list[0].view.key) } : null) }]
+        : [],
+    ),
+  );
   const headOf = (key: string) => document.querySelector<HTMLElement>(`[data-reader-session="${key}"] [data-testid="reader-session-head"]`);
   const inView = useCurrentSession(jumpItems.map((item) => item.key), headOf);
   const toggleFold = (key: string) =>
@@ -1282,6 +1300,49 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
     else setPart(to);
   };
 
+  /** One session's run: its head and tiles, inside its colour's line when it has one. */
+  const drawRun = (run: (typeof runs)[number], inPart = false) => {
+          const drawn = run.groups.map((group, at) => {
+            const tiles = drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
+              isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
+            );
+            const chat = group.chat;
+            if (!chat || typeof group.head !== "function") {
+              return (
+                <div key={group.key} style={column(8)}>
+                  {typeof group.head === "function" ? group.head(null) : group.head}
+                  {tiles}
+                </div>
+              );
+            }
+            /* CA-14 P2, P3: a session is a container: its head, then its tiles 16 in with a 2px line down their left. */
+            const folded = foldedKeys.has(chat.key);
+            const controls = `reader-session-tiles-${chat.key}`;
+            const fold: Fold = { folded, toggle: () => toggleFold(chat.key), controls, tiles: chat.tiles, phone };
+            return (
+              <div key={group.key} data-reader-session={chat.key} style={{ ...column(4), ...(at > 0 || (run !== firstRun && !inPart) ? { marginTop: 16 } : null) }}>
+                {group.head(fold)}
+                <div id={controls} hidden={folded} style={{ position: "relative", ...column(8), marginLeft: 16 }}>
+                  {folded ? null : (
+                    <>
+                      <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} />
+                      {group.entries.length === 0 ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>No tiles yet</p> : tiles}
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          });
+          // CA-06 P4: a coloured session's head and tiles sit inside its line; any other is drawn as it always was.
+          return run.colour ? (
+            <div key={run.key} data-session-colour={run.colour} style={{ ...column(16), ...outlineFor(run.colour), padding: 12 }}>
+              {drawn}
+            </div>
+          ) : (
+            drawn
+          );
+  };
+
   return (
     <div data-testid="build-steps" style={column(16)}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
@@ -1313,47 +1374,43 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           <ReaderMap view={view} announce={announce} onRead={setOpen} />
         </Suspense>
       ) : (
-        runs.map((run) => {
-          const drawn = run.groups.map((group, at) => {
-            const tiles = drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
-              isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
-            );
-            const chat = group.chat;
-            if (!chat || typeof group.head !== "function") {
+        partsModel ? (
+          <>
+            {runs.filter((run) => !partOfRun(run)).map((run) => drawRun(run))}
+            {partsModel.list.map((part, at) => {
+              const key = part.view.key;
+              const closed = foldedParts.has(key);
+              const mine = runs.filter((run) => (partOfRun(run) ?? partsModel.list[0].view.key) === key);
+              const neighbour = partsModel.list[at - 1] ?? partsModel.list[at + 1];
               return (
-                <div key={group.key} style={column(8)}>
-                  {typeof group.head === "function" ? group.head(null) : group.head}
-                  {tiles}
+                <div key={key} id={stepDomId(key)} data-testid="workstream-group" data-workstream-group={key} style={{ ...WORKSTREAM_GROUP, ...(ringed === key ? ring(true) : null) }}>
+                  <WorkstreamHead
+                    part={{ ...part.view, collapsed: closed }}
+                    phone={phone}
+                    first={at === 0}
+                    last={at === partsModel.list.length - 1}
+                    controls={`reader-workstream-${key}`}
+                    onToggle={() =>
+                      setFoldedParts((before) => {
+                        const next = new Set(before);
+                        if (next.has(key)) next.delete(key);
+                        else next.add(key);
+                        return next;
+                      })
+                    }
+                    startsAfterChoices={[]}
+                    joins={neighbour?.view.label ?? ""}
+                  />
+                  <div id={`reader-workstream-${key}`} data-testid="workstream-body" hidden={closed} style={WORKSTREAM_BODY}>
+                    {closed ? null : mine.length > 0 ? mine.map((run) => drawRun(run, true)) : <p style={{ ...text(13, 400, t.label), margin: 0, padding: "4px 8px" }}>No sessions yet</p>}
+                  </div>
                 </div>
               );
-            }
-            /* CA-14 P2, P3: a session is a container: its head, then its tiles 16 in with a 2px line down their left. */
-            const folded = foldedKeys.has(chat.key);
-            const controls = `reader-session-tiles-${chat.key}`;
-            const fold: Fold = { folded, toggle: () => toggleFold(chat.key), controls, tiles: chat.tiles, phone };
-            return (
-              <div key={group.key} data-reader-session={chat.key} style={{ ...column(4), ...(at > 0 || run !== firstRun ? { marginTop: 16 } : null) }}>
-                {group.head(fold)}
-                <div id={controls} hidden={folded} style={{ position: "relative", ...column(8), marginLeft: 16 }}>
-                  {folded ? null : (
-                    <>
-                      <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} />
-                      {group.entries.length === 0 ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>No tiles yet</p> : tiles}
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          });
-          // CA-06 P4: a coloured session's head and tiles sit inside its line; any other is drawn as it always was.
-          return run.colour ? (
-            <div key={run.key} data-session-colour={run.colour} style={{ ...column(16), ...outlineFor(run.colour), padding: 12 }}>
-              {drawn}
-            </div>
-          ) : (
-            drawn
-          );
-        })
+            })}
+          </>
+        ) : (
+          runs.map((run) => drawRun(run))
+        )
       )}
       {map || results.length === 0 ? null : (
         <div style={column(8)}>

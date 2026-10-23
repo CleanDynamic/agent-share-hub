@@ -79,13 +79,15 @@ describe("SandboxView frame", () => {
   });
 
 
-  it("shows the List and Map switch only when Map is available, with the one-time line", () => {
+  it("shows the Map tab only when Map is available, with the one-time line just after the tabs", () => {
     view();
-    expect(screen.getByRole("group", { name: "Build view" })).toBeTruthy();
-    expect(screen.getByText("Map is now available")).toBeTruthy();
+    const tabs = screen.getByRole("group", { name: "Build view" });
+    expect(within(tabs).getAllByRole("button").map((tab) => tab.textContent)).toEqual(["List", "Map"]);
+    expect(within(tabs).getByText("Map is now available")).toBeTruthy();
     cleanup();
     view({ mapAvailable: false, mapHint: false });
-    expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Map" })).toBeNull();
+    expect(screen.queryByText("Map is now available")).toBeNull();
   });
 
   it("lists the twelve Add items in order, with no session in them (CA-12 P4, CA-15 P9); the three new tiles are live only once their node type is", () => {
@@ -222,15 +224,49 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("draws the title row under a hairline, Card and Preview as secondary 30 and Publish as the one primary 30", () => {
+  it("draws the tab row 44 tall under a hairline, with Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
     view();
-    expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
+    const row = screen.getByTestId("sandbox-tabrow");
+    const style = row.getAttribute("style") ?? "";
+    expect(style).toContain("height: 44px");
+    expect(style).toContain("padding: 0px 22px");
+    expect(markup()).toContain("height:44px");
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
-    expect(publish.getAttribute("style")).toMatch(/height:\s*30px/);
-    expect(screen.getByRole("button", { name: "Classification Card" }).getAttribute("data-variant")).toBe("secondary");
-    expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*30px/);
-    expect(markup()).toContain("padding-bottom:20px;border-bottom:1px solid var(--hairline)");
+    expect(publish.getAttribute("style")).toMatch(/height:\s*28px/);
+    const card = screen.getByRole("button", { name: "Classification Card" });
+    expect(card.getAttribute("data-variant")).toBe("secondary");
+    expect(card.textContent).toBe("Card");
+    expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*28px/);
+    // The three sit 8 apart.
+    expect(within(row).getByRole("link", { name: "Preview" }).parentElement?.getAttribute("style")).toContain("gap: 8px");
+  });
+
+  it("draws List and Map at 13, the selected one in --text at 500 with a 1.5px line under it (CA-17 P6)", () => {
+    view({ lens: "list" });
+    const list = screen.getByTestId("sandbox-tab-list");
+    const map = screen.getByTestId("sandbox-tab-map");
+    expect(list.getAttribute("aria-pressed")).toBe("true");
+    expect(list.getAttribute("style")).toContain("font-weight: 500");
+    expect(list.getAttribute("style")).toContain("font-size: 13px");
+    expect(list.getAttribute("style")).toContain("padding: 0px 0px 13px");
+    expect(list.getAttribute("style")).toContain("inset 0 -1.5px 0");
+    expect(map.getAttribute("style")).toContain("font-weight: 400");
+    expect(map.getAttribute("style")).not.toContain("inset");
+    expect(screen.getByTestId("sandbox-tabs").getAttribute("style")).toContain("gap: 22px");
+    fireEvent.click(map);
+  });
+
+  it("puts the draft's title and its status line at the top of the List's Build column, 3 apart (CA-17 P6)", () => {
+    view({ lens: "list" });
+    const head = screen.getByTestId("sandbox-build-head");
+    expect(within(head).getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
+    expect(within(head).getByTestId("sandbox-status")).toBeTruthy();
+    expect(head.getAttribute("style")).toContain("gap: 3px");
+    expect(within(screen.getByTestId("sandbox-tabrow")).queryByRole("heading", { level: 1 })).toBeNull();
+    cleanup();
+    view({ lens: "map" });
+    expect(screen.queryByTestId("sandbox-build-head")).toBeNull();
   });
 
   it("puts Sources on the surface with a hairline on its right and Details in a module", () => {
