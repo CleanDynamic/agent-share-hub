@@ -345,14 +345,14 @@ describe("the post above the build", () => {
     expect(screen.getByRole("group", { name: "Build view" })).toBeTruthy();
   });
 
-  it("sits in the Build head, 18 below the status line", () => {
+  it("sits at the top of the Build head, 18 under it before the hairline", () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/compose/x"]}>
         <SandboxView {...sandboxViewProps("bakery")} post={<p>the post body</p>} />
       </MemoryRouter>,
     );
+    expect(markup).toMatch(/padding-bottom:18px;border-bottom:1px solid var\(--hairline\)"><section aria-label="Post"/);
     const style = /aria-label="Post"[^>]*style="([^"]*)"/.exec(markup)?.[1] ?? "";
-    expect(style).toContain("margin-top:18px");
     expect(style).not.toContain("background");
   });
 
