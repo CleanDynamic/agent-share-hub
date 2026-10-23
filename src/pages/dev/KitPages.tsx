@@ -67,7 +67,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   sandbox: lazy(() => import("./SandboxDemo")),
   /* CA-16 — the Classification Card, and the Gallery with the classification filters (no board is compared). */
   classification: lazy(() => import("./ClassificationDemo")),
-  /* CA-15b — each tile modal open on its own, and a List with every kind of tile (no board image is in the repo). */
+  /* CA-15b: each tile modal open on its own, and a List with every kind of tile (no board image is in the repo). */
   modals: lazy(() => import("./ModalsDemo")),
   /* UI-P37 — the Bounties board, for its four states (no reference board is compared). */
   "bounty-board": lazy(() => import("./BountyBoardDemo")),
