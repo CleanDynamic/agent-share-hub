@@ -1810,7 +1810,7 @@ export function SandboxPage() {
         threadNote={thread.hold}
         {...addHandlers}
         addTargets={addTargets}
-        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true) }}
+        viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true) }}
         sessionList={sessionList}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         map={mapColumn}
@@ -1866,7 +1866,7 @@ export function SandboxPage() {
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={onAddPrompt}
             addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
-            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
             onDropSession={edits.onDrop}
             parts={
               partsModel
@@ -1882,7 +1882,7 @@ export function SandboxPage() {
             onDropOnWorkstream={partsModel ? edits.onDropOnPart : undefined}
             onDropWorkstream={partsModel ? edits.onDropPart : undefined}
             onAddPart={buildId ? () => void edits.onAddPart() : undefined}
-            onSplitHere={viewOptions.splitMerge ? edits.onSplitHere : undefined}
+            onSplitHere={edits.onSplitHere}
             promptIn={promptSession}
             said={sessionSaid}
                 onAddAsAgent={onAddAsAgent}

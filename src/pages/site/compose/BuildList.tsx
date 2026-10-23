@@ -124,6 +124,8 @@ import {
 } from "./refinedStyles";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
+import { REASONS, moveReason } from "@/lib/build/componentMenus";
+import { useReason } from "./removePieces";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
 export const ADD_FLASH_MS = 1200;
@@ -307,11 +309,15 @@ export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 
 
 /* ── small pieces ── */
 
-function MenuRow({ children, disabled, onSelect, phone }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean }) {
+function MenuRow({ children, disabled, onSelect, phone, reason }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean; reason?: string }) {
+  const why = useReason(disabled ? reason : undefined);
   return (
-    <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)}>
-      {children}
-    </Menu.Item>
+    <>
+      <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)} {...why.props}>
+        {children}
+      </Menu.Item>
+      {why.note}
+    </>
   );
 }
 
@@ -393,8 +399,8 @@ function ColourMenuRow({ step, phone, anchor }: { step: Step; phone: boolean; an
 }
 
 /**
- * CA-14 P5, P7: "Move to session…" (the other sessions, in a submenu) and, with Split and merge on, "Split session here"
- * (any tile but the first of its session). Nothing for a tile that is not in a session of its own, or with one session.
+ * CA-14 P5, P7: "Move to session…" (the other sessions, in a submenu, greyed with its reason while there is only one session)
+ * and "Split session here" (any tile but the first of its session). Nothing for a tile that is not in a session of its own.
  */
 function SessionTileRows({ step, phone }: { step: Step; phone: boolean }) {
   const refs = useContext(ListRefsContext);
@@ -403,6 +409,7 @@ function SessionTileRows({ step, phone }: { step: Step; phone: boolean }) {
   const others = (refs.sessions ?? []).filter((session) => session.key !== mine);
   return (
     <>
+      {refs.onMoveToSession && others.length === 0 ? <MenuRow phone={phone} disabled reason={REASONS.oneSession}>Move to session…</MenuRow> : null}
       {refs.onMoveToSession && others.length > 0 ? (
         <Menu.Sub>
           <Menu.SubTrigger style={menuItem(true, phone)}>Move to session…</Menu.SubTrigger>
@@ -896,8 +903,8 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
         <MenuContent align="end" sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()} onCloseAutoFocus={rename.onCloseAutoFocus}>
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
           <CopyTogetherRow step={step} phone={phone} />
-          <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-          <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <MenuRow phone={phone} disabled={index === 0} reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+          <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
           <SessionTileRows step={step} phone={phone} />
           <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
@@ -1123,12 +1130,12 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 }}
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
-                <MenuRow phone={phone} disabled={!open} onSelect={open}>Read all of it</MenuRow>
+                <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all of it</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
-                <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-                <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+                <MenuRow phone={phone} disabled={index === 0} reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+                <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
                 <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
               <SessionTileRows step={step} phone={phone} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>

@@ -113,7 +113,7 @@ describe("the ⋯ menu and keys", () => {
     await screen.findByRole("menuitem", { name: "Move up" });
   };
 
-  it("offers Move up and Move down (not past the ends), Colour…, and Remove session…; no merge until Split and merge is on", async () => {
+  it("offers Move up and Move down (not past the ends), Colour…, and Remove session…; no merge item when the page gives none", async () => {
     const props = list({ onColour: vi.fn(), sessionOps: { onTitle: vi.fn(), onMove: vi.fn(), onRemove: vi.fn() } });
     await open(1);
     expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBe("true");
@@ -125,7 +125,7 @@ describe("the ⋯ menu and keys", () => {
     expect(props.sessionOps?.onMove).toHaveBeenCalledWith(expect.any(String), 1);
   });
 
-  it("offers Merge with the session above on every session but the first, only when it is on", async () => {
+  it("offers Merge with the session above on every session but the first", async () => {
     const props = list();
     await open(1);
     expect(screen.queryByRole("menuitem", { name: SESSION_HEAD_COPY.mergeUp })).toBeNull();

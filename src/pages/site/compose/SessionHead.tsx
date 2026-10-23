@@ -20,6 +20,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { SESSION_TITLE_MAX } from "@/lib/build/making";
+import { REASONS, moveReason } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 
@@ -31,6 +32,7 @@ import { dialogTitle, menuItem, menuSurface, text, tnum, windowStyle } from "./r
 import { SESSION_META, SESSION_NAME } from "./tileRecipes";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { ToolPicker } from "./ToolPicker";
+import { useReason } from "./removePieces";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -61,7 +63,7 @@ export interface SessionOps {
   onTitle: (key: string, title: string) => void;
   onMove: (key: string, by: -1 | 1) => void;
   onRemove: (key: string) => void;
-  /** Only with "Split and merge" on. Absent: no menu item. */
+  /** "Merge with the session above", for any session but the first. Absent: no menu item. */
   onMergeUp?: (key: string) => void;
   /** CA-17 P2: put the session in another part (at its end). Absent: no menu item. */
   onMoveToPart?: (key: string, workstream: string) => void;
@@ -362,12 +364,17 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
               </Menu.Trigger>
               <Menu.Portal>
                 <MenuContent align="end" sideOffset={4} style={menuSurface()}>
-                  <Row phone={phone} disabled={first} onSelect={() => ops?.onMove(session.key, -1)}>
+                  <Row phone={phone} disabled={first} reason={moveReason("session", -1, first)} onSelect={() => ops?.onMove(session.key, -1)}>
                     {SESSION_HEAD_COPY.moveUp}
                   </Row>
-                  <Row phone={phone} disabled={last} onSelect={() => ops?.onMove(session.key, 1)}>
+                  <Row phone={phone} disabled={last} reason={moveReason("session", 1, last)} onSelect={() => ops?.onMove(session.key, 1)}>
                     {SESSION_HEAD_COPY.moveDown}
                   </Row>
+                  {part && ops?.onMoveToPart && part.moveTo.length === 0 ? (
+                    <Row phone={phone} disabled reason={REASONS.onePart}>
+                      {SESSION_HEAD_COPY.moveToPart}
+                    </Row>
+                  ) : null}
                   {part && ops?.onMoveToPart && part.moveTo.length > 0 ? (
                     <Menu.Sub>
                       <Menu.SubTrigger style={menuItem(true, phone)}>{SESSION_HEAD_COPY.moveToPart}</Menu.SubTrigger>
@@ -383,19 +390,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
                     </Menu.Sub>
                   ) : null}
                   {part && ops?.onWithAbove ? (
-                    <Menu.CheckboxItem
-                      checked={part.withAbove && !part.firstInPart}
-                      disabled={part.firstInPart}
-                      onCheckedChange={(next) => ops.onWithAbove?.(session.key, next)}
-                      style={{ ...menuItem(!part.firstInPart, phone), gap: 8 }}
-                    >
-                      <span style={{ width: 16, display: "inline-flex" }}>
-                        <Menu.ItemIndicator>
-                          <Glyph name="check" size={16} />
-                        </Menu.ItemIndicator>
-                      </span>
-                      {SESSION_HEAD_COPY.sameStage}
-                    </Menu.CheckboxItem>
+                    <SameStageRow part={part} phone={phone} onChange={(next) => ops.onWithAbove?.(session.key, next)} />
                   ) : null}
                   {onEdit ? (
                     <Row phone={phone} onSelect={onEdit}>
@@ -436,10 +431,32 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
   );
 }
 
-function Row({ children, disabled, onSelect, phone }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean }) {
+function Row({ children, disabled, onSelect, phone, reason }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean; reason?: string }) {
+  const why = useReason(disabled ? reason : undefined);
   return (
-    <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)}>
-      {children}
-    </Menu.Item>
+    <>
+      <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)} {...why.props}>
+        {children}
+      </Menu.Item>
+      {why.note}
+    </>
+  );
+}
+
+/** "Same stage as the session above": greyed on the first session of a part, with its reason. */
+function SameStageRow({ part, phone, onChange }: { part: SessionPartInfo; phone: boolean; onChange: (on: boolean) => void }) {
+  const why = useReason(part.firstInPart ? REASONS.noSessionAbove : undefined);
+  return (
+    <>
+      <Menu.CheckboxItem checked={part.withAbove && !part.firstInPart} disabled={part.firstInPart} onCheckedChange={onChange} style={{ ...menuItem(!part.firstInPart, phone), gap: 8 }} {...why.props}>
+        <span style={{ width: 16, display: "inline-flex" }}>
+          <Menu.ItemIndicator>
+            <Glyph name="check" size={16} />
+          </Menu.ItemIndicator>
+        </span>
+        {SESSION_HEAD_COPY.sameStage}
+      </Menu.CheckboxItem>
+      {why.note}
+    </>
   );
 }

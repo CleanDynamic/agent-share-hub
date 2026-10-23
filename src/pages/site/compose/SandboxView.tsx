@@ -61,6 +61,8 @@ import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
+import { REASONS } from "@/lib/build/componentMenus";
+import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
 
 export type SandboxLens = "list" | "map";
@@ -525,15 +527,16 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
 
 export interface ViewMenuProps {
   sessionList: boolean;
-  splitMerge: boolean;
-  onChange: (patch: { sessionList?: boolean; splitMerge?: boolean }) => void;
+  /** CA-20 P1: how many sessions the build has. The session list is greyed, with its reason, until it has two. Absent: always available. */
+  sessionCount?: number;
+  onChange: (patch: { sessionList?: boolean }) => void;
   /** CA-17 P2: "Label parts", 1, 2, 3 or A, B, C for the whole build. Present only when the build has two or more parts. */
   labels?: { value: PartLabels; onChange: (value: PartLabels) => void };
   /** CA-19 P7: "Colours…", the window of every reference group and single colour in the build. The maker's only. */
   onColours?: () => void;
 }
 
-export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C", colours: "Colours…" } as const;
+export const VIEW_COPY = { button: "View", sessionList: "Session list", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C", colours: "Colours…" } as const;
 
 /** CA-17 P2: the "Label parts" row of the View menu. */
 function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["labels"]>; phone: boolean }) {
@@ -555,27 +558,63 @@ function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["l
   );
 }
 
+/** CA-20 P1: the session list, as a row of the sheet on a phone: greyed, and saying why, until the build has two sessions. */
+function SessionListSheetRow({ view }: { view: ViewMenuProps }) {
+  const reason = sessionListReason(view);
+  const why = useReason(reason);
+  return (
+    <>
+      <button
+        type="button"
+        role="menuitemcheckbox"
+        aria-checked={view.sessionList}
+        aria-disabled={reason ? true : undefined}
+        onClick={() => !reason && view.onChange({ sessionList: !view.sessionList })}
+        {...why.props}
+        style={{ ...bareButton, ...menuItem(!reason, true), width: "100%", gap: 8, textAlign: "left" }}
+      >
+        <span style={{ width: 16, display: "inline-flex" }}>{view.sessionList ? <Glyph name="check" size={16} /> : null}</span>
+        {VIEW_COPY.sessionList}
+      </button>
+      {why.note}
+    </>
+  );
+}
+
+/** CA-20 P1: the session list, as an item of the menu on a computer. */
+function SessionListMenuRow({ view }: { view: ViewMenuProps }) {
+  const reason = sessionListReason(view);
+  const why = useReason(reason);
+  return (
+    <>
+      <Menu.CheckboxItem checked={view.sessionList} disabled={Boolean(reason)} onCheckedChange={(next) => view.onChange({ sessionList: next })} onSelect={(event) => event.preventDefault()} style={{ ...menuItem(!reason, false), gap: 8 }} {...why.props}>
+        <span style={{ width: 16, display: "inline-flex" }}>
+          <Menu.ItemIndicator>
+            <Glyph name="check" size={16} />
+          </Menu.ItemIndicator>
+        </span>
+        {VIEW_COPY.sessionList}
+      </Menu.CheckboxItem>
+      {why.note}
+    </>
+  );
+}
+
+/** The reason the session list cannot be switched yet, or none. */
+const sessionListReason = (view: ViewMenuProps): string | undefined => (view.sessionCount !== undefined && view.sessionCount < 2 ? REASONS.sessionList : undefined);
+
 /**
- * "View", beside Add: two switches, both off until the maker turns them on, kept for them on this device. On a computer
- * a menu of two checkable items that stays open while they are switched; on a phone the same two rows in a bottom sheet.
+ * "View", beside Add: the session list (kept for the maker on this device), then the rows of the parts, the colours and the
+ * folds. On a computer a menu that stays open while the switch is changed; on a phone the same rows in a bottom sheet.
  */
 function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
   const [open, setOpen] = useState(false);
-  const rows = [
-    { key: "sessionList" as const, name: VIEW_COPY.sessionList, on: view.sessionList },
-    { key: "splitMerge" as const, name: VIEW_COPY.splitMerge, on: view.splitMerge },
-  ];
   if (phone) {
     return (
       <>
         <MenuButton label={VIEW_COPY.button} value="" data-testid="sandbox-view" aria-haspopup="dialog" aria-expanded={open} style={{ height: 44 }} onClick={() => setOpen(true)} />
         <BrandBottomSheet open={open} onOpenChange={setOpen} title={VIEW_COPY.button} data-testid="view-sheet">
-          {rows.map((row) => (
-            <button key={row.key} type="button" role="menuitemcheckbox" aria-checked={row.on} onClick={() => view.onChange({ [row.key]: !row.on })} style={{ ...bareButton, ...menuItem(true, true), width: "100%", gap: 8, textAlign: "left" }}>
-              <span style={{ width: 16, display: "inline-flex" }}>{row.on ? <Glyph name="check" size={16} /> : null}</span>
-              {row.name}
-            </button>
-          ))}
+          <SessionListSheetRow view={view} />
           {view.labels ? <LabelPartsRow labels={view.labels} phone /> : null}
           {view.onColours ? (
             <button
@@ -603,16 +642,7 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={6} style={menuSurface(220)}>
-          {rows.map((row) => (
-            <Menu.CheckboxItem key={row.key} checked={row.on} onCheckedChange={(next) => view.onChange({ [row.key]: next })} onSelect={(event) => event.preventDefault()} style={{ ...menuItem(true, false), gap: 8 }}>
-              <span style={{ width: 16, display: "inline-flex" }}>
-                <Menu.ItemIndicator>
-                  <Glyph name="check" size={16} />
-                </Menu.ItemIndicator>
-              </span>
-              {row.name}
-            </Menu.CheckboxItem>
-          ))}
+          <SessionListMenuRow view={view} />
           {view.labels ? <LabelPartsRow labels={view.labels} phone={false} /> : null}
           {view.onColours ? (
             <>
@@ -634,6 +664,8 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
 /** A link drawn as a secondary button, for Preview: 30 high (48 on a phone), the control recipe. */
 function LinkButton({ to, phone, height, children }: { to: string | null; phone: boolean; height?: number; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  // CA-20 P1: greyed, and says why.
+  const why = useReason(to ? undefined : REASONS.preview);
   const common: CSSProperties = {
     height: height ?? (phone ? 48 : 28),
     padding: phone ? "0 16px" : "0 12px",
@@ -650,8 +682,9 @@ function LinkButton({ to, phone, height, children }: { to: string | null; phone:
   };
   if (!to) {
     return (
-      <span aria-disabled="true" style={{ ...common, filter: t.dimFilter, cursor: "not-allowed" }}>
+      <span aria-disabled="true" role="link" {...why.props} style={{ ...common, filter: t.dimFilter, cursor: "not-allowed" }}>
         {children}
+        {why.note}
       </span>
     );
   }

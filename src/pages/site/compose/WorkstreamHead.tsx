@@ -27,6 +27,8 @@ import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { DragHandle, useNestWorkstream, useNestWorkstreamDrag } from "./listNest";
 import { GROUP_TITLE, LABEL, RecipeButton, frameStyle } from "./modalRecipes";
 import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
+import { moveReason } from "@/lib/build/componentMenus";
+import { useReason } from "./removePieces";
 import { WORKSTREAM_STARTS } from "./workstreamRecipes";
 
 export const WORKSTREAM_HEAD_COPY = {
@@ -160,11 +162,15 @@ function NameField({ part, phone, onSave }: { part: WorkstreamHeadView; phone: b
   );
 }
 
-function Row({ children, disabled, onSelect, phone }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean }) {
+function Row({ children, disabled, onSelect, phone, reason }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean; reason?: string }) {
+  const why = useReason(disabled ? reason : undefined);
   return (
-    <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)}>
-      {children}
-    </Menu.Item>
+    <>
+      <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)} {...why.props}>
+        {children}
+      </Menu.Item>
+      {why.note}
+    </>
   );
 }
 
@@ -245,10 +251,10 @@ function PartMenuRows({ props, colour, remove }: { props: WorkstreamHeadProps; c
       ) : null}
       {ops ? (
         <>
-          <Row phone={phone} disabled={first} onSelect={() => ops.onMove(part.key, -1)}>
+          <Row phone={phone} disabled={first} reason={moveReason("part", -1, first)} onSelect={() => ops.onMove(part.key, -1)}>
             {WORKSTREAM_HEAD_COPY.moveUp}
           </Row>
-          <Row phone={phone} disabled={last} onSelect={() => ops.onMove(part.key, 1)}>
+          <Row phone={phone} disabled={last} reason={moveReason("part", 1, last)} onSelect={() => ops.onMove(part.key, 1)}>
             {WORKSTREAM_HEAD_COPY.moveDown}
           </Row>
           <Menu.Separator style={{ height: 1, margin: "4px 0", background: t.hairline }} />
