@@ -56,6 +56,7 @@ import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
 import { ColourButton } from "@/components/brand/ColourButton";
+import { MemberLabel } from "./groupLabels";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
 import { refTo } from "@/lib/build/thread";
@@ -361,9 +362,17 @@ const colourEdge = (colour: string | undefined): CSSProperties | null => (colour
 /** The colour button at the right of a tile's top row: on a desktop, or wherever the tile has no menu to put it in. */
 function CardColour({ step, phone, inMenu = false }: { step: Step; phone: boolean; inMenu?: boolean }) {
   const { onColour } = useContext(ListRefsContext);
+  const to = refTo({ kind: "node", id: step.id });
+  /* CA-19 P5: a member of a named group says so, just before the tile's menu. */
+  const label = <MemberLabel to={to} />;
   /* CA-14 P2: no colour, nothing drawn: "Colour…" in the tile's menu (or Details) is how one is given. */
-  if (!onColour || !step.colour || (phone && inMenu)) return null;
-  return <ColourButton what={partName(step)} colour={step.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(refTo({ kind: "node", id: step.id }), anchor, pickerName(step), step.colour ?? null)} />;
+  if (!onColour || !step.colour || (phone && inMenu)) return label;
+  return (
+    <>
+      {label}
+      <ColourButton what={partName(step)} colour={step.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(to, anchor, pickerName(step), step.colour ?? null)} />
+    </>
+  );
 }
 
 /** "Colour…" in a tile's menu. The picker opens as a sheet on a phone and beside the tile on a computer. */

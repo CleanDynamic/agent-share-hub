@@ -14,6 +14,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 
 
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { ColourButton } from "@/components/brand/ColourButton";
+import { MemberLabel } from "./groupLabels";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
@@ -340,6 +341,8 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
         <span data-testid="workstream-count" style={quiet}>
           {WORKSTREAM_HEAD_COPY.count(part.sessions)}
         </span>
+        {/* CA-19 P5: a part in a named group says so, just before its menu. */}
+        <MemberLabel to={refTo({ kind: "workstream", id: part.key })} />
         {part.colour && onColour && maker && !phone ? <ColourButton what={part.label} colour={part.colour} size={22} onPick={() => openColour()} /> : null}
         {maker ? (
           <Menu.Root>

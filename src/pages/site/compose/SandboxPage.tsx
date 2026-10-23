@@ -100,6 +100,7 @@ import { makingWithGroupColours, previewGroupColour, withGroupColours, type Refe
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { ReferenceNotice } from "./referencePieces";
 import { useReferences } from "./useReferences";
+import { GroupLabelsProvider } from "./groupLabels";
 import { useReferenceActions } from "./useReferenceActions";
 import { useHistoryKeys } from "./useReferenceHistory";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
@@ -917,13 +918,13 @@ export function SandboxPage() {
     if (group) {
       const what = `Session ${group.number}`;
       const to = refTo({ kind: "session", id: selectedId });
-      return { what, colour: group.colour ?? null, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, group.colour ?? null) };
+      return { what, colour: group.colour ?? null, to, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, group.colour ?? null) };
     }
     const step = allParts(steps).find((candidate) => candidate.id === selectedId);
     if (!step) return null;
     const what = partName(step);
     const to = refTo({ kind: "node", id: step.id });
-    return { what, colour: step.colour ?? null, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, step.colour ?? null) };
+    return { what, colour: step.colour ?? null, to, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, step.colour ?? null) };
   }, [selectedId, shown, steps, onColour]);
 
   /* ── tiles inside tiles (CA-04 P2) ── */
@@ -1754,6 +1755,7 @@ export function SandboxPage() {
         }}
       />
       <PartRegistryProvider registry={registry}>
+      <GroupLabelsProvider making={makingDrawn} onOpen={referenceActions.openGroup}>
       <SandboxView
         {...viewProps}
         classification={classification}
@@ -1913,6 +1915,7 @@ export function SandboxPage() {
         mapAvailable={mapAvailable}
         mapHint={mapAvailable && !switched}
       />
+      </GroupLabelsProvider>
       </PartRegistryProvider>
       <AddAgentDialog
         open={addAgentOpen}

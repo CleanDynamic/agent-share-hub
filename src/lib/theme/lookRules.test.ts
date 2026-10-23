@@ -581,6 +581,9 @@ export const CA03_FILES: readonly string[] = [
   "src/dev/fixtures/references.ts",
   "src/pages/dev/SandboxDemo.tsx",
   "src/components/brand/ColourPicker.part.test.tsx",
+  // CA-19 P5
+  "src/pages/site/compose/groupLabels.tsx",
+  "src/pages/site/compose/groupLabels.ui.test.tsx",
 ];
 
 /**

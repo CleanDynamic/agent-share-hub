@@ -580,3 +580,37 @@ export function previewGroupColour(making: unknown, groupId: string | null, colo
   if (!Array.isArray(list)) return making;
   return { ...(making as object), reference_groups: list.map((entry) => (asObject(entry).id === groupId ? { ...asObject(entry), colour } : entry)) };
 }
+
+/**
+ * For readers (the build page): the nodes with each grouped tile's `payload.colour` set to its group's, so every card,
+ * edge and link draws it through the same helpers. A copy: nothing stored changes.
+ */
+export function treeWithGroupColours<T extends { id: string; payload: unknown; children?: T[] }>(tree: readonly T[], making: unknown): T[] {
+  const model: ColourModel = { groups: referenceGroupsOf(making), singles: {} };
+  if (model.groups.length === 0) return tree as T[];
+  const walk = (nodes: readonly T[]): T[] =>
+    nodes.map((node) => {
+      const state = stateIn(model, refTo({ kind: "node", id: node.id }));
+      const children = node.children ? walk(node.children) : node.children;
+      if (state.state === "none" || !state.colour) return children === node.children ? node : { ...node, children };
+      return { ...node, payload: { ...asObject(node.payload), colour: state.colour }, ...(children ? { children } : null) };
+    });
+  return walk(tree);
+}
+
+/** For readers: `making` with each grouped session's and part's colour set to its group's. */
+export function makingWithAllGroupColours(making: unknown): unknown {
+  const model: ColourModel = { groups: referenceGroupsOf(making), singles: {} };
+  if (model.groups.length === 0 || !making || typeof making !== "object") return making;
+  const parts = makingWithGroupColours(making) as Record<string, unknown>;
+  const meta = asObject(parts.sessions_meta);
+  const next: Record<string, unknown> = { ...meta };
+  for (const group of model.groups) {
+    if (group.members.length < GROUP_MIN_MEMBERS) continue;
+    for (const ref of group.members) {
+      const target = parseRefTo(ref);
+      if (target?.kind === "session" && next[target.id]) next[target.id] = { ...asObject(next[target.id]), colour: group.colour };
+    }
+  }
+  return { ...parts, sessions_meta: next };
+}

@@ -14,6 +14,8 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 
 
 import { Button } from "@/components/brand/Button";
 import { ColourButton } from "@/components/brand/ColourButton";
+import { refTo } from "@/lib/build/thread";
+import { MemberLabel } from "./groupLabels";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
@@ -280,6 +282,8 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
             {`Setup ${session.setupCount}`}
           </TextButton>
         ) : null}
+        {/* CA-19 P5: a member of a named group says so, just before the session's menu. */}
+        <MemberLabel to={refTo({ kind: "session", id: session.key })} />
         {session.colour && onColour && editable ? (
           <ColourButton what={`Session ${session.number}`} colour={session.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(anchor)} />
         ) : null}

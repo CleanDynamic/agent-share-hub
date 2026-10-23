@@ -99,7 +99,7 @@ export function GroupLabel({ name, colour, prefix, testId = "group-label", onCli
       <span style={{ ...words(11.5, 500, ink), ...ELLIPSIS }}>{prefix ? `${prefix} ${name}` : name}</span>
     </>
   );
-  const look: CSSProperties = { boxSizing: "border-box", display: "inline-flex", alignItems: "center", gap: 6, height: 20, padding: "0 7px", borderRadius: 5, background: t.hairline, maxWidth: "100%", minWidth: 0, flexShrink: 1 };
+  const look: CSSProperties = { boxSizing: "border-box", display: "inline-flex", alignItems: "center", gap: 6, height: 20, padding: "0 7px", borderRadius: 5, backgroundColor: t.hairline, maxWidth: "100%", minWidth: 0, flexShrink: 1 };
   if (!onClick) {
     return (
       <span data-testid={testId} data-group-label={name} style={look}>
@@ -118,7 +118,7 @@ export function GroupLabel({ name, colour, prefix, testId = "group-label", onCli
         onClick();
       }}
       {...handlers}
-      style={{ ...look, border: 0, cursor: "pointer", ...(state.hovered ? { background: t.controlOn } : null), ...ring(state.focusVisible) }}
+      style={{ ...look, border: 0, cursor: "pointer", ...(state.hovered ? { backgroundColor: t.controlOn } : null), ...ring(state.focusVisible) }}
     >
       {body}
     </button>

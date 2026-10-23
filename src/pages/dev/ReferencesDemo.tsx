@@ -40,6 +40,7 @@ import { usePostLinks } from "@/pages/site/compose/usePostLinks";
 import { useReferenceActions } from "@/pages/site/compose/useReferenceActions";
 import { useHistoryKeys } from "@/pages/site/compose/useReferenceHistory";
 import { useReferences } from "@/pages/site/compose/useReferences";
+import { GroupLabelsProvider } from "@/pages/site/compose/groupLabels";
 
 import { useDevMap } from "./DevMap";
 import type { DesignPageProps } from "./KitPages";
@@ -160,16 +161,17 @@ export default function ReferencesDemo({ fit = "board", state = "populated" }: D
     const group = shown.groups.find((candidate) => groupKey(candidate) === selectedId);
     if (group) {
       const what = `Session ${group.number}`;
-      return { what, colour: group.colour ?? null, onPick: (anchor: HTMLElement) => onColour(`session:${groupKey(group)}`, anchor, what, group.colour ?? null) };
+      return { what, colour: group.colour ?? null, to: `session:${groupKey(group)}`, onPick: (anchor: HTMLElement) => onColour(`session:${groupKey(group)}`, anchor, what, group.colour ?? null) };
     }
     const step = allParts(shown.steps).find((candidate) => candidate.id === selectedId);
     if (!step) return null;
     const what = partName(step);
-    return { what, colour: step.colour ?? null, onPick: (anchor: HTMLElement) => onColour(`node:${step.id}`, anchor, what, step.colour ?? null) };
+    return { what, colour: step.colour ?? null, to: `node:${step.id}`, onPick: (anchor: HTMLElement) => onColour(`node:${step.id}`, anchor, what, step.colour ?? null) };
   }, [selectedId, shown, onColour]);
 
   return (
     <PartRegistryProvider registry={registry}>
+      <GroupLabelsProvider making={makingDrawn} onOpen={actions.openGroup}>
       <SandboxView
         fit={fit}
         {...sandboxViewProps("fox", state)}
@@ -265,6 +267,7 @@ export default function ReferencesDemo({ fit = "board", state = "populated" }: D
       />
       <ReferenceNotice notice={references.history.notice} onUndo={references.history.undo} onDone={references.history.dismiss} phone={phone} />
       {actions.keepDialog}
-    </PartRegistryProvider>
+    </GroupLabelsProvider>
+      </PartRegistryProvider>
   );
 }
