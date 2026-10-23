@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { COLUMN_GAP, COLUMN_MAX, COLUMN_MIN, DETAILS_GAP, SEPARATION, frameOf, innerWidthOf, layoutDetails, type Measured } from "./detailsLayout";
+import { DETAILS_GAP, SEPARATION, frameOf, innerWidthOf, layoutDetails, type Measured } from "./detailsLayout";
 
 /** Pieces whose height does not depend on the width. */
 const flat = (heights: number[], over: Partial<Measured> = {}): Measured => ({ head: 56, foot: 0, sections: heights.map((height, at) => ({ key: `s${at}`, height })), ...over });
@@ -84,60 +84,76 @@ describe("Build is centred on the window and Details takes the room to its right
   });
 });
 
-describe("Details is as narrow as its content allows", () => {
-  const inner = innerWidthOf(1920);
-
-  it("gives a short tile 280", () => {
-    const layout = layoutDetails({ inner, height: 800, measure: () => flat([120, 90]) });
-    expect(layout).toMatchObject({ beside: true, width: 280, columns: 1, scrolls: false });
-    expect(layout.assignment).toEqual([["head", "s0", "s1"]]);
+describe("the composer is one box (CA-18b P5)", () => {
+  it.each([
+    // window, boxLeft (Sources or the rail), boxRight (Details; checked from 1280, where it is shown)
+    [1152, 40, 0],
+    [1280, 104, 1240],
+    [1440, 144, 1400],
+    [1920, 324, 1880],
+    [2560, 644, 2220],
+  ])("at %i the box runs %i to %i", (window, left, right) => {
+    const frame = frameOf(innerWidthOf(window));
+    expect(frame.boxLeft).toBe(left);
+    if (window >= 1280) expect(frame.boxRight).toBe(right);
   });
 
-  it("gives a long prompt a wider single column, as the text wraps less", () => {
-    // 3 sections of 600 at 300; each 1/(w/300) as wide; the height is 1000: it fits once w >= 300 * (1800 + 112) / 1000 ...
-    const measure = wraps([600, 600, 600]);
-    const layout = layoutDetails({ inner, height: 1300, measure });
-    expect(layout.columns).toBe(1);
-    expect(layout.width).toBeGreaterThan(280);
-    expect((layout.width - 280) % 20).toBe(0);
-    const tight = layout.width - 20;
-    const m = measure(tight);
-    expect(56 + m.sections.reduce((n, s) => n + s.height, 0) + 2 * SEPARATION).toBeGreaterThan(1300);
-    expect(layout.scrolls).toBe(false);
+  it("ends at Build's right edge when Details is hidden, and begins at the rail's when Sources is folded", () => {
+    const hidden = frameOf(innerWidthOf(1152));
+    expect(hidden.beside).toBe(false);
+    expect(hidden.boxRight).toBe(hidden.buildLeft + hidden.build);
+    const rail = frameOf(innerWidthOf(1100));
+    expect(rail.rail).toBe(true);
+    expect(rail.boxLeft).toBe(rail.buildLeft - 24 - 52);
   });
 
-  it("goes to two columns when no single column of 520 or less will hold it", () => {
-    const layout = layoutDetails({ inner: innerWidthOf(2560), height: 500, measure: wraps([250, 250, 250]) });
-    expect(layout.columns).toBe(2);
-    expect(layout.columnWidth).toBeGreaterThanOrEqual(COLUMN_MIN);
-    expect(layout.columnWidth).toBeLessThanOrEqual(COLUMN_MAX);
-    expect(layout.width).toBe(2 * layout.columnWidth + COLUMN_GAP);
-    expect(layout.scrolls).toBe(false);
-  });
-
-  it("fills the first column down in order, then the next, and never splits a section", () => {
-    const layout = layoutDetails({ inner: innerWidthOf(2560), height: 520, measure: () => flat([200, 200, 200, 200]) });
-    expect(layout.columns).toBeGreaterThanOrEqual(2);
-    expect(layout.assignment.flat()).toEqual(["head", "s0", "s1", "s2", "s3"]);
-    for (const column of layout.assignment) {
-      const used = column.reduce((n, key, at) => n + (key === "head" ? 56 : 200 + (at > 0 && column[at - 1] !== "head" ? SEPARATION : 0)), 0);
-      expect(used).toBeLessThanOrEqual(520);
+  it("gives Details one fixed width per window: min(room, 520), at least 280", () => {
+    for (let window = 1280; window <= 3000; window += 16) {
+      const frame = frameOf(innerWidthOf(window));
+      expect(frame.detailsWidth, String(window)).toBe(Math.min(frame.room, 520));
+      expect(frame.detailsWidth).toBeGreaterThanOrEqual(280);
+      expect(frame.boxRight).toBe(frame.detailsLeft + frame.detailsWidth);
     }
   });
 
-  it("uses three columns when two will not do and the room has them", () => {
-    const layout = layoutDetails({ inner: innerWidthOf(3300), height: 480, measure: () => flat([200, 200, 200, 200]) });
-    expect(layout.columns).toBeGreaterThanOrEqual(3);
-    expect(layout.scrolls).toBe(false);
+  it("keeps the right edge where it is whatever Details holds", () => {
+    const inner = innerWidthOf(1920);
+    const edges = [flat([100]), flat([900, 900, 900]), flat([5000], { foot: 40 })].map((m) => layoutDetails({ inner, height: 600, measure: () => m }));
+    expect(new Set(edges.map((e) => e.boxRight)).size).toBe(1);
+    expect(new Set(edges.map((e) => e.detailsLeft + e.width)).size).toBe(1);
+    expect(edges.every((e) => e.width === 500 && e.columns === 1)).toBe(true);
   });
 
-  it("scrolls when the room runs out", () => {
-    const small = layoutDetails({ inner: innerWidthOf(1440), height: 300, measure: () => flat([400, 400, 400]) });
-    expect(small.beside).toBe(true);
-    expect(small.scrolls).toBe(true);
-    const wide = layoutDetails({ inner: innerWidthOf(2560), height: 300, measure: () => flat([290, 290, 290, 290, 290, 290, 290, 290, 290, 290]) });
-    expect(wide.scrolls).toBe(true);
-    expect(wide.columns).toBeGreaterThan(1);
+  it("gives the Map the same left, and the same right when Details is beside", () => {
+    for (let window = 768; window <= 2560; window += 16) {
+      const frame = frameOf(innerWidthOf(window));
+      if (frame.beside) expect(frame.mapRight, String(window)).toBe(frame.boxRight);
+      else expect(frame.mapRight, String(window)).toBe(window - 40);
+    }
+  });
+});
+
+describe("Details is one fixed column that scrolls inside", () => {
+  const inner = innerWidthOf(1920);
+
+  it("fills the column from the top, in order, a section never split", () => {
+    const layout = layoutDetails({ inner, height: 800, measure: () => flat([120, 90]) });
+    expect(layout).toMatchObject({ beside: true, width: 500, columns: 1, scrolls: false });
+    expect(layout.assignment).toEqual([["head", "s0", "s1"]]);
+  });
+
+  it("scrolls inside when it is taller than the window, instead of adding columns", () => {
+    const layout = layoutDetails({ inner: innerWidthOf(2560), height: 500, measure: wraps([250, 250, 250]) });
+    expect(layout.columns).toBe(1);
+    expect(layout.width).toBe(520);
+    expect(layout.scrolls).toBe(true);
+    expect(layout.assignment.flat()).toEqual(["head", "s0", "s1", "s2"]);
+  });
+
+  it("does not scroll when it fits", () => {
+    const layout = layoutDetails({ inner, height: 600, measure: () => flat([200, 200]) });
+    expect(layout.scrolls).toBe(false);
+    expect(56 + 400 + SEPARATION).toBeLessThanOrEqual(600);
   });
 
   it("cuts one long prose section to fit, for Read all", () => {
@@ -158,9 +174,9 @@ describe("Details is as narrow as its content allows", () => {
     expect(layout.assignment.flat().at(-1)).toBe("foot");
   });
 
-  it("measures only the widths it needs, once each", () => {
+  it("measures once, at its one width", () => {
     const widths: number[] = [];
     layoutDetails({ inner, height: 600, measure: (width) => { widths.push(width); return wraps([450, 450])(width); } });
-    expect(new Set(widths).size).toBe(widths.length);
+    expect(widths).toEqual([500]);
   });
 });

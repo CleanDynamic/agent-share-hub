@@ -44,7 +44,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { COMPOSER_PAD } from "@/pages/site/compose/detailsRecipes";
+import { useWindowSize } from "@/pages/site/compose/DetailsAside";
+import { ORIGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
 import { Breadcrumb } from "./Breadcrumb";
 import { HEADER_HEIGHT } from "./chromeSize";
 import { Dock } from "./Dock";
@@ -152,6 +153,7 @@ export function SiteFrameView({
   wide = false,
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
+  const win = useWindowSize();
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
 
   const root: CSSProperties = {
@@ -200,7 +202,7 @@ export function SiteFrameView({
             minWidth: 0,
           }}
         >
-          {phone ? null : <div data-slot="breadcrumb" style={wide ? { padding: `24px ${COMPOSER_PAD}px 0` } : undefined}>{breadcrumb}</div>}
+          {phone ? null : <div data-slot="breadcrumb" style={wide ? { padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` } : undefined}>{breadcrumb}</div>}
           {children}
         </main>
         {phone ? null : (

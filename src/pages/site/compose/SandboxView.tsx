@@ -54,7 +54,7 @@ import { ClickToEdit, DetailsOverlay } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { COMPOSER_PAD, HEAD_GAP } from "./detailsRecipes";
-import { SURFACE_MARGIN, frameOf, innerWidthOf } from "./detailsLayout";
+import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -212,9 +212,6 @@ export const listHint = (phone: boolean) => (phone ? LIST_HINT_PHONE : LIST_HINT
 
 /** The columns start this far under the title row. */
 const COLUMNS_TOP = 32;
-/** The surface's own border, inside its 6 margin: the columns' origin is this far plus 6 from the window's edge. */
-const SURFACE_BORDER = 1;
-const ORIGIN = SURFACE_MARGIN + SURFACE_BORDER;
 export const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
 
 /** "3 sessions · 12 prompts · 2 files", leaving out any zero. */
@@ -833,6 +830,9 @@ export function SandboxView(props: SandboxViewProps) {
   const frame = frameOf(innerWidthOf(win.width));
   // Map is for desktop; a phone is always the list.
   const lens: SandboxLens = phone ? "list" : props.lens;
+  /* CA-18b P5: the composer is one box. The title area, the banner and the Map's row are padded in from `frameOf`'s edges. */
+  const padLeft = frame.boxLeft - ORIGIN;
+  const padRight = win.width - ORIGIN - (lens === "map" ? frame.mapRight : frame.boxRight);
 
   const openCard = (field: CardField | null) => {
     setCardField(field);
@@ -1085,13 +1085,13 @@ export function SandboxView(props: SandboxViewProps) {
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
           and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
-      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${COMPOSER_PAD}px 0` }}>
+      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
           {heading}
           {statusLine}
         </div>
         {tabs}
-        <div style={{ ...TAB_ACTIONS, marginLeft: 0 }}>
+        <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
           <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
             Card
           </Button>
@@ -1103,11 +1103,11 @@ export function SandboxView(props: SandboxViewProps) {
           </Button>
         </div>
       </div>
-      {banner ? <div style={{ padding: `16px ${COMPOSER_PAD}px 0` }}>{banner}</div> : null}
+      {banner ? <div style={{ padding: `16px ${padRight}px 0 ${padLeft}px` }}>{banner}</div> : null}
       {lens === "map" ? (
         <div
           data-testid="sandbox-columns"
-          style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 24, padding: `32px ${COMPOSER_PAD}px 0`, minWidth: 0 }}
+          style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 24, padding: `${COLUMNS_TOP}px ${padRight}px 0 ${padLeft}px`, minWidth: 0 }}
         >
           <SourcesFrame rail titled={!props.sources} counts={props.counts} open={railOpen} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
             {sourcesBody}
@@ -1132,7 +1132,7 @@ export function SandboxView(props: SandboxViewProps) {
           </div>
           <div style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD }}>{buildColumn}</div>
           {frame.beside ? (
-            <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.room, display: "flex", alignItems: "stretch" }}>
+            <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth, display: "flex", alignItems: "stretch" }}>
               <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? props.renderDetails(plan) : detailsBody)} />
             </div>
           ) : null}

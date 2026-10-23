@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import { ORIGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
+
 import { SiteFrameView } from "./SiteFrame";
 
 const markup = (wide?: boolean) =>
@@ -23,12 +25,12 @@ describe("the frame's wide option", () => {
     expect(html).not.toContain("data-wide");
   });
 
-  it("drops the cap and the side padding when wide, and insets the breadcrumb by 34", () => {
+  it("drops the cap and the side padding when wide, and starts the breadcrumb at the box's left edge (CA-18b P5)", () => {
     const html = markup(true);
     expect(html).toContain("max-width:none");
     expect(html).not.toContain("max-width:1428px");
     expect(html).toContain("padding:0 0 48px");
-    expect(html).toContain("padding:24px 34px 0");
+    expect(html).toContain(`padding:24px 0 0 ${frameOf(innerWidthOf(window.innerWidth)).boxLeft - ORIGIN}px`);
   });
 
   it("is off on the gallery and the build page, which do not pass it", async () => {

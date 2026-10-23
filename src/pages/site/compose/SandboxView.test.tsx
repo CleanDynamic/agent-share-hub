@@ -231,7 +231,7 @@ describe("the refined look (UI-P93)", () => {
   it("draws the title row under a hairline, 34 in at the sides: the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
     view();
     const row = screen.getByTestId("sandbox-tabrow");
-    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 34px 0px");
+    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 33px 0px 137px");
     expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
