@@ -532,7 +532,8 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
   const extras = (step.kind === "prompt" && !isInstructions(step) && step.outputShape) || step.changes?.length || uses.length > 0 || goesInto.length > 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", ...(phone ? { minHeight: "100%" } : null) }}>
+    /* The global field rule makes a field inherit its size on a computer, so the window sets the fields' 13 here. */
+    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13, ...(phone ? { minHeight: "100%" } : null) }}>
       <LiveRegion message={said} />
       <div style={phone ? { ...HEADER, padding: "4px 0 16px" } : HEADER}>
         <div style={HEADER_TEXT}>

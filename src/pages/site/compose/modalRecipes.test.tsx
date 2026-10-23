@@ -188,6 +188,13 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(footerStyle(false)).toMatchObject({ padding: "14px 20px", background: t.windowFoot, gap: 8, borderTop: `1px solid ${t.hairlineModule}` });
   });
 
+  it("phone (CA-15b P4): the footer stays at the bottom of the sheet; fields and buttons are 44 tall at 16px", () => {
+    expect(footerStyle(true)).toMatchObject({ position: "sticky", bottom: 0 });
+    expect(fieldStyle(true)).toMatchObject({ height: 44, fontSize: 16 });
+    render(<RecipeButton phone>Cancel</RecipeButton>);
+    expect(screen.getByRole("button", { name: "Cancel" }).style.height).toBe("44px");
+  });
+
   it("group heading: padding 16 20 4, a rule, 14/500", () => {
     render(
       <ModalInset.Provider value={20}>

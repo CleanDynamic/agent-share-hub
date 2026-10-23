@@ -442,6 +442,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/BuildList.nest.test.tsx",
   "src/pages/site/compose/checkRuns.ui.test.tsx",
   "src/lib/build/onePrompt.snapshot.test.tsx",
+  // CA-15b P4
+  "src/pages/dev/ModalsDemo.tsx",
 ];
 
 /**
