@@ -1461,7 +1461,7 @@ export function SandboxPage() {
     [addOneFile, addSetup, takeResultFiles],
   );
 
-  /* CA-14 P5: what the Add items do, shared by the Add button at the top and each session's "+ Add to this session". */
+  /* CA-14 P5: what the Add items do, shared by the Add button at the top and each session's "+ Add Tile". */
   const addHandlers = {
     onAddFile: pickTile,
     onAddPromptFocus,

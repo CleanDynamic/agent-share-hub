@@ -172,7 +172,7 @@ const positions = () =>
     .sort((a, b) => Number(a.position) - Number(b.position));
 
 describe("CA-14 P5 · adding to the right session", () => {
-  it("has no prompt box at the foot and no Adding to picker; every open session ends with + Add to this session", async () => {
+  it("has no prompt box at the foot and no Adding to picker; every open session ends with + Add Tile", async () => {
     await twoSessions();
     expect(screen.queryByTestId("adding-to")).toBeNull();
     expect(screen.queryByTestId("add-prompt")).toBeNull();

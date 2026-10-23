@@ -223,7 +223,7 @@ export interface BuildListProps {
   onDropWorkstream?: (workstreamKey: string, over: string) => void;
   /** CA-17 P2: "Add a part", the row under "Add a session". Resolves once the part is made. Absent: no row. */
   onAddPart?: () => void;
-  /** CA-14 P5: the "+ Add to this session" row at the end of a session, drawn by the page (it holds the Add items). */
+  /** CA-14 P5: the "+ Add Tile" row at the end of a session, drawn by the page (it holds the Add items). */
   addToSession?: (sessionKey: string) => ReactNode;
   /** CA-14 P5: the session whose prompt box is open. An empty draft has Session 1's open without it. */
   promptIn?: string | null;
