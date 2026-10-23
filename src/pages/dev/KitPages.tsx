@@ -146,7 +146,7 @@ export default function KitPages() {
         {UNFRAMED.has(page) || isBare(page, window.location.search) ? (
           <View viewport={viewport} fit="board" state={state} />
         ) : (
-          <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
+          <SiteFrameView viewport={viewport} fit="board" wide={page === "sandbox"} {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
             <View viewport={viewport} fit="board" state={state} />
           </SiteFrameView>
         )}

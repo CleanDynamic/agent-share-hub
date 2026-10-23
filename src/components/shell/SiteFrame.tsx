@@ -44,6 +44,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { COMPOSER_PAD } from "@/pages/site/compose/detailsRecipes";
 import { Breadcrumb } from "./Breadcrumb";
 import { HEADER_HEIGHT } from "./chromeSize";
 import { Dock } from "./Dock";
@@ -81,6 +82,8 @@ export interface SiteFrameViewProps {
   children?: ReactNode;
   /** `board` on the dev compare page: the footer is placed where the board draws it (UI-P55). */
   fit?: PageFit;
+  /** CA-18 P4: no 1428 cap, no side padding on `<main>`: the page insets itself by 34. For the composer only. */
+  wide?: boolean;
 }
 
 const SKIP_BASE: CSSProperties = {
@@ -146,6 +149,7 @@ export function SiteFrameView({
   mobileHeader,
   dock,
   children,
+  wide = false,
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
@@ -178,7 +182,7 @@ export function SiteFrameView({
       >
         {phone ? mobileHeader : header}
       </div>
-      <div data-ui="surface" style={SURFACE}>
+      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? { ...SURFACE, maxWidth: "none" } : SURFACE}>
         <main
           id="main"
           style={{
@@ -189,12 +193,14 @@ export function SiteFrameView({
             gap: phone ? 16 : 24,
             padding: phone
               ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
-              : "24px clamp(16px, 4.6vw, 64px) 48px",
+              : wide
+                ? "0 0 48px"
+                : "24px clamp(16px, 4.6vw, 64px) 48px",
             boxSizing: "border-box",
             minWidth: 0,
           }}
         >
-          {phone ? null : <div data-slot="breadcrumb">{breadcrumb}</div>}
+          {phone ? null : <div data-slot="breadcrumb" style={wide ? { padding: `24px ${COMPOSER_PAD}px 0` } : undefined}>{breadcrumb}</div>}
           {children}
         </main>
         {phone ? null : (
@@ -211,10 +217,12 @@ export function SiteFrameView({
 export interface SiteFrameProps {
   variant?: SiteFrameVariant;
   children?: ReactNode;
+  /** CA-18 P4: see `SiteFrameViewProps.wide`. */
+  wide?: boolean;
 }
 
 /** The container: live chrome around the page. UI-P17 to UI-P19 fill the slots. */
-export function SiteFrame({ variant = "site", children }: SiteFrameProps) {
+export function SiteFrame({ variant = "site", children, wide }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
       <ConnectorDialogProvider>
@@ -225,6 +233,7 @@ export function SiteFrame({ variant = "site", children }: SiteFrameProps) {
         footer={<SiteFooter />}
         mobileHeader={<MobileHeader />}
         dock={<Dock />}
+        wide={wide}
       >
         {children}
       </SiteFrameView>

@@ -48,6 +48,10 @@ import { TextButton } from "./composeControls";
 import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
+import { DetailsAside, useWindowSize } from "./DetailsAside";
+import type { DetailsPlan } from "./DetailsPanel";
+import { COMPOSER_PAD, HEAD_GAP } from "./detailsRecipes";
+import { DETAILS_GAP, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
@@ -156,6 +160,8 @@ export interface SandboxViewProps extends CardProps {
   list?: ReactNode;
   map?: ReactNode;
   selection?: ReactNode;
+  /** CA-18 P4: Details drawn for a plan (its columns, or a measuring copy). Absent: `selection`, in one column. */
+  renderDetails?: (plan?: DetailsPlan) => ReactNode;
 }
 
 export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "code" | "check" | "result";
@@ -569,10 +575,10 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
 /* ── pieces ── */
 
 /** A link drawn as a secondary button, for Preview: 30 high (48 on a phone), the control recipe. */
-function LinkButton({ to, phone, children }: { to: string | null; phone: boolean; children: ReactNode }) {
+function LinkButton({ to, phone, height, children }: { to: string | null; phone: boolean; height?: number; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const common: CSSProperties = {
-    height: phone ? 48 : 30,
+    height: height ?? (phone ? 48 : 30),
     padding: "0 16px",
     borderRadius: 6,
     boxSizing: "border-box",
@@ -667,7 +673,7 @@ function SourcesFrame({
         gap: 20,
         ...(overlay
           ? { ...moduleStyle(), background: t.window, borderColor: t.windowBorder, boxShadow: t.windowShadow }
-          : { flex: "1 1 216px", maxWidth: 232, boxSizing: "border-box", paddingRight: 24, borderRight: `1px solid ${t.hairline}` }),
+          : { flex: "0 0 216px", width: 216, boxSizing: "border-box", paddingRight: 24, borderRight: `1px solid ${t.hairline}` }),
       }}
     >
       {titled || overlay ? (
@@ -766,6 +772,7 @@ const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: 
 
 export function SandboxView(props: SandboxViewProps) {
   const phone = useIsPhone();
+  const win = useWindowSize();
   const { status, published, save } = props;
 
   const [cardOpen, setCardOpen] = useState(false);
@@ -788,6 +795,7 @@ export function SandboxView(props: SandboxViewProps) {
   if (status === "notFound") return <NotFound />;
 
   const untitled = isUntitled(props.title);
+  const frame = frameOf(innerWidthOf(win.width));
   // Map is for desktop; a phone is always the list.
   const lens: SandboxLens = phone ? "list" : props.lens;
 
@@ -1000,10 +1008,25 @@ export function SandboxView(props: SandboxViewProps) {
         display: "flex",
         flexDirection: "column",
         gap: 20,
-        flex: lens === "map" && !phone ? "999 1 560px" : "999 1 480px",
+        ...(phone ? { flex: "999 1 480px" } : { flex: `0 1 ${frame.build}px`, width: frame.build }),
       }}
     >
-      {postSection}
+      {phone ? (
+        postSection
+      ) : (
+        /* CA-18 P4: the head of the build: its title, its status line, the post 18 below, 18 under it, the hairline. */
+        <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, paddingBottom: HEAD_GAP, borderBottom: `1px solid ${t.hairline}` }}>
+          <h1 data-testid="sandbox-heading" style={{ ...text(18, 500, untitled ? t.text2 : t.text), lineHeight: "24px", margin: 0, letterSpacing: "-0.01em", overflowWrap: "anywhere" }}>
+            {untitled ? UNTITLED : props.title.trim()}
+          </h1>
+          <div style={{ lineHeight: "18px" }}>{statusLine}</div>
+          {props.post && trail.length === 0 ? (
+            <section ref={postRef} aria-label="Post" data-testid="sandbox-post" tabIndex={-1} style={{ outline: "none", minWidth: 0, marginTop: HEAD_GAP }}>
+              {props.post}
+            </section>
+          ) : null}
+        </div>
+      )}
       {buildPanel}
     </div>
   );
@@ -1061,38 +1084,59 @@ export function SandboxView(props: SandboxViewProps) {
     );
   }
 
-  const rail = lens === "map";
+  const rail = lens === "map" || frame.rail;
+  const tabs = props.mapAvailable ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <Segmented
+        label="Build view"
+        size={28}
+        fontSize={12}
+        value={props.lens}
+        onChange={props.onLens}
+        items={[
+          { value: "list", label: "List" },
+          { value: "map", label: "Map" },
+        ]}
+      />
+      {props.mapHint ? <span style={text(11.5, 400, t.label)}>Map is now available</span> : null}
+    </div>
+  ) : (
+    <span />
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 16, paddingBottom: 20, borderBottom: `1px solid ${t.hairline}` }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
-          {heading}
-          {statusLine}
-        </div>
-        {lensSwitch}
-        <div style={{ display: "flex", gap: 8, alignSelf: "flex-start", paddingTop: 2 }}>
-          <Button variant="secondary" size={32} fontSize={13} onClick={() => openCard(null)} style={{ height: 30 }}>
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div
+        data-testid="sandbox-tabs"
+        style={{ height: 44, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: `0 ${COMPOSER_PAD}px`, borderBottom: `1px solid ${t.hairline}` }}
+      >
+        {tabs}
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button variant="secondary" size={28} fontSize={12} onClick={() => openCard(null)}>
             Classification Card
           </Button>
-          <LinkButton to={previewTo} phone={false}>
+          <LinkButton to={previewTo} phone={false} height={28}>
             Preview
           </LinkButton>
-          <Button size={32} fontSize={13} disabled={publishDisabled} onClick={props.onPublish} style={{ height: 30 }}>
+          <Button size={28} fontSize={12} disabled={publishDisabled} onClick={props.onPublish}>
             {publishLabel}
           </Button>
         </div>
       </div>
-      {banner}
-      <div style={{ position: "relative", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+      {banner ? <div style={{ padding: `16px ${COMPOSER_PAD}px 0` }}>{banner}</div> : null}
+      <div
+        data-testid="sandbox-columns"
+        style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: rail ? 24 : frame.sourcesGap, padding: `32px ${COMPOSER_PAD}px 0`, minWidth: 0 }}
+      >
         <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
           {sourcesBody}
         </SourcesFrame>
         {buildColumn}
-        <section aria-label="Details" style={{ ...moduleStyle(), flex: "1 1 280px", maxWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
-          <PanelTitle>Details</PanelTitle>
-          {detailsBody}
-        </section>
+        {frame.beside ? (
+          <div style={{ marginLeft: DETAILS_GAP - (rail ? 24 : frame.sourcesGap) }}>
+            <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? props.renderDetails(plan) : detailsBody)} />
+          </div>
+        ) : null}
       </div>
       {card}
     </div>

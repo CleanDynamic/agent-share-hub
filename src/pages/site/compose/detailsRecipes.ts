@@ -75,3 +75,7 @@ export const TOOL_MARK_SIZE = 20;
 
 export const NOT_SET: CSSProperties = { ...type(12, 400, t.label, 17), margin: 0, marginTop: FOOT_ABOVE };
 export const EMPTY: CSSProperties = { ...type(13, 400, t.text2, 18), margin: 0 };
+
+/* CA-18 P4: the composer's frame. The composer sits 34 in from the surface; the build head's post is 18 below its status line and 18 above its hairline. */
+export const COMPOSER_PAD = 34;
+export const HEAD_GAP = 18;

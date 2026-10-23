@@ -1702,6 +1702,9 @@ export function SandboxPage() {
             }}
           />
         }
+        renderDetails={(plan) => (
+          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsHandlers} plan={plan} />
+        )}
         selection={
           <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsHandlers} />
         }

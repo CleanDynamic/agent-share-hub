@@ -12,7 +12,7 @@
    `DetailsHandlers` stays: the handlers are the ones the windows call (CA-18 P2), written here once and typed here. */
 
 import { Copy } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { ColourDot } from "@/components/brand/ColourButton";
 import { Button } from "@/components/brand/Button";
@@ -417,6 +417,8 @@ export interface DetailsPanelProps extends DetailsHandlers {
 
 /** CA-18 P4: Details laid out in columns: which section sits in which, how wide each is, and how tall a prose section may be before Read all. */
 export interface DetailsPlan {
+  /** Measuring copy: every piece alone in a block as wide as its container, each with no separator above, marked `data-measure`. */
+  measure?: boolean;
   columnWidth: number;
   /** The keys of what sits in each column, in order: "head", section keys, "foot". */
   columns: readonly (readonly string[])[];
@@ -582,7 +584,7 @@ export function DetailsSection({ section, first, view, onSelect, clamp, onReadAl
   const copyable = value.type === "prose" && value.copy ? value.text : null;
   void view;
   return (
-    <section data-testid="details-section" data-section={section.key} aria-label={section.label} style={{ position: "relative", minWidth: 0, ...(first ? null : SECTION_BREAK) }}>
+    <section data-testid="details-section" data-section={section.key} data-prose={value.type === "prose" ? "true" : undefined} aria-label={section.label} style={{ position: "relative", minWidth: 0, ...(first ? null : SECTION_BREAK) }}>
       <div style={SECTION_HEAD}>
         <div style={{ minWidth: 0 }}>
           <h4 style={SECTION_LABEL}>{section.label}</h4>
@@ -626,6 +628,9 @@ export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colou
   );
 }
 
+/** Contains its children's margins, so a measured piece is as tall as it draws. */
+const FLOW: CSSProperties = { display: "flow-root" };
+
 const nameOnly: BuildFacts = { ref: () => null };
 
 /** The sections a tile holds and what it leaves empty: what the panel and the layout both read. */
@@ -649,6 +654,17 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
         <DetailsHead view={view} colour={colour} onEdit={onEdit} />
         {sections.map((section, at) => one(section, at === 0))}
         {foot ? <p data-testid="details-not-set" style={NOT_SET}>{foot}</p> : null}
+      </div>
+    );
+  }
+  if (plan.measure) {
+    return (
+      <div data-testid="details-measure" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+        <div data-measure="head" style={FLOW}><DetailsHead view={view} colour={colour} onEdit={onEdit} /></div>
+        {sections.map((section) => (
+          <div key={section.key} data-measure={section.key} style={FLOW}>{one(section, true)}</div>
+        ))}
+        {foot ? <div data-measure="foot" style={FLOW}><p data-testid="details-not-set" style={NOT_SET}>{foot}</p></div> : null}
       </div>
     );
   }
