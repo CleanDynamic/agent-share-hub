@@ -25,8 +25,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { Button } from "@/components/brand/Button";
-import { Segmented } from "@/components/brand/Segmented";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
@@ -39,15 +37,14 @@ import { isCustomEntry, type Dispute, type Entry } from "@/lib/classify/types";
 import { CardPreview } from "./CardPreview";
 import { ClassificationPicker } from "./ClassificationPicker";
 import { applyDraft, draftOf, type ClassificationCardData, type ClassificationDraft } from "./classificationCardModel";
-import { useRing } from "./composeFields";
 import { DESCRIPTION_MAX } from "./composeModel";
 import { MadeWithLine } from "./MadeWithLine";
 import { ModalShell } from "./ModalFrame";
 import { OptionalField, OptionalSection } from "./OptionalSection";
-import { ChosenValue, WINDOW_FOOT } from "./classificationPieces";
+import { ChosenValue } from "./classificationPieces";
+import { BlockHead, Block, FOOT_NOTE, FieldArea, FieldInput, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
 import { ReadFromBuild } from "./ReadFromBuild";
-import { text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { DM_MONO } from "@/lib/theme/type";
+import { text } from "./refinedStyles";
 import { type ComposeViewProps } from "./ComposeView";
 import { type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
 
@@ -106,16 +103,11 @@ export const NOT_LIVE_LINE = "Classification will save once the database update 
 
 const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
 
-/** A field: the label 12.5/500 (and what sits on its right) over the control, 8 apart. */
+/** A field: the recipe's block head (the label, and what sits on its right) over the control, 8 apart. */
 function RefinedField({ id, label, right, children }: { id: string; label: string; right?: ReactNode; children: ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <label htmlFor={id} style={text(12.5, 500, t.text)}>
-          {label}
-        </label>
-        {right ? <span style={{ marginLeft: "auto" }}>{right}</span> : null}
-      </div>
+      <BlockHead label={label} htmlFor={id} count={right} />
       {children}
     </div>
   );
@@ -141,37 +133,23 @@ function BountySwitch({ on, onChange, phone }: { on: boolean; onChange: (on: boo
 }
 
 function NumberInput({ id, label, value, whole, phone, onChange }: { id: string; label: string; value: string; whole?: boolean; phone: boolean; onChange: (value: string) => void }) {
-  const focus = useRing<HTMLInputElement>();
   return (
     <RefinedField id={id} label={label}>
-      <input
-        id={id}
-        type="number"
-        inputMode={whole ? "numeric" : "decimal"}
-        min={0}
-        step={whole ? 1 : "any"}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        {...focus.handlers}
-        style={{ ...typedField(phone), ...focus.style }}
-      />
+      <FieldInput id={id} phone={phone} type="number" inputMode={whole ? "numeric" : "decimal"} min={0} step={whole ? 1 : "any"} value={value} onChange={(event) => onChange(event.target.value)} />
     </RefinedField>
   );
 }
 
 function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; details: ComposeDetails; onChange: (key: ComposeDetailKey, value: string) => void; onGap: (on: boolean) => void }) {
-  const brokeRing = useRing<HTMLTextAreaElement>();
-  const fixRing = useRing<HTMLTextAreaElement>();
-  const gapRing = useRing<HTMLInputElement>();
   const money = (value: string) => (value.trim() ? `£${value}` : "");
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <OptionalField phone={phone} filledText name="Known issue" description="What broke and how it was fixed" summary={details.symptom}>
         <RefinedField id="card-problem" label="Problem">
-          <textarea id="card-problem" rows={2} value={details.symptom} placeholder="e.g. exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} {...brokeRing.handlers} style={{ ...typedArea(phone), ...brokeRing.style }} />
+          <FieldArea id="card-problem" phone={phone} rows={2} value={details.symptom} placeholder="e.g. exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} />
         </RefinedField>
         <RefinedField id="card-fix" label="Fix">
-          <textarea id="card-fix" rows={2} value={details.resolution} placeholder="e.g. Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} {...fixRing.handlers} style={{ ...typedArea(phone), ...fixRing.style }} />
+          <FieldArea id="card-fix" phone={phone} rows={2} value={details.resolution} placeholder="e.g. Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} />
         </RefinedField>
       </OptionalField>
       <OptionalField phone={phone} filledText name="Build cost (£)" description="What it cost to make" summary={money(details.costSetup)}>
@@ -188,7 +166,7 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
         {details.gapOn ? (
           <>
             <RefinedField id="card-left-open" label="What is left open">
-              <input id="card-left-open" type="text" autoComplete="off" value={details.gapProblem} onChange={(event) => onChange("gapProblem", event.target.value)} {...gapRing.handlers} style={{ ...typedField(phone), ...gapRing.style }} />
+              <FieldInput id="card-left-open" phone={phone} type="text" autoComplete="off" value={details.gapProblem} onChange={(event) => onChange("gapProblem", event.target.value)} />
             </RefinedField>
             <p style={{ margin: 0, ...text(12, 400, t.text2) }}>Readers will see it as one part left open. You can add a reward on Bounties after publishing.</p>
           </>
@@ -210,10 +188,7 @@ function CardBody(props: SandboxCardProps) {
   const [details, setDetails] = useState<ComposeDetails>(props.details);
   const [draft, setDraft] = useState<ClassificationDraft>(() => draftOf(data?.stored ?? emptyClassification()));
   const [saving, setSaving] = useState(false);
-  const titleRing = useRing<HTMLInputElement>();
-  const summaryRing = useRing<HTMLTextAreaElement>();
-  const fieldText = phone ? 16 : 13.5;
-  const pad = 20;
+  const pad = useModalInset();
 
   const stored = data?.stored ?? null;
   const candidate = useMemo(() => (data ? applyDraft(stored, data.derived, draft) : null), [data, stored, draft]);
@@ -299,20 +274,11 @@ function CardBody(props: SandboxCardProps) {
           ) : null}
         </div>
 
-        <div style={{ padding: `14px ${pad}px 16px`, borderTop: `1px solid ${t.hairlineModule}` }}>
-          <RefinedField id={CARD_FIELD_ID.title} label="Title" right={<span style={{ fontFamily: DM_MONO, fontSize: 11.5, color: t.label }}>Required</span>}>
-            <input
-              id={CARD_FIELD_ID.title}
-              type="text"
-              value={title}
-              placeholder="Name your build"
-              autoComplete="off"
-              onChange={(event) => setTitle(event.target.value)}
-              {...titleRing.handlers}
-              style={{ ...wellField, height: phone ? 44 : 32, padding: "0 12px", ...text(fieldText, 400, t.text), ...titleRing.style }}
-            />
+        <Block testId="card-title-block">
+          <RefinedField id={CARD_FIELD_ID.title} label="Title" right="Required">
+            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} placeholder="Name your build" autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
           </RefinedField>
-        </div>
+        </Block>
 
         <div style={{ padding: `0 ${pad}px`, borderTop: `1px solid ${t.hairlineModule}` }}>
           <OptionalSection hint="Suggestions come from your build" bleed={pad}>
@@ -321,24 +287,15 @@ function CardBody(props: SandboxCardProps) {
               "One sentence on what the build does",
               summary,
               undefined,
-              <RefinedField
-                id={CARD_FIELD_ID.summary}
-                label="Summary"
-                right={
-                  <span style={{ ...text(11.5, 400, t.label), ...tnum }}>
-                    {summary.length} / {DESCRIPTION_MAX}
-                  </span>
-                }
-              >
-                <textarea
+              <RefinedField id={CARD_FIELD_ID.summary} label="Summary" right={`${summary.length} / ${DESCRIPTION_MAX}`}>
+                <FieldArea
                   id={CARD_FIELD_ID.summary}
+                  phone={phone}
                   rows={2}
                   value={summary}
                   maxLength={DESCRIPTION_MAX}
                   placeholder="e.g. Answers customer questions from the help centre using keyword and vector search together"
                   onChange={(event) => setSummary(event.target.value)}
-                  {...summaryRing.handlers}
-                  style={{ ...wellField, display: "block", minHeight: 52, padding: "8px 12px", ...text(fieldText, 400, t.text), lineHeight: "20px", resize: "vertical", ...summaryRing.style }}
                 />
               </RefinedField>,
               { forceOpen: open("summary") },
@@ -372,7 +329,7 @@ function CardBody(props: SandboxCardProps) {
                     draft.age ? labelFor("age", draft.age) : "",
                     undefined,
                     <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                      <Segmented label="Age suitability" items={AGE_VALUES.map((value) => ({ value: value.id, label: value.label }))} value={draft.age ?? ""} size={phone ? 50 : 26} fontSize={12} onChange={(value) => set("age", value)} />
+                      <SegmentedField label="Age suitability" items={AGE_VALUES.map((value) => ({ value: value.id, label: value.label }))} value={draft.age} phone={phone} onChange={(value) => set("age", value)} />
                       {draft.age ? (
                         <button type="button" onClick={() => set("age", null)} style={{ border: 0, background: "none", cursor: "pointer", minHeight: phone ? 44 : 24, ...text(12, 400, t.text2), textDecoration: "underline" }}>
                           Clear age suitability
@@ -423,16 +380,16 @@ function CardBody(props: SandboxCardProps) {
         </div>
       </div>
 
-      <div style={{ flexShrink: 0, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 8, padding: "14px 20px", background: WINDOW_FOOT, borderTop: `1px solid ${t.hairlineModule}`, ...(phone ? { position: "sticky", bottom: 0 } : null) }}>
-        <span data-testid="card-required" style={{ ...text(12.5, 400, t.label), flexGrow: 1, minWidth: 0 }}>
+      <div data-testid="card-footer" style={footerStyle(phone)}>
+        <span data-testid="card-required" style={FOOT_NOTE}>
           {titleOk ? "All required fields complete" : "Required: a title"}
         </span>
-        <Button variant="secondary" size={phone ? 44 : 30} fontSize={13} onClick={() => props.onOpenChange(false)}>
+        <RecipeButton phone={phone} onClick={() => props.onOpenChange(false)}>
           Cancel
-        </Button>
-        <Button size={phone ? 44 : 30} fontSize={13} disabled={!titleOk || saving} onClick={() => void onSave()}>
+        </RecipeButton>
+        <RecipeButton variant="primary" phone={phone} disabled={!titleOk || saving} onClick={() => void onSave()}>
           Save
-        </Button>
+        </RecipeButton>
       </div>
     </>
   );

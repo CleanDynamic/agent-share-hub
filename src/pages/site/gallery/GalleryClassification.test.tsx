@@ -11,6 +11,7 @@ const listGalleryFeed = vi.fn();
 const getGalleryFacets = vi.fn();
 const getClassificationFacets = vi.fn();
 const getBuildClassifications = vi.fn();
+const getBuildTries = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { storage: { from: () => ({ createSignedUrl: vi.fn().mockResolvedValue({ data: null, error: null }) }) } },
@@ -29,6 +30,7 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   listGalleryFeed: (params: unknown) => listGalleryFeed(params),
   getClassificationFacets: () => getClassificationFacets(),
   getBuildClassifications: (ids: unknown) => getBuildClassifications(ids),
+  getBuildTries: (ids: unknown) => getBuildTries(ids),
 }));
 vi.mock("@/lib/build/sessions", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/sessions")>()),
@@ -61,6 +63,9 @@ const COUNTS = {
   "setting:education": 1,
   "setting:education.lecturer": 1,
   "role:made-with-ai": 6,
+  "field:education": 3,
+  "setting:research": 2,
+  "built:autonomous-agent": 1,
 };
 
 function row(id: string): GalleryFeedRow {
@@ -122,10 +127,7 @@ function renderAt(entry: string) {
 }
 
 const address = () => screen.getByTestId("address").textContent;
-const openFilters = async () => {
-  fireEvent.click(await screen.findByRole("button", { name: "Filters" }));
-  return screen.getByRole("region", { name: "Filters" });
-};
+const filters = async () => within(await screen.findByRole("complementary", { name: "Filters" }));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -133,6 +135,7 @@ beforeEach(() => {
   getGalleryFacets.mockResolvedValue({ roles: [], tools: [] });
   getClassificationFacets.mockResolvedValue({ live: true, counts: COUNTS });
   getBuildClassifications.mockResolvedValue({});
+  getBuildTries.mockResolvedValue({});
 });
 
 describe("Gallery filters: before the columns are live", () => {
@@ -141,7 +144,7 @@ describe("Gallery filters: before the columns are live", () => {
     renderAt("/gallery?f=field:ai-ml");
     expect(await screen.findByTestId("feed-menu-sort")).toBeTruthy();
     await waitFor(() => expect(listGalleryFeed).toHaveBeenCalled());
-    expect(screen.queryByRole("button", { name: "Filters" })).toBeNull();
+    expect(screen.queryByRole("complementary", { name: "Filters" })).toBeNull();
     expect(screen.queryByTestId("quick-chips")).toBeNull();
     expect(listGalleryFeed).toHaveBeenLastCalledWith(expect.not.objectContaining({ facets: expect.anything() }));
     expect(listGalleryFeed.mock.calls.every(([params]) => !("classified" in (params as object)) || (params as { classified?: boolean }).classified === undefined)).toBe(true);
@@ -149,111 +152,259 @@ describe("Gallery filters: before the columns are live", () => {
   });
 });
 
-describe("Gallery filters: with the columns live", () => {
-  it("shows the two quick chips and no Sort menu, and says the order in the count line", async () => {
+describe("Gallery board: the page, top to bottom", () => {
+  it("heads the page with Gallery and the two quick filters at the right", async () => {
     renderAt("/gallery");
-    const quick = await screen.findByTestId("quick-chips");
+    await screen.findByTestId("quick-chips");
+    const heading = screen.getByRole("heading", { level: 1, name: "Gallery" });
+    expect(heading.style.fontSize).toBe("22px");
+    const quick = screen.getByTestId("quick-chips");
     expect(within(quick).getAllByRole("button").map((b) => b.textContent)).toEqual(["No coding", "Free plans are enough"]);
+    expect(heading.compareDocumentPosition(quick) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByTestId("feed-menu-sort")).toBeNull();
-    await waitFor(() => expect(screen.getByTestId("feed-count")).toHaveTextContent("2 builds, newest first"));
   });
 
-  it("opens the filters in the order Field, Task, What was built, Tools and stack, then a closed More filters", async () => {
+  it("has the search with the board's placeholder, then the tabs and the lens", async () => {
     renderAt("/gallery");
-    const panel = await openFilters();
-    const headings = within(panel).getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(headings).toEqual(["Field", "Task", "What was built", "Tools and stack"]);
-    const more = within(panel).getByRole("button", { name: "More filters" });
+    await screen.findByTestId("quick-chips");
+    const search = screen.getByRole("searchbox", { name: "Search the gallery" }) as HTMLInputElement;
+    expect(search.placeholder).toBe("Search builds, fields, tasks, tools. For example: NLP, Stata, marking, trading bot");
+    expect(search.style.height).toBe("38px");
+    const tabs = screen.getAllByRole("tab").map((tab) => tab.textContent);
+    expect(tabs).toEqual(["All builds", "By field", "By task", "By what was built", "By technique"]);
+    expect(screen.getByRole("tab", { name: "All builds" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "All builds" }).style.borderBottomWidth).toBe("2px");
+    const lens = screen.getByRole("group", { name: "Lens" });
+    expect(within(lens).getAllByRole("button").map((b) => b.textContent)).toEqual(["All", "Proven", "Rebuilt", "Unsolved"]);
+  });
+
+  it("shows the collections that have builds, with their counts, and applies one as filters", async () => {
+    renderAt("/gallery");
+    const collections = await screen.findByTestId("collections");
+    const buttons = within(collections).getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual([
+      "AI for teachersMarking, lesson planning, presentations \u00B7 3 builds",
+      "Research with AILiterature review, text analysis, statistics \u00B7 2 builds",
+      "Runs on its ownAutonomous agents shown running \u00B7 1 build",
+    ]);
+    fireEvent.click(buttons[0]);
+    await waitFor(() => expect(address()).toBe("/gallery?f=field:education"));
+    fireEvent.click(buttons[2]);
+    await waitFor(() => expect(address()).toBe("/gallery?f=field:education&f=built:autonomous-agent&f=built:multi-agent-system"));
+  });
+
+  it("hides a collection with no builds, and the whole row when none has any", async () => {
+    getClassificationFacets.mockResolvedValue({ live: true, counts: { ...COUNTS, "field:education": 0, "setting:research": 0 } });
+    renderAt("/gallery");
+    const collections = await screen.findByTestId("collections");
+    expect(within(collections).getAllByRole("button").map((b) => b.textContent?.slice(0, 11))).toEqual(["Runs on its"]);
+  });
+
+  it("draws no collections row at all when none has builds", async () => {
+    getClassificationFacets.mockResolvedValue({ live: true, counts: { "skill:no-coding": 5 } });
+    renderAt("/gallery");
+    await screen.findByTestId("quick-chips");
+    expect(screen.queryByTestId("collections")).toBeNull();
+  });
+
+  it("says the order the Gallery really uses", async () => {
+    renderAt("/gallery");
+    await screen.findByTestId("quick-chips");
+    expect(screen.getByTestId("feed-count")).toHaveTextContent("Proven builds first, then newest");
+    await waitFor(() => expect(listGalleryFeed).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "reproduced", classified: true })));
+  });
+
+  it("draws the filters in a 248 column in the order Field, Task, What was built, Tools and stack, then a closed More filters naming its groups", async () => {
+    renderAt("/gallery");
+    const column = await screen.findByRole("complementary", { name: "Filters" });
+    const f = within(column);
+    expect(f.getAllByRole("region").map((region) => region.getAttribute("aria-label"))).toEqual(["Field", "Task", "What was built", "Tools and stack", "More filters"]);
+    for (const name of ["Field", "Task", "What was built", "Tools and stack"]) expect(f.getByRole("button", { name }).getAttribute("aria-expanded")).toBe("true");
+    const more = f.getByRole("button", { name: "More filters" });
     expect(more.getAttribute("aria-expanded")).toBe("false");
+    expect(f.getByTestId("more-filters-line").textContent).toBe("Setting \u00B7 Role of AI \u00B7 Techniques \u00B7 Modality \u00B7 Build method \u00B7 Autonomy \u00B7 Data handled \u00B7 Skill needed \u00B7 Cost to run \u00B7 Age suitability");
     fireEvent.click(more);
-    const after = within(panel).getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(after.slice(4)).toEqual(["Setting", "Role of AI", "Skill needed", "Cost to run"]);
-    expect(within(panel).queryByRole("heading", { name: "Techniques" })).toBeNull();
+    expect(f.queryByTestId("more-filters-line")).toBeNull();
+    expect(f.getByRole("region", { name: "Setting" })).toBeTruthy();
+    expect(f.getByRole("region", { name: "Role of AI" })).toBeTruthy();
+    expect(f.queryByRole("region", { name: "Techniques" })).toBeNull();
   });
 
-  it("shows counts, hides values with no builds, and shows Areas and Domains opening to their children", async () => {
+  it("uses checkboxes with counts, hides values with no builds, and opens Areas to their children", async () => {
     renderAt("/gallery");
-    const panel = await openFilters();
-    const field = within(panel).getByRole("region", { name: "Field" });
-    expect(within(field).getByRole("button", { name: /^AI and machine learning/ }).textContent).toContain("5");
-    expect(within(field).getByRole("button", { name: /^Medicine and health/ }).textContent).toContain("2");
-    expect(within(field).queryByRole("button", { name: /^Law/ })).toBeNull();
-    expect(within(field).queryByRole("button", { name: /^Retrieval systems/ })).toBeNull();
+    const f = await filters();
+    const field = f.getByRole("region", { name: "Field" });
+    const ai = within(field).getByRole("checkbox", { name: "AI and machine learning" });
+    expect(ai.closest("label")?.textContent).toContain("5");
+    expect(within(field).queryByRole("checkbox", { name: "Law" })).toBeNull();
+    expect(within(field).queryByRole("checkbox", { name: "Retrieval systems" })).toBeNull();
     fireEvent.click(within(field).getByRole("button", { name: "Show what is under AI and machine learning" }));
-    expect(within(field).getByRole("button", { name: /^Retrieval systems/ }).textContent).toContain("3");
-    fireEvent.click(within(field).getByRole("button", { name: "Show what is under Retrieval systems" }));
-    expect(within(field).getByRole("button", { name: /^Hybrid search/ }).textContent).toContain("2");
-    const task = within(panel).getByRole("region", { name: "Task" });
-    expect(within(task).getByRole("button", { name: /^Create/ })).toBeTruthy();
-    expect(within(task).queryByRole("button", { name: /^Writing/ })).toBeNull();
-    fireEvent.click(within(task).getByRole("button", { name: "Show what is under Create" }));
-    expect(within(task).getByRole("button", { name: /^Writing/ })).toBeTruthy();
+    expect(within(field).getByRole("checkbox", { name: "Retrieval systems" }).closest("label")?.textContent).toContain("3");
+    expect(f.getByRole("region", { name: "Task" }).querySelectorAll("input[type=checkbox]").length).toBeGreaterThan(0);
   });
 
-  it("shows the top 6 values and then Show all", async () => {
+  it("shows the top 6 values and then a text link, Show all for What was built", async () => {
     const many: Record<string, number> = {};
     ["web-app", "mobile-app", "game", "dataset", "video", "audio", "presentation", "image-set"].forEach((id, i) => {
       many[`built:${id}`] = 10 - i;
     });
     getClassificationFacets.mockResolvedValue({ live: true, counts: many });
     renderAt("/gallery");
-    const panel = await openFilters();
-    const built = within(panel).getByRole("region", { name: "What was built" });
-    expect(within(built).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))).toHaveLength(6);
-    fireEvent.click(within(built).getByRole("button", { name: "Show all What was built" }));
-    expect(within(built).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))).toHaveLength(8);
-    expect(within(built).getByRole("button", { name: "Show fewer What was built" })).toBeTruthy();
+    const f = await filters();
+    const built = f.getByRole("region", { name: "What was built" });
+    expect(within(built).getAllByRole("checkbox")).toHaveLength(6);
+    fireEvent.click(within(built).getByText("Show all"));
+    expect(within(built).getAllByRole("checkbox")).toHaveLength(8);
+    expect(within(built).getByText("Show fewer")).toBeTruthy();
   });
 
-  it("searches Tools and stack inside its own box", async () => {
+  it("opens the search box of Tools and stack from its link, and finds a tool in it", async () => {
     renderAt("/gallery");
-    const panel = await openFilters();
-    const stack = within(panel).getByRole("region", { name: "Tools and stack" });
-    expect(within(stack).getByRole("button", { name: /^Python/ })).toBeTruthy();
+    const f = await filters();
+    const stack = f.getByRole("region", { name: "Tools and stack" });
+    expect(within(stack).queryByRole("searchbox")).toBeNull();
+    fireEvent.click(within(stack).getByText("Search tools"));
     fireEvent.change(within(stack).getByRole("searchbox", { name: "Search Tools and stack" }), { target: { value: "stat" } });
-    expect(within(stack).getByRole("button", { name: /^Stata/ })).toBeTruthy();
-    expect(within(stack).queryByRole("button", { name: /^Python/ })).toBeNull();
+    expect(within(stack).getByRole("checkbox", { name: "Stata" })).toBeTruthy();
+    expect(within(stack).queryByRole("checkbox", { name: "Python" })).toBeNull();
   });
 
   it("writes the address and asks the feed: an OR within a facet, an AND across facets", async () => {
     renderAt("/gallery");
-    const panel = await openFilters();
-    const field = within(panel).getByRole("region", { name: "Field" });
-    fireEvent.click(within(field).getByRole("button", { name: /^AI and machine learning/ }));
+    const f = await filters();
+    fireEvent.click(f.getByRole("checkbox", { name: "AI and machine learning" }));
     await waitFor(() => expect(address()).toBe("/gallery?f=field:ai-ml"));
-    fireEvent.click(within(field).getByRole("button", { name: /^Medicine and health/ }));
+    fireEvent.click(f.getByRole("checkbox", { name: "Medicine and health" }));
     fireEvent.click(within(screen.getByTestId("quick-chips")).getByRole("button", { name: "No coding" }));
     await waitFor(() => expect(address()).toBe("/gallery?f=field:ai-ml&f=field:medicine&f=skill:no-coding"));
     expect(listGalleryFeed).toHaveBeenLastCalledWith(expect.objectContaining({ facets: ["field:ai-ml", "field:medicine", "skill:no-coding"], classified: true }));
-    expect(within(screen.getByTestId("feed-active-filters")).getByRole("button", { name: "Remove Field: AI and machine learning" })).toBeTruthy();
     fireEvent.click(within(screen.getByTestId("feed-active-filters")).getByRole("button", { name: "Remove Skill needed: No coding" }));
     await waitFor(() => expect(address()).toBe("/gallery?f=field:ai-ml&f=field:medicine"));
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
     await waitFor(() => expect(address()).toBe("/gallery"));
   });
 
-  it("reads facets from a link, and drops one the lists do not know", async () => {
-    renderAt("/gallery?f=skill:no-coding&f=skill:nope&f=cost:free-plans-are-enough");
-    await waitFor(() => expect(address()).toBe("/gallery?f=skill:no-coding&f=cost:free-plans-are-enough"));
-    await waitFor(() => expect(listGalleryFeed).toHaveBeenLastCalledWith(expect.objectContaining({ facets: ["skill:no-coding", "cost:free-plans-are-enough"] })));
+  it("reads facets and a tab from a link, and drops a facet the lists do not know", async () => {
+    renderAt("/gallery?f=skill:no-coding&f=skill:nope&f=cost:free-plans-are-enough&by=field");
+    await waitFor(() => expect(address()).toBe("/gallery?f=skill:no-coding&f=cost:free-plans-are-enough&by=field"));
+    expect((await screen.findByRole("tab", { name: "By field" })).getAttribute("aria-selected")).toBe("true");
     expect(within(screen.getByTestId("quick-chips")).getByRole("button", { name: "No coding" }).getAttribute("aria-pressed")).toBe("true");
   });
 });
 
-describe("Gallery cards: two lines and the Regulated area tag", () => {
-  it("draws the lines under the build line, and the tag beside the title, for a classified build only", async () => {
-    const c: Classification = {
-      ...emptyClassification(),
-      declared: { ...emptyClassification().declared, field: [{ id: "law.contracts" }], task: [{ id: "assess.reviewing-and-critiquing", primary: true }], setting: [{ id: "work.small-business" }] },
-      derived: { built: { values: ["web-app"], from: [] }, role: { values: ["made-with-ai"], from: [] }, skill: { values: ["no-coding"], from: [] }, stack: { values: ["ai-applications.claude", "languages.python", "applications.stata"], from: [] } },
-    };
-    getBuildClassifications.mockResolvedValue({ a: c });
+describe("Gallery board: the items", () => {
+  const classified: Classification = {
+    ...emptyClassification(),
+    declared: { ...emptyClassification().declared, field: [{ id: "law.contracts" }], task: [{ id: "assess.reviewing-and-critiquing", primary: true }], setting: [{ id: "work.small-business" }] },
+    derived: { built: { values: ["web-app"], from: [] }, role: { values: ["made-with-ai"], from: [] }, skill: { values: ["no-coding"], from: [] }, stack: { values: ["ai-applications.claude", "languages.python", "applications.stata"], from: [] } },
+  };
+
+  it("reads author, title with the Regulated area tag, summary, the two lines and the proof line, with no cover", async () => {
+    getBuildClassifications.mockResolvedValue({ a: classified });
+    getBuildTries.mockResolvedValue({ a: { tried: 4, worked: 3 }, b: { tried: 2, worked: 1 } });
     renderAt("/gallery");
-    const lines = await screen.findAllByText("Claude + Python · Web app · Made with AI · No coding");
-    expect(lines).toHaveLength(1);
-    expect(screen.getByText("Contracts · Reviewing and critiquing · Small business")).toBeTruthy();
-    expect(screen.getAllByText("Regulated area")).toHaveLength(1);
-    expect(screen.getAllByTestId("feed-build-title")).toHaveLength(2);
-    expect(document.querySelectorAll("[data-card-part='classification']")).toHaveLength(1);
+    const items = await screen.findAllByTestId("board-item");
+    expect(items).toHaveLength(2);
+    const item = items[0];
+    expect(within(item).getByText("Maria")).toBeTruthy();
+    expect(within(item).getByText("@maria")).toBeTruthy();
+    expect(within(item).getByTestId("feed-build-title").textContent).toBe("Build a");
+    expect(within(item).getByText("Regulated area")).toBeTruthy();
+    expect(within(item).getByText("It works.")).toBeTruthy();
+    expect(within(item).getByText("Claude + Python \u00B7 Web app \u00B7 Made with AI \u00B7 No coding")).toBeTruthy();
+    expect(within(item).getByText("Contracts \u00B7 Reviewing and critiquing \u00B7 Small business")).toBeTruthy();
+    expect(within(item).getByTestId("board-proof").textContent).toBe("3 of 4 people got it working");
+    expect(item.querySelector("img")).toBeNull();
+    // the second build has no classification: no lines, no tag
+    expect(within(items[1]).queryByText("Regulated area")).toBeNull();
+    expect(items[1].querySelector("[data-card-part='classification-1']")).toBeNull();
+  });
+
+  it("draws the proof dot only when more than half got it working", async () => {
+    getBuildTries.mockResolvedValue({ a: { tried: 4, worked: 3 }, b: { tried: 4, worked: 2 } });
+    renderAt("/gallery");
+    const items = await screen.findAllByTestId("board-item");
+    await waitFor(() => expect(within(items[0]).getByTestId("board-proof").textContent).toBe("3 of 4 people got it working"));
+    expect(within(items[0]).queryByTestId("board-proof-dot")).not.toBeNull();
+    expect(within(items[1]).getByTestId("board-proof").textContent).toBe("2 of 4 people got it working");
+    expect(within(items[1]).queryByTestId("board-proof-dot")).toBeNull();
+  });
+
+  it("says Not yet reproduced when nobody has tried it", async () => {
+    listGalleryFeed.mockResolvedValue({ ...page(["a"]), rows: [{ ...row("a"), reproduction_count: 0 }] });
+    renderAt("/gallery");
+    const item = await screen.findByTestId("board-item");
+    expect(within(item).getByTestId("board-proof").textContent).toBe("Not yet reproduced");
+  });
+
+  it("filters the loaded builds by the lens", async () => {
+    listGalleryFeed.mockResolvedValue({ ...page(["a", "b"]), rows: [{ ...row("a"), reproduction_count: 3 }, { ...row("b"), reproduction_count: 0, rebuild_count: 2 }] });
+    renderAt("/gallery");
+    await screen.findAllByTestId("board-item");
+    fireEvent.click(within(screen.getByRole("group", { name: "Lens" })).getByRole("button", { name: "Rebuilt" }));
+    await waitFor(() => expect(screen.getAllByTestId("board-item")).toHaveLength(1));
+    expect(screen.getByTestId("feed-build-title").textContent).toBe("Build b");
+    await waitFor(() => expect(address()).toBe("/gallery?lens=rebuilt"));
+  });
+});
+
+describe("Gallery board: the tabs", () => {
+  it("groups the builds by the facet's top-level values, most first, each with its first three builds and Show all", async () => {
+    listGalleryFeed.mockImplementation(async (params: { facets?: string[] }) => {
+      const key = (params.facets ?? []).find((f) => f.startsWith("field:"));
+      return key === "field:ai-ml" ? page(["a", "b", "c", "d"]) : key === "field:medicine" ? page(["e"]) : page(["a", "b"]);
+    });
+    renderAt("/gallery?by=field");
+    const groups = await screen.findByTestId("board-groups");
+    const sections = await within(groups).findAllByTestId("board-group");
+    expect(sections.map((section) => section.getAttribute("aria-label"))).toEqual(["AI and machine learning", "Education", "Medicine and health"]);
+    expect(within(sections[0]).getAllByTestId("board-item")).toHaveLength(3);
+    expect(within(sections[0]).getByRole("button", { name: "Show all 5" })).toBeTruthy();
+    expect(within(sections[1]).getAllByTestId("board-item")).toHaveLength(2);
+    expect(within(sections[2]).getAllByTestId("board-item")).toHaveLength(1);
+    expect(listGalleryFeed).toHaveBeenCalledWith(expect.objectContaining({ facets: ["field:ai-ml"] }));
+  });
+
+  it("keeps the filters inside a tab, and Show all chooses the value and returns to All builds", async () => {
+    renderAt("/gallery?by=task&f=skill:no-coding");
+    const groups = await screen.findByTestId("board-groups");
+    await within(groups).findAllByTestId("board-group");
+    expect(listGalleryFeed).toHaveBeenCalledWith(expect.objectContaining({ facets: ["skill:no-coding", "task:create"] }));
+    fireEvent.click(within(groups).getByRole("button", { name: "Show all 4" }));
+    await waitFor(() => expect(address()).toBe("/gallery?f=skill:no-coding&f=task:create"));
+    expect(screen.queryByTestId("board-groups")).toBeNull();
+  });
+
+  it("writes the tab in the address and reads it back", async () => {
+    renderAt("/gallery");
+    fireEvent.click(await screen.findByRole("tab", { name: "By technique" }));
+    await waitFor(() => expect(address()).toBe("/gallery?by=technique"));
+    fireEvent.click(screen.getByRole("tab", { name: "All builds" }));
+    await waitFor(() => expect(address()).toBe("/gallery"));
+  });
+});
+
+describe("Gallery board: narrower windows", () => {
+  it("below 768 puts the filters behind a Filters button in a sheet, with one column", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: /max-width/.test(query), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    renderAt("/gallery");
+    expect(await screen.findByTestId("board-grid")).toBeTruthy();
+    expect(screen.queryByRole("complementary", { name: "Filters" })).toBeNull();
+    expect(screen.getByTestId("board-grid").style.gridTemplateColumns).toBe("repeat(1, minmax(0, 1fr))");
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    expect(await screen.findByRole("region", { name: "Field" })).toBeTruthy();
+    vi.unstubAllGlobals();
+  });
+
+  it("below 1100 has two columns, and from 1100 three", async () => {
+    const stub = (wide: boolean) => vi.stubGlobal("matchMedia", (query: string) => ({ matches: /min-width: ?1100/.test(query) ? wide : /min-width/.test(query), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    stub(false);
+    const { unmount } = renderAt("/gallery");
+    expect((await screen.findByTestId("board-grid")).style.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+    unmount();
+    stub(true);
+    renderAt("/gallery");
+    expect((await screen.findByTestId("board-grid")).style.gridTemplateColumns).toBe("repeat(3, minmax(0, 1fr))");
+    vi.unstubAllGlobals();
   });
 });

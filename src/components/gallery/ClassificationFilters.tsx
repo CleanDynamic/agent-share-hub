@@ -1,23 +1,28 @@
-/* CA-16 P6: the Gallery's classification filters.
+/* CA-16 and CA-16b: the Gallery's classification filters, drawn as the "Gallery with filters" board draws them.
 
-   IN THIS ORDER: Field (Areas and Domains with counts, each opening to its children), Task (groups, each opening to its
-   tasks), What was built, Tools and stack (with its own search box). Then one closed group, More filters, holding Setting,
-   Role of AI, Techniques, Modality, Build method, Autonomy, Data handled, Skill needed, Cost to run and Age suitability.
-   Every value shows its count; a value with no builds is hidden (a chosen one stays, so it can be turned off); a group
-   shows its top 6 and then "Show all". Two quick chips sit above: No coding, and Free plans are enough.
+   FIVE GROUPS in this order: Field, Task, What was built, Tools and stack, then More filters. The first four start open,
+   More filters starts closed and, closed, names the groups it holds ("Setting · Role of AI · Techniques · ..."); open, each
+   becomes a group of its own. Groups are split by `--hairline` rules and padded 10 0; the first has no rule and no top
+   padding. A group's head is its name at 13/500 and a 14 chevron in `--label` that turns over when open.
 
-   Choosing values is an OR within a facet and an AND across facets; this component only says which keys are chosen and
-   the page writes the address. It draws the refined `FilterChip` and the well, and nothing of its own colour. */
+   OPTIONS are rows padded 5 0, 13 `--text2`: the brand Checkbox at 14 (a 1px dashed edge when empty), the value, then its
+   count at the right in the data face 11 `--label`. A value with no builds is hidden (a chosen one stays, so it can be turned
+   off). Each group shows its top 6 and then a text link, 12.5 `--text2`, underlined: "Show all fields", "Show all tasks",
+   "Show all", and for Tools and stack "Search tools", which opens its search box. Field, Task and Setting values that have
+   children show a small chevron that opens them in place.
 
-import { useId, useMemo, useState } from "react";
+   Choosing values is an OR within a facet and an AND across facets; this only says which keys are chosen and the page
+   writes the address. The two quick filters are `QuickFilters`, which the Gallery's heading row carries. */
 
-import { FilterChip } from "@/components/brand/FilterChip";
+import { useId, useMemo, useState, type CSSProperties } from "react";
+
+import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
-import { SearchField } from "@/components/brand/SearchField";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { FACET_LABEL, TAXONOMY, STACK_VALUES, type Facet, type TaxonomyValue } from "@/lib/classify/taxonomy";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FACET_LABEL, STACK_VALUES, TAXONOMY, type Facet, type TaxonomyValue } from "@/lib/classify/taxonomy";
 
 export const TOP_VALUES = 6;
 
@@ -26,11 +31,15 @@ export const QUICK_CHIPS: readonly { key: string; label: string }[] = [
   { key: "cost:free-plans-are-enough", label: "Free plans are enough" },
 ];
 
-const MAIN: readonly { facet: Facet; tree?: boolean; search?: boolean }[] = [
-  { facet: "field", tree: true },
-  { facet: "task", tree: true },
-  { facet: "built" },
-  { facet: "stack", search: true },
+const DASH_EDGE = t.segOnBorder;
+const SEG_ON_BORDER = t.segOnBorder;
+
+/** The facets of the first four groups, and what the "Show all" link says. */
+const MAIN: readonly { facet: Facet; tree?: boolean; search?: boolean; more: string }[] = [
+  { facet: "field", tree: true, more: "Show all fields" },
+  { facet: "task", tree: true, more: "Show all tasks" },
+  { facet: "built", more: "Show all" },
+  { facet: "stack", search: true, more: "Search tools" },
 ];
 
 const MORE: readonly { facet: Facet; tree?: boolean }[] = [
@@ -45,6 +54,9 @@ const MORE: readonly { facet: Facet; tree?: boolean }[] = [
   { facet: "cost" },
   { facet: "age" },
 ];
+
+/** What closed More filters says it holds. */
+export const MORE_FILTERS_LINE = MORE.map((group) => FACET_LABEL[group.facet]).join(" · ");
 
 export type FacetCounts = Readonly<Record<string, number>>;
 
@@ -70,73 +82,89 @@ export function visibleValues(values: readonly TaxonomyValue[], counts: FacetCou
   return [...top, ...kept];
 }
 
-function ShowAll({ open, hidden, onToggle, name, phone }: { open: boolean; hidden: number; onToggle: () => void; name: string; phone: boolean }) {
+const link: CSSProperties = { border: 0, background: "transparent", cursor: "pointer", padding: 0, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textAlign: "left" };
+
+/** A text link under a group: 4 below it, 12.5 `--text2`, underlined. */
+function TextLink({ children, onClick, expanded, name, phone }: { children: string; onClick: () => void; expanded?: boolean; name?: string; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
-  if (!open && hidden <= 0) return null;
   return (
-    <button
-      type="button"
-      aria-expanded={open}
-      aria-label={`${open ? "Show fewer" : "Show all"} ${name}`}
-      onClick={onToggle}
-      {...handlers}
-      style={{ alignSelf: "flex-start", border: 0, background: "transparent", cursor: "pointer", minHeight: phone ? 44 : 28, padding: "0 4px", borderRadius: 6, fontFamily: "inherit", fontSize: 12, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, ...ring(state.focusVisible) }}
-    >
-      {open ? "Show fewer" : "Show all"}
+    <button type="button" aria-expanded={expanded} aria-label={name} onClick={onClick} {...handlers} style={{ ...link, alignSelf: "flex-start", marginTop: 4, minHeight: phone ? 44 : undefined, borderRadius: 4, ...ring(state.focusVisible) }}>
+      {children}
     </button>
   );
 }
 
-function ValueChip({ value, counts, selected, onToggle }: { value: TaxonomyValue; counts: FacetCounts; selected: ReadonlySet<string>; onToggle: (key: string) => void }) {
+function Option({ value, counts, selected, onToggle, phone, trailing }: { value: TaxonomyValue; counts: FacetCounts; selected: ReadonlySet<string>; onToggle: (key: string) => void; phone: boolean; trailing?: React.ReactNode }) {
   const key = keyOf(value.facet, value.id);
-  return <FilterChip label={value.label} count={countOf(counts, value.facet, value.id)} on={selected.has(key)} onClick={() => onToggle(key)} />;
+  const on = selected.has(key);
+  const [hover, setHover] = useState(false);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+      <label
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{ display: "flex", alignItems: "center", gap: 10, flexGrow: 1, minWidth: 0, padding: phone ? "11px 0" : "5px 0", cursor: "pointer", fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: hover || on ? t.text : t.text2 }}
+      >
+        <Checkbox
+          checked={on}
+          label={value.label}
+          onChange={() => onToggle(key)}
+          style={{ width: 14, height: 14, borderRadius: 4, ...(on ? null : { background: "transparent", boxShadow: "none", borderWidth: 1, borderStyle: "solid", borderColor: DASH_EDGE }) }}
+        />
+        <span style={{ flexGrow: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.label}</span>
+        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label, fontVariantNumeric: "tabular-nums" }}>{countOf(counts, value.facet, value.id)}</span>
+      </label>
+      {trailing}
+    </div>
+  );
 }
 
-function TreeNode({ value, counts, selected, onToggle, depth, phone }: { value: TaxonomyValue; counts: FacetCounts; selected: ReadonlySet<string>; onToggle: (key: string) => void; depth: number; phone: boolean }) {
-  const [open, setOpen] = useState(() => holdsSelection(value.facet, value.id, selected) && !selected.has(keyOf(value.facet, value.id)));
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+function Node({ value, counts, selected, onToggle, phone, depth }: { value: TaxonomyValue; counts: FacetCounts; selected: ReadonlySet<string>; onToggle: (key: string) => void; phone: boolean; depth: number }) {
   const children = visibleValues(childrenOf(value.facet, value.id), counts, selected, true);
+  const [open, setOpen] = useState(() => children.length > 0 && holdsSelection(value.facet, value.id, selected) && !selected.has(keyOf(value.facet, value.id)));
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
-        <ValueChip value={value} counts={counts} selected={selected} onToggle={onToggle} />
-        {children.length > 0 ? (
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-label={`${open ? "Hide" : "Show"} what is under ${value.label}`}
-            onClick={() => setOpen((v) => !v)}
-            {...handlers}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: phone ? 44 : 28, minHeight: phone ? 44 : 28, border: 0, background: "transparent", cursor: "pointer", borderRadius: 6, color: t.label, ...ring(state.focusVisible) }}
-          >
-            <Glyph name={open ? "chevd" : "chev"} size={16} />
-          </button>
-        ) : null}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <Option
+        value={value}
+        counts={counts}
+        selected={selected}
+        onToggle={onToggle}
+        phone={phone}
+        trailing={
+          children.length > 0 ? (
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-label={`${open ? "Hide" : "Show"} what is under ${value.label}`}
+              onClick={() => setOpen((v) => !v)}
+              {...handlers}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: phone ? 44 : 20, height: phone ? 44 : 20, flexShrink: 0, border: 0, background: "transparent", cursor: "pointer", borderRadius: 4, color: t.label, ...ring(state.focusVisible) }}
+            >
+              <Glyph name={open ? "up" : "chevd"} size={14} />
+            </button>
+          ) : null
+        }
+      />
       {open && children.length > 0 ? (
-        <div role="group" aria-label={`Under ${value.label}`} style={{ display: "flex", flexDirection: "column", gap: 6, marginLeft: Math.min(depth + 1, 3) * 12, paddingLeft: 8, borderLeft: `1px solid ${t.hairlineModule}` }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {children
-              .filter((child) => childrenOf(child.facet, child.id).length === 0)
-              .map((child) => (
-                <ValueChip key={child.id} value={child} counts={counts} selected={selected} onToggle={onToggle} />
-              ))}
-          </div>
-          {children
-            .filter((child) => childrenOf(child.facet, child.id).length > 0)
-            .map((child) => (
-              <TreeNode key={child.id} value={child} counts={counts} selected={selected} onToggle={onToggle} depth={depth + 1} phone={phone} />
-            ))}
+        <div role="group" aria-label={`Under ${value.label}`} style={{ display: "flex", flexDirection: "column", marginLeft: Math.min(depth + 1, 3) * 12 }}>
+          {children.map((child) => (
+            <Node key={child.id} value={child} counts={counts} selected={selected} onToggle={onToggle} phone={phone} depth={depth + 1} />
+          ))}
         </div>
       ) : null}
     </div>
   );
 }
 
-function FacetGroup({ facet, tree, search, counts, selected, onToggle, phone }: { facet: Facet; tree?: boolean; search?: boolean; counts: FacetCounts; selected: ReadonlySet<string>; onToggle: (key: string) => void; phone: boolean }) {
+/** A group: its head (name and chevron) and, when open, its options. */
+function Group({ facet, first, defaultOpen = true, more, tree, search, counts, selected, onToggle, phone }: { facet: Facet; first: boolean; defaultOpen?: boolean; more?: string; tree?: boolean; search?: boolean; counts: FacetCounts; selected: ReadonlySet<string>; onToggle: (key: string) => void; phone: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   const [all, setAll] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [needle, setNeedle] = useState("");
   const searchId = useId();
+  const head = useInteractive<HTMLButtonElement>();
   const name = FACET_LABEL[facet];
 
   const pool = useMemo(() => {
@@ -149,36 +177,56 @@ function FacetGroup({ facet, tree, search, counts, selected, onToggle, phone }: 
   const matching = typed ? pool.filter((value) => [value.label, ...value.synonyms].some((word) => word.toLowerCase().includes(typed))) : pool;
   const everything = visibleValues(matching, counts, selected, true);
   const shown = typed ? everything : visibleValues(matching, counts, selected, all);
+  const hidden = everything.length - shown.length;
   if (everything.length === 0 && !search) return null;
 
   return (
-    <section aria-label={name} data-facet-group={facet} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      <h3 style={{ margin: 0, fontFamily: "inherit", fontSize: 12.5, fontWeight: 500, color: t.text }}>{name}</h3>
-      {search ? (
-        <div>
-          <label htmlFor={searchId} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-            Search Tools and stack
-          </label>
-          <SearchField id={searchId} label="Search Tools and stack" placeholder="Search Tools and stack" width={240} value={needle} onChange={(event) => setNeedle(event.target.value)} />
+    <section aria-label={name} data-facet-group={facet} style={{ display: "flex", flexDirection: "column", minWidth: 0, padding: first ? "0 0 10px" : "10px 0", borderTop: first ? undefined : `1px solid ${t.hairline}` }}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        {...head.handlers}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", minHeight: phone ? 44 : undefined, padding: "4px 0", border: 0, background: "transparent", cursor: "pointer", borderRadius: 4, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text, ...ring(head.state.focusVisible) }}
+      >
+        <span>{name}</span>
+        <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
+          <Glyph name={open ? "up" : "chevd"} size={14} />
+        </span>
+      </button>
+      {open ? (
+        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+          {search && searching ? (
+            <div style={{ padding: "4px 0 6px" }}>
+              <label htmlFor={searchId} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                Search Tools and stack
+              </label>
+              <input
+                id={searchId}
+                type="search"
+                role="searchbox"
+                autoFocus
+                value={needle}
+                placeholder="Search Tools and stack"
+                onChange={(event) => setNeedle(event.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", height: phone ? 44 : 30, padding: "0 10px", borderRadius: 6, background: t.well, border: `1px solid ${t.wellBorder}`, boxShadow: t.wellShadow, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, color: t.text }}
+              />
+            </div>
+          ) : null}
+          {shown.map((value) => (tree ? <Node key={value.id} value={value} counts={counts} selected={selected} onToggle={onToggle} phone={phone} depth={0} /> : <Option key={value.id} value={value} counts={counts} selected={selected} onToggle={onToggle} phone={phone} />))}
+          {search && typed && shown.length === 0 ? <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>Nothing in Tools and stack matches that yet.</p> : null}
+          {search && !searching ? (
+            <TextLink phone={phone} onClick={() => setSearching(true)}>
+              {more ?? "Search tools"}
+            </TextLink>
+          ) : null}
+          {!search && !typed && (all || hidden > 0) ? (
+            <TextLink phone={phone} expanded={all} name={all ? `Show fewer ${name}` : `${more ?? "Show all"} ${name}`} onClick={() => setAll((v) => !v)}>
+              {all ? "Show fewer" : (more ?? "Show all")}
+            </TextLink>
+          ) : null}
         </div>
       ) : null}
-      {tree ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {shown.map((value) => (
-              <TreeNode key={value.id} value={value} counts={counts} selected={selected} onToggle={onToggle} depth={0} phone={phone} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {shown.map((value) => (
-            <ValueChip key={value.id} value={value} counts={counts} selected={selected} onToggle={onToggle} />
-          ))}
-        </div>
-      )}
-      {search && typed && shown.length === 0 ? <p style={{ margin: 0, fontFamily: "inherit", fontSize: 12, color: t.text2 }}>Nothing in Tools and stack matches that yet.</p> : null}
-      {typed ? null : <ShowAll open={all} hidden={everything.length - shown.length} onToggle={() => setAll((v) => !v)} name={name} phone={phone} />}
     </section>
   );
 }
@@ -190,6 +238,47 @@ export interface ClassificationFiltersProps {
   phone: boolean;
 }
 
+/** The two quick filters: 30 tall, padding 0 12, radius 8, transparent, a 1px `--window-border`, 12.5 `--text2`. A chosen one is `--control-on` with a `--seg-on-border` edge and `--text`. */
+export function QuickFilters({ selected, onToggle, phone = false }: { selected: readonly string[]; onToggle: (key: string) => void; phone?: boolean }) {
+  return (
+    <div role="group" aria-label="Quick filters" data-testid="quick-chips" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {QUICK_CHIPS.map((chip) => (
+        <QuickFilter key={chip.key} label={chip.label} on={selected.includes(chip.key)} onClick={() => onToggle(chip.key)} phone={phone} />
+      ))}
+    </div>
+  );
+}
+
+function QuickFilter({ label, on, onClick, phone }: { label: string; on: boolean; onClick: () => void; phone: boolean }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      {...handlers}
+      style={{
+        height: phone ? 44 : 30,
+        padding: "0 12px",
+        boxSizing: "border-box",
+        borderRadius: 8,
+        cursor: "pointer",
+        fontFamily: FIGTREE,
+        fontSize: 12.5,
+        lineHeight: "normal",
+        background: on ? t.controlOn : state.hovered ? t.tile : "transparent",
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: on ? SEG_ON_BORDER : t.windowBorder,
+        color: on || state.hovered ? t.text : t.text2,
+        ...ring(state.focusVisible),
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 /** Every key that is chosen, for the active-filter chips: its facet's name and the value's label. */
 export function describeKey(key: string): string {
   const at = key.indexOf(":");
@@ -199,50 +288,44 @@ export function describeKey(key: string): string {
   return `${FACET_LABEL[facet] ?? facet}: ${value?.label ?? id}`;
 }
 
-/** The two quick chips above the grid: No coding, and Free plans are enough. Each is just a facet key, so it also shows in the active filters. */
-export function QuickChips({ selected, onToggle }: { selected: readonly string[]; onToggle: (key: string) => void }) {
-  return (
-    <div role="group" aria-label="Quick filters" data-testid="quick-chips" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-      {QUICK_CHIPS.map((chip) => (
-        <FilterChip key={chip.key} label={chip.label} on={selected.includes(chip.key)} onClick={() => onToggle(chip.key)} />
-      ))}
-    </div>
-  );
-}
-
 export function ClassificationFilters({ counts, selected, onToggle, phone }: ClassificationFiltersProps) {
+  const chosen = useMemo(() => new Set(selected), [selected]);
   const moreHasSelectionAtStart = MORE.some((group) => selected.some((key) => key.startsWith(`${group.facet}:`)));
   const [more, setMore] = useState(moreHasSelectionAtStart);
-  const chosen = useMemo(() => new Set(selected), [selected]);
   const moreId = useId();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
 
   return (
-    <div data-testid="classification-filters" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-      {MAIN.map((group) => (
-        <FacetGroup key={group.facet} facet={group.facet} tree={group.tree} search={group.search} counts={counts} selected={chosen} onToggle={onToggle} phone={phone} />
+    <div data-testid="classification-filters" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      {MAIN.map((group, index) => (
+        <Group key={group.facet} facet={group.facet} first={index === 0} more={group.more} tree={group.tree} search={group.search} counts={counts} selected={chosen} onToggle={onToggle} phone={phone} />
       ))}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <section aria-label="More filters" style={{ display: "flex", flexDirection: "column", padding: "10px 0", borderTop: `1px solid ${t.hairline}` }}>
         <button
           type="button"
           aria-expanded={more}
           aria-controls={moreId}
           onClick={() => setMore((v) => !v)}
           {...handlers}
-          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, minHeight: phone ? 44 : 32, padding: "0 4px", border: 0, background: "transparent", cursor: "pointer", borderRadius: 6, fontFamily: "inherit", fontSize: 13, fontWeight: 500, color: t.text, ...ring(state.focusVisible) }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", minHeight: phone ? 44 : undefined, padding: "4px 0", border: 0, background: "transparent", cursor: "pointer", borderRadius: 4, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text, ...ring(state.focusVisible) }}
         >
-          <Glyph name={more ? "chevd" : "chev"} size={16} color={t.label} />
-          More filters
+          <span>More filters</span>
+          <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
+            <Glyph name={more ? "up" : "chevd"} size={14} />
+          </span>
         </button>
         {more ? (
-          <div id={moreId} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {MORE.map((group) => (
-              <FacetGroup key={group.facet} facet={group.facet} tree={group.tree} counts={counts} selected={chosen} onToggle={onToggle} phone={phone} />
+          <div id={moreId} style={{ display: "flex", flexDirection: "column" }}>
+            {MORE.map((group, index) => (
+              <Group key={group.facet} facet={group.facet} first={index === 0} tree={group.tree} counts={counts} selected={chosen} onToggle={onToggle} phone={phone} />
             ))}
           </div>
-        ) : null}
-      </div>
+        ) : (
+          <p data-testid="more-filters-line" style={{ margin: "2px 0 0", fontFamily: FIGTREE, fontSize: 12.5, lineHeight: "20px", color: t.label }}>
+            {MORE_FILTERS_LINE}
+          </p>
+        )}
+      </section>
     </div>
   );
 }
-

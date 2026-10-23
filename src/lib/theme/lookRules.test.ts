@@ -403,6 +403,16 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/sessionLayout.ts",
   "src/pages/site/compose/SandboxPage.tsx",
   "src/pages/site/compose/sourcesModel.ts",
+  // CA-16b
+  "src/components/classify/ClassificationBits.tsx",
+  "src/components/gallery/ClassificationFilters.tsx",
+  "src/pages/site/compose/CardPreview.tsx",
+  "src/pages/site/compose/ClassificationPicker.tsx",
+  "src/pages/site/compose/ReadFromBuild.tsx",
+  "src/pages/site/compose/SandboxCard.tsx",
+  "src/pages/site/compose/classificationPieces.tsx",
+  "src/pages/site/gallery/GalleryBoard.tsx",
+  "src/pages/site/gallery/GalleryBoardGroups.tsx",
   // CA-15b P1 (the token files hold raw values by design and are held by css-parity and contrast instead)
   "src/pages/site/compose/ChoiceGrid.tsx",
   "src/pages/site/compose/ModalFrame.tsx",
@@ -705,6 +715,111 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `style={{ display: "flex", alignItems: "center", gap: 10, flexGrow: 1, minWidth: 0, padding: phone ? "11px 0" : "5px 0", cursor: "pointer", f`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 11, 5 is not in SPACE_REFINED",
+    text: `style={{ display: "flex", alignItems: "center", gap: 10, flexGrow: 1, minWidth: 0, padding: phone ? "11px 0" : "5px 0", cursor: "pointer", f`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10, 10 is not in SPACE_REFINED",
+    text: `<section aria-label={name} data-facet-group={facet} style={{ display: "flex", flexDirection: "column", minWidth: 0, padding: first ? "0 0 10`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<section aria-label="More filters" style={{ display: "flex", flexDirection: "column", padding: "10px 0", borderTop: \`1px solid \${t.hairline}`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `<article style={{ padding: "14px 16px", boxSizing: "border-box", background: t.well, border: \`1px solid \${t.wellBorder}\`, borderRadius: 10, `,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 6, rowGap: 4, minWidth: 0 }}>`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<li key={facet} data-facet={facet} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 0", borderBottom: \`1px solid \${`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `<div style={{ flexShrink: 0, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 8, padding: "14px 20px", background: WINDO`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10, 10 is not in SPACE_REFINED",
+    text: `padding: readOnly ? "0 10px" : "0 6px 0 10px",`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 5 is not in SPACE_REFINED",
+    text: `gap: 5,`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: `return { ...typeaheadRow(active, phone), color: t.text2, borderTop: \`1px solid \${t.hairlineModule}\`, borderTopLeftRadius: 0, borderTopRightR`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 36 is not in SPACE_REFINED",
+    text: `style={{ width: "100%", boxSizing: "border-box", height: phone ? 44 : 38, padding: "0 12px 0 36px", borderRadius: 9, background: t.well, bor`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `style={{ flexShrink: 0, padding: "10px 0", marginBottom: -1, border: 0, borderBottomWidth: 2, borderBottomStyle: "solid", borderBottomColor:`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `style={{ textAlign: "left", cursor: "pointer", padding: "14px 16px", boxSizing: "border-box", borderRadius: 10, background: t.module, border`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 22 is not in SPACE_REFINED",
+    text: `<div role="tablist" aria-label="Group the builds" style={{ display: "flex", gap: 22, borderBottom: \`1px solid \${t.hairline}\`, overflowX: "au`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 18 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 18 }}>`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 18 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 18 }}>{tabs}</div>`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 22 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 22 }}>`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 28, display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "248px minmax(0, 1fr)", columnGap: 32, alignIt`,
+    why: "A measure the Classification Card and Gallery boards draw (CA-16b): 5, 9, 10, 11, 14, 18, 22, 28 and 36 are theirs.",
+  },
   {
     rule: "no glass (backdrop-filter)",
     text: 'not.toContain("backdrop-filter")',

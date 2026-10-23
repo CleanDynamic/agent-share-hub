@@ -88,7 +88,7 @@ function TaskMenu({ label, phone, onMakePrimary }: { label: string; phone: boole
         <Glyph name="more" size={14} />
       </button>
       {menu ? (
-        <div role="menu" aria-label={`${label} options`} style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 20, padding: 4, borderRadius: 9, background: t.window, border: `1px solid ${t.controlBorder}`, boxShadow: "0 8px 24px rgba(0,0,0,.5)" }}>
+        <div role="menu" aria-label={`${label} options`} style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 20, padding: 4, borderRadius: 9, background: t.window, border: `1px solid ${t.controlBorder}`, boxShadow: t.windowShadow }}>
           <button
             type="button"
             role="menuitem"
@@ -178,7 +178,7 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
                 menu={
                   primary ? (
                     index === 0 ? (
-                      <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, textTransform: "uppercase", letterSpacing: ".06em" }}>Primary</span>
+                      <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>Primary</span>
                     ) : (
                       <TaskMenu label={name} phone={phone} onMakePrimary={() => commit([entries[index], ...entries.filter((_, at) => at !== index)])} />
                     )

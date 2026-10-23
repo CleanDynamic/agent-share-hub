@@ -20,6 +20,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
+import { PickMenu } from "./PickMenu";
 import { bareButton, text, typedField } from "./refinedStyles";
 
 export const CONFIRMED_FREE = "Confirmed free";
@@ -67,16 +68,8 @@ function DisputeForm({ facet, phone, current, onApply, onCancel }: { facet: Face
       }}
       style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }}
     >
-      <label htmlFor={`${id}-value`} style={text(12.5, 500, t.text)}>
-        {`Corrected value for ${name}`}
-      </label>
-      <select id={`${id}-value`} value={value} onChange={(event) => setValue(event.target.value)} style={field}>
-        {options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <span style={text(12.5, 500, t.text)}>{`Corrected value for ${name}`}</span>
+      <PickMenu label={`Corrected value for ${name}`} options={options.map((option) => ({ value: option.id, label: option.label }))} value={value || null} onChange={setValue} phone={phone} id={`${id}-value`} />
       <label htmlFor={`${id}-reason`} style={text(12.5, 500, t.text)}>
         {`Reason for changing ${name}`}
       </label>
