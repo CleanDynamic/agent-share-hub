@@ -40,6 +40,8 @@ import { refLookup, shownName, type RefEntry, type RefGroup } from "@/lib/build/
 import { extraLinks, insertLinked, LINK_RULES_COPY, linkOf, linkRanges, linkWords, postAt, rangeRefusal, removeExtraLinks, trimRange, unlinkAt } from "@/lib/build/linkRules";
 import { NOTICE_COPY } from "@/lib/build/referenceHistory";
 import { TextLink } from "./modalRecipes";
+import { DANGER, PAD, words as pieceWords } from "./referencePieces";
+import { TextButton } from "./composeControls";
 import { useHistoryKeys, type LinkEdit, type ReferenceHistoryControls } from "./useReferenceHistory";
 import type { Build } from "@/lib/build/types";
 import type { GalleryMedia } from "@/lib/build";
@@ -81,6 +83,10 @@ export interface PostReferences {
   onEditor?: (editor: Editor | null) => void;
   /** CA-19 P3: the screen's name for a target ("Data model", "Session 3", "Login flow"). */
   nameOf?: (to: string) => string;
+  /** CA-19 P4: the colour picker's "Select words in the post instead": the post asks for one stretch to link to this. */
+  selecting?: { to: string; name: string } | null;
+  /** The words were linked, or Cancel or Escape ended it. */
+  onSelectingDone?: () => void;
 }
 
 /** The parts of the draft that are not the thread. */
@@ -375,6 +381,49 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
     closeRefs();
     editor?.commands.focus();
   };
+  /* CA-19 P4: select words to link to a component. Highlighting one stretch links it at once, as one step, and the bar goes. */
+  const selecting = references?.selecting ?? null;
+  const onSelectingDone = references?.onSelectingDone;
+  const [selectRefusal, setSelectRefusal] = useState<string | null>(null);
+  const postTop = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setSelectRefusal(null);
+    if (!selecting) return;
+    postTop.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      onSelectingDone?.();
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [selecting, onSelectingDone]);
+  useEffect(() => {
+    const dom = viewDom(editor);
+    if (!selecting || !dom || !editor) return;
+    const settle = () => {
+      const { from, to } = editor.state.selection;
+      if (from === to) return;
+      const refusal = rangeRefusal(editor.state.doc, from, to);
+      const trimmed = refusal ? null : trimRange(editor.state.doc, from, to);
+      if (refusal || !trimmed || trimmed.from >= trimmed.to) {
+        setSelectRefusal(refusal ?? LINK_RULES_COPY.oneStretch);
+        return;
+      }
+      const words = editor.state.doc.textBetween(trimmed.from, trimmed.to, "\n", "\n");
+      if (runLink(NOTICE_COPY.linked(words, selecting.name), (tr) => (linkWords(tr, from, to, selecting.to).ok ? undefined : false))) onSelectingDone?.();
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift" || event.shiftKey) settle();
+    };
+    dom.addEventListener("mouseup", settle);
+    dom.addEventListener("keyup", onKeyUp);
+    return () => {
+      dom.removeEventListener("mouseup", settle);
+      dom.removeEventListener("keyup", onKeyUp);
+    };
+  }, [selecting, editor, runLink, onSelectingDone]);
+
   /* CA-19 P1: an old post's extra links, and the one step that removes them. */
   const extras = useEditorState({ editor, selector: ({ editor: current }) => (current && !current.isDestroyed ? extraLinks(current.state.doc).length : 0) }) ?? 0;
   const removeExtras = () => runLink(NOTICE_COPY.removedExtra(extras), (tr) => (removeExtraLinks(tr) ? undefined : false));
@@ -466,7 +515,8 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
       : { top: (tops[dropPost] ?? 0) + FIRST_LINE_DROP - 4, bottom: dropPost + 1 < tops.length ? tops[dropPost + 1] - BLOCK_GAP + 4 : Math.max(editorHeight, (tops[dropPost] ?? 0) + 40) + 4 };
 
   return (
-    <div data-testid="post-tab" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+    <div ref={postTop} data-testid="post-tab" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+      {selecting ? <SelectWordsBar name={selecting.name} refusal={selectRefusal} onCancel={() => onSelectingDone?.()} /> : null}
       <div style={{ display: "flex", alignItems: "stretch", gap: phone ? RAIL_GAP.phone : RAIL_GAP.desktop, minWidth: 0 }}>
         <ThreadRail editor={editor} maker={draft.maker} size={avatar} focused={writing.post} onTops={setTops} />
         {/* The first line starts 8 below the avatar's top, as X sets it; room at the right for the remove button. */}
@@ -613,6 +663,23 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           <PostPreview doc={liveDoc} build={draft.build} title={draft.title} maker={draft.maker} media={pictures.rows} src={pictures.src} variant="sheet" />
         ) : null}
       </BottomSheet>
+    </div>
+  );
+}
+
+export const SELECT_WORDS_COPY = {
+  ask: (name: string) => `Select words to link to ${name}`,
+  cancel: "Cancel",
+} as const;
+
+/** CA-19 P4: the bar at the top of the post while it asks for words: `--tile`, padding 10 14, 12.5, Cancel at 500 at the right. */
+function SelectWordsBar({ name, refusal, onCancel }: { name: string; refusal: string | null; onCancel: () => void }) {
+  return (
+    <div role="status" data-testid="select-words-bar" style={{ display: "flex", alignItems: "center", gap: 12, background: t.tile, borderRadius: 8, padding: PAD.bar, minWidth: 0 }}>
+      <span style={{ ...pieceWords(12.5, 400, refusal ? DANGER : t.text), flexGrow: 1, minWidth: 0 }}>{refusal ?? SELECT_WORDS_COPY.ask(name)}</span>
+      <TextButton style={pieceWords(12.5, 500, t.text)} onClick={onCancel}>
+        {SELECT_WORDS_COPY.cancel}
+      </TextButton>
     </div>
   );
 }

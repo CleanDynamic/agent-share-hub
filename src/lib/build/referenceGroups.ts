@@ -314,6 +314,14 @@ export function setSingleColour(model: ColourModel, ref: string, hex: string): C
   return commit(model, without(model.groups, ref), { [ref]: colour });
 }
 
+/** Give several components one single colour in one step (a session's picker with "Also colour its tiles that have no colour"). */
+export function setSingleColours(model: ColourModel, refs: readonly string[], hex: string): ColourMove | null {
+  const colour = normaliseHex(hex);
+  const members = refs.filter(isMemberRef);
+  if (!colour || members.length === 0) return null;
+  return commit(model, members.reduce((groups, ref) => without(groups, ref), cloneGroups(model.groups)), Object.fromEntries(members.map((ref) => [ref, colour])));
+}
+
 /** Take a component's colour off: its single colour, or its place in a group. */
 export function clearColour(model: ColourModel, ref: string): ColourMove | null {
   if (!isMemberRef(ref)) return null;
@@ -563,4 +571,12 @@ export function groupByMember(making: unknown): Map<string, ReferenceGroup> {
   const out = new Map<string, ReferenceGroup>();
   for (const group of referenceGroupsOf(making)) if (group.members.length >= GROUP_MIN_MEMBERS) for (const ref of group.members) out.set(ref, group);
   return out;
+}
+
+/** `making` with one group's colour as the picker previews it, before Done. */
+export function previewGroupColour(making: unknown, groupId: string | null, colour: string | null): unknown {
+  if (!groupId || !colour || !making || typeof making !== "object") return making;
+  const list = (making as { reference_groups?: unknown }).reference_groups;
+  if (!Array.isArray(list)) return making;
+  return { ...(making as object), reference_groups: list.map((entry) => (asObject(entry).id === groupId ? { ...asObject(entry), colour } : entry)) };
 }

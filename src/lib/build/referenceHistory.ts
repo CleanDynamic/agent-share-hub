@@ -121,6 +121,7 @@ export const NOTICE_COPY = {
   coloured: (name: string, hex: string) => `Coloured ${name} ${hex}`,
   uncoloured: (name: string) => `Took the colour off ${name}`,
   madeGroup: (group: string) => `Made the group ${group}`,
+  madeGroupOf: (a: string, b: string) => `Made a group of ${a} and ${b}`,
   savedGroup: (group: string) => `Saved ${group}`,
   renamed: (group: string) => `Renamed the group to ${group}`,
   recoloured: (group: string, hex: string) => `Changed ${group} to ${hex}`,

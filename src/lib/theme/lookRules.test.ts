@@ -573,6 +573,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/useReferences.ts",
   "src/pages/site/compose/SandboxPage.tsx",
   "src/pages/site/build/useReaderPostLinks.ts",
+  // CA-19 P4
+  "src/components/brand/ColourPicker.references.test.tsx",
+  "src/pages/site/compose/useReferenceActions.tsx",
+  "src/pages/site/compose/referenceActions.ui.test.tsx",
+  "src/pages/dev/ReferencesDemo.tsx",
+  "src/dev/fixtures/references.ts",
+  "src/pages/dev/SandboxDemo.tsx",
+  "src/components/brand/ColourPicker.part.test.tsx",
 ];
 
 /**

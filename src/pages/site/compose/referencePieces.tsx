@@ -16,7 +16,8 @@
 
    The board measures that are not on the site's spacing scale (10, 14, 18) live here, as the recipe files keep theirs. */
 
-import { useEffect, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
@@ -27,7 +28,7 @@ import { nameColourFor, swatchFor } from "@/lib/theme/partColour";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { RecipeButton } from "./modalRecipes";
+import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, frameStyle } from "./modalRecipes";
 
 /* ── type ── */
 
@@ -47,6 +48,9 @@ export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: 11,
 
 /** The danger words: `--breakage`. */
 export const DANGER = t.breakage;
+
+/** The colour code field's face: the data face 12.5, padded 0 8 (the recipe's field gives the fill, the edge and the focus). */
+export const CODE_FIELD: CSSProperties = { fontFamily: DM_MONO, fontSize: 12.5, padding: "0 8px", minWidth: 0, width: "100%", fontVariantNumeric: "tabular-nums" };
 
 export const ELLIPSIS: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
 
@@ -217,5 +221,89 @@ export function ReferenceNotice({ notice, onUndo, onDone, phone = false }: { not
         {NOTICE_COPY.undo}
       </RecipeButton>
     </div>
+  );
+}
+
+/* ── which linked text to keep ── */
+
+export const KEEP_COPY = {
+  cancel: "Cancel",
+  post: (n: number) => `Post ${n}`,
+} as const;
+
+export interface KeepChoice {
+  key: string;
+  /** Whose it is: "Login flow", "Code 4". */
+  owner: string;
+  words: string;
+  post: number;
+}
+
+/**
+ * Two linked texts, one to keep (a merge of two linked groups, a linked component joining a linked group): two rows, each
+ * the words and their post, then Cancel and the action. The other becomes plain words.
+ */
+export function KeepLinkDialog({ open, title, body, action, choices, onPick, onCancel }: { open: boolean; title: string; body?: string; action: string; choices: readonly KeepChoice[]; onPick: (key: string) => void; onCancel: () => void }) {
+  const [chosen, setChosen] = useState<string | null>(choices[0]?.key ?? null);
+  useEffect(() => setChosen(choices[0]?.key ?? null), [choices]);
+  return (
+    <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
+      <Dialog.Portal>
+        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
+        <Dialog.Content data-testid="keep-link-dialog" aria-describedby={undefined} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(420) }}>
+          <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
+            <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
+            {body ? <p style={{ ...SUBTITLE, margin: 0 }}>{body}</p> : null}
+            <div role="radiogroup" aria-label={title} style={{ display: "flex", flexDirection: "column", gap: GAP.panels }}>
+              {choices.map((choice) => (
+                <KeepRow key={choice.key} choice={choice} chosen={chosen === choice.key} onChoose={() => setChosen(choice.key)} />
+              ))}
+            </div>
+          </div>
+          <div style={footerStyle(false)}>
+            <span style={{ ...NOTE, flexGrow: 1 }} />
+            <RecipeButton small onClick={onCancel}>
+              {KEEP_COPY.cancel}
+            </RecipeButton>
+            <RecipeButton small variant="primary" disabled={!chosen} onClick={() => chosen && onPick(chosen)}>
+              {action}
+            </RecipeButton>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function KeepRow({ choice, chosen, onChoose }: { choice: KeepChoice; chosen: boolean; onChoose: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={chosen}
+      data-keep={choice.key}
+      onClick={onChoose}
+      {...handlers}
+      style={{
+        appearance: "none",
+        textAlign: "left",
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        padding: PAD.panel,
+        borderRadius: 8,
+        cursor: "pointer",
+        background: chosen ? t.selectedFill : state.hovered ? t.controlOn : t.tile,
+        border: `1px solid ${chosen ? t.selectedEdge : "transparent"}`,
+        ...ring(state.focusVisible),
+      }}
+    >
+      <span style={words(12, 400, t.label)}>{choice.owner}</span>
+      <span style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+        <span style={{ ...words(13, 500, t.text), ...ELLIPSIS, flexGrow: 1 }}>{`"${choice.words}"`}</span>
+        <span style={{ ...data(11, t.label), flexShrink: 0 }}>{KEEP_COPY.post(choice.post)}</span>
+      </span>
+    </button>
   );
 }
