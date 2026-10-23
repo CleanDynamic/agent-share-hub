@@ -82,7 +82,7 @@ const toOf = (option: Option) => (option.kind === "group" ? option.group.entry.t
 function GroupRow({ group, id, active, chosen, linked, onPick, onHover }: { group: PanelGroup; id: string; active: boolean; chosen: boolean; linked: boolean; onPick: () => void; onHover: () => void }) {
   const named = Boolean(group.entry.group?.name);
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
       <div
         id={id}
         role="option"
@@ -120,7 +120,7 @@ function EntryRow({ row, id, active, chosen, onPick, onHover }: { row: PanelRow;
       onMouseDown={(event) => event.preventDefault()}
       onMouseEnter={onHover}
       onClick={onPick}
-      style={{ boxSizing: "border-box", height: 34, padding: PAD.row, paddingLeft: GAP.row + row.indent, borderRadius: 7, display: "flex", alignItems: "center", gap: GAP.row, cursor: "pointer", background: active ? t.controlOn : "transparent" }}
+      style={{ boxSizing: "border-box", height: 34, flexShrink: 0, padding: PAD.row, paddingLeft: GAP.row + row.indent, borderRadius: 7, display: "flex", alignItems: "center", gap: GAP.row, cursor: "pointer", background: active ? t.controlOn : "transparent" }}
     >
       <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 2, minWidth: 22, flexShrink: 0 }}>
         <span style={data(11, t.text2)}>{entry.number}</span>
@@ -133,18 +133,25 @@ function EntryRow({ row, id, active, chosen, onPick, onHover }: { row: PanelRow;
 }
 
 function MovePanel({ line, phone, onCancel, onMove }: { line: string; phone: boolean; onCancel: () => void; onMove: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  // The question opens under its row: the list scrolls so all of it shows.
+  useEffect(() => {
+    box.current?.scrollIntoView?.({ block: "nearest" });
+  }, []);
   return (
-    <InnerPanel testId="link-move" style={{ margin: "4px 0 6px", display: "flex", flexDirection: "column", gap: GAP.row }}>
-      <p style={{ ...words(12.5, 400, t.text2, 18), margin: 0 }}>{line}</p>
-      <span style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <RecipeButton small phone={phone} onClick={onCancel}>
-          {LINK_PANEL_COPY.cancel}
-        </RecipeButton>
-        <RecipeButton small variant="primary" phone={phone} onClick={onMove}>
-          {LINK_PANEL_COPY.moveHere}
-        </RecipeButton>
-      </span>
-    </InnerPanel>
+    <div ref={box} style={{ display: "flex", flexShrink: 0 }}>
+      <InnerPanel testId="link-move" style={{ margin: "4px 0 6px", display: "flex", flexDirection: "column", gap: GAP.row, flexShrink: 0, flexGrow: 1 }}>
+        <p style={{ ...words(12.5, 400, t.text2, 18), margin: 0 }}>{line}</p>
+        <span style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <RecipeButton small phone={phone} onClick={onCancel}>
+            {LINK_PANEL_COPY.cancel}
+          </RecipeButton>
+          <RecipeButton small variant="primary" phone={phone} onClick={onMove}>
+            {LINK_PANEL_COPY.moveHere}
+          </RecipeButton>
+        </span>
+      </InnerPanel>
+    </div>
   );
 }
 
@@ -260,7 +267,7 @@ function PanelBody({ groups, lookup, current, words: picked, post, refusal, link
           </p>
         ) : null}
         {groupCount > 0 ? (
-          <span role="presentation" style={{ ...SECTION_LABEL, padding: PAD.label }}>
+          <span role="presentation" style={{ ...SECTION_LABEL, padding: PAD.label, flexShrink: 0 }}>
             {LINK_PANEL_COPY.groups}
           </span>
         ) : null}
@@ -282,7 +289,7 @@ function PanelBody({ groups, lookup, current, words: picked, post, refusal, link
           </div>
         ))}
         {lists.rows.length > 0 ? (
-          <span role="presentation" style={{ ...SECTION_LABEL, padding: PAD.label }}>
+          <span role="presentation" style={{ ...SECTION_LABEL, padding: PAD.label, flexShrink: 0 }}>
             {LINK_PANEL_COPY.parts}
           </span>
         ) : null}

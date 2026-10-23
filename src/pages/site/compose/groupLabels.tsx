@@ -1,4 +1,4 @@
-/* CA-19 P5 — a reference group's name on its members (board "References: the colour picker", right column).
+/* CA-19 P5: a reference group's name on its members (board "References: the colour picker", right column).
 
    When a group has a name, every member shows it: a dot and the name, 20 tall, on `--hairline`, both in the group's colour
    kept readable (nameColourFor). In the List it sits in each member's head just before its menu (tiles, sessions, parts);

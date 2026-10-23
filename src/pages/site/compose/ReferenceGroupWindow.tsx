@@ -1,4 +1,4 @@
-/* CA-19 P6 — the reference group window (board "References: groups and the Colours window", left).
+/* CA-19 P6: the reference group window (board "References: groups and the Colours window", left).
 
    A 560 window from the modal recipes (a BottomSheet on a phone). It opens from a group's label, from Make a group, from
    Open group and from the Colours window. Head: "Reference group", "Components that work together, under one colour", and

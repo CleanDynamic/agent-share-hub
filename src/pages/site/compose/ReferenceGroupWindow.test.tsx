@@ -1,4 +1,4 @@
-// CA-19 P6 — the reference group window (board "References: groups and the Colours window", left): opening from each
+// CA-19 P6: the reference group window (board "References: groups and the Colours window", left): opening from each
 // place, every block, order by dragging, adding and removing, the notes count, linked text both ways, the two-member
 // rule, Delete group with its confirmation, and Save as one step.
 

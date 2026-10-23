@@ -95,7 +95,8 @@ export function GroupLabel({ name, colour, prefix, testId = "group-label", onCli
   const theme = useResolvedTheme();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   if (!name) return null;
-  const ink = nameColourFor(colour, theme);
+  // Measured on the label's own fill, so the name keeps 4.5:1 there in both themes.
+  const ink = nameColourFor(colour, theme, "hairline");
   const body = (
     <>
       <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, ...swatchFor(ink) }} />

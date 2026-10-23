@@ -1,4 +1,4 @@
-// CA-19 P8 — "References": CA-17's "Two parts" (Part A: Sessions 1 to 3, Part B: Sessions 4 and 5, letters), with tiles
+// CA-19 P8: "References": CA-17's "Two parts" (Part A: Sessions 1 to 3, Part B: Sessions 4 and 5, letters), with tiles
 // of its own so the board's names line up (Data model is tile 2, Code 4, Check 5), and:
 //
 //   - the group "Login flow" in #7FB88A, holding Session 2, Code 4 and Check 5, with notes, linked to "Signing in by email

@@ -1,4 +1,4 @@
-/* CA-19 P2 — one undo history for every colour and link action, on the composer.
+/* CA-19 P2: one undo history for every colour and link action, on the composer.
 
    A step is taken by `step(sentence, { move, edit })`: `edit` changes the post's links on a transaction (the composer's
    link panel, the colour picker, the group and Colours windows all come through here), `move` is a colour move from

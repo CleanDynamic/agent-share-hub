@@ -1,4 +1,4 @@
-/* CA-19 P4 — what the colour picker (and later the group and Colours windows) does with colours and links, on top of
+/* CA-19 P4: what the colour picker (and later the group and Colours windows) does with colours and links, on top of
    `useReferences`: every action is one step of the history, named in the notice's words.
 
    - Done in the picker: a single colour set or taken off (with the tiles or sessions "Also colour…" names), or a group's

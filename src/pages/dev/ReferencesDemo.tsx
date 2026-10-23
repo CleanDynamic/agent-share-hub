@@ -1,4 +1,4 @@
-/* CA-19 P8 — /dev/kit/pages/sandbox?build=references: "References", colour and references working on a fixture.
+/* CA-19 P8: /dev/kit/pages/sandbox?build=references: "References", colour and references working on a fixture.
 
    CA-17's "Two parts" with the group Login flow (Session 2, Code 4, Check 5, linked in post 2), Data model and Landing page
    sharing #7FA7D9 (Data model linked in post 1), an unnamed group of Prompts 7 and 8, and an old post with two links to

@@ -1,4 +1,4 @@
-// CA-19 P7 — the Colours window (board "References: groups and the Colours window", right): both lists and their order,
+// CA-19 P7: the Colours window (board "References: groups and the Colours window", right): both lists and their order,
 // the menu, merge with and without two links, the shared-code panel, saved colours and their menu, Clear all with its
 // counts, and Undo after clearing.
 

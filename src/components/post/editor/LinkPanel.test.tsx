@@ -1,4 +1,4 @@
-// CA-19 P3 — linking from the post (board "References: from the post"): the reference button and @, the link panel's
+// CA-19 P3: linking from the post (board "References: from the post"): the reference button and @, the link panel's
 // sections and order, choosing, the move panel, replacing, removing, nothing highlighted, refusals, the group hover card
 // and Go to the group.
 

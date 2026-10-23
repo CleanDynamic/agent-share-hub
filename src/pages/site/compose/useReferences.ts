@@ -1,4 +1,4 @@
-/* CA-19 — colour and references on the composer: the build's colours as one model, the one history every colour and link
+/* CA-19: colour and references on the composer: the build's colours as one model, the one history every colour and link
    step goes through, the writes, and the names the screen uses.
 
    THE MODEL is read from `builds.making` and the tiles' own `payload.colour` (`colourModelOf`). A step's writes go to the

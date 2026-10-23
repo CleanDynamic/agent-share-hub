@@ -1,4 +1,4 @@
-/* CA-19 P6, P7 — the reference windows on a page: the group window (and, from P7, the Colours window), wired to the
+/* CA-19 P6, P7: the reference windows on a page: the group window (and, from P7, the Colours window), wired to the
    composer's colour model, its history and its actions. The composer and the References dev page draw the same. */
 
 import { useColourSwatches } from "@/components/brand/useColourSwatches";

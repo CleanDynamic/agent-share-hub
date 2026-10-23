@@ -1,4 +1,4 @@
-/* CA-19 P7 — the Colours window (board "References: groups and the Colours window", right).
+/* CA-19 P7: the Colours window (board "References: groups and the Colours window", right).
 
    "Colours…" in the composer's View menu opens a 600 window: "Colours", "Every reference group and single colour in this
    build". Top to bottom:

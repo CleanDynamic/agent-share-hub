@@ -1,4 +1,4 @@
-// CA-06 P2 — highlight, then @: the picker's groups, search and keys, and what a choice does to the post. CA-19 P3 drew the
+// CA-06 P2: highlight, then @. The picker's groups, search and keys, and what a choice does to the post. CA-19 P3 drew the
 // picker again as the link panel, with the same keys; these hold it to them.
 
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";

@@ -1,4 +1,4 @@
-// CA-19 P5 — reference groups on their members: the label in the List, Details, the map's tooltip and panel and the
+// CA-19 P5: reference groups on their members: the label in the List, Details, the map's tooltip and panel and the
 // build page; none for an unnamed group or a single colour; members' edges in the group's colour.
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -61,8 +61,8 @@ describe("in the composer", () => {
     const label = within(screen.getByRole("group", { name: /^Code 4:/ })).getByTestId("group-label");
     expect(label.style.height).toBe("20px");
     // jsdom drops a var() colour from a style, so the hairline fill is read by the screenshots, not here.
-    // Noon's surface: the group's green is moved darker until its name reads at 4.5:1.
-    const ink = nameColourFor(REFS_COLOURS.login, "noon");
+    // Noon: the group's green is moved darker until its name reads at 4.5:1 on the label's own fill.
+    const ink = nameColourFor(REFS_COLOURS.login, "noon", "hairline");
     const n = parseInt(ink.slice(1), 16);
     expect((label.lastElementChild as HTMLElement).style.color).toBe(`rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`);
   });

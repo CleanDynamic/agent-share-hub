@@ -592,6 +592,9 @@ export const CA03_FILES: readonly string[] = [
   // CA-19 P7
   "src/pages/site/compose/ColoursWindow.tsx",
   "src/pages/site/compose/ColoursWindow.test.tsx",
+  // CA-19 P8
+  "src/lib/theme/partColour.ts",
+  "src/lib/theme/groupLabelContrast.test.ts",
 ];
 
 /**

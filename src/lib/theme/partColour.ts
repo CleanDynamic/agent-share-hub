@@ -11,6 +11,7 @@ import type { CSSProperties } from "react";
 
 import { contrast, over, parse } from "./luminance";
 import { resolveToken, type ThemeKey } from "./resolve";
+import type { TokenName } from "./semantics";
 
 /** `#RGB`, `RGB`, `#RRGGBB` or `RRGGBB`, any case, spaces trimmed, as `#RRGGBB` in upper case; anything else is null. */
 export function normaliseHex(input: unknown): string | null {
@@ -113,15 +114,24 @@ function fromHsl(h: number, s: number, l: number): string {
   return `#${[channel(0), channel(8), channel(4)].map((v) => v.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
 }
 
+/** The post's ground with a token's fill laid over it: what a name drawn on that fill is read against. */
+export function groundOn(theme: ThemeKey, on: TokenName | undefined): string {
+  const base = ground(theme);
+  if (!on) return base;
+  const fill = resolveToken(theme, on);
+  return parse(fill)[3] === 1 ? fill : over(fill, base);
+}
+
 /**
  * The colour a part's NAME is drawn in, as text on the surface (in the List and on the map). The maker's colour when it
  * reaches 4.5:1 on that surface in that theme; otherwise the same colour with only its lightness moved, as far as it takes
  * to reach 4.5:1: lighter in Dusk, darker in Noon. Hue and saturation are kept. The stored colour never changes.
+ * CA-19: `on` names the fill the name sits on when it is not the surface (a group's label on `--hairline`).
  */
-export function nameColourFor(hex: string, theme: ThemeKey): string {
+export function nameColourFor(hex: string, theme: ThemeKey, on?: TokenName): string {
   const colour = normaliseHex(hex);
   if (!colour) return hex;
-  const surface = ground(theme);
+  const surface = groundOn(theme, on);
   if (contrast(colour, surface) >= NAME_TEXT_FLOOR) return colour;
   const [h, s, l] = toHsl(parse(colour));
   const step = theme === "dusk" ? 0.005 : -0.005;

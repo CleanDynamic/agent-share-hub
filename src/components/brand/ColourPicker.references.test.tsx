@@ -1,4 +1,4 @@
-// CA-19 P4 — the colour picker (board "References: the colour picker"): the colour code field, Saved with its circle and
+// CA-19 P4: the colour picker (board "References: the colour picker"): the colour code field, Saved with its circle and
 // menu, Recent, Suggested, "Also used by", linked text (with and without, Find words, Select words), the group state,
 // No colour and Escape.
 

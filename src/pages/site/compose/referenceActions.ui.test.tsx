@@ -1,4 +1,4 @@
-// CA-19 P4 — the picker's actions on a whole composer (the "References" dev page, which runs the composer's own history and
+// CA-19 P4: the picker's actions on a whole composer (the "References" dev page, which runs the composer's own history and
 // actions on memory): Done as one step, Make a group from "Also used by", Find words, Select words in the post, and a
 // member's group state.
 
