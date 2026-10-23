@@ -1,6 +1,6 @@
 // CA-05 P10 — a trained model: Result Details asks what it is, what it is based on and trained on; the build page says it.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,7 +14,8 @@ import { StepsList } from "@/pages/site/build/BuildSteps";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
 import { modelLabel } from "@/lib/models/registry";
 
-import { DetailsPanel, type DetailsPanelProps } from "./DetailsPanel";
+import type { DetailsHandlers } from "./DetailsPanel";
+import { TileEditDialog } from "./TileEditDialog";
 import { resolveView } from "./detailsView";
 
 beforeEach(() => {
@@ -77,57 +78,60 @@ describe("what a result takes", () => {
   });
 });
 
-describe("Result Details", () => {
-  function details(payload: Record<string, unknown>, children: NodeTree[] = [file]) {
+describe("Result window (CA-18: written there, held until Save)", () => {
+  function windowFor(payload: Record<string, unknown>, children: NodeTree[] = [file]) {
     const t = tree(payload, children);
     const view = resolveView({ selectedId: "r1", steps: buildSteps(t), groups: [], tree: t, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined });
-    const props: DetailsPanelProps = { phone: false, view, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onTrainedOn: vi.fn() };
-    render(<DetailsPanel {...props} />);
+    const props = { onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onTrainedOn: vi.fn() } as unknown as DetailsHandlers & Record<string, ReturnType<typeof vi.fn>>;
+    render(<TileEditDialog view={view} handlers={props} onClose={vi.fn()} />);
     return props;
   }
+  const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
+  const grid = () => within(screen.getByRole("group", { name: "Output type" }));
 
   it("asks Output type with four choices, Link first, and shows nothing more for the first three", () => {
-    details({ summary: "Site", url: "https://x.test" }, []);
-    expect(screen.getAllByRole("radio").map((radio) => radio.getAttribute("aria-label") ?? (radio.closest("label")?.textContent ?? ""))).toEqual(["Link", "Image or video", "File", "Model"]);
-    expect((screen.getByRole("radio", { name: "Link" }) as HTMLInputElement).checked).toBe(true);
-    expect(screen.queryByText("Based on")).toBeNull();
+    windowFor({ summary: "Site", url: "https://x.test" }, []);
+    expect(grid().getAllByRole("button").map((button) => button.textContent)).toEqual(["Link", "Image or video", "File", "Model"]);
+    expect(grid().getByRole("button", { name: "Link" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByText("Base model")).toBeNull();
     expect(screen.queryByText("Trained on")).toBeNull();
   });
 
   it("saves the choice of Model as its kind", () => {
-    const props = details({ summary: "Site" }, []);
-    fireEvent.click(screen.getByRole("radio", { name: "Model" }));
+    const props = windowFor({ summary: "Site" }, []);
+    fireEvent.click(grid().getByRole("button", { name: "Model" }));
+    expect(props.onFields).not.toHaveBeenCalled();
+    save();
     expect(props.onFields).toHaveBeenCalledWith("r1", { kind: "trained-model" });
   });
 
   it("takes the kind off when another choice is made", () => {
-    const props = details(trainedPayload);
-    fireEvent.click(screen.getByRole("radio", { name: "Link" }));
+    const props = windowFor(trainedPayload);
+    fireEvent.click(grid().getByRole("button", { name: "Link" }));
+    save();
     expect(props.onFields).toHaveBeenLastCalledWith("r1", { kind: null });
   });
 
-  it("asks Based on and Trained on, and How it was trained in the Optional section, closed (CA-15 P11)", () => {
-    const props = details(trainedPayload);
-    expect(screen.getByText("Based on")).toBeTruthy();
-    expect(screen.getByTestId("trained-on").textContent).toContain("ratings.csv · 1,200 rows");
-    expect(screen.getByRole("button", { name: "Replace the file" })).toBeTruthy();
-    expect(screen.queryByRole("textbox", { name: "How it was trained" })).toBeNull();
-    fireEvent.click(screen.getAllByTestId("optional-field").find((el) => el.textContent?.includes("How it was trained"))?.querySelector("button") as HTMLButtonElement);
-    const how = screen.getByRole("textbox", { name: "How it was trained" });
+  it("asks Base model, Trained on and the method, and writes the method, on Save", () => {
+    const props = windowFor(trainedPayload);
+    expect(screen.getByText("Base model")).toBeTruthy();
+    expect(screen.getByTestId("edit-trained-on").textContent).toContain("ratings.csv · 1,200 rows");
+    expect(screen.getByTestId("edit-trained-on-file")).toBeTruthy();
+    const how = screen.getByRole("textbox", { name: "Training method" });
     fireEvent.change(how, { target: { value: "Pairs ranked by a panel" } });
-    fireEvent.keyDown(how, { key: "Enter" });
-    expect(props.onFields).toHaveBeenCalledWith("r1", { method: "Pairs ranked by a panel" });
     fireEvent.click(screen.getByRole("button", { name: "Remove the file" }));
+    save();
+    expect(props.onFields).toHaveBeenCalledWith("r1", { method: "Pairs ranked by a panel" });
     expect(props.onRemoveInside).toHaveBeenCalledWith("f1");
   });
 
   it("sends the file chosen for Trained on", () => {
-    const props = details(trainedPayload, []);
-    const input = screen.getByTestId("details-trained-on");
+    const props = windowFor(trainedPayload, []);
+    const input = screen.getByTestId("edit-trained-on-file");
     const chosen = new File(["a,b\n1,2\n"], "ratings.csv", { type: "text/csv" });
     fireEvent.change(input, { target: { files: [chosen] } });
+    save();
     expect(props.onTrainedOn).toHaveBeenCalledWith("r1", chosen);
-    expect(screen.getByRole("button", { name: "Add the file" })).toBeTruthy();
   });
 });
 

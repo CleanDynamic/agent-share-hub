@@ -1,121 +1,75 @@
-/* UI-P93 — the Details panel in the refined look, as `design/reference/refined/{dusk,noon}/composer-list.html` draws
-   it.
+/* CA-18 P3 — the Details panel, read only.
 
-   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `DetailsPanel` stays the current look; this takes its props (imported, not copied) and shows
-   the same things for each kind of selection, in the same order, with the same fields, writes and accessible names.
+   It shows the selected tile the way its modal does: the same sections, the same names, in the same order, taken from one list
+   (`tileSections`). Nothing in it can be typed into; every change is made in the tile's own window, which Edit opens. What it
+   keeps are the things that read or move without changing anything: Copy, Read all, and a link to another tile.
 
-   THE LOOK. An eyebrow ("Prompt 3"); the title 18/500 with the ghost `pencil` (Rename); for a prompt, its tool's real
-   mark at 24 beside its two meta lines (12/18 `--text2`); the text in a well (13/21); Read all of it (secondary 26)
-   and the word count; Uses and Goes into as hairline lists (a `larr` or `rarr` lead in `--label`, the title
-   12.5/500, the meta 11.5 `--label`, a ghost 24 `x` to remove); Add an input as a 12.5/500 `--text2` text button with
-   no icon. Fields are the well recipe; a chosen way of running is the selected recipe, never a colour.
+   THE LOOK (boards "Details: read only" and "Details: on a 1920 window"). A column on the surface, not a boxed module, split by
+   spacing and thin lines: a head (the tool's mark, the title and the modal's header line, Edit at the right) and then each
+   section that holds something: its label 14/500, its count under it, and its value (prose, rows, a list, chips, links). A
+   section that holds nothing is not drawn; the last line names them once. The measures are in `detailsRecipes`.
 
-   CA-03 P2: the eyebrow is the board's (Geist 10.5/500 `--label`, capitals, .06em: `EYEBROW`); every field label is
-   the composer's (13/500, 6 above its control); a label and its value read label over value (12 `--text2` over 13
-   `--text`, a hairline between pairs); How it runs is a list of choice rows; a session's prompts tick with the brand
-   checkbox; fields you type in are 30 high. 16 between groups, 6 between a label and its control, 8 in a row. */
+   `DetailsHandlers` stays: the handlers are the ones the windows call (CA-18 P2), written here once and typed here. */
 
-import * as Menu from "@radix-ui/react-dropdown-menu";
-import { Pencil, X } from "lucide-react";
-import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { Copy } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { ColourButton, ColourDot } from "@/components/brand/ColourButton";
-
+import { ColourDot } from "@/components/brand/ColourButton";
 import { Button } from "@/components/brand/Button";
-import { CodeEditorField } from "@/components/code/CodeEditorField";
-import { CodeLines } from "@/components/code/CodeLines";
 import { ChangedText } from "@/components/build/ChangedText";
-import { changesLine, type ChangeRange } from "@/lib/build/changes";
-import { Checkbox } from "@/components/brand/Checkbox";
-import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
-import { Segmented } from "@/components/brand/Segmented";
-import { harnessTool, hiddenModelName, modelMenu, pairCheck } from "@/lib/tools/modelRules";
-import { toolName } from "@/lib/tools/registry";
-import { ring } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
+import { changesLine, type ChangeRange } from "@/lib/build/changes";
+import { headOf, notSetLine, readSections, type BuildFacts, type ListItem, type ReadSection, type SectionValue } from "@/lib/build/tileSections";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
 
-import { ChoiceRows } from "./ChoiceRows";
-import { DecisionFields } from "./DecisionFields";
-import { RunsWhenField } from "./RunsWhenField";
-import { RuntimeFields } from "./RuntimeFields";
 import type { HelpersRead } from "@/lib/build/agentCode";
 import type { RuntimePatch } from "@/lib/build/graph";
 import type { RuntimeView } from "./runtimeView";
-import { draftToInput, type DecisionDraft } from "@/lib/build/decisionDraft";
+import type { DecisionDraft } from "@/lib/build/decisionDraft";
 import type { DecisionInput } from "@/lib/build/graph";
 import type { RunsWhen } from "@/lib/build/decision";
-import { Field, FIELD_LABEL, TextButton } from "./composeControls";
+import type { GoesRow, InputOption, UseRow, ChecklistRow, MakesRow } from "./detailsModel";
+import { ToolMark } from "./refinedPieces";
+import { text } from "./refinedStyles";
 import {
-  atOnce,
-  firstRows,
-  isClockTime,
-  RUNS_CHOICES,
-  RUNS_COPY,
-  SCHEDULE_PRESETS,
-  scheduleDetail,
-  scheduleParts,
-  type RunsChoice,
-  type GoesRow,
-  type InputOption,
-  type UseRow,
-  type ChecklistRow,
-  type MakesRow,
-} from "./detailsModel";
-import { OutsideWarning } from "./OutsideWarning";
-import { CheckBlock, ToolMark } from "./refinedPieces";
-import { ToolPicker } from "./ToolPicker";
-import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TRAINED_METHOD_MAX, CONNECTION_LABEL, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
-
-import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
-import { ModelPicker } from "./ModelPicker";
-import { groupByLoaded, type SetupLoaded } from "@/lib/build/setup";
-import { ChangesEachRoundField, MemoryTidyField } from "./AgentNotesFields";
-import { ModelRunFields } from "./ModelRunFields";
-import { asksHowRun, type ModelRun } from "@/lib/build/modelRun";
-import { CheckCasesField } from "./CheckCasesField";
-import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
+  BADGE,
+  CHIPS,
+  COLUMN,
+  EDIT_BUTTON,
+  EMPTY,
+  HEAD_BELOW,
+  HEAD_LINE,
+  HEAD_MARK,
+  HEAD_ROW,
+  HEAD_TEXT,
+  HEAD_TITLE,
+  LINK_ROW,
+  LIST_DETAIL,
+  LIST_KIND,
+  LIST_NAME,
+  LIST_ROW,
+  LIST_VALUE,
+  NOT_SET,
+  PROSE,
+  PROSE_CODE,
+  PROSE_MUTED,
+  ROW,
+  ROW_LABEL,
+  ROW_VALUE,
+  SECTION_BREAK,
+  SECTION_COUNT,
+  SECTION_HEAD,
+  SECTION_LABEL,
+  TOOL_MARK_SIZE,
+  VALUE,
+} from "./detailsRecipes";
+import type { ModelRun } from "@/lib/build/modelRun";
+import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnection, ToolRunsAt, ManualWhere } from "@/lib/build/graph";
+import type { AgentSetupValue } from "./AgentSetupFields";
+import type { OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
-import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
-import { MenuContent } from "./ComposeMenu";
-import { ChoiceGrid } from "./ChoiceGrid";
-import { PromptName } from "@/components/build/tileBodies";
-import { AGENT_DIALOG_COPY } from "./AddAgentDialog";
-import { CODE_DIALOG_COPY } from "./AddCodeDialog";
-import { TOOL_DIALOG_COPY } from "./AddToolDialog";
-import { DATASET_DIALOG_COPY } from "./AddDatasetDialog";
-import { REPO_DIALOG_COPY } from "./AddRepoDialog";
-import { SYSTEM_PROMPT_DIALOG_COPY } from "./AddSystemPromptDialog";
-import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
-import { ExtraRows, agentRows, checkRows, codeRows, datasetRows, promptRows, repoRows, resultRows, systemPromptRows, toolRows } from "./detailsOptional";
-import {
-  DATASET_DESCRIPTION_MAX,
-  DATASET_USES,
-  DATASET_USE_LABEL,
-  REPO_AUTHOR_MAX,
-  REPO_DESCRIPTION_MAX,
-  REPO_OWNERSHIPS,
-  REPO_OWNERSHIP_LABEL,
-  REPO_USAGES,
-  REPO_USAGE_LABEL,
-  REPO_VISIBILITIES,
-  SYSTEM_PROMPT_TEXT_MAX,
-  isPossiblyUnmaintained,
-  licenceLine,
-  repoDay,
-  repoOf,
-  scopeOf,
-  scopeValue,
-  systemPromptOf,
-  datasetOf,
-  type DatasetUse,
-  type RepoOwnership,
-  type RepoUsage,
-  type RepoVisibility,
-} from "@/lib/build/sourceTiles";
+import type { SessionGoal } from "@/lib/build/making";
+import type { SetupLoaded } from "@/lib/build/setup";
 
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
@@ -157,6 +111,8 @@ export interface PromptView extends InputsView {
 /** Work done outside AI (UI-P70). It is never detected, and has no model and no text to copy. */
 export interface ManualView extends InputsView {
   kind: "manual";
+  /** CA-18: where it was done, when it says (an app, a terminal, a phone...). */
+  where?: ManualWhere | null;
   id: string;
   number: string;
   title: string | null;
@@ -212,6 +168,7 @@ export interface SetupRow {
 export interface FileView {
   kind: "file";
   id: string;
+  number?: string;
   /** CA-04 P2, a file sent with a step: "Sent with prompt 2". */
   sentWithLine?: string;
   name: string;
@@ -224,6 +181,8 @@ export interface FileView {
 export interface ToolView {
   kind: "tool";
   id: string;
+  /** CA-18: its place on the build ("11"), for the title of its window. */
+  number?: string;
   service: string;
   scopes: string;
   usedBy: readonly GoesRow[];
@@ -265,6 +224,7 @@ export interface AgentView extends InputsView {
 export interface ResultView {
   kind: "result";
   id: string;
+  number?: string;
   summary: string;
   url: string;
   /** Pictures kept with the result. */
@@ -386,7 +346,7 @@ export interface DetailsHandlers {
   onRemoveMade?: (fileId: string) => void;
   onRuns: (id: string, runs: Runs | null) => void;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
-  onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
+  onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) => void;
   /** UI-P70: add or replace a manual step's picture. */
   onManualPicture?: (id: string, file: File) => void;
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
@@ -436,1769 +396,301 @@ export interface DetailsColour {
   onPick: (anchor: HTMLElement) => void;
 }
 
-const DetailsColourContext = createContext<DetailsColour | null>(null);
 
 export interface DetailsPanelProps extends DetailsHandlers {
-  /** CA-06 P4: absent for a part that takes no colour (a tool, a result), and where nothing can change it. */
+  /** CA-06 P4: the selected part's colour: a dot before its line. Absent for a part that takes none. */
   colour?: DetailsColour | null;
-  /** CA-04 P4: "Setup 2" on a session's head asks this session's Setup to scroll into view; `at` changes each time. */
+  /** CA-04 P4: kept for the page; the Setup of a session is read in its own window now. */
   focusSetup?: { key: string; at: number } | null;
   phone: boolean;
   view: DetailsView | null;
-  /** The tools the build already uses, first in a manual step's tool picker. */
   inBuild?: readonly string[];
-  /** TF-08: "Name a file it makes" in the List asks this step's Makes field to open; `at` changes each time. */
+  /** TF-08: kept for the page. */
   focusMakes?: { id: string; at: number } | null;
+  /** CA-18: names the other tiles a section points at (their number, kind and session). Absent: they are named as the view names them. */
+  build?: BuildFacts;
+  /** CA-18: opens the window for what is shown. Absent: no Edit. */
+  onEdit?: () => void;
+  /** CA-18 P4: the columns Details is laid out in. Absent: one. */
+  plan?: DetailsPlan;
 }
 
-export const MANUAL_DETAILS_COPY = { never: "Added by you · never detected" } as const;
+/** CA-18 P4: Details laid out in columns: which section sits in which, how wide each is, and how tall a prose section may be before Read all. */
+export interface DetailsPlan {
+  /** Measuring copy: every piece alone in a block as wide as its container, each with no separator above, marked `data-measure`. */
+  measure?: boolean;
+  columnWidth: number;
+  /** The keys of what sits in each column, in order: "head", section keys, "foot". */
+  columns: readonly (readonly string[])[];
+  /** A prose section taller than this is cut, with Read all, by section key. */
+  cut?: Readonly<Record<string, number>>;
+}
 
 export const DETAILS_COPY = {
-  empty: "Select a prompt, session or file to see it here.",
-} as const;
-
-export const MAKES_COPY = {
-  title: "Makes",
-  add: "Name a file it makes",
-  placeholder: "File name, such as brand-guide.md",
-  taken: "This step already makes a file with that name.",
+  empty: "Select a tile or session to see it here.",
+  edit: "Edit",
+  copy: "Copy",
+  copied: "Copied",
+  copyFailed: "Couldn't copy that. Select the text and copy it by hand.",
+  readAll: "Read all",
 } as const;
 
 /* ── small pieces ── */
 
-const line = `1px solid ${t.hairlineModule}`;
+const kindOf = (item: ListItem): string | null => (item.kind ? `· ${item.kind}` : null);
 
-const quiet = (extra: CSSProperties = {}): CSSProperties => text(11.5, 400, t.label, extra);
-
-/** A list's head: its name 12.5/500 and its count, over a hairline. */
-function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
+function ItemBody({ item }: { item: ListItem }) {
   return (
-    <section style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
-        <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{title}</h3>
-        {typeof count === "number" ? <span style={{ ...quiet(), ...tnum }}>{count}</span> : null}
-      </div>
-      {children}
-    </section>
+    <>
+      {item.tool ? (
+        <span style={{ width: TOOL_MARK_SIZE, display: "inline-flex", justifyContent: "center", flexShrink: 0 }}>
+          <ToolMark tool={item.tool} size={20} />
+        </span>
+      ) : item.badge ? (
+        <span data-testid="details-badge" style={BADGE}>
+          {item.badge}
+        </span>
+      ) : null}
+      <span style={LIST_NAME}>{item.name}</span>
+      {kindOf(item) ? <span style={LIST_KIND}>{kindOf(item)}</span> : null}
+      {item.detail ? <span style={LIST_DETAIL}>{item.detail}</span> : null}
+      {item.value ? <span style={LIST_VALUE}>{item.value}</span> : null}
+    </>
   );
 }
 
-/** A ghost 24 that removes one thing (44 on a phone). */
-function RemoveButton({ label, phone, onClick }: { label: string; phone: boolean; onClick: () => void }) {
-  const side = phone ? 44 : 24;
-  return <IconButton icon={X} glyph="x" boxed={false} label={label} size={26} onClick={onClick} style={{ width: side, height: side, color: t.label }} />;
-}
-
-function Lead({ glyph }: { glyph: GlyphName }) {
-  return (
-    <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
-      <Glyph name={glyph} size={16} />
-    </span>
-  );
-}
-
-/** A row of a hairline list: at least 48 high (44 for a plain one), a hairline under it. */
-const listRow = (minHeight = 48): CSSProperties => ({ display: "flex", alignItems: "center", gap: 12, minHeight, boxSizing: "border-box", padding: "6px 0", borderBottom: line, minWidth: 0 });
-
-function ShowMore({ hidden, phone, onClick }: { hidden: number; phone: boolean; onClick: () => void }) {
-  if (hidden <= 0) return null;
-  return (
-    <div style={{ paddingTop: 8 }}>
-      <TextButton target={phone} onClick={onClick} style={text(12.5, 500, t.text2)}>
-        Show {hidden} more
-      </TextButton>
-    </div>
-  );
-}
-
-/** A label and its value (CA-03): the label 12 `--text2` over the value 13 `--text`, a hairline under the pair. */
-function KeyValue({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div data-testid="label-value" style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0", borderBottom: line, minWidth: 0 }}>
-      <span style={text(12, 400, t.text2)}>{label}</span>
-      <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
-    </div>
-  );
-}
-
-/** A text field that hands its value over on blur or Enter and goes back on Esc. */
-function CommitField({
-  label,
-  value,
-  placeholder,
-  max,
-  phone,
-  multiline = false,
-  rows = 2,
-  onCommit,
-}: {
-  label: string;
-  value: string;
-  placeholder?: string;
-  max?: number;
-  phone: boolean;
-  multiline?: boolean;
-  rows?: number;
-  onCommit: (value: string) => void;
-}) {
-  const [draft, setDraft] = useState(value);
-  const commit = () => {
-    if (draft.trim() !== value.trim()) onCommit(draft);
-  };
-  const { state, handlers } = useInteractive<HTMLInputElement & HTMLTextAreaElement>({ onBlur: commit });
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !multiline) {
-      event.preventDefault();
-      commit();
-    }
-    if (event.key === "Escape") setDraft(value);
-  };
-  const style: CSSProperties = multiline ? typedArea(phone, ring(state.focusVisible)) : typedField(phone, ring(state.focusVisible));
-  const common = {
-    "aria-label": label,
-    value: draft,
-    placeholder,
-    maxLength: max,
-    onChange: (event: { target: { value: string } }) => setDraft(event.target.value),
-    onKeyDown,
-    ...handlers,
-  };
-  return multiline ? <textarea rows={rows} {...common} style={style} /> : <input type="text" {...common} style={style} />;
-}
-
-/** A field label over its control: the composer's `Field` look, the label wrapping the control it names. */
-function FieldBlock({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={FIELD_LABEL}>{label}</span>
-      {children}
-    </label>
-  );
-}
-
-/** The eyebrow, the title 18/500 and the ghost `pencil` that renames it in place (Enter saves, Esc cancels). */
-function Head({ eyebrow, children }: { eyebrow: ReactNode; children?: ReactNode }) {
-  const colour = useContext(DetailsColourContext);
-  if (colour) {
+/** A links row selects its tile; a row with no tile behind it is plain. */
+function LinkItem({ item, onSelect }: { item: ListItem; onSelect?: (id: string) => void }) {
+  const id = item.id;
+  if (id && onSelect) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-        <p data-testid="details-eyebrow" style={{ ...EYEBROW, margin: 0, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
-          {colour.colour ? <ColourDot colour={colour.colour} size={8} /> : null}
-          {eyebrow}
-        </p>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, flexGrow: 1, minWidth: 0 }}>{children}</div>
-          <ColourButton what={colour.what} colour={colour.colour} onPick={colour.onPick} />
-        </div>
-      </div>
+      <button type="button" data-testid="details-link" onClick={() => onSelect(id)} style={{ ...LIST_ROW, ...LINK_ROW }}>
+        <ItemBody item={item} />
+      </button>
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      <p data-testid="details-eyebrow" style={{ ...EYEBROW, margin: 0, whiteSpace: "nowrap" }}>
-        {eyebrow}
-      </p>
-      {children}
+    <div style={LIST_ROW}>
+      <ItemBody item={item} />
     </div>
   );
 }
 
-const titleStyle = (quietTitle: boolean): CSSProperties => ({
-  ...text(18, 500, quietTitle ? t.text2 : t.text),
-  margin: 0,
-  minWidth: 0,
-  letterSpacing: "-0.015em",
-  overflowWrap: "anywhere",
-});
-
-function Title({ id, title, fallback, editable, label, phone, onRename, place }: { id: string; title: string | null; fallback: string; editable: boolean; label: string; phone: boolean; onRename: (id: string, title: string) => void; /** A prompt: its place on the build ("Prompt 3 · Session 2"), drawn before the maker's own title. */ place?: string }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
-  const finish = (save: boolean) => {
-    setEditing(false);
-    if (save && draft.trim() !== (title ?? "")) onRename(id, draft);
-  };
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-      {editing ? (
-        <input
-          autoFocus
-          aria-label={label}
-          value={draft}
-          maxLength={80}
-          placeholder={place ? "e.g. Welcome email" : fallback}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={() => finish(true)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") finish(true);
-            if (event.key === "Escape") finish(false);
-          }}
-          style={typedField(phone, { fontSize: 16, fontWeight: 500 })}
-        />
-      ) : (
-        <h3 data-default-title={title ? undefined : "true"} style={titleStyle(!title)}>
-          {place ? <PromptName place={place} title={title} size={18} /> : (title ?? fallback)}
-        </h3>
-      )}
-      {editable && !editing ? (
-        <IconButton
-          icon={Pencil}
-          glyph="pencil"
-          boxed={false}
-          label="Rename"
-          size={26}
-          style={phone ? { width: 44, height: 44 } : undefined}
-          onClick={() => {
-            setDraft(title ?? "");
-            setEditing(true);
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-/** "Read all of it", a secondary 26. */
-function ReadAll({ phone, disabled, onClick }: { phone: boolean; disabled: boolean; onClick: () => void }) {
-  return (
-    <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={disabled} onClick={onClick} style={phone ? undefined : { height: 26 }}>
-      Read all of it
-    </Button>
-  );
-}
-
-/* ── inputs: Uses, Add an input, Goes into ── */
-
-function AddInput({ id, options, phone, onAddUse, onAttach }: { id: string; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse" | "onAttach">) {
-  const [menuAll, setMenuAll] = useState(false);
-  const menu = menuAll ? { visible: [...options], hidden: 0 } : firstRows(options);
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const disabled = options.length === 0 && !onAttach;
-  return (
-    <Menu.Root onOpenChange={(open) => !open && setMenuAll(false)}>
-      <Menu.Trigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          {...handlers}
-          style={{
-            ...bareButton,
-            height: phone ? 44 : 36,
-            ...text(12.5, 500, state.hovered && !disabled ? t.text : t.text2),
-            cursor: disabled ? "default" : "pointer",
-            filter: disabled ? t.dimFilter : undefined,
-            alignSelf: "flex-start",
-            ...ring(state.focusVisible),
-          }}
-        >
-          Add an input
-        </button>
-      </Menu.Trigger>
-      <Menu.Portal>
-        <MenuContent align="start" sideOffset={6} style={{ ...menuSurface(260), maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))" }}>
-          {onAttach ? (
-            <Menu.Item onSelect={() => onAttach(id)} style={menuItem(true, phone)}>
-              A file from your computer
-            </Menu.Item>
-          ) : null}
-          {menu.visible.map((option) => (
-            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 12px" }}>
-              <span style={text(12.5, 500, t.text)}>{option.label}</span>
-              {option.sub ? <span style={quiet()}>{option.sub}</span> : null}
-            </Menu.Item>
-          ))}
-          {menu.hidden > 0 ? (
-            <Menu.Item
-              onSelect={(event) => {
-                event.preventDefault();
-                setMenuAll(true);
-              }}
-              style={{ ...menuItem(true, phone), color: t.text2 }}
-            >
-              Show {menu.hidden} more
-            </Menu.Item>
-          ) : null}
-        </MenuContent>
-      </Menu.Portal>
-    </Menu.Root>
-  );
-}
-
-function UseList({ id, rows, options, phone, onAddUse, onAttach, onRemoveUse }: { id: string; rows: readonly UseRow[]; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse" | "onAttach" | "onRemoveUse">) {
-  const [all, setAll] = useState(false);
-  const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
-  return (
-    <Section title="Uses" count={rows.length}>
-      {shown.visible.map((row) => (
-        <div key={`${row.use.kind}:${row.use.node_id}`} style={listRow()}>
-          <Lead glyph="larr" />
-          <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-            <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{row.label}</span>
-            {row.sub ? <span style={quiet()}>{row.sub}</span> : null}
-          </span>
-          <RemoveButton label={`Remove ${row.label}`} phone={phone} onClick={() => onRemoveUse(id, row.use)} />
-        </div>
-      ))}
-      <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
-      <AddInput id={id} options={options} phone={phone} onAddUse={onAddUse} onAttach={onAttach} />
-    </Section>
-  );
-}
-
-function RowList({ title, rows, phone, glyph = "rarr", onSelect }: { title: string; rows: readonly GoesRow[]; phone: boolean; glyph?: GlyphName; onSelect?: (id: string) => void }) {
-  const [all, setAll] = useState(false);
-  if (rows.length === 0) return null;
-  const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
-  return (
-    <Section title={title} count={rows.length}>
-      {shown.visible.map((row) => (
-        <div key={row.id} style={{ ...listRow(44), borderBottom: "none" }}>
-          <Lead glyph={glyph} />
-          {onSelect && row.id !== "result" ? (
-            <TextButton onClick={() => onSelect(row.id)} style={{ ...text(12.5, 500, t.text), textAlign: "left" }}>
-              {row.label}
-            </TextButton>
-          ) : (
-            <span style={text(12.5, 500, t.text)}>{row.label}</span>
-          )}
-        </div>
-      ))}
-      <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
-    </Section>
-  );
-}
-
-/* ── Makes (TF-08): the files a step makes ── */
-
-/** A made file's name, renamed in place: Enter or leaving saves, Esc goes back, and a blank name goes back too. */
-function MadeName({ row, phone, onRename }: { row: MakesRow; phone: boolean; onRename: (id: string, name: string) => void }) {
-  const [draft, setDraft] = useState(row.name);
-  const commit = () => {
-    const next = draft.trim();
-    if (!next) setDraft(row.name);
-    else if (next !== row.name) onRename(row.id, next);
-  };
-  const { state, handlers } = useInteractive<HTMLInputElement>({ onBlur: commit });
-  return (
-    <input
-      type="text"
-      aria-label={`Name of ${row.name}`}
-      value={draft}
-      maxLength={MADE_FILE_NAME_MAX}
-      onChange={(event) => setDraft(event.target.value)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          commit();
-        }
-        if (event.key === "Escape") setDraft(row.name);
-      }}
-      {...handlers}
-      style={typedField(phone, { flexGrow: 1, minWidth: 0, ...ring(state.focusVisible) })}
-    />
-  );
-}
-
-function MakesList({
-  stepId,
-  rows,
-  phone,
-  focus,
-  onAdd,
-  onRename,
-  onRemove,
-}: {
-  stepId: string;
-  rows: readonly MakesRow[];
-  phone: boolean;
-  focus: DetailsPanelProps["focusMakes"];
-  onAdd: (stepId: string, name: string) => void;
-  onRename: (id: string, name: string) => void;
-  onRemove: (id: string) => void;
-}) {
-  const [all, setAll] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [taken, setTaken] = useState(false);
-  const field = useRef<HTMLInputElement>(null);
-  const button = useInteractive<HTMLButtonElement>();
-  const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
-
-  /* The List's menu item opens the field, or puts the cursor back in it when it is open already. */
-  const asked = focus && focus.id === stepId ? focus.at : 0;
-  useEffect(() => {
-    if (!asked) return;
-    setAdding(true);
-    field.current?.focus();
-  }, [asked]);
-
-  const close = () => {
-    setAdding(false);
-    setDraft("");
-    setTaken(false);
-  };
-  const submit = () => {
-    const name = draft.trim();
-    if (!name) return;
-    if (rows.some((row) => row.name.trim().toLowerCase() === name.toLowerCase())) {
-      setTaken(true);
-      return;
-    }
-    onAdd(stepId, name);
-    close();
-  };
-
-  return (
-    <Section title={MAKES_COPY.title} count={rows.length}>
-      {shown.visible.map((row) => (
-        <div key={row.id} style={listRow()}>
-          <MadeName key={row.name} row={row} phone={phone} onRename={onRename} />
-          <RemoveButton label={`Remove ${row.name}`} phone={phone} onClick={() => onRemove(row.id)} />
-        </div>
-      ))}
-      <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
-      {adding ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8 }}>
-          <input
-            ref={field}
-            autoFocus
-            type="text"
-            aria-label={MAKES_COPY.add}
-            placeholder={MAKES_COPY.placeholder}
-            value={draft}
-            maxLength={MADE_FILE_NAME_MAX}
-            onChange={(event) => {
-              setDraft(event.target.value);
-              setTaken(false);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                submit();
-              }
-              if (event.key === "Escape") {
-                event.stopPropagation();
-                close();
-              }
-            }}
-            onBlur={() => {
-              if (!draft.trim()) close();
-            }}
-            style={typedField(phone)}
-          />
-          {taken ? <span style={quiet()}>{MAKES_COPY.taken}</span> : null}
-        </div>
-      ) : (
-        <button
-          type="button"
-          {...button.handlers}
-          onClick={() => setAdding(true)}
-          style={{
-            ...bareButton,
-            height: phone ? 44 : 36,
-            ...text(12.5, 500, button.state.hovered ? t.text : t.text2),
-            cursor: "pointer",
-            alignSelf: "flex-start",
-            ...ring(button.state.focusVisible),
-          }}
-        >
-          {MAKES_COPY.add}
-        </button>
-      )}
-    </Section>
-  );
-}
-
-/* ── a saved pair that breaks the rules (CA-02 P8) ── */
-
-export const PAIR_COPY = {
-  notOffered: (tool: string, model: string) => `${tool} doesn't offer ${model}.`,
-  runsNoModel: (tool: string) => `${tool} doesn't run a model.`,
-  hidesModel: (tool: string) => `${tool} doesn't show which model it used.`,
-  change: "Change the model",
-  remove: "Remove the model",
-} as const;
-
-/**
- * One quiet line and one text button, for a tool and model saved together that the tool's rules do not allow. Only
- * the maker sees Details, so only the maker sees it; nothing changes until they press the button. An unknown tool
- * or model says nothing.
- */
-function PairNote({ tool, model, phone, onChange, onRemove }: { tool: string | null | undefined; model: string | null | undefined; phone: boolean; onChange: () => void; onRemove: () => void }) {
-  const check = pairCheck(tool, model);
-  if (check !== "not-offered" && check !== "tool-runs-no-model" && check !== "tool-hides-model") return null;
-  const name = toolName(tool) ?? (tool ?? "").trim();
-  const line = check === "not-offered" ? PAIR_COPY.notOffered(name, (model ?? "").trim()) : check === "tool-runs-no-model" ? PAIR_COPY.runsNoModel(name) : PAIR_COPY.hidesModel(name);
-  return (
-    <div data-testid="pair-note" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-      <span style={text(12, 400, t.text2)}>{line}</span>
-      <TextButton target={phone} underline style={text(12, 500, t.text)} onClick={check === "not-offered" ? onChange : onRemove}>
-        {check === "not-offered" ? PAIR_COPY.change : PAIR_COPY.remove}
-      </TextButton>
-    </div>
-  );
-}
-
-/* ── a prompt ── */
-
-/** The tool, from the session line: "Session 2 · Claude Code" ends in it. */
-const toolOf = (sessionLine: string): string => sessionLine.split(" · ").pop() ?? "";
-
-/** The Makes list of a step; only where the panel can write it. */
-function Makes({ id, rows, phone, focus, h }: { id: string; rows: readonly MakesRow[]; phone: boolean; focus: DetailsPanelProps["focusMakes"]; h: DetailsHandlers }) {
-  if (!h.onAddMade) return null;
-  return <MakesList stepId={id} rows={rows} phone={phone} focus={focus} onAdd={h.onAddMade} onRename={(fileId, name) => h.onFields(fileId, { title: name })} onRemove={(fileId) => h.onRemoveMade?.(fileId)} />;
-}
-
-function PromptDetails({ view, phone, focus, payload, inBuild, ...h }: { view: PromptView; phone: boolean; focus: DetailsPanelProps["focusMakes"]; payload?: Record<string, unknown>; inBuild?: readonly string[] } & DetailsHandlers) {
-  const open = h.onOpenPrompt ? () => h.onOpenPrompt?.(view.id) : undefined;
-  /** CA-02 P8: "Change the model" opens the model menu. */
-  const [openModel, setOpenModel] = useState(0);
+function Prose({ value, changes, clamp, onReadAll }: { value: Extract<SectionValue, { type: "prose" }>; changes?: readonly ChangeRange[]; clamp?: number; onReadAll?: () => void }) {
+  const style = value.code ? PROSE_CODE : value.muted ? PROSE_MUTED : PROSE;
   return (
     <>
-      <Head eyebrow={view.sentWithLine ?? `Prompt ${view.number}`}>
-        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable={view.editable} label={`Title of prompt ${view.number}`} phone={phone} onRename={h.onRename} place={view.place} />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <ToolMark tool={toolOf(view.sessionLine)} model={view.model} size={24} />
-          <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <span style={{ ...text(12, 400, t.text2), lineHeight: "18px" }}>{view.sessionLine}</span>
-            {view.detailLine ? <span style={{ ...text(12, 400, t.text2), lineHeight: "18px" }}>{view.detailLine}</span> : null}
-          </span>
-        </div>
-      </Head>
-      {view.typed ? (
-        /* CA-02 P8: the menu follows the prompt's tool, as Typed here's does. A group, not a label: a label would name
-           the menu's button and the note's button after itself. */
-        <div role="group" aria-label="Model" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={FIELD_LABEL}>Model</span>
-          <div>
-            <ModelPicker tool={view.tool ?? null} value={view.model} onChange={(model) => h.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool />
-          </div>
-          {!view.model && modelMenu(harnessTool(view.tool)).state !== "hidden" && modelMenu(harnessTool(view.tool)).state !== "none" ? (
-            <span style={quiet()}>Model is empty because there is no session to read it from.</span>
-          ) : null}
-          <PairNote tool={view.tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => h.onModel(view.id, null)} />
+      <p data-testid="details-prose" style={clamp ? { ...style, maxHeight: clamp, overflow: "hidden" } : style}>
+        {value.changes ? <ChangedText text={value.text} changes={changes ?? value.changes} /> : value.text}
+      </p>
+      {value.changes?.length ? (
+        <p data-testid="changes-line" style={text(11.5, 400, t.label, { margin: 0 })}>
+          {changesLine(value.changes.length)}
+        </p>
+      ) : null}
+      {clamp && onReadAll ? (
+        <div style={VALUE}>
+          <Button variant="secondary" size={28} fontSize={12} onClick={onReadAll} style={EDIT_BUTTON}>
+            {DETAILS_COPY.readAll}
+          </Button>
         </div>
       ) : null}
-      {view.modelRun && h.onModelRun ? <ModelRunFields id={view.id} run={view.modelRun.run} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
-      <div style={{ ...wellField, padding: 12 }}>
-        <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          <ChangedText text={view.text} changes={view.changes} />
+    </>
+  );
+}
+
+function ValueView({ value, onSelect, clamp, onReadAll }: { value: SectionValue; onSelect?: (id: string) => void; clamp?: number; onReadAll?: () => void }) {
+  switch (value.type) {
+    case "prose":
+      return <Prose value={value} clamp={clamp} onReadAll={onReadAll} />;
+    case "rows":
+      return (
+        <div role="list">
+          {value.rows.map((row) => (
+            <div key={row.label} role="listitem" data-testid="details-row" style={ROW}>
+              <span style={ROW_LABEL}>{row.label}</span>
+              <span style={ROW_VALUE}>{row.value}</span>
+            </div>
+          ))}
+        </div>
+      );
+    case "list":
+      return (
+        <div role="list">
+          {value.items.map((item, at) => (
+            <div key={`${item.id ?? ""}${at}`} role="listitem" style={LIST_ROW}>
+              <ItemBody item={item} />
+            </div>
+          ))}
+        </div>
+      );
+    case "links":
+      return (
+        <div role="list">
+          {value.items.map((item, at) => (
+            <div key={`${item.id ?? ""}${at}`} role="listitem">
+              <LinkItem item={item} onSelect={onSelect} />
+            </div>
+          ))}
+        </div>
+      );
+    case "chips":
+      return (
+        <div role="list" style={CHIPS}>
+          {value.chips.map((chip, at) => (
+            <span key={`${chip}${at}`} role="listitem" style={BADGE}>
+              {chip}
+            </span>
+          ))}
+        </div>
+      );
+  }
+}
+
+/** Copy: a 26 square control that puts a prose section's text on the clipboard, and says so. */
+function CopyButton({ text: words }: { text: string }) {
+  const [said, setSaid] = useState("");
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  return (
+    <>
+      <IconButton
+        icon={Copy}
+        label={DETAILS_COPY.copy}
+        size={26}
+        onClick={() => {
+          void (async () => {
+            try {
+              await navigator.clipboard.writeText(words);
+              setSaid(DETAILS_COPY.copied);
+            } catch {
+              setSaid(DETAILS_COPY.copyFailed);
+            }
+            window.clearTimeout(timer.current);
+            timer.current = window.setTimeout(() => setSaid(""), 2000);
+          })();
+        }}
+      />
+      <span aria-live="polite" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+        {said}
+      </span>
+    </>
+  );
+}
+
+/** One section: its label, its count under it, a reading button at the right, then its value. Not first in its column: 22, a rule, 22. */
+export function DetailsSection({ section, first, view, onSelect, clamp, onReadAll }: { section: ReadSection; first: boolean; view: DetailsView; onSelect?: (id: string) => void; clamp?: number; onReadAll?: () => void }) {
+  const value = section.value;
+  const copyable = value.type === "prose" && value.copy ? value.text : null;
+  void view;
+  return (
+    <section data-testid="details-section" data-section={section.key} data-prose={value.type === "prose" ? "true" : undefined} aria-label={section.label} style={{ position: "relative", minWidth: 0, ...(first ? null : SECTION_BREAK) }}>
+      <div style={SECTION_HEAD}>
+        <div style={{ minWidth: 0 }}>
+          <h4 style={SECTION_LABEL}>{section.label}</h4>
+          {value.count ? <p data-testid="details-count" style={SECTION_COUNT}>{value.count}</p> : null}
+        </div>
+        {copyable ? <CopyButton text={copyable} /> : null}
+      </div>
+      <div style={VALUE}>
+        <ValueView value={value} onSelect={onSelect} clamp={clamp} onReadAll={onReadAll} />
+      </div>
+    </section>
+  );
+}
+
+/** The head: the tool's mark, the title and the modal's header line (a colour dot before it when set), Edit at the right. */
+export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colour?: DetailsColour | null; onEdit?: () => void }) {
+  const head = headOf(view);
+  const editable = view.kind !== "file";
+  return (
+    <header data-testid="details-head" style={{ ...HEAD_ROW, marginBottom: HEAD_BELOW }}>
+      {head.tool || view.kind === "prompt" || view.kind === "session" ? (
+        <span style={HEAD_MARK}>
+          <ToolMark tool={head.tool} model={head.model} size={24} />
+        </span>
+      ) : null}
+      <div style={HEAD_TEXT}>
+        <h3 data-default-title={head.untitled ? "true" : undefined} style={head.untitled ? { ...HEAD_TITLE, color: t.text2 } : HEAD_TITLE}>
+          {head.title}
+        </h3>
+        <p data-testid="details-line" style={HEAD_LINE}>
+          {colour?.colour ? <ColourDot colour={colour.colour} size={8} /> : null}
+          <span>{head.line}</span>
         </p>
       </div>
-      {view.changes?.length ? <span data-testid="changes-line" style={quiet()}>{changesLine(view.changes.length)}</span> : null}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <ReadAll phone={phone} disabled={!open} onClick={() => open?.()} />
-        <span style={{ flexGrow: 1 }} />
-        <span style={{ ...quiet(), ...tnum }}>{view.words} words</span>
-      </div>
-      {view.editable ? <ExtraRows id={view.id} rows={promptRows(payload ?? {}, view.text)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} /> : null}
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      {view.editable ? <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} /> : null}
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
-}
-
-/* ── a manual step (UI-P70) ── */
-
-function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: ManualView; phone: boolean; inBuild?: readonly string[]; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
-  const picker = useRef<HTMLInputElement>(null);
-  const commit = (fields: { tool?: string; text?: string }) => {
-    // Both are required: a blank value goes back to what was there.
-    if (Object.values(fields).some((value) => !value?.trim())) return;
-    h.onManual?.(view.id, fields);
-  };
-  return (
-    <>
-      <Head eyebrow={view.sentWithLine ?? `Manual step ${view.number}`}>
-        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of manual step ${view.number}`} phone={phone} onRename={h.onRename} />
-        <span style={text(12, 400, t.text2)}>{MANUAL_DETAILS_COPY.never}</span>
-      </Head>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
-        <span style={FIELD_LABEL}>Tool</span>
-        <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} step="manual" onChange={(value) => commit({ tool: value ?? "" })} />
-      </div>
-      <FieldBlock label="What was done">
-        <CommitField key={`${view.id}:text`} label="What was done" value={view.text} max={140} multiline phone={phone} onCommit={(value) => commit({ text: value })} />
-      </FieldBlock>
-      <Section title="Picture" count={view.picture ? 1 : 0}>
-        {view.picture ? (
-          <div style={listRow(44)}>
-            <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{view.picture.name}</span>
-            <RemoveButton label="Remove the picture" phone={phone} onClick={() => h.onManual?.(view.id, { media_id: null })} />
-          </div>
-        ) : null}
-        <input
-          ref={picker}
-          type="file"
-          accept="image/*"
-          hidden
-          data-testid="details-manual-picture"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) h.onManualPicture?.(view.id, file);
-          }}
-        />
-        <div style={{ paddingTop: 8 }}>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => picker.current?.click()}>
-            {view.picture ? "Replace the picture" : "Add a picture"}
-          </Button>
-        </div>
-      </Section>
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
-}
-
-/* ── code (CA-02 P7) ── */
-
-export const CODE_DETAILS_COPY = {
-  copy: "Copy",
-  copied: "Copied",
-  copyFailed: "Couldn't copy that. Select the code and copy it by hand.",
-  writtenWith: CODE_DIALOG_COPY.writtenWith,
-} as const;
-
-function CodeDetails({ view, phone, focus, payload, inBuild, ...h }: { view: CodeView; phone: boolean; focus: DetailsPanelProps["focusMakes"]; payload?: Record<string, unknown>; inBuild?: readonly string[] } & DetailsHandlers) {
-  const [said, setSaid] = useState("");
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(view.source);
-      setSaid(CODE_DETAILS_COPY.copied);
-    } catch {
-      setSaid(CODE_DETAILS_COPY.copyFailed);
-    }
-  };
-  return (
-    <>
-      <Head eyebrow={view.sentWithLine ?? `Code ${view.number}`}>
-        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of code ${view.number}`} phone={phone} onRename={h.onRename} />
-        <span style={text(12, 400, t.text2)}>{[view.filename, view.language, `${view.lines} ${view.lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
-      </Head>
-      <CodeLines text={view.source} compact testId="details-code" label="Code" />
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void copy()} style={phone ? undefined : { height: 26 }}>
-          {CODE_DETAILS_COPY.copy}
+      {onEdit && editable ? (
+        <Button variant="secondary" size={28} fontSize={12} onClick={onEdit} style={EDIT_BUTTON}>
+          {DETAILS_COPY.edit}
         </Button>
-        <span aria-live="polite" style={quiet()}>
-          {said}
-        </span>
-      </div>
-      <ExtraRows id={view.id} rows={codeRows(payload ?? {})} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
-}
-
-/* ── a decision (CA-13 P2) ── */
-
-function DecisionDetails({ view, phone, inBuild, ...h }: { view: DecisionView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
-  const [draft, setDraft] = useState(view.draft);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const save = () => {
-    const made = draftToInput(draft);
-    if ("error" in made) {
-      setError(made.error);
-      return;
-    }
-    setError(null);
-    h.onDecision?.(view.id, made.input);
-    setSaved(true);
-  };
-  return (
-    <>
-      <Head eyebrow={view.sentWithLine ?? `Decision ${view.number} · runs in the app`}>
-        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of decision ${view.number}`} phone={phone} onRename={h.onRename} />
-      </Head>
-      <DecisionFields draft={draft} onChange={(next) => { setDraft(next); setSaved(false); }} phone={phone} codeTiles={view.codeTiles} stepChoices={view.stepChoices} inBuild={inBuild} />
-      {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
-      {h.onDecision ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Button variant="primary" size={phone ? 44 : 28} fontSize={12} onClick={save} style={phone ? undefined : { height: 26 }}>
-            Save the decision
-          </Button>
-          <span aria-live="polite" style={quiet()}>{saved ? "Saved" : ""}</span>
-        </div>
       ) : null}
-    </>
+    </header>
   );
 }
 
-/* ── a check (CA-03 P5) ── */
+/** Contains its children's margins, so a measured piece is as tall as it draws. */
+const FLOW: CSSProperties = { display: "flow-root" };
 
-function CheckDetails({ view, phone, payload, inBuild, ...h }: { view: CheckView; phone: boolean; payload?: Record<string, unknown>; inBuild?: readonly string[] } & DetailsHandlers) {
-  return (
-    <>
-      <Head eyebrow={view.sentWithLine ?? `Check ${view.number}`}>
-        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of check ${view.number}`} phone={phone} onRename={h.onRename} />
-      </Head>
-      <CheckBlock check={view.check} />
-      {h.onCheckCases ? <CheckCasesField key={`${view.id}:cases:${(view.check.caseList ?? []).length}`} id={view.id} cases={view.check.caseList ?? []} phone={phone} onBlurOnly onChange={(cases) => h.onCheckCases?.(view.id, cases)} /> : null}
-      {h.onCheckRuns ? <CheckRunsField key={`${view.id}:${(view.check.runs ?? []).map((run) => `${run.at}${run.passed}${run.total}`).join(",")}`} id={view.id} runs={view.check.runs ?? []} phone={phone} onChange={(runs) => h.onCheckRuns?.(view.id, runs)} /> : null}
-      <ExtraRows id={view.id} rows={checkRows(payload ?? {})} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
-}
+const nameOnly: BuildFacts = { ref: () => null };
 
-/* ── a session ── */
-
-export const SESSION_DETAILS_COPY = {
-  tool: "Tool",
-  date: "Date",
-  typedHere: "No app chosen",
-  dateHint: "2026-10-12",
-  badDate: "Write the day as 2026-10-12.",
-} as const;
-
-/** CA-04 P1: a session's day, typed as "2026-10-12"; anything else is said and not saved. */
-function SessionDate({ id, value, phone, onCommit }: { id: string; value: string; phone: boolean; onCommit: (date: string) => void }) {
-  const [wrong, setWrong] = useState(false);
-  return (
-    <FieldBlock label={SESSION_DETAILS_COPY.date}>
-      <CommitField
-        key={`${id}:date`}
-        label={SESSION_DETAILS_COPY.date}
-        value={value}
-        placeholder={SESSION_DETAILS_COPY.dateHint}
-        max={10}
-        phone={phone}
-        onCommit={(next) => {
-          const day = next.trim();
-          const ok = isIsoDay(day);
-          setWrong(!ok);
-          if (ok) onCommit(day);
-        }}
-      />
-      {wrong ? <span style={quiet()}>{SESSION_DETAILS_COPY.badDate}</span> : null}
-    </FieldBlock>
-  );
-}
-
-export const SETUP_COPY = {
-  title: "Setup",
-  add: "Add to setup",
-  notShared: "Not shared",
-  keepToMyself: "Don't share it",
-} as const;
-
-/**
- * CA-04 P4: Setup, under Date. Rows: the kind 12 `--label`, the name 12.5 `--text`, hairlines between. A row marked
- * Not shared is dashed, its name (and a skill's description) kept. Add to setup opens the file picker.
- */
-function SetupSection({ view, phone, focus, onSelect, onAddToSetup, onNotShared }: { view: SessionView; phone: boolean; focus: DetailsPanelProps["focusSetup"] } & Pick<DetailsHandlers, "onSelect" | "onAddToSetup" | "onNotShared">) {
-  const ref = useRef<HTMLElement>(null);
-  const at = focus && focus.key === view.key ? focus.at : null;
-  useEffect(() => {
-    if (at !== null) ref.current?.scrollIntoView?.({ block: "start" });
-  }, [at]);
-  const rows = view.setup ?? [];
-  // Shown only once the session has a setup: a drop on Sources starts one.
-  if (rows.length === 0) return null;
-  // CA-05 P6: under two quiet labels, only when both have rows.
-  const grouped = groupByLoaded(rows.map((entry) => ({ ...entry, loaded: entry.loaded ?? ("start" as const) })));
-  const row = (row: SetupRow) => (
-        <div
-      key={row.id}
-      data-testid="setup-row"
-      data-not-shared={row.notShared ? "true" : undefined}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        minHeight: phone ? 44 : 40,
-        padding: "6px 8px",
-        boxSizing: "border-box",
-        borderBottom: line,
-        ...(row.notShared ? { border: `1px dashed ${t.line}`, borderRadius: 6, marginTop: 4 } : null),
-      }}
-    >
-      <button type="button" onClick={() => onSelect?.(row.id)} style={{ ...bareButton, display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-        <span style={text(12, 400, t.label)}>{row.kind}</span>
-        <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.name}</span>
-        {row.description ? <span style={{ ...quiet(), overflowWrap: "anywhere" }}>{row.description}</span> : null}
-      </button>
-      {row.notShared ? (
-        <span style={quiet()}>{SETUP_COPY.notShared}</span>
-      ) : onNotShared ? (
-        <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => onNotShared(row.id)}>
-          {SETUP_COPY.keepToMyself}
-        </TextButton>
-      ) : null}
-    </div>
-  );
-  return (
-    <section ref={ref} aria-label={SETUP_COPY.title} data-testid="session-setup" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
-        <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{SETUP_COPY.title}</h3>
-        <span style={{ ...quiet(), ...tnum }}>{rows.length}</span>
-      </div>
-      {grouped
-        ? grouped.map((group) => (
-            <div key={group.loaded} role="group" aria-label={group.label} data-testid="setup-loaded" data-loaded={group.loaded} style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ ...text(11.5, 400, t.label), paddingTop: 12, paddingBottom: 4 }}>{group.label}</span>
-              {group.items.map(row)}
-            </div>
-          ))
-        : rows.map(row)}
-      {onAddToSetup ? (
-        <div style={{ paddingTop: 8 }}>
-          <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onAddToSetup(view.key)}>
-            {SETUP_COPY.add}
-          </TextButton>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-export const GOAL_COPY = {
-  title: "Worked until",
-  add: "Add a goal",
-  condition: "The condition",
-  conditionHint: "the tests pass and the page loads",
-  atMost: "At most",
-  turns: "turns",
-  reached: "Was it reached?",
-  tookTurns: "Reached in",
-  remove: "Take the goal off",
-  badTurns: `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`,
-} as const;
-
-const REACHED_ROWS = [
-  { value: "reached", label: "Reached" },
-  { value: "limit", label: "Stopped at the limit" },
-  { value: "me", label: "Stopped by me" },
-] as const;
-
-/** A whole number of turns, 1 to 500, or undefined for blank; null for anything else. */
-const turnsField = (value: string): number | undefined | null => {
-  const text = value.trim();
-  if (!text) return undefined;
-  const n = Number(text);
-  return Number.isInteger(n) && n >= GOAL_TURNS_MIN && n <= GOAL_TURNS_MAX ? n : null;
-};
-
-/**
- * CA-04 P6: Worked until, under Setup: a well for the condition (up to 200), an optional At most (1 to 500 turns), and
- * Was it reached? as choice rows (Reached, Stopped at the limit, Stopped by me); reached, how many turns it took.
- */
-function GoalSection({ view, phone, onSessionGoal, onClose }: { view: SessionView; phone: boolean; onSessionGoal: NonNullable<DetailsHandlers["onSessionGoal"]>; onClose: () => void }) {
-  const goal = view.goal ?? null;
-  const [wrong, setWrong] = useState(false);
-  const save = (change: Partial<SessionGoal>) => {
-    const next = { condition: goal?.condition ?? "", ...goal, ...change };
-    if (!next.condition.trim()) return;
-    onSessionGoal(view.key, next);
-  };
-  const turns = (key: "atMost" | "turns") => (value: string) => {
-    const n = turnsField(value);
-    setWrong(n === null);
-    if (n !== null) save({ [key]: n });
-  };
-  return (
-    <section aria-label={GOAL_COPY.title} data-testid="session-goal" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
-        <h3 style={{ ...text(12.5, 500, t.text), margin: 0, flexGrow: 1 }}>{GOAL_COPY.title}</h3>
-        <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => (goal ? onSessionGoal(view.key, null) : onClose())}>
-          {GOAL_COPY.remove}
-        </TextButton>
-      </div>
-      <FieldBlock label={GOAL_COPY.condition}>
-        <CommitField key={`${view.key}:goal`} label={GOAL_COPY.condition} value={goal?.condition ?? ""} placeholder={GOAL_COPY.conditionHint} max={GOAL_CONDITION_MAX} phone={phone} multiline onCommit={(value) => save({ condition: value.trim() })} />
-      </FieldBlock>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <GroupLabel id={`${view.key}-most`}>{GOAL_COPY.atMost}</GroupLabel>
-        <div role="group" aria-labelledby={`${view.key}-most`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 72 }}>
-            <CommitField key={`${view.key}:most`} label={GOAL_COPY.atMost} value={goal?.atMost ? String(goal.atMost) : ""} max={3} phone={phone} onCommit={turns("atMost")} />
-          </div>
-          <span style={text(12.5, 400, t.text2)}>{GOAL_COPY.turns}</span>
-        </div>
-      </div>
-      {goal ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <GroupLabel id={`${view.key}-reached`}>{GOAL_COPY.reached}</GroupLabel>
-          <ChoiceRows<"reached" | "limit" | "me">
-            label={GOAL_COPY.reached}
-            name={`reached-${view.key}`}
-            phone={phone}
-            value={goal.reached ?? ("" as "reached")}
-            onChange={(reached) => save({ reached, ...(reached === "reached" ? null : { turns: undefined }) })}
-            rows={REACHED_ROWS}
-          />
-          {goal.reached === "reached" ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={text(12.5, 400, t.text2)}>{GOAL_COPY.tookTurns}</span>
-              <div style={{ width: 72 }}>
-                <CommitField key={`${view.key}:took`} label={GOAL_COPY.tookTurns} value={goal.turns ? String(goal.turns) : ""} max={3} phone={phone} onCommit={turns("turns")} />
-              </div>
-              <span style={text(12.5, 400, t.text2)}>{GOAL_COPY.turns}</span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      {wrong ? <span style={quiet()}>{GOAL_COPY.badTurns}</span> : null}
-    </section>
-  );
-}
-
-function SessionDetails({
-  view,
-  phone,
-  inBuild,
-  focusSetup,
-  onToggleSessionPrompt,
-  onSessionTool,
-  onSessionMeta,
-  onSelect,
-  onAddToSetup,
-  onNotShared,
-  onSessionGoal,
-  onSessionExtras,
-  onSessionTogether,
-}: { view: SessionView; phone: boolean; inBuild: readonly string[]; focusSetup?: DetailsPanelProps["focusSetup"] } & Pick<
-  DetailsHandlers,
-  "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared" | "onSessionGoal" | "onSessionExtras" | "onSessionTogether"
->) {
-  const [goalAsked, setGoalAsked] = useState(false);
-  const [all, setAll] = useState(false);
-  const shown = all ? { visible: [...view.checklist], hidden: 0 } : firstRows(view.checklist);
-  return (
-    <>
-      <Head eyebrow="Session">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <ToolMark tool={view.tool} model={view.model} size={24} />
-          <h3 style={titleStyle(false)}>Session {view.number}</h3>
-        </div>
-      </Head>
-      {view.editable && onSessionMeta ? (
-        <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <GroupLabel id={`${view.key}-tool`}>{SESSION_DETAILS_COPY.tool}</GroupLabel>
-            <div role="group" aria-labelledby={`${view.key}-tool`}>
-              <ToolPicker
-                key={`${view.key}:tool`}
-                label={SESSION_DETAILS_COPY.tool}
-                value={view.editable.tool}
-                inBuild={inBuild}
-                allowNone
-                noneLabel={SESSION_DETAILS_COPY.typedHere}
-                phone={phone}
-                step="session"
-                onChange={(tool) => onSessionMeta(view.key, { tool })}
-              />
-            </div>
-          </div>
-          <SessionDate id={view.key} value={view.editable.date} phone={phone} onCommit={(date) => onSessionMeta(view.key, { date })} />
-          {view.model ? (
-            <div>
-              <KeyValue label="Model">{view.model}</KeyValue>
-            </div>
-          ) : null}
-        </>
-      ) : (
-      <div>
-        <KeyValue label="Tool">{view.tool}</KeyValue>
-        {view.pickTool && onSessionTool ? (
-          <div style={{ padding: "8px 0", borderBottom: line }}>
-            <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} step="session" onChange={(value) => onSessionTool(view.key, value)} />
-          </div>
-        ) : null}
-        <KeyValue label="Model">{view.model || "Not named"}</KeyValue>
-        <KeyValue label="Date">{view.date || "Not dated"}</KeyValue>
-      </div>
-      )}
-      <SetupSection view={view} phone={phone} focus={focusSetup ?? null} onSelect={onSelect} onAddToSetup={onAddToSetup} onNotShared={onNotShared} />
-      {view.goal || (goalAsked && onSessionGoal) ? (
-        onSessionGoal ? (
-          <GoalSection view={view} phone={phone} onSessionGoal={onSessionGoal} onClose={() => setGoalAsked(false)} />
-        ) : (
-          <KeyValue label={GOAL_COPY.title}>{view.goal ? goalLine(view.goal) : ""}</KeyValue>
-        )
-      ) : onSessionGoal ? (
-        <span>
-          <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setGoalAsked(true)}>
-            {GOAL_COPY.add}
-          </TextButton>
-        </span>
-      ) : null}
-      {onSessionExtras ? <StartedWithField key={`${view.key}:started`} id={view.key} extras={view.extras ?? {}} phone={phone} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
-      {onSessionExtras ? <TogetherFields id={view.key} extras={view.extras ?? {}} others={view.others ?? []} phone={phone} onTogether={onSessionTogether ? (keys) => onSessionTogether(view.key, keys) : undefined} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
-      {onSessionExtras ? <SessionFactsFields id={view.key} extras={view.extras ?? {}} phone={phone} onChange={(extras) => onSessionExtras(view.key, extras)} /> : null}
-      <Section title="Prompts in the build">
-        <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
-        {view.status === "loading" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>Loading this session's prompts…</p> : null}
-        {view.status === "error" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>This session's prompts did not load.</p> : null}
-        <div role="group" aria-label="Prompts in this session">
-          {shown.visible.map((row) => (
-            <label key={row.ordinal} style={{ ...listRow(phone ? 44 : 40), cursor: "pointer" }}>
-              <Checkbox checked={row.stepId !== null} onChange={(event) => onToggleSessionPrompt(view, row, event.target.checked)} />
-              <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.label}</span>
-            </label>
-          ))}
-        </div>
-        <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
-      </Section>
-    </>
-  );
-}
-
-/* ── a file, a tool ── */
-
-function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; phone: boolean } & Pick<DetailsHandlers, "onDownload" | "onSelect">) {
-  return (
-    <>
-      <Head eyebrow={view.sentWithLine ?? "File"}>
-        <h3 style={titleStyle(false)}>{view.name}</h3>
-      </Head>
-      <div>
-        <KeyValue label="From">{view.from}</KeyValue>
-        {view.size ? <KeyValue label="Size">{view.size}</KeyValue> : null}
-      </div>
-      {view.canDownload ? (
-        <div>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => onDownload(view.id)} style={phone ? undefined : { height: 26 }}>
-            Download
-          </Button>
-        </div>
-      ) : null}
-      <RowList title="Used by" rows={view.usedBy} phone={phone} onSelect={onSelect} />
-    </>
-  );
-}
-
-export const CONNECTION_COPY = {
-  title: "Connection method",
-  where: "Where it ran",
-  web: "At a web address",
-  local: "On my computer",
-  tools: "Tools it used",
-} as const;
-
-/** CA-04 P5: How it was connected (choice rows), where an MCP server ran (one more line), and the tools it called. */
-function ConnectionBlock({ view, phone, onToolConnection }: { view: ToolView; phone: boolean } & Pick<DetailsHandlers, "onToolConnection">) {
-  const used = view.toolsUsed ?? [];
-  return (
-    <>
-      {onToolConnection ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <GroupLabel id={`${view.id}-connection`}>{CONNECTION_COPY.title}</GroupLabel>
-          <ChoiceRows<ToolConnection>
-            label={CONNECTION_COPY.title}
-            name={`connection-${view.id}`}
-            phone={phone}
-            value={view.connection ?? ("" as ToolConnection)}
-            onChange={(next) => onToolConnection(view.id, next, next === "mcp" ? (view.runsAt ?? null) : null)}
-            rows={TOOL_CONNECTIONS.map((value) => ({ value, label: CONNECTION_LABEL[value] }))}
-          />
-          {view.connection === "mcp" ? (
-            <div style={{ paddingLeft: 24 }}>
-              <ChoiceRows<ToolRunsAt>
-                label={CONNECTION_COPY.where}
-                name={`runs-at-${view.id}`}
-                phone={phone}
-                value={view.runsAt ?? ("" as ToolRunsAt)}
-                onChange={(next) => onToolConnection(view.id, "mcp", next)}
-                rows={TOOL_RUNS_AT.map((value) => ({ value, label: CONNECTION_COPY[value] }))}
-              />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      {used.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <GroupLabel id={`${view.id}-used`}>{CONNECTION_COPY.tools}</GroupLabel>
-          <div role="list" aria-labelledby={`${view.id}-used`} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {used.map((tool) => (
-              <span key={tool.name} role="listitem" data-testid="tool-used" style={chipStyle}>
-                {tool.name}
-                <span style={{ ...text(11, 400, t.label), ...tnum }}>{tool.count}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </>
-  );
-}
-
-function ToolDetails({ view, phone, onFields, onSelect, onToolConnection, onExtras, payload, inBuild }: { view: ToolView; phone: boolean; payload?: Record<string, unknown>; inBuild?: readonly string[] } & Pick<DetailsHandlers, "onFields" | "onSelect" | "onToolConnection" | "onExtras">) {
-  return (
-    <>
-      <Head eyebrow="Tool" />
-      <FieldBlock label={TOOL_DIALOG_COPY.tool}>
-        <CommitField key={`${view.id}:service`} label={TOOL_DIALOG_COPY.tool} value={view.service} phone={phone} max={80} onCommit={(value) => onFields(view.id, { service: value })} />
-      </FieldBlock>
-      <FieldBlock label={TOOL_DIALOG_COPY.did}>
-        <CommitField key={`${view.id}:scopes`} label={TOOL_DIALOG_COPY.did} value={view.scopes} placeholder={TOOL_DIALOG_COPY.didPlaceholder} phone={phone} max={140} onCommit={(value) => onFields(view.id, { scopes: value })} />
-      </FieldBlock>
-      <ConnectionBlock view={view} phone={phone} onToolConnection={onToolConnection} />
-      <ExtraRows id={view.id} rows={toolRows(payload ?? {})} phone={phone} inBuild={inBuild} onExtras={onExtras} />
-      <RowList title="Used by" rows={view.usedBy} phone={phone} onSelect={onSelect} />
-    </>
-  );
-}
-
-/* ── an agent or a team ── */
-
-/** A small label over a control that is not one input (CA-03): the field label's look, in a group. */
-function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
-  return (
-    <span id={id} style={FIELD_LABEL}>
-      {children}
-    </span>
-  );
-}
-
-/**
- * CA-03 P3: How did it run? Choice rows, the first three always shown and the other two under "More ways it ran"
- * (shown straight away when one of them is chosen). A schedule offers three presets and a time, written into its
- * detail as text ("Weekdays 07:30"); typing in the field still works and wins. "Again until" takes an optional "At
- * most" count, written into the same detail ("until the review has no changes · at most 3 times"). Nothing new is
- * stored: `payload.runs` keeps its shape.
- */
-function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns" | "onAgentNotes">) {
-  // CA-04 P6: in a session that worked until a goal, "Until a goal was reached" is chosen for you.
-  const how = view.runs?.how ?? (view.sessionGoal ? "goal" : "once");
-  const choice = RUNS_CHOICES.find((entry) => entry.how === how) ?? RUNS_CHOICES[0];
-  const name = `runs-${view.id}`;
-  const field = choice.field;
-  const saved = view.runs?.detail ?? "";
-  const [count, setCount] = useState(view.runs?.count ?? 2);
-  const [detail, setDetail] = useState(saved);
-  const [condition, setCondition] = useState(how === "until" ? untilParts(saved).condition : "");
-  const [atMost, setAtMost] = useState(how === "until" && untilParts(saved).atMost !== null ? String(untilParts(saved).atMost) : "");
-  const [time, setTime] = useState(how === "schedule" ? scheduleParts(saved).time : "");
-  const [moreAsked, setMoreAsked] = useState(false);
-  const showMore = moreAsked || choice.more;
-  const preset = how === "schedule" ? scheduleParts(detail).preset : null;
-  const ids = `${name}-field`;
-
-  const pick = (next: RunsChoice) => {
-    setDetail("");
-    setCondition("");
-    setAtMost("");
-    setTime("");
-    if (next.how === "once") onRuns(view.id, null);
-    else if (next.how === "parallel") onRuns(view.id, { how: "parallel", count: view.runs?.count ?? count });
-    else onRuns(view.id, { how: next.how, detail: "" });
-  };
-
-  /** Write a detail when it changed. */
-  const write = (next: string) => {
-    if (next.trim() !== saved.trim()) onRuns(view.id, { how, detail: next.trim() });
-  };
-
-  const atMostNumber = (): number | null => {
-    const n = Number(atMost);
-    return atMost.trim() && Number.isFinite(n) ? Math.min(AT_MOST_MAX, Math.max(AT_MOST_MIN, Math.round(n))) : null;
-  };
-  const writeUntil = () => {
-    const n = atMostNumber();
-    setAtMost(n === null ? "" : String(n));
-    write(untilDetail(condition, n));
-  };
-  const room = UNTIL_DETAIL_MAX - (atMost.trim() ? ` · at most ${AT_MOST_MAX} times`.length : 0);
-
-  const enterBlurs = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (event.key === "Enter") (event.target as HTMLInputElement).blur();
-  };
-
-  return (
-    <Section title={RUNS_COPY.title}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>
-        <ChoiceRows
-          label={RUNS_COPY.title}
-          name={name}
-          phone={phone}
-          value={how}
-          onChange={(next) => pick(RUNS_CHOICES.find((entry) => entry.how === next) ?? RUNS_CHOICES[0])}
-          rows={RUNS_CHOICES.filter((entry) => !entry.more || showMore).map((entry) => ({
-            value: entry.how,
-            label: entry.how === "once" && view.parent ? `${entry.label} · ${RUNS_COPY.inTeam}` : entry.label,
-          }))}
-        />
-        {showMore ? null : (
-          <span>
-            <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setMoreAsked(true)}>
-              {RUNS_COPY.more}
-            </TextButton>
-          </span>
-        )}
-
-        {field?.kind === "count" ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="text"
-              inputMode="numeric"
-              aria-label={field.label}
-              value={Number.isFinite(count) ? String(count) : ""}
-              onChange={(event) => setCount(Number(event.target.value.replace(/[^0-9]/g, "")))}
-              onBlur={() => {
-                const next = Math.min(field.max, Math.max(field.min, Math.round(Number.isFinite(count) ? count : field.min)));
-                setCount(next);
-                if (next !== view.runs?.count) onRuns(view.id, { how: "parallel", count: next });
-              }}
-              onKeyDown={enterBlurs}
-              style={typedField(phone, { width: 72, ...tnum })}
-            />
-            <span style={{ ...quiet(), ...tnum }}>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</span>
-          </div>
-        ) : null}
-
-        {how === "schedule" && field?.kind === "text" ? (
-          <div role="group" aria-labelledby={`${ids}-when`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <GroupLabel id={`${ids}-when`}>{field.label}</GroupLabel>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-              <Segmented
-                label={RUNS_COPY.presets}
-                semantics="radio"
-                size={phone ? 50 : 28}
-                value={preset ?? ""}
-                items={SCHEDULE_PRESETS.map((entry) => ({ value: entry, label: entry }))}
-                onChange={(next) => {
-                  const chosen = SCHEDULE_PRESETS.find((entry) => entry === next) ?? null;
-                  const written = scheduleDetail(chosen, time);
-                  setDetail(written);
-                  write(written);
-                }}
-              />
-              <input
-                type="text"
-                aria-label={RUNS_COPY.time}
-                placeholder={RUNS_COPY.timeHint}
-                maxLength={5}
-                value={time}
-                onChange={(event) => setTime(event.target.value.replace(/[^0-9:]/g, ""))}
-                onBlur={() => {
-                  if (time.trim() && !isClockTime(time)) return;
-                  const written = scheduleDetail(preset, time);
-                  if (!written) return;
-                  setDetail(written);
-                  write(written);
-                }}
-                onKeyDown={enterBlurs}
-                style={typedField(phone, { width: 72, ...tnum })}
-              />
-            </div>
-            <input
-              type="text"
-              aria-label={field.label}
-              maxLength={field.max}
-              placeholder={field.placeholder}
-              value={detail}
-              onChange={(event) => setDetail(event.target.value)}
-              onBlur={() => {
-                setTime(scheduleParts(detail).time);
-                write(detail);
-              }}
-              onKeyDown={enterBlurs}
-              style={typedField(phone)}
-            />
-            <span style={{ ...quiet(), ...tnum }}>
-              {detail.length} / {field.max}
-            </span>
-          </div>
-        ) : null}
-
-        {how === "event" && field?.kind === "text" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <FieldBlock label={field.label}>
-              <input
-                type="text"
-                aria-label={field.label}
-                maxLength={field.max}
-                placeholder={field.placeholder}
-                value={detail}
-                onChange={(event) => setDetail(event.target.value)}
-                onBlur={() => write(detail)}
-                onKeyDown={enterBlurs}
-                style={typedField(phone)}
-              />
-            </FieldBlock>
-            <span style={{ ...quiet(), ...tnum }}>
-              {detail.length} / {field.max}
-            </span>
-          </div>
-        ) : null}
-
-        {how === "script" && field?.kind === "code" ? (
-          <FieldBlock label={field.label}>
-            <CodeEditorField
-              ariaLabel={field.label}
-              testId="details-script"
-              maxLength={field.max}
-              rows={{ min: 3, max: 8 }}
-              placeholder={field.placeholder}
-              value={detail}
-              onChange={setDetail}
-              onBlur={() => write(detail)}
-            />
-          </FieldBlock>
-        ) : null}
-
-        {how === "until" && field?.kind === "text" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <FieldBlock label={field.label}>
-              <input
-                type="text"
-                aria-label={field.label}
-                maxLength={room}
-                placeholder={field.placeholder}
-                value={condition}
-                onChange={(event) => setCondition(event.target.value)}
-                onBlur={writeUntil}
-                onKeyDown={enterBlurs}
-                style={typedField(phone)}
-              />
-            </FieldBlock>
-            <span style={{ ...quiet(), ...tnum, marginTop: -2 }}>
-              {condition.length} / {room}
-            </span>
-            <div role="group" aria-labelledby={`${ids}-most`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <GroupLabel id={`${ids}-most`}>{RUNS_COPY.atMost}</GroupLabel>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  aria-label={RUNS_COPY.atMost}
-                  maxLength={2}
-                  value={atMost}
-                  onChange={(event) => setAtMost(event.target.value.replace(/[^0-9]/g, ""))}
-                  onBlur={writeUntil}
-                  onKeyDown={enterBlurs}
-                  style={typedField(phone, { width: 56, ...tnum })}
-                />
-                <span style={text(12.5, 400, t.text2)}>{RUNS_COPY.times}</span>
-              </div>
-            </div>
-            {/* CA-05 P9: what an agent changes each round, when it runs again until a condition was met. */}
-            {view.kind === "agent" && onAgentNotes ? <ChangesEachRoundField id={view.id} value={view.changesEachRound ?? ""} phone={phone} onCommit={(said) => onAgentNotes(view.id, { changesEachRound: said })} /> : null}
-          </div>
-        ) : null}
-      </div>
-    </Section>
-  );
-}
-
-/** CA-02 P5: an agent's Runs in, Models and Tools, written as they change once every model is named. */
-function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup, modelRun, onModelRun, memoryTidy, onAgentNotes }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]>; modelRun?: ModelRun | null; onModelRun?: DetailsHandlers["onModelRun"]; memoryTidy?: string; onAgentNotes?: DetailsHandlers["onAgentNotes"] }) {
-  const [value, setValue] = useState(initial);
-  const [openModel, setOpenModel] = useState(0);
-  const change = (next: AgentSetupValue) => {
-    setValue(next);
-    // What it remembers goes only when it is there or was just cleared: an agent without one is written as before.
-    if (setupReady(next)) onAgentSetup(id, { ...savedModels(next), harness: next.harness, tools: next.tools, ...(next.memory !== undefined ? { memory: next.memory } : null) });
-  };
-  const main = value.models[0]?.model ?? null;
-  return (
-    <>
-      <PairNote
-        tool={value.harness}
-        model={main}
-        phone={phone}
-        onChange={() => setOpenModel((n) => n + 1)}
-        // An agent always names a model: the harness's own name stands in for one it does not show or run.
-        onRemove={() => {
-          const own = hiddenModelName(value.harness) ?? toolName(value.harness) ?? value.harness;
-          if (own) change({ ...value, models: [{ model: own, role: "main" }, ...value.models.slice(1)] });
-        }}
-      />
-      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} />
-      {/* CA-05 P9: under What it remembers. */}
-      {onAgentNotes ? <MemoryTidyField id={id} value={memoryTidy ?? ""} phone={phone} onCommit={(said) => onAgentNotes(id, { memoryTidy: said })} /> : null}
-      {/* CA-05 P8: a model on the maker's own computer, or with open weights, says how it was run. */}
-      {onModelRun && asksHowRun(value.harness, main) ? <ModelRunFields id={id} run={modelRun ?? null} phone={phone} onChange={(run) => onModelRun(id, run)} /> : null}
-    </>
-  );
-}
-
-/** An agent's setup as read-only lines, where the panel cannot write it. */
-function AgentSetupLines({ setup }: { setup: AgentSetupValue }) {
-  return (
-    <div>
-      <KeyValue label="Runs in">{setup.harness ?? "My own code (API)"}</KeyValue>
-      {setup.models.map((row, index) => (
-        <KeyValue key={index} label={index === 0 ? "Model" : `Model ${index + 1}`}>{`${row.model ?? ""} · ${row.role}`}</KeyValue>
-      ))}
-      {setup.tools.length ? <KeyValue label="Tools it can use">{setup.tools.join(" · ")}</KeyValue> : null}
-      {setup.memory ? <KeyValue label="What it remembers">{setup.memory}</KeyValue> : null}
-    </div>
-  );
-}
-
-function AgentDetails({ view, phone, inBuild = [], payload, ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[]; payload?: Record<string, unknown> } & DetailsHandlers) {
-  const word = view.kind === "agent" ? "Agent" : "Team";
-  /* CA-03 P4: a team's first agent is its lead. */
-  const lead = view.kind === "agent" && view.parent !== null && view.number.endsWith(".1");
-  return (
-    <>
-      <Head eyebrow={view.sentWithLine ?? `${lead ? "Lead agent" : word} ${view.number}`}>
-        <Title id={view.id} title={view.name} fallback={view.defaultName} editable={false} label={`${word} name`} phone={phone} onRename={h.onRename} />
-      </Head>
-      <OutsideWarning names={view.outside ?? []} />
-      <FieldBlock label="Name">
-        <CommitField key={`${view.id}:name`} label="Name" value={view.name ?? ""} placeholder={view.defaultName} max={80} phone={phone} onCommit={(value) => h.onRename(view.id, value)} />
-      </FieldBlock>
-      {(view.model && !view.setup) || view.parent ? (
-        <div>
-          {view.parent ? <KeyValue label="In">{view.parent}</KeyValue> : null}
-          {view.model && !view.setup ? <KeyValue label="Model">{view.model}</KeyValue> : null}
-        </div>
-      ) : null}
-      {view.setup ? (
-        h.onAgentSetup ? (
-          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} modelRun={view.modelRun} onModelRun={h.onModelRun} memoryTidy={view.memoryTidy} onAgentNotes={h.onAgentNotes} />
-        ) : (
-          <AgentSetupLines setup={view.setup} />
-        )
-      ) : null}
-      {view.kind === "agent" ? (
-        <FieldBlock label={AGENT_DIALOG_COPY.instructions}>
-          {h.onInstructions ? (
-            <CommitField key={`${view.id}:instructions`} label={AGENT_DIALOG_COPY.instructions} value={view.instructions} placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder} multiline phone={phone} onCommit={(value) => h.onInstructions?.(view.id, value)} />
-          ) : (
-            <p style={{ ...wellField, padding: 12, margin: 0, lineHeight: "21px", fontSize: 13, overflowWrap: "anywhere" }}>{view.instructions}</p>
-          )}
-        </FieldBlock>
-      ) : null}
-      <RunsGroup view={view} phone={phone} onRuns={h.onRuns} onAgentNotes={h.onAgentNotes} />
-      <ExtraRows id={view.id} rows={agentRows(payload ?? {}, view.kind === "team")} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
-      <Section title={`Inside ${view.inside}`}>
-        {view.insideRows.map((row) => (
-          <div key={row.id} style={listRow(44)}>
-            <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{row.label}</span>
-            <RemoveButton label={`Remove ${row.label}`} phone={phone} onClick={() => h.onRemoveInside(row.id)} />
-          </div>
-        ))}
-      </Section>
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
-}
-
-/* ── a result ── */
-
-export const RESULT_COPY = {
-  what: "Output type",
-  link: "Link",
-  picture: "Image or video",
-  file: "File",
-  trained: "Model",
-  basedOn: "Based on",
-  trainedOn: "Trained on",
-  trainedOnLine: "The ratings or examples it learned from.",
-  addFile: "Add the file",
-  replaceFile: "Replace the file",
-  removeFile: "Remove the file",
-  how: "How it was trained",
-  howHint: "Rated answers, ranked by me",
-  howLine: "How the model was trained",
-  url: "URL",
-} as const;
-
-const WHAT_ROWS: readonly { value: ResultWhat; label: string }[] = [
-  { value: "link", label: RESULT_COPY.link },
-  { value: "picture", label: RESULT_COPY.picture },
-  { value: "file", label: RESULT_COPY.file },
-  { value: "trained-model", label: RESULT_COPY.trained },
-];
-
-function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTrainedOn, onRemoveInside, onExtras, payload }: { view: ResultView; phone: boolean; payload?: Record<string, unknown> } & Pick<DetailsHandlers, "onFields" | "onAddPicture" | "onUseAsCover" | "onTrainedOn" | "onRemoveInside" | "onExtras">) {
-  const picker = useRef<HTMLInputElement>(null);
-  const trainedPicker = useRef<HTMLInputElement>(null);
-  const what: ResultWhat = view.what ?? (view.pictures.length > 0 ? "picture" : "link");
-  const trained = what === "trained-model" ? view.trained : undefined;
-  return (
-    <>
-      <Head eyebrow="Result" />
-      <FieldBlock label="Summary">
-        <CommitField key={`${view.id}:summary`} label="Summary" value={view.summary} phone={phone} multiline max={200} onCommit={(value) => onFields(view.id, { summary: value })} />
-      </FieldBlock>
-      {/* CA-05 P10: rare, so it is one choice here; the first three are read from what the result holds. */}
-      <Field id={`${view.id}-what`} label={RESULT_COPY.what} group>
-        <ChoiceRows<ResultWhat>
-          label={RESULT_COPY.what}
-          name={`what-${view.id}`}
-          phone={phone}
-          value={what}
-          onChange={(next) => onFields(view.id, { kind: next === "trained-model" ? "trained-model" : null })}
-          rows={WHAT_ROWS}
-        />
-      </Field>
-      {trained ? (
-        <>
-          <Field id={`${view.id}-based`} label={RESULT_COPY.basedOn} group>
-            <ModelPicker tool={null} value={trained.baseModel || null} onChange={(model) => onFields(view.id, { base_model: model ?? null })} phone={phone} name="Based on" anyWithoutTool />
-          </Field>
-          <Field id={`${view.id}-trained-on`} label={RESULT_COPY.trainedOn} group>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {trained.trainedOn ? (
-                <div data-testid="trained-on" style={listRow(44)}>
-                  <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>
-                    {trained.trainedOn.name}
-                    {trained.trainedOn.rows ? ` · ${trained.trainedOn.rows.toLocaleString("en-GB")} rows` : ""}
-                  </span>
-                  {onRemoveInside ? <RemoveButton label={RESULT_COPY.removeFile} phone={phone} onClick={() => onRemoveInside(trained.trainedOn?.id ?? "")} /> : null}
-                </div>
-              ) : (
-                <span style={quiet()}>{RESULT_COPY.trainedOnLine}</span>
-              )}
-              {onTrainedOn ? (
-                <>
-                  <input
-                    ref={trainedPicker}
-                    type="file"
-                    hidden
-                    data-testid="details-trained-on"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      event.target.value = "";
-                      if (file) onTrainedOn(view.id, file);
-                    }}
-                  />
-                  <span>
-                    <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => trainedPicker.current?.click()}>
-                      {trained.trainedOn ? RESULT_COPY.replaceFile : RESULT_COPY.addFile}
-                    </Button>
-                  </span>
-                </>
-              ) : null}
-            </div>
-          </Field>
-          <OptionalSection>
-            <OptionalField name={RESULT_COPY.how} description={RESULT_COPY.howLine} summary={summaryOf(trained.method)} phone={phone}>
-              <CommitField key={`${view.id}:method`} label={RESULT_COPY.how} value={trained.method} placeholder={RESULT_COPY.howHint} max={TRAINED_METHOD_MAX} phone={phone} onCommit={(value) => onFields(view.id, { method: value })} />
-            </OptionalField>
-          </OptionalSection>
-        </>
-      ) : null}
-      <FieldBlock label={RESULT_COPY.url}>
-        <CommitField key={`${view.id}:url`} label={RESULT_COPY.url} value={view.url} placeholder="https://" phone={phone} max={300} onCommit={(value) => onFields(view.id, { url: value })} />
-      </FieldBlock>
-      <Section title="Pictures" count={view.pictures.length}>
-        {view.pictures.map((picture) => (
-          <div key={picture.id} style={listRow(44)}>
-            <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{picture.name}</span>
-            <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => onUseAsCover(picture.id)} style={phone ? undefined : { height: 26 }}>
-              Use as cover
-            </Button>
-          </div>
-        ))}
-        <input
-          ref={picker}
-          type="file"
-          accept="image/*"
-          hidden
-          data-testid="details-picture"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) onAddPicture(view.id, file);
-          }}
-        />
-        <div style={{ paddingTop: 8 }}>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => picker.current?.click()}>
-            Add a picture
-          </Button>
-        </div>
-      </Section>
-      <ExtraRows id={view.id} rows={resultRows(payload ?? {})} phone={phone} onExtras={onExtras} />
-    </>
-  );
-}
-
-/* ── a system prompt, a dataset and a GitHub repository (CA-15 P9, P11) ── */
-
-/** The head of a tile that has its name as its title: an eyebrow, the title and a line under it. */
-function SourceHead({ eyebrow, view, noun, line, phone, onRename }: { eyebrow: string; view: { id: string; number: string; title: string | null; defaultTitle: string; sentWithLine?: string }; noun: string; line?: ReactNode; phone: boolean; onRename: DetailsHandlers["onRename"] }) {
-  return (
-    <Head eyebrow={view.sentWithLine ?? eyebrow}>
-      <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of ${noun} ${view.number}`} phone={phone} onRename={onRename} />
-      {line ? <span style={text(12, 400, t.text2)}>{line}</span> : null}
-    </Head>
-  );
-}
-
-type Applies = "all" | "session" | "prompts";
-
-function SystemPromptDetails({ view, phone, inBuild, ...h }: { view: SystemPromptView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
-  const facts = systemPromptOf(view.payload);
-  const scope = scopeOf(view.payload.scope);
-  const [mode, setMode] = useState<Applies>(scope.kind);
-  const [picked, setPicked] = useState<string[]>(scope.kind === "prompts" ? scope.ids : []);
-  const save = (patch: Record<string, unknown>) => h.onExtras?.(view.id, patch);
-  const choose = (next: Applies) => {
-    setMode(next);
-    if (next === "all") save({ scope: scopeValue({ kind: "all" }) });
-    if (next === "session" && view.session) save({ scope: scopeValue({ kind: "session", key: view.session }) });
-    if (next === "prompts" && picked.length > 0) save({ scope: scopeValue({ kind: "prompts", ids: picked }) });
-  };
-  const tick = (id: string, on: boolean) => {
-    const next = on ? [...picked, id] : picked.filter((one) => one !== id);
-    setPicked(next);
-    if (next.length > 0) save({ scope: scopeValue({ kind: "prompts", ids: next }) });
-  };
-  return (
-    <>
-      <SourceHead eyebrow={`System prompt ${view.number}`} view={view} noun="system prompt" line={`Applies to ${view.appliesTo} ${view.appliesTo === 1 ? "prompt" : "prompts"}`} phone={phone} onRename={h.onRename} />
-      <FieldBlock label={SYSTEM_PROMPT_DIALOG_COPY.text}>
-        <CommitField key={`${view.id}:text`} label={SYSTEM_PROMPT_DIALOG_COPY.text} value={facts.text} multiline rows={6} max={SYSTEM_PROMPT_TEXT_MAX} phone={phone} placeholder={SYSTEM_PROMPT_DIALOG_COPY.textPlaceholder} onCommit={(value) => save({ text: value })} />
-      </FieldBlock>
-      <Field id={`${view.id}-applies`} label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo} group>
-        <ChoiceRows<Applies>
-          label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo}
-          name={`applies-${view.id}`}
-          phone={phone}
-          value={mode}
-          onChange={choose}
-          rows={[
-            { value: "all", label: SYSTEM_PROMPT_DIALOG_COPY.all },
-            ...(view.session ? [{ value: "session" as const, label: SYSTEM_PROMPT_DIALOG_COPY.session }] : []),
-            ...(view.prompts.length > 0 ? [{ value: "prompts" as const, label: SYSTEM_PROMPT_DIALOG_COPY.selected }] : []),
-          ]}
-        />
-        {mode === "prompts" ? (
-          <div role="group" aria-label={SYSTEM_PROMPT_DIALOG_COPY.selected} style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 24 }}>
-            {view.prompts.map((prompt) => (
-              <label key={prompt.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28 }}>
-                <Checkbox checked={picked.includes(prompt.id)} onChange={(event) => tick(prompt.id, event.target.checked)} />
-                <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{prompt.label}</span>
-              </label>
-            ))}
-            {picked.length === 0 ? <span style={quiet()}>Choose at least one prompt for it to apply to.</span> : null}
-          </div>
-        ) : null}
-      </Field>
-      <ExtraRows id={view.id} rows={systemPromptRows(view.payload)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
-}
-
-function DatasetDetails({ view, phone, inBuild, ...h }: { view: DatasetView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
-  const facts = datasetOf(view.payload);
-  const save = (patch: Record<string, unknown>) => h.onExtras?.(view.id, patch);
-  return (
-    <>
-      <SourceHead eyebrow={`Dataset ${view.number}`} view={view} noun="dataset" line={facts.use ? DATASET_USE_LABEL[facts.use] : undefined} phone={phone} onRename={h.onRename} />
-      <FieldBlock label={DATASET_DIALOG_COPY.description}>
-        <CommitField key={`${view.id}:description`} label={DATASET_DIALOG_COPY.description} value={facts.description} multiline rows={3} max={DATASET_DESCRIPTION_MAX} phone={phone} placeholder={DATASET_DIALOG_COPY.descriptionPlaceholder} onCommit={(value) => save({ description: value })} />
-      </FieldBlock>
-      <Field id={`${view.id}-use`} label={DATASET_DIALOG_COPY.use} group>
-        <ChoiceGrid<DatasetUse> bare label={DATASET_DIALOG_COPY.use} items={DATASET_USES.map((value) => ({ value, label: DATASET_USE_LABEL[value] }))} value={facts.use} onChange={(next) => save({ use: next })} phone={phone} allowClear />
-      </Field>
-      <ExtraRows id={view.id} rows={datasetRows(view.payload)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
-}
-
-function RepoDetails({ view, phone, inBuild = [], ...h }: { view: RepoView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
-  const facts = repoOf(view.payload);
-  const save = (patch: Record<string, unknown>) => h.onExtras?.(view.id, patch);
-  if (!facts) return <SourceHead eyebrow={`GitHub repository ${view.number}`} view={view} noun="repository" phone={phone} onRename={h.onRename} />;
-  const third = facts.ownership === "third_party";
-  const own = facts.ownership === "created" || facts.ownership === "owned";
-  const licence = facts.fetched.fetchedAt ? licenceLine(facts.fetched.licenceSpdx, facts.fetched.licenceName) : null;
-  return (
-    <>
-      <SourceHead eyebrow={`GitHub repository ${view.number}`} view={view} noun="repository" line={facts.ownership ? REPO_OWNERSHIP_LABEL[facts.ownership] : undefined} phone={phone} onRename={h.onRename} />
-      <FieldBlock label={REPO_DIALOG_COPY.url}>
-        <CommitField key={`${view.id}:url`} label={REPO_DIALOG_COPY.url} value={facts.url} phone={phone} placeholder={REPO_DIALOG_COPY.urlPlaceholder} onCommit={(value) => save({ url: value })} />
-      </FieldBlock>
-      <Field id={`${view.id}-ownership`} label={REPO_DIALOG_COPY.ownership} group>
-        <ChoiceGrid<RepoOwnership> bare label={REPO_DIALOG_COPY.ownership} items={REPO_OWNERSHIPS.map((value) => ({ value, label: REPO_OWNERSHIP_LABEL[value] }))} value={facts.ownership} onChange={(next) => save({ ownership: next })} phone={phone} />
-      </Field>
-      <FieldBlock label={REPO_DIALOG_COPY.description}>
-        <CommitField key={`${view.id}:description`} label={REPO_DIALOG_COPY.description} value={facts.description ?? ""} multiline rows={3} max={REPO_DESCRIPTION_MAX} phone={phone} placeholder={REPO_DIALOG_COPY.descriptionPlaceholder} onCommit={(value) => save({ description: value })} />
-      </FieldBlock>
-      {facts.fetched.fetchedAt ? (
-        <div data-testid="repo-retrieved">
-          <KeyValue label={REPO_DIALOG_COPY.retrieved}>{`Retrieved ${repoDay(facts.fetched.fetchedAt)}`}</KeyValue>
-          {facts.fetched.language ? <KeyValue label={REPO_DIALOG_COPY.language}>{facts.fetched.language}</KeyValue> : null}
-          {licence ? <KeyValue label={REPO_DIALOG_COPY.licence}>{licence.reuse ? `${licence.text} · ${licence.reuse}` : licence.text}</KeyValue> : null}
-          {facts.fetched.pushedAt ? <KeyValue label={REPO_DIALOG_COPY.lastCommit}>{`${repoDay(facts.fetched.pushedAt)}${isPossiblyUnmaintained(facts.fetched.pushedAt) ? ` · ${REPO_DIALOG_COPY.unmaintained}` : ""}`}</KeyValue> : null}
-        </div>
-      ) : null}
-      {third ? (
-        <>
-          <FieldBlock label={REPO_DIALOG_COPY.author}>
-            <CommitField key={`${view.id}:author`} label={REPO_DIALOG_COPY.author} value={facts.author ?? ""} max={REPO_AUTHOR_MAX} phone={phone} onCommit={(value) => save({ author: value })} />
-          </FieldBlock>
-          <Field id={`${view.id}-usage`} label={REPO_DIALOG_COPY.usage} group>
-            {REPO_USAGES.map((value) => (
-              <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28 }}>
-                <Checkbox checked={facts.usage.includes(value)} onChange={(event) => save({ usage: REPO_USAGES.filter((use: RepoUsage) => (use === value ? event.target.checked : facts.usage.includes(use))) })} />
-                <span style={text(13, 400, t.text)}>{REPO_USAGE_LABEL[value]}</span>
-              </label>
-            ))}
-          </Field>
-        </>
-      ) : null}
-      {own ? (
-        <>
-          <Field id={`${view.id}-visibility`} label={REPO_DIALOG_COPY.visibility} group>
-            <ChoiceGrid<RepoVisibility> bare label={REPO_DIALOG_COPY.visibility} items={REPO_VISIBILITIES.map((value) => ({ value, label: value === "public" ? REPO_DIALOG_COPY.public : REPO_DIALOG_COPY.private }))} value={facts.visibility} onChange={(next) => save({ visibility: next })} phone={phone} allowClear columns={2} />
-          </Field>
-          <Field id={`${view.id}-generated`} label={REPO_DIALOG_COPY.generatedWith} group>
-            <div>
-              <ToolPicker label={REPO_DIALOG_COPY.generatedWith} value={facts.generatedWith} onChange={(next) => save({ generated_with: next })} inBuild={inBuild} allowNone phone={phone} step="code" placeholder={REPO_DIALOG_COPY.selectTool} />
-            </div>
-          </Field>
-          <FieldBlock label={REPO_DIALOG_COPY.deployed}>
-            <CommitField key={`${view.id}:deployed`} label={REPO_DIALOG_COPY.deployed} value={facts.deployedUrl ?? ""} placeholder={REPO_DIALOG_COPY.deployedPlaceholder} phone={phone} onCommit={(value) => save({ deployed_url: value })} />
-          </FieldBlock>
-        </>
-      ) : null}
-      <ExtraRows id={view.id} rows={repoRows(view.payload)} phone={phone} inBuild={inBuild} onExtras={h.onExtras} />
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
-      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
-    </>
-  );
+/** The sections a tile holds and what it leaves empty: what the panel and the layout both read. */
+export function detailsOf(view: DetailsView, build: BuildFacts = nameOnly) {
+  const { sections, notSet } = readSections(view, build);
+  return { head: headOf(view), sections, notSet, foot: notSetLine(notSet) };
 }
 
 /* ── the panel ── */
 
-/* The global field rule makes a field inherit its size on a desktop, so the panel sets the fields' 13 here. */
-export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSetup = null, colour = null, ...h }: DetailsPanelProps) {
-  if (!view) return <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{DETAILS_COPY.empty}</p>;
+function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { view: DetailsView; plan?: DetailsPlan; colour?: DetailsColour | null; build?: BuildFacts; onSelect?: (id: string) => void; onEdit?: () => void; onOpenPrompt?: (id: string) => void }) {
+  const { sections, foot } = detailsOf(view, build);
+  const id = view.kind === "session" ? view.key : view.id;
+  const readAll = view.kind === "prompt" && onOpenPrompt ? () => onOpenPrompt(id) : undefined;
+  const one = (section: ReadSection, first: boolean) => (
+    <DetailsSection key={section.key} section={section} first={first} view={view} onSelect={onSelect} clamp={plan?.cut?.[section.key]} onReadAll={readAll} />
+  );
+  if (!plan) {
+    return (
+      <div style={COLUMN}>
+        <DetailsHead view={view} colour={colour} onEdit={onEdit} />
+        {sections.map((section, at) => one(section, at === 0))}
+        {foot ? <p data-testid="details-not-set" style={NOT_SET}>{foot}</p> : null}
+      </div>
+    );
+  }
+  if (plan.measure) {
+    return (
+      <div data-testid="details-measure" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+        <div data-measure="head" style={FLOW}><DetailsHead view={view} colour={colour} onEdit={onEdit} /></div>
+        {sections.map((section) => (
+          <div key={section.key} data-measure={section.key} style={FLOW}>{one(section, true)}</div>
+        ))}
+        {foot ? <div data-measure="foot" style={FLOW}><p data-testid="details-not-set" style={NOT_SET}>{foot}</p></div> : null}
+      </div>
+    );
+  }
+  const byKey = new Map<string, ReactNode>([["head", <DetailsHead key="head" view={view} colour={colour} onEdit={onEdit} />], ["foot", foot ? <p key="foot" data-testid="details-not-set" style={NOT_SET}>{foot}</p> : null]]);
   return (
-    <DetailsColourContext.Provider value={colour}>
-    <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
-      {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} payload={view.payload} inBuild={inBuild} {...h} /> : null}
-      {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
-      {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} payload={view.sentWithLine?.startsWith("Setup") ? undefined : view.payload} inBuild={inBuild} {...(view.sentWithLine?.startsWith("Setup") ? { ...h, onExtras: undefined } : h)} /> : null}
-      {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} payload={view.payload} inBuild={inBuild} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} onSessionGoal={h.onSessionGoal} onSessionExtras={h.onSessionExtras} onSessionTogether={h.onSessionTogether} focusSetup={focusSetup} /> : null}
-      {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
-      {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} onExtras={h.onExtras} payload={view.payload} inBuild={inBuild} /> : null}
-      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} payload={view.payload} {...h} /> : null}
-      {view.kind === "system_prompt" ? <SystemPromptDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
-      {view.kind === "dataset" ? <DatasetDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
-      {view.kind === "repo" ? <RepoDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
-      {view.kind === "decision" ? <DecisionDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
-      {view.runtime && h.onRuntime && view.kind !== "session" ? (
-        <RuntimeFields key={`${view.id}:runtime`} id={view.id} runtime={view.runtime} phone={phone} onRuntime={h.onRuntime} onReadHelpers={h.onReadHelpers} />
-      ) : null}
-      {view.runtime?.runsWhen && h.onRunsWhen && view.kind !== "prompt" ? (
-        <RunsWhenField key={`${view.kind === "session" ? view.key : view.id}:when:${view.runtime.runsWhen.currentLabel ?? ""}`} view={view.runtime.runsWhen} phone={phone} onChange={(next) => h.onRunsWhen?.(view.kind === "session" ? view.key : view.id, next)} />
-      ) : null}
-      {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} onTrainedOn={h.onTrainedOn} onRemoveInside={h.onRemoveInside} onExtras={h.onExtras} payload={view.payload} /> : null}
+    <div data-testid="details-columns" style={{ display: "flex", alignItems: "flex-start", gap: 48 }}>
+      {plan.columns.map((keys, at) => (
+        <div key={at} data-testid="details-column" style={{ ...COLUMN, width: plan.columnWidth, flexShrink: 0 }}>
+          {keys.map((key, index) => {
+            const section = sections.find((entry) => entry.key === key);
+            if (section) return one(section, !keys.slice(0, index).some((earlier) => earlier !== "head"));
+            return byKey.get(key) ?? null;
+          })}
+        </div>
+      ))}
     </div>
-    </DetailsColourContext.Provider>
+  );
+}
+
+/** The selected tile, read: its sections, in the modal's order. Nothing in it can be typed into. */
+export function DetailsPanel({ view, colour = null, build, onEdit, plan, onSelect, onOpenPrompt }: DetailsPanelProps) {
+  if (!view) return <p style={EMPTY}>{DETAILS_COPY.empty}</p>;
+  return (
+    <div data-testid="details-panel" data-kind={view.kind} style={{ ...COLUMN, fontSize: 13 }}>
+      <Body view={view} plan={plan} colour={colour} build={build} onSelect={onSelect} onEdit={onEdit} onOpenPrompt={onOpenPrompt} />
+    </div>
   );
 }
 

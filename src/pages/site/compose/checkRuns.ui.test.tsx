@@ -14,7 +14,8 @@ import { StepsList } from "@/pages/site/build/BuildSteps";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
 import { BuildList } from "./BuildList";
-import { DetailsPanel, type CheckView } from "./DetailsPanel";
+import type { CheckView } from "./DetailsPanel";
+import { TileEditDialog } from "./TileEditDialog";
 
 beforeEach(() => {
   upsertNode.mockReset();
@@ -120,7 +121,7 @@ describe("the Check's lines", () => {
   });
 });
 
-describe("Check Details › Runs", () => {
+describe("Check window › Runs (CA-18: written there, held until Save)", () => {
   const view = (runs?: typeof RUNS): CheckView => ({
     kind: "check",
     id: "c",
@@ -134,9 +135,10 @@ describe("Check Details › Runs", () => {
   });
   const mount = (v: CheckView) => {
     const onCheckRuns = vi.fn();
-    render(<DetailsPanel phone={false} view={v} onCheckRuns={onCheckRuns} onRename={vi.fn()} onModel={vi.fn()} onAddUse={vi.fn()} onRemoveUse={vi.fn()} onRuns={vi.fn()} onRemoveInside={vi.fn()} onToggleSessionPrompt={vi.fn()} onDownload={vi.fn()} onFields={vi.fn()} onAddPicture={vi.fn()} onUseAsCover={vi.fn()} />);
+    render(<TileEditDialog view={v} onClose={vi.fn()} handlers={{ onCheckRuns, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() }} />);
     return onCheckRuns;
   };
+  const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
   it("lists the runs newest first", () => {
     mount(view(RUNS));
@@ -160,6 +162,7 @@ describe("Check Details › Runs", () => {
     const total = within(fresh).getByLabelText("Out of in run 1");
     fireEvent.change(total, { target: { value: "40" } });
     fireEvent.keyDown(total, { key: "Enter" });
+    save();
     expect(onCheckRuns).toHaveBeenCalledWith("c", [
       { at: "2026-10-16", passed: 38, total: 40 },
       { at: "2026-10-14", passed: 40, total: 40 },
@@ -170,6 +173,7 @@ describe("Check Details › Runs", () => {
   it("removes a run", () => {
     const onCheckRuns = mount(view(RUNS));
     fireEvent.click(screen.getByRole("button", { name: "Remove run 3" }));
+    save();
     expect(onCheckRuns).toHaveBeenCalledWith("c", [RUNS[2], RUNS[1]]);
   });
 

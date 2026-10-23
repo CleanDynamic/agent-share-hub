@@ -27,6 +27,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
+import { EYEBROW } from "./refinedStyles";
 import {
   Alert,
   FOOT_NOTE,
@@ -52,6 +53,9 @@ export const MODAL_COPY = {
   close: "Close",
   cancel: "Cancel",
   add: "Add",
+  /** CA-18: a window that changes a tile that is there. */
+  save: "Save",
+  edit: "Edit",
   allComplete: "All required fields complete",
 } as const;
 
@@ -61,6 +65,23 @@ export const requiredLine = (missing: string | null | undefined): string => (mis
 /** The first of the required fields that is not complete, in the order the body shows them; null when all are. */
 export const firstMissing = (checks: readonly (readonly [boolean, string])[]): string | null => checks.find(([done]) => !done)?.[1] ?? null;
 
+/* ── edit mode (CA-18 P2) ── */
+
+/**
+ * A dialog opened on a tile that is there: its title is the tile's own line ("Tool 11 · Gmail") under the eyebrow "Edit", its
+ * primary button reads Save, and Cancel or Escape discards. `onSave` gets what the form holds; `after` draws what only the
+ * tile's own window has (its inputs, what it makes, how it runs), given the same.
+ */
+export interface EditMode<Input> {
+  title: string;
+  onSave: (input: Input) => void;
+  /** What only the tile's own window has, drawn above the form's first block (its title). */
+  before?: (input: Input) => ReactNode;
+  /** A piece the window draws in place of one of the form's own (a check's list of runs, for its panel of two counts). */
+  slots?: Record<string, ReactNode>;
+  after?: (input: Input) => ReactNode;
+}
+
 /* ── the window ── */
 
 export interface ModalShellProps {
@@ -69,6 +90,8 @@ export interface ModalShellProps {
   title: string;
   /** What the tile is for, one grey line. */
   subtitle: string;
+  /** CA-18: a window that changes a tile that is there says "Edit" above its title. */
+  eyebrow?: string;
   /** CA-15b: 560 for most tiles, 640 for the prompt window, code and decision. */
   width?: number;
   testId: string;
@@ -76,11 +99,16 @@ export interface ModalShellProps {
 }
 
 /** The window. `children` is the form (`ModalForm`); it is mounted only while the window is open, so each opening starts clean. */
-export function ModalShell({ open, onOpenChange, title, subtitle, width = MODAL_WIDTH.standard, testId, children }: ModalShellProps) {
+export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width = MODAL_WIDTH.standard, testId, children }: ModalShellProps) {
   const phone = useIsPhone();
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={onOpenChange} title={title}>
+        {eyebrow ? (
+          <p data-testid="modal-eyebrow" style={{ ...EYEBROW, margin: 0 }}>
+            {eyebrow}
+          </p>
+        ) : null}
         <p data-testid="modal-subtitle" style={{ ...SUBTITLE, margin: 0 }}>
           {subtitle}
         </p>
@@ -95,6 +123,11 @@ export function ModalShell({ open, onOpenChange, title, subtitle, width = MODAL_
         <Dialog.Content data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...frameStyle(width) }}>
           <div data-testid="modal-header" style={HEADER}>
             <div style={HEADER_TEXT}>
+              {eyebrow ? (
+                <p data-testid="modal-eyebrow" style={{ ...EYEBROW, margin: "0 0 4px" }}>
+                  {eyebrow}
+                </p>
+              ) : null}
               <Dialog.Title style={TITLE}>{title}</Dialog.Title>
               <Dialog.Description data-testid="modal-subtitle" style={SUBTITLE}>
                 {subtitle}

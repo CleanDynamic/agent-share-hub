@@ -1,7 +1,7 @@
-// CA-05 P8 — the model line on screen: Details asks how it was run for a model on your own computer, and the List,
-// Details and What you need say it.
+// CA-05 P8 — the model line on screen: the prompt window and the agent window ask how it was run for a model on your own
+// computer (CA-18: Details only reads it), and the List, Details and What you need say it.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,9 @@ import { readerSteps, stepsMarkdown, whatYouNeed } from "@/lib/build/readerSteps
 import type { NodeTree } from "@/lib/build/types";
 
 import { BuildList } from "./BuildList";
-import { DetailsPanel, type DetailsPanelProps, type PromptView } from "./DetailsPanel";
+import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import type { DetailsHandlers, PromptView } from "./DetailsPanel";
+import { TileEditDialog } from "./TileEditDialog";
 import { resolveView } from "./detailsView";
 
 beforeEach(() => {
@@ -31,38 +33,52 @@ const tree = (run: Record<string, unknown> | null = RUN): NodeTree[] => [
   node("p2", "prompt", { text: "Say bye.", tool: "claude", model: "Opus 5.5" }, 3),
 ];
 
-function details(selectedId: string, over: Partial<DetailsPanelProps> = {}, run: Record<string, unknown> | null = RUN) {
+function ctx(selectedId: string, run: Record<string, unknown> | null) {
   const t = tree(run);
   const steps = buildSteps(t);
   const view = resolveView({ selectedId, steps, groups: [], tree: t, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined });
-  const props: DetailsPanelProps = { phone: false, view, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onModelRun: vi.fn(), onAgentSetup: vi.fn(), ...over };
-  render(<DetailsPanel {...props} />);
-  return { props, view };
+  return { steps, view };
 }
 
-describe("Details", () => {
+/** A prompt: its window saves as it goes. */
+function promptWindow(selectedId: string, run: Record<string, unknown> | null = RUN) {
+  const { steps, view } = ctx(selectedId, run);
+  const handlers = { onModel: vi.fn(), onModelRun: vi.fn(), onAddUse: vi.fn(), onAttach: vi.fn(), onRemoveUse: vi.fn(), onAddMade: vi.fn(), onRemoveMade: vi.fn(), onFields: vi.fn() };
+  render(<FullPromptWindow steps={steps} openId={selectedId} mode="maker" onClose={vi.fn()} onTitle={vi.fn()} details={() => view as PromptView} handlers={handlers} />);
+  return { props: handlers, view };
+}
+
+/** An agent: its window holds the writes until Save. */
+function agentWindow(selectedId: string, run: Record<string, unknown> | null = RUN) {
+  const { view } = ctx(selectedId, run);
+  const handlers = { onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onModelRun: vi.fn(), onAgentSetup: vi.fn() } as unknown as DetailsHandlers & { onModelRun: ReturnType<typeof vi.fn> };
+  render(<TileEditDialog view={view} handlers={handlers} onClose={vi.fn()} />);
+  return handlers;
+}
+
+describe("the windows", () => {
   it("asks How it was run and Where for a prompt on Ollama, and says the model line", () => {
-    const { view } = details("p1");
+    const { view } = promptWindow("p1");
     expect((view as PromptView).detailLine).toContain("Muse Spark Open · 4-bit · on my own computer");
     expect(screen.getByRole("button", { name: "How it was run" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Where" })).toBeTruthy();
   });
 
   it("does not ask for a prompt on a hosted model", () => {
-    details("p2");
+    promptWindow("p2");
     expect(screen.queryByRole("button", { name: "How it was run" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Where" })).toBeNull();
   });
 
   it("saves the size from the menu, keeping where", () => {
-    const { props } = details("p1");
+    const { props } = promptWindow("p1");
     fireEvent.keyDown(screen.getByRole("button", { name: "How it was run" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "8-bit" }));
     expect(props.onModelRun).toHaveBeenCalledWith("p1", { precision: "8-bit", where: "computer" });
   });
 
   it("takes an Other size of up to 20 characters", () => {
-    const { props } = details("p1", {}, null);
+    const { props } = promptWindow("p1", null);
     fireEvent.keyDown(screen.getByRole("button", { name: "How it was run" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Other" }));
     const field = screen.getByRole("textbox", { name: "How it was run: Other" }) as HTMLInputElement;
@@ -73,15 +89,19 @@ describe("Details", () => {
   });
 
   it("clears the run when both are taken off", () => {
-    const { props } = details("p1", {}, { where: "server" });
+    const { props } = promptWindow("p1", { where: "server" });
     fireEvent.keyDown(screen.getByRole("button", { name: "Where" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Not said" }));
     expect(props.onModelRun).toHaveBeenCalledWith("p1", null);
   });
 
-  it("asks for an agent that runs in Ollama", () => {
-    details("a1");
-    expect(screen.getByRole("button", { name: "How it was run" })).toBeTruthy();
+  it("asks for an agent that runs in Ollama, and writes it on Save", () => {
+    const props = agentWindow("a1");
+    fireEvent.keyDown(screen.getByRole("button", { name: "How it was run" }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "8-bit" }));
+    expect(props.onModelRun).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
+    expect(props.onModelRun).toHaveBeenCalledWith("a1", { precision: "8-bit", where: "computer" });
   });
 });
 

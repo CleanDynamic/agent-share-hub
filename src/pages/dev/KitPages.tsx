@@ -140,13 +140,13 @@ export default function KitPages() {
       data-design-theme={theme}
       data-design-viewport={viewport}
       data-design-state={state}
-      style={{ width: WIDTH[viewport] }}
+      style={{ width: page === "sandbox" && new URLSearchParams(window.location.search).has("window") ? "100%" : WIDTH[viewport] }}
     >
       <Suspense fallback={null}>
         {UNFRAMED.has(page) || isBare(page, window.location.search) ? (
           <View viewport={viewport} fit="board" state={state} />
         ) : (
-          <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
+          <SiteFrameView viewport={viewport} fit="board" wide={page === "sandbox"} {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
             <View viewport={viewport} fit="board" state={state} />
           </SiteFrameView>
         )}

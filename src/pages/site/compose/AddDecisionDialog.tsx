@@ -9,11 +9,11 @@
 import { useState } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { decisionMissing, draftToInput, emptyDraft } from "@/lib/build/decisionDraft";
+import { decisionMissing, draftToInput, emptyDraft, type DecisionDraft } from "@/lib/build/decisionDraft";
 import type { DecisionInput } from "@/lib/build/graph";
 
 import { DecisionFields, type DecisionFieldsProps } from "./DecisionFields";
-import { ModalForm, ModalShell } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, type EditMode } from "./ModalFrame";
 import { MODAL_WIDTH } from "./modalRecipes";
 
 export const DECISION_DIALOG_COPY = {
@@ -26,11 +26,14 @@ export const DECISION_DIALOG_COPY = {
 export interface AddDecisionDialogProps extends Pick<DecisionFieldsProps, "codeTiles" | "stepChoices" | "inBuild" | "onAddCode"> {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: DecisionInput) => void;
+  onAdd?: (input: DecisionInput) => void;
+  /** CA-18: a decision that is there, as its form holds it. */
+  current?: DecisionDraft | null;
+  edit?: EditMode<DecisionInput>;
 }
 
-function Form({ onAdd, onCancel, phone, ...fields }: Pick<AddDecisionDialogProps, "onAdd" | "codeTiles" | "stepChoices" | "inBuild" | "onAddCode"> & { onCancel: () => void; phone: boolean }) {
-  const [draft, setDraft] = useState(emptyDraft);
+function Form({ onAdd, onCancel, phone, current, edit, ...fields }: Pick<AddDecisionDialogProps, "onAdd" | "codeTiles" | "stepChoices" | "inBuild" | "onAddCode" | "current" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const [draft, setDraft] = useState(() => current ?? emptyDraft());
   const [error, setError] = useState<string | null>(null);
   /** Which Optional row the error points into, so it opens on its own. */
   const [into, setInto] = useState<DecisionFieldsProps["open"]>({});
@@ -39,6 +42,7 @@ function Form({ onAdd, onCancel, phone, ...fields }: Pick<AddDecisionDialogProps
       phone={phone}
       missing={decisionMissing(draft)}
       onCancel={onCancel}
+      addLabel={edit ? MODAL_COPY.save : undefined}
       alert={error}
       onSubmit={() => {
         const made = draftToInput(draft);
@@ -47,9 +51,11 @@ function Form({ onAdd, onCancel, phone, ...fields }: Pick<AddDecisionDialogProps
           setInto(/answered with|ranking|yes or no from/.test(made.error) ? { answer: true } : /example/i.test(made.error) ? { examples: true } : /threshold/i.test(made.error) ? { low: true } : {});
           return;
         }
-        onAdd(made.input);
+        if (edit) edit.onSave(made.input);
+        else onAdd?.(made.input);
       }}
     >
+      {edit?.before ? edit.before({} as DecisionInput) : null}
       <DecisionFields
         draft={draft}
         onChange={(next) => {
@@ -61,20 +67,21 @@ function Form({ onAdd, onCancel, phone, ...fields }: Pick<AddDecisionDialogProps
         open={into}
         {...fields}
       />
+      {edit?.after ? edit.after({} as DecisionInput) : null}
     </ModalForm>
   );
 }
 
-export function AddDecisionDialog({ open, onOpenChange, onAdd, ...fields }: AddDecisionDialogProps) {
+export function AddDecisionDialog({ open, onOpenChange, onAdd, current, edit, ...fields }: AddDecisionDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: DecisionInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={DECISION_DIALOG_COPY.title} subtitle={DECISION_DIALOG_COPY.subtitle} width={MODAL_WIDTH.wide} testId="add-decision-dialog">
-      <Form {...fields} onAdd={add} onCancel={close} phone={phone} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : DECISION_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={DECISION_DIALOG_COPY.subtitle} width={MODAL_WIDTH.wide} testId={edit ? "edit-decision-dialog" : "add-decision-dialog"}>
+      <Form {...fields} current={current} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );
 }

@@ -271,7 +271,7 @@ export interface ComposePrompts {
   /** UI-P70: add a manual step, with its picture if given, straight after step `afterId` (the end when null). Resolves its id, or null if it failed. */
   addManual: (input: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null }) => Promise<string | null>;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
-  setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
+  setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) => void;
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
   setManualPicture: (id: string, file: File) => Promise<boolean>;
   /** CA-02 P7: add code steps, one for each piece, in order, written with the tool and model given. Resolves the first one's id, or null if none was added. */
@@ -957,7 +957,7 @@ export function useComposePrompts({
   const setConnection = (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) =>
     void writeStep(id, "Couldn't save how it was connected. Try again.", (node) => setToolConnection(node, connection, runsAt));
 
-  const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
+  const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) =>
     void writeStep(id, "Couldn't save that. Try again.", async (node) => {
       const saved = await setManualFields(node, fields);
       noteTool(latest.current.buildId, fields.tool);

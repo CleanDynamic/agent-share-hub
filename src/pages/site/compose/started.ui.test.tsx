@@ -1,6 +1,6 @@
 // CA-05 P3 — Started with on screen: Session Details saves the command and reads it; the build page shows it with Copy.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,11 +9,13 @@ import type { NodeTree } from "@/lib/build/types";
 import { StepsList } from "@/pages/site/build/BuildSteps";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
-import { DetailsPanel, type SessionView } from "./DetailsPanel";
+import type { SessionView } from "./DetailsPanel";
+import { SessionDialog } from "./SessionDialog";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
 });
+const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -24,11 +26,11 @@ const tree = [{ id: "p", build_id: "b", parent_id: null, position: 1, type: "pro
 const session = (over: Partial<SessionView> = {}): SessionView => ({ kind: "session", key: "typed-a", number: 1, tool: "Claude Code", model: "", date: "12 Oct", inBuild: 1, total: 1, status: "ready", checklist: [], ...over });
 
 function mount(view: SessionView, onSessionExtras = vi.fn()) {
-  render(<DetailsPanel phone={false} view={view} onSessionExtras={onSessionExtras} onRename={vi.fn()} onModel={vi.fn()} onAddUse={vi.fn()} onRemoveUse={vi.fn()} onRuns={vi.fn()} onRemoveInside={vi.fn()} onToggleSessionPrompt={vi.fn()} onDownload={vi.fn()} onFields={vi.fn()} onAddPicture={vi.fn()} onUseAsCover={vi.fn()} />);
+  render(<SessionDialog view={view} onClose={vi.fn()} handlers={{ onSessionExtras: onSessionExtras, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() }} />);
   return onSessionExtras;
 }
 
-describe("Session Details › Started with", () => {
+describe("Session window › Started with", () => {
   it("shows the settings in plain words under the command, and leaves the unknown flag in the command", () => {
     mount(session());
     const well = screen.getByRole("textbox", { name: "Started with" });
@@ -42,6 +44,7 @@ describe("Session Details › Started with", () => {
     const well = screen.getByRole("textbox", { name: "Started with" });
     fireEvent.change(well, { target: { value: COMMAND } });
     fireEvent.blur(well);
+    save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { startedWith: COMMAND, ownCopy: "fix-totals" });
   });
 
@@ -50,6 +53,7 @@ describe("Session Details › Started with", () => {
     const well = screen.getByRole("textbox", { name: "Started with" });
     fireEvent.change(well, { target: { value: COMMAND } });
     fireEvent.blur(well);
+    save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { startedWith: COMMAND, ownCopy: "my-branch" });
   });
 });

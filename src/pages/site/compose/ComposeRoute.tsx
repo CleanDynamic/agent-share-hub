@@ -74,7 +74,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   }
 
   return (
-    <SiteFrame>
+    <SiteFrame wide={SANDBOX_COMPOSER_ENABLED}>
       {/* No RouteBoundary: it is keyed by pathname, and the first change replaces
           /compose/new with /compose/{id}, which would remount the page under the
           creator's cursor. */}

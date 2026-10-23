@@ -39,7 +39,7 @@ import { csvColumns } from "@/lib/build/tileExtras";
 import { toolName } from "@/lib/tools/registry";
 
 import { ChoiceGrid } from "./ChoiceGrid";
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { Alert, Block, BlockHead, Count, DropZone, FieldArea, FieldInput, FileButton, FileLine, Inline, MODAL_WIDTH, NARROW, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
@@ -117,12 +117,26 @@ export type AddResultInput = (
   | { kind: "offline"; description: string; photo: File | null }
 ) & { caption: string };
 
+/** CA-18: what the form starts with on a result that is there: the four things Details could change. */
+export interface ResultCurrent {
+  kind: "link" | "pictures" | "file" | "model";
+  url: string;
+  baseModel: string;
+  method: string;
+  caption: string;
+}
+
+/** CA-18: the output types a result that is there can be changed between (its pictures and file have their own blocks). */
+export const EDIT_RESULT_KINDS: readonly ResultKind[] = ["link", "pictures", "file", "model"];
+
 export interface AddResultDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: AddResultInput) => void;
+  onAdd?: (input: AddResultInput) => void;
   /** The tools the build already uses, first in the application picker. */
   inBuild?: readonly string[];
+  current?: ResultCurrent | null;
+  edit?: EditMode<AddResultInput>;
 }
 
 /** The twelve output types, in the order the grid draws them. */
@@ -144,12 +158,13 @@ function readHead(file: File): Promise<string> {
 
 const ACCEPT: Partial<Record<ResultKind, string>> = { pictures: "image/*,video/*", audio: "audio/*", table: ".csv,.tsv,text/csv", offline: "image/*" };
 
-function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProps, "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
-  const [kind, setKind] = useState<ResultKind>("link");
-  const [url, setUrl] = useState("");
+function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick<AddResultDialogProps, "onAdd" | "inBuild" | "current" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const onAdd = (input: AddResultInput) => (edit ? edit.onSave(input) : add?.(input));
+  const [kind, setKind] = useState<ResultKind>(current?.kind ?? "link");
+  const [url, setUrl] = useState(current?.url ?? "");
   const [files, setFiles] = useState<File[]>([]);
-  const [base, setBase] = useState("");
-  const [method, setMethod] = useState("");
+  const [base, setBase] = useState(current?.baseModel ?? "");
+  const [method, setMethod] = useState(current?.method ?? "");
   const [body, setBody] = useState("");
   const [csv, setCsv] = useState("");
   const [columns, setColumns] = useState<number | null>(null);
@@ -161,7 +176,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProp
   const [unit, setUnit] = useState("");
   const [before, setBefore] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
-  const [caption, setCaption] = useState("");
+  const [caption, setCaption] = useState(current?.caption ?? "");
   const [wrong, setWrong] = useState<string | null>(null);
   const uid = useId();
 
@@ -211,13 +226,13 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProp
 
   const missing = firstMissing(
     kind === "link" || kind === "deployed"
-      ? [[resultLinkOf(url) !== null, "a URL"]]
+      ? [[resultLinkOf(url) !== null || (Boolean(edit) && url.trim() === ""), "a URL"]]
       : kind === "pictures"
-        ? [[files.length > 0, "at least one image or video"]]
+        ? [[files.length > 0 || Boolean(edit), "at least one image or video"]]
         : kind === "file"
-          ? [[files.length > 0, "a file"]]
+          ? [[files.length > 0 || Boolean(edit), "a file"]]
           : kind === "model"
-            ? [[base.trim().length > 0 || method.trim().length > 0, "a base model or a training method"]]
+            ? [[base.trim().length > 0 || method.trim().length > 0 || Boolean(edit), "a base model or a training method"]]
             : kind === "text"
               ? [[body.trim().length > 0, "the text"]]
               : kind === "audio"
@@ -238,7 +253,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProp
     if (kind === "link") onAdd({ kind, url: url.trim(), caption: said });
     else if (kind === "deployed") onAdd({ kind, url: url.trim(), caption: said });
     else if (kind === "pictures") onAdd({ kind, files, caption: said });
-    else if (kind === "file") onAdd({ kind, file: files[0], caption: said });
+    else if (kind === "file") onAdd({ kind, file: files[0] as File, caption: said });
     else if (kind === "audio") onAdd({ kind, file: files[0], caption: said });
     else if (kind === "model") onAdd({ kind, baseModel: base.trim(), method: method.trim(), caption: said });
     else if (kind === "text") onAdd({ kind, text: body.trim(), caption: said });
@@ -274,10 +289,11 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProp
   );
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing}>
-      <Block label={RESULT_DIALOG_COPY.outputType} noRule>
-        <BlockHead label={RESULT_DIALOG_COPY.outputType} count={RESULT_DIALOG_COPY.types(RESULT_CHOICES.length)} />
-        <ChoiceGrid bare label={RESULT_DIALOG_COPY.outputType} items={RESULT_CHOICES} value={kind} onChange={pick} phone={phone} />
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} addLabel={edit ? MODAL_COPY.save : undefined}>
+      {edit?.before ? edit.before({ kind, url, caption } as unknown as AddResultInput) : null}
+      <Block label={RESULT_DIALOG_COPY.outputType} noRule={!edit?.before}>
+        <BlockHead label={RESULT_DIALOG_COPY.outputType} count={RESULT_DIALOG_COPY.types(edit ? EDIT_RESULT_KINDS.length : RESULT_CHOICES.length)} />
+        <ChoiceGrid bare label={RESULT_DIALOG_COPY.outputType} items={edit ? RESULT_CHOICES.filter((choice) => EDIT_RESULT_KINDS.includes(choice.value)) : RESULT_CHOICES} value={kind} onChange={pick} phone={phone} />
       </Block>
 
       {kind === "link" || kind === "deployed" ? (
@@ -286,7 +302,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProp
         </Row>
       ) : null}
 
-      {kind === "pictures" ? (
+      {kind === "pictures" && !edit ? (
         <Block>
           <BlockHead label={RESULT_DIALOG_COPY.picturesHead} count={RESULT_DIALOG_COPY.files(files.length)} />
           <DropZone words={RESULT_DIALOG_COPY.dropPictures} button={RESULT_DIALOG_COPY.chooseFiles} accept={ACCEPT.pictures} multiple onFiles={choose} phone={phone} testId="result-files" inputLabel={RESULT_DIALOG_COPY.choosePictures} />
@@ -294,7 +310,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProp
         </Block>
       ) : null}
 
-      {kind === "file" ? fileBlock(RESULT_TYPE_LABEL.file, RESULT_DIALOG_COPY.chooseFile) : null}
+      {kind === "file" && !edit ? fileBlock(RESULT_TYPE_LABEL.file, RESULT_DIALOG_COPY.chooseFile) : null}
       {kind === "audio" ? fileBlock(RESULT_DIALOG_COPY.audio, RESULT_DIALOG_COPY.chooseAudio) : null}
       {kind === "table" ? fileBlock(RESULT_DIALOG_COPY.tableFile, RESULT_DIALOG_COPY.chooseTable) : null}
 
@@ -369,20 +385,21 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddResultDialogProp
           <FieldInput phone={phone} aria-label={RESULT_DIALOG_COPY.caption} maxLength={RESULT_CAPTION_MAX} value={caption} placeholder={RESULT_DIALOG_COPY.captionPlaceholder} onChange={(event) => setCaption(event.target.value)} />
         </OptionalField>
       </OptionalSection>
+      {edit?.after ? edit.after({ kind, baseModel: base, method, url, caption } as unknown as AddResultInput) : null}
     </ModalForm>
   );
 }
 
-export function AddResultDialog({ open, onOpenChange, onAdd, inBuild }: AddResultDialogProps) {
+export function AddResultDialog({ open, onOpenChange, onAdd, inBuild, current, edit }: AddResultDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddResultInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={RESULT_DIALOG_COPY.title} subtitle={RESULT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-result-dialog">
-      <Form onAdd={add} onCancel={close} phone={phone} inBuild={inBuild} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : RESULT_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={RESULT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-result-dialog" : "add-result-dialog"}>
+      <Form onAdd={add} onCancel={close} phone={phone} inBuild={inBuild} current={current} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} />
     </ModalShell>
   );
 }

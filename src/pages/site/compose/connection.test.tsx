@@ -14,6 +14,7 @@ import { NeedPanel } from "@/pages/site/build/BuildSteps";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
 import { DetailsPanel, type ToolView } from "./DetailsPanel";
+import { TileEditDialog } from "./TileEditDialog";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -47,34 +48,46 @@ describe("the saved keys", () => {
   });
 });
 
-describe("Tool Details", () => {
+describe("Tool window (CA-18: the connection is chosen there, and Details only reads it)", () => {
   const view = (over: Partial<ToolView> = {}): ToolView => ({ kind: "tool", id: "t", service: "github", scopes: "", usedBy: [], connection: null, runsAt: null, toolsUsed: [], ...over });
+  const handlers = (onToolConnection = vi.fn()) => ({ onToolConnection, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() });
   const mount = (tool: ToolView, onToolConnection = vi.fn()) => {
-    render(<DetailsPanel phone={false} view={tool} onToolConnection={onToolConnection} onRename={vi.fn()} onModel={vi.fn()} onAddUse={vi.fn()} onRemoveUse={vi.fn()} onRuns={vi.fn()} onRemoveInside={vi.fn()} onToggleSessionPrompt={vi.fn()} onDownload={vi.fn()} onFields={vi.fn()} onAddPicture={vi.fn()} onUseAsCover={vi.fn()} />);
+    render(<TileEditDialog view={tool} handlers={handlers(onToolConnection)} onClose={vi.fn()} />);
     return onToolConnection;
   };
+  const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
-  it("asks the connection method under What it was used for, and where an MCP server ran", () => {
+  it("offers the nine connection methods, and where an MCP server ran, saving them through onToolConnection", () => {
     const onToolConnection = mount(view());
-    const group = screen.getByRole("radiogroup", { name: "Connection method" });
-    expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual(["MCP server", "Native integration", "Custom code", "Browser extension", "API key", "Zapier, Make or n8n", "Plugin or skill", "Command-line interface", "Manual copy and paste"]);
-    expect(screen.queryByRole("radiogroup", { name: "Where it ran" })).toBeNull();
-    fireEvent.click(within(group).getByRole("radio", { name: "MCP server" }));
+    const row = screen.getAllByTestId("optional-field").find((el) => within(el).queryByText("Connection method")) as HTMLElement;
+    fireEvent.click(within(row).getAllByRole("button")[0]);
+    const group = screen.getByRole("group", { name: "Connection method" });
+    expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual(["MCP server", "Native integration", "Custom code", "Browser extension", "API key", "Zapier, Make or n8n", "Plugin or skill", "Command-line interface", "Manual copy and paste"]);
+    expect(screen.queryByRole("group", { name: "Where it ran" })).toBeNull();
+    fireEvent.click(within(group).getByRole("button", { name: "MCP server" }));
+    expect(onToolConnection).not.toHaveBeenCalled();
+    save();
     expect(onToolConnection).toHaveBeenCalledWith("t", "mcp", null);
     cleanup();
     const again = mount(view({ connection: "mcp" }));
-    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Where it ran" })).getByRole("radio", { name: "At a web address" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Where it ran" })).getByRole("radio", { name: "At a web address" }));
+    save();
     expect(again).toHaveBeenCalledWith("t", "mcp", "web");
   });
 
-  it("shows the tools it used as chips with counts, read from what was saved, never typed", () => {
+  it("shows the tools it used with their counts, read from what was saved, never typed", () => {
     expect(toolsUsedOf(node("t", "integration", { service: "github", tools_used: { create_issue: 3, get_file: 7, bad: "x" } }, 1))).toEqual([
       { name: "get_file", count: 7 },
       { name: "create_issue", count: 3 },
     ]);
     mount(view({ toolsUsed: [{ name: "get_file", count: 7 }] }));
-    expect(screen.getAllByTestId("tool-used").map((chip) => chip.textContent)).toEqual(["get_file7"]);
+    expect(within(screen.getByRole("group", { name: "Tools it used" })).getByText("get_file 7")).toBeTruthy();
     expect(screen.queryByRole("textbox", { name: "Tools it used" })).toBeNull();
+    cleanup();
+    render(<DetailsPanel phone={false} view={view({ toolsUsed: [{ name: "get_file", count: 7 }] })} {...handlers()} />);
+    const used = screen.getByRole("region", { name: "Tools it used" });
+    expect(used.textContent).toContain("get_file");
+    expect(used.textContent).toContain("7");
   });
 });
 

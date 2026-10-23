@@ -28,7 +28,7 @@ import {
 import { linesOf } from "@/lib/build/tileExtras";
 
 import { ChoiceGrid } from "./ChoiceGrid";
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { Block, BlockHead, FieldArea, FieldInput, Hint, Inline, MODAL_WIDTH, NARROW, Row } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
@@ -72,29 +72,48 @@ export const DATASET_DIALOG_COPY = {
 
 export type AddDatasetInput = Omit<DatasetInput, "session">;
 
+/** CA-18: what the form starts with on a dataset that is there (counts as typed). */
+export interface DatasetCurrent {
+  name: string;
+  description: string;
+  use: DatasetUse | null;
+  format: string;
+  records: string;
+  columns: string[];
+  source: string;
+  sample: string[];
+  licence: string;
+  strategy: string;
+  size: string;
+  overlap: string;
+  embedding: string;
+}
+
 export interface AddDatasetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: AddDatasetInput) => void;
+  onAdd?: (input: AddDatasetInput) => void;
+  current?: DatasetCurrent | null;
+  edit?: EditMode<AddDatasetInput>;
 }
 
 /** A count as typed: digits only. */
 const digits = (raw: string): string => raw.replace(/[^0-9]/g, "");
 
-function Form({ onAdd, onCancel, phone }: Pick<AddDatasetDialogProps, "onAdd"> & { onCancel: () => void; phone: boolean }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [use, setUse] = useState<DatasetUse | null>(null);
-  const [format, setFormat] = useState("");
-  const [records, setRecords] = useState("");
-  const [columns, setColumns] = useState("");
-  const [source, setSource] = useState("");
-  const [sample, setSample] = useState("");
-  const [licence, setLicence] = useState("");
-  const [strategy, setStrategy] = useState("");
-  const [size, setSize] = useState("");
-  const [overlap, setOverlap] = useState("");
-  const [embedding, setEmbedding] = useState("");
+function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogProps, "onAdd" | "current" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const [name, setName] = useState(current?.name ?? "");
+  const [description, setDescription] = useState(current?.description ?? "");
+  const [use, setUse] = useState<DatasetUse | null>(current?.use ?? null);
+  const [format, setFormat] = useState(current?.format ?? "");
+  const [records, setRecords] = useState(current?.records ?? "");
+  const [columns, setColumns] = useState((current?.columns ?? []).join("\n"));
+  const [source, setSource] = useState(current?.source ?? "");
+  const [sample, setSample] = useState((current?.sample ?? []).join("\n"));
+  const [licence, setLicence] = useState(current?.licence ?? "");
+  const [strategy, setStrategy] = useState(current?.strategy ?? "");
+  const [size, setSize] = useState(current?.size ?? "");
+  const [overlap, setOverlap] = useState(current?.overlap ?? "");
+  const [embedding, setEmbedding] = useState(current?.embedding ?? "");
   const uid = useId();
   const retrieval = use === "retrieval";
   const columnLines = linesOf(columns);
@@ -106,7 +125,7 @@ function Form({ onAdd, onCancel, phone }: Pick<AddDatasetDialogProps, "onAdd"> &
   ]);
 
   const submit = () =>
-    onAdd({
+    (edit ? edit.onSave : (onAdd ?? (() => undefined)))({
       name: name.trim(),
       description: description.trim(),
       use,
@@ -123,7 +142,7 @@ function Form({ onAdd, onCancel, phone }: Pick<AddDatasetDialogProps, "onAdd"> &
     });
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} blocked={Boolean(tooMany)} alert={tooMany}>
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} blocked={Boolean(tooMany)} alert={tooMany} addLabel={edit ? MODAL_COPY.save : undefined}>
       <Row id={`${uid}-name`} label={DATASET_DIALOG_COPY.name} noRule phone={phone}>
         <FieldInput phone={phone} id={`${uid}-name`} value={name} maxLength={TITLE_MAX} placeholder={DATASET_DIALOG_COPY.namePlaceholder} onChange={(event) => setName(event.target.value)} />
       </Row>
@@ -175,20 +194,21 @@ function Form({ onAdd, onCancel, phone }: Pick<AddDatasetDialogProps, "onAdd"> &
           </OptionalField>
         ) : null}
       </OptionalSection>
+      {edit?.after ? edit.after({ name, description, use }) : null}
     </ModalForm>
   );
 }
 
-export function AddDatasetDialog({ open, onOpenChange, onAdd }: AddDatasetDialogProps) {
+export function AddDatasetDialog({ open, onOpenChange, onAdd, current, edit }: AddDatasetDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddDatasetInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={DATASET_DIALOG_COPY.title} subtitle={DATASET_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-dataset-dialog">
-      <Form onAdd={add} onCancel={close} phone={phone} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : DATASET_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={DATASET_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-dataset-dialog" : "add-dataset-dialog"}>
+      <Form onAdd={add} onCancel={close} phone={phone} current={current} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} />
     </ModalShell>
   );
 }
