@@ -1019,14 +1019,11 @@ export function SandboxView(props: SandboxViewProps) {
       {phone ? (
         postSection
       ) : (
-        /* CA-18 P4: the head of the build: its title, its status line, the post 18 below, 18 under it, the hairline. */
+        /* CA-18 P4: the post heads the Build column, 18 under the head's hairline and 18 above it. The title and its
+           status line sit in the title row at the top of the page, as they did before this change. */
         <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, paddingBottom: HEAD_GAP, borderBottom: `1px solid ${t.hairline}` }}>
-          <h1 data-testid="sandbox-heading" style={{ ...text(18, 500, untitled ? t.text2 : t.text), lineHeight: "24px", margin: 0, letterSpacing: "-0.01em", overflowWrap: "anywhere" }}>
-            {untitled ? UNTITLED : props.title.trim()}
-          </h1>
-          <div style={{ lineHeight: "18px" }}>{statusLine}</div>
           {props.post && trail.length === 0 ? (
-            <section ref={postRef} aria-label="Post" data-testid="sandbox-post" tabIndex={-1} style={{ outline: "none", minWidth: 0, marginTop: HEAD_GAP }}>
+            <section ref={postRef} aria-label="Post" data-testid="sandbox-post" tabIndex={-1} style={{ outline: "none", minWidth: 0 }}>
               {props.post}
             </section>
           ) : null}
