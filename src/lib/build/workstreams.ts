@@ -213,6 +213,25 @@ export function removeWorkstream(making: unknown, order: readonly string[], key:
   return { ...change, joins };
 }
 
+/**
+ * A session just made goes to the end of part `to`, in the one order. `order` is the order before it; the session is not in
+ * it yet (or is, and is moved). With no stored parts the order is the old one with the session last.
+ */
+export function orderWithNewSession(making: unknown, order: readonly string[], session: string, to: string | undefined): string[] {
+  const rest = order.filter((key) => key !== session);
+  const stored = storedWorkstreamsOf(making);
+  if (!to || !stored.some((part) => part.key === to)) return [...rest, session];
+  const meta = { ...sessionsMetaOf(making), [session]: { tool: null, date: "", workstream: to } };
+  return orderByWorkstream([...rest, session], meta, stored);
+}
+
+/** The part a session joins when its maker does not say: the last, once the build has two or more parts. */
+export function defaultWorkstream(making: unknown, chosen?: string): string | undefined {
+  const stored = storedWorkstreamsOf(making);
+  if (chosen && stored.some((part) => part.key === chosen)) return chosen;
+  return stored.length >= 2 ? stored[stored.length - 1].key : undefined;
+}
+
 /** Move a part up or down one place. The sessions go with it. Null when it cannot move. */
 export function moveWorkstream(making: unknown, order: readonly string[], key: string, by: -1 | 1): WorkstreamChange | null {
   const stored = storedWorkstreamsOf(making);

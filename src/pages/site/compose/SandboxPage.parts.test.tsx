@@ -223,3 +223,68 @@ describe("CA-17 P2 · Label parts", () => {
     expect(await screen.findByRole("button", { name: "Part B options" })).toBeTruthy();
   });
 });
+
+const CLAIMED = "0e0e0e0e-0000-4000-8000-000000000002";
+
+/** Two parts: Session 1 (the one-prompt session) in Part 1, Session 2 (the 66-prompt one) moved into Part 2. */
+async function sessionPerPart() {
+  await twoParts();
+  fireEvent.keyDown(screen.getByRole("button", { name: "Session 2 options" }), { key: "Enter" });
+  fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to part…" }), { key: "ArrowRight" });
+  fireEvent.click(await screen.findByRole("menuitem", { name: "Part 2" }));
+  const [first, second] = storedWorkstreamsOf(draftRow()?.making);
+  await waitFor(() => expect(sessionsMetaOf(draftRow()?.making)[LONG]?.workstream).toBe(second.key), { timeout: 15_000 });
+  return { first, second };
+}
+
+/** Open Add a session, which starts on the last part, and choose another by its title. */
+async function openAddTo(choose?: string) {
+  fireEvent.click(screen.getByTestId("add-session-row"));
+  const button = await screen.findByTestId("add-to-button");
+  expect(button.textContent).toContain("Part 2");
+  if (choose) {
+    fireEvent.pointerDown(button, { button: 0, ctrlKey: false });
+    fireEvent.keyDown(button, { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: new RegExp(choose) }));
+  }
+}
+
+describe("CA-17 P3 · adding a session into a part", () => {
+  it("Start a new session lands at the end of the part chosen in Add to, in the one order", async () => {
+    const { first } = await sessionPerPart();
+    await openAddTo("Part 1");
+    expect(screen.getByText("An empty one at the end of Part 1. Pick its app later.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Start a new session/ }));
+    await waitFor(() => expect(making().session_order).toHaveLength(3), { timeout: 15_000 });
+    const key = (making().session_order as string[])[1];
+    expect(key).toMatch(/^typed-/);
+    expect(making().session_order).toEqual([WAITING, key, LONG]);
+    expect(sessionsMetaOf(draftRow()?.making)[key]?.workstream).toBe(first.key);
+    await waitFor(() => expect(order()).toEqual([WAITING, key, LONG]), { timeout: 15_000 });
+  });
+
+  it("with Add to left alone it goes to the last part", async () => {
+    const { second } = await sessionPerPart();
+    await openAddTo();
+    fireEvent.click(screen.getByRole("button", { name: /Start a new session/ }));
+    await waitFor(() => expect(making().session_order).toHaveLength(3), { timeout: 15_000 });
+    const key = (making().session_order as string[])[2];
+    expect(sessionsMetaOf(draftRow()?.making)[key]?.workstream).toBe(second.key);
+  });
+
+  it("a connected chat lands at the end of the chosen part, and its tiles are put with it", async () => {
+    const { first } = await sessionPerPart();
+    await openAddTo("Part 1");
+    fireEvent.click(screen.getByRole("button", { name: /Add from your connected chats/ }));
+    const picker = await screen.findByTestId("add-session-picker");
+    fireEvent.click(within(picker).getAllByRole("listitem").find((row) => !(row as HTMLButtonElement).disabled && /claude/i.test(row.getAttribute("aria-label") ?? "")) as HTMLElement);
+    await waitFor(() => expect(making().session_order).toEqual([WAITING, CLAIMED, LONG]), { timeout: 20_000 });
+    expect(sessionsMetaOf(draftRow()?.making)[CLAIMED]?.workstream).toBe(first.key);
+    await waitFor(() => expect(order()).toEqual([WAITING, CLAIMED, LONG]), { timeout: 15_000 });
+    // Its tile sits between Session 1's and the 66 of the session after it.
+    const tiles = positions();
+    expect(tiles).toHaveLength(68);
+    expect((tiles[1].source_ref as { import_session_id?: string }).import_session_id).toBe(CLAIMED);
+    expect((tiles[2].source_ref as { import_session_id?: string }).import_session_id).toBe(LONG);
+  });
+});

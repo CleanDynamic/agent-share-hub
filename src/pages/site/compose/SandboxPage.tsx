@@ -44,12 +44,12 @@ import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/tes
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
-import { orderByWorkstream } from "@/lib/build/workstreams";
+import { defaultWorkstream, orderByWorkstream, orderWithNewSession, workstreamKeyOf } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionToBuild } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
-import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, orderKeys } from "@/lib/build/sessionLayout";
+import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessionOrder, orderKeys } from "@/lib/build/sessionLayout";
 import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
@@ -516,6 +516,8 @@ export function SandboxPage() {
   /* CA-17 P2: the build's parts, when it has two or more. */
   const theme = useResolvedTheme();
   const partsModel = useMemo(() => listPartsOf(made, groups, theme), [made, groups, theme]);
+  /** CA-17 P3: the parts "Add to" can choose; none until the build has two. */
+  const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
   const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
@@ -564,22 +566,25 @@ export function SandboxPage() {
    * where a session made here is kept (`sessions_meta`, `build_sessions` when the table is there, `session_order`), so it
    * works before the CA-12 table is live.
    */
-  const onStartSession = useCallback(async () => {
+  const onStartSession = useCallback(async (workstream?: string) => {
     setStartingSession(true);
     try {
       const fresh = !buildId;
       const id = await ensureBuild();
       const first = shown[0];
-      const emptyFirst = Boolean(first && groupKind(first) === "typed" && !first.tool && first.stepNumbers.length === 0);
+      // CA-17 P3: with parts the session joins the chosen one (else the last); an empty Session 1 is used only when it is in that part.
+      const part = fresh ? undefined : defaultWorkstream(made, workstream);
+      const emptyFirst = Boolean(first && groupKind(first) === "typed" && !first.tool && first.stepNumbers.length === 0 && (!part || workstreamKeyOf(sessionsMetaOf(made)[groupKey(first)], storedWorkstreamsOf(made)) === part));
       let key: string;
       if (fresh && firstSession.current) key = firstSession.current;
       else if (emptyFirst && first) key = groupKey(first);
       else {
         key = newSessionKey();
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
-        await setSessionMeta(id, key, { tool: null, date: todayDay() });
+        await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
         await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
-        await patchMaking(id, { session_order: [...keys, key] });
+        if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
+        else await patchMaking(id, { session_order: [...keys, key] });
       }
       await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
       setChosenSession(key);
@@ -590,7 +595,7 @@ export function SandboxPage() {
     } finally {
       setStartingSession(false);
     }
-  }, [ensureBuild, buildId, shown, groups, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession]);
+  }, [ensureBuild, buildId, shown, groups, made, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession]);
 
   /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
   const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
@@ -1151,11 +1156,11 @@ export function SandboxPage() {
    * is scrolled to and outlined once.
    */
   const onAddSession = useCallback(
-    async (importId: string) => {
+    async (importId: string, workstream?: string) => {
       setAdding((previous) => new Set(previous).add(importId));
       try {
         const id = await ensureBuild();
-        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id });
+        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id, workstream });
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }),
           queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
@@ -1746,8 +1751,9 @@ export function SandboxPage() {
               loadingMore: sessions.libraryLoadingMore,
               onMore: sessions.libraryMore,
               adding: adding.size > 0 || startingSession,
-              onAdd: (importId) => void onAddSession(importId),
-              onStartNew: () => void onStartSession(),
+              onAdd: (importId, part) => void onAddSession(importId, part),
+              onStartNew: (part) => void onStartSession(part),
+              parts: addToParts,
             }}
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
@@ -1772,7 +1778,8 @@ export function SandboxPage() {
             reminders={reminderRows}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onAddSession={(id) => void onAddSession(id)}
+            onAddSession={(id, part) => void onAddSession(id, part)}
+            parts={addToParts}
             onDropFiles={onDropFiles}
             onPick={pick}
             connectHref="/connect"

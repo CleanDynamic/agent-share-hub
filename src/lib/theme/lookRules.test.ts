@@ -472,6 +472,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AddSessionRow.tsx",
   "src/pages/site/compose/listNest.tsx",
   "src/pages/site/compose/useSessionEdits.ts",
+  // CA-17 P3
+  "src/lib/build/addSession.ts",
+  "src/components/brand/MenuButton.tsx",
+  "src/pages/site/compose/SourcesPanel.tsx",
+  "src/pages/site/compose/AddSessionRow.parts.test.tsx",
 ];
 
 /**
