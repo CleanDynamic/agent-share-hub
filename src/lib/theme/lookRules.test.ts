@@ -626,6 +626,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca20.p6.test.tsx",
   "src/lib/build/duplicate.ts",
   "src/pages/site/compose/ConvertWindow.tsx",
+  "src/lib/build/shortcuts.ts",
+  "src/pages/site/compose/ShortcutsDialog.tsx",
+  "src/pages/site/compose/useBuildShortcuts.ts",
 ];
 
 /**

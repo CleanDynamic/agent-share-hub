@@ -20,6 +20,7 @@ import { REMOVE_COPY, type ClearCounts } from "@/lib/build/componentMenus";
 import { restoreSnapshot } from "@/lib/build/buildSnapshot";
 import { CONVERT_COPY, canConvert, convertRow, convertTiles, duplicateTiles, DUPLICATE_COPY, targetsOf, type ConvertTo } from "@/lib/build/duplicate";
 import { DEFAULT_AGENT_MODEL } from "./AddAgentDialog";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 import { ConvertWindow, type Conversion } from "./ConvertWindow";
 import { REMOVED_COPY, type RemovedMeta } from "@/lib/build/removedLog";
 import { FILE_TYPE, groupKey, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
@@ -83,6 +84,8 @@ export interface BuildActions {
   ungroup: (ids: readonly string[]) => void;
   /** Whether a tile is in a group. */
   grouped: (id: string) => boolean;
+  /** CA-20 P8: the window that lists the keys. */
+  shortcuts: { open: () => void };
   /** CA-20 P6: Recently removed, in the build's menu. Absent: the item is not drawn. */
   recentlyRemoved?: { count: number; open: () => void };
   /** CA-20 P4: Clear the build, from the build's menu. */
@@ -115,6 +118,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
   const [removal, setRemoval] = useState<SessionRemoval | null>(null);
   const [clearing, setClearing] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [converting, setConverting] = useState<Conversion | null>(null);
 
   const removeTiles = useCallback(
@@ -355,6 +359,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       group,
       ungroup,
       grouped,
+      shortcuts: { open: () => setHelpOpen(true) },
       recentlyRemoved: { count: history.removed.length, open: () => setListOpen(true) },
       clear: { counts: clearCounts, ask: () => setClearing(true) },
     }),
@@ -373,6 +378,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           void clearBuild();
         }}
       />
+    <ShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     <ConvertWindow
       conversion={converting}
       onClose={() => setConverting(null)}

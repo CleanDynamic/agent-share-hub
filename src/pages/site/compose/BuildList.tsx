@@ -125,6 +125,8 @@ import {
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
+import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
+import { COUNT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildSelectionContext } from "./useBuildSelection";
@@ -314,12 +316,19 @@ const usePicked = (id: string): boolean => Boolean(useBuildSelectionContext()?.t
 
 /* ── small pieces ── */
 
-function MenuRow({ children, disabled, onSelect, phone, reason }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean; reason?: string }) {
+function MenuRow({ children, disabled, onSelect, phone, reason, shortcut }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean; reason?: string; shortcut?: ShortcutId }) {
   const why = useReason(disabled ? reason : undefined);
   return (
     <>
-      <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)} {...why.props}>
-        {children}
+      <Menu.Item disabled={disabled} onSelect={onSelect} style={shortcut && !phone ? { ...menuItem(!disabled, phone), justifyContent: "space-between", gap: 12 } : menuItem(!disabled, phone)} {...why.props}>
+        {shortcut && !phone ? (
+          <>
+            <span>{children}</span>
+            <span aria-hidden="true" style={COUNT}>{shortcutLabel(shortcut)}</span>
+          </>
+        ) : (
+          children
+        )}
       </Menu.Item>
       {why.note}
     </>
@@ -331,7 +340,7 @@ function DuplicateRow({ step, phone }: { step: Step; phone: boolean }) {
   const actions = useBuildActionsContext();
   if (!actions) return null;
   return (
-    <MenuRow phone={phone} onSelect={() => actions.duplicate([step.id])}>
+    <MenuRow phone={phone} shortcut="duplicate" onSelect={() => actions.duplicate([step.id])}>
       Duplicate
     </MenuRow>
   );
@@ -357,7 +366,7 @@ function UngroupRow({ step, phone }: { step: Step; phone: boolean }) {
   const actions = useBuildActionsContext();
   if (!actions || !actions.grouped(step.id)) return null;
   return (
-    <MenuRow phone={phone} onSelect={() => actions.ungroup([step.id])}>
+    <MenuRow phone={phone} shortcut="ungroup" onSelect={() => actions.ungroup([step.id])}>
       Ungroup
     </MenuRow>
   );
@@ -947,13 +956,13 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
           <ConvertRows step={step} phone={phone} />
           <CopyTogetherRow step={step} phone={phone} />
-          <MenuRow phone={phone} disabled={index === 0} reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-          <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <MenuRow phone={phone} disabled={index === 0} shortcut="moveUp" reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+          <MenuRow phone={phone} disabled={last} shortcut="moveDown" reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />
           <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
           <UngroupRow step={step} phone={phone} />
           <SessionTileRows step={step} phone={phone} />
-          <RemoveRow label={MENU_COPY.removeTile} phone={phone} onSelect={() => props.onRemove(step.id)} />
+          <RemoveRow label={MENU_COPY.removeTile} phone={phone} shortcut={phone ? undefined : <span aria-hidden="true" style={COUNT}>{shortcutLabel("remove")}</span>} onSelect={() => props.onRemove(step.id)} />
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
@@ -1182,13 +1191,13 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
-                <MenuRow phone={phone} disabled={index === 0} reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-                <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+                <MenuRow phone={phone} disabled={index === 0} shortcut="moveUp" reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+                <MenuRow phone={phone} disabled={last} shortcut="moveDown" reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />
                 <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
           <UngroupRow step={step} phone={phone} />
               <SessionTileRows step={step} phone={phone} />
-              <RemoveRow label={MENU_COPY.removeTile} phone={phone} onSelect={() => props.onRemove(step.id)} />
+              <RemoveRow label={MENU_COPY.removeTile} phone={phone} shortcut={phone ? undefined : <span aria-hidden="true" style={COUNT}>{shortcutLabel("remove")}</span>} onSelect={() => props.onRemove(step.id)} />
               </MenuContent>
             </Menu.Portal>
           </Menu.Root>

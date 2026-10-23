@@ -107,6 +107,7 @@ import { computeFacets, shapeFromBuilt, shownValues } from "@/lib/classify/facet
 import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 import { BuildActionsContext, useBuildActions } from "./useBuildActions";
+import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar } from "./removePieces";
 import type { Drawn } from "@/lib/build/buildSelection";
@@ -1875,6 +1876,19 @@ export function SandboxPage() {
     dropOnStep: asStep((id: string) => `Attached a file to ${whatIs(id)}`, onDropOnStep),
     setup: asStep("Added setup files", addSetup),
   };
+
+  /* CA-20 P8: the build page's keys. */
+  useBuildShortcuts({
+    phone,
+    history: buildHistory,
+    actions,
+    selection,
+    selectedId,
+    tiles: drawn.sessions.flatMap((session) => session.tiles),
+    onSelect: setSelectedId,
+    onMove: stepOf.move,
+    openHelp: actions.shortcuts.open,
+  });
 
   return (
     <BuildHistoryContext.Provider value={buildHistory}>

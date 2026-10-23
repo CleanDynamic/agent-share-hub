@@ -12,6 +12,7 @@ import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { HISTORY_COPY } from "@/lib/build/buildHistory";
+import { SHORTCUT_COPY, shortcutLabel } from "@/lib/build/shortcuts";
 import { CLEAR_COPY } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -86,7 +87,7 @@ export function BuildTitleActions({ phone = false, keys }: { phone?: boolean; ke
         glyph="undo"
         phone={phone}
         label={history.canUndo ? HISTORY_COPY.undoStep(history.undoSentence ?? "") : HISTORY_COPY.undo}
-        title={stepTooltip("undo", history.canUndo ? history.undoSentence : null, keys?.undo)}
+        title={stepTooltip("undo", history.canUndo ? history.undoSentence : null, keys?.undo ?? (phone ? undefined : shortcutLabel("undo")))}
         disabled={!history.canUndo}
         data-testid="title-undo"
         onClick={() => void history.undo()}
@@ -97,7 +98,7 @@ export function BuildTitleActions({ phone = false, keys }: { phone?: boolean; ke
         glyph="redo"
         phone={phone}
         label={history.canRedo ? HISTORY_COPY.redoStep(history.redoSentence ?? "") : HISTORY_COPY.redo}
-        title={stepTooltip("redo", history.canRedo ? history.redoSentence : null, keys?.redo)}
+        title={stepTooltip("redo", history.canRedo ? history.redoSentence : null, keys?.redo ?? (phone ? undefined : shortcutLabel("redo")))}
         disabled={!history.canRedo}
         data-testid="title-redo"
         onClick={() => void history.redo()}
@@ -118,6 +119,12 @@ export function BuildTitleActions({ phone = false, keys }: { phone?: boolean; ke
                 </Menu.Item>
               ) : null}
               {keys?.shortcuts}
+              {phone ? null : (
+                <Menu.Item data-testid="build-options-shortcuts" onSelect={actions.shortcuts.open} style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: 12 }}>
+                  <span>{SHORTCUT_COPY.item}</span>
+                  <span aria-hidden="true" style={COUNT}>{shortcutLabel("help")}</span>
+                </Menu.Item>
+              )}
               <Menu.Separator style={{ height: 1, margin: "4px 0", background: t.hairline }} />
               <Menu.Item data-testid="build-options-clear" data-tone="danger" disabled={empty} onSelect={actions.clear.ask} style={{ ...menuItem(!empty, phone), color: DANGER }} {...clearWhy.props}>
                 {CLEAR_COPY.menu}
