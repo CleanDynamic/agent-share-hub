@@ -15,7 +15,7 @@ for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     const builds: { left: number; width: number }[] = [];
     for (const details of SELECTIONS) {
-      await page.goto(`/dev/kit/pages/sandbox?theme=noon&build=bakery&details=${details}`);
+      await page.goto(`/dev/kit/pages/sandbox?theme=noon&build=bakery&details=${details}&window=1`);
       await page.locator('section[aria-label="Build"]').waitFor();
       const build = await page.locator('section[aria-label="Build"]').boundingBox();
       expect(build).not.toBeNull();

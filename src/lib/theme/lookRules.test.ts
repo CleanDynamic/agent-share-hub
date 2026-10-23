@@ -494,6 +494,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/detailsView.ts",
   "src/components/build/FullPromptWindow.tsx",
   // CA-18 P5
+  "src/components/shell/siteFrame.wide.test.tsx",
   "src/pages/site/compose/DetailsOverlay.tsx",
   "src/pages/site/compose/DetailsOverlay.test.tsx",
   // CA-18 P4
