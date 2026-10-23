@@ -2,8 +2,8 @@
 
    PURE (no React). `…Current` reads a tile's view into the dialog's own starting values, so the dialog opens filled in.
    `save…` turns what the dialog holds into calls on `DetailsHandlers`: the handlers Details used, with the arguments Details
-   used, and only for what changed. A dialog that gave a key the Add dialog writes and Details never did (a check's test
-   description, a code tile's source) shows it and does not write it: nothing new is stored. */
+   used, and only for what changed. A check's test description, pass criteria, failure notes and last run date, and a code tile's
+   lines and language, are written by `onCheckText` and `onCodeSource` (an update of the tile's own payload, the keys Add wrote). */
 
 import type { AgentSetupValue } from "./AgentSetupFields";
 import type { AddAgentInput, AgentCurrent } from "./AddAgentDialog";
@@ -260,6 +260,11 @@ export function saveManual(view: V<"manual">, input: AddManualStepInput, h: H): 
 
 export function saveCode(view: V<"code">, input: AddCodeInput, h: H): void {
   const step = input.steps[0];
+  const before = codeCurrent(view);
+  const patch: { source?: string; language?: string } = {};
+  if (step && step.source !== before.source) patch.source = step.source;
+  if (step && step.language !== (view.language ?? null)) patch.language = step.language;
+  if (Object.keys(patch).length > 0) h.onCodeSource?.(view.id, patch);
   saveRows(h, view.id, codeRows(payloadOf(view)), {
     "File path": { filename: step?.filename ?? "" },
     "Generated with": { tool: input.tool ?? "", model: input.model ?? "" },
@@ -270,6 +275,13 @@ export function saveCheck(view: V<"check">, input: AddCheckInput, h: H): void {
   const id = view.id;
   const before = checkCurrent(view);
   const cases = keptCases(input.cases ?? []);
+  const text_ = {
+    ...(input.tested !== before.tested ? { tested: input.tested } : null),
+    ...(input.passing !== before.passing ? { passing: input.passing } : null),
+    ...((input.onFail ?? "") !== before.failed ? { onFail: input.onFail ?? "" } : null),
+    ...((input.runAt ?? "") !== before.runAt ? { runAt: input.runAt ?? "" } : null),
+  };
+  if (Object.keys(text_).length > 0) h.onCheckText?.(id, text_);
   if (!same(cases, keptCases(before.cases))) h.onCheckCases?.(id, cases);
   saveRows(h, id, checkRows(payloadOf(view)), {
     "Test method": { method: input.method ?? "" },

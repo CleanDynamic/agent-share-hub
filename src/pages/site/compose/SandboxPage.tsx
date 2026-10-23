@@ -1611,6 +1611,8 @@ export function SandboxPage() {
     },
     onCheckRuns: prompts.setCheckRuns,
     onCheckCases: prompts.setCheckCases,
+    onCheckText: prompts.setCheckText,
+    onCodeSource: prompts.setCodeSource,
     onModelRun: prompts.setModelRun,
     onTrainedOn: (id, file) => void onTrainedOn(id, file),
     onAgentNotes: prompts.setAgentNotes,

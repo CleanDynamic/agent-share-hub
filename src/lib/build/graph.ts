@@ -1996,6 +1996,65 @@ export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
   return null;
 }
 
+/** The four text fields of the Add Check window that a check that is there can change; each key only when it is in the patch. */
+export interface CheckTextPatch {
+  tested?: string;
+  passing?: string;
+  /** Empty takes the notes off. */
+  onFail?: string;
+  /** "2026-10-12"; empty takes the date off. */
+  runAt?: string;
+}
+
+/**
+ * CA-18: change a check's test description, pass criteria, failure notes or last run date, with the rules Add › Check holds them to
+ * (`checkRefusal`). Only the keys in the patch are written; every other key of the payload is written back as it was read.
+ */
+export async function setCheckText(node: BuildNode, patch: CheckTextPatch): Promise<BuildNode> {
+  if (node.type !== CHECK_TYPE) throw refuse("setCheckText", "Only a check has these fields.");
+  const payload = { ...payloadOf(node) };
+  const now = {
+    tested: typeof payload.tested === "string" ? payload.tested : "",
+    passing: typeof payload.passing === "string" ? payload.passing : "",
+    on_fail: typeof payload.on_fail === "string" ? payload.on_fail : "",
+    run_at: typeof payload.run_at === "string" ? payload.run_at : "",
+  };
+  const next = {
+    tested: patch.tested !== undefined ? patch.tested.trim() : now.tested,
+    passing: patch.passing !== undefined ? patch.passing.trim() : now.passing,
+    on_fail: patch.onFail !== undefined ? patch.onFail.trim() : now.on_fail,
+    run_at: patch.runAt !== undefined ? patch.runAt.trim() : now.run_at,
+  };
+  // The counts are not this write's; zeros pass their rule.
+  const why = checkRefusal({ tested: next.tested, passing: next.passing, onFail: next.on_fail, runAt: next.run_at, passed: 0, total: 0 });
+  if (why) throw refuse("setCheckText", why);
+  for (const [key, value] of Object.entries(next) as [keyof typeof next, string][]) {
+    if (value === now[key]) continue;
+    if (value) payload[key] = value;
+    else delete payload[key];
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-18: change a piece of code's lines and language, with the rules Add › Code holds them to (some code, at most `CODE_MAX`,
+ * a language the build knows). Only the keys in the patch are written.
+ */
+export async function setCodeSource(node: BuildNode, patch: { source?: string; language?: string }): Promise<BuildNode> {
+  if (node.type !== CODE_TYPE) throw refuse("setCodeSource", "Only code has lines.");
+  const payload = { ...payloadOf(node) };
+  if (patch.source !== undefined) {
+    if (!patch.source.trim()) throw refuse("setCodeSource", "Code needs its lines.");
+    if (patch.source.length > CODE_MAX) throw refuse("setCodeSource", "Code is at most 100,000 characters. Upload it as a file instead.");
+    payload.source = patch.source;
+  }
+  if (patch.language !== undefined) {
+    if (!(CODE_LANGUAGES as readonly string[]).includes(patch.language)) throw refuse("setCodeSource", "That is not a language the build knows.");
+    payload.language = patch.language;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
 /**
  * CA-05 P7: the runs of a check (`payload.runs`, newest first, up to 20). The newest run is also the check's last run,
  * so its passed, total and date are written to `passed`, `total` and `run_at` and the status line says the same. No

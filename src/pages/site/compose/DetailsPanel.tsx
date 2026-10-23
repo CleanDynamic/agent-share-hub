@@ -373,6 +373,10 @@ export interface DetailsHandlers {
   onCheckRuns?: (id: string, runs: CheckRun[]) => void;
   /** CA-12 P12: a check's cases, saved when the field loses focus or a case is ticked or removed. */
   onCheckCases?: (id: string, cases: CheckCase[]) => void;
+  /** CA-18: a check's test description, pass criteria, failure notes and last run date, written for what changed. Absent: they are shown and not changed. */
+  onCheckText?: (id: string, patch: { tested?: string; passing?: string; onFail?: string; runAt?: string }) => void;
+  /** CA-18: a piece of code's lines and language, written for what changed. */
+  onCodeSource?: (id: string, patch: { source?: string; language?: string }) => void;
   /** CA-05 P5: the sessions this one ran at the same time as; the pairing is written both ways. Absent: the menu is not shown. */
   onSessionTogether?: (key: string, keys: string[]) => void;
   /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */

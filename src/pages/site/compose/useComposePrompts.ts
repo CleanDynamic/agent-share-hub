@@ -94,6 +94,9 @@ import {
   usesOf,
   type AgentModel,
   setCheckCases,
+  setCheckText,
+  setCodeSource,
+  type CheckTextPatch,
   addResultTile,
   type ResultInput,
   type CheckCase,
@@ -220,6 +223,10 @@ export interface ComposePrompts {
   /** CA-15 P2: replace a prompt's text now (the window's "Mark selection as a variable"), keeping everything else it carries. */
   setTextOf: (id: string, text: string) => void;
   setCheckCases: (id: string, cases: readonly CheckCase[]) => void;
+  /** CA-18: a check's test description, pass criteria, failure notes and last run date. */
+  setCheckText: (id: string, patch: CheckTextPatch) => void;
+  /** CA-18: a piece of code's lines and language. */
+  setCodeSource: (id: string, patch: { source?: string; language?: string }) => void;
   /** UI-P65: take a suggested input. */
   accept: (id: string, use: Use, steps: readonly Step[]) => void;
   /** UI-P65: keep a suggestion from coming back; `key` is "<kind>:<node_id>". */
@@ -620,6 +627,10 @@ export function useComposePrompts({
     void writeStep(id, "Couldn't save that prompt. Try again.", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
     void writeStep(id, "Couldn't save those cases. Try again.", (node) => setCheckCases(node, keptCases(cases)));
+  const setCheckTextOf = (id: string, patch: CheckTextPatch) =>
+    void writeStep(id, "Couldn't save that check. Try again.", (node) => setCheckText(node, patch));
+  const setCodeSourceOf = (id: string, patch: { source?: string; language?: string }) =>
+    void writeStep(id, "Couldn't save that code. Try again.", (node) => setCodeSource(node, patch));
   const setAgentNotesOf = (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) =>
     void writeStep(id, "Couldn't save that. Try again.", (node) => setAgentNotes(node, notes));
   const setModelRunOf = (id: string, run: ModelRun | null) =>
@@ -990,5 +1001,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }
