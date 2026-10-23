@@ -62,6 +62,10 @@ export interface SessionMeta extends SessionExtras {
   colour?: string;
   /** CA-14 P1: the maker's title for the session, 1 to 80 characters, trimmed. Absent when it has none. */
   title?: string;
+  /** CA-17 P1: the key of the session's part (a `Workstream`). Absent, or a key not in `making.workstreams`: the first part. */
+  workstream?: string;
+  /** CA-17 P1: in the same stage as the session above it in its part. */
+  withAbove?: boolean;
 }
 
 /** CA-14 P1: the longest session title. */
@@ -140,6 +144,144 @@ export interface Making {
   session_order?: string[];
   /** CA-14 P1: the keys of the sessions the maker has folded. Kept beside `build_sessions.collapsed`. */
   sessions_collapsed?: string[];
+  /** CA-17 P1: the build's parts, in the maker's order. Absent or empty: one part, and nothing about parts is drawn. */
+  workstreams?: Workstream[];
+  /** CA-17 P1: how parts are labelled, for the whole build. Absent: numbers. */
+  part_labels?: PartLabels;
+  /** CA-17 P1: the map of sessions. Absent: see `mapOf`. */
+  map?: MapSettings;
+}
+
+/**
+ * CA-17 P1: a part of a build, a group of sessions. On screen it is a "Part"; in code it is a workstream, because "part"
+ * already means a tile or a session here (`postRefs.ts`, `partColour.ts`, `usePartRef`).
+ */
+export interface Workstream {
+  /** `ws-<uuid>`. */
+  key: string;
+  /** 1 to 60 characters, trimmed. */
+  name?: string;
+  /** The maker's colour, "#RRGGBB". */
+  colour?: string;
+  /** The key of a session of another part: this part begins after it. */
+  startsAfter?: string;
+  collapsed?: boolean;
+}
+
+export const WORKSTREAM_PREFIX = "ws-";
+export const WORKSTREAM_NAME_MAX = 60;
+/** Letters stop at Z. */
+export const WORKSTREAM_MAX = 26;
+
+export type PartLabels = "letters" | "numbers";
+
+/** CA-17 P1: the map of sessions, kept on the build. */
+export interface MapSettings {
+  on: boolean;
+  direction: "horizontal" | "vertical";
+  /** Readers see the map only when this is true. */
+  onBuildPage: boolean;
+}
+
+/** A new part's key. */
+export function newWorkstreamKey(): string {
+  const uuid =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+  return `${WORKSTREAM_PREFIX}${uuid}`;
+}
+
+/** A part's name as it is kept: trimmed, empty as none. Anything longer than the limit is left for `workstreamsRefusal`. */
+export const cleanWorkstreamName = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+};
+
+/**
+ * `making.workstreams`, read defensively: an entry with no key, a repeated key, or past the 26th is skipped; a name
+ * longer than the limit is cut; a colour that is not one is left off; any other key is ignored (never removed from storage).
+ */
+export function storedWorkstreamsOf(making: unknown): Workstream[] {
+  const raw = asObject(making).workstreams;
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: Workstream[] = [];
+  for (const value of raw) {
+    if (out.length >= WORKSTREAM_MAX) break;
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const entry = value as Record<string, unknown>;
+    const key = typeof entry.key === "string" ? entry.key.trim() : "";
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    const part: Workstream = { key };
+    const name = cleanWorkstreamName(entry.name);
+    if (name) part.name = name.slice(0, WORKSTREAM_NAME_MAX);
+    const colour = normaliseHex(entry.colour);
+    if (colour) part.colour = colour;
+    if (typeof entry.startsAfter === "string" && entry.startsAfter.trim()) part.startsAfter = entry.startsAfter.trim();
+    if (entry.collapsed === true) part.collapsed = true;
+    out.push(part);
+  }
+  return out;
+}
+
+/** Why a list of parts cannot be saved, or null. Pure, so the composer can say no first. */
+export function workstreamsRefusal(list: readonly Workstream[]): string | null {
+  if (list.length > WORKSTREAM_MAX) return `A build has at most ${WORKSTREAM_MAX} parts.`;
+  const keys = new Set<string>();
+  for (const part of list) {
+    if (!part.key) return "That part is not saved yet.";
+    if (keys.has(part.key)) return "Two parts have the same key.";
+    keys.add(part.key);
+    if (part.name !== undefined && part.name.trim().length > WORKSTREAM_NAME_MAX) return `A part name is at most ${WORKSTREAM_NAME_MAX} characters.`;
+    if (part.colour !== undefined && !normaliseHex(part.colour)) return "A colour is written like #7FA7D9.";
+  }
+  return null;
+}
+
+/** `making.part_labels`: "letters" or "numbers"; anything else, or nothing, is numbers. */
+export function partLabelsOf(making: unknown): PartLabels {
+  return asObject(making).part_labels === "letters" ? "letters" : "numbers";
+}
+
+/** `making.map`, read defensively; null when there is none (or it does not read), which `mapOf`'s callers treat by who is looking. */
+export function mapOf(making: unknown): MapSettings | null {
+  const raw = asObject(asObject(making).map);
+  if (typeof raw.on !== "boolean") return null;
+  return { on: raw.on, direction: raw.direction === "vertical" ? "vertical" : "horizontal", onBuildPage: raw.onBuildPage === true };
+}
+
+/** Whether `making` has a `map` key at all, whatever it holds. A build that predates the map has none. */
+export const hasMapKey = (making: unknown): boolean => Object.prototype.hasOwnProperty.call(asObject(making), "map");
+
+/**
+ * The map as its maker sees it. Stored settings are used as they are. A published build whose `making` has no `map` key
+ * predates the map: its maker sees it as created, with "Show on build page" ticked, and nothing is written to it. A draft
+ * with none has no map yet (null): "Create a map" makes one.
+ */
+export function makerMapOf(making: unknown, published: boolean): MapSettings | null {
+  const stored = mapOf(making);
+  if (stored) return stored;
+  return published && !hasMapKey(making) ? { on: true, direction: "horizontal", onBuildPage: true } : null;
+}
+
+/** Whether readers see the map: only when it is on and on the build page. A build with no `map` key keeps showing it, as it always did. */
+export function readerSeesMap(making: unknown): boolean {
+  if (!hasMapKey(making)) return true;
+  const stored = mapOf(making);
+  return Boolean(stored?.on && stored.onBuildPage);
+}
+
+/** The direction readers see: the maker's, horizontal when none is stored. */
+export const readerMapDirection = (making: unknown): MapSettings["direction"] => mapOf(making)?.direction ?? "horizontal";
+
+/** Why the map settings cannot be saved, or null. */
+export function mapRefusal(map: MapSettings): string | null {
+  if (typeof map.on !== "boolean" || typeof map.onBuildPage !== "boolean") return "The map settings are on or off.";
+  if (map.direction !== "horizontal" && map.direction !== "vertical") return "The map runs horizontally or vertically.";
+  return null;
 }
 
 /** The key of a session made in the composer starts with this. */
@@ -186,6 +328,9 @@ export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
     // CA-14 P1: a title longer than the limit (written by hand) is cut when read, never shown whole.
     const title = cleanSessionTitle(entry.title);
     if (title) meta.title = title.slice(0, SESSION_TITLE_MAX);
+    // CA-17 P1: the part it is in and whether it shares the stage above; read as they are, resolved where they are used.
+    if (typeof entry.workstream === "string" && entry.workstream.trim()) meta.workstream = entry.workstream.trim();
+    if (entry.withAbove === true) meta.withAbove = true;
     // CA-05: cost, tokens, background, started with, at the same time as, own copy.
     Object.assign(meta, extrasOf(entry));
     out[key] = meta;
@@ -449,6 +594,8 @@ export function sessionMetaRefusal(key: string, meta: SessionMeta): string | nul
   if (meta.date && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
   if (meta.tool && meta.tool.trim().length > SESSION_TOOL_MAX) return `A tool name is at most ${SESSION_TOOL_MAX} characters.`;
   if (meta.title !== undefined && meta.title.trim().length > SESSION_TITLE_MAX) return `A session title is at most ${SESSION_TITLE_MAX} characters.`;
+  if (meta.workstream !== undefined && (typeof meta.workstream !== "string" || !meta.workstream.trim())) return "A session's part is a part of this build.";
+  if (meta.withAbove !== undefined && typeof meta.withAbove !== "boolean") return "Same stage as the session above is on or off.";
   return extrasRefusal(meta);
 }
 
@@ -497,6 +644,25 @@ export async function patchMaking(buildId: string, patch: Record<string, unknown
   const next = { ...asObject(making), ...patch };
   await updateBuild(buildId, { making: next } as unknown as BuildPatch);
   return next;
+}
+
+/** CA-17 P1: save the build's parts (all of them, in order). Refused with a plain message when they do not read. */
+export async function setWorkstreams(buildId: string, list: readonly Workstream[]): Promise<Record<string, unknown>> {
+  const why = workstreamsRefusal(list);
+  if (why) throw buildLayerError("setWorkstreams", new Error(why));
+  return patchMaking(buildId, { workstreams: list.map((part) => ({ ...part })) });
+}
+
+/** CA-17 P1: number or letter the parts, for the whole build. */
+export async function setPartLabels(buildId: string, labels: PartLabels): Promise<Record<string, unknown>> {
+  return patchMaking(buildId, { part_labels: labels });
+}
+
+/** CA-17 P1: save the map's settings. */
+export async function setMapSettings(buildId: string, map: MapSettings): Promise<Record<string, unknown>> {
+  const why = mapRefusal(map);
+  if (why) throw buildLayerError("setMapSettings", new Error(why));
+  return patchMaking(buildId, { map: { on: map.on, direction: map.direction, onBuildPage: map.onBuildPage } });
 }
 
 /** A code for the log, and only a code. */

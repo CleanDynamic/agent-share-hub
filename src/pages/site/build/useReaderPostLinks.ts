@@ -1,8 +1,8 @@
 /* CA-06 P3 — the post's links on the build page, for a reader.
 
    Clicking a link (or Go to it on its card) goes to the part as its address does: `#node-{id}` for a tile, the
-   existing address that scrolls to the card and rings it, and `#session-{key}` for a session, which is its first
-   step's card, where its head is. Both are centred in the window. The part's window opens, and offers Back to the
+   existing address that scrolls to the card and rings it, `#session-{key}` for a session, which is its first
+   step's card, where its head is, and `#workstream-{key}` (CA-17) for a whole part, whose head is rung. Both are centred in the window. The part's window opens, and offers Back to the
    post, which brings the words to the middle, focused and outlined. */
 
 import { useCallback, useMemo, useRef } from "react";
@@ -38,7 +38,7 @@ export function useReaderPostLinks({
       const group = groups.find((candidate) => groupKey(candidate) === key);
       return group ? (steps.find((step) => group.stepNumbers.includes(step.number))?.id ?? null) : null;
     };
-    return { groups, firstStep, lookup: refLookup(refGroups({ steps, groups })) };
+    return { groups, firstStep, lookup: refLookup(refGroups({ steps, groups, making })) };
   }, [enabled, making, tree]);
 
   const words = useRef<{ to: string; words: HTMLElement } | null>(null);
@@ -53,7 +53,8 @@ export function useReaderPostLinks({
       // The address says where the reader went, without the router scrolling to it.
       const { pathname, search } = window.location;
       window.history.replaceState(window.history.state, "", `${pathname}${search}#${target.kind}-${target.id}`);
-      onFocus((current) => ({ id, n: (current?.n ?? 0) + 1, open: to, fromPost: true }));
+      // A whole part has no window: its head comes to the middle and is ringed, as `#workstream-{key}` does.
+      onFocus((current) => ({ id, n: (current?.n ?? 0) + 1, ...(target.kind === "workstream" ? null : { open: to, fromPost: true }) }));
     },
     [links, onFocus],
   );

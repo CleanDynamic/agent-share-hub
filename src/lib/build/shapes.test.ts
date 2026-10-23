@@ -14,7 +14,7 @@ vi.mock("@/lib/build", async (importOriginal) => ({ ...(await importOriginal<typ
 
 import { NodeCard } from "@/components/build/NodeCard";
 import { allNodes, SHAPES, SHAPE_KEYS, SHAPE_NODE_TYPES, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeKey } from "@/dev/fixtures/shapes";
-import { layoutMap, layoutOpened } from "@/lib/build/mapLayout";
+import { layoutSessionMap, sessionMapFor } from "@/lib/build/sessionMap";
 import { pairCheck } from "@/lib/tools/modelRules";
 
 import { buildSummary } from "./buildSummary";
@@ -132,8 +132,11 @@ describe.each(SHAPE_KEYS)("the %s shape", (key) => {
     const list = shapeListProps(key);
     expect(list.steps.map((step) => step.id)).toEqual(steps.map((step) => step.id));
     const map = shapeMapProps(key);
-    const layout = layoutMap(map.steps, map.groups, map.files, map.tools, map.results, map.suggestions);
-    for (const step of steps) expect(layout.boxes.some((box) => box.id === step.id), step.id).toBe(true);
+    // The Map shows sessions only (CA-17): a box for each session the List shows, and none overlaps another.
+    const model = sessionMapFor({ groups: map.groups, steps: map.steps, files: map.files, making: SHAPES[key].making });
+    const layout = layoutSessionMap(model, "horizontal");
+    expect(layout.boxes.map((box) => box.key).sort()).toEqual(model.sessions.map((session) => session.key).sort());
+    for (const [i, a] of layout.boxes.entries()) for (const b of layout.boxes.slice(i + 1)) expect(a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h, `${a.key} ${b.key}`).toBe(false);
     const view = shapeDetailsProps(key).view;
     expect(view && "id" in view ? view.id : view && "key" in view ? view.key : null).toBe(SHAPES[key].selected);
   });
@@ -233,19 +236,6 @@ describe("a team that checks itself (CA-03 P9)", () => {
     expect(checkStatus(check.check!)).toEqual({ allPassed: true, line: "Passed 14 of 14 runs · since 12 Oct" });
     const result = tree.find((entry) => entry.type === "result") as NodeTree;
     expect(usesOf(result)).toEqual([{ kind: "output", node_id: "k-c1" }]);
-  });
-
-  it("puts the three agents in one column on the Map, fanned out from the lead and fanned in to the code step", () => {
-    const map = shapeMapProps("team-checks");
-    const layout = layoutOpened(team, map.steps, map.files, map.tools, map.results);
-    const at = (id: string) => layout.boxes.find((box) => box.id === id)!;
-    const [lead, research, build, review] = ["k-lead", "k-research", "k-build", "k-review"].map(at);
-    expect(lead.column).toBe(0);
-    expect([research.column, build.column, review.column]).toEqual([1, 1, 1]);
-    expect(new Set([research.x, build.x, review.x]).size).toBe(1);
-    expect(layout.sideBySide.map((group) => group.ids)).toEqual([["k-research", "k-build", "k-review"]]);
-    expect(layout.wires.filter((wire) => wire.from === "k-lead").map((wire) => wire.to)).toEqual(["k-research", "k-build", "k-review"]);
-    expect(layout.wires.filter((wire) => wire.to === "k-c1").map((wire) => wire.from)).toEqual(["k-research", "k-build", "k-review"]);
   });
 
   it("says what kind of build it is", () => {

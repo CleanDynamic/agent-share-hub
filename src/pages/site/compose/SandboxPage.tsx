@@ -31,6 +31,7 @@ import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
@@ -42,15 +43,17 @@ import { goalRefusal, patchMaking, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
-import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { defaultWorkstream, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamsOf } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionToBuild } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
-import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, orderKeys } from "@/lib/build/sessionLayout";
+import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessionOrder, orderKeys } from "@/lib/build/sessionLayout";
 import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
+import { listPartsOf } from "./partsModel";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -77,12 +80,16 @@ import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAd
 import { useComposerScrollPadding } from "./composeChrome";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
-import { BuildMap } from "./BuildMap";
 import { attachFiles } from "./attachFiles";
 import { DetailsPanel, type DetailsHandlers } from "./DetailsPanel";
 import { TileEditDialog } from "./TileEditDialog";
 import { buildFactsOf, pieces, resolveView, type MediaFacts } from "./detailsView";
-import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
+import { sessionMapFor, type MapPieceLike } from "@/lib/build/sessionMap";
+import { centre, partElement } from "@/components/build/partNav";
+import { flashOutline } from "@/components/post/RefLinks";
+import { SessionMapColumn, NoMap } from "./SessionMap";
+import { SessionMapPanel } from "./SessionMapPanel";
+import { makerMapOf, type MapSettings } from "@/lib/build/making";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
@@ -94,7 +101,7 @@ import { allParts, PartWindow } from "@/components/build/PartWindow";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import { usePostLinks } from "./usePostLinks";
 import { useColourPicking } from "./useColourPicking";
-import { previewColours, type ColourPreview } from "@/lib/build/colourPreview";
+import { previewColours, previewWorkstreams, type ColourPreview } from "@/lib/build/colourPreview";
 import { sayFailed } from "./draftStart";
 
 /** builds.making.sessions, read defensively: it is a json column. */
@@ -172,7 +179,7 @@ export function SandboxPage() {
 
   const made = (build as { making?: unknown } | null)?.making;
   /* CA-12 P5: sessions are numbered by `build_sessions.position`; a draft with no rows is numbered by its steps, as before. */
-  const order = useMemo(() => getSessionOrder(made, sessions.rows), [made, sessions.rows]);
+  const order = useMemo(() => orderByWorkstream(getSessionOrder(made, sessions.rows), sessionsMetaOf(made), storedWorkstreamsOf(made)), [made, sessions.rows]);
   /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
   const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
   const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
@@ -187,7 +194,10 @@ export function SandboxPage() {
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
   }, [tree, made, order]);
-  const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview), [savedSteps, savedGroups, colourPreview]);
+  /* CA-17 P5: the sessions of a part, for its picker's "Also colour its sessions that have no colour", and the parts with the previewed colour on. */
+  const sessionsOfPart = useCallback((workstream: string): readonly string[] => workstreamsOf(made, orderKeys(savedGroups)).find((part) => part.key === workstream)?.sessions ?? [], [made, savedGroups]);
+  const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview, sessionsOfPart), [savedSteps, savedGroups, colourPreview, sessionsOfPart]);
+  const madeShown = useMemo(() => previewWorkstreams(made, colourPreview), [made, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
@@ -196,7 +206,7 @@ export function SandboxPage() {
     return names.filter((name): name is string => Boolean(name));
   }, [steps, groups]);
 
-  const mapAvailable = sessionCount >= 2 || hasAgent;
+  const mapAvailable = sessionCount >= 2;
 
   /* ── agents and teams (UI-P69) ── */
 
@@ -283,30 +293,6 @@ export function SandboxPage() {
   );
   const manualType = useQuery({ queryKey: ["build", "getNodeType", "manual_step"], queryFn: () => getNodeType("manual_step"), staleTime: Infinity });
   const manualAvailable = Boolean(manualType.data?.is_active);
-  /** Ids of the agents and teams opened in the Map, outermost first. */
-  const [trail, setTrail] = useState<readonly string[]>([]);
-  const trailSteps = useMemo(() => {
-    const all = flatten(steps);
-    const found: Step[] = [];
-    for (const id of trail) {
-      const step = all.find((candidate) => candidate.id === id && (candidate.kind === "agent" || candidate.kind === "team"));
-      if (!step) break;
-      found.push(step);
-    }
-    return found;
-  }, [steps, trail]);
-  const opened = trailSteps.length > 0 ? trailSteps[trailSteps.length - 1] : null;
-  const onOpenContainer = useCallback(
-    (id: string) =>
-      setTrail((previous) => {
-        const at = previous.indexOf(id);
-        return at >= 0 ? previous.slice(0, at + 1) : [...previous, id];
-      }),
-    [],
-  );
-  const onBack = useCallback(() => setTrail((previous) => previous.slice(0, -1)), []);
-  const onTrail = useCallback((depth: number) => setTrail((previous) => previous.slice(0, depth)), []);
-
   /* ── List (UI-P65) ── */
 
   /* CA-10 (CA-09 F2): Add › Prompt focuses the add field INSIDE THE TAP that chose it, so an iPhone raises the
@@ -367,8 +353,8 @@ export function SandboxPage() {
     }
     return out;
   }, [madeFiles, madeNames]);
-  /** The Map's files: a made file says which step makes it, so the Map places it after that step. */
-  const mapFiles = useMemo<MapPiece[]>(() => mapPieces.files.map((file) => ({ id: file.id, name: file.name, madeBy: madeFiles.get(file.id) ?? null })), [mapPieces.files, madeFiles]);
+  /** The files, each with the step that makes it: a tile that reads a made file reads from that step's session. */
+  const mapFiles = useMemo<MapPieceLike[]>(() => mapPieces.files.map((file) => ({ id: file.id, name: file.name, madeBy: madeFiles.get(file.id) ?? null })), [mapPieces.files, madeFiles]);
   // UI-P71: exact facts only — a file named word for word in a prompt.
   const suggestions: ListSuggestion[] = useMemo(
     () =>
@@ -380,21 +366,6 @@ export function SandboxPage() {
         madeFiles,
       ).map((suggestion) => ({ ...suggestion, label: listFacts.names[suggestion.use.node_id] ?? "File" })),
     [steps, tree, listFacts.names, madeFiles],
-  );
-  const mapSuggestions: MapSuggestion[] = useMemo(
-    () => suggestions.map(({ stepId, use, label }) => ({ stepId, use, label })),
-    [suggestions],
-  );
-  const mapResults = useMemo<MapResult[]>(
-    () =>
-      tree
-        .filter((node) => node.type === RESULT_TYPE && node.parent_id === null)
-        .map((node) => {
-          const payload = (node.payload ?? {}) as Record<string, unknown>;
-          const text = (key: string) => (typeof payload[key] === "string" && (payload[key] as string).trim() ? (payload[key] as string) : null);
-          return { id: node.id, title: text("summary") ?? text("url") ?? "Result", fromId: usesOf(node).find((use) => use.kind === "output")?.node_id ?? null };
-        }),
-    [tree],
   );
   /** CA-04 P4: each session's setup, and how many items it holds. */
   const setupCounts = useMemo(() => {
@@ -410,7 +381,7 @@ export function SandboxPage() {
   }, [tree]);
   const dividerRows = useMemo(() => dividers(steps, groups, setupCounts, runsWhen), [steps, groups, setupCounts, runsWhen]);
   /** CA-06 P2: what the post's words can link to: each session, then its tiles. */
-  const postRefGroups = useMemo(() => refGroups({ steps, groups }), [steps, groups]);
+  const postRefGroups = useMemo(() => refGroups({ steps, groups, making: madeShown }), [steps, groups, madeShown]);
 
   /* ── Sources ── */
 
@@ -461,7 +432,6 @@ export function SandboxPage() {
     phone,
     setSelectedId,
     setOpenPromptId,
-    setTrail,
   });
 
   /* ── sessions (CA-04 P1) ── */
@@ -511,7 +481,12 @@ export function SandboxPage() {
   const [sessionSaid, setSessionSaid] = useState("");
   /** The session whose prompt box is open. An empty draft has Session 1's open without it. */
   const [promptSession, setPromptSession] = useState<string | null>(null);
-  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, onGone: (key) => {
+  /* CA-17 P2: the build's parts, when it has two or more. */
+  const theme = useResolvedTheme();
+  const partsModel = useMemo(() => listPartsOf(madeShown, groups, theme), [madeShown, groups, theme]);
+  /** CA-17 P3: the parts "Add to" can choose; none until the build has two. */
+  const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
   } });
@@ -559,22 +534,25 @@ export function SandboxPage() {
    * where a session made here is kept (`sessions_meta`, `build_sessions` when the table is there, `session_order`), so it
    * works before the CA-12 table is live.
    */
-  const onStartSession = useCallback(async () => {
+  const onStartSession = useCallback(async (workstream?: string) => {
     setStartingSession(true);
     try {
       const fresh = !buildId;
       const id = await ensureBuild();
       const first = shown[0];
-      const emptyFirst = Boolean(first && groupKind(first) === "typed" && !first.tool && first.stepNumbers.length === 0);
+      // CA-17 P3: with parts the session joins the chosen one (else the last); an empty Session 1 is used only when it is in that part.
+      const part = fresh ? undefined : defaultWorkstream(made, workstream);
+      const emptyFirst = Boolean(first && groupKind(first) === "typed" && !first.tool && first.stepNumbers.length === 0 && (!part || workstreamKeyOf(sessionsMetaOf(made)[groupKey(first)], storedWorkstreamsOf(made)) === part));
       let key: string;
       if (fresh && firstSession.current) key = firstSession.current;
       else if (emptyFirst && first) key = groupKey(first);
       else {
         key = newSessionKey();
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
-        await setSessionMeta(id, key, { tool: null, date: todayDay() });
+        await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
         await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
-        await patchMaking(id, { session_order: [...keys, key] });
+        if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
+        else await patchMaking(id, { session_order: [...keys, key] });
       }
       await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
       setChosenSession(key);
@@ -585,7 +563,7 @@ export function SandboxPage() {
     } finally {
       setStartingSession(false);
     }
-  }, [ensureBuild, buildId, shown, groups, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession]);
+  }, [ensureBuild, buildId, shown, groups, made, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession]);
 
   /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
   const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
@@ -718,14 +696,15 @@ export function SandboxPage() {
         const group = groups.find((candidate) => groupKey(candidate) === key);
         const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
         const { colour: _old, ...rest } = before;
-        await setSessionMeta(id, key, colour ? { ...rest, colour } : rest);
+        // In the node queue, behind any write already going: a part's colour and its sessions' are written one after another.
+        await nodes.run(() => setSessionMeta(id, key, colour ? { ...rest, colour } : rest));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session colour not saved", cause);
         sayFailed(cause, "Couldn't save that colour. Try again.");
       }
     },
-    [ensureBuild, groups, made, refreshRecord],
+    [ensureBuild, groups, made, refreshRecord, nodes],
   );
 
   /** CA-12 P3: "Pick an app" on a session made here. On a post with no draft yet, the draft and its Session 1 are made first. */
@@ -857,15 +836,16 @@ export function SandboxPage() {
       const target = parseRefTo(to);
       if (!target) return;
       if (target.kind === "session") void onSessionColour(target.id, colour);
+      else if (target.kind === "workstream") void edits.onPartColour(target.id, colour);
       else {
         prompts.setColour(target.id, colour);
         afterWrite();
       }
     },
-    [onSessionColour, prompts, afterWrite],
+    [onSessionColour, prompts, afterWrite, edits],
   );
   /* CA-06 P5: the picker the colour buttons open. */
-  const { onColour, picker: colourPicker } = useColourPicking({ preview: colourPreview, setPreview: setColourPreview, savedSteps, savedGroups, write: writeColour, phone });
+  const { onColour, picker: colourPicker } = useColourPicking({ preview: colourPreview, setPreview: setColourPreview, savedSteps, savedGroups, write: writeColour, phone, sessionsOfPart });
   /** Details' colour: the selected tile's or session's, with its button. */
   const detailsColour = useMemo(() => {
     if (!selectedId) return null;
@@ -1186,11 +1166,11 @@ export function SandboxPage() {
    * is scrolled to and outlined once.
    */
   const onAddSession = useCallback(
-    async (importId: string) => {
+    async (importId: string, workstream?: string) => {
       setAdding((previous) => new Set(previous).add(importId));
       try {
         const id = await ensureBuild();
-        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id });
+        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id, workstream });
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }),
           queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
@@ -1521,6 +1501,63 @@ export function SandboxPage() {
     onSession: aimAt,
   };
 
+  /* ── CA-17 P4: the map of sessions ── */
+  const published = (build as { status?: string } | null)?.status !== undefined && (build as { status?: string } | null)?.status !== "draft";
+  const mapSettings = makerMapOf(made, published);
+  const mapModel = useMemo(() => sessionMapFor({ groups, steps, files: mapFiles, making: madeShown }), [groups, steps, mapFiles, madeShown]);
+  /** The map's selected session: a session's key held in the page's selection (a link to a session selects it too). */
+  const mapSelected = selectedId && mapModel.sessions.some((session) => session.key === selectedId) ? selectedId : null;
+  const mapActive = Boolean(mapSettings?.on);
+  const changeMap = (next: MapSettings) => edits.onMapSettings(next);
+  /** "Open in the build": the List, with the session's head in the middle of the window and outlined. */
+  const openInBuild = useCallback(
+    (key: string) => {
+      setLens("list");
+      setSelectedId(key);
+      window.setTimeout(() => {
+        const el = partElement(registry, refTo({ kind: "session", id: key }));
+        if (el) {
+          centre(el);
+          flashOutline(el);
+        }
+      }, 60);
+    },
+    [registry],
+  );
+  const openTileInBuild = useCallback(
+    (tileId: string) => {
+      setLens("list");
+      setSelectedId(tileId);
+      window.setTimeout(() => {
+        const el = partElement(registry, refTo({ kind: "node", id: tileId }));
+        if (el) {
+          centre(el);
+          flashOutline(el);
+        }
+      }, 60);
+    },
+    [registry],
+  );
+  const mapColumn =
+    mapSettings && mapActive ? (
+      <SessionMapColumn
+        model={mapModel}
+        direction={mapSettings.direction}
+        selected={mapSelected}
+        onSelect={setSelectedId}
+        shownLine={mapSettings.onBuildPage ? "Shown on build page" : "Not on build page"}
+        controls={{
+          onDirection: (direction) => changeMap({ ...mapSettings, direction }),
+          onBuildPage: mapSettings.onBuildPage,
+          onToggleBuildPage: (onBuildPage) => changeMap({ ...mapSettings, onBuildPage }),
+          onRemove: () => changeMap({ ...mapSettings, on: false }),
+        }}
+      />
+    ) : (
+      <NoMap onCreate={() => changeMap({ on: true, direction: "horizontal", onBuildPage: false })} />
+    );
+  const mapPanel = mapSettings && mapActive ? <SessionMapPanel model={mapModel} selected={mapSelected} onOpenInBuild={openInBuild} onOpenTile={openTileInBuild} /> : null;
+
   /** The handlers Details had, which its tiles' windows now call (CA-18). */
   const detailsHandlers: DetailsHandlers = {
     onSelect: setSelectedId,
@@ -1672,38 +1709,11 @@ export function SandboxPage() {
         threadNote={thread.hold}
         {...addHandlers}
         addTargets={addTargets}
-        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions }}
+        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined }}
         sessionList={sessionList}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
-        trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
-        onTrail={onTrail}
-        map={
-          <BuildMap
-            steps={steps}
-            groups={groups}
-            files={mapFiles}
-            tools={mapPieces.tools}
-            results={mapResults}
-            suggestions={mapSuggestions}
-            made={madeFiles}
-            madeNames={madeNames}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onClear={() => setSelectedId(null)}
-            onOpenPrompt={setOpenPromptId}
-            opened={opened}
-            onOpenContainer={onOpenContainer}
-            onBack={onBack}
-            onLeave={(id) => {
-              setTrail([]);
-              setSelectedId(id);
-            }}
-            onConnect={(toId, use) => {
-              prompts.accept(toId, use, steps);
-              afterWrite();
-            }}
-          />
-        }
+        map={mapColumn}
+        mapPanel={mapPanel}
         selectedKey={selectedId}
         onEditSelected={selectedId ? () => openTile(selectedId) : undefined}
         renderDetails={(plan) => (
@@ -1755,8 +1765,22 @@ export function SandboxPage() {
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={onAddPrompt}
             addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
-            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined }}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
             onDropSession={edits.onDrop}
+            parts={
+              partsModel
+                ? {
+                    parts: partsModel.list,
+                    withAbove: partsModel.withAbove,
+                    onToggle: edits.onPartFold,
+                    onColour: (key, anchor, what, colour) => onColour(refTo({ kind: "workstream", id: key }), anchor, what, colour),
+                    ops: { onName: edits.onPartName, onMove: edits.onPartMove, onRemove: edits.onPartRemove, onStartsAfter: edits.onPartStartsAfter },
+                  }
+                : undefined
+            }
+            onDropOnWorkstream={partsModel ? edits.onDropOnPart : undefined}
+            onDropWorkstream={partsModel ? edits.onDropPart : undefined}
+            onAddPart={buildId ? () => void edits.onAddPart() : undefined}
             onSplitHere={viewOptions.splitMerge ? edits.onSplitHere : undefined}
             promptIn={promptSession}
             said={sessionSaid}
@@ -1773,8 +1797,9 @@ export function SandboxPage() {
               loadingMore: sessions.libraryLoadingMore,
               onMore: sessions.libraryMore,
               adding: adding.size > 0 || startingSession,
-              onAdd: (importId) => void onAddSession(importId),
-              onStartNew: () => void onStartSession(),
+              onAdd: (importId, part) => void onAddSession(importId, part),
+              onStartNew: (part) => void onStartSession(part),
+              parts: addToParts,
             }}
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
@@ -1799,7 +1824,8 @@ export function SandboxPage() {
             reminders={reminderRows}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onAddSession={(id) => void onAddSession(id)}
+            onAddSession={(id, part) => void onAddSession(id, part)}
+            parts={addToParts}
             onDropFiles={onDropFiles}
             onPick={pick}
             connectHref="/connect"

@@ -10,6 +10,7 @@
    and the boxed 26 plus. The drop zone is 56 high, 1px dashed `--line`, radius 6. A selected row is the selected
    recipe, never a colour. */
 
+import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Plus } from "lucide-react";
 import { useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -25,9 +26,11 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
+import type { AddToPart } from "./AddSessionRow";
+import { MenuContent } from "./ComposeMenu";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { ToolMark } from "./refinedPieces";
-import { bareButton, ellipsis, text, tnum } from "./refinedStyles";
+import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
@@ -40,6 +43,7 @@ export const SOURCES_COPY = {
   stillArriving: "Still arriving",
   didntFinish: "Didn't finish",
   inThisDraft: "In this draft",
+  addThisTo: "Add this session to",
   showMoreSessions: "Show more sessions",
   drop: "Drop sessions or files",
   noSessions: "No sessions yet.",
@@ -67,7 +71,9 @@ export interface SourcesPanelProps {
   /** The selected session's key, or the selected step's id. */
   selectedId: string | null;
   onSelect: (id: string) => void;
-  onAddSession: (id: string) => void;
+  onAddSession: (id: string, part?: string) => void;
+  /** CA-17 P3: the build's parts when it has two or more. "Add session" then asks which part first. */
+  parts?: readonly AddToPart[];
   /** Files dropped on the zone; CA-04 P4: with where each sat when a folder was dropped. */
   onDropFiles: (files: File[], paths?: string[]) => void;
   /** Opens the page's file picker. */
@@ -261,7 +267,29 @@ function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; ph
   );
 }
 
-function LibraryRow({ item, phone, onAdd }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string) => void }) {
+/** CA-17 P3: "Add session" with two or more parts: a small menu, "Add this session to", one row for each part. */
+function AddToMenu({ item, parts, phone, onAdd }: { item: SourceLibraryItem; parts: readonly AddToPart[]; phone: boolean; onAdd: (id: string, part: string) => void }) {
+  return (
+    <Menu.Root modal={false}>
+      <Menu.Trigger asChild>
+        <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="end" sideOffset={4} style={menuSurface()}>
+          <Menu.Label style={{ ...text(11.5, 500, t.label), padding: "6px 12px 4px" }}>{SOURCES_COPY.addThisTo}</Menu.Label>
+          {parts.map((part) => (
+            <Menu.Item key={part.key} onSelect={() => onAdd(item.id, part.key)} style={{ ...menuItem(true, phone), gap: 8 }}>
+              <ColourDot colour={part.colour} />
+              {part.title}
+            </Menu.Item>
+          ))}
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+function LibraryRow({ item, phone, onAdd, parts }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string, part?: string) => void; parts?: readonly AddToPart[] }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
       <ToolMark tool={item.label} size={20} />
@@ -272,6 +300,8 @@ function LibraryRow({ item, phone, onAdd }: { item: SourceLibraryItem; phone: bo
       </span>
       {item.inThisDraft ? (
         <span style={{ ...text(11.5, 400, t.label), flexShrink: 0 }}>{SOURCES_COPY.inThisDraft}</span>
+      ) : parts && parts.length >= 2 ? (
+        <AddToMenu item={item} parts={parts} phone={phone} onAdd={onAdd} />
       ) : (
         <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
       )}
@@ -420,7 +450,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
       {library.length > 0 ? (
         <section aria-label={SOURCES_COPY.yourSessions} style={group}>
           <GroupHead name={SOURCES_COPY.yourSessions} count={library.length} hollow />
-          <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} />} />
+          <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} />} />
           {props.libraryHasMore ? (
             <div style={{ ...rowLine, paddingTop: 8 }}>
               <TextButton onClick={() => props.onLibraryMore?.()} target={phone} disabled={props.libraryLoadingMore} style={text(12.5, 500, t.text2)}>

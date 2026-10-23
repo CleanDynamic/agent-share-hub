@@ -83,13 +83,15 @@ describe("SandboxView frame", () => {
   });
 
 
-  it("shows the List and Map switch only when Map is available, with the one-time line", () => {
+  it("shows the Map tab only when Map is available, with the one-time line just after the tabs", () => {
     view();
-    expect(screen.getByRole("group", { name: "Build view" })).toBeTruthy();
-    expect(screen.getByText("Map is now available")).toBeTruthy();
+    const tabs = screen.getByRole("group", { name: "Build view" });
+    expect(within(tabs).getAllByRole("button").map((tab) => tab.textContent)).toEqual(["List", "Map"]);
+    expect(within(tabs).getByText("Map is now available")).toBeTruthy();
     cleanup();
     view({ mapAvailable: false, mapHint: false });
-    expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Map" })).toBeNull();
+    expect(screen.queryByText("Map is now available")).toBeNull();
   });
 
   it("lists the twelve Add items in order, with no session in them (CA-12 P4, CA-15 P9); the three new tiles are live only once their node type is", () => {
@@ -142,38 +144,7 @@ describe("SandboxView on a phone", () => {
   });
 });
 
-describe("the Build panel's head when an agent or a team is opened (UI-P69)", () => {
-  const trail = [{ id: "t3", title: "Copy team" }, { id: "t3b", title: "Writer" }];
-
-  it("reads 'Build › {title}', with Build a link back and a Back to build beside Add", () => {
-    const props = view({ lens: "map", trail: [trail[0]], onTrail: vi.fn() });
-    const head = screen.getByTestId("sandbox-trail");
-    expect(head.textContent).toBe("Build›Copy team");
-    expect(within(head).getByText("Copy team").getAttribute("aria-current")).toBe("page");
-    fireEvent.click(within(head).getByRole("button", { name: "Build" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(0);
-    fireEvent.click(screen.getByRole("button", { name: "Back to build" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(0);
-  });
-
-  it("reads 'Build › {team} › {agent}' one level further in, and Back goes up one level", () => {
-    const props = view({ lens: "map", trail, onTrail: vi.fn() });
-    expect(screen.getByTestId("sandbox-trail").textContent).toBe("Build›Copy team›Writer");
-    fireEvent.click(within(screen.getByTestId("sandbox-trail")).getByRole("button", { name: "Copy team" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(1);
-    fireEvent.click(screen.getByRole("button", { name: "Back to build" }));
-    expect(props.onTrail).toHaveBeenLastCalledWith(1);
-  });
-
-  it("is the plain 'Build' title with nothing opened, and in List even when something is", () => {
-    view({ lens: "map", trail: [] });
-    expect(screen.queryByTestId("sandbox-trail")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Back to build" })).toBeNull();
-    cleanup();
-    view({ lens: "list", trail });
-    expect(screen.queryByTestId("sandbox-trail")).toBeNull();
-  });
-
+describe("the Add menu (UI-P69)", () => {
   it("opens the Add dialog from Add › Agent", async () => {
     const onAddAgent = vi.fn();
     view({ onAddAgent });
@@ -257,16 +228,49 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("draws the title row under a hairline — the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28", () => {
+  it("draws the title row under a hairline, 34 in at the sides: the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
     view();
+    const row = screen.getByTestId("sandbox-tabrow");
+    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 34px 0px");
     expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
     expect(publish.getAttribute("style")).toMatch(/height:\s*28px/);
-    expect(screen.getByRole("button", { name: "Classification Card" }).getAttribute("data-variant")).toBe("secondary");
+    const card = screen.getByRole("button", { name: "Classification Card" });
+    expect(card.getAttribute("data-variant")).toBe("secondary");
+    expect(card.textContent).toBe("Card");
     expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*28px/);
-    expect(screen.getByTestId("sandbox-tabs").contains(screen.getByRole("heading", { level: 1 }))).toBe(true);
+    // The three sit 8 apart.
+    expect(within(row).getByRole("link", { name: "Preview" }).parentElement?.getAttribute("style")).toContain("gap: 8px");
+  });
+
+  it("draws List and Map at 13, the selected one in --text at 500 with a 1.5px line under it (CA-17 P6)", () => {
+    view({ lens: "list" });
+    const list = screen.getByTestId("sandbox-tab-list");
+    const map = screen.getByTestId("sandbox-tab-map");
+    expect(list.getAttribute("aria-pressed")).toBe("true");
+    expect(list.getAttribute("style")).toContain("font-weight: 500");
+    expect(list.getAttribute("style")).toContain("font-size: 13px");
+    expect(list.getAttribute("style")).toContain("padding: 0px 0px 13px");
+    expect(list.getAttribute("style")).toContain("inset 0 -1.5px 0");
+    expect(map.getAttribute("style")).toContain("font-weight: 400");
+    expect(map.getAttribute("style")).not.toContain("inset");
+    expect(screen.getByTestId("sandbox-tabs").getAttribute("style")).toContain("gap: 22px");
+    fireEvent.click(map);
+  });
+
+  it("keeps the draft's title and status line in the title row in List and Map, the post heading the List's Build column (CA-18 P4)", () => {
+    view({ lens: "list" });
+    const head = screen.getByTestId("sandbox-build-head");
+    // The title and its status line are in the title row; the post heads the column, 18 above the hairline (CA-18 P4).
+    expect(within(head).queryByRole("heading", { level: 1 })).toBeNull();
+    expect(within(screen.getByTestId("sandbox-tabrow")).getByTestId("sandbox-status")).toBeTruthy();
     expect(markup()).toContain("padding-bottom:18px;border-bottom:1px solid var(--hairline)");
+    expect(within(screen.getByTestId("sandbox-tabrow")).getByRole("heading", { level: 1 })).toBeTruthy();
+    cleanup();
+    view({ lens: "map" });
+    expect(screen.queryByTestId("sandbox-build-head")).toBeNull();
+    expect(within(screen.getByTestId("sandbox-tabrow")).getByRole("heading", { level: 1 })).toBeTruthy();
   });
 
   it("puts Sources on the surface, 216 wide, with a hairline on its right", () => {
@@ -305,9 +309,17 @@ describe("the refined Map and Card (UI-P94)", () => {
     expect(markup({ lens: "map" })).toContain("width:28px;height:1px;background:var(--hairline-module)");
   });
 
-  it("makes Build a module beside the rail in Map, and leaves it on the surface in List", () => {
-    expect(markup({ lens: "map" })).toMatch(/aria-label="Build" tabindex="-1" style="[^"]*background:var\(--module\)/);
-    expect(markup({ lens: "list" })).not.toMatch(/aria-label="Build" tabindex="-1" style="[^"]*background:var\(--module\)/);
+  it("draws the map column and its panel beside the rail in Map, with no Build panel and no Details; the List keeps them (CA-17 P4)", () => {
+    const map = markup({ lens: "map", map: <p>the map</p>, mapPanel: <aside>the panel</aside> });
+    expect(map).toContain('data-testid="map-view"');
+    expect(map).toContain("the map");
+    expect(map).toContain("the panel");
+    expect(map).not.toContain('aria-label="Build"');
+    expect(map).not.toContain('aria-label="Details"');
+    const list = markup({ lens: "list" });
+    expect(list).not.toContain('data-testid="map-view"');
+    expect(list).toContain('aria-label="Build"');
+    expect(list).toContain('aria-label="Details"');
   });
 
   it("opens the Card as the modal window", () => {
@@ -337,7 +349,7 @@ describe("the post above the build", () => {
     const build = screen.getByRole("region", { name: "Build" });
     expect(within(post).getByText("the post body")).toBeTruthy();
     expect(post.closest('[data-testid="sandbox-columns"]')).toBe(build.closest('[data-testid="sandbox-columns"]'));
-    expect(screen.getByTestId("sandbox-tabs").contains(screen.getByTestId("sandbox-heading"))).toBe(true);
+    expect(screen.getByTestId("sandbox-tabrow").contains(screen.getByTestId("sandbox-heading"))).toBe(true);
     expect(post.compareDocumentPosition(build) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     for (const name of ["Sources", "Details"]) expect(screen.getByRole("region", { name })).toBeTruthy();
     expect(screen.queryByRole("tablist")).toBeNull();
@@ -356,11 +368,11 @@ describe("the post above the build", () => {
     expect(style).not.toContain("background");
   });
 
-  it("is not drawn without a post, nor while an agent or a team is open in the Map", () => {
+  it("is not drawn without a post, nor in the Map view", () => {
     viewAt("/compose/x", { post: undefined });
     expect(screen.queryByRole("region", { name: "Post" })).toBeNull();
     cleanup();
-    viewAt("/compose/x", { lens: "map", trail: [{ id: "t3", title: "Research team" }] });
+    viewAt("/compose/x", { lens: "map" });
     expect(screen.queryByRole("region", { name: "Post" })).toBeNull();
   });
 

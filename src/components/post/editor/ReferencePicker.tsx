@@ -11,7 +11,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSP
 import { createPortal } from "react-dom";
 
 import { BottomSheet } from "@/components/shell/BottomSheet";
-import { filterRefGroups, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
+import { filterRefGroups, hasPartRows, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import { fieldStyle } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
@@ -20,6 +20,9 @@ import { ellipsis, menuSurface, text, tnum } from "@/pages/site/compose/refinedS
 export const REFERENCE_COPY = {
   button: "Link to a tile or session",
   search: "Find a tile or session",
+  /** CA-17 P5: with two or more parts the picker finds them too. */
+  buttonWithParts: "Link to a part, session or tile",
+  searchWithParts: "Find a part, session or tile",
   none: "Nothing has that name",
   remove: "Remove the link",
   whole: "The whole session",
@@ -53,7 +56,7 @@ function rowsOf(groups: readonly RefGroup[], removable: boolean): Row[] {
   for (const group of groups) {
     group.entries.forEach((entry, at) => {
       // A session that cannot be linked (an old build's typed prompts) still names its tiles' group.
-      rows.push({ kind: "entry", entry, label: at === 0 && entry.kind !== "Session" ? group.label : null });
+      rows.push({ kind: "entry", entry, label: at === 0 && entry.kind !== "Session" && entry.kind !== "Part" ? group.label : null });
     });
   }
   if (removable) rows.push({ kind: "remove" });
@@ -89,7 +92,7 @@ function EntryRow({ entry, active, chosen, id, phone, onPick, onHover }: { entry
         <span style={{ fontFamily: DM_MONO, fontSize: 10.5, lineHeight: "normal", color: t.label, ...tnum }}>{entry.number}</span>
         {entry.colour ? <span aria-hidden="true" data-colour-bar="" style={{ width: 16, height: 2, borderRadius: 1, background: entry.colour }} /> : null}
       </span>
-      <span style={{ ...text(13, entry.kind === "Session" ? 500 : 400, t.text), ...ellipsis, flexGrow: 1, minWidth: 0 }}>{entry.title}</span>
+      <span style={{ ...text(13, entry.kind === "Session" || entry.kind === "Part" ? 500 : 400, t.text), ...ellipsis, flexGrow: 1, minWidth: 0 }}>{entry.title}</span>
       <span style={{ ...text(12, 400, t.label), flexShrink: 0 }}>{entry.kind}</span>
     </div>
   );
@@ -99,6 +102,9 @@ function PickerBody({ groups, current, phone, onChoose, onRemove, onClose, field
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const listId = useId();
+  const withParts = useMemo(() => hasPartRows(groups), [groups]);
+  const searchWords = withParts ? REFERENCE_COPY.searchWithParts : REFERENCE_COPY.search;
+  const buttonWords = withParts ? REFERENCE_COPY.buttonWithParts : REFERENCE_COPY.button;
   const shown = useMemo(() => filterRefGroups(groups, query), [groups, query]);
   const rows = useMemo(() => rowsOf(shown, Boolean(current)), [shown, current]);
   const startAt = Math.max(0, rows.findIndex((row) => row.kind === "entry" && row.entry.to === current));
@@ -153,12 +159,12 @@ function PickerBody({ groups, current, phone, onChoose, onRemove, onClose, field
         ref={field}
         type="text"
         role="combobox"
-        aria-label={REFERENCE_COPY.search}
+        aria-label={searchWords}
         aria-expanded="true"
         aria-controls={listId}
         aria-activedescendant={rows.length ? `${listId}-${Math.min(active, rows.length - 1)}` : undefined}
         aria-autocomplete="list"
-        placeholder={REFERENCE_COPY.search}
+        placeholder={searchWords}
         autoComplete="off"
         spellCheck={false}
         value={query}
@@ -168,7 +174,7 @@ function PickerBody({ groups, current, phone, onChoose, onRemove, onClose, field
         onBlur={() => setFocused(false)}
         style={fieldPaint}
       />
-      <div ref={list} id={listId} role="listbox" aria-label={REFERENCE_COPY.button} style={{ display: "flex", flexDirection: "column", maxHeight: phone ? "60dvh" : 320, overflowY: "auto" }}>
+      <div ref={list} id={listId} role="listbox" aria-label={buttonWords} style={{ display: "flex", flexDirection: "column", maxHeight: phone ? "60dvh" : 320, overflowY: "auto" }}>
         {rows.length === 0 || (rows.length === 1 && rows[0].kind === "remove") ? (
           <p role="status" style={{ ...text(12.5, 400, t.text2), margin: 0, padding: "8px" }}>
             {REFERENCE_COPY.none}
@@ -250,7 +256,7 @@ export function ReferencePicker(props: ReferencePickerProps) {
 
   if (phone) {
     return (
-      <BottomSheet open onOpenChange={(next) => !next && onClose()} title={REFERENCE_COPY.button}>
+      <BottomSheet open onOpenChange={(next) => !next && onClose()} title={hasPartRows(props.groups) ? REFERENCE_COPY.buttonWithParts : REFERENCE_COPY.button}>
         <PickerBody {...props} field={field} />
       </BottomSheet>
     );

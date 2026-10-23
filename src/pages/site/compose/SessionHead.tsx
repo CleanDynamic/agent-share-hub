@@ -21,7 +21,7 @@ import { SESSION_TITLE_MAX } from "@/lib/build/making";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 
-import { MenuContent } from "./ComposeMenu";
+import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { TextButton } from "./composeControls";
 import { DragHandle, useNestSession, useNestSessionDrag } from "./listNest";
 import { ToolMark } from "./refinedPieces";
@@ -39,6 +39,8 @@ export const SESSION_HEAD_COPY = {
   edit: "Edit session…",
   colour: "Colour…",
   mergeUp: "Merge with the session above",
+  moveToPart: "Move to part…",
+  sameStage: "Same stage as the session above",
   remove: "Remove session…",
   removeTitle: (n: number) => `Remove Session ${n}?`,
   removeBody: (tiles: number) => `Its ${tiles} ${tiles === 1 ? "tile is" : "tiles are"} removed too.`,
@@ -59,6 +61,19 @@ export interface SessionOps {
   onRemove: (key: string) => void;
   /** Only with "Split and merge" on. Absent: no menu item. */
   onMergeUp?: (key: string) => void;
+  /** CA-17 P2: put the session in another part (at its end). Absent: no menu item. */
+  onMoveToPart?: (key: string, workstream: string) => void;
+  /** CA-17 P2: share the stage of the session above, or stop. Absent: no menu item. */
+  onWithAbove?: (key: string, on: boolean) => void;
+}
+
+/** CA-17 P2: what a session's head knows about the build's parts. Absent with one part. */
+export interface SessionPartInfo {
+  /** The other parts, as "Part B · Support agent". */
+  moveTo: readonly { key: string; label: string }[];
+  /** The first session of its part has no session above to share a stage with. */
+  firstInPart: boolean;
+  withAbove: boolean;
 }
 
 export interface SessionHeadProps {
@@ -82,6 +97,8 @@ export interface SessionHeadProps {
   inBuild?: readonly string[];
   /** Whether the session can be moved, titled and so on: not an old build's unsaved run of typed prompts. */
   editable: boolean;
+  /** CA-17 P2: with two or more parts. */
+  part?: SessionPartInfo;
 }
 
 /** "Session 1 · Claude": the head's name, and the group's accessible name. */
@@ -205,7 +222,7 @@ function RemoveDialog({ open, session, tiles, phone, onClose, onConfirm }: { ope
   );
 }
 
-export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable }: SessionHeadProps) {
+export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part }: SessionHeadProps) {
   const drop = useNestSession(session.key);
   const drag = useNestSessionDrag(session.key);
   const head = useRef<HTMLDivElement>(null);
@@ -347,6 +364,35 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
                   <Row phone={phone} disabled={last} onSelect={() => ops?.onMove(session.key, 1)}>
                     {SESSION_HEAD_COPY.moveDown}
                   </Row>
+                  {part && ops?.onMoveToPart && part.moveTo.length > 0 ? (
+                    <Menu.Sub>
+                      <Menu.SubTrigger style={menuItem(true, phone)}>{SESSION_HEAD_COPY.moveToPart}</Menu.SubTrigger>
+                      <Menu.Portal>
+                        <MenuSubContent sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()}>
+                          {part.moveTo.map((to) => (
+                            <Row key={to.key} phone={phone} onSelect={() => ops.onMoveToPart?.(session.key, to.key)}>
+                              {to.label}
+                            </Row>
+                          ))}
+                        </MenuSubContent>
+                      </Menu.Portal>
+                    </Menu.Sub>
+                  ) : null}
+                  {part && ops?.onWithAbove ? (
+                    <Menu.CheckboxItem
+                      checked={part.withAbove && !part.firstInPart}
+                      disabled={part.firstInPart}
+                      onCheckedChange={(next) => ops.onWithAbove?.(session.key, next)}
+                      style={{ ...menuItem(!part.firstInPart, phone), gap: 8 }}
+                    >
+                      <span style={{ width: 16, display: "inline-flex" }}>
+                        <Menu.ItemIndicator>
+                          <Glyph name="check" size={16} />
+                        </Menu.ItemIndicator>
+                      </span>
+                      {SESSION_HEAD_COPY.sameStage}
+                    </Menu.CheckboxItem>
+                  ) : null}
                   {onEdit ? (
                     <Row phone={phone} onSelect={onEdit}>
                       {SESSION_HEAD_COPY.edit}

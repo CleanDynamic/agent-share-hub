@@ -44,7 +44,7 @@ export function NumberTile({ children }: { children: ReactNode }) {
 }
 
 /** The tool's real mark, or a 6px square when it has none. */
-export function ToolMark({ tool, model, size }: { tool?: string | null; model?: string | null; size: 14 | 20 | 24 }) {
+export function ToolMark({ tool, model, size }: { tool?: string | null; model?: string | null; size: 14 | 16 | 20 | 24 }) {
   if (markFor({ tool, model }) === null) {
     return <span aria-hidden="true" style={{ width: 6, height: 6, margin: (size - 6) / 2, borderRadius: 1, background: t.label, flexShrink: 0 }} />;
   }

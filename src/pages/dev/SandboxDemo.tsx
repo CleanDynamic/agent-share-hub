@@ -5,9 +5,9 @@
    `?select=3` selects the step numbered 3 (or with that id) in the List and the Map, and opens Details' overlay in a window too narrow
    to hold it beside the build; on a build of CA-02's shapes `select` is a node id, as below.
    `?open=1` opens the full prompt window on the selected prompt (UI-P67).
-   `?lens=map` draws the Map; `?build=big` is 60 steps for the long-task measurement (UI-P68).
-   `?build=team` is the team build (S5): add `&lens=map` for its Map, and `&opened=t3` (or `t3b`) for the
-   opened team (V5-TeamMap) (UI-P69).
+   `?lens=map` draws the Map of sessions (CA-17); `&direction=vertical`, `&session=<key>` and `&map=none` pick its direction, selection and the
+   empty state. `?build=big` is 60 steps for the long-task measurement (UI-P68).
+   `?build=team` is the team build (S5): add `&lens=map` for its Map (UI-P69).
    `?build=manual` is the manual step build (D2 option B): add `&lens=map` for its Map (UI-P70).
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
    `?post=thread` writes a two-post thread in the post above the build; the default is an empty post (PT-05).
@@ -15,6 +15,7 @@
    `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code|shape-team-checks` draws one of CA-02's five
    shapes of AI use, or CA-03's sixth; `&check=failed` draws its check with one run failed
    (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
+   `?build=parts` is CA-17's "Two parts": Part A, Part B starting after Session 2, letters, the map and a post that links a part (LinksDemo).
    `?build=links` is CA-06's "A post with links": the post's links work, and nothing is written (LinksDemo).
    `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
@@ -36,7 +37,7 @@ import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { SHAPES, SHAPE_KEYS, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeKey } from "@/dev/fixtures/shapes";
 import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxManualFixture, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
-import { BuildMap } from "@/pages/site/compose/BuildMap";
+import { useDevMap } from "./DevMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
 import { DetailsPanel, type DetailsPanelProps } from "@/pages/site/compose/DetailsPanel";
 import { PostTab } from "@/pages/site/compose/PostTab";
@@ -100,7 +101,7 @@ function shapeFixture(key: ShapeKey, select: string | null, failed = false) {
 export default function SandboxDemo(props: DesignPageProps) {
   const [params] = useSearchParams();
   // CA-06 P7: "A post with links".
-  if (params.get("build") === "links") return <LinksDemo {...props} />;
+  if (params.get("build") === "links" || params.get("build") === "parts") return <LinksDemo {...props} />;
   return <ShapesDemo {...props} />;
 }
 
@@ -123,8 +124,12 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const asSelect = shape ? null : params.get("select");
   const picked = asSelect ? (baseList.steps.flatMap((step) => [step, ...step.children]).find((step) => step.number === asSelect || step.id === asSelect) ?? null) : null;
   const list = picked ? { ...baseList, selectedId: picked.id } : baseList;
-  const openedId = params.get("opened");
-  const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
+  const devMap = useDevMap({
+    fixture: team?.map ?? sandboxMapProps(mapOf),
+    direction: params.get("direction") === "vertical" ? "vertical" : "horizontal",
+    selected: params.get("session"),
+    none: params.get("map") === "none",
+  });
   /* CA-03 P10: How did it run? keeps what you pick here, writing nothing, so its fields can be seen. */
   const [runsPicked, setRunsPicked] = useState<{ id: string; runs: Runs | null } | null>(null);
   const withRuns = (props: DetailsPanelProps): DetailsPanelProps => ({
@@ -143,8 +148,8 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
         lens={params.get("lens") === "map" ? "map" : "list"}
         mapAvailable={Boolean(team) || params.get("lens") === "map" || sandboxViewProps(which, state).mapAvailable}
         list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
-        map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} {...(picked ? { selectedId: picked.id } : null)} opened={opened} onOpenPrompt={setOpen} />}
-        trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
+        map={devMap.column}
+        mapPanel={devMap.panel}
         selectedKey={picked?.id ?? null}
         selection={<DetailsPanel {...withRuns(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : asked === "pair" ? brokenPair() : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
         onAddAgent={() => setDialog("agent")}

@@ -48,12 +48,15 @@ import { TextButton } from "./composeControls";
 import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
+import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
+import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_HINT, TAB_ROW, tabStyle } from "./tabRowRecipes";
 import { ClickToEdit, DetailsOverlay } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { COMPOSER_PAD, HEAD_GAP } from "./detailsRecipes";
 import { DETAILS_GAP, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
+import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
@@ -114,6 +117,8 @@ export interface SandboxViewProps extends CardProps {
   viewOptions?: ViewMenuProps;
   /** CA-14 P6: the session list, a row under the header (a menu on a phone). Absent: nothing is drawn. */
   sessionList?: ReactNode;
+  /** CA-17 P4: the map's panel, beside the map in the Map view where Details was. */
+  mapPanel?: ReactNode;
   /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
   onAddFile?: () => void;
 
@@ -146,10 +151,6 @@ export interface SandboxViewProps extends CardProps {
   /** CA-03 P8: one line that says what kind of build it is, for the status line. Absent until it has more than one step. */
   summary?: string;
 
-  /** UI-P69: the agents and teams opened in the Map, outermost first. Empty: the build itself. */
-  trail?: readonly { id: string; title: string }[];
-  /** Go up to `depth` levels open: 0 is the build, 1 the first of the trail. */
-  onTrail?: (depth: number) => void;
 
   /** PT-05: the post, drawn above the build. Absent, nothing is drawn there. */
   post?: ReactNode;
@@ -524,9 +525,31 @@ export interface ViewMenuProps {
   sessionList: boolean;
   splitMerge: boolean;
   onChange: (patch: { sessionList?: boolean; splitMerge?: boolean }) => void;
+  /** CA-17 P2: "Label parts", 1, 2, 3 or A, B, C for the whole build. Present only when the build has two or more parts. */
+  labels?: { value: PartLabels; onChange: (value: PartLabels) => void };
 }
 
-export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge" } as const;
+export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C" } as const;
+
+/** CA-17 P2: the "Label parts" row of the View menu. */
+function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["labels"]>; phone: boolean }) {
+  return (
+    <div data-testid="label-parts" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: phone ? "8px 12px" : "6px 12px 4px" }}>
+      <span style={text(13, 400, t.text)}>{VIEW_COPY.labelParts}</span>
+      <Segmented
+        label={VIEW_COPY.labelParts}
+        size={phone ? 50 : 28}
+        fontSize={12}
+        value={labels.value}
+        onChange={labels.onChange}
+        items={[
+          { value: "numbers", label: VIEW_COPY.numbers },
+          { value: "letters", label: VIEW_COPY.letters },
+        ]}
+      />
+    </div>
+  );
+}
 
 /**
  * "View", beside Add: two switches, both off until the maker turns them on, kept for them on this device. On a computer
@@ -549,6 +572,7 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
               {row.name}
             </button>
           ))}
+          {view.labels ? <LabelPartsRow labels={view.labels} phone /> : null}
         </BrandBottomSheet>
       </>
     );
@@ -570,6 +594,7 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
               {row.name}
             </Menu.CheckboxItem>
           ))}
+          {view.labels ? <LabelPartsRow labels={view.labels} phone={false} /> : null}
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
@@ -582,8 +607,8 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
 function LinkButton({ to, phone, height, children }: { to: string | null; phone: boolean; height?: number; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const common: CSSProperties = {
-    height: height ?? (phone ? 48 : 30),
-    padding: "0 16px",
+    height: height ?? (phone ? 48 : 28),
+    padding: phone ? "0 16px" : "0 12px",
     borderRadius: 6,
     boxSizing: "border-box",
     display: "inline-flex",
@@ -593,7 +618,7 @@ function LinkButton({ to, phone, height, children }: { to: string | null; phone:
     whiteSpace: "nowrap",
     flexShrink: 0,
     ...controlPaint(state),
-    ...text(13, 500, t.text),
+    ...text(phone ? 13 : 12.5, 500, t.text),
   };
   if (!to) {
     return (
@@ -863,23 +888,17 @@ export function SandboxView(props: SandboxViewProps) {
   /* The board draws Publish at full strength whatever is still outstanding. */
   const previewTo = props.slug ? `/b2/${props.slug}` : null;
 
-  const lensSwitch =
-    props.mapAvailable && !phone ? (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-        <Segmented
-          label="Build view"
-          size={28}
-          fontSize={12}
-          value={props.lens}
-          onChange={props.onLens}
-          items={[
-            { value: "list", label: "List" },
-            { value: "map", label: "Map" },
-          ]}
-        />
-        {props.mapHint ? <span style={text(11.5, 400, t.label)}>Map is now available</span> : null}
-      </div>
-    ) : null;
+  /* CA-17 P6: List and Map are the tabs of the row across the top; Map shows only when there is a map to make (two or more sessions). */
+  const tabs = (
+    <div role="group" aria-label="Build view" data-testid="sandbox-tabs" style={TAB_GROUP}>
+      {(props.mapAvailable && !phone ? (["list", "map"] as const) : (["list"] as const)).map((value) => (
+        <button key={value} type="button" aria-pressed={props.lens === value} data-testid={`sandbox-tab-${value}`} onClick={() => props.onLens(value)} style={tabStyle(props.lens === value)}>
+          {value === "list" ? "List" : "Map"}
+        </button>
+      ))}
+      {props.mapAvailable && !phone && props.mapHint ? <span style={TAB_HINT}>Map is now available</span> : null}
+    </div>
+  );
 
   const banner = published ? (
     <div
@@ -894,7 +913,6 @@ export function SandboxView(props: SandboxViewProps) {
     </div>
   ) : null;
 
-  const trail = lens === "map" ? (props.trail ?? []) : [];
   const detailsBody = props.selection ?? <p style={quiet}>{DETAILS_EMPTY}</p>;
   const sourcesBody = props.sources ?? <DefaultSources />;
 
@@ -921,7 +939,6 @@ export function SandboxView(props: SandboxViewProps) {
       checkable={props.checkable}
     />
   );
-  const trailLink: CSSProperties = { ...bareButton, ...underlined, fontSize: 13.5, fontWeight: 500, color: t.text2 };
   const buildPanel = (
     <section
       ref={buildRef}
@@ -933,34 +950,10 @@ export function SandboxView(props: SandboxViewProps) {
         display: "flex",
         flexDirection: "column",
         gap: 12,
-        /* UI-P94: in Map, Build is a module beside the rail. */
-        ...(lens === "map" && !phone ? moduleStyle() : null),
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
-        {trail.length > 0 ? (
-          <h2 data-testid="sandbox-trail" style={{ ...text(13.5, 500, t.text), margin: 0, display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", gap: 6 }}>
-            <button type="button" onClick={() => props.onTrail?.(0)} style={trailLink}>
-              Build
-            </button>
-            {trail.map((entry, at) => (
-              <span key={entry.id} style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
-                <span aria-hidden="true" style={{ color: t.label }}>
-                  ›
-                </span>
-                {at < trail.length - 1 ? (
-                  <button type="button" onClick={() => props.onTrail?.(at + 1)} style={trailLink}>
-                    {entry.title}
-                  </button>
-                ) : (
-                  <span aria-current="page">{entry.title}</span>
-                )}
-              </span>
-            ))}
-          </h2>
-        ) : (
-          <PanelTitle>Build</PanelTitle>
-        )}
+        <PanelTitle>Build</PanelTitle>
         <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0 }}>
           {countsLine(props.counts)}
         </span>
@@ -978,23 +971,18 @@ export function SandboxView(props: SandboxViewProps) {
             {addMenu}
           </span>
         ) : null}
-        {trail.length > 0 ? (
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => props.onTrail?.(trail.length - 1)}>
-            Back to build
-          </Button>
-        ) : null}
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
         {phone ? null : addMenu}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {lens === "map" ? (props.map ?? null) : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>)}
+      {props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>}
     </section>
   );
 
   /* PT-05: the post heads the Build column, above the first prompt, under nothing but its own hairline. Not while an
      agent or team is open in the Map: the trail is about that one part. */
   const postSection =
-    props.post && trail.length === 0 ? (
+    props.post ? (
       <section
         ref={postRef}
         aria-label="Post"
@@ -1021,8 +1009,8 @@ export function SandboxView(props: SandboxViewProps) {
       ) : (
         /* CA-18 P4: the post heads the Build column, 18 under the head's hairline and 18 above it. The title and its
            status line sit in the title row at the top of the page, as they did before this change. */
-        <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, paddingBottom: HEAD_GAP, borderBottom: `1px solid ${t.hairline}` }}>
-          {props.post && trail.length === 0 ? (
+        <div data-testid="sandbox-build-head" style={{ ...BUILD_HEAD, gap: 0, paddingBottom: HEAD_GAP, borderBottom: `1px solid ${t.hairline}` }}>
+          {props.post ? (
             <section ref={postRef} aria-label="Post" data-testid="sandbox-post" tabIndex={-1} style={{ outline: "none", minWidth: 0 }}>
               {props.post}
             </section>
@@ -1089,40 +1077,20 @@ export function SandboxView(props: SandboxViewProps) {
   }
 
   const rail = lens === "map" || frame.rail;
-  const tabs = props.mapAvailable ? (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <Segmented
-        label="Build view"
-        size={28}
-        fontSize={12}
-        value={props.lens}
-        onChange={props.onLens}
-        items={[
-          { value: "list", label: "List" },
-          { value: "map", label: "Map" },
-        ]}
-      />
-      {props.mapHint ? <span style={text(11.5, 400, t.label)}>Map is now available</span> : null}
-    </div>
-  ) : (
-    <span />
-  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div
-        data-testid="sandbox-tabs"
-        ref={tabsRef}
-        style={{ display: "flex", alignItems: "center", gap: 16, padding: `10px ${COMPOSER_PAD}px 12px`, borderBottom: `1px solid ${t.hairline}` }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
+      {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
+          and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
+      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${COMPOSER_PAD}px 0` }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
           {heading}
           {statusLine}
         </div>
         {tabs}
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => openCard(null)}>
-            Classification Card
+        <div style={{ ...TAB_ACTIONS, marginLeft: 0 }}>
+          <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
+            Card
           </Button>
           <LinkButton to={previewTo} phone={false} height={28}>
             Preview
@@ -1140,14 +1108,24 @@ export function SandboxView(props: SandboxViewProps) {
         <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
           {sourcesBody}
         </SourcesFrame>
-        {buildColumn}
-        {frame.beside ? (
-          <div style={{ marginLeft: DETAILS_GAP - (rail ? 24 : frame.sourcesGap) }}>
-            <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? props.renderDetails(plan) : detailsBody)} />
+        {lens === "map" ? (
+          /* CA-17 P4: Details is not shown in the Map view: the map column fills, then 48, then the map's panel, 312 wide. */
+          <div data-testid="map-view" style={MAP_AND_PANEL}>
+            <div style={MAP_COLUMN}>{props.map ?? null}</div>
+            {props.mapPanel}
           </div>
-        ) : null}
+        ) : (
+          <>
+            {buildColumn}
+            {frame.beside ? (
+              <div style={{ marginLeft: DETAILS_GAP - (rail ? 24 : frame.sourcesGap) }}>
+                <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? props.renderDetails(plan) : detailsBody)} />
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
-      {frame.beside ? null : (
+      {frame.beside || lens === "map" ? null : (
         <DetailsOverlay selectedKey={props.selectedKey} below={tabsRef} onEdit={props.onEditSelected}>
           {detailsBody}
         </DetailsOverlay>

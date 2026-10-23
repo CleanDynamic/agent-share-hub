@@ -6,17 +6,20 @@
 // whose part is gone is drawn as plain words (`refLook` says `gone`).
 
 import { groupKey, groupKind, groupOfStep, shownGroups, stepTitle, type SessionGroup, type Step } from "./graph";
+import { partLabelsOf } from "./making";
+import { dayRange } from "./stages";
 import { refTo } from "./thread";
+import { workstreamLabel, workstreamMark, workstreamTitle, workstreamsOf } from "./workstreams";
 
 /** One part a link can point at. */
 export interface RefEntry {
-  /** `node:<id>` or `session:<key>`. */
+  /** `node:<id>`, `session:<key>` or (CA-17) `workstream:<key>`. */
   to: string;
-  /** What follows the words: "3", "3.1", "S2". */
+  /** What follows the words: "3", "3.1", "S2", and for a part "B" (letters) or "P2" (numbers). */
   number: string;
-  /** "The whole session" for a session's own row; else the part's title. */
+  /** "The whole session" for a session's own row, "The whole part · Support agent" for a part's; else the tile's title. */
   title: string;
-  /** "Prompt", "Agent", "Session", ... */
+  /** "Prompt", "Agent", "Session", "Part", ... */
   kind: string;
   /** 0 for a step or a session; one more for each level it is nested. */
   depth: number;
@@ -36,7 +39,7 @@ export interface RefEntry {
   stepKind?: Step["kind"];
 }
 
-/** A session's entries, led by its own row; `key` null holds the steps an old build has before any session. */
+/** A session's entries, led by its own row; `key` null holds the steps an old build has before any session. With two or more parts (CA-17), a part's own row stands in a group of its own, and its sessions' groups follow it, a level in. */
 export interface RefGroup {
   key: string | null;
   /** "Session 2 · Claude Code", or null. */
@@ -84,6 +87,8 @@ const threeLines = (text: string): string =>
 export interface RefInput {
   steps: readonly Step[];
   groups: readonly SessionGroup[];
+  /** CA-17: `builds.making`, for the build's parts. With fewer than two the groups are as they always were. */
+  making?: unknown;
 }
 
 /** The session a link can name: one that is stored, so never an old build's run of typed prompts. */
@@ -98,7 +103,7 @@ function countTiles(steps: readonly Step[]): number {
 }
 
 /** The picker's groups, in the build's order: each session's own row, then its tiles, nested tiles under their parent. */
-export function refGroups({ steps, groups }: RefInput): RefGroup[] {
+export function refGroups({ steps, groups, making }: RefInput): RefGroup[] {
   const shown = shownGroups(groups);
   const out: RefGroup[] = [];
   const byKey = new Map<string, RefGroup>();
@@ -156,8 +161,50 @@ export function refGroups({ steps, groups }: RefInput): RefGroup[] {
     add(target, step, 0, step.number, session);
   }
 
-  return [...(loose.entries.length > 0 ? [loose] : []), ...out].filter((group) => group.entries.length > 0);
+  const plain = [...(loose.entries.length > 0 ? [loose] : []), ...out].filter((group) => group.entries.length > 0);
+  const parts = making ? workstreamsOf(making, shown.map((group) => groupKey(group))) : [];
+  if (parts.length < 2) return plain;
+
+  // CA-17 P5: with two or more parts the groups gain a level. Each part leads with its own row, then its sessions, a level in.
+  const labels = partLabelsOf(making);
+  const byGroup = new Map(plain.filter((group) => group.key !== null).map((group) => [group.key as string, group]));
+  const sessionByKey = new Map(shown.map((group) => [groupKey(group), group]));
+  const leveled: RefGroup[] = loose.entries.length > 0 ? [loose] : [];
+  for (const part of parts) {
+    const mine = part.sessions.flatMap((key) => (sessionByKey.has(key) ? [sessionByKey.get(key) as SessionGroup] : []));
+    const apps = [...new Set(mine.map((group) => group.tool).filter((tool): tool is string => Boolean(tool)))];
+    const days = mine.map((group) => (group.startedAt && /^\d{4}-\d{2}-\d{2}/.test(group.startedAt) ? group.startedAt.slice(0, 10) : "")).filter(Boolean).sort();
+    const facts = [`${mine.length} ${mine.length === 1 ? "session" : "sessions"}`, apps.join(", "), dayRange(days[0], days[days.length - 1])].filter(Boolean);
+    const label = workstreamLabel(part.index, labels);
+    leveled.push({
+      key: part.key,
+      label: null,
+      entries: [
+        {
+          to: refTo({ kind: "workstream", id: part.key }),
+          number: labels === "letters" ? workstreamMark(part.index, labels) : `P${part.index + 1}`,
+          title: part.name ? `The whole part · ${part.name}` : "The whole part",
+          kind: "Part",
+          depth: 0,
+          colour: part.colour ?? null,
+          name: workstreamTitle(part, part.index, labels).toLowerCase(),
+          eyebrow: label,
+          body: facts.join(" · "),
+          heading: part.name ?? label,
+          id: part.key,
+        },
+      ],
+    });
+    for (const key of part.sessions) {
+      const group = byGroup.get(key);
+      if (group) leveled.push({ ...group, entries: group.entries.map((entry) => ({ ...entry, depth: entry.depth + 1 })) });
+    }
+  }
+  return leveled;
 }
+
+/** Whether the groups hold a part's own row: the picker then says "part, session or tile". */
+export const hasPartRows = (groups: readonly RefGroup[]): boolean => groups.some((group) => group.entries.some((entry) => entry.kind === "Part"));
 
 /** Every entry by its `to`. */
 export function refLookup(groups: readonly RefGroup[]): Map<string, RefEntry> {

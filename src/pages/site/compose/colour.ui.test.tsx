@@ -12,7 +12,8 @@ import { shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeSource } fr
 import { StepsList } from "@/pages/site/build/BuildSteps";
 
 import { BuildList, partName } from "./BuildList";
-import { BuildMap } from "./BuildMap";
+import { sessionMapFor } from "@/lib/build/sessionMap";
+import { SessionMapColumn } from "./SessionMap";
 import { DetailsPanel } from "./DetailsPanel";
 import { SourcesPanel } from "./SourcesPanel";
 import { sourceSessions } from "./sourcesModel";
@@ -89,10 +90,14 @@ describe("the List", () => {
   });
 });
 
-it("the Map draws a coloured box's border", () => {
-  render(createElement(BuildMap, shapeMapProps("one-sitting", source)));
-  expect(screen.getByTestId("map-box-o-p2").style.borderColor).toBe(rgb(LINKS_COLOURS.prompt));
-  expect(screen.getByTestId("map-box-o-p1").style.borderColor).not.toBe(rgb(LINKS_COLOURS.prompt));
+it("the Map draws a coloured session's box with its border, and no other", () => {
+  const map = shapeMapProps("one-sitting", source);
+  const model = sessionMapFor({ groups: map.groups, steps: map.steps, files: map.files, making: build.making });
+  render(createElement(SessionMapColumn, { model, direction: "horizontal", selected: null, onSelect: vi.fn() }));
+  const coloured = document.querySelector(`[data-testid="map-box"][data-session-colour="${LINKS_COLOURS.session}"]`) as HTMLElement;
+  expect(coloured.style.borderColor).toBe(rgb(LINKS_COLOURS.session));
+  const plain = screen.getAllByTestId("map-box").find((box) => !box.getAttribute("data-session-colour"));
+  expect(plain?.style.borderColor ?? "").not.toBe(rgb(LINKS_COLOURS.session));
 });
 
 it("Sources puts a 7px dot before a coloured session's name", () => {

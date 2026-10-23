@@ -8,10 +8,13 @@
      opening words (at most 60 characters); the date and the prompt count under them; and where it already is at the right.
    A session already in this draft cannot be added twice. */
 
+import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { useId, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 
+import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
+import { MenuButton } from "@/components/brand/MenuButton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -19,16 +22,19 @@ import { t } from "@/lib/theme/tokens";
 
 import { TextButton } from "./composeControls";
 import { ToolMark } from "./refinedPieces";
-import { bareButton, ellipsis, menuSurface, text, tnum, wellField } from "./refinedStyles";
+import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { draftNote, groupLibrary, openingWords, type SourceLibraryItem } from "./sourcesModel";
 import { FLOATING_Z } from "./ToolPicker";
 
 export const ADD_SESSION_COPY = {
   row: "Add a session",
+  addPart: "Add a part",
   adding: "Adding…",
   title: "Add a session",
   startNew: "Start a new session",
   startNewLine: "An empty one at the end. Pick its app later.",
+  startNewLineIn: (part: string) => `An empty one at the end of ${part}. Pick its app later.`,
+  addTo: "Add to",
   fromChats: "Add from your connected chats",
   fromChatsLine: "Chats your connector has sent",
   back: "Back",
@@ -54,6 +60,14 @@ export function filterSessions(items: readonly SourceLibraryItem[], query: strin
   });
 }
 
+/** CA-17 P3: a part Add to can choose. `label` is "Part B", `title` is "Part B · Support agent". */
+export interface AddToPart {
+  key: string;
+  label: string;
+  title: string;
+  colour?: string;
+}
+
 export interface AddSessionRowProps {
   phone: boolean;
   /** Every finished session, newest first. */
@@ -63,12 +77,16 @@ export interface AddSessionRowProps {
   onMore?: () => void;
   /** A session is being added (on a new post, the draft is made first): the row says so at once. */
   adding: boolean;
-  /** Add this finished session to the draft. */
-  onAdd: (importId: string) => void;
-  /** Start an empty session with no app. */
-  onStartNew: () => void;
+  /** Add this finished session to the draft; `part` is the part it joins when the build has two or more. */
+  onAdd: (importId: string, part?: string) => void;
+  /** Start an empty session with no app; `part` as above. */
+  onStartNew: (part?: string) => void;
+  /** CA-17 P3: the build's parts when it has two or more. The picker then starts with "Add to". */
+  parts?: readonly AddToPart[];
   /** The time the groups are read against; now when absent. */
   now?: number;
+  /** CA-17 P2: "+ Add a session to this part" opens the picker; `n` changes on every ask. */
+  openFor?: { part: string; n: number } | null;
 }
 
 const rowButton: CSSProperties = { ...bareButton, display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", boxSizing: "border-box", borderRadius: 6 };
@@ -141,7 +159,7 @@ function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: bool
   );
 }
 
-function ChatList({ props, close, back }: { props: AddSessionRowProps; close: () => void; back: () => void }) {
+function ChatList({ props, close, back, part }: { props: AddSessionRowProps; close: () => void; back: () => void; part?: string }) {
   const { phone, library } = props;
   const [query, setQuery] = useState("");
   const id = useId();
@@ -181,7 +199,8 @@ function ChatList({ props, close, back }: { props: AddSessionRowProps; close: ()
                   phone={phone}
                   onPick={() => {
                     close();
-                    props.onAdd(item.id);
+                    if (part) props.onAdd(item.id, part);
+                    else props.onAdd(item.id);
                   }}
                 />
               ))}
@@ -200,18 +219,49 @@ function ChatList({ props, close, back }: { props: AddSessionRowProps; close: ()
   );
 }
 
-function PickerBody({ props, close }: { props: AddSessionRowProps; close: () => void }) {
+/** CA-17 P3: "Add to", a menu button showing the chosen part's colour dot and title; choosing one changes where both choices add. */
+function AddToField({ parts, chosen, onChoose, phone }: { parts: readonly AddToPart[]; chosen: AddToPart; onChoose: (key: string) => void; phone: boolean }) {
+  return (
+    <div data-testid="add-to" style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px 8px" }}>
+      <Menu.Root modal={false}>
+        <Menu.Trigger asChild>
+          <MenuButton label={ADD_SESSION_COPY.addTo} value={chosen.title} lead={<ColourDot colour={chosen.colour} />} data-testid="add-to-button" style={phone ? { height: 44 } : undefined} />
+        </Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Content align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z + 1 }}>
+            {parts.map((part) => (
+              <Menu.Item key={part.key} onSelect={() => onChoose(part.key)} style={{ ...menuItem(true, phone), gap: 8 }}>
+                <ColourDot colour={part.colour} />
+                <span style={{ flexGrow: 1 }}>{part.title}</span>
+                <span aria-hidden="true" style={{ width: 16, display: "inline-flex" }}>
+                  {part.key === chosen.key ? <Glyph name="check" size={16} /> : null}
+                </span>
+              </Menu.Item>
+            ))}
+          </Menu.Content>
+        </Menu.Portal>
+      </Menu.Root>
+    </div>
+  );
+}
+
+function PickerBody({ props, close, initial }: { props: AddSessionRowProps; close: () => void; initial?: string }) {
   const [view, setView] = useState<"choices" | "list">("choices");
-  if (view === "list") return <ChatList props={props} close={close} back={() => setView("choices")} />;
+  const parts = props.parts && props.parts.length >= 2 ? props.parts : null;
+  const [picked, setPicked] = useState<string | undefined>(initial);
+  const chosen = parts ? (parts.find((part) => part.key === picked) ?? parts[parts.length - 1]) : null;
+  if (view === "list") return <ChatList props={props} close={close} back={() => setView("choices")} part={chosen?.key} />;
   return (
     <div data-testid="add-session-choices" style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+      {parts && chosen ? <AddToField parts={parts} chosen={chosen} onChoose={setPicked} phone={props.phone} /> : null}
       <Choice
         phone={props.phone}
         title={ADD_SESSION_COPY.startNew}
-        line={ADD_SESSION_COPY.startNewLine}
+        line={chosen ? ADD_SESSION_COPY.startNewLineIn(chosen.label) : ADD_SESSION_COPY.startNewLine}
         onPick={() => {
           close();
-          props.onStartNew();
+          if (chosen) props.onStartNew(chosen.key);
+          else props.onStartNew();
         }}
       />
       <Choice phone={props.phone} forward title={ADD_SESSION_COPY.fromChats} line={ADD_SESSION_COPY.fromChatsLine} onPick={() => setView("list")} />
@@ -219,11 +269,8 @@ function PickerBody({ props, close }: { props: AddSessionRowProps; close: () => 
   );
 }
 
-export function AddSessionRow(props: AddSessionRowProps) {
-  const { phone, adding } = props;
-  const [open, setOpen] = useState(false);
-  const trigger = useInteractive<HTMLButtonElement>();
-  const triggerStyle: CSSProperties = {
+/** CA-17 P2: the row's look, shared with "Add a part" under it. */
+const addRowStyle = (hovered: boolean, focusVisible: boolean, adding: boolean): CSSProperties => ({
     ...bareButton,
     display: "flex",
     alignItems: "center",
@@ -236,9 +283,38 @@ export function AddSessionRow(props: AddSessionRowProps) {
     borderRadius: 6,
     ...text(13, 500, t.text2),
     cursor: adding ? "default" : "pointer",
-    ...(trigger.state.hovered && !adding ? { background: t.controlOn } : null),
-    ...ring(trigger.state.focusVisible),
-  };
+    ...(hovered && !adding ? { background: t.controlOn } : null),
+    ...ring(focusVisible),
+});
+
+/** CA-17 P2: "Add a part", a row exactly like "Add a session", directly under it. */
+export function AddPartRow({ phone: _phone, adding, onAdd }: { phone: boolean; adding: boolean; onAdd: () => void }) {
+  const trigger = useInteractive<HTMLButtonElement>();
+  return (
+    <button type="button" data-testid="add-part-row" data-hit="" disabled={adding} onClick={onAdd} {...trigger.handlers} style={addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding)}>
+      <span aria-hidden="true" style={{ display: "inline-flex" }}>
+        <Glyph name="plus" size={16} />
+      </span>
+      {ADD_SESSION_COPY.addPart}
+    </button>
+  );
+}
+
+export function AddSessionRow(props: AddSessionRowProps) {
+  const { phone, adding } = props;
+  const [open, setOpen] = useState(false);
+  const trigger = useInteractive<HTMLButtonElement>();
+  /* CA-17 P3: the part the picker starts on: the one whose "+ Add a session to this part" opened it, else the last. */
+  const [startOn, setStartOn] = useState<string | undefined>(undefined);
+  const openN = props.openFor?.n;
+  const openPart = props.openFor?.part;
+  useEffect(() => {
+    if (openN === undefined) return;
+    setStartOn(openPart);
+    setOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openN]);
+  const triggerStyle: CSSProperties = addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding);
   const label = adding ? ADD_SESSION_COPY.adding : ADD_SESSION_COPY.row;
   const content = (
     <>
@@ -254,17 +330,36 @@ export function AddSessionRow(props: AddSessionRowProps) {
   if (phone) {
     return (
       <>
-        <button type="button" data-testid="add-session-row" data-hit="" disabled={adding} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)} {...trigger.handlers} style={triggerStyle}>
+        <button
+          type="button"
+          data-testid="add-session-row"
+          data-hit=""
+          disabled={adding}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => {
+            setStartOn(undefined);
+            setOpen(true);
+          }}
+          {...trigger.handlers}
+          style={triggerStyle}
+        >
           {content}
         </button>
         <BottomSheet open={open} onOpenChange={setOpen} title={ADD_SESSION_COPY.title}>
-          {open ? <PickerBody props={props} close={() => setOpen(false)} /> : null}
+          {open ? <PickerBody props={props} close={() => setOpen(false)} initial={startOn} /> : null}
         </BottomSheet>
       </>
     );
   }
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setStartOn(undefined);
+        setOpen(next);
+      }}
+    >
       <Popover.Trigger asChild>
         <button type="button" data-testid="add-session-row" data-hit="" disabled={adding} aria-haspopup="dialog" {...trigger.handlers} style={triggerStyle}>
           {content}
@@ -272,7 +367,7 @@ export function AddSessionRow(props: AddSessionRowProps) {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content aria-label={ADD_SESSION_COPY.title} align="start" sideOffset={6} collisionPadding={16} style={{ ...menuSurface(380), zIndex: FLOATING_Z, padding: 8, maxHeight: "min(560px, var(--radix-popover-content-available-height))" }}>
-          <PickerBody props={props} close={() => setOpen(false)} />
+          <PickerBody props={props} close={() => setOpen(false)} initial={startOn} />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

@@ -32,6 +32,7 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { ChevronRight } from "lucide-react";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
@@ -63,6 +64,9 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { OutsideWarning } from "../compose/OutsideWarning";
+import { listPartsOf } from "../compose/partsModel";
+import { WorkstreamHead } from "../compose/WorkstreamHead";
+import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "../compose/workstreamRecipes";
 import { CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
@@ -166,7 +170,6 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
   const [lens, setLens] = useState<"list" | "map">("list");
   const [ringed, setRinged] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
-  const [start, setStart] = useState<{ opened: string | null; selected: string | null } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -190,14 +193,6 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
 
   const raw = useMemo(() => steps.map((entry) => entry.step), [steps]);
   const names = useMemo(() => namesIn(steps), [steps]);
-  const seeMap = useCallback(
-    (id: string) => {
-      const inside = steps.find((entry) => entry.step.id === id)?.children.filter((child) => !child.step.id.endsWith(":instructions"));
-      setStart({ opened: id, selected: inside?.[0]?.step.id ?? id });
-      setLens("map");
-    },
-    [steps],
-  );
   const toolOf = useMemo(() => {
     const tools = new Map<string, string | null>();
     let current: string | null = null;
@@ -214,7 +209,7 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
     return out;
   }, [steps]);
   const map = lens === "map" && !phone && view.mapAvailable;
-  return { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap: phone || !view.mapAvailable ? undefined : seeMap, toolOf, flat, map };
+  return { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map };
 }
 
 /** The column to the right of The build: tools and models, files, how it runs, time and other parts. */
@@ -780,7 +775,6 @@ interface Ctx {
   ringed: string | null;
   go: (id: string) => void;
   read: (id: string) => void;
-  seeMap?: (id: string) => void;
 }
 
 function Title({ entry, right, place }: { entry: ReaderStep; right: ReactNode; /** A prompt: its place on the build, before the maker's own title. */ place?: string }) {
@@ -1049,12 +1043,6 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />
         ))}
       </div>
-      {ctx.seeMap ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: INDENT }}>
-          <ReadAll label={`See the ${team ? "team" : "agent"} in Map`} onRead={() => ctx.seeMap?.(step.id)} />
-          <span style={text(11.5, 400, t.label)}>shows who passes work to whom</span>
-        </div>
-      ) : null}
     </article>
   );
 }
@@ -1212,15 +1200,29 @@ function sessionRuns(groups: readonly Group[]): { key: string; colour?: string; 
 
 export function StepsList({ view, phone, announce }: StepsListProps) {
   const { steps, results } = view;
-  const { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap, toolOf, flat, map } = useStepsList(view, phone);
-  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
+  const { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map } = useStepsList(view, phone);
+  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen };
 
   /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
   const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));
   const firstRun = runs[0];
   const [foldedKeys, setFolded] = useState<ReadonlySet<string>>(() => new Set(runs.flatMap((run) => run.groups.flatMap((group) => (group.chat?.collapsed ? [group.chat.key] : [])))));
+  /* CA-17 P6: with two or more parts each part has its head, as in the composer, without its controls. */
+  const theme = useResolvedTheme();
+  const partsModel = useMemo(() => listPartsOf(view.making, view.groups ?? [], theme), [view.making, view.groups, theme]);
+  const [foldedParts, setFoldedParts] = useState<ReadonlySet<string>>(() => new Set((partsModel?.list ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)));
+  const partOfRun = (run: { groups: Group[] }): string | undefined => {
+    const key = run.groups[0]?.chat?.key ?? run.groups[0]?.session ?? undefined;
+    return key ? partsModel?.partOf.get(key) : undefined;
+  };
   /* CA-14 P6: a build with three sessions or more has the session list for its readers; it costs them nothing, so it is always on. */
-  const jumpItems = runs.flatMap((run) => run.groups.flatMap((group) => (group.chat && group.chat.session !== null ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? "No app chosen" }] : [])));
+  const jumpItems = runs.flatMap((run) =>
+    run.groups.flatMap((group) =>
+      group.chat && group.chat.session !== null
+        ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? "No app chosen", ...(partsModel ? { group: partsModel.titles.get(partOfRun(run) ?? partsModel.list[0].view.key) } : null) }]
+        : [],
+    ),
+  );
   const headOf = (key: string) => document.querySelector<HTMLElement>(`[data-reader-session="${key}"] [data-testid="reader-session-head"]`);
   const inView = useCurrentSession(jumpItems.map((item) => item.key), headOf);
   const toggleFold = (key: string) =>
@@ -1298,41 +1300,8 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
     else setPart(to);
   };
 
-  return (
-    <div data-testid="build-steps" style={column(16)}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-        {view.mapAvailable && !phone ? (
-          <Segmented<"list" | "map">
-            label="How to look at the build"
-            items={[
-              { value: "list", label: "List" },
-              { value: "map", label: "Map" },
-            ]}
-            value={lens}
-            onChange={(next) => {
-              if (next === "list") setStart(null);
-              setLens(next);
-            }}
-            size={28}
-            fontSize={12}
-          />
-        ) : null}
-        <span style={text(12, 400, t.text2, tnum)}>{view.counts}</span>
-        {phone ? null : (
-          <>
-            <span style={{ flexGrow: 1 }} />
-            <span style={{ ...text(12, 400, t.label), textAlign: "right" }}>{map ? "click a box to read it · Esc clears" : headNote(steps)}</span>
-          </>
-        )}
-      </div>
-      <CostStrip steps={steps.map((entry) => entry.step)} groups={view.groups ?? []} audience="reader" />
-      {!map && jumpItems.length >= 3 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null}
-      {map ? (
-        <Suspense fallback={<div role="status" style={{ ...text(12, 400, t.text2), padding: "24px 0" }}>Drawing the map…</div>}>
-          <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
-        </Suspense>
-      ) : (
-        runs.map((run) => {
+  /** One session's run: its head and tiles, inside its colour's line when it has one. */
+  const drawRun = (run: (typeof runs)[number], inPart = false) => {
           const drawn = run.groups.map((group, at) => {
             const tiles = drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
               isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
@@ -1351,7 +1320,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
             const controls = `reader-session-tiles-${chat.key}`;
             const fold: Fold = { folded, toggle: () => toggleFold(chat.key), controls, tiles: chat.tiles, phone };
             return (
-              <div key={group.key} data-reader-session={chat.key} style={{ ...column(4), ...(at > 0 || run !== firstRun ? { marginTop: 16 } : null) }}>
+              <div key={group.key} data-reader-session={chat.key} style={{ ...column(4), ...(at > 0 || (run !== firstRun && !inPart) ? { marginTop: 16 } : null) }}>
                 {group.head(fold)}
                 <div id={controls} hidden={folded} style={{ position: "relative", ...column(8), marginLeft: 16 }}>
                   {folded ? null : (
@@ -1372,7 +1341,76 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           ) : (
             drawn
           );
-        })
+  };
+
+  return (
+    <div data-testid="build-steps" style={column(16)}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+        {view.mapAvailable && !phone ? (
+          <Segmented<"list" | "map">
+            label="How to look at the build"
+            items={[
+              { value: "list", label: "List" },
+              { value: "map", label: "Map" },
+            ]}
+            value={lens}
+            onChange={setLens}
+            size={28}
+            fontSize={12}
+          />
+        ) : null}
+        <span style={text(12, 400, t.text2, tnum)}>{view.counts}</span>
+        {phone ? null : (
+          <>
+            <span style={{ flexGrow: 1 }} />
+            <span style={{ ...text(12, 400, t.label), textAlign: "right" }}>{map ? "click a session to see what joins it · Esc clears" : headNote(steps)}</span>
+          </>
+        )}
+      </div>
+      <CostStrip steps={steps.map((entry) => entry.step)} groups={view.groups ?? []} audience="reader" />
+      {!map && jumpItems.length >= 3 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null}
+      {map ? (
+        <Suspense fallback={<div role="status" style={{ ...text(12, 400, t.text2), padding: "24px 0" }}>Drawing the map…</div>}>
+          <ReaderMap view={view} announce={announce} onRead={setOpen} />
+        </Suspense>
+      ) : (
+        partsModel ? (
+          <>
+            {runs.filter((run) => !partOfRun(run)).map((run) => drawRun(run))}
+            {partsModel.list.map((part, at) => {
+              const key = part.view.key;
+              const closed = foldedParts.has(key);
+              const mine = runs.filter((run) => (partOfRun(run) ?? partsModel.list[0].view.key) === key);
+              const neighbour = partsModel.list[at - 1] ?? partsModel.list[at + 1];
+              return (
+                <div key={key} id={stepDomId(key)} data-testid="workstream-group" data-workstream-group={key} style={{ ...WORKSTREAM_GROUP, ...(ringed === key ? ring(true) : null) }}>
+                  <WorkstreamHead
+                    part={{ ...part.view, collapsed: closed }}
+                    phone={phone}
+                    first={at === 0}
+                    last={at === partsModel.list.length - 1}
+                    controls={`reader-workstream-${key}`}
+                    onToggle={() =>
+                      setFoldedParts((before) => {
+                        const next = new Set(before);
+                        if (next.has(key)) next.delete(key);
+                        else next.add(key);
+                        return next;
+                      })
+                    }
+                    startsAfterChoices={[]}
+                    joins={neighbour?.view.label ?? ""}
+                  />
+                  <div id={`reader-workstream-${key}`} data-testid="workstream-body" hidden={closed} style={WORKSTREAM_BODY}>
+                    {closed ? null : mine.length > 0 ? mine.map((run) => drawRun(run, true)) : <p style={{ ...text(13, 400, t.label), margin: 0, padding: "4px 8px" }}>No sessions yet</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        ) : (
+          runs.map((run) => drawRun(run))
+        )
       )}
       {map || results.length === 0 ? null : (
         <div style={column(8)}>

@@ -23,7 +23,11 @@ import { nextTopPosition } from "./composeCover";
 import { loadImportProposal } from "./imports";
 import type { TranscriptProposal, TranscriptSourceRef } from "./intake";
 import { isTypedSession, patchMaking, refreshMakingStats, sessionsMetaOf, setSessionMeta } from "./making";
-import { getSessionOrder, setCollapsed } from "./sessionLayout";
+import { reorderNodes } from "./nodes";
+import { planLayout } from "./sessionEdit";
+import { defaultWorkstream, orderWithNewSession, workstreamKeyOf } from "./workstreams";
+import { storedWorkstreamsOf } from "./making";
+import { getSessionOrder, setCollapsed, setSessionOrder } from "./sessionLayout";
 import { getNodeTree } from "./nodes";
 import { recordCreatedVia } from "./provenance";
 import { buildLayerError, type BuildNodeInsert, type NodeTree } from "./types";
@@ -33,7 +37,8 @@ export const TILE_BATCH = 100;
 
 const UNTITLED = "Untitled build";
 
-export type AddTarget = { kind: "new" } | { kind: "existing"; buildId: string };
+/** CA-17 P3: `workstream` is the part the session joins (the end of it); with two or more parts and none given, the last. */
+export type AddTarget = { kind: "new" } | { kind: "existing"; buildId: string; workstream?: string };
 
 export interface AddSessionResult {
   buildId: string;
@@ -189,7 +194,10 @@ export async function addSessionToBuild(importId: string, target: AddTarget): Pr
     if (rows.some((existing) => existing.sessionKey === importId) || hasSession(tree, importId)) {
       throw buildLayerError("addSessionToBuild", new Error("That session is already in this draft."));
     }
-    const replaced = emptyFirstSession(rows, making, tree);
+    // CA-17 P3: the part it joins, when the build has parts. An empty Session 1 in another part is left alone.
+    const part = isNew ? undefined : defaultWorkstream(making, target.kind === "existing" ? target.workstream : undefined);
+    let replaced = emptyFirstSession(rows, making, tree);
+    if (replaced && part && workstreamKeyOf(sessionsMetaOf(making)[replaced], storedWorkstreamsOf(making)) !== part) replaced = null;
     const place = placeSession(rows, replaced);
 
     // The tiles, at the end of the draft. A second writer taking the position first is read again and tried once more.
@@ -213,7 +221,7 @@ export async function addSessionToBuild(importId: string, target: AddTarget): Pr
     }
     // CA-12: an entry in sessions_meta marks a session added this way, so its head is drawn even when it is the only one.
     if (!sessionsMetaOf(making)[importId]) {
-      await setSessionMeta(buildId, importId, { tool: null, date: "" });
+      await setSessionMeta(buildId, importId, { tool: null, date: "", ...(part ? { workstream: part } : null) });
       marked = true;
     }
     const collapsed = startsCollapsed(prompts.length);
@@ -229,7 +237,14 @@ export async function addSessionToBuild(importId: string, target: AddTarget): Pr
     const keptOrder = getSessionOrder(making, rows).filter((key) => key !== replaced && key !== importId);
     const at = replaced ? Math.max(0, getSessionOrder(making, rows).indexOf(replaced)) : keptOrder.length;
     keptOrder.splice(Math.min(at, keptOrder.length), 0, importId);
-    await patchMaking(buildId, { session_order: keptOrder }).catch((cause) => console.warn("[addSession] order not kept in making", cause));
+    // CA-17 P3: in a part, the session stands at the end of it in the one order, and the tiles are put with their session.
+    const grouped = part ? orderWithNewSession(making, keptOrder.filter((key) => key !== importId), importId, part) : keptOrder;
+    if (part) {
+      await setSessionOrder(buildId, grouped);
+      const [afterTree, afterMaking] = await Promise.all([getNodeTree(buildId), readMaking(buildId)]);
+      const moves = planLayout(afterTree, afterMaking, sessionsMetaOf(afterMaking), grouped).moves;
+      if (moves.length > 0) await reorderNodes(buildId, moves);
+    } else await patchMaking(buildId, { session_order: keptOrder }).catch((cause) => console.warn("[addSession] order not kept in making", cause));
     if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => console.warn("[addSession] fold not kept in making", cause));
 
     if (isNew) {

@@ -474,6 +474,7 @@ export function PostToolbar({
   notice,
   onPreview,
   onReference,
+  referenceLabel,
 }: {
   editor: Editor | null;
   /** Below 768px: 44 square buttons, and Bold, Italic, Underline and Link in the Text size row. */
@@ -484,6 +485,8 @@ export function PostToolbar({
   onPreview?: () => void;
   /** CA-06 P2: @, the picker of the build's tiles and sessions. Absent: no @ button. */
   onReference?: () => void;
+  /** CA-17 P5: the link button's name; "Link to a part, session or tile" once the build has two or more parts. */
+  referenceLabel?: string;
 }) {
   const tools = useEditorState({ editor, selector: ({ editor: current }) => readTools(current) }) ?? NONE;
   const [panel, setPanel] = useState<"size" | "link" | null>(null);
@@ -543,7 +546,7 @@ export function PostToolbar({
             <span style={{ ...letter, fontWeight: 500 }}>Aa</span>
           </ToolButton>
           {onReference ? (
-            <ToolButton label={REFERENCE_COPY.button} size={size} onClick={run(onReference)}>
+            <ToolButton label={referenceLabel ?? REFERENCE_COPY.button} size={size} onClick={run(onReference)}>
               <Tool glyph="at" />
             </ToolButton>
           ) : null}

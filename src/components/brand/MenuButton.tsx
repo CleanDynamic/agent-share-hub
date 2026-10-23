@@ -6,7 +6,7 @@
 // `tone="inverse"` (PT-05) draws it on a `--inverse` bar: no fill at rest, the value in `--on-inverse`, the label and
 // the chevron in `--on-inverse-2`, 30 high; hover is a colour step.
 
-import type { ButtonHTMLAttributes, Ref } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -25,6 +25,8 @@ export interface MenuButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   open?: boolean;
   /** On a light ground (default) or on an `--inverse` bar. */
   tone?: "default" | "inverse";
+  /** CA-17: a small mark drawn before the value (a part's colour dot). */
+  lead?: ReactNode;
   /** CA-10: the button itself, so a sheet it opens can hand focus back to it (a React 19 prop, passed through). */
   ref?: Ref<HTMLButtonElement>;
 }
@@ -34,6 +36,7 @@ export function MenuButton({
   value,
   open,
   tone = "default",
+  lead,
   type = "button",
   style,
   onMouseEnter,
@@ -93,6 +96,7 @@ export function MenuButton({
       }}
     >
       {label}
+      {lead}
       {value ? <span style={{ color: inverse ? t.onInverse : t.text, fontWeight: 500 }}>{value}</span> : null}
       <Glyph name="chevd" size={16} color={inverse ? t.onInverse2 : t.label} />
     </button>

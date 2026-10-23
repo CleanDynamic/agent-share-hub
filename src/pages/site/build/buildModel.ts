@@ -39,7 +39,7 @@ import {
   type NodeType,
   type RebuildSummary,
 } from "@/lib/build";
-import { sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, type Making, type MakingSession } from "@/lib/build/making";
+import { mapOf, partLabelsOf, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, storedWorkstreamsOf, type Making, type MakingSession } from "@/lib/build/making";
 import type { PortableCost } from "@/lib/build/portable";
 import type { NeedGroup, ReaderMapData, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 
@@ -246,7 +246,7 @@ export interface BuildStepsView {
   need: readonly NeedGroup[];
   /** `buildCounts(steps)`. */
   counts: string;
-  /** CONCEPT §5: two sessions or an agent. */
+  /** CA-17 P6: two or more sessions, and the maker has put the map on the build page (a build from before the map has it on). */
   mapAvailable: boolean;
   /** What the read-only Map draws besides the steps (UI-P74). */
   map: ReaderMapData;
@@ -265,6 +265,8 @@ export interface BuildStepsView {
   onBackToPost?: () => void;
   /** CA-06 P3: the build's sessions, for the session window. */
   groups?: readonly SessionGroup[];
+  /** CA-17: `builds.making` as stored, for the parts, their labels and the map's settings. */
+  making?: unknown;
 }
 
 /** builds.making is jsonb the maker can write: keep only what has the shape. */
@@ -281,6 +283,9 @@ export function asMaking(value: unknown): Making {
   // CA-14 P1: the maker's order and the sessions they left folded, which a reader's build page follows.
   const session_order = sessionOrderOf(record);
   const sessions_collapsed = sessionsCollapsedOf(record);
+  // CA-17: the parts, how they are labelled and the map's settings, read the same way.
+  const workstreams = storedWorkstreamsOf(record);
+  const map = mapOf(record);
   return {
     sessions,
     excluded_models: excluded,
@@ -288,6 +293,9 @@ export function asMaking(value: unknown): Making {
     ...(Object.keys(sessions_meta).length > 0 ? { sessions_meta } : null),
     ...(session_order.length > 0 ? { session_order } : null),
     ...(sessions_collapsed.length > 0 ? { sessions_collapsed } : null),
+    ...(workstreams.length > 0 ? { workstreams } : null),
+    ...(partLabelsOf(record) === "letters" ? { part_labels: "letters" as const } : null),
+    ...(map ? { map } : null),
   };
 }
 

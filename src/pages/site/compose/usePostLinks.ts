@@ -50,8 +50,8 @@ export interface PostLinksInput {
   phone: boolean;
   setSelectedId: (id: string) => void;
   setOpenPromptId: (id: string | null) => void;
-  /** The agents and teams open in the Map, outermost first. */
-  setTrail: (ids: readonly string[]) => void;
+  /** The agents and teams open in the Map, outermost first. Absent: nothing opens inside the Map (CA-17). */
+  setTrail?: (ids: readonly string[]) => void;
 }
 
 export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelectedId, setOpenPromptId, setTrail }: PostLinksInput) {
@@ -92,12 +92,23 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
       const target = parseRefTo(to);
       if (!target || !lookup.has(to)) return;
       shownTo.current = to;
+      // CA-17 P5: a whole part has no window: its head (the List) or its label (the Map) comes to the middle and is outlined.
+      if (target.kind === "workstream") {
+        afterPaint(() => {
+          const el = elementFor(to);
+          if (el) {
+            centre(el);
+            flashOutline(el);
+          }
+        });
+        return;
+      }
       if (target.kind === "node") {
         const path = pathTo(steps, target.id);
         const containers = path.slice(0, -1).filter((step) => step.kind === "agent" || step.kind === "team");
-        if (lens === "map" && !phone) setTrail(containers.map((step) => step.id));
+        if (lens === "map" && !phone) setTrail?.(containers.map((step) => step.id));
         setReveal((previous) => ({ id: target.id, n: (previous?.n ?? 0) + 1 }));
-      } else if (lens === "map" && !phone) setTrail([]);
+      } else if (lens === "map" && !phone) setTrail?.([]);
       setSelectedId(target.id);
       afterPaint(() => {
         const el = elementFor(to);
@@ -130,7 +141,7 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
     setOpenPromptId(null);
     setFromPost(null);
     // The post is hidden while an agent or a team is open in the Map.
-    setTrail([]);
+    setTrail?.([]);
     // The window hands focus back as it closes (onCloseAutoFocus); this is for a window that did not.
     window.setTimeout(() => {
       const from = pendingBack.current;

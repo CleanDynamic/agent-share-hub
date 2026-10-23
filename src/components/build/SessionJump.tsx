@@ -7,7 +7,7 @@
 // sessions. Nothing here writes.
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
@@ -22,6 +22,20 @@ export interface SessionJumpItem {
   number: number;
   /** The title the maker gave it, else its app. */
   label: string;
+  /** CA-17 P6: its part, "Part B · Support agent", when the build has two or more. The list then groups its items by part. */
+  group?: string;
+}
+
+/** The items in runs of one part, in order: [{ group, items }]. One run with no group when none has one. */
+export function jumpGroups(items: readonly SessionJumpItem[]): { group: string | null; items: SessionJumpItem[] }[] {
+  const out: { group: string | null; items: SessionJumpItem[] }[] = [];
+  for (const item of items) {
+    const group = item.group ?? null;
+    const last = out[out.length - 1];
+    if (last && last.group === group) last.items.push(item);
+    else out.push({ group, items: [item] });
+  }
+  return out;
 }
 
 /** A head this close to the top of the screen, or above it, is the one in view. */
@@ -119,10 +133,15 @@ export function SessionJump({ items, current, phone, onJump }: { items: readonly
         </Menu.Trigger>
         <Menu.Portal>
           <MenuContent align="start" sideOffset={4} style={menuSurface()}>
-            {items.map((item) => (
-              <Menu.Item key={item.key} onSelect={() => onJump(item.key)} aria-current={item.key === current ? "true" : undefined} style={{ ...menuItem(true, true), ...text(13, item.key === current ? 500 : 400, item.key === current ? t.text : t.text2) }}>
-                {item.number} {item.label}
-              </Menu.Item>
+            {jumpGroups(items).map((run, at) => (
+              <Fragment key={`${run.group ?? "none"}:${at}`}>
+                {run.group ? <Menu.Label style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{run.group}</Menu.Label> : null}
+                {run.items.map((item) => (
+                  <Menu.Item key={item.key} onSelect={() => onJump(item.key)} aria-current={item.key === current ? "true" : undefined} style={{ ...menuItem(true, true), ...text(13, item.key === current ? 500 : 400, item.key === current ? t.text : t.text2) }}>
+                    {item.number} {item.label}
+                  </Menu.Item>
+                ))}
+              </Fragment>
             ))}
           </MenuContent>
         </Menu.Portal>
@@ -130,9 +149,18 @@ export function SessionJump({ items, current, phone, onJump }: { items: readonly
     );
   }
   return (
-    <nav aria-label="Sessions" data-testid="session-list" style={{ display: "flex", gap: 4, overflowX: "auto", minWidth: 0, paddingBottom: 2 }}>
-      {items.map((item) => (
-        <Chip key={item.key} item={item} current={item.key === current} onJump={() => onJump(item.key)} />
+    <nav aria-label="Sessions" data-testid="session-list" style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto", minWidth: 0, paddingBottom: 2 }}>
+      {jumpGroups(items).map((run, at) => (
+        <Fragment key={`${run.group ?? "none"}:${at}`}>
+          {run.group ? (
+            <span data-testid="session-list-part" style={{ ...text(12, 500, t.label), flexShrink: 0, whiteSpace: "nowrap", padding: at > 0 ? "0 4px 0 12px" : "0 4px 0 0" }}>
+              {run.group}
+            </span>
+          ) : null}
+          {run.items.map((item) => (
+            <Chip key={item.key} item={item} current={item.key === current} onJump={() => onJump(item.key)} />
+          ))}
+        </Fragment>
       ))}
     </nav>
   );
