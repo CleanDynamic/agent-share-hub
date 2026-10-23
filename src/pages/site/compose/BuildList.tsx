@@ -26,7 +26,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { ArrowUp, Link as JoinIcon, MoreHorizontal, Unlink as SplitIcon } from "lucide-react";
+import { ArrowUp, Link as JoinIcon, Unlink as SplitIcon } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -97,14 +97,17 @@ import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
-import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
+import { FOOT_LINK, LIST_BOX, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
+
+/** CA-15b: a tile's body and foot sit 34 in, under its title. */
+const INDENT = TILE_INDENT;
 import { AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestGap, NestList, TAKES, useNestTile, useSessionDragging, useTileNear, type NestTarget } from "./listNest";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
-  INDENT,
   bareButton,
   chipStyle,
   ellipsis,
@@ -840,7 +843,7 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
   return (
     <Menu.Root>
       <Menu.Trigger asChild>
-        <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`${noun} ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+        <TileOptions label={`${noun} ${step.number} options`} phone={phone} onClick={(event) => event.stopPropagation()} />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()} onCloseAutoFocus={rename.onCloseAutoFocus}>
@@ -863,11 +866,11 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
  */
 function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+    <div style={TILE_HEAD}>
       <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
-      <NumberTile>{step.number}</NumberTile>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-        <span data-testid={typeTestId} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>
+      <NumberBadge>{step.number}</NumberBadge>
+      <div style={TILE_TEXT}>
+        <span data-testid={typeTestId} style={TILE_EYEBROW}>
           {typeLine}
         </span>
         {title}
@@ -884,8 +887,8 @@ function TileTitle({ step, rename, noun, phone }: { step: Step; rename: ReturnTy
   return rename.renaming ? (
     <RenameField label={`Title of ${noun.toLowerCase()} ${step.number}`} draft={rename.draft} placeholder={step.defaultTitle} phone={phone} onDraft={rename.setDraft} onFinish={rename.finish} />
   ) : (
-    <h3 data-default-title={isDefault ? "true" : undefined} title={stepTitle(step)} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, ...ellipsis }}>
-      {stepTitle(step)}
+    <h3 data-default-title={isDefault ? "true" : undefined} title={stepTitle(step)} style={{ ...TILE_TITLE, ...(isDefault ? { color: t.text2 } : null) }}>
+      {step.kind === "tool" || step.kind === "repo" ? <MarkedName name={step.kind === "tool" ? (step.tool ?? stepTitle(step)) : "github"}>{stepTitle(step)}</MarkedName> : stepTitle(step)}
     </h3>
   );
 }
@@ -895,9 +898,8 @@ function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; on
   return (
     <TextButton
       target={phone}
-      underline
       aria-expanded={expanded}
-      style={text(12, 500, t.text2)}
+      style={FOOT_LINK}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
@@ -918,6 +920,16 @@ function ExtraRow({ step, props, withGoes = true }: { step: Step; props: BuildLi
   );
 }
 
+/** A tile's number by its id, anywhere in the build. */
+function numberIn(steps: readonly Step[], id: string): Step["number"] | undefined {
+  for (const step of steps) {
+    if (step.id === id) return step.number;
+    const inner = numberIn(step.children, id);
+    if (inner !== undefined) return inner;
+  }
+  return undefined;
+}
+
 /**
  * The foot of every tile: its "Uses" chips, then one mono line of at most three counted facts with at most one link. "Send
  * with the step above" shares that line, so a tile that can take it needs no row of its own.
@@ -927,7 +939,7 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
   return (
     <>
       <ExtraRow step={step} props={props} withGoes={withGoes} />
-      <TileFooter facts={facts ?? footerFactsOf(step)} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
+      <TileFooter facts={facts ?? footerFactsOf(step, (id) => numberIn(props.steps, id))} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
     </>
   );
 }
@@ -1006,7 +1018,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected || over), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1039,7 +1051,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
           editable ? (
           <Menu.Root>
             <Menu.Trigger asChild>
-              <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Prompt ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+              <TileOptions label={`Prompt ${step.number} options`} phone={phone} onClick={(event) => event.stopPropagation()} />
             </Menu.Trigger>
             <Menu.Portal>
               <MenuContent
@@ -1081,7 +1093,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       />
       <p
         ref={textRef}
-        style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
+        style={{ ...text(13.5, 400, t.text), lineHeight: "21px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
       >
         <ChangedText text={step.text} changes={step.changes} />
       </p>
@@ -1226,18 +1238,19 @@ const AGENT_TILE_TOOLS = 3;
 /** A team's agents as a compact list: the name at the left, the role and the model in mono at the right. */
 function TeamAgents({ team }: { team: Step }) {
   return (
-    <ul data-testid="team-agents" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2, paddingLeft: INDENT }}>
-      {team.children.map((agent, at) => {
-        const role = at === 0 ? "Lead" : "Agent";
-        const right = [role, agent.harness ? (toolName(agent.harness) ?? agent.harness) : null, stepModel(agent)].filter(Boolean).join(" · ");
-        return (
-          <li key={agent.id} data-testid="team-agent" style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
-            <span style={{ ...text(13, 400, agent.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(agent)}</span>
-            <span style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, flexShrink: 0, maxWidth: "55%", ...ellipsis }}>{right}</span>
-          </li>
-        );
-      })}
-    </ul>
+    <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
+      <ul data-testid="team-agents" style={LIST_BOX}>
+        {team.children.map((agent, at) => {
+          const right = [at === 0 ? "Lead" : null, agent.harness ? (toolName(agent.harness) ?? agent.harness) : null, stepModel(agent)].filter(Boolean).join(" · ");
+          return (
+            <li key={agent.id} data-testid="team-agent" style={listRow(at === 0)}>
+              <span style={{ ...text(13, 400, agent.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(agent)}</span>
+              <span style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, flexShrink: 0, maxWidth: "55%", ...ellipsis }}>{right}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -1278,7 +1291,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       data-kind={step.kind}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1422,7 +1435,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1525,7 +1538,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1536,7 +1549,9 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         title={<TileTitle step={step} rename={rename} noun="Code" phone={phone} />}
         menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
       />
-      <CodeLines text={step.text} maxLines={CODE_TILE_LINES} expanded={all} hideToggle testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
+      <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
+        <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+      </div>
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       <MadeLine names={props.madeNames?.[step.id]} />
@@ -1586,7 +1601,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1598,13 +1613,13 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         menu={<TileMenu step={step} noun="Check" index={index} last={last} props={props} rename={rename} />}
       />
       {criteria ? (
-        <p data-testid="check-criteria" style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
-          <span style={{ color: t.label }}>Pass criteria: </span>
+        <p data-testid="check-criteria" style={{ ...text(13, 400, t.text), lineHeight: "20px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
+          <span style={{ ...text(12.5, 400, t.text2) }}>Pass criteria: </span>
           {criteria}
         </p>
       ) : null}
       {status ? (
-        <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT }}>
+        <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT, ...text(13, 400, t.text), lineHeight: "20px" }}>
           <span style={tnum}>{status.line}</span>
         </DotLine>
       ) : null}
@@ -1628,7 +1643,7 @@ export const PENDING_ADD_COPY: Record<PendingAdd, { eyebrow: string; adding: str
 
 function PendingAddCard({ kind }: { kind: PendingAdd }) {
   return (
-    <div data-testid="add-pending" data-kind={kind} aria-busy="true" style={{ ...moduleStyle(false), display: "flex", alignItems: "center", gap: 12 }}>
+    <div data-testid="add-pending" data-kind={kind} aria-busy="true" style={{ ...tileCard(false), flexDirection: "row", alignItems: "center", gap: 12 }}>
       <span
         aria-hidden="true"
         style={{ width: 24, height: 24, borderRadius: 6, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
@@ -1658,7 +1673,7 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
           onSelect(result.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", alignItems: "flex-start", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
+      style={{ ...tileCard(selected), flexDirection: "row", alignItems: "flex-start", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
     >
       <span
         aria-hidden="true"
@@ -1859,7 +1874,6 @@ function WhileDragging({ children }: { children: (dragging: boolean) => ReactNod
 }
 
 /** The tiles of a session: 16 in from its head, with the 2px line down their left, 8 in from their edge. */
-const bodyStyle: CSSProperties = { position: "relative", display: "flex", flexDirection: "column", gap: 8, minWidth: 0, marginLeft: 16 };
 
 /** A run of steps on the page: a session's head and the prompts that follow it, or one step that stands alone. */
 interface Run {
@@ -2045,10 +2059,9 @@ export function BuildList(props: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <div id={tilesId} data-testid="session-tiles" hidden={closed} style={headed ? bodyStyle : undefined}>
+              <div id={tilesId} data-testid="session-tiles" hidden={closed} style={headed ? RUN : undefined}>
                 {closed ? null : (
                   <>
-                    {headed ? <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} /> : null}
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
                     <SessionLines session={run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}

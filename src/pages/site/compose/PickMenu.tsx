@@ -13,6 +13,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
+import { PickerFieldButton } from "./modalRecipes";
 
 export interface PickOption<V extends string> {
   value: V;
@@ -31,23 +32,29 @@ export interface PickMenuProps<V extends string> {
   placeholder?: string;
   id?: string;
   style?: CSSProperties;
+  /** CA-15b: drawn as the modals' picker field (full width, the well, a chevron at the right). */
+  field?: boolean;
 }
 
-export function PickMenu<V extends string>({ label, options, value, onChange, phone, placeholder = "", id, style }: PickMenuProps<V>) {
+export function PickMenu<V extends string>({ label, options, value, onChange, phone, placeholder = "", id, style, field = false }: PickMenuProps<V>) {
   const [open, setOpen] = useState(false);
   const chosen = options.find((option) => option.value === value);
   const shown = chosen ? (chosen.label ?? chosen.value) : "";
   return (
     <Menu.Root open={open} onOpenChange={setOpen}>
       <Menu.Trigger asChild>
-        <MenuButton
-          id={id}
-          aria-label={label}
-          label={shown ? "" : placeholder}
-          value={shown}
-          open={open}
-          style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null), ...style }}
-        />
+        {field ? (
+          <PickerFieldButton id={id} aria-label={label} value={shown || null} placeholder={placeholder} phone={phone} open={open} style={style} />
+        ) : (
+          <MenuButton
+            id={id}
+            aria-label={label}
+            label={shown ? "" : placeholder}
+            value={shown}
+            open={open}
+            style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null), ...style }}
+          />
+        )}
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent

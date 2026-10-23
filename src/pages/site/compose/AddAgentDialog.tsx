@@ -1,6 +1,7 @@
-/* UI-P69, CA-15 P7: Add › "Agent": a model that runs on its own, with instructions and tools.
+/* UI-P69, CA-15 P7, CA-15b P2: Add › "Agent": a model that runs on its own, with instructions and tools.
 
-   The shared modal frame, 520 wide (a `BottomSheet` below 768). Required: a model (`setupReady`). Visible:
+   Built from `modalRecipes` as the board "Add an agent" draws it, 560 wide (a `BottomSheet` below 768). Required: a model
+   (`setupReady`). Visible:
 
    - Single agent or Multi-agent team: a real radio group, with the chosen one's line under it. A team is made holding one agent,
      which takes the model too, so the dialog describes the agent that leads it (it is titled for that agent). When the team node
@@ -17,7 +18,6 @@
 
 import { useId, useState } from "react";
 
-import { Segmented } from "@/components/brand/Segmented";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TITLE_MAX, WHEN_DETAIL_MAX, firstLineOf, type AgentModel, type Runs } from "@/lib/build/graph";
 import type { Helper } from "@/lib/build/helpers";
@@ -26,15 +26,13 @@ import { traceRefusal } from "@/lib/build/trace";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { startingModel } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
-import { t } from "@/lib/theme/tokens";
 
 import { savedModels, setupReady, useAgentSetupFields, type AgentSetupValue } from "./AgentSetupFields";
 import { ChoiceGrid } from "./ChoiceGrid";
-import { Field } from "./composeControls";
 import { HelpersField } from "./HelpersField";
-import { FieldRow, FieldRows, Hint, ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { Block, FieldArea, FieldInput, Hint, MODAL_WIDTH, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
-import { text, tnum, typedArea, typedField } from "./refinedStyles";
 
 export const AGENT_DIALOG_COPY = {
   title: "Add an agent",
@@ -52,28 +50,33 @@ export const AGENT_DIALOG_COPY = {
   /** CA-12 P11. */
   instructions: "System instructions",
   instructionsLine: "What the agent is told to do",
-  instructionsPlaceholder: "e.g. Triage the inbox and draft a reply to each message",
+  instructionsPlaceholder: "e.g. Every Monday, write this week's menu from what is in stock",
   starts: "Trigger",
-  startsLine: "How a run begins",
+  startsLine: "Manual, scheduled, or started by an event",
   schedule: "Schedule",
   schedulePlaceholder: "e.g. Weekdays 07:30",
   event: "Triggering event",
   eventPlaceholder: "e.g. A new email arrives",
   limits: "Limits",
-  limitsLine: "What it must not do, one per line",
-  limitsPlaceholder: "e.g. Never sends email without approval\nStops after 20 steps",
+  limitsLine: "Maximum steps, budget or run time, approvals and prohibited actions",
+  limitsPlaceholder: "One limit per line",
   output: "Output and destination",
-  outputLine: "What it produces and where that goes",
-  outputPlaceholder: "e.g. A weekly summary posted to the team's Slack channel",
+  outputLine: "A file, a message or a pull request, and where it is delivered",
+  outputPlaceholder: "e.g. A menu document saved to the shared drive",
   sample: "Sample run",
-  sampleLine: "A trace link, or a pasted transcript of one run",
+  sampleLine: "A transcript or trace of one real run",
   trace: "Trace link",
-  tracePlaceholder: "e.g. https://smith.langchain.com/o/example/runs/1",
+  tracePlaceholder: "Link to a transcript or trace",
   transcript: "Sample transcript",
   transcriptPlaceholder: "e.g. User: Summarise today's orders\nAgent: Three orders came in ...",
   pattern: "Orchestration pattern",
-  patternLine: "How the agents in the team work together",
-  memoryLine: "What it remembers between runs",
+  patternLine: "Sequential, lead with delegates, parallel then merged, or writer and reviewer",
+  patternCount: "Multi-agent only",
+  patternShown: "Shown when Multi-agent team is selected.",
+  memoryLine: "What the agent keeps between runs, and where",
+  toolsLine: "Applications the agent can call",
+  hostLine: "Where the agent runs",
+  helpersLine: "Models that summarise history or extract fields for the agent",
 } as const;
 
 /** CA-12 P11, CA-15 P7: how an agent starts, in the words the dialog asks it. "ask" is stored as no `runs` at all. */
@@ -200,63 +203,50 @@ function Form({
 
   return (
     <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={firstMissing([[ready, "a model"]])} alert={tried ? why : null}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <Segmented
+      <Block noRule>
+        <SegmentedField<"agent" | "team">
           label="What to add"
-          semantics="radio"
-          size={phone ? 50 : 30}
-          fullWidth
+          phone={phone}
           value={kind}
-          onChange={(next) => choose(next)}
+          onChange={choose}
           items={[
             { value: "agent", label: AGENT_DIALOG_COPY.one },
             { value: "team", label: AGENT_DIALOG_COPY.team, disabled: !teamsAvailable },
           ]}
         />
-        <span style={text(12, 400, t.text2)}>{!teamsAvailable ? AGENT_DIALOG_COPY.teamsMissing : kind === "team" ? AGENT_DIALOG_COPY.teamLine : AGENT_DIALOG_COPY.oneLine}</span>
-      </div>
+        {!teamsAvailable ? <Hint>{AGENT_DIALOG_COPY.teamsMissing}</Hint> : null}
+      </Block>
 
-      <FieldRows>
-        <FieldRow id={`${uid}-name`} label={AGENT_DIALOG_COPY.name} phone={phone}>
-          <input id={`${uid}-name`} type="text" value={name} maxLength={TITLE_MAX} placeholder={`${kind === "team" ? "Team" : "Agent"} ${nextNumber}`} onChange={(event) => setName(event.target.value)} style={typedField(phone)} />
-        </FieldRow>
-      </FieldRows>
+      <Row id={`${uid}-name`} label={AGENT_DIALOG_COPY.name} phone={phone}>
+        <FieldInput phone={phone} id={`${uid}-name`} value={name} maxLength={TITLE_MAX} placeholder={`${kind === "team" ? "Team" : "Agent"} ${nextNumber}`} onChange={(event) => setName(event.target.value)} />
+      </Row>
 
       {parts.models}
 
       <OptionalSection>
         <OptionalField name={AGENT_DIALOG_COPY.instructions} description={AGENT_DIALOG_COPY.instructionsLine} summary={summaryOf(firstLineOf(instructions, 120))} phone={phone}>
-          <textarea aria-label={AGENT_DIALOG_COPY.instructions} rows={6} value={instructions} placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder} onChange={(event) => setInstructions(event.target.value)} style={typedArea(phone, { resize: "vertical" })} />
+          <FieldArea phone={phone} rows={4} aria-label={AGENT_DIALOG_COPY.instructions} value={instructions} placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder} onChange={(event) => setInstructions(event.target.value)} />
         </OptionalField>
 
-        <OptionalField name="Available tools" description="The applications it could call" summary={summaryOf(toolNames)} phone={phone}>
+        <OptionalField name="Available tools" description={AGENT_DIALOG_COPY.toolsLine} summary={summaryOf(toolNames)} phone={phone}>
           {parts.tools}
         </OptionalField>
 
         <OptionalField name={AGENT_DIALOG_COPY.starts} description={AGENT_DIALOG_COPY.startsLine} summary={start === "ask" ? null : summaryOf(START_CHOICES.find((choice) => choice.value === start)?.label, startDetail)} phone={phone}>
-          <Segmented
-            label={AGENT_DIALOG_COPY.starts}
-            semantics="radio"
-            size={phone ? 50 : 30}
-            fullWidth
-            value={start}
-            onChange={(next) => setStart(next)}
-            items={START_CHOICES.map((choice) => ({ value: choice.value, label: choice.label }))}
-          />
+          <SegmentedField label={AGENT_DIALOG_COPY.starts} phone={phone} value={start} onChange={(next) => setStart(next)} items={START_CHOICES} />
           {start !== "ask" ? (
-            <input
-              type="text"
+            <FieldInput
+              phone={phone}
               aria-label={start === "event" ? AGENT_DIALOG_COPY.event : AGENT_DIALOG_COPY.schedule}
               value={startDetail}
               maxLength={WHEN_DETAIL_MAX}
               placeholder={start === "event" ? AGENT_DIALOG_COPY.eventPlaceholder : AGENT_DIALOG_COPY.schedulePlaceholder}
               onChange={(event) => setStartDetail(event.target.value)}
-              style={typedField(phone)}
             />
           ) : null}
         </OptionalField>
 
-        <OptionalField name="Host platform" description="The tool or framework it ran on" summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
+        <OptionalField name="Host platform" description={AGENT_DIALOG_COPY.hostLine} summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
           {parts.host}
         </OptionalField>
 
@@ -264,33 +254,26 @@ function Form({
           {parts.memory}
         </OptionalField>
 
-        <OptionalField name="Supporting models" description="Smaller models that kept it on track" summary={helpers.length ? `${helpers.length} ${helpers.length === 1 ? "supporting model" : "supporting models"}` : null} phone={phone}>
+        <OptionalField name="Supporting models" description={AGENT_DIALOG_COPY.helpersLine} summary={helpers.length ? `${helpers.length} ${helpers.length === 1 ? "supporting model" : "supporting models"}` : null} phone={phone}>
           <HelpersField helpers={helpers} toolNames={toolNames} decisions={[]} phone={phone} onChange={setHelpers} bare />
         </OptionalField>
 
         <OptionalField name={AGENT_DIALOG_COPY.limits} description={AGENT_DIALOG_COPY.limitsLine} summary={summaryOf(limitLines)} phone={phone}>
-          <textarea aria-label={AGENT_DIALOG_COPY.limits} rows={3} value={limits} placeholder={AGENT_DIALOG_COPY.limitsPlaceholder} onChange={(event) => setLimits(event.target.value)} style={typedArea(phone)} />
+          <FieldArea phone={phone} rows={3} aria-label={AGENT_DIALOG_COPY.limits} value={limits} placeholder={AGENT_DIALOG_COPY.limitsPlaceholder} onChange={(event) => setLimits(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={AGENT_DIALOG_COPY.output} description={AGENT_DIALOG_COPY.outputLine} summary={summaryOf(output)} phone={phone}>
-          <textarea aria-label={AGENT_DIALOG_COPY.output} rows={2} maxLength={OUTPUT_MAX} value={output} placeholder={AGENT_DIALOG_COPY.outputPlaceholder} onChange={(event) => setOutput(event.target.value)} style={typedArea(phone)} />
-          <span style={{ ...text(11.5, 400, t.text2), ...tnum, alignSelf: "flex-end" }}>
-            {output.length} / {OUTPUT_MAX}
-          </span>
+          <FieldInput phone={phone} aria-label={AGENT_DIALOG_COPY.output} maxLength={OUTPUT_MAX} value={output} placeholder={AGENT_DIALOG_COPY.outputPlaceholder} onChange={(event) => setOutput(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={AGENT_DIALOG_COPY.sample} description={AGENT_DIALOG_COPY.sampleLine} summary={summaryOf(trace, transcript ? firstLineOf(transcript, 80) : null)} phone={phone}>
-          <Field id={`${uid}-trace`} label={AGENT_DIALOG_COPY.trace}>
-            <input id={`${uid}-trace`} type="text" inputMode="url" value={trace} placeholder={AGENT_DIALOG_COPY.tracePlaceholder} onChange={(event) => setTrace(event.target.value)} style={typedField(phone)} />
-          </Field>
-          <Field id={`${uid}-transcript`} label={AGENT_DIALOG_COPY.transcript}>
-            <textarea id={`${uid}-transcript`} rows={5} maxLength={SAMPLE_MAX} value={transcript} placeholder={AGENT_DIALOG_COPY.transcriptPlaceholder} onChange={(event) => setTranscript(event.target.value)} style={typedArea(phone, { fontFamily: "var(--font-data)" })} />
-          </Field>
+          <FieldInput phone={phone} aria-label={AGENT_DIALOG_COPY.trace} inputMode="url" value={trace} placeholder={AGENT_DIALOG_COPY.tracePlaceholder} onChange={(event) => setTrace(event.target.value)} />
+          <FieldArea phone={phone} rows={4} mono aria-label={AGENT_DIALOG_COPY.transcript} maxLength={SAMPLE_MAX} value={transcript} placeholder={AGENT_DIALOG_COPY.transcriptPlaceholder} onChange={(event) => setTranscript(event.target.value)} />
           <Hint>Leave out anything secret. Name a key, never paste its value.</Hint>
         </OptionalField>
 
         {kind === "team" ? (
-          <OptionalField name={AGENT_DIALOG_COPY.pattern} description={AGENT_DIALOG_COPY.patternLine} summary={pattern ? AGENT_PATTERN_LABEL[pattern] : null} phone={phone}>
+          <OptionalField name={AGENT_DIALOG_COPY.pattern} description={AGENT_DIALOG_COPY.patternLine} titleCount={AGENT_DIALOG_COPY.patternCount} summary={pattern ? AGENT_PATTERN_LABEL[pattern] : null} phone={phone}>
             <ChoiceGrid<AgentPattern> label={AGENT_DIALOG_COPY.pattern} items={AGENT_PATTERNS.map((value) => ({ value, label: AGENT_PATTERN_LABEL[value] }))} value={pattern} onChange={setPattern} phone={phone} columns={2} allowClear />
           </OptionalField>
         ) : null}
@@ -314,7 +297,7 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
   };
   // Each opening starts clean: the shell mounts its form only while open.
   return (
-    <ModalShell open={open} onOpenChange={openChange} title={title} subtitle={AGENT_DIALOG_COPY.subtitle} width={520} testId="add-agent-dialog">
+    <ModalShell open={open} onOpenChange={openChange} title={title} subtitle={AGENT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-agent-dialog">
       <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={phone} seed={seed} inBuild={inBuild} onKind={setKind} />
     </ModalShell>
   );

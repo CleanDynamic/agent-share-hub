@@ -24,6 +24,7 @@ import { ManualThumb } from "@/pages/site/compose/ManualThumb";
 import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
 import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { DM_MONO } from "@/lib/theme/type";
+import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
 
 export const TILE_COPY = {
   deployed: "Deployed app",
@@ -51,14 +52,17 @@ export function ToolTileBody({ step, indent = 0, lean = false }: { step: Step; i
   const connection = step.app?.connection ? CONNECTION_LABEL[step.app.connection] : null;
   const where = step.app?.connection === "mcp" && step.app.runsAt ? (step.app.runsAt === "web" ? "at a web address" : "on the maker's computer") : null;
   const how = [connection, where].filter(Boolean).join(" · ");
+  if (lean && !step.app?.scopes) return null;
   return (
     <div data-testid="tool-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <ToolMark tool={name} size={20} />
-        <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{name}</span>
-      </div>
+      {lean ? null : (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <ToolMark tool={name} size={20} />
+          <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{name}</span>
+        </div>
+      )}
       {how && !lean ? <span data-testid="tool-how" style={text(12.5, 400, t.text2)}>{how}</span> : null}
-      {step.app?.scopes ? <span data-testid="tool-scopes" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", ...(lean ? clamp(1) : null) }}>{step.app.scopes}</span> : null}
+      {step.app?.scopes ? <span data-testid="tool-scopes" style={{ ...BODY_LINE, ...(lean ? clamp(1) : null) }}>{step.app.scopes}</span> : null}
     </div>
   );
 }
@@ -84,7 +88,7 @@ export function DecisionTileBody({ step, indent = 0, lean = false }: { step: Ste
         </div>
       )}
       {lines.map((line, index) => (
-        <span key={index} data-testid="decision-line" data-answered={line.answered || undefined} style={{ ...text(13, 400, line.answered ? t.text : t.label), fontVariantNumeric: "tabular-nums", overflowWrap: "anywhere" }}>
+        <span key={index} data-testid="decision-line" data-answered={line.answered || undefined} style={{ ...DATA_LINE, ...(line.answered ? null : { color: t.label }) }}>
           {line.text}
         </span>
       ))}
@@ -166,7 +170,7 @@ export function ManualTileBody({ step, indent = 0, picture = true, lean = false,
         </div>
       )}
       {every.length > 1 ? (
-        <ol data-testid="manual-lines" style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 2, ...text(13.5, 400, t.text), lineHeight: "22px" }}>
+        <ol data-testid="manual-lines" style={STEPS}>
           {lines.map((line, at) => (
             <li key={at} style={{ overflowWrap: "anywhere" }}>
               {line}
@@ -202,8 +206,8 @@ export function triggerLine(step: Pick<Step, "runs" | "changesEachRound">): stri
 export function ReplyBlock({ reply, onRead, indent = 0, lean = false }: { reply: string; onRead?: () => void; indent?: number; lean?: boolean }): ReactNode {
   if (lean) {
     return (
-      <p data-testid="prompt-reply" style={{ ...text(13, 400, t.text2), margin: 0, marginLeft: indent, lineHeight: "20px", minWidth: 0, ...ellipsis }}>
-        <span style={{ color: t.label }}>{TILE_COPY.response} </span>
+      <p data-testid="prompt-reply" style={{ ...RESPONSE_LINE, marginLeft: indent }}>
+        <span style={RESPONSE_WORD}>{TILE_COPY.response} </span>
         {reply.replace(/\s+/g, " ").trim()}
       </p>
     );
@@ -340,13 +344,11 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
           target="_blank"
           rel="noopener noreferrer"
           onClick={(event) => event.stopPropagation()}
-          style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, padding: 8, borderRadius: 6, border: `1px solid ${t.line}`, background: t.cell, textDecoration: "none", boxSizing: "border-box" }}
+          style={LINK_CARD}
         >
           <SiteIcon host={link.host} />
-          <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
-            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{link.site}</span>
-            {detail?.kind === "deployed" ? <span style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>{TILE_COPY.deployed}</span> : link.path ? <span style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>{link.path}</span> : null}
-          </span>
+          <span style={{ ...LINK_ADDRESS, flexGrow: 1 }}>{detail?.kind === "deployed" ? link.host : [link.host, link.path].filter(Boolean).join("")}</span>
+          <span style={{ ...text(12.5, 400, t.text2), flexShrink: 0 }}>{detail?.kind === "deployed" ? TILE_COPY.deployed : link.site}</span>
         </a>
       </div>
     );
@@ -356,11 +358,13 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
     const more = facts.mediaIds.length - shown.length;
     return (
       <div data-testid="result-tile" style={wrap}>
-        <div data-testid="result-thumbs" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <div data-testid="result-thumbs" style={PICTURES}>
           {shown.map((id) => (
-            <ManualThumb key={id} mediaId={id} size={64} />
+            <span key={id} style={PICTURE}>
+              <ManualThumb mediaId={id} size={56} />
+            </span>
           ))}
-          {more > 0 ? <Quiet>{`+${more} more`}</Quiet> : null}
+          {more > 0 ? <span style={MORE_COUNT}>{`+${more}`}</span> : null}
         </div>
       </div>
     );
@@ -399,8 +403,8 @@ export function TileFooter({ facts, link, extra, indent = 0 }: { facts: readonly
   const shown = facts.filter((fact): fact is string => Boolean(fact)).slice(0, 3);
   if (shown.length === 0 && !link && !extra) return null;
   return (
-    <div data-testid="tile-footer" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 12, minWidth: 0, paddingLeft: indent }}>
-      <span data-testid="tile-footer-facts" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, flexGrow: 1, minWidth: 0, ...ellipsis, ...tnum }}>
+    <div data-testid="tile-footer" style={{ ...TILE_FOOT, paddingLeft: indent }}>
+      <span data-testid="tile-footer-facts" style={FOOT_FACTS}>
         {shown.join(" · ")}
       </span>
       {extra ? <span style={{ flexShrink: 0 }}>{extra}</span> : null}
@@ -416,10 +420,10 @@ export function SystemPromptTileBody({ step, indent = 0, full = false }: { step:
   const parts = splitVariables(step.text);
   return (
     <div data-testid="system-prompt-tile" style={{ paddingLeft: indent, minWidth: 0 }}>
-      <p data-testid="system-prompt-text" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(full ? null : clamp(2)) }}>
+      <p data-testid="system-prompt-text" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "21px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(full ? null : clamp(2)) }}>
         {parts.map((part, at) =>
           part.variable ? (
-            <span key={at} data-testid="variable-chip" style={{ ...CONTROL, fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", padding: "0 6px", margin: "0 1px", borderRadius: 4, display: "inline-block", color: t.text, whiteSpace: "nowrap" }}>
+            <span key={at} data-testid="variable-chip" style={VARIABLE}>
               {part.text}
             </span>
           ) : (
@@ -445,8 +449,8 @@ export function DatasetTileBody({ step, indent = 0 }: { step: Step; indent?: num
         </span>
       ) : null}
       {facts.columns.length > 0 ? (
-        <span data-testid="dataset-columns" style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", color: t.text2, ...ellipsis }}>
-          {facts.columns.join(", ")}
+        <span data-testid="dataset-columns" style={DATA_LINE}>
+          {facts.columns.join(" · ")}
         </span>
       ) : null}
     </div>
@@ -533,7 +537,7 @@ export function ReaderFacts({ facts, indent = 0 }: { facts: readonly ReaderFact[
 /** "Open on GitHub", the one link of a repository's footer. It opens in a new tab and never selects the tile. */
 export function OpenOnGitHub({ url }: { url: string }) {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} style={{ ...text(12, 500, t.text2), textDecoration: "underline", borderRadius: 4 }}>
+    <a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} style={{ ...FOOT_LINK_STYLE, borderRadius: 4 }}>
       Open on GitHub
     </a>
   );

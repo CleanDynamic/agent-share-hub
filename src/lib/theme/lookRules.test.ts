@@ -408,13 +408,76 @@ export const CA03_FILES: readonly string[] = [
   "src/components/gallery/ClassificationFilters.tsx",
   "src/pages/site/compose/CardPreview.tsx",
   "src/pages/site/compose/ClassificationPicker.tsx",
-  "src/pages/site/compose/OptionalSection.tsx",
   "src/pages/site/compose/ReadFromBuild.tsx",
   "src/pages/site/compose/SandboxCard.tsx",
   "src/pages/site/compose/classificationPieces.tsx",
   "src/pages/site/gallery/GalleryBoard.tsx",
   "src/pages/site/gallery/GalleryBoardGroups.tsx",
+  // CA-15b P1 (the token files hold raw values by design and are held by css-parity and contrast instead)
+  "src/pages/site/compose/ChoiceGrid.tsx",
+  "src/pages/site/compose/ModalFrame.tsx",
+  "src/pages/site/compose/modalRecipes.test.tsx",
+  "src/pages/site/compose/modalRecipes.tsx",
+  "src/pages/site/compose/OptionalSection.test.tsx",
+  "src/pages/site/compose/OptionalSection.tsx",
+  "src/components/build/FullPromptWindow.optional.test.tsx",
+  "src/pages/site/compose/AddToolDialog.test.tsx",
+  // CA-15b P2
+  "src/pages/site/compose/AddDatasetDialog.tsx",
+  "src/pages/site/compose/AddRepoDialog.tsx",
+  "src/pages/site/compose/AddResultDialog.tsx",
+  "src/pages/site/compose/AddSystemPromptDialog.tsx",
+  "src/pages/site/compose/AddDecisionDialog.tsx",
+  "src/pages/site/compose/DecisionFields.tsx",
+  "src/pages/site/compose/AddSourceDialogs.test.tsx",
+  "src/pages/site/compose/AddResultDialog.test.tsx",
+  "src/pages/site/compose/AddDecisionDialog.test.tsx",
+  "src/pages/site/compose/AddManualStepDialog.test.tsx",
+  "src/pages/site/compose/modalBoards.test.tsx",
+  "src/pages/site/compose/detailsOptional.test.tsx",
+  "src/pages/site/compose/PickMenu.tsx",
+  "src/pages/site/compose/ModelPicker.tsx",
+  "src/pages/site/compose/AgentSetupFields.tsx",
+  "src/components/build/FullPromptWindow.tsx",
+  "src/components/build/FullPromptWindow.refined.test.tsx",
+  // CA-15b P3
+  "src/pages/site/compose/tileRecipes.tsx",
+  "src/pages/site/compose/tileRecipes.test.tsx",
+  "src/components/build/tileBodies.tsx",
+  "src/lib/build/tileLines.ts",
+  "src/lib/build/tileLines.test.ts",
+  "src/pages/site/compose/SessionHead.tsx",
+  "src/pages/site/compose/BuildList.lighter.test.tsx",
+  "src/pages/site/compose/BuildList.sources.test.tsx",
+  "src/pages/site/compose/BuildList.nest.test.tsx",
+  "src/pages/site/compose/checkRuns.ui.test.tsx",
+  "src/lib/build/onePrompt.snapshot.test.tsx",
+  // CA-15b P4
+  "src/pages/dev/ModalsDemo.tsx",
 ];
+
+/**
+ * CA-15b: the modal files. Each is built only from `modalRecipes.tsx`: none sets a colour, a size or a radius of its own.
+ * The recipes are the one place a modal's measures live.
+ */
+export const MODAL_FILES: readonly string[] = [
+  "src/pages/site/compose/ChoiceGrid.tsx",
+  "src/pages/site/compose/OptionalSection.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AddCheckDialog.tsx",
+  "src/pages/site/compose/AddCodeDialog.tsx",
+  "src/pages/site/compose/AddDatasetDialog.tsx",
+  "src/pages/site/compose/AddDecisionDialog.tsx",
+  "src/pages/site/compose/AddManualStepDialog.tsx",
+  "src/pages/site/compose/AddRepoDialog.tsx",
+  "src/pages/site/compose/AddResultDialog.tsx",
+  "src/pages/site/compose/AddSystemPromptDialog.tsx",
+  "src/pages/site/compose/AddToolDialog.tsx",
+  "src/pages/site/compose/DecisionFields.tsx",
+];
+
+/** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 
@@ -1015,7 +1078,8 @@ export function lookFindings(source: string, file = "snippet.tsx"): Finding[] {
   const out: Finding[] = [];
   for (const { rule, pattern } of FORBIDDEN) for (const match of every(pattern, code)) out.push(found(rule, code, match.index ?? 0));
   out.push(...spacingFindings(code), ...componentFindings(code, file));
-  return out.filter((finding) => !ALLOWED.some((allowed) => allowed.rule === finding.rule && finding.text.includes(allowed.text)));
+  const recipe = RECIPE_FILES.some((name) => file.endsWith(name));
+  return out.filter((finding) => !(recipe && (finding.rule.startsWith("spacing ") || finding.rule === "an outline other than ring()"))).filter((finding) => !ALLOWED.some((allowed) => allowed.rule === finding.rule && finding.text.includes(allowed.text)));
 }
 
 /* ── rule 3: no buzzwords in copy ── */
@@ -1167,4 +1231,32 @@ if (CA03_FILES.length > 0) describe.each(CA03_FILES.map((file) => [file]))("%s",
 
 it("lists only files that exist", () => {
   for (const file of CA03_FILES) expect(fs.existsSync(path.join(ROOT, file)), file).toBe(true);
+});
+
+/* ── CA-15b: no modal sets a colour, a size or a radius outside the recipes ── */
+
+const MODAL_STYLE = /\bt\.[a-z]\w*|#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(|\b(?:borderRadius|fontSize|fontWeight|lineHeight|boxShadow|background|border(?:Top|Right|Bottom|Left)?|color)\s*:|\b(?:height|width|minHeight|minWidth|maxHeight|maxWidth|padding\w*|margin\w*|gap|rowGap|columnGap)\s*:\s*(?:["'`]|-?[1-9])/;
+
+/** Each place a modal file paints or sizes something itself. */
+export function modalStyleFindings(source: string): Finding[] {
+  const code = stripComments(source);
+  return [...every(MODAL_STYLE, code)].map((match) => found("a modal style outside modalRecipes", code, match.index ?? 0));
+}
+
+describe("modal files take their look from modalRecipes.tsx (CA-15b)", () => {
+  it("catches a colour, a size and a radius", () => {
+    expect(modalStyleFindings("const a = { color: t.text };")).not.toEqual([]);
+    expect(modalStyleFindings("<div style={{ padding: 12 }} />")).not.toEqual([]);
+    expect(modalStyleFindings("<div style={{ borderRadius: 8 }} />")).not.toEqual([]);
+    expect(modalStyleFindings("<Row label=\"Name\" phone={phone} />")).toEqual([]);
+  });
+
+  it.each(MODAL_FILES.map((file) => [file]))("%s sets no style of its own", (file) => {
+    const source = fs.readFileSync(path.join(ROOT, file), "utf8");
+    expect(modalStyleFindings(source).map((finding) => `${file}:${finding.line} ${finding.text}`)).toEqual([]);
+  });
+
+  it("lists modal files that are in the look's list", () => {
+    for (const file of MODAL_FILES) expect(CA03_FILES, file).toContain(file);
+  });
 });

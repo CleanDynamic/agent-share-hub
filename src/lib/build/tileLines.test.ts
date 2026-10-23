@@ -36,7 +36,7 @@ describe("the type line", () => {
   });
 
   it("adds what is known to a repository and a dataset", () => {
-    expect(typeLineOf(step({ type: "repo", payload: { step: true, url: "github.com/a/b", ownership: "third_party" } }))).toBe("GitHub repository · Third-party repository");
+    expect(typeLineOf(step({ type: "repo", payload: { step: true, url: "github.com/a/b", ownership: "third_party" } }))).toBe("GitHub repository · Third-party");
     expect(typeLineOf(step({ type: "dataset", payload: { step: true, description: "d", use: "finetuning" } }))).toBe("Dataset · Fine-tuning");
   });
 

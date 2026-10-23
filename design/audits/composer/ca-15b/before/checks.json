@@ -1,0 +1,280 @@
+[
+  {
+    "name": "result-1280-dusk",
+    "off": [],
+    "wrapped": [
+      "Deployed app or website",
+      "Change in an external app"
+    ],
+    "footBottom": 698,
+    "height": 900
+  },
+  {
+    "name": "tool-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 727,
+    "height": 900
+  },
+  {
+    "name": "check-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 854,
+    "height": 900
+  },
+  {
+    "name": "code-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 811,
+    "height": 900
+  },
+  {
+    "name": "agent-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 854,
+    "height": 900
+  },
+  {
+    "name": "decision-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 854,
+    "height": 900
+  },
+  {
+    "name": "repo-1280-dusk",
+    "off": [],
+    "wrapped": [
+      "Created in this build",
+      "Your existing repository",
+      "Third-party repository"
+    ],
+    "footBottom": 773,
+    "height": 900
+  },
+  {
+    "name": "system-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 798,
+    "height": 900
+  },
+  {
+    "name": "dataset-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 848,
+    "height": 900
+  },
+  {
+    "name": "manual-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "prompt-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "tiles-1280-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "result-1280-noon",
+    "off": [],
+    "wrapped": [
+      "Deployed app or website",
+      "Change in an external app"
+    ],
+    "footBottom": 698,
+    "height": 900
+  },
+  {
+    "name": "tool-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 727,
+    "height": 900
+  },
+  {
+    "name": "check-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 854,
+    "height": 900
+  },
+  {
+    "name": "code-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 811,
+    "height": 900
+  },
+  {
+    "name": "agent-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 854,
+    "height": 900
+  },
+  {
+    "name": "decision-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 854,
+    "height": 900
+  },
+  {
+    "name": "repo-1280-noon",
+    "off": [],
+    "wrapped": [
+      "Created in this build",
+      "Your existing repository",
+      "Third-party repository"
+    ],
+    "footBottom": 773,
+    "height": 900
+  },
+  {
+    "name": "system-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 798,
+    "height": 900
+  },
+  {
+    "name": "dataset-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 848,
+    "height": 900
+  },
+  {
+    "name": "manual-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "prompt-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "tiles-1280-noon",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "result-390-dusk",
+    "off": [],
+    "wrapped": [
+      "Deployed app or website",
+      "Change in an external app"
+    ],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "tool-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "check-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "code-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "agent-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "decision-390-dusk",
+    "off": [],
+    "wrapped": [
+      "Yes or no (Noul)"
+    ],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "repo-390-dusk",
+    "off": [],
+    "wrapped": [
+      "Created in this build",
+      "Your existing repository",
+      "Third-party repository"
+    ],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "system-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "dataset-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": 883,
+    "height": 900
+  },
+  {
+    "name": "manual-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "prompt-390-dusk",
+    "off": [],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  },
+  {
+    "name": "tiles-390-dusk",
+    "off": [
+      "PRE.code-lines",
+      "CODE.import { Extension }"
+    ],
+    "wrapped": [],
+    "footBottom": null,
+    "height": 900
+  }
+]

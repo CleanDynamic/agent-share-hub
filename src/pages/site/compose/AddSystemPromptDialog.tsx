@@ -1,6 +1,7 @@
 /* CA-15 P9: Add › "System prompt": instructions that apply across prompts.
 
-   The shared modal frame, 520 wide (a `BottomSheet` below 768). Required:
+   CA-15b: built from `modalRecipes` in the boards' pattern (rows, blocks, Optional, footer), 560 wide (a `BottomSheet`
+   below 768). Selected prompts is an option grid, several at once, never native checkboxes. Required:
 
    - Name: the tile's title.
    - Text: the instructions, up to 20,000 characters. A `{name}` written in it is a variable.
@@ -11,19 +12,15 @@
 
 import { useId, useState } from "react";
 
-import { Segmented } from "@/components/brand/Segmented";
-import { Checkbox } from "@/components/brand/Checkbox";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TITLE_MAX, type SystemPromptInput } from "@/lib/build/graph";
 import { SYSTEM_PROMPT_TEXT_MAX, SYSTEM_PROMPT_VERSION_MAX, type SystemPromptScope } from "@/lib/build/sourceTiles";
 import { VARIABLE_DESCRIPTION_MAX, variablesFor } from "@/lib/build/tileExtras";
-import { t } from "@/lib/theme/tokens";
 
-import { Field } from "./composeControls";
-import { FieldRow, FieldRows, Hint, ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
+import { Block, BlockHead, FieldArea, FieldInput, Hint, MODAL_WIDTH, NARROW, OptionGrid, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
-import { text, tnum, typedArea, typedField } from "./refinedStyles";
 
 export const SYSTEM_PROMPT_DIALOG_COPY = {
   title: "Add a system prompt",
@@ -96,26 +93,20 @@ function Form({ onAdd, onCancel, phone, prompts, session }: Pick<AddSystemPrompt
 
   return (
     <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing}>
-      <FieldRows>
-        <FieldRow id={`${uid}-name`} label={SYSTEM_PROMPT_DIALOG_COPY.name} phone={phone}>
-          <input id={`${uid}-name`} type="text" value={name} maxLength={TITLE_MAX} placeholder={SYSTEM_PROMPT_DIALOG_COPY.namePlaceholder} onChange={(event) => setName(event.target.value)} style={typedField(phone)} />
-        </FieldRow>
-      </FieldRows>
+      <Row id={`${uid}-name`} label={SYSTEM_PROMPT_DIALOG_COPY.name} noRule phone={phone}>
+        <FieldInput phone={phone} id={`${uid}-name`} value={name} maxLength={TITLE_MAX} placeholder={SYSTEM_PROMPT_DIALOG_COPY.namePlaceholder} onChange={(event) => setName(event.target.value)} />
+      </Row>
 
-      <Field id={`${uid}-text`} label={SYSTEM_PROMPT_DIALOG_COPY.text}>
-        <textarea id={`${uid}-text`} rows={8} maxLength={SYSTEM_PROMPT_TEXT_MAX} value={body} placeholder={SYSTEM_PROMPT_DIALOG_COPY.textPlaceholder} onChange={(event) => setBody(event.target.value)} style={typedArea(phone, { resize: "vertical" })} />
-        <span style={{ ...text(11.5, 400, t.text2), ...tnum, alignSelf: "flex-end" }}>
-          {body.length.toLocaleString("en-GB")} / {SYSTEM_PROMPT_TEXT_MAX.toLocaleString("en-GB")}
-        </span>
-      </Field>
+      <Block>
+        <BlockHead label={SYSTEM_PROMPT_DIALOG_COPY.text} htmlFor={`${uid}-text`} count={`${body.length.toLocaleString("en-GB")} / ${SYSTEM_PROMPT_TEXT_MAX.toLocaleString("en-GB")}`} />
+        <FieldArea phone={phone} id={`${uid}-text`} rows={8} maxLength={SYSTEM_PROMPT_TEXT_MAX} value={body} placeholder={SYSTEM_PROMPT_DIALOG_COPY.textPlaceholder} onChange={(event) => setBody(event.target.value)} />
+      </Block>
 
-      <Field id={`${uid}-applies`} label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo} group>
-        <Segmented<Applies>
+      <Block label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo}>
+        <BlockHead label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo} />
+        <SegmentedField<Applies>
           label={SYSTEM_PROMPT_DIALOG_COPY.appliesTo}
-          semantics="radio"
-          size={phone ? 50 : 30}
-          fontSize={13}
-          fullWidth
+          phone={phone}
           items={[
             { value: "all", label: SYSTEM_PROMPT_DIALOG_COPY.all },
             { value: "session", label: SYSTEM_PROMPT_DIALOG_COPY.session, disabled: session === null },
@@ -127,44 +118,38 @@ function Form({ onAdd, onCancel, phone, prompts, session }: Pick<AddSystemPrompt
         {session === null ? <Hint>{SYSTEM_PROMPT_DIALOG_COPY.noSession}</Hint> : null}
         {prompts.length === 0 ? <Hint>{SYSTEM_PROMPT_DIALOG_COPY.noPrompts}</Hint> : null}
         {applies === "prompts" ? (
-          <div role="group" aria-label={SYSTEM_PROMPT_DIALOG_COPY.selected} style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflowY: "auto" }}>
-            {prompts.map((prompt) => (
-              <label key={prompt.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28 }}>
-                <Checkbox checked={picked.includes(prompt.id)} onChange={(event) => setPicked((now) => (event.target.checked ? [...now, prompt.id] : now.filter((id) => id !== prompt.id)))} />
-                <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{prompt.label}</span>
-              </label>
-            ))}
-          </div>
+          <OptionGrid
+            label={SYSTEM_PROMPT_DIALOG_COPY.selected}
+            phone={phone}
+            multiple
+            columns={2}
+            items={prompts.map((prompt) => ({ value: prompt.id, label: prompt.label }))}
+            chosen={picked}
+            onPick={(id) => setPicked((now) => (now.includes(id) ? now.filter((other) => other !== id) : [...now, id]))}
+          />
         ) : null}
-      </Field>
+      </Block>
 
       <OptionalSection>
         <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.model} description={SYSTEM_PROMPT_DIALOG_COPY.modelLine} summary={summaryOf(model)} phone={phone}>
-          <Field id={`${uid}-model`} label={SYSTEM_PROMPT_DIALOG_COPY.model} group>
-            <div>
-              <ModelPicker tool={null} anyWithoutTool value={model} onChange={setModel} phone={phone} />
-            </div>
-          </Field>
+          <ModelPicker tool={null} anyWithoutTool value={model} onChange={setModel} phone={phone} field />
         </OptionalField>
-
         <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.version} description={SYSTEM_PROMPT_DIALOG_COPY.versionLine} summary={summaryOf(version)} phone={phone}>
-          <input aria-label={SYSTEM_PROMPT_DIALOG_COPY.version} type="text" maxLength={SYSTEM_PROMPT_VERSION_MAX} value={version} placeholder={SYSTEM_PROMPT_DIALOG_COPY.versionPlaceholder} onChange={(event) => setVersion(event.target.value)} style={typedField(phone, { width: 200 })} />
+          <FieldInput phone={phone} mono width={NARROW.version} aria-label={SYSTEM_PROMPT_DIALOG_COPY.version} maxLength={SYSTEM_PROMPT_VERSION_MAX} value={version} placeholder={SYSTEM_PROMPT_DIALOG_COPY.versionPlaceholder} onChange={(event) => setVersion(event.target.value)} />
         </OptionalField>
-
         <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.variables} description={SYSTEM_PROMPT_DIALOG_COPY.variablesLine} summary={summaryOf(variables.map((variable) => `{${variable.name}}`))} phone={phone}>
           {variables.length === 0 ? <Hint>{SYSTEM_PROMPT_DIALOG_COPY.noVariables}</Hint> : null}
           {variables.map((variable) => (
-            <Field key={variable.name} id={`${uid}-var-${variable.name}`} label={`{${variable.name}}`}>
-              <input
+            <Row key={variable.name} id={`${uid}-var-${variable.name}`} label={`{${variable.name}}`} noRule phone={phone}>
+              <FieldInput
+                phone={phone}
                 id={`${uid}-var-${variable.name}`}
-                type="text"
                 maxLength={VARIABLE_DESCRIPTION_MAX}
                 value={described[variable.name] ?? ""}
                 placeholder="e.g. The customer's first name"
                 onChange={(event) => setDescribed((now) => ({ ...now, [variable.name]: event.target.value }))}
-                style={typedField(phone)}
               />
-            </Field>
+            </Row>
           ))}
         </OptionalField>
       </OptionalSection>
@@ -180,7 +165,7 @@ export function AddSystemPromptDialog({ open, onOpenChange, onAdd, prompts, sess
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={SYSTEM_PROMPT_DIALOG_COPY.title} subtitle={SYSTEM_PROMPT_DIALOG_COPY.subtitle} width={520} testId="add-system-prompt-dialog">
+    <ModalShell open={open} onOpenChange={onOpenChange} title={SYSTEM_PROMPT_DIALOG_COPY.title} subtitle={SYSTEM_PROMPT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-system-prompt-dialog">
       <Form onAdd={add} onCancel={close} phone={phone} prompts={prompts} session={session} />
     </ModalShell>
   );

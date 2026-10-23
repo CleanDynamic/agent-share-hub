@@ -43,10 +43,10 @@ const upload = (...files: File[]) => fireEvent.change(screen.getByTestId("code-f
 describe("Add › Code (CA-02 P7)", () => {
   // CA-11: the well is now a numbered code box. It is 12 lines tall (20 each, 6 padding top and bottom, a 1px border
   // each side), the line height is 20px not 1.55, and the gutter starts at 1.
-  it("is a 520-wide dialog in the shared frame with a monospace well of 12 lines, a numbered gutter and no spell check", () => {
+  it("is a 640-wide dialog in the shared frame with a monospace well of 12 lines, a numbered gutter and no spell check", () => {
     open();
     expect(screen.getByRole("dialog", { name: CODE_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-code-dialog").style.width).toBe("520px");
+    expect(screen.getByTestId("add-code-dialog").style.width).toBe("640px");
     expect(screen.getByTestId("code-well-box").style.height).toBe("254px");
     expect(screen.getByTestId("code-gutter-numbers").textContent).toBe("1");
     expect(well().getAttribute("spellcheck")).toBe("false");
@@ -66,7 +66,7 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
     expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual(["File path", "Generated with"]);
     expect(screen.queryByLabelText("File path")).toBeNull();
-    expect(screen.getByText("Text files only. Each file is added as a separate step.")).toBeTruthy();
+    expect(screen.getByText("Or upload text files. Each file is added as a separate step.")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/File name|Written with|optional/);
   });
 
@@ -139,7 +139,7 @@ describe("Add › Code (CA-02 P7)", () => {
       new File(["x".repeat(100_001)], "huge.js", { type: "text/javascript" }),
     );
     await waitFor(() => expect(screen.getByRole("list", { name: "Upload files" })).toBeTruthy());
-    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["schema.sqlSQL · 1 lines", "app.tsTypeScript · 1 lines"]);
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["schema.sql · SQL · 1 lineRemove", "app.ts · TypeScript · 1 lineRemove"]);
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("blob.ts: That file isn't text.");
     expect(alert.textContent).toContain("photo.png: That file isn't text.");

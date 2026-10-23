@@ -151,7 +151,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
     type_("Value", "42");
     expect(status()).toBe("Required: a label");
     type_("Label", "Orders per week");
-    expect(screen.getAllByTestId("optional-field").map((row) => within(row).getAllByRole("button")[0].textContent)).toEqual(["Unit" + "What the value is counted in", "Value before" + "The figure before the change", "Caption" + "One line under the result"]);
+    expect(screen.getAllByTestId("optional-field").map((row) => within(row).getAllByRole("button")[0].textContent)).toEqual(["Unit" + "What the value is counted in", "Value before" + "The figure before the change", "Caption" + "One line describing what the output shows"]);
     fireEvent.click(within(screen.getAllByTestId("optional-field")[0]).getByRole("button"));
     type_("Unit", "orders");
     fireEvent.click(within(screen.getAllByTestId("optional-field")[1]).getByRole("button"));
@@ -267,7 +267,7 @@ describe("the result tile body (CA-12 P9, CA-15 P3)", () => {
   it("shows at most 4 thumbnails and counts the rest", () => {
     render(<ResultTileBody facts={resultFactsOf({ payload: { media_ids: ["a", "b", "c", "d", "e", "f"] } })} />);
     expect(screen.getAllByTestId("manual-thumb")).toHaveLength(4);
-    expect(screen.getByText("+2 more")).toBeTruthy();
+    expect(screen.getByText("+2")).toBeTruthy();
   });
 
   it("a file shows its type, name and size; a model its base and method; an empty one says so", () => {

@@ -26,6 +26,7 @@ import { TextButton } from "./composeControls";
 import { DragHandle, useNestSession, useNestSessionDrag } from "./listNest";
 import { ToolMark } from "./refinedPieces";
 import { dialogTitle, menuItem, menuSurface, text, tnum, windowStyle } from "./refinedStyles";
+import { SESSION_META, SESSION_NAME } from "./tileRecipes";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { ToolPicker } from "./ToolPicker";
 
@@ -164,7 +165,8 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
 }
 
 /** The tile count and the date, in the head's quiet words. */
-const quiet = (colour: string) => ({ ...text(13, 400, colour), ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 });
+/** CA-15b: the session line's facts, 12.5 `--label`. */
+const quiet = (colour: string) => ({ ...SESSION_META, color: colour, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 });
 
 function RemoveDialog({ open, session, tiles, phone, onClose, onConfirm }: { open: boolean; session: SourceSession; tiles: number; phone: boolean; onClose: () => void; onConfirm: () => void }) {
   const body = (
@@ -225,8 +227,8 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
   };
 
   const app = (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, ...text(15, 500, t.text) }}>
-      <span style={{ whiteSpace: "nowrap" }}>Session {session.number} ·</span>
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0, ...SESSION_META }}>
+      <span style={{ whiteSpace: "nowrap", ...SESSION_NAME }}>Session {session.number} ·</span>
       {session.tool === NO_APP && onPickApp && maker ? (
         <ToolPicker quiet label={`Pick an app for session ${session.number}`} placeholder={NO_APP} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
       ) : (
@@ -241,7 +243,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
       {maker ? (
           <TitleField session={session} phone={phone} onSave={(title) => ops?.onTitle(session.key, title)} />
         ) : session.title ? (
-          <span data-testid="session-title-text" style={{ ...text(15, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
+          <span data-testid="session-title-text" style={{ ...text(13, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
             {session.title}
           </span>
         ) : (

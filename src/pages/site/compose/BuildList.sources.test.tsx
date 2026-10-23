@@ -83,7 +83,7 @@ describe("a dataset tile", () => {
     const tile = card("dataset");
     expect(within(tile).getByTestId("dataset-eyebrow").textContent).toBe("Dataset · Evaluation");
     expect(within(tile).getByTestId("dataset-description").textContent).toBe("Support tickets from 2025");
-    expect(within(tile).getByTestId("dataset-columns").textContent).toBe("id, subject, team");
+    expect(within(tile).getByTestId("dataset-columns").textContent).toBe("id · subject · team");
     expect(within(tile).getByTestId("tile-footer-facts").textContent).toBe("CSV · 3 columns · 1,200 records");
   });
 
@@ -102,7 +102,7 @@ describe("a GitHub repository tile", () => {
     show([repo()]);
     const tile = card("repo");
     expect(tile.getAttribute("aria-label")).toBe("GitHub repository 1: acme/shop");
-    expect(within(tile).getByTestId("repo-eyebrow").textContent).toBe("GitHub repository · Third-party repository");
+    expect(within(tile).getByTestId("repo-eyebrow").textContent).toBe("GitHub repository · Third-party");
     expect(within(tile).queryByTestId("repo-tile")).toBeNull();
     const link = within(tile).getByRole("link", { name: "Open on GitHub" });
     expect(link.getAttribute("href")).toBe("https://github.com/acme/shop");

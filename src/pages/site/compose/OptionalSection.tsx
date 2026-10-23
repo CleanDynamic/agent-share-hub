@@ -9,17 +9,18 @@
    grey line instead, cut to one line, so nothing filled is hidden. A row opens on its own when `forceOpen` turns true (the
    modal was opened from an error that points into it). Opened from the keyboard, focus moves into the row's field.
 
-   The only motion is the chevron's turn; opening and closing are instant. */
+   The only motion is the chevron's turn; opening and closing are instant.
+
+   CA-15b: drawn from `modalRecipes` (the optional header and row recipes). Inside a modal the rows run edge to edge and pad
+   themselves 20 in (`ModalInset`); a row's hint always reads the same, and a filled row shows its value at the right of
+   the summary, as a count. CA-16b's `filledText` rows keep the value in the line, as that card draws it. */
 
 import { Children, isValidElement, useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
-import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
 
-import { bareButton, ellipsis, text, tnum } from "./refinedStyles";
+import { ELLIPSIS, ModalInset, OPTIONAL, useModalInset } from "./modalRecipes";
 
 export const OPTIONAL_COPY = { heading: "Optional", fields: (n: number) => `${n} ${n === 1 ? "field" : "fields"}` } as const;
 
@@ -49,13 +50,15 @@ export interface OptionalFieldProps {
   phone?: boolean;
   /** CA-16b: a count at the right, in mono, before the chevron ("2 suggestions"). Absent: none. */
   count?: string;
+  /** CA-15b: a count 6 after the title ("Multi-agent only"). */
+  titleCount?: string;
   /** CA-16b: a filled row's line is drawn in `--text` rather than `--label`. Absent: as it was. */
   filledText?: boolean;
   children: ReactNode;
 }
 
 /** One closed-by-default row. */
-export function OptionalField({ name, description, summary, forceOpen = false, phone = false, count, filledText = false, children }: OptionalFieldProps) {
+export function OptionalField({ name, description, summary, forceOpen = false, phone = false, count, titleCount, filledText = false, children }: OptionalFieldProps) {
   const [open, setOpen] = useState(false);
   const uid = useId();
   const region = useRef<HTMLDivElement>(null);
@@ -74,8 +77,12 @@ export function OptionalField({ name, description, summary, forceOpen = false, p
     region.current?.querySelector<HTMLElement>("input, textarea, select, button, [tabindex]:not([tabindex='-1'])")?.focus();
   }, [open]);
 
+  const inset = useModalInset();
+  const line = filledText && filled && !open ? summary : description;
+  const value = !filledText && filled && !open ? summary : null;
+
   return (
-    <div data-testid="optional-field" data-open={open || undefined} data-filled={filled || undefined} style={{ minWidth: 0 }}>
+    <div data-testid="optional-field" data-open={open || undefined} data-filled={filled || undefined} style={OPTIONAL.row}>
       <button
         type="button"
         aria-expanded={open}
@@ -87,36 +94,39 @@ export function OptionalField({ name, description, summary, forceOpen = false, p
           setOpen(!open);
         }}
         {...handlers}
-        style={{
-          ...bareButton,
-          width: "100%",
-          boxSizing: "border-box",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          minHeight: phone ? 44 : 40,
-          padding: "8px 0",
-          borderRadius: 6,
-          ...ring(state.focusVisible),
-        }}
+        data-ring-inset=""
+        style={{ ...OPTIONAL.summary(inset, state.hovered && inset > 0, phone), ...OPTIONAL.focus(state.focusVisible) }}
       >
-        <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span style={text(13, 400, t.text)}>{name}</span>
-          <span data-testid="optional-line" style={{ ...text(12.5, 400, filled && !open && filledText ? t.text : t.label), ...ellipsis }}>
-            {filled && !open ? summary : description}
+        <span style={{ display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 }}>
+          <span style={OPTIONAL.titleLine}>
+            <span data-testid="optional-title" style={OPTIONAL.title}>
+              {name}
+            </span>
+            {titleCount ? (
+              <span data-testid="optional-title-count" style={OPTIONAL.count}>
+                {titleCount}
+              </span>
+            ) : null}
+          </span>
+          <span data-testid="optional-line" style={{ ...OPTIONAL.hint, ...ELLIPSIS, ...(filledText && filled && !open ? OPTIONAL.filledLine : null) }}>
+            {line}
           </span>
         </span>
         {count ? (
-          <span data-testid="optional-row-count" style={{ fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.label, flexShrink: 0, whiteSpace: "nowrap" }}>
+          <span data-testid="optional-row-count" style={OPTIONAL.value}>
             {count}
           </span>
+        ) : value ? (
+          <span data-testid="optional-value" style={OPTIONAL.value}>
+            {value}
+          </span>
         ) : null}
-        <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0, color: t.label, transform: open ? "rotate(180deg)" : "none", transition: "transform 120ms" }}>
-          <Glyph name="chevd" size={16} />
+        <span aria-hidden="true" style={OPTIONAL.chevron(open)}>
+          <Glyph name="chevd" size={14} />
         </span>
       </button>
       {open ? (
-        <div ref={region} id={`${uid}-region`} role="region" aria-labelledby={`${uid}-head`} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "4px 0 12px", minWidth: 0 }}>
+        <div ref={region} id={`${uid}-region`} role="region" aria-labelledby={`${uid}-head`} style={OPTIONAL.body(inset)}>
           {children}
         </div>
       ) : null}
@@ -135,22 +145,22 @@ export interface OptionalSectionProps {
 
 /** The section: its heading and count, then its rows split by hairlines. Draws nothing when it has no field. */
 export function OptionalSection({ children, hint, bleed = 0 }: OptionalSectionProps) {
+  const context = useModalInset();
   const rows = Children.toArray(children).filter(isValidElement);
   if (rows.length === 0) return null;
+  const inset = bleed || context;
   return (
-    <section aria-label={OPTIONAL_COPY.heading} data-testid="optional-section" style={{ display: "flex", flexDirection: "column", minWidth: 0, ...(bleed ? { margin: `0 -${bleed}px` } : null) }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, paddingBottom: 6, borderBottom: `1px solid ${t.hairline}`, ...(bleed ? { padding: `14px ${bleed}px 6px` } : null) }}>
-        <h3 style={{ ...text(13, 500, t.text), margin: 0 }}>{OPTIONAL_COPY.heading}</h3>
-        <span data-testid="optional-count" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "normal", color: t.label, ...tnum }}>
-          {hint ?? OPTIONAL_COPY.fields(rows.length)}
-        </span>
-      </div>
-      {rows.map((row, index) => (
-        <div key={index} style={{ ...(index === 0 ? null : { borderTop: `1px solid ${t.hairline}` }), ...(bleed ? { padding: `0 ${bleed}px` } : null) }}>
-          {row}
+    <ModalInset.Provider value={inset}>
+      <section aria-label={OPTIONAL_COPY.heading} data-testid="optional-section" style={OPTIONAL.sectionAt(bleed)}>
+        <div style={OPTIONAL.header(inset)}>
+          <h3 style={OPTIONAL.heading}>{OPTIONAL_COPY.heading}</h3>
+          <span data-testid="optional-count" style={OPTIONAL.count}>
+            {hint ?? OPTIONAL_COPY.fields(rows.length)}
+          </span>
         </div>
-      ))}
-    </section>
+        {rows}
+      </section>
+    </ModalInset.Provider>
   );
 }
 
