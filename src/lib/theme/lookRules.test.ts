@@ -557,6 +557,22 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/useReferenceHistory.ts",
   "src/pages/site/compose/referencePieces.tsx",
   "src/components/brand/glyphs.ts",
+  // CA-19 P3
+  "src/components/post/editor/LinkPanel.tsx",
+  "src/components/post/editor/LinkPanel.test.tsx",
+  "src/components/post/editor/PostToolbar.tsx",
+  "src/components/post/editor/references.test.tsx",
+  "src/components/post/RefLinks.tsx",
+  "src/components/build/partNav.tsx",
+  "src/components/brand/Glyph.tsx",
+  "src/components/brand/glyphs.test.tsx",
+  "src/lib/build/postRefs.ts",
+  "src/lib/build/referenceGroupsWrite.ts",
+  "src/pages/site/compose/PostTab.tsx",
+  "src/pages/site/compose/usePostLinks.ts",
+  "src/pages/site/compose/useReferences.ts",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/build/useReaderPostLinks.ts",
 ];
 
 /**

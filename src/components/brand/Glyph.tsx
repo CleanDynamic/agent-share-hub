@@ -14,7 +14,7 @@
 // (`t.label`) or `currentColor`, never a literal. A call site that still holds a lucide icon under the current look
 // uses `Icon`, which chooses between the two.
 
-import { GLYPHS, type GlyphName } from "./glyphs";
+import { GLYPHS, GLYPH_STROKES, type GlyphName } from "./glyphs";
 
 export type { GlyphName } from "./glyphs";
 
@@ -39,7 +39,7 @@ export function Glyph({ name, size = 16, color = "currentColor", fill = "none" }
       viewBox="0 0 16 16"
       fill={fill}
       stroke={color}
-      strokeWidth={DOTS_ONLY.includes(name) ? 2 : 1.3}
+      strokeWidth={DOTS_ONLY.includes(name) ? 2 : (GLYPH_STROKES[name] ?? 1.3)}
       strokeLinecap="square"
       aria-hidden="true"
     >

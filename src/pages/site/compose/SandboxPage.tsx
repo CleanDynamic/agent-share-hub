@@ -95,7 +95,11 @@ import { SourcesPanel } from "./SourcesPanel";
 import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
-import { refGroups } from "@/lib/build/postRefs";
+import { refGroups, refLookup } from "@/lib/build/postRefs";
+import { makingWithGroupColours, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
+import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
+import { ReferenceNotice } from "./referencePieces";
+import { useReferences } from "./useReferences";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
 import { allParts, PartWindow } from "@/components/build/PartWindow";
 import { parseRefTo, refTo } from "@/lib/build/thread";
@@ -196,8 +200,25 @@ export function SandboxPage() {
   }, [tree, made, order]);
   /* CA-17 P5: the sessions of a part, for its picker's "Also colour its sessions that have no colour", and the parts with the previewed colour on. */
   const sessionsOfPart = useCallback((workstream: string): readonly string[] => workstreamsOf(made, orderKeys(savedGroups)).find((part) => part.key === workstream)?.sessions ?? [], [made, savedGroups]);
-  const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview, sessionsOfPart), [savedSteps, savedGroups, colourPreview, sessionsOfPart]);
-  const madeShown = useMemo(() => previewWorkstreams(made, colourPreview), [made, colourPreview]);
+  /* CA-19: single colours and reference groups, the one history of colour and link steps, and what is written but not yet saved. */
+  const writeRef = useRef<(to: string, colour: string | null) => void>(() => undefined);
+  const saveGroupsRef = useRef<(groups: ReferenceGroup[], order?: string[]) => Promise<void>>(async () => undefined);
+  const nameRef = useRef<(to: string) => string>((to) => to);
+  const references = useReferences({
+    made,
+    savedSteps,
+    savedGroups,
+    writeColour: (to, colour) => writeRef.current(to, colour),
+    saveGroups: (list, order) => saveGroupsRef.current(list, order),
+    loaded: Boolean(build),
+    nameOf: (to) => nameRef.current(to),
+  });
+  // A member is drawn in its group's colour; the picker's live colour goes over that.
+  const { steps, groups } = useMemo(() => {
+    const drawn = withGroupColours(savedSteps, savedGroups, references.making, references.pending);
+    return previewColours(drawn.steps, drawn.groups, colourPreview, sessionsOfPart);
+  }, [savedSteps, savedGroups, references.making, references.pending, colourPreview, sessionsOfPart]);
+  const madeShown = useMemo(() => previewWorkstreams(makingWithGroupColours(references.making, references.pending), colourPreview), [references.making, references.pending, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
@@ -423,6 +444,9 @@ export function SandboxPage() {
   /* ── links in the post (CA-06 P3) ── */
 
   const registry = useRef<PartRegistry>(new Map()).current;
+  const baseLookup = useMemo(() => refLookup(postRefGroups), [postRefGroups]);
+  const groupEntriesOf = references.groupEntries;
+  const groupTargets = useMemo(() => groupEntriesOf(baseLookup), [groupEntriesOf, baseLookup]);
   const links = usePostLinks({
     steps,
     groups,
@@ -432,7 +456,14 @@ export function SandboxPage() {
     phone,
     setSelectedId,
     setOpenPromptId,
+    groupEntries: groupTargets,
   });
+  /** CA-19: every link target, groups too, and the screen's name for each. */
+  const withGroupTargets = references.withGroups;
+  const nameIn = references.nameIn;
+  const allTargets = useMemo(() => withGroupTargets(links.lookup), [withGroupTargets, links.lookup]);
+  const nameOfTarget = useCallback((to: string) => nameIn(allTargets, to), [nameIn, allTargets]);
+  nameRef.current = nameOfTarget;
 
   /* ── sessions (CA-04 P1) ── */
 
@@ -845,6 +876,19 @@ export function SandboxPage() {
     },
     [onSessionColour, prompts, afterWrite, edits],
   );
+  writeRef.current = writeColour;
+  saveGroupsRef.current = async (list: ReferenceGroup[], order?: string[]) => {
+    try {
+      await nodes.run(async () => {
+        const id = await ensureBuild();
+        await setReferenceGroups(id, list, order);
+        await refreshRecord(id);
+      });
+    } catch (cause) {
+      console.error("[Sandbox] reference groups not saved", cause);
+      sayFailed(cause, "Couldn't save those colours. Try again.");
+    }
+  };
   /* CA-06 P5: the picker the colour buttons open. */
   const { onColour, picker: colourPicker } = useColourPicking({ preview: colourPreview, setPreview: setColourPreview, savedSteps, savedGroups, write: writeColour, phone, sessionsOfPart });
   /** Details' colour: the selected tile's or session's, with its button. */
@@ -1704,7 +1748,7 @@ export function SandboxPage() {
             thread={thread}
             phone={phone}
             draft={{ build, title: viewProps.title, maker }}
-            references={{ groups: postRefGroups, lookup: links.lookup, onGo: links.goTo, onMentions: links.onMentions }}
+            references={{ groups: postRefGroups, lookup: allTargets, onGo: links.goTo, onMentions: links.onMentions, history: references.history, onEditor: references.setEditor, nameOf: nameOfTarget }}
           />
         }
         threadNote={thread.hold}
@@ -1907,6 +1951,7 @@ export function SandboxPage() {
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
       {colourPicker}
+      <ReferenceNotice notice={references.history.notice} onUndo={references.history.undo} onDone={references.history.dismiss} phone={phone} />
       <PartWindow
         steps={steps}
         groups={groups}

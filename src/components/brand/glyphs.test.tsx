@@ -60,6 +60,8 @@ const TABLE: Record<GlyphName, string> = {
   fit: "M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10",
   undo: "M5.5 4 3 6.5 5.5 9M3 6.5h6.25a3.5 3.5 0 0 1 0 7H7",
   redo: "M10.5 4 13 6.5 10.5 9M13 6.5H6.75a3.5 3.5 0 0 0 0 7H9",
+  reference: "M12.5 8a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zM9.75 8a1.75 1.75 0 1 1-3.5 0 1.75 1.75 0 0 1 3.5 0zM8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2",
+  eyedropper: "M10.5 2.75l2.75 2.75-1.5 1.5-2.75-2.75zM9.75 5.75 4.5 11v1.5H6l5.25-5.25M3 13l1.5-1.5",
 };
 
 const REFINED_URL = "/dev/kit/components";
@@ -69,7 +71,7 @@ const svgOf = (container: HTMLElement) => container.querySelector("svg") as SVGS
 
 describe("the glyph table", () => {
   it("is the 24 glyphs of the UI-P82 table, the ones added for posts, CA-06's @, CA-07, CA-17's fit and CA-19's, in its order", () => {
-    expect(GLYPH_NAMES).toHaveLength(45);
+    expect(GLYPH_NAMES).toHaveLength(47);
     expect(GLYPH_NAMES).toEqual(Object.keys(TABLE));
   });
 
@@ -100,10 +102,10 @@ describe("Glyph", () => {
     expect(svg).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("draws every glyph at stroke 1.3 but `more` and `grip`, which are dots only and take 2", () => {
+  it("draws every glyph at stroke 1.3 but `more` and `grip`, which are dots only and take 2, and CA-19's reference at 1.4", () => {
     for (const name of GLYPH_NAMES) {
       const svg = svgOf(render(<Glyph name={name} />).container);
-      expect(svg.getAttribute("stroke-width"), name).toBe(name === "more" || name === "grip" ? "2" : "1.3");
+      expect(svg.getAttribute("stroke-width"), name).toBe(name === "more" || name === "grip" ? "2" : name === "reference" ? "1.4" : "1.3");
     }
   });
 

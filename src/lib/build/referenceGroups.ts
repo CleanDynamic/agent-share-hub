@@ -507,40 +507,53 @@ function recolour(steps: readonly Step[], colourOf: (id: string) => string | nul
 }
 
 /**
- * The steps and sessions as they are drawn: a member of a group in its group's colour, everything else as stored. The
- * same helpers then draw it (`borderFor`, `outlineFor`, the links' fill), so a group's colour reaches every place a single
- * colour does. Returns what it was given when there are no groups.
+ * What a component is drawn in, over what is stored: its group's colour when it is in one, else `pending[ref]` when the
+ * composer has written a single colour that is not saved yet (null: taken off), else undefined (as stored).
  */
-export function withGroupColours(steps: Step[], groups: SessionGroup[], making: unknown): { steps: Step[]; groups: SessionGroup[] } {
+function drawnColour(model: ColourModel, pending: Readonly<Record<string, string | null>>, ref: string): string | null | undefined {
+  const state = stateIn(model, ref);
+  if (state.state !== "none") return state.colour;
+  return ref in pending ? pending[ref] : undefined;
+}
+
+/**
+ * The steps and sessions as they are drawn: a member of a group in its group's colour, a single colour the composer has
+ * just written as written, everything else as stored. The same helpers then draw it (`borderFor`, `outlineFor`, the links'
+ * fill), so a group's colour reaches every place a single colour does. Returns what it was given when nothing changes.
+ */
+export function withGroupColours(steps: Step[], groups: SessionGroup[], making: unknown, pending: Readonly<Record<string, string | null>> = {}): { steps: Step[]; groups: SessionGroup[] } {
   const model: ColourModel = { groups: referenceGroupsOf(making), singles: {} };
-  if (model.groups.length === 0) return { steps, groups };
-  const shown = (ref: string): string | undefined => {
-    const state = stateIn(model, ref);
-    return state.state === "none" ? undefined : (state.colour ?? undefined);
-  };
+  if (model.groups.length === 0 && Object.keys(pending).length === 0) return { steps, groups };
   return {
-    steps: recolour(steps, (id) => shown(refTo({ kind: "node", id }))),
+    steps: recolour(steps, (id) => drawnColour(model, pending, refTo({ kind: "node", id }))),
     groups: groups.map((group) => {
-      const colour = shown(refTo({ kind: "session", id: groupKey(group) }));
-      return colour ? { ...group, colour } : group;
+      const colour = drawnColour(model, pending, refTo({ kind: "session", id: groupKey(group) }));
+      if (colour === undefined) return group;
+      const next = { ...group };
+      if (colour) next.colour = colour;
+      else delete next.colour;
+      return next;
     }),
   };
 }
 
-/** `making` with every grouped part's colour laid over its `workstreams` entry, for the part heads, the map and the links. */
-export function makingWithGroupColours(making: unknown): unknown {
+/** `making` with every grouped (or just written) part's colour laid over its `workstreams` entry, for the part heads, the map and the links. */
+export function makingWithGroupColours(making: unknown, pending: Readonly<Record<string, string | null>> = {}): unknown {
   const model: ColourModel = { groups: referenceGroupsOf(making), singles: {} };
-  if (model.groups.length === 0 || !making || typeof making !== "object") return making;
+  if ((model.groups.length === 0 && Object.keys(pending).length === 0) || !making || typeof making !== "object") return making;
   const list = (making as { workstreams?: unknown }).workstreams;
   if (!Array.isArray(list)) return making;
   let changed = false;
   const next = list.map((entry) => {
     const key = asObject(entry).key;
     if (typeof key !== "string") return entry;
-    const state = stateIn(model, refTo({ kind: "workstream", id: key }));
-    if (state.state === "none" || !state.colour) return entry;
+    const colour = drawnColour(model, pending, refTo({ kind: "workstream", id: key }));
+    if (colour === undefined) return entry;
     changed = true;
-    return { ...asObject(entry), colour: state.colour };
+    const copy = { ...asObject(entry) };
+    if (colour) copy.colour = colour;
+    else delete copy.colour;
+    return copy;
   });
   return changed ? { ...(making as object), workstreams: next } : making;
 }

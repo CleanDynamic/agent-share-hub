@@ -65,7 +65,14 @@ export const GLYPHS = {
   /** CA-19: Undo and Redo, drawn in their neighbours' style. */
   undo: "M5.5 4 3 6.5 5.5 9M3 6.5h6.25a3.5 3.5 0 0 1 0 7H7",
   redo: "M10.5 4 13 6.5 10.5 9M13 6.5H6.75a3.5 3.5 0 0 0 0 7H9",
+  /** CA-19: "Link to a group, part, session or tile": a target, a circle with a smaller one inside and four short ticks. Stroke 1.4. */
+  reference: "M12.5 8a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zM9.75 8a1.75 1.75 0 1 1-3.5 0 1.75 1.75 0 0 1 3.5 0zM8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2",
+  /** CA-19: "Pick from the screen", an eyedropper. */
+  eyedropper: "M10.5 2.75l2.75 2.75-1.5 1.5-2.75-2.75zM9.75 5.75 4.5 11v1.5H6l5.25-5.25M3 13l1.5-1.5",
 } as const;
+
+/** The glyphs drawn at a stroke of their own: CA-19's reference target at 1.4. */
+export const GLYPH_STROKES: Partial<Record<keyof typeof GLYPHS, number>> = { reference: 1.4 };
 
 export type GlyphName = keyof typeof GLYPHS;
 

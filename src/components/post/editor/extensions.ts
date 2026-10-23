@@ -27,7 +27,7 @@ import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, postType } from "@/components/post/postType";
 import { countLabel, COUNT_SHOWN_FROM } from "@/lib/build/threadEditor";
 import { linkAllowed, parseRefTo, POST_BODY_MAX } from "@/lib/build/thread";
-import { splitRepairs, stripRefMarks } from "@/lib/build/linkRules";
+import { extraLinks, LINK_RULES_COPY, splitRepairs, stripRefMarks } from "@/lib/build/linkRules";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
@@ -642,7 +642,14 @@ const PostLinkRules = Extension.create({
     return [
       new Plugin({
         key: new PluginKey("postLinkRules"),
-        props: { transformPasted: (slice) => stripRefMarks(slice) },
+        props: {
+          transformPasted: (slice) => stripRefMarks(slice),
+          // An old post's extra links say so where they are; the line under the post removes them in one step.
+          decorations: (state) => {
+            const extras = extraLinks(state.doc);
+            return extras.length ? DecorationSet.create(state.doc, extras.map((range) => Decoration.inline(range.from, range.end, { title: LINK_RULES_COPY.alsoLinked, "data-ref-extra": "" }))) : null;
+          },
+        },
         appendTransaction: (transactions, before, after) => {
           if (!transactions.some((tr) => tr.docChanged)) return null;
           const map = (pos: number, assoc?: number) => transactions.reduce((at, tr) => tr.mapping.map(at, assoc), pos);

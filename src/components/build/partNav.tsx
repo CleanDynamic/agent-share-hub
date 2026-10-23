@@ -83,3 +83,52 @@ export function focusable(el: HTMLElement): HTMLElement {
   while (at && at.tabIndex < 0) at = at.parentElement;
   return at ?? el;
 }
+
+/**
+ * CA-19 P3, Go to the group: every member is outlined and the rest of the parts drawn here are dimmed, until Escape (or the
+ * next call). A part holding a member is not dimmed itself (its other parts are), so a tile in a session stays bright.
+ * Returns what puts it all back. Straight on the elements, as `flashOutline` is: nothing in the List or the map re-renders.
+ */
+export function focusGroup(registry: PartRegistry, members: readonly string[], dimFilter: string, ring: { width: number | string; style: string; colour: string; offset: number | string }): () => void {
+  stopFocusGroup?.();
+  const memberEls = members.flatMap((to) => {
+    const el = partElement(registry, to);
+    return el ? [el] : [];
+  });
+  const touched: { el: HTMLElement; filter: string; was: [string, string, string, string] }[] = [];
+  const keep = (el: HTMLElement) => touched.push({ el, filter: el.style.filter, was: [el.style.outlineWidth, el.style.outlineStyle, el.style.outlineColor, el.style.outlineOffset] });
+  for (const el of memberEls) {
+    keep(el);
+    const px = (value: number | string) => (typeof value === "number" ? `${value}px` : value);
+    el.style.outlineWidth = px(ring.width);
+    el.style.outlineStyle = ring.style;
+    el.style.outlineColor = ring.colour;
+    el.style.outlineOffset = px(ring.offset);
+    el.setAttribute("data-group-focus", "member");
+  }
+  for (const [to, el] of registry) {
+    if (!el.isConnected || members.includes(to)) continue;
+    if (memberEls.some((member) => el.contains(member) || member.contains(el))) continue;
+    keep(el);
+    el.style.filter = dimFilter;
+    el.setAttribute("data-group-focus", "dimmed");
+  }
+  const restore = () => {
+    for (const { el, filter, was } of touched) {
+      el.style.filter = filter;
+      [el.style.outlineWidth, el.style.outlineStyle, el.style.outlineColor, el.style.outlineOffset] = was;
+      el.removeAttribute("data-group-focus");
+    }
+    document.removeEventListener("keydown", onKey, true);
+    if (stopFocusGroup === restore) stopFocusGroup = null;
+  };
+  const onKey = (event: KeyboardEvent) => {
+    if (event.key === "Escape") restore();
+  };
+  document.addEventListener("keydown", onKey, true);
+  stopFocusGroup = restore;
+  if (memberEls[0]) centre(memberEls[0]);
+  return restore;
+}
+
+let stopFocusGroup: (() => void) | null = null;

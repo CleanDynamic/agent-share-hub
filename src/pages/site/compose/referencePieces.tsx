@@ -52,7 +52,7 @@ export const ELLIPSIS: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden
 
 /* ── measures the boards draw ── */
 
-export const PAD = { panel: "12px 14px", section: "14px 18px", rows: "10px 18px", search: "0 18px 12px", list: "0 8px 10px", label: "12px 10px 6px", members: "0 10px 4px 32px", bar: "10px 14px", card: "16px 18px", notice: "0 6px 0 14px", head: "16px 18px 12px", foot: "12px 18px" } as const;
+export const PAD = { panel: "12px 14px", section: "14px 18px", rows: "10px 18px", search: "0 18px 12px", list: "0 8px 10px", label: "12px 10px 6px", members: "0 10px 4px 32px", bar: "10px 14px", row: "0 10px", card: "16px 18px", notice: "0 6px 0 14px", head: "16px 18px 12px", foot: "12px 18px" } as const;
 export const GAP = { notice: 14, picker: 16, column: 10, swatch: 8, panels: 8, row: 10 } as const;
 
 /* ── the inner panel ── */

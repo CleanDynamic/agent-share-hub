@@ -127,6 +127,7 @@ export const NOTICE_COPY = {
   notes: (group: string) => `Changed the notes of ${group}`,
   ordered: "Changed the order",
   folded: (group: string, member: string) => `${group} had one component left, so ${member} keeps its colour`,
+  trimmed: (group: string) => `Took a deleted component out of ${group}`,
   undo: "Undo",
   redo: "Redo",
   /** A group with no name, wherever a sentence names it. */
