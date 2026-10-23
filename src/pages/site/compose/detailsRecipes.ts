@@ -79,3 +79,10 @@ export const EMPTY: CSSProperties = { ...type(13, 400, t.text2, 18), margin: 0 }
 /* CA-18 P4: the composer's frame. The composer sits 34 in from the surface; the build head's post is 18 below its status line and 18 above its hairline. */
 export const COMPOSER_PAD = 34;
 export const HEAD_GAP = 18;
+
+/* CA-18 P5: the overlay panel of a smaller window, and the foot that says a click edits. */
+export const OVERLAY_WIDTH = 360;
+export const OVERLAY_EDGE = 8;
+export const OVERLAY_PAD = 20;
+export const OVERLAY_FOOT_PAD = "14px 20px";
+export const OVERLAY_FOOT_COPY = { click: "Click to edit", tap: "Tap to edit" } as const;

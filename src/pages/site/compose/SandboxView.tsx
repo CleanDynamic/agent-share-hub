@@ -48,6 +48,7 @@ import { TextButton } from "./composeControls";
 import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
+import { ClickToEdit, DetailsOverlay } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { COMPOSER_PAD, HEAD_GAP } from "./detailsRecipes";
@@ -162,6 +163,9 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
   /** CA-18 P4: Details drawn for a plan (its columns, or a measuring copy). Absent: `selection`, in one column. */
   renderDetails?: (plan?: DetailsPlan) => ReactNode;
+  /** CA-18 P5: the selected tile's key, and the way to its window: the overlay and the sheet open the window from a click on their content. */
+  selectedKey?: string | null;
+  onEditSelected?: () => void;
 }
 
 export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "code" | "check" | "result";
@@ -783,6 +787,7 @@ export function SandboxView(props: SandboxViewProps) {
   const [railOpen, setRailOpen] = useState(false);
   const buildRef = useRef<HTMLElement>(null);
   const postRef = useRef<HTMLElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   if (status === "loading") return <Skeletons phone={phone} />;
   if (status === "error") {
@@ -1077,7 +1082,9 @@ export function SandboxView(props: SandboxViewProps) {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{sourcesBody}</div>
         </BottomSheet>
         <BottomSheet open={detailsOpen} onOpenChange={setDetailsOpen} title="Details">
-          {detailsBody}
+          <ClickToEdit onEdit={props.onEditSelected ? () => { setDetailsOpen(false); props.onEditSelected?.(); } : undefined} phone>
+            {detailsBody}
+          </ClickToEdit>
         </BottomSheet>
         {card}
       </div>
@@ -1108,6 +1115,7 @@ export function SandboxView(props: SandboxViewProps) {
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       <div
         data-testid="sandbox-tabs"
+        ref={tabsRef}
         style={{ height: 44, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: `0 ${COMPOSER_PAD}px`, borderBottom: `1px solid ${t.hairline}` }}
       >
         {tabs}
@@ -1138,6 +1146,11 @@ export function SandboxView(props: SandboxViewProps) {
           </div>
         ) : null}
       </div>
+      {frame.beside ? null : (
+        <DetailsOverlay selectedKey={props.selectedKey} below={tabsRef} onEdit={props.onEditSelected}>
+          {detailsBody}
+        </DetailsOverlay>
+      )}
       {card}
     </div>
   );
