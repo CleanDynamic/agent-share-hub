@@ -108,13 +108,13 @@ it("Sources puts a 7px dot before a coloured session's name", () => {
   expect(sessions.find((row) => row.key === LINKS_S1)?.colour).toBeUndefined();
 });
 
-it("Details puts an 8px dot before the eyebrow and the button beside the title", () => {
+it("Details puts an 8px dot before its line, and has no colour button (CA-18: the colour is set from the tile's menu)", () => {
   const onPick = vi.fn();
   render(createElement(DetailsPanel, { ...shapeDetailsProps("one-sitting", "o-p2", source), colour: { what: "Prompt 2", colour: LINKS_COLOURS.prompt, onPick } }));
-  const eyebrow = screen.getByTestId("details-eyebrow");
-  expect((eyebrow.querySelector("[data-colour-dot]") as HTMLElement).style.width).toBe("8px");
-  fireEvent.click(screen.getByRole("button", { name: `Colour for Prompt 2: ${LINKS_COLOURS.prompt}` }));
-  expect(onPick).toHaveBeenCalled();
+  const line = screen.getByTestId("details-line");
+  expect((line.querySelector("[data-colour-dot]") as HTMLElement).style.width).toBe("8px");
+  expect(screen.queryByRole("button", { name: /^Colour for/ })).toBeNull();
+  expect(onPick).not.toHaveBeenCalled();
 });
 
 it("the build page draws the same tiles and session line, and no colour button", () => {

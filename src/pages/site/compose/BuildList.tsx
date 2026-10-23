@@ -163,6 +163,8 @@ export interface BuildListProps {
   onSelect: (id: string) => void;
   /** UI-P67's full prompt window. Absent: nothing opens and "Read all of it" is disabled. */
   onOpenPrompt?: (id: string) => void;
+  /** CA-18: a double click on any other tile opens its own window, to change it. Absent: nothing opens. A phone has no double click. */
+  onEditTile?: (id: string) => void;
   onRename: (id: string, title: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
   onRemove: (id: string) => void;
@@ -1327,6 +1329,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       data-kind={step.kind}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
+      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
@@ -1465,6 +1468,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
+      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1568,6 +1572,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
+      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1631,6 +1636,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
+      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1694,7 +1700,7 @@ function PendingAddCard({ kind }: { kind: PendingAdd }) {
   );
 }
 
-function ResultCard({ result, selected, ringed = false, onSelect }: { result: ListResult; selected: boolean; ringed?: boolean; onSelect: (id: string) => void }) {
+function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { result: ListResult; selected: boolean; ringed?: boolean; onSelect: (id: string) => void; onEdit?: (id: string) => void }) {
   return (
     <div
       data-testid="result-card"
@@ -1703,6 +1709,7 @@ function ResultCard({ result, selected, ringed = false, onSelect }: { result: Li
       tabIndex={0}
       aria-pressed={selected}
       onClick={() => onSelect(result.id)}
+      onDoubleClick={onEdit ? () => onEdit(result.id) : undefined}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -2093,6 +2100,7 @@ export function BuildList(props: BuildListProps) {
                 onOpenSetup={props.onOpenSetup}
                 onPickApp={props.onPickApp}
                 inBuild={props.inBuild}
+                onEdit={props.onEditTile ? () => props.onEditTile?.(run.head.key) : undefined}
                 onColour={props.onColour ? (anchor) => props.onColour?.(refTo({ kind: "session", id: run.head.key }), anchor, `Session ${run.head.number}`, run.head.colour ?? null) : undefined}
               />
             ) : null}
@@ -2191,7 +2199,7 @@ export function BuildList(props: BuildListProps) {
         }
       </WhileDragging>
       {props.results.map((result) => (
-        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} />
+        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.phone ? undefined : props.onEditTile} />
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
       {nestOn ? (

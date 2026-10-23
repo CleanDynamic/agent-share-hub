@@ -78,6 +78,9 @@ import {
   frameStyle,
 } from "@/pages/site/compose/modalRecipes";
 
+import type { PromptView } from "@/pages/site/compose/DetailsPanel";
+import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editKit";
+
 import { FromPostNote } from "./PartWindow";
 import { PromptName } from "./tileBodies";
 
@@ -112,6 +115,9 @@ export interface FullPromptWindowProps {
   onBackToPost?: () => void;
   /** CA-06 P3: called as the window closes, instead of putting focus back where it was. */
   onCloseAutoFocus?: (event: Event) => void;
+  /** CA-18, maker mode: the prompt as Details reads it, and what changes it: Model, How it was run, Uses and Makes. Absent: those are not drawn. */
+  details?: (id: string) => PromptView | null;
+  handlers?: PromptEditHandlers;
 }
 
 export const FULL_PROMPT_COPY = {
@@ -529,7 +535,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
 
   const quiet = geist(11.5, 400, t.label);
   const maker = mode === "maker" && Boolean(onTitle) && !instructions;
-  const extras = (step.kind === "prompt" && !isInstructions(step) && step.outputShape) || step.changes?.length || uses.length > 0 || goesInto.length > 0;
+  const extras = (step.kind === "prompt" && !isInstructions(step) && step.outputShape) || step.changes?.length || ((uses.length > 0 || goesInto.length > 0) && !(maker && props.details));
 
   return (
     /* The global field rule makes a field inherit its size on a computer, so the window sets the fields' 13 here. */
@@ -590,6 +596,12 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
             <RefinedTextBox key={step.id} text={step.text} changes={step.changes} boxRef={textRef} phone={phone} onPick={mode === "maker" && (onChanges || onText) ? setPicked : undefined} />
           </Block>
           {!isInstructions(step) && step.kind === "prompt" ? <ReplyField key={`reply-${step.id}`} step={step} onReply={mode === "maker" ? onReply : undefined} phone={phone} /> : null}
+          {maker && !isInstructions(step) && step.kind === "prompt" && props.details && props.handlers ? (
+            (() => {
+              const view = props.details?.(step.id);
+              return view ? <PromptEdits key={`edits-${step.id}`} view={view} handlers={props.handlers as PromptEditHandlers} phone={phone} /> : null;
+            })()
+          ) : null}
           {extras ? (
             <Block>
               {!isInstructions(step) && step.kind === "prompt" && step.outputShape ? <ShapeRead shape={step.outputShape} /> : null}
@@ -598,7 +610,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
                   {changesLine(step.changes.length)}
                 </p>
               ) : null}
-              {uses.length > 0 || goesInto.length > 0 ? (
+              {(uses.length > 0 || goesInto.length > 0) && !(maker && props.details) ? (
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                   {uses.length > 0 ? <span style={quiet}>Uses</span> : null}
                   {uses.map((use) => (

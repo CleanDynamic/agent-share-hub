@@ -23,7 +23,7 @@ import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
 
 import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } from "./codeModel";
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, MODAL_WIDTH, Row } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
@@ -80,23 +80,35 @@ export interface AddCodeInput {
   model: string | null;
 }
 
+/** CA-18: what the form starts with on a piece of code that is there. */
+export interface CodeSeed {
+  source: string;
+  language: CodeLanguage | null;
+  filename: string | null;
+  tool: string | null;
+  model: string | null;
+}
+
 export interface AddCodeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: AddCodeInput) => void;
+  onAdd?: (input: AddCodeInput) => void;
   /** The tools the build already uses, first in the tool picker. */
   inBuild?: readonly string[];
   /** "Keep it as code": the text pasted into Typed here, to start the well with. */
   seed?: string | null;
+  /** CA-18: a piece of code that is there: its lines and language are filled in and saved with the rest. */
+  current?: CodeSeed | null;
+  edit?: EditMode<AddCodeInput>;
 }
 
-function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialogProps, "onAdd" | "inBuild" | "seed"> & { onCancel: () => void; phone: boolean }) {
-  const [source, setSource] = useState(seed ?? "");
-  const [filename, setFilename] = useState("");
+function Form({ onAdd, onCancel, phone, inBuild = [], seed, current, edit }: Pick<AddCodeDialogProps, "onAdd" | "inBuild" | "seed" | "current" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const [source, setSource] = useState(current?.source ?? seed ?? "");
+  const [filename, setFilename] = useState(current?.filename ?? "");
   /** Null while the language follows the text and the file name. */
-  const [chosen, setChosen] = useState<CodeLanguage | null>(null);
-  const [tool, setTool] = useState<string | null>(null);
-  const [model, setModel] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<CodeLanguage | null>(current?.language ?? null);
+  const [tool, setTool] = useState<string | null>(current?.tool ?? null);
+  const [model, setModel] = useState<string | null>(current?.model ?? null);
   const [files, setFiles] = useState<CodeStepInput[]>([]);
   const [refused, setRefused] = useState<string[]>([]);
   const uid = useId();
@@ -117,23 +129,28 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
   const submit = () => {
     if (!ready) return;
     const steps: CodeStepInput[] = [...(typed ? [{ source, language, filename: filename.trim() || null }] : []), ...files];
-    onAdd({ steps, tool, model });
+    const made = { steps, tool, model };
+    if (edit) edit.onSave(made);
+    else onAdd?.(made);
   };
 
   const missing = firstMissing([[typed || files.length > 0, "code"]]);
 
   return (
-    <ModalForm phone={phone} missing={missing} blocked={tooLong || filename.length > CODE_FILENAME_MAX} onSubmit={submit} onCancel={onCancel}>
+    <ModalForm phone={phone} missing={missing} blocked={tooLong || filename.length > CODE_FILENAME_MAX} onSubmit={submit} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined}>
+      {edit?.before ? edit.before({ steps: [{ source, language, filename: filename.trim() || null }], tool, model }) : null}
       <Block noRule>
         <BlockHead label={CODE_DIALOG_COPY.code} htmlFor={`${uid}-code`} count={typed ? CODE_DIALOG_COPY.lines(lineCount(source)) : null} />
-        <CodeEditorField id={`${uid}-code`} testId="code-well" value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />
+        <CodeEditorField id={`${uid}-code`} testId={edit ? "edit-code" : "code-well"} value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />
         {tooLong ? <Alert>{CODE_COPY.tooLong}</Alert> : null}
-        <Inline>
-          <FileButton phone={phone} multiple accept="text/*,.ts,.tsx,.js,.jsx,.mjs,.py,.sql,.json,.yml,.yaml,.sh,.html,.css,.md,.toml" onFiles={(list) => void take(list)} testId="code-files" inputLabel={CODE_DIALOG_COPY.upload}>
-            {CODE_DIALOG_COPY.upload}
-          </FileButton>
-        </Inline>
-        <Hint>{CODE_DIALOG_COPY.uploadLine}</Hint>
+        {edit ? null : (
+          <Inline>
+            <FileButton phone={phone} multiple accept="text/*,.ts,.tsx,.js,.jsx,.mjs,.py,.sql,.json,.yml,.yaml,.sh,.html,.css,.md,.toml" onFiles={(list) => void take(list)} testId="code-files" inputLabel={CODE_DIALOG_COPY.upload}>
+              {CODE_DIALOG_COPY.upload}
+            </FileButton>
+          </Inline>
+        )}
+        {edit ? null : <Hint>{CODE_DIALOG_COPY.uploadLine}</Hint>}
         {files.length > 0 ? (
           <ul aria-label={CODE_DIALOG_COPY.upload} style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {files.map((file, index) => (
@@ -183,20 +200,21 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
           <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} field />
         </OptionalField>
       </OptionalSection>
+      {edit?.after ? edit.after({ steps: [{ source, language, filename: filename.trim() || null }], tool, model }) : null}
     </ModalForm>
   );
 }
 
-export function AddCodeDialog({ open, onOpenChange, onAdd, inBuild, seed = null }: AddCodeDialogProps) {
+export function AddCodeDialog({ open, onOpenChange, onAdd, inBuild, seed = null, current = null, edit }: AddCodeDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddCodeInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={CODE_DIALOG_COPY.title} subtitle={CODE_DIALOG_COPY.subtitle} width={MODAL_WIDTH.wide} testId="add-code-dialog">
-      <Form inBuild={inBuild} seed={seed} onAdd={add} onCancel={close} phone={phone} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : CODE_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={CODE_DIALOG_COPY.subtitle} width={MODAL_WIDTH.wide} testId={edit ? "edit-code-dialog" : "add-code-dialog"}>
+      <Form inBuild={inBuild} seed={seed} current={current} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );
 }

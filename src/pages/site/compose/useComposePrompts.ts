@@ -94,6 +94,9 @@ import {
   usesOf,
   type AgentModel,
   setCheckCases,
+  setCheckText,
+  setCodeSource,
+  type CheckTextPatch,
   addResultTile,
   type ResultInput,
   type CheckCase,
@@ -220,6 +223,10 @@ export interface ComposePrompts {
   /** CA-15 P2: replace a prompt's text now (the window's "Mark selection as a variable"), keeping everything else it carries. */
   setTextOf: (id: string, text: string) => void;
   setCheckCases: (id: string, cases: readonly CheckCase[]) => void;
+  /** CA-18: a check's test description, pass criteria, failure notes and last run date. */
+  setCheckText: (id: string, patch: CheckTextPatch) => void;
+  /** CA-18: a piece of code's lines and language. */
+  setCodeSource: (id: string, patch: { source?: string; language?: string }) => void;
   /** UI-P65: take a suggested input. */
   accept: (id: string, use: Use, steps: readonly Step[]) => void;
   /** UI-P65: keep a suggestion from coming back; `key` is "<kind>:<node_id>". */
@@ -271,7 +278,7 @@ export interface ComposePrompts {
   /** UI-P70: add a manual step, with its picture if given, straight after step `afterId` (the end when null). Resolves its id, or null if it failed. */
   addManual: (input: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null }) => Promise<string | null>;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
-  setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
+  setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) => void;
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
   setManualPicture: (id: string, file: File) => Promise<boolean>;
   /** CA-02 P7: add code steps, one for each piece, in order, written with the tool and model given. Resolves the first one's id, or null if none was added. */
@@ -620,6 +627,10 @@ export function useComposePrompts({
     void writeStep(id, "Couldn't save that prompt. Try again.", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
     void writeStep(id, "Couldn't save those cases. Try again.", (node) => setCheckCases(node, keptCases(cases)));
+  const setCheckTextOf = (id: string, patch: CheckTextPatch) =>
+    void writeStep(id, "Couldn't save that check. Try again.", (node) => setCheckText(node, patch));
+  const setCodeSourceOf = (id: string, patch: { source?: string; language?: string }) =>
+    void writeStep(id, "Couldn't save that code. Try again.", (node) => setCodeSource(node, patch));
   const setAgentNotesOf = (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) =>
     void writeStep(id, "Couldn't save that. Try again.", (node) => setAgentNotes(node, notes));
   const setModelRunOf = (id: string, run: ModelRun | null) =>
@@ -957,7 +968,7 @@ export function useComposePrompts({
   const setConnection = (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) =>
     void writeStep(id, "Couldn't save how it was connected. Try again.", (node) => setToolConnection(node, connection, runsAt));
 
-  const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
+  const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) =>
     void writeStep(id, "Couldn't save that. Try again.", async (node) => {
       const saved = await setManualFields(node, fields);
       noteTool(latest.current.buildId, fields.tool);
@@ -990,5 +1001,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

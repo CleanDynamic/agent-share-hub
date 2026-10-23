@@ -49,7 +49,7 @@ import {
 } from "@/lib/build/sourceTiles";
 import { linesOf } from "@/lib/build/tileExtras";
 
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { Block, BlockHead, FactList, FactRow, FieldArea, FieldInput, GroupHeading, Hint, MODAL_WIDTH, OptionGrid, Panel, Row, SegmentedField, StatusLine } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
@@ -106,10 +106,32 @@ export const REPO_DIALOG_COPY = {
 
 export type AddRepoInput = Omit<RepoInput, "session">;
 
+/** CA-18: what the form starts with on a repository that is there. */
+export interface RepoCurrent {
+  url: string;
+  ownership: RepoOwnership | null;
+  description: string;
+  author: string;
+  usage: RepoUsage[];
+  visibility: RepoVisibility | null;
+  generated: string | null;
+  deployed: string;
+  pinKind: RepoPinKind | null;
+  pinValue: string;
+  path: string;
+  modifications: string;
+  keyFiles: string[];
+  run: string[];
+  /** What GitHub said when the address was entered; kept, never asked for again. */
+  fetched: RepoFetched | null;
+}
+
 export interface AddRepoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: AddRepoInput) => void;
+  onAdd?: (input: AddRepoInput) => void;
+  current?: RepoCurrent | null;
+  edit?: EditMode<AddRepoInput>;
   /** The tools the build already uses, first in the "Generated with" picker. */
   inBuild?: readonly string[];
   /** How a repository is looked up; GitHub's public API unless a test says otherwise. */
@@ -149,22 +171,28 @@ function Retrieved({ facts, owner, name, status }: { facts: RepoFetched | null; 
   );
 }
 
-function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo }: Pick<AddRepoDialogProps, "onAdd" | "inBuild"> & { fetchRepo: NonNullable<AddRepoDialogProps["fetchRepo"]>; onCancel: () => void; phone: boolean }) {
-  const [url, setUrl] = useState("");
-  const [ownership, setOwnership] = useState<RepoOwnership | null>(null);
-  const [description, setDescription] = useState("");
-  const [author, setAuthor] = useState<string | null>(null);
-  const [usage, setUsage] = useState<RepoUsage[]>([]);
-  const [visibility, setVisibility] = useState<RepoVisibility | null>(null);
-  const [generated, setGenerated] = useState<string | null>(null);
-  const [deployed, setDeployed] = useState("");
-  const [pinKind, setPinKind] = useState<RepoPinKind | null>(null);
-  const [pinValue, setPinValue] = useState("");
-  const [path, setPath] = useState("");
-  const [modifications, setModifications] = useState("");
-  const [keyFiles, setKeyFiles] = useState("");
-  const [run, setRun] = useState("");
-  const [retrieved, setRetrieved] = useState<RetrievedState>(null);
+/** Whether the lookup for this address is already held. */
+const here0 = (retrieved: RetrievedState, key: string | null): boolean => retrieved !== null && retrieved.key === key;
+
+function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo, current, edit }: Pick<AddRepoDialogProps, "onAdd" | "inBuild" | "current" | "edit"> & { fetchRepo: NonNullable<AddRepoDialogProps["fetchRepo"]>; onCancel: () => void; phone: boolean }) {
+  const [url, setUrl] = useState(current?.url ?? "");
+  const [ownership, setOwnership] = useState<RepoOwnership | null>(current?.ownership ?? null);
+  const [description, setDescription] = useState(current?.description ?? "");
+  const [author, setAuthor] = useState<string | null>(current ? current.author : null);
+  const [usage, setUsage] = useState<RepoUsage[]>(current?.usage ?? []);
+  const [visibility, setVisibility] = useState<RepoVisibility | null>(current?.visibility ?? null);
+  const [generated, setGenerated] = useState<string | null>(current?.generated ?? null);
+  const [deployed, setDeployed] = useState(current?.deployed ?? "");
+  const [pinKind, setPinKind] = useState<RepoPinKind | null>(current?.pinKind ?? null);
+  const [pinValue, setPinValue] = useState(current?.pinValue ?? "");
+  const [path, setPath] = useState(current?.path ?? "");
+  const [modifications, setModifications] = useState(current?.modifications ?? "");
+  const [keyFiles, setKeyFiles] = useState((current?.keyFiles ?? []).join("\n"));
+  const [run, setRun] = useState((current?.run ?? []).join("\n"));
+  const [retrieved, setRetrieved] = useState<RetrievedState>(() => {
+    const seeded = current ? parseRepoUrl(current.url) : null;
+    return seeded && current?.fetched ? { key: `${seeded.owner}/${seeded.name}`.toLowerCase(), facts: current.fetched } : null;
+  });
   const [tried, setTried] = useState(false);
   const uid = useId();
 
@@ -173,7 +201,8 @@ function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo }: Pick<AddRepoD
 
   /* Once per URL: the lookup starts when the address first reads as a repository, and a later change of address starts another. */
   useEffect(() => {
-    if (!parsed) return;
+    // A repository that is there keeps what GitHub said when it was added.
+    if (!parsed || (edit && here0(retrieved, key))) return;
     let live = true;
     void fetchRepo(parsed.owner, parsed.name).then((facts) => {
       if (live) setRetrieved({ key: `${parsed.owner}/${parsed.name}`.toLowerCase(), facts });
@@ -198,7 +227,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo }: Pick<AddRepoD
   const submit = () => {
     setTried(true);
     if (!parsed || !ownership || runSecret) return;
-    onAdd({
+    (edit ? edit.onSave : (onAdd ?? (() => undefined)))({
       url: parsed.url,
       ownership,
       ...(description.trim() ? { description: description.trim() } : null),
@@ -213,7 +242,8 @@ function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo }: Pick<AddRepoD
   };
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} alert={tried && runSecret ? REPO_DIALOG_COPY.runSecret : null}>
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} addLabel={edit ? MODAL_COPY.save : undefined} alert={tried && runSecret ? REPO_DIALOG_COPY.runSecret : null}>
+      {edit?.before ? edit.before({ url } as AddRepoInput) : null}
       <Row id={`${uid}-url`} label={REPO_DIALOG_COPY.url} phone={phone}>
         <FieldInput phone={phone} mono id={`${uid}-url`} inputMode="url" autoComplete="off" value={url} placeholder={REPO_DIALOG_COPY.urlPlaceholder} onChange={(event) => setUrl(event.target.value)} />
       </Row>
@@ -298,20 +328,21 @@ function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo }: Pick<AddRepoD
           <Hint>{RUN_HINT}</Hint>
         </OptionalField>
       </OptionalSection>
+      {edit?.after ? edit.after({ url } as AddRepoInput) : null}
     </ModalForm>
   );
 }
 
-export function AddRepoDialog({ open, onOpenChange, onAdd, inBuild, fetchRepo }: AddRepoDialogProps) {
+export function AddRepoDialog({ open, onOpenChange, onAdd, inBuild, fetchRepo, current, edit }: AddRepoDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddRepoInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={REPO_DIALOG_COPY.title} subtitle={REPO_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-repo-dialog">
-      <Form onAdd={add} onCancel={close} phone={phone} inBuild={inBuild} fetchRepo={fetchRepo ?? fetchRepoFacts} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : REPO_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={REPO_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-repo-dialog" : "add-repo-dialog"}>
+      <Form onAdd={add} onCancel={close} phone={phone} inBuild={inBuild} fetchRepo={fetchRepo ?? fetchRepoFacts} current={current} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} />
     </ModalShell>
   );
 }

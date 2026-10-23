@@ -14,6 +14,7 @@ import { StepsList } from "@/pages/site/build/BuildSteps";
 import { BuildList } from "./BuildList";
 import { dividers } from "./buildListModel";
 import { DetailsPanel, type DetailsPanelProps, type SessionView } from "./DetailsPanel";
+import { SessionDialog } from "./SessionDialog";
 import { resolveView } from "./detailsView";
 import { sourceSessions } from "./sourcesModel";
 
@@ -70,29 +71,38 @@ function ctx() {
   return { t, steps, groups, base: { steps, groups, tree: t, sources: sourceSessions(groups, steps), sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined } };
 }
 
-describe("Session Details › Setup", () => {
-  it("lists the setup under Date: kind over name, a skill's description, a not shared row dashed", () => {
+describe("Session window › Setup", () => {
+  it("lists the setup: kind and name, Not shared marked, Don't share it held until Save, Add to setup at once", () => {
     const { base } = ctx();
     const view = resolveView({ ...base, selectedId: "typed-b" }) as SessionView;
-    const props = details({ view, onAddToSetup: vi.fn(), onNotShared: vi.fn(), onSelect: vi.fn() });
+    const handlers = { onNotShared: vi.fn(), onAddToSetup: vi.fn(), onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() };
+    render(<SessionDialog view={view} onClose={vi.fn()} handlers={handlers} />);
     const section = screen.getByTestId("session-setup");
-    const rows = within(section).getAllByTestId("setup-row");
-    expect(rows.map((row) => row.textContent)).toEqual(["InstructionsCLAUDE.mdDon't share it", "MCP servergithubDon't share it", "Rulenpm testDon't share it", "Skillorder-formsOrder forms that add up.Not shared"]);
-    // CA-05 P6: two quiet labels, because both have rows; a skill is read only when needed.
-    expect(within(section).getAllByTestId("setup-loaded").map((group) => group.getAttribute("aria-label"))).toEqual(["At the start", "Only when needed"]);
-    expect(rows[3].getAttribute("data-not-shared")).toBe("true");
-    fireEvent.click(within(rows[0]).getByRole("button", { name: "Don't share it" }));
-    expect(props.onNotShared).toHaveBeenCalledWith("x1");
+    const text = section.textContent ?? "";
+    for (const word of ["Instructions", "CLAUDE.md", "MCP server", "github", "Rule", "npm test", "Skill", "order-forms"]) expect(text).toContain(word);
+    expect(within(section).getAllByRole("button", { name: /^Don't share it/ })).toHaveLength(3);
+    expect(text).toContain("Not shared");
+    fireEvent.click(within(section).getByRole("button", { name: "Don't share it: CLAUDE.md" }));
+    expect(handlers.onNotShared).not.toHaveBeenCalled();
     fireEvent.click(within(section).getByRole("button", { name: "Add to setup" }));
-    expect(props.onAddToSetup).toHaveBeenCalledWith("typed-b");
-    fireEvent.click(within(rows[1]).getByRole("button", { name: /github/ }));
-    expect(props.onSelect).toHaveBeenCalledWith("x3");
+    expect(handlers.onAddToSetup).toHaveBeenCalledWith("typed-b");
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
+    expect(handlers.onNotShared).toHaveBeenCalledWith("x1");
+  });
+
+  it("is read in Details as a list of its items, a skill marked Not shared", () => {
+    const { base } = ctx();
+    const view = resolveView({ ...base, selectedId: "typed-b" }) as SessionView;
+    details({ view });
+    const section = screen.getByRole("region", { name: "Setup" });
+    expect(within(section).getAllByRole("listitem").map((row) => row.textContent)).toEqual(expect.arrayContaining([expect.stringContaining("CLAUDE.md"), expect.stringContaining("order-forms")]));
+    expect(section.textContent).toContain("Not shared");
   });
 
   it("draws nothing for a session with no setup", () => {
     const { base } = ctx();
-    details({ view: resolveView({ ...base, selectedId: "typed-a" }), onAddToSetup: vi.fn() });
-    expect(screen.queryByTestId("session-setup")).toBeNull();
+    details({ view: resolveView({ ...base, selectedId: "typed-a" }) });
+    expect(screen.queryByRole("region", { name: "Setup" })).toBeNull();
   });
 
   it("opens a setup item as a file, a tool or its rule", () => {

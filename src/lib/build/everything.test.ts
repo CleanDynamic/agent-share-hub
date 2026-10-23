@@ -167,28 +167,27 @@ describe("everything at once, in the composer", () => {
     expect(text).not.toContain("Tidies its notes");
   });
 
-  it("gives Session Details Started with, its settings in words, and the optional fields", () => {
+  it("reads Session Details: Started with, the cost, the copy, the sessions it ran beside and its setup (CA-18: Details only reads)", () => {
     render(createElement(MemoryRouter, null, createElement(DetailsPanel, shapeDetailsProps("everything"))));
-    expect(screen.getByRole("textbox", { name: "Started with" })).toBeTruthy();
-    expect(screen.getByTestId("started-with-settings").textContent).toBe("Model: opusAllowed to: plan onlyOwn copy of the code: fix-totalsAt most 8 turns");
-    for (const name of ["What it cost", "Own copy of the code"]) expect(screen.getByRole("textbox", { name })).toBeTruthy();
-    expect(screen.getByRole("checkbox", { name: "Show readers" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Ran at the same time as" })).toBeTruthy();
-    const groupsShown = within(screen.getByTestId("session-setup")).getAllByTestId("setup-loaded");
-    expect(groupsShown.map((group) => group.getAttribute("aria-label"))).toEqual(["At the start", "Only when needed"]);
+    const section = (name: string) => screen.getByRole("region", { name });
+    expect(document.querySelectorAll("input, textarea, select").length).toBe(0);
+    expect(section("Started with").textContent).toContain("claude --model opus");
+    expect(section("Own copy of the code").textContent).toContain("fix-totals");
+    expect(section("At the same time as")).toBeTruthy();
+    expect(within(section("Setup")).getAllByRole("listitem").length).toBeGreaterThan(0);
   });
 
-  it("gives the check, the agent and the result what their Details ask", () => {
+  it("reads the check's runs, the agent's way it ran and its notes, and the result as a trained model", () => {
     cleanup();
     render(createElement(MemoryRouter, null, createElement(DetailsPanel, shapeDetailsProps("everything", "e-chk"))));
-    expect(screen.getAllByTestId("check-run")).toHaveLength(3);
+    expect(within(screen.getByRole("region", { name: "Runs" })).getAllByRole("listitem")).toHaveLength(3);
     cleanup();
     render(createElement(MemoryRouter, null, createElement(DetailsPanel, shapeDetailsProps("everything", "e-a1"))));
-    expect(screen.getByRole("button", { name: "How it was run" })).toBeTruthy();
-    expect(screen.getByRole("textbox", { name: "How it tidies its notes" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "How it was run" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Memory" }).textContent).toContain("How it tidies");
     cleanup();
     render(createElement(MemoryRouter, null, createElement(DetailsPanel, shapeDetailsProps("everything", "e-r1"))));
-    expect((screen.getByRole("radio", { name: "Model" }) as HTMLInputElement).checked).toBe(true);
-    expect(screen.getByTestId("trained-on").textContent).toContain("ratings.csv · 1,200 rows");
+    expect(screen.getByRole("region", { name: "Output type" }).textContent).toContain("Model");
+    expect(screen.getByRole("region", { name: "Trained on" }).textContent).toContain("ratings.csv");
   });
 });

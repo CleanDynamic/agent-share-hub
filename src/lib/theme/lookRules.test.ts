@@ -493,6 +493,57 @@ export const CA03_FILES: readonly string[] = [
   // CA-17 P6
   "src/pages/site/compose/tabRowRecipes.ts",
   "src/pages/site/build/readerParts.test.tsx",
+  // CA-18 P1
+  "src/lib/build/tileSections.ts",
+  "src/lib/build/tileSections.test.ts",
+  "src/dev/fixtures/detailsKinds.ts",
+  // CA-18 P2
+  "src/pages/site/compose/detailsRecipes.ts",
+  "src/pages/site/compose/editBuffer.ts",
+  "src/pages/site/compose/editBuffer.test.ts",
+  "src/pages/site/compose/editHandlers.ts",
+  "src/pages/site/compose/editKit.tsx",
+  "src/pages/site/compose/tileEdits.ts",
+  "src/pages/site/compose/TileEditDialog.tsx",
+  "src/pages/site/compose/TileEditDialog.test.tsx",
+  "src/pages/site/compose/SessionDialog.tsx",
+  "src/pages/site/compose/SessionDialog.test.tsx",
+  "src/pages/site/compose/tileSections.match.test.tsx",
+  "src/pages/site/compose/BuildList.edit.test.tsx",
+  "src/components/build/FullPromptWindow.sections.test.tsx",
+  "src/pages/site/compose/SessionExtrasFields.tsx",
+  "src/pages/site/compose/PairNote.tsx",
+  "src/pages/site/compose/RunsFields.tsx",
+  "src/pages/site/compose/ModalFrame.tsx",
+  "src/pages/site/compose/AddToolDialog.tsx",
+  "src/pages/site/compose/AddManualStepDialog.tsx",
+  "src/pages/site/compose/AddCodeDialog.tsx",
+  "src/pages/site/compose/AddCheckDialog.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AddResultDialog.tsx",
+  "src/pages/site/compose/AddSystemPromptDialog.tsx",
+  "src/pages/site/compose/AddDatasetDialog.tsx",
+  "src/pages/site/compose/AddRepoDialog.tsx",
+  "src/pages/site/compose/AddDecisionDialog.tsx",
+  "src/pages/site/compose/runtimeView.ts",
+  "src/pages/site/compose/SessionHead.tsx",
+  "src/pages/site/compose/BuildList.tsx",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/detailsView.ts",
+  "src/components/build/FullPromptWindow.tsx",
+  // CA-18 P5
+  "src/components/shell/siteFrame.wide.test.tsx",
+  "src/pages/site/compose/DetailsOverlay.tsx",
+  "src/pages/site/compose/DetailsOverlay.test.tsx",
+  // CA-18 P4
+  "src/pages/site/compose/detailsLayout.ts",
+  "src/pages/site/compose/detailsLayout.test.ts",
+  "src/pages/site/compose/DetailsAside.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/SandboxView.test.tsx",
+  "src/pages/site/compose/ComposeRoute.tsx",
+  "src/components/shell/SiteFrame.tsx",
 ];
 
 /**
@@ -513,10 +564,13 @@ export const MODAL_FILES: readonly string[] = [
   "src/pages/site/compose/AddSystemPromptDialog.tsx",
   "src/pages/site/compose/AddToolDialog.tsx",
   "src/pages/site/compose/DecisionFields.tsx",
+  "src/pages/site/compose/editKit.tsx",
+  "src/pages/site/compose/TileEditDialog.tsx",
+  "src/pages/site/compose/SessionDialog.tsx",
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 

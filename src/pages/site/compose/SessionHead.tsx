@@ -36,6 +36,7 @@ export const SESSION_HEAD_COPY = {
   addToThis: "+ Add to this session",
   moveUp: "Move up",
   moveDown: "Move down",
+  edit: "Edit session…",
   colour: "Colour…",
   mergeUp: "Merge with the session above",
   moveToPart: "Move to part…",
@@ -91,6 +92,8 @@ export interface SessionHeadProps {
   onPickApp?: (key: string, tool: string | null) => void;
   /** Opens the colour picker for the session, anchored to the element. Absent: no colour. */
   onColour?: (anchor: HTMLElement) => void;
+  /** CA-18: opens the session's own window, to change it: a double click on the head, and "Edit session…" in its menu. Absent: neither. */
+  onEdit?: () => void;
   inBuild?: readonly string[];
   /** Whether the session can be moved, titled and so on: not an old build's unsaved run of typed prompts. */
   editable: boolean;
@@ -219,7 +222,7 @@ function RemoveDialog({ open, session, tiles, phone, onClose, onConfirm }: { ope
   );
 }
 
-export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, ops, onOpenSetup, onPickApp, onColour, inBuild = [], editable, part }: SessionHeadProps) {
+export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part }: SessionHeadProps) {
   const drop = useNestSession(session.key);
   const drag = useNestSessionDrag(session.key);
   const head = useRef<HTMLDivElement>(null);
@@ -300,6 +303,15 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
         }}
         onKeyDown={onKeyDown}
+        onDoubleClick={
+          onEdit && maker && !phone
+            ? (event) => {
+                // A double click on a field, a button or a menu is that control's own.
+                if ((event.target as HTMLElement).closest("input, button, a, [role=menuitem]")) return;
+                onEdit();
+              }
+            : undefined
+        }
         style={{
           position: "relative",
           outline: "none",
@@ -380,6 +392,11 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
                       </span>
                       {SESSION_HEAD_COPY.sameStage}
                     </Menu.CheckboxItem>
+                  ) : null}
+                  {onEdit ? (
+                    <Row phone={phone} onSelect={onEdit}>
+                      {SESSION_HEAD_COPY.edit}
+                    </Row>
                   ) : null}
                   {onColour ? (
                     <Row phone={phone} onSelect={() => head.current && onColour(head.current)}>

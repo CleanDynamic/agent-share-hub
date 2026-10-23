@@ -1,6 +1,6 @@
-// CA-04 P6 — Worked until on screen: Session Details saves it; the List and the build page say it under the head.
+// CA-04 P6 — Worked until on screen: the Session window saves it (CA-18: Details only reads it now); the List and the build page say it under the head.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,7 +13,8 @@ import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
 import { BuildList } from "./BuildList";
 import { dividers } from "./buildListModel";
-import { DetailsPanel, type SessionView } from "./DetailsPanel";
+import type { SessionView } from "./DetailsPanel";
+import { SessionDialog } from "./SessionDialog";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -29,33 +30,41 @@ const tree = [{ id: "p", build_id: "b", parent_id: null, position: 1, type: "pro
 
 const session = (over: Partial<SessionView> = {}): SessionView => ({ kind: "session", key: "typed-a", number: 1, tool: "Claude Code", model: "", date: "12 Oct", inBuild: 1, total: 1, status: "ready", checklist: [], ...over });
 const mount = (view: SessionView, onSessionGoal = vi.fn()) => {
-  render(<DetailsPanel phone={false} view={view} onSessionGoal={onSessionGoal} onRename={vi.fn()} onModel={vi.fn()} onAddUse={vi.fn()} onRemoveUse={vi.fn()} onRuns={vi.fn()} onRemoveInside={vi.fn()} onToggleSessionPrompt={vi.fn()} onDownload={vi.fn()} onFields={vi.fn()} onAddPicture={vi.fn()} onUseAsCover={vi.fn()} />);
+  render(<SessionDialog view={view} onClose={vi.fn()} handlers={{ onSessionGoal, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() }} />);
   return onSessionGoal;
 };
+const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
-describe("Session Details › Worked until", () => {
-  it("is offered as Add a goal, and saves the condition word for word", () => {
+describe("Session window › Worked until", () => {
+  it("saves the condition word for word, when Save is pressed", () => {
     const onSessionGoal = mount(session());
-    expect(screen.queryByTestId("session-goal")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Add a goal" }));
     const condition = screen.getByRole("textbox", { name: "The condition" });
     fireEvent.change(condition, { target: { value: "the order form passes its tests" } });
     fireEvent.blur(condition);
+    expect(onSessionGoal).not.toHaveBeenCalled();
+    save();
     expect(onSessionGoal).toHaveBeenCalledWith("typed-a", { condition: "the order form passes its tests" });
   });
 
   it("asks Was it reached?, refuses turns outside 1 to 500, and takes the goal off", () => {
     const onSessionGoal = mount(session({ goal: { condition: "x" } }));
     fireEvent.click(screen.getByRole("radio", { name: "Reached" }));
-    expect(onSessionGoal).toHaveBeenLastCalledWith("typed-a", { condition: "x", reached: "reached" });
     const most = screen.getByRole("textbox", { name: "At most" });
     fireEvent.change(most, { target: { value: "900" } });
-    fireEvent.keyDown(most, { key: "Enter" });
+    fireEvent.blur(most);
     expect(screen.getByText("Turns are whole numbers from 1 to 500.")).toBeTruthy();
     fireEvent.change(most, { target: { value: "40" } });
-    fireEvent.keyDown(most, { key: "Enter" });
-    expect(onSessionGoal).toHaveBeenLastCalledWith("typed-a", { condition: "x", atMost: 40 });
+    fireEvent.blur(most);
+    save();
+    // Held until Save, and written once with what the goal had become.
+    expect(onSessionGoal).toHaveBeenCalledTimes(1);
+    expect(onSessionGoal).toHaveBeenLastCalledWith("typed-a", { condition: "x", reached: "reached", atMost: 40 });
+  });
+
+  it("takes the goal off with null", () => {
+    const onSessionGoal = mount(session({ goal: { condition: "x" } }));
     fireEvent.click(screen.getByRole("button", { name: "Take the goal off" }));
+    save();
     expect(onSessionGoal).toHaveBeenLastCalledWith("typed-a", null);
   });
 });

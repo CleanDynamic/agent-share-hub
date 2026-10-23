@@ -1,16 +1,17 @@
-// CA-15 P11: a selected tile's Details match its modal: the same names, the required fields first, then the Optional section
-// with closed rows that say what they hold, and a field saves the keys it owns.
+// CA-15 P11, CA-18 P2: the Optional rows of each tile, in the modals' words. The row builders say what each tile holds (they
+// are what the modal's Edit mode saves through); the tile's own window draws the rows, closed, each saying what it holds, and
+// writes the keys each owns when Save is pressed. Details only reads them now (CA-18 P3).
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildSteps } from "@/lib/build/graph";
 import type { NodeTree } from "@/lib/build/types";
 
-import { DetailsPanel, type DetailsPanelProps } from "./DetailsPanel";
+import type { DetailsHandlers } from "./DetailsPanel";
 import { agentRows, checkRows, codeRows, datasetRows, promptRows, repoRows, resultRows, systemPromptRows, toolRows } from "./detailsOptional";
 import { resolveView } from "./detailsView";
+import { TileEditDialog } from "./TileEditDialog";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -24,17 +25,17 @@ let seq = 0;
 const node = (id: string, type: string, payload: Record<string, unknown>, over: Partial<NodeTree> = {}): NodeTree =>
   ({ id, build_id: "b", parent_id: null, position: ++seq, type, title: null, note: null, payload, source_ref: null, event_id: null, is_gap: false, created_at: "", children: [], ...over }) as NodeTree;
 
-function details(tree: NodeTree[], selectedId: string, over: Partial<DetailsPanelProps> = {}) {
+type Mocks = DetailsHandlers & { onExtras: ReturnType<typeof vi.fn>; onRename: ReturnType<typeof vi.fn> };
+
+/** A tile's own window, in edit mode, on the tile of this id. */
+function windowFor(tree: NodeTree[], selectedId: string) {
   const steps = buildSteps(tree);
   const view = resolveView({ selectedId, steps, groups: [], tree, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined });
-  const props = { phone: false, view, onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onExtras: vi.fn(), ...over } as DetailsPanelProps;
-  render(
-    <MemoryRouter>
-      <DetailsPanel {...props} />
-    </MemoryRouter>,
-  );
+  const props = { onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn(), onExtras: vi.fn() } as unknown as Mocks;
+  render(<TileEditDialog view={view} handlers={props} inBuild={[]} onClose={vi.fn()} />);
   return { props, view };
 }
+const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
 const rowNames = () => screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent);
 const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
@@ -110,114 +111,92 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   });
 });
 
-describe("the Optional section in Details (CA-15 P11)", () => {
+describe("the Optional section in a tile's window (CA-15 P11, CA-18 P2)", () => {
   const checkTree = () => [node("ck", "eval_run", { tested: "Places an order", passing: "Total shows £9", method: "automated", scoring: { how: "metric", target: "95%" } })];
 
   it("draws closed rows, each saying what it holds, after the required fields", () => {
-    details(checkTree(), "ck");
-    expect(rowNames()).toEqual(["Test method", "Reviewer", "Scoring method", "Model tested", "Evidence"]);
+    windowFor(checkTree(), "ck");
+    expect(rowNames()).toEqual(expect.arrayContaining(["Test method", "Reviewer", "Scoring method", "Model tested", "Evidence"]));
     expect(summaryOfRow("Test method")).toContain("Automated");
     expect(summaryOfRow("Scoring method")).toContain("Metric against a target · 95%");
     expect(row("Reviewer").getAttribute("data-open")).toBeNull();
-    expect(screen.queryByRole("textbox", { name: "Target" })).toBeNull();
-    expect(screen.getByTestId("optional-count").textContent).toBe("5 fields");
   });
 
-  it("is not drawn at all where nothing can change it", () => {
-    details(checkTree(), "ck", { onExtras: undefined });
-    expect(screen.queryByTestId("optional-section")).toBeNull();
-  });
-
-  it("saves a choice as soon as it is made, and only the keys it owns", () => {
-    const { props } = details(checkTree(), "ck");
+  it("saves a choice on Save, and only the keys it owns", () => {
+    const { props } = windowFor(checkTree(), "ck");
     openRow("Reviewer");
-    fireEvent.click(within(row("Reviewer")).getByRole("button", { name: "A client" }));
+    fireEvent.click(within(row("Reviewer")).getByRole("radio", { name: "A client" }));
+    expect(props.onExtras).not.toHaveBeenCalled();
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("ck", { reviewer: "client" });
+    expect(props.onExtras).toHaveBeenCalledTimes(1);
   });
 
   it("a second press on the chosen one takes the key off", () => {
-    const { props } = details(checkTree(), "ck");
+    const { props } = windowFor(checkTree(), "ck");
     openRow("Test method");
-    fireEvent.click(within(row("Test method")).getByRole("button", { name: "Automated" }));
+    fireEvent.click(within(row("Test method")).getByRole("radio", { name: "Automated" }));
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("ck", { method: null });
   });
 
-  it("saves a text field when it is left, and not when it has not changed", () => {
-    const { props } = details([node("tl", "integration", { step: true, service: "Slack", plan: "Pro" })], "tl");
+  it("saves a text field on Save, and not when it has not changed", () => {
+    const { props } = windowFor([node("tl", "integration", { step: true, service: "Slack", plan: "Pro" })], "tl");
     openRow("Required plan");
-    const field = screen.getByRole("textbox", { name: "Required plan" });
-    fireEvent.blur(field);
+    save();
     expect(props.onExtras).not.toHaveBeenCalled();
-    fireEvent.change(field, { target: { value: "Business" } });
-    fireEvent.blur(field);
-    expect(props.onExtras).toHaveBeenCalledWith("tl", { plan: "Business" });
+    cleanup();
+    const again = windowFor([node("tl", "integration", { step: true, service: "Slack", plan: "Pro" })], "tl");
+    openRow("Required plan");
+    fireEvent.change(screen.getByRole("textbox", { name: "Required plan" }), { target: { value: "Business" } });
+    save();
+    expect(again.props.onExtras).toHaveBeenCalledWith("tl", { plan: "Business" });
   });
 
   it("a metric's Target shows only once Metric is the scoring method", () => {
-    details([node("ck", "eval_run", { tested: "t", passing: "p" })], "ck");
+    windowFor([node("ck", "eval_run", { tested: "t", passing: "p" })], "ck");
     openRow("Scoring method");
     expect(screen.queryByRole("textbox", { name: "Target" })).toBeNull();
-    fireEvent.click(within(row("Scoring method")).getByRole("button", { name: "Metric against a target" }));
+    fireEvent.click(within(row("Scoring method")).getByRole("radio", { name: "Metric against a target" }));
     expect(screen.getByRole("textbox", { name: "Target" })).toBeTruthy();
   });
 
   it("a team has Orchestration pattern, an agent Limits, Output and destination and Sample run", () => {
-    details([node("tm", "team", { pattern: "lead" }, { children: [node("tm1", "agent_config", { system_prompt: "Lead", model: "Opus 5.5" }, { parent_id: "tm" })] })], "tm");
-    expect(rowNames()).toEqual(["Orchestration pattern"]);
+    windowFor([node("tm", "team", { pattern: "lead" }, { children: [node("tm1", "agent_config", { system_prompt: "Lead", model: "Opus 5.5" }, { parent_id: "tm" })] })], "tm");
+    expect(rowNames().map((name) => name?.replace("Multi-agent only", ""))).toEqual(["Trigger", "Orchestration pattern"]);
     cleanup();
-    const { props } = details([node("ag", "agent_config", { system_prompt: "Review", model: "Opus 5.5", limits: ["Never deploys"] })], "ag");
-    expect(rowNames()).toEqual(["Limits", "Output and destination", "Sample run"]);
+    const { props } = windowFor([node("ag", "agent_config", { system_prompt: "Review", model: "Opus 5.5", limits: ["Never deploys"] })], "ag");
+    expect(rowNames()).toEqual(expect.arrayContaining(["Limits", "Output and destination", "Sample run"]));
     openRow("Limits");
-    const limits = screen.getByRole("textbox", { name: "Limits" });
-    fireEvent.change(limits, { target: { value: "Never deploys\nNever emails" } });
-    fireEvent.blur(limits);
+    fireEvent.change(screen.getByRole("textbox", { name: "Limits" }), { target: { value: "Never deploys\nNever emails" } });
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("ag", { limits: ["Never deploys", "Never emails"] });
   });
 
-  it("a prompt has Model settings and Variables, and variables are found in its text", () => {
-    const { props } = details([node("pr", "prompt", { text: "Hi {name}, write about {topic}." })], "pr");
-    expect(rowNames()).toEqual(["Model settings", "Variables"]);
-    expect(summaryOfRow("Variables")).toContain("{name}, {topic}");
-    openRow("Variables");
-    const field = screen.getByRole("textbox", { name: "{name}" });
-    fireEvent.change(field, { target: { value: "First name" } });
-    fireEvent.blur(field);
-    expect(props.onExtras).toHaveBeenCalledWith("pr", { variables: [{ name: "name", description: "First name" }, { name: "topic", description: "" }] });
-  });
-
-  it("code has File path and Generated with, and saves the file path when it is left", () => {
-    const { props } = details([node("cd", "code", { source: "const a = 1;", language: "ts" })], "cd");
-    expect(rowNames()).toEqual(["File path", "Generated with"]);
-    openRow("File path");
-    const field = screen.getByRole("textbox", { name: "File path" });
-    fireEvent.change(field, { target: { value: "src/a.ts" } });
-    fireEvent.blur(field);
-    expect(props.onExtras).toHaveBeenCalledWith("cd", { filename: "src/a.ts" });
-  });
-
   it("a tool says Application and Actions performed, and has no Service or What it was used for", () => {
-    details([node("tl", "integration", { step: true, service: "Slack", scopes: "Posted" })], "tl");
-    expect(screen.getByLabelText("Application")).toBeTruthy();
+    windowFor([node("tl", "integration", { step: true, service: "Slack", scopes: "Posted" })], "tl");
+    expect(screen.getByRole("button", { name: "Application" })).toBeTruthy();
+    openRow("Actions performed");
     expect(screen.getByLabelText("Actions performed")).toBeTruthy();
     expect(screen.queryByLabelText("Service")).toBeNull();
     expect(screen.queryByLabelText("What it was used for")).toBeNull();
-    expect(rowNames()).toEqual(["Permissions", "Required plan", "Setup steps", "Alternatives"]);
+    expect(rowNames()).toEqual(expect.arrayContaining(["Permissions", "Required plan", "Setup steps", "Alternatives"]));
   });
 
   it("the placeholders of its fields start e.g.", () => {
-    details([node("tl", "integration", { step: true, service: "Slack" })], "tl");
+    windowFor([node("tl", "integration", { step: true, service: "Slack" })], "tl");
     openRow("Required plan");
     expect((screen.getByRole("textbox", { name: "Required plan" }) as HTMLInputElement).placeholder).toMatch(/^e\.g\. /);
   });
 });
 
-describe("a system prompt, a dataset and a GitHub repository in Details (CA-15 P11)", () => {
+describe("a system prompt, a dataset and a GitHub repository in their windows (CA-15 P11, CA-18 P2)", () => {
   const prompts = () => [node("p1", "prompt", { text: "One", session: "s1" }, { title: "First" }), node("p2", "prompt", { text: "Two", session: "s1" }, { title: "Second" })];
 
   it("resolves each to its own view, with its payload, and without a runtime", () => {
     const tree = [...prompts(), node("sp", "system_prompt", { step: true, text: "Be brief" }), node("ds", "dataset", { step: true, description: "d" }), node("rp", "repo", { step: true, url: "github.com/acme/shop" })];
     for (const [id, kind] of [["sp", "system_prompt"], ["ds", "dataset"], ["rp", "repo"]] as const) {
-      const { view } = details(tree, id);
+      const { view } = windowFor(tree, id);
       expect(view?.kind).toBe(kind);
       expect(view?.payload).toBeTruthy();
       expect(view?.runtime).toBeUndefined();
@@ -225,58 +204,48 @@ describe("a system prompt, a dataset and a GitHub repository in Details (CA-15 P
     }
   });
 
-  it("a system prompt asks Text and Applies to first, then the Optional rows Model, Version and Variables", () => {
-    const { props } = details([...prompts(), node("sp", "system_prompt", { step: true, text: "Use {tone}", scope: "all" }, { title: "Voice" })], "sp");
-    expect(screen.getByTestId("details-eyebrow").textContent).toContain("System prompt");
+  it("a system prompt asks Name, Text and Applies to first, then Model, Version and Variables, and writes the text on Save", () => {
+    const { props } = windowFor([...prompts(), node("sp", "system_prompt", { step: true, text: "Use {tone}", scope: "all" }, { title: "Voice" })], "sp");
     const text = screen.getByLabelText("Text") as HTMLTextAreaElement;
     expect(text.value).toBe("Use {tone}");
     expect(screen.getByRole("group", { name: "Applies to" })).toBeTruthy();
-    const position = (a: Element, b: Element) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
-    expect(position(text, screen.getByTestId("optional-section"))).toBeTruthy();
-    expect(rowNames()).toEqual(["Model", "Version", "Variables"]);
+    expect(text.compareDocumentPosition(screen.getByTestId("optional-section")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(rowNames()).toEqual(expect.arrayContaining(["Model", "Version", "Variables"]));
     fireEvent.change(text, { target: { value: "Use {tone} and {voice}" } });
-    fireEvent.blur(text);
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("sp", { text: "Use {tone} and {voice}" });
   });
 
-  it("a system prompt's Applies to saves all, this session or the prompts ticked, and not an empty choice", () => {
-    const { props, view } = details([...prompts(), node("sp", "system_prompt", { step: true, text: "x", scope: "prompts:p1" }, { title: "Voice" })], "sp");
-    expect(view?.kind === "system_prompt" ? view.prompts.map((prompt) => prompt.id) : []).toEqual(["p1", "p2"]);
-    fireEvent.click(screen.getByRole("radio", { name: "All prompts" }));
+  it("a system prompt's Applies to saves all, this session or the prompts ticked", () => {
+    const { props } = windowFor([...prompts(), node("sp", "system_prompt", { step: true, text: "x", scope: "prompts:p1" }, { title: "Voice" })], "sp");
+    fireEvent.click(within(screen.getByRole("group", { name: "Applies to" })).getByRole("radio", { name: "All prompts" }));
+    save();
     expect(props.onExtras).toHaveBeenLastCalledWith("sp", { scope: "all" });
-    fireEvent.click(screen.getByRole("radio", { name: "Selected prompts" }));
-    expect(props.onExtras).toHaveBeenLastCalledWith("sp", { scope: "prompts:p1" });
-    fireEvent.click(screen.getByRole("checkbox", { name: /Second/ }));
-    expect(props.onExtras).toHaveBeenLastCalledWith("sp", { scope: "prompts:p1,p2" });
-    fireEvent.click(screen.getByRole("checkbox", { name: /First/ }));
-    fireEvent.click(screen.getByRole("checkbox", { name: /Second/ }));
-    expect(screen.getByText("Choose at least one prompt for it to apply to.")).toBeTruthy();
-    expect(props.onExtras).toHaveBeenLastCalledWith("sp", { scope: "prompts:p2" });
   });
 
   it("a dataset asks Description and Use first, then Format, Record count, Columns, Source, Sample records and Licence", () => {
-    const { props } = details([node("ds", "dataset", { step: true, description: "Tickets", use: "evaluation", format: "CSV" }, { title: "Tickets" })], "ds");
-    expect((screen.getByLabelText("Description") as HTMLTextAreaElement).value).toBe("Tickets");
+    const { props } = windowFor([node("ds", "dataset", { step: true, description: "Tickets", use: "evaluation", format: "CSV" }, { title: "Tickets" })], "ds");
+    expect((screen.getByLabelText(/^Description/) as HTMLTextAreaElement).value).toBe("Tickets");
     expect(screen.getByRole("button", { name: "Evaluation" }).getAttribute("aria-pressed")).toBe("true");
     expect(rowNames()).toEqual(["Format", "Record count", "Columns", "Source", "Sample records", "Licence"]);
     expect(summaryOfRow("Format")).toContain("CSV");
     fireEvent.click(screen.getByRole("button", { name: "Retrieval" }));
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("ds", { use: "retrieval" });
   });
 
   it("a dataset's record count takes digits only and is saved as a number", () => {
-    const { props } = details([node("ds", "dataset", { step: true, description: "d" })], "ds");
+    const { props } = windowFor([node("ds", "dataset", { step: true, description: "d" })], "ds");
     openRow("Record count");
-    const field = screen.getByRole("textbox", { name: "Record count" });
-    fireEvent.change(field, { target: { value: "1,2x00" } });
-    fireEvent.blur(field);
+    fireEvent.change(screen.getByRole("textbox", { name: "Record count" }), { target: { value: "1,2x00" } });
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("ds", { record_count: 1200 });
   });
 
   it("a repository asks URL, Ownership and Description first, and what GitHub said is read, not asked", () => {
-    details([node("rp", "repo", { step: true, url: "github.com/acme/shop", ownership: "third_party", language: "Go", licence_spdx: "MIT", pushed_at: "2020-01-01T00:00:00Z", fetched_at: "2026-10-07T09:00:00Z", author: "acme" })], "rp");
+    windowFor([node("rp", "repo", { step: true, url: "github.com/acme/shop", ownership: "third_party", language: "Go", licence_spdx: "MIT", pushed_at: "2020-01-01T00:00:00Z", fetched_at: "2026-10-07T09:00:00Z", author: "acme" })], "rp");
     expect((screen.getByLabelText("Repository URL") as HTMLInputElement).value).toBe("https://github.com/acme/shop");
-    expect(screen.getByRole("button", { name: "Third-party repository" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("radio", { name: "Third-party repository" }).getAttribute("aria-checked")).toBe("true");
     const retrieved = screen.getByTestId("repo-retrieved");
     expect(retrieved.textContent).toContain("Go");
     expect(retrieved.textContent).toContain("MIT · reuse permitted");
@@ -287,49 +256,32 @@ describe("a system prompt, a dataset and a GitHub repository in Details (CA-15 P
   });
 
   it("a repository of your own asks Visibility, Generated with and the Deployed URL, not an author", () => {
-    const { props } = details([node("rp", "repo", { step: true, url: "github.com/me/mine", ownership: "owned" })], "rp");
+    const { props } = windowFor([node("rp", "repo", { step: true, url: "github.com/me/mine", ownership: "owned" })], "rp");
     expect(screen.getByText("Visibility")).toBeTruthy();
     expect(screen.getByLabelText("Deployed URL")).toBeTruthy();
     expect(screen.queryByLabelText("Author")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Private" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Private" }));
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("rp", { visibility: "private" });
   });
 
   it("a repository's usage ticks save the whole list", () => {
-    const { props } = details([node("rp", "repo", { step: true, url: "github.com/acme/shop", ownership: "third_party", usage: ["copied"] })], "rp");
-    fireEvent.click(screen.getByRole("checkbox", { name: "Followed its documentation" }));
+    const { props } = windowFor([node("rp", "repo", { step: true, url: "github.com/acme/shop", ownership: "third_party", usage: ["copied"] })], "rp");
+    fireEvent.click(screen.getByRole("button", { name: "Followed its documentation" }));
+    save();
     expect(props.onExtras).toHaveBeenCalledWith("rp", { usage: ["copied", "docs"] });
   });
 
   it("a repository's run instructions say to name keys, never paste values", () => {
-    details([node("rp", "repo", { step: true, url: "github.com/acme/shop", ownership: "owned" })], "rp");
+    windowFor([node("rp", "repo", { step: true, url: "github.com/acme/shop", ownership: "owned" })], "rp");
     openRow("Run instructions");
     expect(screen.getByText("One command per line. Name keys, never paste their values.")).toBeTruthy();
   });
 
-  it("each can be renamed from its title", () => {
-    const { props } = details([node("ds", "dataset", { step: true, description: "d" }, { title: "Tickets" })], "ds");
-    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    const field = screen.getByRole("textbox", { name: "Title of dataset 1" });
-    fireEvent.change(field, { target: { value: "Support tickets" } });
-    fireEvent.keyDown(field, { key: "Enter" });
+  it("each is renamed from its Name field, through onRename", () => {
+    const { props } = windowFor([node("ds", "dataset", { step: true, description: "d" }, { title: "Tickets" })], "ds");
+    fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Support tickets" } });
+    save();
     expect(props.onRename).toHaveBeenCalledWith("ds", "Support tickets");
-  });
-});
-
-describe("a prompt's name in Details (CA-15 follow-up)", () => {
-  it("is its place on the build with the typed title next to it, and the pencil edits only the typed title", () => {
-    const { props, view } = details([node("p1", "prompt", { text: "One" }), node("p2", "prompt", { text: "Two" }, { title: "Menu copy" })], "p2");
-    expect(view?.kind === "prompt" ? view.place : "").toBe("Prompt 2");
-    const heading = screen.getAllByRole("heading", { level: 3 })[0];
-    expect(within(heading).getByTestId("prompt-place").textContent).toBe("Prompt 2");
-    expect(within(heading).getByTestId("prompt-own-title").textContent).toBe("Menu copy");
-    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    const field = screen.getByRole("textbox", { name: "Title of prompt 2" }) as HTMLInputElement;
-    expect(field.value).toBe("Menu copy");
-    expect(field.placeholder).toBe("e.g. Welcome email");
-    fireEvent.change(field, { target: { value: "" } });
-    fireEvent.keyDown(field, { key: "Enter" });
-    expect(props.onRename).toHaveBeenCalledWith("p2", "");
   });
 });

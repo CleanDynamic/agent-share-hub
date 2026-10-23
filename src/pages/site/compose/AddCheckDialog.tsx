@@ -36,7 +36,7 @@ import {
 } from "@/lib/build/tileExtras";
 
 import { CheckCasesField, keptCases } from "./CheckCasesField";
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, Count, FieldArea, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, Panel, PanelBody, RateBar, SegmentedField, Spread } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
@@ -92,30 +92,52 @@ export type AddCheckInput = Omit<CheckInput, "testedStep" | "evidence"> & {
   evidenceFile?: File | null;
 };
 
+/** CA-18: what the form starts with on a check that is there. */
+export interface CheckSeed {
+  tested: string;
+  passing: string;
+  failed: string;
+  passed: number | null;
+  total: number | null;
+  runAt: string;
+  cases: CheckCase[];
+  method: CheckMethod | null;
+  reviewer: CheckReviewer | null;
+  scoring: ScoringHow | null;
+  target: string;
+  model: string;
+  version: string;
+  evidenceUrl: string;
+  /** The file kept as the evidence, by name. */
+  evidenceName: string | null;
+}
+
 export interface AddCheckDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: AddCheckInput) => void;
+  onAdd?: (input: AddCheckInput) => void;
+  seed?: CheckSeed | null;
+  edit?: EditMode<AddCheckInput>;
 }
 
 /** A count as typed: digits only, and empty reads as nothing yet. */
 const countOf = (raw: string): number => (raw.trim() === "" ? Number.NaN : Number(raw));
 
-function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & { onCancel: () => void; phone: boolean }) {
-  const [tested, setTested] = useState("");
-  const [passing, setPassing] = useState("");
-  const [failed, setFailed] = useState("");
-  const [passed, setPassed] = useState("");
-  const [total, setTotal] = useState("");
-  const [runAt, setRunAt] = useState("");
-  const [cases, setCases] = useState<CheckCase[]>([]);
-  const [method, setMethod] = useState<CheckMethod | null>(null);
-  const [reviewer, setReviewer] = useState<CheckReviewer | null>(null);
-  const [scoring, setScoring] = useState<ScoringHow | null>(null);
-  const [target, setTarget] = useState("");
-  const [model, setModel] = useState<string | null>(null);
-  const [version, setVersion] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
+function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, "onAdd" | "seed" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const [tested, setTested] = useState(seed?.tested ?? "");
+  const [passing, setPassing] = useState(seed?.passing ?? "");
+  const [failed, setFailed] = useState(seed?.failed ?? "");
+  const [passed, setPassed] = useState(seed?.passed != null ? String(seed.passed) : "");
+  const [total, setTotal] = useState(seed?.total != null ? String(seed.total) : "");
+  const [runAt, setRunAt] = useState(seed?.runAt ?? "");
+  const [cases, setCases] = useState<CheckCase[]>(seed?.cases ?? []);
+  const [method, setMethod] = useState<CheckMethod | null>(seed?.method ?? null);
+  const [reviewer, setReviewer] = useState<CheckReviewer | null>(seed?.reviewer ?? null);
+  const [scoring, setScoring] = useState<ScoringHow | null>(seed?.scoring ?? null);
+  const [target, setTarget] = useState(seed?.target ?? "");
+  const [model, setModel] = useState<string | null>(seed?.model || null);
+  const [version, setVersion] = useState(seed?.version ?? "");
+  const [evidenceUrl, setEvidenceUrl] = useState(seed?.evidenceUrl ?? "");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [fileWrong, setFileWrong] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
@@ -127,7 +149,8 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
   const shownPassed = fromCases ? String(casesCount) : passed;
   const shownTotal = fromCases ? String(given.length) : total;
   const input = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt, ...(fromCases ? { cases: given } : null) };
-  const why = checkRefusal(input) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
+  // A check that is there keeps its counts as they are, so only its text and date are held to the Add rules.
+  const why = (edit ? checkRefusal({ ...input, passed: 0, total: 0, cases: undefined }) : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
   const missing = firstMissing([
     [tested.trim().length > 0, "a test description"],
     [passing.trim().length > 0, "pass criteria"],
@@ -159,7 +182,7 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
     setTried(true);
     if (why) return;
     const onFail = failed.trim() || null;
-    onAdd({
+    (edit ? edit.onSave : (onAdd ?? (() => undefined)))({
       ...input,
       tested: tested.trim(),
       passing: passing.trim(),
@@ -174,7 +197,8 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
   };
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} alert={tried && why ? why : null}>
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={edit ? null : missing} addLabel={edit ? MODAL_COPY.save : undefined} alert={tried && why ? why : null}>
+      {edit?.before ? edit.before(input as never) : null}
       <Block noRule>
         <BlockHead label={CHECK_DIALOG_COPY.tested} htmlFor={`${uid}-tested`} count={`${tested.length} / ${CHECK_TEXT_MAX}`} />
         <FieldArea phone={phone} id={`${uid}-tested`} rows={2} maxLength={CHECK_TEXT_MAX} value={tested} placeholder={CHECK_DIALOG_COPY.testedPlaceholder} onChange={(event) => setTested(event.target.value)} />
@@ -187,6 +211,7 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
 
       <Block label={CHECK_DIALOG_COPY.runs} testId="check-runs">
         <BlockHead label={CHECK_DIALOG_COPY.runs} count={CHECK_DIALOG_COPY.runsLine} />
+        {edit?.slots?.runs ?? (
         <Panel padding="12px 14px">
           <PanelBody>
             <Spread>
@@ -201,6 +226,7 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
             {fromCases ? <Hint>{CHECK_DIALOG_COPY.fromCases}</Hint> : null}
           </PanelBody>
         </Panel>
+        )}
       </Block>
 
       <OptionalSection>
@@ -235,30 +261,34 @@ function Form({ onAdd, onCancel, phone }: Pick<AddCheckDialogProps, "onAdd"> & {
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.evidence} description={CHECK_DIALOG_COPY.evidenceLine} summary={summaryOf(evidenceFile?.name, evidenceFile ? null : evidenceUrl)} phone={phone}>
-          <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.evidenceUrl} inputMode="url" disabled={Boolean(evidenceFile)} value={evidenceUrl} placeholder={CHECK_DIALOG_COPY.evidenceUrlPlaceholder} onChange={(event) => setEvidenceUrl(event.target.value)} />
-          <Inline>
-            <FileButton phone={phone} onFiles={chooseEvidence} testId="check-evidence-file" inputLabel={CHECK_DIALOG_COPY.evidenceFile} disabled={evidenceUrl.trim().length > 0}>
-              {CHECK_DIALOG_COPY.evidenceFile}
-            </FileButton>
-          </Inline>
+          <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.evidenceUrl} inputMode="url" disabled={Boolean(evidenceFile) || Boolean(seed?.evidenceName)} value={evidenceUrl} placeholder={CHECK_DIALOG_COPY.evidenceUrlPlaceholder} onChange={(event) => setEvidenceUrl(event.target.value)} />
+          {edit ? null : (
+            <Inline>
+              <FileButton phone={phone} onFiles={chooseEvidence} testId="check-evidence-file" inputLabel={CHECK_DIALOG_COPY.evidenceFile} disabled={evidenceUrl.trim().length > 0}>
+                {CHECK_DIALOG_COPY.evidenceFile}
+              </FileButton>
+            </Inline>
+          )}
+          {seed?.evidenceName ? <Hint>{`${seed.evidenceName} is kept as the evidence.`}</Hint> : null}
           {evidenceFile ? <FileLine name={evidenceFile.name} removeLabel={`${CHECK_DIALOG_COPY.remove} ${evidenceFile.name}`} onRemove={() => setEvidenceFile(null)} phone={phone} /> : null}
           {fileWrong ? <Alert>{fileWrong}</Alert> : null}
         </OptionalField>
       </OptionalSection>
+      {edit?.after ? edit.after(input as never) : null}
     </ModalForm>
   );
 }
 
-export function AddCheckDialog({ open, onOpenChange, onAdd }: AddCheckDialogProps) {
+export function AddCheckDialog({ open, onOpenChange, onAdd, seed, edit }: AddCheckDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddCheckInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={CHECK_DIALOG_COPY.title} subtitle={CHECK_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-check-dialog">
-      <Form onAdd={add} onCancel={close} phone={phone} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : CHECK_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={CHECK_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-check-dialog" : "add-check-dialog"}>
+      <Form seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );
 }

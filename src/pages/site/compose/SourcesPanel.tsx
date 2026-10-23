@@ -410,10 +410,10 @@ export function SourcesPanel(props: SourcesPanelProps) {
 
   return (
     <div data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-      <div style={{ display: "flex", justifyContent: phone ? "flex-end" : "space-between", alignItems: "baseline", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: 2, marginBottom: -8 }}>
         {/* On a phone the bottom sheet's own title is "Sources". */}
-        {phone ? null : <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>Sources</h2>}
-        <span style={{ ...text(11.5, 400, t.label), ...tnum }}>{inBuild} in build</span>
+        {phone ? null : <h2 style={{ ...text(14, 500, t.text), margin: 0 }}>Sources</h2>}
+        <span style={{ ...text(12, 400, t.label), ...tnum }}>{inBuild} in build</span>
       </div>
 
       {empty ? (
