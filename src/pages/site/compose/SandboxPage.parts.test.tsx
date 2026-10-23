@@ -186,7 +186,7 @@ describe("CA-17 P2 · moving a session between parts", () => {
 });
 
 describe("CA-17 P2 · removing a part", () => {
-  it("asks first, then its sessions join the part above and nothing is lost", async () => {
+  it("goes at once with no window, its sessions join the part above and nothing is lost, and the notice says so (CA-20 P2)", async () => {
     await twoParts();
     const [first, second] = storedWorkstreamsOf(draftRow()?.making);
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 2 options" }), { key: "Enter" });
@@ -194,16 +194,18 @@ describe("CA-17 P2 · removing a part", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "Part 2" }));
     await waitFor(() => expect(sessionsMetaOf(draftRow()?.making)[LONG]?.workstream).toBe(second.key), { timeout: 15_000 });
     fireEvent.keyDown(screen.getByRole("button", { name: "Part 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove part…" }));
-    const dialog = await screen.findByTestId("remove-workstream-dialog");
-    expect(within(dialog).getByText("Remove Part 2?")).toBeTruthy();
-    expect(within(dialog).getByText("Its 1 session joins Part 1.")).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove part" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
     await waitFor(() => expect(storedWorkstreamsOf(draftRow()?.making).map((part) => part.key)).toEqual([first.key]), { timeout: 15_000 });
     expect(sessionsMetaOf(draftRow()?.making)[LONG]?.workstream).toBe(first.key);
     expect(order()).toEqual([WAITING, LONG]);
     expect(positions()).toHaveLength(67);
+    expect(await screen.findByText("Removed Part 2. Its sessions joined Part 1", undefined, { timeout: 10_000 })).toBeTruthy();
     await waitFor(() => expect(screen.queryByTestId("workstream-head")).toBeNull(), { timeout: 10_000 });
+    // Undo, in the notice, brings the part back with its session.
+    fireEvent.click(await screen.findByTestId("notice-undo"));
+    await waitFor(() => expect(storedWorkstreamsOf(draftRow()?.making).map((part) => part.key)).toEqual([first.key, second.key]), { timeout: 15_000 });
+    expect(sessionsMetaOf(draftRow()?.making)[LONG]?.workstream).toBe(second.key);
   });
 });
 

@@ -8,19 +8,16 @@
    The head writes nothing. Its callbacks (`ops`) are the maker's; a reader's build page draws its own head. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import * as Dialog from "@radix-ui/react-dialog";
 import { MoreHorizontal, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
-import { Button } from "@/components/brand/Button";
 import { ColourButton } from "@/components/brand/ColourButton";
 import { refTo } from "@/lib/build/thread";
 import { MemberLabel } from "./groupLabels";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
-import { BottomSheet } from "@/components/shell/BottomSheet";
 import { SESSION_TITLE_MAX } from "@/lib/build/making";
-import { REASONS, moveReason } from "@/lib/build/componentMenus";
+import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 
@@ -28,11 +25,11 @@ import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { TextButton } from "./composeControls";
 import { DragHandle, useNestSession, useNestSessionDrag } from "./listNest";
 import { ToolMark } from "./refinedPieces";
-import { dialogTitle, menuItem, menuSurface, text, tnum, windowStyle } from "./refinedStyles";
+import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { SESSION_META, SESSION_NAME } from "./tileRecipes";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { ToolPicker } from "./ToolPicker";
-import { useReason } from "./removePieces";
+import { RemoveRow, useReason } from "./removePieces";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -45,12 +42,6 @@ export const SESSION_HEAD_COPY = {
   mergeUp: "Merge with the session above",
   moveToPart: "Move to part…",
   sameStage: "Same stage as the session above",
-  remove: "Remove session…",
-  removeTitle: (n: number) => `Remove Session ${n}?`,
-  removeBody: (tiles: number) => `Its ${tiles} ${tiles === 1 ? "tile is" : "tiles are"} removed too.`,
-  removeBodyEmpty: "It has no tiles.",
-  confirm: "Remove",
-  cancel: "Cancel",
   count: (n: number) => `${n} ${n === 1 ? "tile" : "tiles"}`,
   typedPast: (n: number) => `${n}/${SESSION_TITLE_MAX}`,
 } as const;
@@ -192,47 +183,12 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
 /** CA-15b: the session line's facts, 12.5 `--label`. */
 const quiet = (colour: string) => ({ ...SESSION_META, color: colour, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 });
 
-function RemoveDialog({ open, session, tiles, phone, onClose, onConfirm }: { open: boolean; session: SourceSession; tiles: number; phone: boolean; onClose: () => void; onConfirm: () => void }) {
-  const body = (
-    <>
-      <p style={{ ...text(13, 400, t.text2), margin: "0 0 16px" }}>{tiles > 0 ? SESSION_HEAD_COPY.removeBody(tiles) : SESSION_HEAD_COPY.removeBodyEmpty}</p>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <Button variant="secondary" size={phone ? 44 : 36} onClick={onClose}>
-          {SESSION_HEAD_COPY.cancel}
-        </Button>
-        <Button variant="primary" size={phone ? 44 : 36} onClick={onConfirm}>
-          {SESSION_HEAD_COPY.confirm}
-        </Button>
-      </div>
-    </>
-  );
-  if (phone) {
-    return (
-      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={SESSION_HEAD_COPY.removeTitle(session.number)}>
-        {body}
-      </BottomSheet>
-    );
-  }
-  return (
-    <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
-        <Dialog.Content role="alertdialog" aria-describedby={undefined} data-testid="remove-session-dialog" style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(380) }}>
-          <Dialog.Title style={dialogTitle}>{SESSION_HEAD_COPY.removeTitle(session.number)}</Dialog.Title>
-          {body}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
 export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part }: SessionHeadProps) {
   const drop = useNestSession(session.key);
   const drag = useNestSessionDrag(session.key);
   const head = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [removing, setRemoving] = useState(false);
   const maker = Boolean(ops) && editable;
   const handleShown = phone || hovered || focused || drag.held;
   const setRefs = (element: HTMLDivElement | null) => {
@@ -407,26 +363,13 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
                       {SESSION_HEAD_COPY.mergeUp}
                     </Row>
                   ) : null}
-                  <Row phone={phone} onSelect={() => setRemoving(true)}>
-                    {SESSION_HEAD_COPY.remove}
-                  </Row>
+                  <RemoveRow label={MENU_COPY.removeSession} phone={phone} onSelect={() => ops?.onRemove(session.key)} />
                 </MenuContent>
               </Menu.Portal>
             </Menu.Root>
           </span>
         ) : null}
       </div>
-      <RemoveDialog
-        open={removing}
-        session={session}
-        tiles={tiles}
-        phone={phone}
-        onClose={() => setRemoving(false)}
-        onConfirm={() => {
-          setRemoving(false);
-          ops?.onRemove(session.key);
-        }}
-      />
     </>
   );
 }

@@ -83,3 +83,42 @@ export function selectAllInSessionItem(): MenuItemSpec {
 export function ungroupItem(inGroup: boolean, available: boolean): MenuItemSpec | null {
   return available && inGroup ? { key: "ungroup", label: MENU_COPY.ungroup, shortcut: "ungroup" } : null;
 }
+
+/* ── what is said when something is removed ── */
+
+const noun = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+export const REMOVE_COPY = {
+  /** The notice after a tile goes: "Removed Prompt 3", "Removed Team 11 and its 3 agents". */
+  tile: (name: string, inside?: { count: number; what: "agents" | "tiles" }) =>
+    inside && inside.count > 0 ? `Removed ${name} and its ${inside.what === "agents" ? noun(inside.count, "agent", "agents") : noun(inside.count, "tile", "tiles")}` : `Removed ${name}`,
+  /** "Removed Session 2", "Removed Session 2 and its 3 tiles". */
+  session: (number: number, tiles: number) => (tiles > 0 ? `Removed Session ${number} and its ${noun(tiles, "tile", "tiles")}` : `Removed Session ${number}`),
+  /** "Removed Session 2. Its tiles moved to Session 1". */
+  sessionKept: (number: number, into: number) => `Removed Session ${number}. Its tiles moved to Session ${into}`,
+  /** "Removed Part B. Its sessions joined Part A". */
+  part: (label: string, into: string) => `Removed ${label}. Its sessions joined ${into}`,
+  partAlone: (label: string) => `Removed ${label}`,
+  file: (name: string) => `Removed ${name}`,
+  /** Several at once: "Removed 2 sessions and 4 tiles". */
+  several: (sessions: number, tiles: number) => {
+    const parts = [sessions > 0 ? noun(sessions, "session", "sessions") : "", tiles > 0 ? noun(tiles, "tile", "tiles") : ""].filter(Boolean);
+    return `Removed ${parts.join(" and ")}`;
+  },
+  severalKept: (sessions: number, into: number) => `Removed ${noun(sessions, "session", "sessions")}. Their tiles moved to Session ${into}`,
+  cleared: "Cleared the build",
+} as const;
+
+/** The session window's words. */
+export const SESSION_WINDOW_COPY = {
+  title: (number: number) => `Remove Session ${number}?`,
+  /** For several: "Remove 2 sessions and 1 tile?". */
+  titleMany: (sessions: number, tiles: number) => `Remove ${noun(sessions, "session", "sessions")}${tiles > 0 ? ` and ${noun(tiles, "tile", "tiles")}` : ""}?`,
+  body: (tiles: number) => `It has ${noun(tiles, "tile", "tiles")}.`,
+  /** "They have 5 tiles between them." */
+  bodyMany: (tiles: number) => `They have ${noun(tiles, "tile", "tiles")} between them.`,
+  cancel: "Cancel",
+  keep: "Keep the tiles",
+  keepNone: "No other session to move them to",
+  all: "Remove all",
+} as const;

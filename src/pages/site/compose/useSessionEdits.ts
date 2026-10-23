@@ -3,23 +3,25 @@
    Every change is planned first (`sessionEdit.ts`, `sessionLayout.ts`, pure) and then written in this order: the tiles'
    `payload.session` in one batch, the sessions' entries (`making.sessions_meta`), the order (`build_sessions` and
    `making.session_order`), then the tiles' places, so each session's tiles sit together in the order the sessions are
-   numbered. A change a maker may want back (move to a session, remove, merge, split) keeps what it replaced and offers Undo in
-   a toast for ten seconds; Undo writes that back.
+   numbered. A change a maker may want back (move to a session, remove, merge, split, move a part) is one step of the build's
+   history (CA-20 P5): the title row's Undo takes it back, and a removal, a merge and a split also say so in the notice, with Undo.
 
    An import is never touched: a tile is read for its session from `payload.session` first, so giving a tile another session
    edits this draft's tile and nothing in the library. */
 
 import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
-import { deleteBuildSession, listBuildSessionRows } from "@/lib/build/buildSessions";
+import { deleteBuildSession } from "@/lib/build/buildSessions";
 import { buildSteps, groupKey, topSteps, type SessionGroup, type Step } from "@/lib/build/graph";
 import { isLegacySession, newSessionKey, patchMaking, readMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta } from "@/lib/build/making";
 import { reorderNodes } from "@/lib/build/nodes";
 import { droppedKey, movedKey, orderKeys, setSessionOrder, stackBySessionMoves } from "@/lib/build/sessionLayout";
-import { dayOfNode, flatRows, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, removeTopNodes, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
+import { dayOfNode, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
+import { goingWith, dropNodes } from "@/lib/build/removeNodes";
+import { REMOVE_COPY } from "@/lib/build/componentMenus";
+import { refTo } from "@/lib/build/thread";
 import type { BuildNode, NodeTree } from "@/lib/build/types";
 import { toolFor } from "@/lib/tools/registry";
 import {
@@ -37,23 +39,11 @@ import {
 } from "@/lib/build/workstreams";
 
 import { sayFailed } from "./draftStart";
+import type { BuildHistoryApi } from "./useBuildHistory";
+import { NOT_AVAILABLE, type ReferenceBridge } from "@/lib/build/referenceBridge";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { NO_APP } from "./sourcesModel";
-
-/** How long Undo stays in the toast. */
-export const UNDO_MS = 10_000;
-
-interface Snapshot {
-  meta: Record<string, SessionMeta>;
-  order: string[];
-  /** The top-level tiles as they were: payload and place. */
-  rows: BuildNode[];
-  /** Whole subtrees that were removed, to put back. */
-  removed?: NodeTree[];
-  /** CA-17 P2: `making.workstreams` as it was, when the build had the key. */
-  workstreams?: unknown;
-}
 
 export interface SessionEditsInput {
   buildId: string | undefined;
@@ -69,9 +59,16 @@ export interface SessionEditsInput {
   onGone: (key: string) => void;
   /** CA-17 P2: the build's parts when it has two or more: each part's key and its title ("Part B · Support agent"), and the part each session is in. */
   parts?: { titles: ReadonlyMap<string, string>; partOf: ReadonlyMap<string, string> };
+  /** CA-20 P5: the build's history, which takes each change as a step. Absent: changes are made and not recorded. */
+  history?: BuildHistoryApi | null;
+  /** CA-20 P2: the reference bridge, to let go of what points at a session or a part that goes. Absent: nothing to let go of. */
+  bridge?: ReferenceBridge;
 }
 
 const findTop = (tree: readonly NodeTree[], id: string): NodeTree | undefined => tree.find((node) => node.id === id);
+
+/** `order` without these keys. */
+const withoutKeys = (order: readonly string[], going: ReadonlySet<string>): string[] => order.filter((entry) => !going.has(entry));
 
 export function useSessionEdits(input: SessionEditsInput) {
   const queryClient = useQueryClient();
@@ -90,17 +87,6 @@ export function useSessionEdits(input: SessionEditsInput) {
     },
     [queryClient],
   );
-
-  const snapshot = useCallback((removed?: NodeTree[]): Snapshot => {
-    const { made, nodes } = latest.current;
-    return {
-      meta: sessionsMetaOf(made),
-      order: editableKeys(),
-      rows: topSteps(nodes.current()).map((node) => rowOf(node)),
-      removed,
-      ...(made && typeof made === "object" && "workstreams" in (made as object) ? { workstreams: (made as { workstreams?: unknown }).workstreams } : null),
-    };
-  }, [editableKeys]);
 
   /** Write a plan: payloads, entries, order, then places. */
   const applyLayout = useCallback(
@@ -125,8 +111,9 @@ export function useSessionEdits(input: SessionEditsInput) {
         for (const row of await writeNodeRows(rows)) nodes.record(row.id, row);
       }
       for (const [key, value] of Object.entries(change.meta ?? {})) await setSessionMeta(buildId, key, value);
-      await setSessionOrder(buildId, change.order);
+      // The rows of sessions that go are deleted before the rest are reordered: a row left in the middle holds a place the others are moved into.
       for (const key of change.dropKeys ?? []) await deleteBuildSession(buildId, key).catch(() => undefined);
+      await setSessionOrder(buildId, change.order);
       if (plan.moves.length > 0) {
         await reorderNodes(buildId, plan.moves);
         for (const move of plan.moves) {
@@ -140,66 +127,23 @@ export function useSessionEdits(input: SessionEditsInput) {
     [refresh],
   );
 
-  /** Put a snapshot back: removed tiles, payloads, places, entries and order. */
-  const restore = useCallback(
-    async (snap: Snapshot) => {
-      const { buildId, nodes } = latest.current;
-      if (!buildId) return;
-      await nodes.run(async () => {
-      if (snap.removed?.length) {
-        const rows = flatRows(snap.removed);
-        for (const row of await writeNodeRows(rows)) nodes.record(row.id, row);
-      }
-      const current = nodes.current();
-      const changed = snap.rows.flatMap((row) => {
-        const now = findTop(current, row.id);
-        return now && JSON.stringify(now.payload) !== JSON.stringify(row.payload) ? [{ ...row, position: now.position }] : [];
-      });
-      for (const row of await writeNodeRows(changed)) nodes.record(row.id, row);
-      const moves = snap.rows.flatMap((row) => {
-        const now = findTop(nodes.current(), row.id);
-        return now && now.position !== row.position ? [{ id: row.id, parent_id: null, position: row.position as number }] : [];
-      });
-      if (moves.length > 0) {
-        await reorderNodes(buildId, moves);
-        for (const move of moves) {
-          const node = findTop(nodes.current(), move.id);
-          if (node) nodes.record(node.id, { ...rowOf(node), position: move.position });
-        }
-      }
-      await patchMaking(buildId, { sessions_meta: snap.meta, session_order: snap.order, ...(snap.workstreams !== undefined ? { workstreams: snap.workstreams } : null) });
-      for (const row of await listBuildSessionRows(buildId)) if (!snap.order.includes(row.sessionKey)) await deleteBuildSession(buildId, row.sessionKey).catch(() => undefined);
-      await setSessionOrder(buildId, snap.order);
-      });
-      await refreshMakingStats(buildId).catch(() => undefined);
-      await refresh(buildId);
+  /* CA-20 P5: a change the maker may want back is one step of the build's history. `sentence` can follow what the task did; `notice`
+     says it in the notice too, with Undo. Without a history (a page that does not draw one) the task just runs. */
+  const bridgeRef = useRef<ReferenceBridge>(NOT_AVAILABLE);
+  bridgeRef.current = input.bridge ?? NOT_AVAILABLE;
+  const track = useCallback(
+    <T,>(sentence: string | ((result: T) => string), task: () => Promise<T>, notice = false): Promise<T> => {
+      const current = latest.current.history;
+      return current ? current.track(sentence, task, { notice }) : task();
     },
-    [refresh],
-  );
-
-  const withUndo = useCallback(
-    (message: string, snap: Snapshot) => {
-      toast(message, {
-        duration: UNDO_MS,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            void restore(snap).catch((cause) => {
-              console.error("[Sessions] undo failed", cause);
-              sayFailed(cause, "Couldn't undo that. Try again.");
-            });
-          },
-        },
-      });
-    },
-    [restore],
+    [],
   );
 
   /** An old build's run of typed prompts is saved as a session made here first; the key it has after. */
   const stable = useCallback(async (key: string): Promise<string | null> => (isLegacySession(key) ? latest.current.claim(key) : key), []);
 
   const guard = useCallback(
-    async (line: string, task: () => Promise<void>) => {
+    async (line: string, task: () => Promise<unknown>) => {
       try {
         await task();
       } catch (cause) {
@@ -353,50 +297,53 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** Move up and Move down on a part's head. */
   const onPartMove = useCallback(
     (key: string, by: -1 | 1) =>
-      void guard("Couldn't move that part. Try again.", async () => {
-        const snap = snapshot();
-        const done = await applyParts((making) => moveWorkstream(making, editableKeys(), key, by));
-        if (done) {
-          latest.current.say(`${titleOf(key)} moved ${by === -1 ? "up" : "down"}.`);
-          withUndo(`Moved ${titleOf(key)} ${by === -1 ? "up" : "down"}.`, snap);
-        }
-      }),
-    [applyParts, editableKeys, guard, snapshot, withUndo],
+      void guard("Couldn't move that part. Try again.", () =>
+        track(`Moved ${titleOf(key)} ${by === -1 ? "up" : "down"}`, async () => {
+          const done = await applyParts((making) => moveWorkstream(making, editableKeys(), key, by));
+          if (done) latest.current.say(`${titleOf(key)} moved ${by === -1 ? "up" : "down"}.`);
+        }),
+      ),
+    [applyParts, editableKeys, guard, track],
   );
 
   /** A part's head dropped on another's. */
   const onDropPart = useCallback(
     (key: string, over: string) =>
-      void guard("Couldn't move that part. Try again.", async () => {
-        const snap = snapshot();
-        const done = await applyParts((making) => droppedWorkstream(making, editableKeys(), key, over));
-        if (done) {
-          latest.current.say(`${titleOf(key)} moved.`);
-          withUndo(`Moved ${titleOf(key)}.`, snap);
-        }
-      }),
-    [applyParts, editableKeys, guard, snapshot, withUndo],
+      void guard("Couldn't move that part. Try again.", () =>
+        track(`Moved ${titleOf(key)}`, async () => {
+          const done = await applyParts((making) => droppedWorkstream(making, editableKeys(), key, over));
+          if (done) latest.current.say(`${titleOf(key)} moved.`);
+        }),
+      ),
+    [applyParts, editableKeys, guard, track],
   );
 
-  /** "Remove part…": its sessions join the part above (or the one below), nothing else is lost. */
+  /** "Remove part": its sessions join the part above (or the one below), nothing else is lost, so it goes at once. Its colour, group and linked text go with it, and Undo brings them back. */
   const onPartRemove = useCallback(
     (key: string) =>
-      void guard("Couldn't remove that part. Try again.", async () => {
-        const snap = snapshot();
-        const title = titleOf(key);
-        let joins = "";
-        const done = await applyParts((making) => {
-          const change = removeWorkstream(making, editableKeys(), key);
-          joins = change?.joins ?? "";
-          return change;
-        });
-        if (done) {
-          const into = latest.current.parts?.titles.get(joins) ?? "the part next to it";
-          latest.current.say(`Removed ${title}. Its sessions are in ${into}.`);
-          withUndo(`Removed ${title}. Its sessions are in ${into}.`, snap);
-        }
-      }),
-    [applyParts, editableKeys, guard, snapshot, withUndo],
+      void guard("Couldn't remove that part. Try again.", () =>
+        track(
+          (said: string | null) => said ?? "",
+          async () => {
+            const title = titleOf(key);
+            let joins = "";
+            // Let go of what points at the part first, so the size rule has run before the part is gone.
+            if (storedWorkstreamsOf(latest.current.made).some((part) => part.key === key)) bridgeRef.current.release([refTo({ kind: "workstream", id: key })]);
+            const done = await applyParts((making) => {
+              const change = removeWorkstream(making, editableKeys(), key);
+              joins = change?.joins ?? "";
+              return change;
+            });
+            if (!done) return null;
+            const into = latest.current.parts?.titles.get(joins);
+            const said = into ? REMOVE_COPY.part(title, into) : REMOVE_COPY.partAlone(title);
+            latest.current.say(`${said}.`);
+            return said;
+          },
+          true,
+        ),
+      ),
+    [applyParts, editableKeys, guard, track],
   );
 
   /** "Move to part…", or a session's head dropped on a part: to the end of that part, or before `before`. */
@@ -404,17 +351,20 @@ export function useSessionEdits(input: SessionEditsInput) {
     (key: string, to: string, before?: string) =>
       guard("Couldn't move that session. Try again.", async () => {
         if (isLegacySession(key)) return;
-        const snap = snapshot();
-        const done = await applyParts((making) => moveSessionToWorkstream(making, editableKeys(), key, to, before));
-        if (done) {
-          // Said by the number it has now: the new order, counted as the List counts it.
-          const offset = orderKeys(latest.current.groups).length - editableKeys().length;
-          const number = done.order.indexOf(key) + 1 + offset;
-          latest.current.say(`Session ${number} is now in ${titleOf(to)}.`);
-          withUndo(`Session ${number} is now in ${titleOf(to)}.`, snap);
-        }
+        await track(
+          (said: string | null) => said ?? "",
+          async () => {
+            const done = await applyParts((making) => moveSessionToWorkstream(making, editableKeys(), key, to, before));
+            if (!done) return null;
+            // Said by the number it has now: the new order, counted as the List counts it.
+            const offset = orderKeys(latest.current.groups).length - editableKeys().length;
+            const number = done.order.indexOf(key) + 1 + offset;
+            latest.current.say(`Session ${number} is now in ${titleOf(to)}.`);
+            return `Moved Session ${number} to ${titleOf(to)}`;
+          },
+        );
       }),
-    [applyParts, editableKeys, guard, snapshot, withUndo],
+    [applyParts, editableKeys, guard, track],
   );
   moveToPartRef.current = moveToPart;
   const onMoveToPart = useCallback((key: string, to: string) => void moveToPart(key, to), [moveToPart]);
@@ -459,86 +409,132 @@ export function useSessionEdits(input: SessionEditsInput) {
     [guard, refresh],
   );
 
-  /** Remove a session and its tiles, undoable. */
-  const onRemove = useCallback(
-    (key: string) =>
-      void guard("Couldn't remove that session. Try again.", async () => {
-        const { buildId, made, nodes, steps, groups } = latest.current;
-        if (!buildId) return;
-        const number = groups.find((entry) => groupKey(entry) === key)?.number ?? 0;
-        const mine = tilesOfSession(steps, groups, key);
-        const subtrees = mine.flatMap((step) => {
-          const node = findTop(nodes.current(), step.id);
-          return node ? [node] : [];
-        });
-        const snap = snapshot(subtrees);
-        const order = withoutKey(editableKeys(), key);
-        await nodes.run(async () => {
-          await removeTopNodes(mine.map((step) => step.id));
-          for (const step of mine) nodes.record(step.id, null);
-        });
-        await setSessionMeta(buildId, key, null);
-        await deleteBuildSession(buildId, key).catch(() => undefined);
-        const collapsed = ((made as { sessions_collapsed?: unknown } | null)?.sessions_collapsed as string[] | undefined) ?? [];
-        await patchMaking(buildId, { session_order: order, sessions_collapsed: collapsed.filter((entry) => entry !== key) });
-        await refreshMakingStats(buildId).catch(() => undefined);
-        latest.current.onGone(key);
-        await refresh(buildId);
-        withUndo(`Removed Session ${number}.`, snap);
+  /**
+   * CA-20 P2: remove sessions, as one step. `all`: they go with their tiles, and the files those make. `keep`: the tiles move first, to
+   * the end of the session above the first one that goes, or to the start of the session below it when none is above, and then
+   * the sessions go. What points at a session (its colour, its group, the words that link to it) is let go first, and comes back
+   * with it on Undo. Resolves the sentence the notice says.
+   */
+  const onRemoveSessions = useCallback(
+    (keys: readonly string[], mode: "keep" | "all"): Promise<void> =>
+      guard("Couldn't remove that session. Try again.", async () => {
+        await track(
+          (said: string | null) => said ?? "",
+          async () => {
+            const { buildId, made, nodes, steps, groups } = latest.current;
+            if (!buildId) return null;
+            const shown = orderKeys(groups);
+            const removing = shown.filter((key) => keys.includes(key));
+            if (removing.length === 0) return null;
+            const numberOf = (key: string) => groups.find((entry) => groupKey(entry) === key)?.number ?? 0;
+            const tiles = removing.flatMap((key) => tilesOfSession(steps, groups, key));
+            const order = editableKeys();
+            const leaving = new Set(removing);
+            const rest = withoutKeys(order, leaving);
+            const collapsed = ((made as { sessions_collapsed?: unknown } | null)?.sessions_collapsed as string[] | undefined) ?? [];
+            const sessionRefs = removing.map((key) => refTo({ kind: "session", id: key }));
+
+            if (mode === "keep") {
+              if (rest.length === 0) return null;
+              const at = order.indexOf(removing[0]);
+              const above = order.slice(0, at).reverse().find((key) => !leaving.has(key));
+              const target = above ?? rest.find((key) => order.indexOf(key) > at) ?? rest[0];
+              const moving = tiles.map((step) => step.id);
+              // Into the end of the session above: they come last. Into the start of the one below: its own tiles go behind them.
+              const atEnd = above ? moving : tilesOfSession(steps, groups, target).map((step) => step.id);
+              bridgeRef.current.release(sessionRefs);
+              await applyLayout({ order: rest, reassign: new Map(moving.map((id) => [id, target])), atEnd, meta: Object.fromEntries(removing.map((key) => [key, null])), dropKeys: removing });
+              await nodes.run(() => patchMaking(buildId, { sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) }).then(() => undefined));
+              for (const key of removing) latest.current.onGone(key);
+              await refreshMakingStats(buildId).catch(() => undefined);
+              const offset = shown.length - order.length;
+              const into = above ? numberOf(target) : rest.indexOf(target) + 1 + offset;
+              return removing.length === 1 ? REMOVE_COPY.sessionKept(numberOf(removing[0]), into) : REMOVE_COPY.severalKept(removing.length, into);
+            }
+
+            const tileIds = tiles.map((step) => step.id);
+            bridgeRef.current.release([...sessionRefs, ...goingWith(nodes.current(), tileIds).map((id) => refTo({ kind: "node", id }))]);
+            await nodes.run(async () => {
+              await dropNodes(nodes, tileIds);
+              for (const key of removing) {
+                await setSessionMeta(buildId, key, null);
+                await deleteBuildSession(buildId, key).catch(() => undefined);
+              }
+              await patchMaking(buildId, { session_order: rest, sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) });
+            });
+            await refreshMakingStats(buildId).catch(() => undefined);
+            for (const key of removing) latest.current.onGone(key);
+            await refresh(buildId);
+            return removing.length === 1 ? REMOVE_COPY.session(numberOf(removing[0]), tiles.length) : REMOVE_COPY.several(removing.length, tiles.length);
+          },
+          true,
+        );
       }),
-    [editableKeys, guard, refresh, snapshot, withUndo],
+    [applyLayout, editableKeys, guard, refresh, track],
   );
 
   /** "Merge with the session above": this session's tiles go to the end of the one above, and this one is gone. */
   const onMergeUp = useCallback(
     (key: string) =>
-      void guard("Couldn't merge those sessions. Try again.", async () => {
-        const { made, steps, groups } = latest.current;
-        const keys = editableKeys();
-        const at = keys.indexOf(key);
-        if (at < 1) return;
-        const upper = keys[at - 1];
-        const entries = sessionsMetaOf(made);
-        const mine = tilesOfSession(steps, groups, key);
-        const snap = snapshot();
-        const title = mergedTitle(entries[upper]?.title, entries[key]?.title);
-        const upperGroup = groups.find((entry) => groupKey(entry) === upper);
-        const upperMeta: SessionMeta = entries[upper] ?? { tool: upperGroup?.tool ? (toolFor(upperGroup.tool)?.id ?? upperGroup.tool) : null, date: "" };
-        const meta: Record<string, SessionMeta | null> = { [key]: null };
-        if (title && title !== entries[upper]?.title && (entries[upper] || !isLegacySession(upper))) meta[upper] = { ...upperMeta, title };
-        const reassign = new Map(mine.map((step) => [step.id, upper]));
-        await applyLayout({ order: withoutKey(keys, key), reassign, atEnd: mine.map((step) => step.id), meta, dropKeys: [key] });
-        latest.current.onGone(key);
-        await refreshMakingStats(latest.current.buildId as string).catch(() => undefined);
-        const number = groups.find((entry) => groupKey(entry) === key)?.number ?? at + 1;
-        withUndo(mergeTitleNote(entries[upper]?.title, entries[key]?.title) ?? `Merged Session ${number} into the session above.`, snap);
-      }),
-    [applyLayout, editableKeys, guard, snapshot, withUndo],
+      void guard("Couldn't merge those sessions. Try again.", () =>
+        track(
+          (said: string | null) => said ?? "",
+          async () => {
+            const { made, steps, groups } = latest.current;
+            const keys = editableKeys();
+            const at = keys.indexOf(key);
+            if (at < 1) return null;
+            const upper = keys[at - 1];
+            const entries = sessionsMetaOf(made);
+            const mine = tilesOfSession(steps, groups, key);
+            const title = mergedTitle(entries[upper]?.title, entries[key]?.title);
+            const upperGroup = groups.find((entry) => groupKey(entry) === upper);
+            const upperMeta: SessionMeta = entries[upper] ?? { tool: upperGroup?.tool ? (toolFor(upperGroup.tool)?.id ?? upperGroup.tool) : null, date: "" };
+            const meta: Record<string, SessionMeta | null> = { [key]: null };
+            if (title && title !== entries[upper]?.title && (entries[upper] || !isLegacySession(upper))) meta[upper] = { ...upperMeta, title };
+            const reassign = new Map(mine.map((step) => [step.id, upper]));
+            // The session that goes takes its colour, group and linked words with it.
+            bridgeRef.current.release([refTo({ kind: "session", id: key })]);
+            await applyLayout({ order: withoutKey(keys, key), reassign, atEnd: mine.map((step) => step.id), meta, dropKeys: [key] });
+            latest.current.onGone(key);
+            await refreshMakingStats(latest.current.buildId as string).catch(() => undefined);
+            const number = groups.find((entry) => groupKey(entry) === key)?.number ?? at + 1;
+            return mergeTitleNote(entries[upper]?.title, entries[key]?.title) ?? `Merged Session ${number} into the session above`;
+          },
+          true,
+        ),
+      ),
+    [applyLayout, editableKeys, guard, track],
   );
 
   /** "Split session here": this tile and every tile after it start a new session right after this one. */
   const onSplitHere = useCallback(
     (stepId: string) =>
-      void guard("Couldn't split that session. Try again.", async () => {
-        const { made, steps, groups, nodes } = latest.current;
-        const plan = splitPlan(steps, groups, stepId);
-        if (!plan) return;
-        const keys = editableKeys();
-        if (!keys.includes(plan.from)) return;
-        const group = groups.find((entry) => groupKey(entry) === plan.from);
-        const entries = sessionsMetaOf(made);
-        const snap = snapshot();
-        const key = newSessionKey();
-        const day = dayOfNode(findTop(nodes.current(), stepId), todayDay());
-        const tool = group?.tool && group.tool !== NO_APP ? (toolFor(group.tool)?.id ?? group.tool) : (entries[plan.from]?.tool ?? null);
-        const part = entries[plan.from]?.workstream;
-        const meta: Record<string, SessionMeta | null> = { [key]: { tool, date: day, ...(part ? { workstream: part } : null) } };
-        const reassign = new Map(plan.tail.map((step) => [step.id, key]));
-        await applyLayout({ order: insertedAfter(keys, key, plan.from), reassign, meta });
-        const tile = steps.find((step) => step.id === stepId);
-        withUndo(`Split Session ${group?.number ?? ""} at tile ${tile?.number ?? ""}.`.replace("  ", " "), snap);
-      }),
-    [applyLayout, editableKeys, guard, snapshot, withUndo],
+      void guard("Couldn't split that session. Try again.", () =>
+        track(
+          (said: string | null) => said ?? "",
+          async () => {
+            const { made, steps, groups, nodes } = latest.current;
+            const plan = splitPlan(steps, groups, stepId);
+            if (!plan) return null;
+            const keys = editableKeys();
+            if (!keys.includes(plan.from)) return null;
+            const group = groups.find((entry) => groupKey(entry) === plan.from);
+            const entries = sessionsMetaOf(made);
+            const key = newSessionKey();
+            const day = dayOfNode(findTop(nodes.current(), stepId), todayDay());
+            const tool = group?.tool && group.tool !== NO_APP ? (toolFor(group.tool)?.id ?? group.tool) : (entries[plan.from]?.tool ?? null);
+            const part = entries[plan.from]?.workstream;
+            const meta: Record<string, SessionMeta | null> = { [key]: { tool, date: day, ...(part ? { workstream: part } : null) } };
+            const reassign = new Map(plan.tail.map((step) => [step.id, key]));
+            await applyLayout({ order: insertedAfter(keys, key, plan.from), reassign, meta });
+            const tile = steps.find((step) => step.id === stepId);
+            return `Split Session ${group?.number ?? ""} at tile ${tile?.number ?? ""}`.replace("  ", " ");
+          },
+          true,
+        ),
+      ),
+    [applyLayout, editableKeys, guard, track],
   );
 
   /** "Move to session…", or a tile dropped on a session's head: to the end of that session. */
@@ -549,17 +545,15 @@ export function useSessionEdits(input: SessionEditsInput) {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
-        const snap = snapshot();
         const step = steps.find((entry) => entry.id === id);
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry)).concat(target).filter((entry, at, all) => all.indexOf(entry) === at);
-        await applyLayout({ order: keys, reassign: new Map([[id, target]]), atEnd: [id] });
         const number = groups.find((entry) => groupKey(entry) === key)?.number ?? "";
-        withUndo(`Moved ${step ? `tile ${step.number}` : "the tile"} to Session ${number}.`, snap);
+        await track(`Moved ${step ? `tile ${step.number}` : "the tile"} to Session ${number}`, () => applyLayout({ order: keys, reassign: new Map([[id, target]]), atEnd: [id] }));
         ok = true;
       });
       return ok;
     },
-    [applyLayout, guard, snapshot, stable, withUndo],
+    [applyLayout, guard, stable, track],
   );
 
   /* A tile added to a session that is not the last lands at the end of the draft; once it is written it is moved up to the
@@ -591,5 +585,5 @@ export function useSessionEdits(input: SessionEditsInput) {
       .catch((cause) => console.warn("[Sessions] a new tile was not put with its session", cause));
   }, [topCount, editableKeys, queryClient]);
 
-  return { onTitle, onMove, onDrop, onRemove, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };
+  return { onTitle, onMove, onDrop, onRemoveSessions, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };
 }

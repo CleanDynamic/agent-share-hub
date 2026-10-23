@@ -393,7 +393,7 @@ describe("CA-14 P7 · split and merge", () => {
 });
 
 describe("CA-14 P5 · Move to session", () => {
-  it("lists the other sessions in a tile's menu and moves the tile to the end of the one chosen; Undo puts it back", async () => {
+  it("lists the other sessions in a tile's menu and moves the tile to the end of the one chosen", async () => {
     await twoSessions();
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 1 options" }), { key: "Enter" });
     fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to session…" }), { key: "ArrowRight" });
@@ -401,29 +401,27 @@ describe("CA-14 P5 · Move to session", () => {
     fireEvent.click(target);
     await waitFor(() => expect(positions().at(-1)?.payload).toMatchObject({ session: LONG }), { timeout: 15_000 });
     expect(positions().at(-1)?.source_ref).toMatchObject({ import_session_id: WAITING });
-    fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
-    await waitFor(() => expect(positions()[0].payload).not.toMatchObject({ session: LONG }), { timeout: 15_000 });
-    expect(positions()).toHaveLength(67);
   });
 });
 
 describe("CA-14 P2 · removing a session", () => {
-  it("asks first, removes the session with its tiles, and puts them back from Undo", async () => {
+  it("asks first (CA-20 P2: Cancel, Keep the tiles, Remove all), removes the session with its tiles, and puts them back from Undo", async () => {
     await twoSessions();
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 1 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove session…" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove session" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Remove Session 1?")).toBeTruthy();
-    expect(within(dialog).getByText("Its 1 tile is removed too.")).toBeTruthy();
+    expect(within(dialog).getByText("It has 1 tile.")).toBeTruthy();
     // Nothing has gone yet.
     expect(positions()).toHaveLength(67);
-    fireEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Remove all" }));
     await waitFor(() => expect(positions()).toHaveLength(66), { timeout: 15_000 });
     await waitFor(() => expect(sessionsOf()).toHaveLength(1), { timeout: 15_000 });
     expect(sessionsMetaOf(draftRow()?.making)[WAITING]).toBeUndefined();
     expect(screen.getAllByTestId("session-head")).toHaveLength(1);
     expect(await screen.findByRole("group", { name: /^Session 1 · / })).toBeTruthy();
-    fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
+    expect(await screen.findByText("Removed Session 1 and its 1 tile")).toBeTruthy();
+    fireEvent.click(await screen.findByTestId("notice-undo"));
     await waitFor(() => expect(positions()).toHaveLength(67), { timeout: 15_000 });
     await waitFor(() => expect(sessionsOf()).toHaveLength(2), { timeout: 15_000 });
     expect(order()).toEqual([WAITING, LONG]);

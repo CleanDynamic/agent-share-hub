@@ -113,13 +113,13 @@ describe("the ⋯ menu and keys", () => {
     await screen.findByRole("menuitem", { name: "Move up" });
   };
 
-  it("offers Move up and Move down (not past the ends), Colour…, and Remove session…; no merge item when the page gives none", async () => {
+  it("offers Move up and Move down (not past the ends), Colour…, and Remove session; no merge item when the page gives none", async () => {
     const props = list({ onColour: vi.fn(), sessionOps: { onTitle: vi.fn(), onMove: vi.fn(), onRemove: vi.fn() } });
     await open(1);
     expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBe("true");
     expect(screen.getByRole("menuitem", { name: "Move down" }).getAttribute("aria-disabled")).toBeNull();
     expect(screen.getByRole("menuitem", { name: "Colour…" })).toBeTruthy();
-    expect(screen.getByRole("menuitem", { name: "Remove session…" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Remove session" }).getAttribute("data-tone")).toBe("danger");
     expect(screen.queryByRole("menuitem", { name: SESSION_HEAD_COPY.mergeUp })).toBeNull();
     fireEvent.click(screen.getByRole("menuitem", { name: "Move down" }));
     expect(props.sessionOps?.onMove).toHaveBeenCalledWith(expect.any(String), 1);
@@ -138,19 +138,12 @@ describe("the ⋯ menu and keys", () => {
     expect(props).toBeTruthy();
   });
 
-  it("asks before removing, naming the session and its tiles, and removes only on Remove", async () => {
+  it("hands the removal over at once: the page asks about a session that has tiles (CA-20 P2)", async () => {
     const props = list();
     await open(1);
-    fireEvent.click(screen.getByRole("menuitem", { name: "Remove session…" }));
-    const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText("Remove Session 1?")).toBeTruthy();
-    expect(within(dialog).getByText("Its 2 tiles are removed too.")).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(props.sessionOps?.onRemove).not.toHaveBeenCalled();
-    await open(1);
-    fireEvent.click(screen.getByRole("menuitem", { name: "Remove session…" }));
-    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Remove session" }));
     expect(props.sessionOps?.onRemove).toHaveBeenCalledWith(expect.any(String));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
   it("moves the session with Alt and the arrow keys when its head has focus", () => {

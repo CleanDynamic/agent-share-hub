@@ -124,8 +124,8 @@ import {
 } from "./refinedStyles";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
-import { REASONS, moveReason } from "@/lib/build/componentMenus";
-import { useReason } from "./removePieces";
+import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
+import { RemoveRow, useReason } from "./removePieces";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
 export const ADD_FLASH_MS = 1200;
@@ -891,7 +891,7 @@ function useRename(step: Step, props: BuildListProps) {
   };
 }
 
-/** The ⋯ menu at the right of a tile's header: rename, copy together, move, colour, session, remove. */
+/** The ⋯ menu at the right of a tile's header: rename, copy together, move, colour, session, then Remove tile. */
 function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun: string; index: number; last: boolean; props: BuildListProps; rename: ReturnType<typeof useRename> }) {
   const { phone } = props;
   return (
@@ -907,7 +907,7 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
           <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
           <SessionTileRows step={step} phone={phone} />
-          <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+          <RemoveRow label={MENU_COPY.removeTile} phone={phone} onSelect={() => props.onRemove(step.id)} />
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
@@ -1138,7 +1138,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
                 <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
               <SessionTileRows step={step} phone={phone} />
-              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+              <RemoveRow label={MENU_COPY.removeTile} phone={phone} onSelect={() => props.onRemove(step.id)} />
               </MenuContent>
             </Menu.Portal>
           </Menu.Root>

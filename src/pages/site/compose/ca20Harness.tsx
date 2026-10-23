@@ -44,8 +44,8 @@ export function harnessAfter() {
   vi.unstubAllGlobals();
 }
 
-export function mount(path: string, { faults = [], delays = [], keep = false }: { faults?: Fault[]; delays?: Delay[]; keep?: boolean } = {}) {
-  if (!keep) startAuditBackend({ schema: REPO_SCHEMA, faults, delays });
+export function mount(path: string, { faults = [], delays = [], keep = false, seed }: { faults?: Fault[]; delays?: Delay[]; keep?: boolean; seed?: (rows: Record<string, Record<string, unknown>[]>) => void } = {}) {
+  if (!keep) startAuditBackend({ schema: REPO_SCHEMA, faults, delays, seed });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -110,3 +110,14 @@ export const describedBy = (element: HTMLElement): string =>
     .map((id) => document.getElementById(id)?.textContent ?? "")
     .join(" ")
     .trim();
+
+/** The CA-20 draft (see ca20Fixture.ts), mounted and loaded. */
+export async function mountCa20(seed: (rows: Record<string, Record<string, unknown>[]>) => void, options: Parameters<typeof mount>[1] = {}) {
+  // A computer's window, wide enough for Sources to stand beside the build.
+  Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 1600 });
+  mount(`/compose/${DRAFT}`, { ...options, seed });
+  await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 15_000 });
+}
+
+/** A node's row, as the table holds it now. */
+export const nodeRow = (id: string) => tableRows("build_nodes").find((row) => row.id === id);

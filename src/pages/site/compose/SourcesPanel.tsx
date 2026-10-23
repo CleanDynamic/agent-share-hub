@@ -11,7 +11,7 @@
    recipe, never a colour. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { Plus } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -28,6 +28,8 @@ import { DM_MONO } from "@/lib/theme/type";
 import { TextButton } from "./composeControls";
 import type { AddToPart } from "./AddSessionRow";
 import { MenuContent } from "./ComposeMenu";
+import { MENU_COPY } from "@/lib/build/componentMenus";
+import { RemoveRow } from "./removePieces";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
@@ -80,6 +82,8 @@ export interface SourcesPanelProps {
   onPick: () => void;
   /** Where "Connect a tool" goes. */
   connectHref: string;
+  /** CA-20 P2: "Remove file" in a file's menu. Absent: files have no menu. */
+  onRemoveFile?: (id: string) => void;
 }
 
 /* ── pieces ── */
@@ -241,16 +245,29 @@ function SessionRow({
   );
 }
 
-function FileRow({ file, phone }: { file: SourceFile; phone: boolean }) {
+function FileRow({ file, phone, onRemove }: { file: SourceFile; phone: boolean; onRemove?: (id: string) => void }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
       <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
         <Glyph name="file" size={16} />
       </span>
-      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
         <span style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
         <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
       </span>
+      {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. */}
+      {onRemove ? (
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`${file.name} options`} size={30} />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <MenuContent align="end" sideOffset={4} style={menuSurface()}>
+              <RemoveRow label={MENU_COPY.removeFile} phone={phone} onSelect={() => onRemove(file.id)} />
+            </MenuContent>
+          </Menu.Portal>
+        </Menu.Root>
+      ) : null}
     </div>
   );
 }
@@ -440,7 +457,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
       {files.length > 0 || reminders.length > 0 ? (
         <section aria-label={SOURCES_COPY.files} style={group}>
           <GroupHead name={SOURCES_COPY.files} count={files.length} />
-          <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} />} />
+          <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} onRemove={props.onRemoveFile} />} />
           {reminders.map((reminder) => (
             <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
           ))}

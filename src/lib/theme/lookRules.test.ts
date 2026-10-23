@@ -604,6 +604,15 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca20.p1.test.tsx",
   "src/pages/site/compose/ca20Harness.tsx",
   "src/pages/site/compose/removePieces.tsx",
+  "src/lib/build/buildHistory.ts",
+  "src/lib/build/buildSnapshot.ts",
+  "src/lib/build/referenceBridge.ts",
+  "src/lib/build/removeNodes.ts",
+  "src/pages/site/compose/ca20.p2.test.tsx",
+  "src/pages/site/compose/ca20Fixture.ts",
+  "src/pages/site/compose/useBuildActions.tsx",
+  "src/pages/site/compose/useBuildHistory.ts",
+  "src/pages/site/compose/useReferenceBridge.ts",
 ];
 
 /**

@@ -100,6 +100,9 @@ import { makingWithGroupColours, previewGroupColour, withGroupColours, type Refe
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { ReferenceNotice } from "./referencePieces";
 import { useReferences } from "./useReferences";
+import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
+import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
+import { BuildActionsContext, useBuildActions } from "./useBuildActions";
 import { GroupLabelsProvider } from "./groupLabels";
 import { useReferenceActions } from "./useReferenceActions";
 import { DetailsReferencesProvider, type DetailsReferencesValue } from "./DetailsReferences";
@@ -137,6 +140,8 @@ export function SandboxPage() {
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
   const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
   const navigate = useNavigate();
+  /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
+  const buildHistory = useBuildHistory({ buildId, nodes });
   const queryClient = useQueryClient();
   const phone = useIsPhone();
   const fine = useFinePointer();
@@ -218,7 +223,10 @@ export function SandboxPage() {
     saveGroups: (list, order) => saveGroupsRef.current(list, order),
     loaded: Boolean(build),
     nameOf: (to) => nameRef.current(to),
+    join: buildHistory.join,
   });
+  /* CA-20: the only way removing, restoring, duplicating and grouping touch colours, groups and the post's links. */
+  const bridge = useReferenceBridge(references);
   // A member is drawn in its group's colour; the picker's live colour goes over that.
   // The picker opened for a group (its window's Change…) previews the group's colour on every member.
   const previewedGroup = colourPreview && parseRefTo(colourPreview.to)?.kind === "group" ? (parseRefTo(colourPreview.to)?.id ?? null) : null;
@@ -526,10 +534,12 @@ export function SandboxPage() {
   const partsModel = useMemo(() => listPartsOf(madeShown, groups, theme), [madeShown, groups, theme]);
   /** CA-17 P3: the parts "Add to" can choose; none until the build has two. */
   const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
-  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, onGone: (key) => {
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, history: buildHistory, bridge, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
   } });
+  /* CA-20: removing (and, later, selecting, duplicating, converting and grouping) in one place, for the menus, the keys and the bars. */
+  const { actions, dialogs: actionDialogs } = useBuildActions({ nodes, history: buildHistory, bridge, steps, groups, removeSessions: edits.onRemoveSessions });
 
   promptOpenRef.current = () => {
     const picked = chosenRef.current;
@@ -1655,7 +1665,7 @@ export function SandboxPage() {
     onModel: prompts.setModel,
     onAddMade: (stepId, name) => void prompts.addMadeFile(stepId, name),
     onRemoveMade: (fileId) => {
-      prompts.removeMadeFile(fileId);
+      actions.removeFile(fileId);
       afterWrite();
     },
     onAddUse: (id, use) => {
@@ -1718,14 +1728,14 @@ export function SandboxPage() {
       afterWrite();
     },
     onRemoveInside: (id) => {
-      prompts.removeInside(id);
+      actions.removeTile(id);
       afterWrite();
     },
     onToggleSessionPrompt: (session, row, on) => {
       if (on) {
         const real = sessions.library.find((candidate) => candidate.id === session.key);
         if (real) prompts.add(real.id, row.ordinal);
-      } else if (row.stepId) prompts.remove(row.stepId);
+      } else if (row.stepId) actions.removeTile(row.stepId);
     },
     onSessionTool: (sessionId, tool) => void sessions.setTool(sessionId, tool),
     onSessionMeta: (key, change) => void onSessionMeta(key, change),
@@ -1778,6 +1788,9 @@ export function SandboxPage() {
           }
         }}
       />
+      <BuildHistoryContext.Provider value={buildHistory}>
+      <ReferenceBridgeContext.Provider value={bridge}>
+      <BuildActionsContext.Provider value={actions}>
       <PartRegistryProvider registry={registry}>
       <GroupLabelsProvider making={makingDrawn} onOpen={referenceActions.openGroup}>
       <DetailsReferencesProvider value={detailsRefs}>
@@ -1841,7 +1854,7 @@ export function SandboxPage() {
             onEditTile={openTile}
             onRename={prompts.rename}
             onMove={prompts.move}
-            onRemove={prompts.remove}
+            onRemove={actions.removeTile}
             onAddAgentPrompt={onAddAgentPrompt}
             onAddAgentTo={(teamId) => void onAddAgentTo(teamId)}
             onAttach={pickForStep}
@@ -1866,7 +1879,7 @@ export function SandboxPage() {
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={onAddPrompt}
             addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
-            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: (key) => actions.askRemoveSessions([key]), onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
             onDropSession={edits.onDrop}
             parts={
               partsModel
@@ -1930,6 +1943,7 @@ export function SandboxPage() {
             onDropFiles={onDropFiles}
             onPick={pick}
             connectHref="/connect"
+            onRemoveFile={actions.removeFile}
           />
           </div>
         }
@@ -1943,6 +1957,9 @@ export function SandboxPage() {
       </DetailsReferencesProvider>
       </GroupLabelsProvider>
       </PartRegistryProvider>
+      </BuildActionsContext.Provider>
+      </ReferenceBridgeContext.Provider>
+      </BuildHistoryContext.Provider>
       <AddAgentDialog
         open={addAgentOpen}
         onOpenChange={onAgentDialog}
@@ -2009,7 +2026,8 @@ export function SandboxPage() {
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
       {colourPicker}
-      <ReferenceNotice notice={references.history.notice} onUndo={references.history.undo} onDone={references.history.dismiss} phone={phone} />
+      <ReferenceNotice notice={buildHistory.notice} onUndo={() => void buildHistory.undo()} onDone={buildHistory.dismiss} phone={phone} />
+      {actionDialogs}
       {referenceActions.keepDialog}
       <ReferenceWindows references={references} actions={referenceActions} refGroups={postRefGroups} lookup={allTargets} phone={phone} />
       <PartWindow
