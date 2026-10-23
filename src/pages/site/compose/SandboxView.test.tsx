@@ -257,15 +257,15 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("draws the tab row under a hairline, Card and Preview as secondary 28 and Publish as the one primary 28", () => {
+  it("draws the title row under a hairline — the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28", () => {
     view();
-    expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*18px/);
+    expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
     expect(publish.getAttribute("style")).toMatch(/height:\s*28px/);
     expect(screen.getByRole("button", { name: "Classification Card" }).getAttribute("data-variant")).toBe("secondary");
     expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*28px/);
-    expect(screen.getByTestId("sandbox-tabs").style.height).toBe("44px");
+    expect(screen.getByTestId("sandbox-tabs").contains(screen.getByRole("heading", { level: 1 }))).toBe(true);
     expect(markup()).toContain("padding-bottom:18px;border-bottom:1px solid var(--hairline)");
   });
 
@@ -337,7 +337,7 @@ describe("the post above the build", () => {
     const build = screen.getByRole("region", { name: "Build" });
     expect(within(post).getByText("the post body")).toBeTruthy();
     expect(post.closest('[data-testid="sandbox-columns"]')).toBe(build.closest('[data-testid="sandbox-columns"]'));
-    expect(post.parentElement?.contains(screen.getByTestId("sandbox-heading"))).toBe(true);
+    expect(screen.getByTestId("sandbox-tabs").contains(screen.getByTestId("sandbox-heading"))).toBe(true);
     expect(post.compareDocumentPosition(build) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     for (const name of ["Sources", "Details"]) expect(screen.getByRole("region", { name })).toBeTruthy();
     expect(screen.queryByRole("tablist")).toBeNull();
@@ -345,14 +345,14 @@ describe("the post above the build", () => {
     expect(screen.getByRole("group", { name: "Build view" })).toBeTruthy();
   });
 
-  it("sits in the Build head, 18 below the status line", () => {
+  it("sits at the top of the Build head, 18 under it before the hairline", () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/compose/x"]}>
         <SandboxView {...sandboxViewProps("bakery")} post={<p>the post body</p>} />
       </MemoryRouter>,
     );
+    expect(markup).toMatch(/padding-bottom:18px;border-bottom:1px solid var\(--hairline\)"><section aria-label="Post"/);
     const style = /aria-label="Post"[^>]*style="([^"]*)"/.exec(markup)?.[1] ?? "";
-    expect(style).toContain("margin-top:18px");
     expect(style).not.toContain("background");
   });
 
