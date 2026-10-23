@@ -33,7 +33,7 @@ import { ToolPicker } from "./ToolPicker";
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
   noTiles: "No tiles yet",
-  addToThis: "+ Add to this session",
+  addToThis: "+ Add Tile",
   moveUp: "Move up",
   moveDown: "Move down",
   edit: "Edit session…",

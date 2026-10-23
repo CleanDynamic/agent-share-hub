@@ -299,7 +299,7 @@ export interface AddTargets {
   onSession?: (key: string) => void;
 }
 
-export const ADD_ASK_COPY = { title: "Add to which session?", row: "Add to this session" } as const;
+export const ADD_ASK_COPY = { title: "Add to which session?", row: "Add Tile" } as const;
 
 /** The small list that asks "Add to which session?": one row per session, the default under the cursor. */
 function SessionAsk({ sessions, current, onPick, phone }: { sessions: readonly { key: string; label: string }[]; current: string | null; onPick: (key: string) => void; phone: boolean }) {
@@ -330,7 +330,7 @@ function SessionAsk({ sessions, current, onPick, phone }: { sessions: readonly {
  * straight back. A row that moves focus (Prompt) says so, and the menu then leaves focus where the row put it instead
  * of returning it to Add. On a phone, the same rows in a bottom sheet, 44pt each, under "Add".
  *
- * CA-14 P5: the same menu is the "+ Add to this session" row at the end of a session (`variant: "row"`, `fixedSession`),
+ * CA-14 P5: the same menu is the "+ Add Tile" row at the end of a session (`variant: "row"`, `fixedSession`),
  * which already knows its session. The Add button at the top asks which session first when there are two or more
  * (`targets`): a small list on a computer, and the first screen of the sheet on a phone.
  */
