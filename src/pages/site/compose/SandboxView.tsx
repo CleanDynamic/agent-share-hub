@@ -537,9 +537,11 @@ export interface ViewMenuProps {
   labels?: { value: PartLabels; onChange: (value: PartLabels) => void };
   /** CA-19 P7: "Colours…", the window of every reference group and single colour in the build. The maker's only. */
   onColours?: () => void;
+  /** CA-20 P7: Collapse all, or Expand all once everything is folded. Absent: not drawn. */
+  fold?: { anyOpen: boolean; run: (closed: boolean) => void };
 }
 
-export const VIEW_COPY = { button: "View", sessionList: "Session list", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C", colours: "Colours…" } as const;
+export const VIEW_COPY = { button: "View", sessionList: "Session list", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C", colours: "Colours…", collapseAll: "Collapse all", expandAll: "Expand all" } as const;
 
 /** CA-17 P2: the "Label parts" row of the View menu. */
 function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["labels"]>; phone: boolean }) {
@@ -619,6 +621,21 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
         <BrandBottomSheet open={open} onOpenChange={setOpen} title={VIEW_COPY.button} data-testid="view-sheet">
           <SessionListSheetRow view={view} />
           {view.labels ? <LabelPartsRow labels={view.labels} phone /> : null}
+          {view.fold ? (
+            <button
+              type="button"
+              role="menuitem"
+              data-testid="view-fold"
+              onClick={() => {
+                setOpen(false);
+                view.fold?.run(view.fold.anyOpen);
+              }}
+              style={{ ...bareButton, ...menuItem(true, true), width: "100%", gap: 8, textAlign: "left", borderTop: `1px solid ${t.hairline}` }}
+            >
+              <span style={{ width: 16, display: "inline-flex" }} />
+              {view.fold.anyOpen ? VIEW_COPY.collapseAll : VIEW_COPY.expandAll}
+            </button>
+          ) : null}
           {view.onColours ? (
             <button
               type="button"
@@ -647,6 +664,15 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
         <MenuContent align="end" sideOffset={6} style={menuSurface(220)}>
           <SessionListMenuRow view={view} />
           {view.labels ? <LabelPartsRow labels={view.labels} phone={false} /> : null}
+          {view.fold ? (
+            <>
+              <Menu.Separator style={{ height: 1, margin: "4px 0", background: t.hairline }} />
+              <Menu.Item data-testid="view-fold" onSelect={() => view.fold?.run(view.fold.anyOpen)} style={{ ...menuItem(true, false), gap: 8 }}>
+                <span style={{ width: 16, display: "inline-flex" }} />
+                {view.fold.anyOpen ? VIEW_COPY.collapseAll : VIEW_COPY.expandAll}
+              </Menu.Item>
+            </>
+          ) : null}
           {view.onColours ? (
             <>
               <Menu.Separator style={{ height: 1, margin: "4px 0", background: t.hairline }} />

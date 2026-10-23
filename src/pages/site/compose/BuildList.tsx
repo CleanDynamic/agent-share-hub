@@ -126,6 +126,7 @@ import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { RemoveRow, useReason } from "./removePieces";
+import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildSelectionContext } from "./useBuildSelection";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
@@ -322,6 +323,43 @@ function MenuRow({ children, disabled, onSelect, phone, reason }: { children: Re
       </Menu.Item>
       {why.note}
     </>
+  );
+}
+
+/** CA-20 P7: Duplicate, in every tile's menu after Move down. */
+function DuplicateRow({ step, phone }: { step: Step; phone: boolean }) {
+  const actions = useBuildActionsContext();
+  if (!actions) return null;
+  return (
+    <MenuRow phone={phone} onSelect={() => actions.duplicate([step.id])}>
+      Duplicate
+    </MenuRow>
+  );
+}
+
+/** CA-20 P7: "Convert to Agent" and the like, after Rename, for the tiles that can change kind. */
+function ConvertRows({ step, phone }: { step: Step; phone: boolean }) {
+  const actions = useBuildActionsContext();
+  if (!actions) return null;
+  return (
+    <>
+      {actions.convertTargets(step.id).map((target) => (
+        <MenuRow key={target.to} phone={phone} disabled={Boolean(target.reason)} reason={target.reason} onSelect={() => actions.convert(step.id, target.to)}>
+          {`Convert to ${target.label.toLowerCase()}…`}
+        </MenuRow>
+      ))}
+    </>
+  );
+}
+
+/** CA-20 P7: Ungroup, after Colour, only when the tile is in a group. */
+function UngroupRow({ step, phone }: { step: Step; phone: boolean }) {
+  const actions = useBuildActionsContext();
+  if (!actions || !actions.grouped(step.id)) return null;
+  return (
+    <MenuRow phone={phone} onSelect={() => actions.ungroup([step.id])}>
+      Ungroup
+    </MenuRow>
   );
 }
 
@@ -907,10 +945,13 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()} onCloseAutoFocus={rename.onCloseAutoFocus}>
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
+          <ConvertRows step={step} phone={phone} />
           <CopyTogetherRow step={step} phone={phone} />
           <MenuRow phone={phone} disabled={index === 0} reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
           <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <DuplicateRow step={step} phone={phone} />
           <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+          <UngroupRow step={step} phone={phone} />
           <SessionTileRows step={step} phone={phone} />
           <RemoveRow label={MENU_COPY.removeTile} phone={phone} onSelect={() => props.onRemove(step.id)} />
         </MenuContent>
@@ -1136,13 +1177,16 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 }}
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+                <ConvertRows step={step} phone={phone} />
                 <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all of it</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
                 <MenuRow phone={phone} disabled={index === 0} reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={last} reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <DuplicateRow step={step} phone={phone} />
                 <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+          <UngroupRow step={step} phone={phone} />
               <SessionTileRows step={step} phone={phone} />
               <RemoveRow label={MENU_COPY.removeTile} phone={phone} onSelect={() => props.onRemove(step.id)} />
               </MenuContent>

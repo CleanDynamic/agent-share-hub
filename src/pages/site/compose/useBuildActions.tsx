@@ -17,11 +17,16 @@ import { kindsIn, type Chosen } from "@/lib/build/buildSelection";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession, listBuildSessionRows } from "@/lib/build/buildSessions";
 import { REMOVE_COPY, type ClearCounts } from "@/lib/build/componentMenus";
+import { restoreSnapshot } from "@/lib/build/buildSnapshot";
+import { CONVERT_COPY, canConvert, convertRow, convertTiles, duplicateTiles, DUPLICATE_COPY, targetsOf, type ConvertTo } from "@/lib/build/duplicate";
+import { DEFAULT_AGENT_MODEL } from "./AddAgentDialog";
+import { ConvertWindow, type Conversion } from "./ConvertWindow";
 import { REMOVED_COPY, type RemovedMeta } from "@/lib/build/removedLog";
 import { FILE_TYPE, groupKey, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { patchMaking, refreshMakingStats, storedWorkstreamsOf } from "@/lib/build/making";
 import { REF_KIND } from "@/lib/build/postRefs";
-import type { ReferenceBridge } from "@/lib/build/referenceBridge";
+import { BRIDGE_COPY, type ReferenceBridge } from "@/lib/build/referenceBridge";
+import type { ReferenceGroup } from "@/lib/build/referenceGroups";
 import { dropFile, dropNodes, goingWith } from "@/lib/build/removeNodes";
 import { flatRows, tilesOfSession } from "@/lib/build/sessionEdit";
 import { orderKeys } from "@/lib/build/sessionLayout";
@@ -48,6 +53,10 @@ export interface BuildActionsInput {
   groups: readonly SessionGroup[];
   /** The session edits' removal of sessions, which writes the layout. `alsoTiles` go in the same step. */
   removeSessions: (keys: readonly string[], mode: "keep" | "all", alsoTiles?: readonly string[]) => Promise<void>;
+  /** CA-20 P7: Collapse all and Expand all. Absent: the item is not drawn. */
+  fold?: { anyOpen: boolean; run: (closed: boolean) => void };
+  /** CA-20 P7: a group was just made; the page opens CA-19's window on it. */
+  onGrouped?: (group: ReferenceGroup) => void;
 }
 
 export interface BuildActions {
@@ -61,6 +70,19 @@ export interface BuildActions {
   askRemoveSessions: (keys: readonly string[]) => void;
   /** What is chosen, as one step: tiles go at once; with sessions among them the session window asks, worded for all. */
   removeSelection: (items: readonly Chosen[]) => void;
+  /** CA-20 P7: copy tiles (each below its original, as one step). */
+  duplicate: (ids: readonly string[]) => void;
+  /** CA-20 P7: what a tile can be turned into, with the reason when it cannot. */
+  convertTargets: (id: string) => { to: ConvertTo; label: string; reason?: string }[];
+  /** CA-20 P7: turn a tile into another kind; asks first when something would not carry over. */
+  convert: (id: string, to: ConvertTo) => void;
+  /** CA-20 P7: Collapse all or Expand all, from the View menu. */
+  fold?: { anyOpen: boolean; run: (closed: boolean) => void };
+  /** CA-20 P7: put tiles in a group (the group's window opens), or take them out. */
+  group: (ids: readonly string[]) => void;
+  ungroup: (ids: readonly string[]) => void;
+  /** Whether a tile is in a group. */
+  grouped: (id: string) => boolean;
   /** CA-20 P6: Recently removed, in the build's menu. Absent: the item is not drawn. */
   recentlyRemoved?: { count: number; open: () => void };
   /** CA-20 P4: Clear the build, from the build's menu. */
@@ -88,11 +110,12 @@ function insideOf(step: Step): { count: number; what: "agents" | "tiles" } {
   return { count: flatten([...step.children, ...(step.sentWith ?? [])]).length, what: "tiles" };
 }
 
-export function useBuildActions({ buildId, made, onCleared, nodes, history, bridge, steps, groups, removeSessions }: BuildActionsInput): { actions: BuildActions; dialogs: ReactNode } {
+export function useBuildActions({ buildId, made, onCleared, nodes, history, bridge, steps, groups, removeSessions, fold, onGrouped }: BuildActionsInput): { actions: BuildActions; dialogs: ReactNode } {
   const queryClient = useQueryClient();
   const [removal, setRemoval] = useState<SessionRemoval | null>(null);
   const [clearing, setClearing] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [converting, setConverting] = useState<Conversion | null>(null);
 
   const removeTiles = useCallback(
     (ids: readonly string[]) => {
@@ -191,6 +214,86 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
     [groups, steps, removeTiles, removeSessions],
   );
 
+  /* ── Duplicate, convert, group ── */
+
+  const duplicate = useCallback(
+    (ids: readonly string[]) => {
+      if (!buildId) return;
+      const flat = flatten(steps);
+      const picked = ids.flatMap((id) => flat.find((step) => step.id === id && !step.id.includes(":")) ?? []);
+      if (picked.length === 0) return;
+      const sentence = picked.length === 1 ? DUPLICATE_COPY.one(tileName(picked[0])) : DUPLICATE_COPY.several(picked.length);
+      void history
+        .track(sentence, () => restoreSnapshot(buildId, nodes, (current) => duplicateTiles(current, picked.map((step) => step.id), () => crypto.randomUUID()).snapshot), { notice: true })
+        .catch((cause) => console.error("[Compose] not duplicated", cause));
+    },
+    [buildId, steps, nodes, history],
+  );
+
+  const rowFor = useCallback((id: string) => flattenNodes(nodes.current()).find((node) => node.id === id), [nodes]);
+
+  const convertTargets = useCallback(
+    (id: string) => {
+      const row = rowFor(id);
+      if (!row || !canConvert(row)) return [];
+      const { children: _children, ...plain } = row as typeof row & { children?: unknown };
+      return targetsOf(row).map((to) => ({ to, label: CONVERT_COPY.targets[to], reason: convertRow(plain, to, DEFAULT_AGENT_MODEL).refusal ?? undefined }));
+    },
+    [rowFor],
+  );
+
+  const doConvert = useCallback(
+    (id: string, to: ConvertTo, name: string) => {
+      if (!buildId) return;
+      void history
+        .track(
+          CONVERT_COPY.done(name, CONVERT_COPY.targets[to]),
+          () =>
+            restoreSnapshot(buildId, nodes, (current) => {
+              const row = current.nodes.find((entry) => entry.id === id);
+              const plan = row ? convertRow(row, to, DEFAULT_AGENT_MODEL) : null;
+              return plan?.row ? convertTiles(current, new Map([[id, plan.row]])) : current;
+            }),
+          { notice: true },
+        )
+        .catch((cause) => console.error("[Compose] not converted", cause));
+    },
+    [buildId, nodes, history],
+  );
+
+  const convert = useCallback(
+    (id: string, to: ConvertTo) => {
+      const row = rowFor(id);
+      const step = flatten(steps).find((entry) => entry.id === id);
+      if (!row || !step) return;
+      const { children: _children, ...plain } = row as typeof row & { children?: unknown };
+      const plan = convertRow(plain, to, DEFAULT_AGENT_MODEL);
+      if (!plan.row) return;
+      const name = tileName(step);
+      if (plan.lost.length > 0) setConverting({ id, to, name, lost: plan.lost });
+      else doConvert(id, to, name);
+    },
+    [rowFor, steps, doConvert],
+  );
+
+  const grouped = useCallback((id: string) => Boolean(bridge.groupOf(refTo({ kind: "node", id }))), [bridge]);
+  const group = useCallback(
+    (ids: readonly string[]) => {
+      const made = bridge.makeGroup(ids.map((id) => refTo({ kind: "node", id })));
+      if (made) onGrouped?.(made);
+    },
+    [bridge, onGrouped],
+  );
+  const ungroup = useCallback(
+    (ids: readonly string[]) => {
+      const refs = ids.map((id) => refTo({ kind: "node", id }));
+      const one = refs.length === 1 ? bridge.groupOf(refs[0]) : undefined;
+      const step = ids.length === 1 ? flatten(steps).find((entry) => entry.id === ids[0]) : undefined;
+      bridge.ungroup(refs, one && step ? BRIDGE_COPY.ungroupedOne(tileName(step), one.name || BRIDGE_COPY.noName) : undefined);
+    },
+    [bridge, steps],
+  );
+
   /* ── Clear the build ── */
 
   const clearCounts = useMemo<ClearCounts>(() => {
@@ -245,10 +348,17 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       removeFile,
       askRemoveSessions,
       removeSelection,
+      duplicate,
+      convertTargets,
+      convert,
+      fold,
+      group,
+      ungroup,
+      grouped,
       recentlyRemoved: { count: history.removed.length, open: () => setListOpen(true) },
       clear: { counts: clearCounts, ask: () => setClearing(true) },
     }),
-    [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, clearCounts, history.removed.length],
+    [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, duplicate, convertTargets, convert, fold, group, ungroup, grouped, clearCounts, history.removed.length],
   );
 
   const dialogs = (
@@ -263,6 +373,15 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           void clearBuild();
         }}
       />
+    <ConvertWindow
+      conversion={converting}
+      onClose={() => setConverting(null)}
+      onConfirm={() => {
+        const asked = converting;
+        setConverting(null);
+        if (asked) doConvert(asked.id, asked.to, asked.name);
+      }}
+    />
     <SessionRemoveWindow
       removal={removal}
       onClose={() => setRemoval(null)}

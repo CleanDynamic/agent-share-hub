@@ -563,6 +563,7 @@ export function SandboxPage() {
     steps,
     groups,
     removeSessions: edits.onRemoveSessions,
+    onGrouped: (group) => referenceActions.setGroupWindow({ draft: { ...group, members: [...group.members] }, isNew: false }),
   });
   /* CA-20 P3: choosing several tiles and sessions. The order is how the List draws them: a session's head, then its top-level tiles. */
   const drawn = useMemo<Drawn>(
@@ -682,6 +683,21 @@ export function SandboxPage() {
     },
     [buildId, queryClient, made],
   );
+
+  /* CA-20 P7: Collapse all folds every session and part; once all are folded the same item opens them. Not a step of the history. */
+  const foldAll = useMemo(() => {
+    const keys = orderKeys(groups).filter((key) => !isLegacySession(key));
+    const parts = storedWorkstreamsOf(made);
+    if (keys.length + parts.length === 0) return undefined;
+    const anyOpen = keys.some((key) => !collapsedKeys.has(key)) || parts.some((part) => !part.collapsed);
+    return {
+      anyOpen,
+      run: (closed: boolean) => {
+        for (const key of keys) if (collapsedKeys.has(key) !== closed) onToggleCollapsed(key, closed);
+        for (const part of parts) if (Boolean(part.collapsed) !== closed) edits.onPartFold(part.key, closed);
+      },
+    };
+  }, [groups, made, collapsedKeys, onToggleCollapsed, edits]);
 
   const onSessionMeta = useCallback(
     async (key: string, change: { tool?: string | null; date?: string }) => {
@@ -1922,7 +1938,7 @@ export function SandboxPage() {
         threadNote={thread.hold}
         {...addHandlers}
         addTargets={addTargets}
-        viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true) }}
+        viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true), fold: foldAll }}
         sessionList={sessionList}
         selectionBar={
           selection.size >= 2 ? (
@@ -1933,6 +1949,9 @@ export function SandboxPage() {
               moveTo={{ sessions: addTargets.sessions, parts: (addToParts ?? []).map((part) => ({ key: part.key, label: part.title })) }}
               onMoveToSession={(key) => void edits.onMoveTiles([...selection.tiles], key)}
               onMoveToPart={(key) => void edits.onMoveSessionsToPart([...selection.sessions], key)}
+              onDuplicate={selection.tiles.size > 0 ? () => actions.duplicate([...selection.tiles]) : undefined}
+              onGroup={bridge.available() && selection.tiles.size >= 2 ? () => actions.group([...selection.tiles]) : undefined}
+              onUngroup={bridge.available() && [...selection.tiles].some((id) => actions.grouped(id)) ? () => actions.ungroup([...selection.tiles].filter((id) => actions.grouped(id))) : undefined}
               onRemove={() => actions.removeSelection(selection.items)}
               onClear={selection.clear}
             />
