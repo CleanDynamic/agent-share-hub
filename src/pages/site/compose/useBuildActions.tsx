@@ -12,6 +12,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
+import { kindsIn, type Chosen } from "@/lib/build/buildSelection";
 import { REMOVE_COPY } from "@/lib/build/componentMenus";
 import { groupKey, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { REF_KIND } from "@/lib/build/postRefs";
@@ -32,8 +33,8 @@ export interface BuildActionsInput {
   bridge: ReferenceBridge;
   steps: readonly Step[];
   groups: readonly SessionGroup[];
-  /** The session edits' removal of sessions, which writes the layout. */
-  removeSessions: (keys: readonly string[], mode: "keep" | "all") => Promise<void>;
+  /** The session edits' removal of sessions, which writes the layout. `alsoTiles` go in the same step. */
+  removeSessions: (keys: readonly string[], mode: "keep" | "all", alsoTiles?: readonly string[]) => Promise<void>;
 }
 
 export interface BuildActions {
@@ -45,6 +46,8 @@ export interface BuildActions {
   removeFile: (fileId: string) => void;
   /** A session: at once when it holds nothing, else the session window asks. */
   askRemoveSessions: (keys: readonly string[]) => void;
+  /** What is chosen, as one step: tiles go at once; with sessions among them the session window asks, worded for all. */
+  removeSelection: (items: readonly Chosen[]) => void;
 }
 
 export const BuildActionsContext = createContext<BuildActions | null>(null);
@@ -130,7 +133,28 @@ export function useBuildActions({ nodes, history, bridge, steps, groups, removeS
     [groups, steps, removeSessions],
   );
 
-  const actions = useMemo<BuildActions>(() => ({ removeTile, removeTiles, removeFile, askRemoveSessions }), [removeTile, removeTiles, removeFile, askRemoveSessions]);
+  const removeSelection = useCallback(
+    (items: readonly Chosen[]) => {
+      const { tiles, sessions } = kindsIn(items);
+      if (sessions.length === 0) return removeTiles(tiles);
+      const shown = orderKeys(groups);
+      const removing = shown.filter((key) => sessions.includes(key));
+      if (removing.length === 0) return removeTiles(tiles);
+      // A tile in a chosen session goes with it, and is not counted twice.
+      const inside = new Set(removing.flatMap((key) => tilesOfSession(steps, groups, key)).flatMap((step) => flatten([step]).map((entry) => entry.id)));
+      const extra = tiles.filter((id) => !inside.has(id));
+      const count = removing.reduce((sum, key) => sum + tilesOfSession(steps, groups, key).length, 0);
+      if (count === 0 && extra.length === 0) {
+        void removeSessions(removing, "all");
+        return;
+      }
+      const left = shown.filter((key) => !removing.includes(key));
+      setRemoval({ keys: removing, numbers: removing.map((key) => groups.find((entry) => groupKey(entry) === key)?.number ?? 0), tiles: count, alsoTiles: extra.length, alsoIds: extra, canKeep: left.length > 0 });
+    },
+    [groups, steps, removeTiles, removeSessions],
+  );
+
+  const actions = useMemo<BuildActions>(() => ({ removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection }), [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection]);
 
   const dialogs = (
     <SessionRemoveWindow
@@ -139,7 +163,7 @@ export function useBuildActions({ nodes, history, bridge, steps, groups, removeS
       onChoose={(mode) => {
         const asked = removal;
         setRemoval(null);
-        if (asked) void removeSessions(asked.keys, mode);
+        if (asked) void removeSessions(asked.keys, mode, asked.alsoIds);
       }}
     />
   );

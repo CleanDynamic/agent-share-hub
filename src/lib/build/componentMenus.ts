@@ -42,6 +42,7 @@ export const REASONS = {
   readAll: "Nothing more to read",
   startsAfter: "No sessions in other parts",
   selectTwo: "Select two or more to group",
+  noTiles: "It has no tiles",
 } as const;
 
 /** The reason a move is greyed, or none when the move can be made. */

@@ -413,10 +413,11 @@ export function useSessionEdits(input: SessionEditsInput) {
    * CA-20 P2: remove sessions, as one step. `all`: they go with their tiles, and the files those make. `keep`: the tiles move first, to
    * the end of the session above the first one that goes, or to the start of the session below it when none is above, and then
    * the sessions go. What points at a session (its colour, its group, the words that link to it) is let go first, and comes back
-   * with it on Undo. Resolves the sentence the notice says.
+   * with it on Undo. `alsoTiles` are tiles chosen with the sessions that are not in them: they go in the same step, in either mode.
+   * Resolves the sentence the notice says.
    */
   const onRemoveSessions = useCallback(
-    (keys: readonly string[], mode: "keep" | "all"): Promise<void> =>
+    (keys: readonly string[], mode: "keep" | "all", alsoTiles: readonly string[] = []): Promise<void> =>
       guard("Couldn't remove that session. Try again.", async () => {
         await track(
           (said: string | null) => said ?? "",
@@ -442,17 +443,19 @@ export function useSessionEdits(input: SessionEditsInput) {
               const moving = tiles.map((step) => step.id);
               // Into the end of the session above: they come last. Into the start of the one below: its own tiles go behind them.
               const atEnd = above ? moving : tilesOfSession(steps, groups, target).map((step) => step.id);
-              bridgeRef.current.release(sessionRefs);
+              bridgeRef.current.release([...sessionRefs, ...goingWith(nodes.current(), [...alsoTiles]).map((id) => refTo({ kind: "node", id }))]);
+              if (alsoTiles.length > 0) await nodes.run(() => dropNodes(nodes, alsoTiles));
               await applyLayout({ order: rest, reassign: new Map(moving.map((id) => [id, target])), atEnd, meta: Object.fromEntries(removing.map((key) => [key, null])), dropKeys: removing });
               await nodes.run(() => patchMaking(buildId, { sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) }).then(() => undefined));
               for (const key of removing) latest.current.onGone(key);
               await refreshMakingStats(buildId).catch(() => undefined);
               const offset = shown.length - order.length;
               const into = above ? numberOf(target) : rest.indexOf(target) + 1 + offset;
+              if (alsoTiles.length > 0) return REMOVE_COPY.several(removing.length, alsoTiles.length);
               return removing.length === 1 ? REMOVE_COPY.sessionKept(numberOf(removing[0]), into) : REMOVE_COPY.severalKept(removing.length, into);
             }
 
-            const tileIds = tiles.map((step) => step.id);
+            const tileIds = [...tiles.map((step) => step.id), ...alsoTiles];
             bridgeRef.current.release([...sessionRefs, ...goingWith(nodes.current(), tileIds).map((id) => refTo({ kind: "node", id }))]);
             await nodes.run(async () => {
               await dropNodes(nodes, tileIds);
@@ -465,7 +468,8 @@ export function useSessionEdits(input: SessionEditsInput) {
             await refreshMakingStats(buildId).catch(() => undefined);
             for (const key of removing) latest.current.onGone(key);
             await refresh(buildId);
-            return removing.length === 1 ? REMOVE_COPY.session(numberOf(removing[0]), tiles.length) : REMOVE_COPY.several(removing.length, tiles.length);
+            if (removing.length === 1 && alsoTiles.length === 0) return REMOVE_COPY.session(numberOf(removing[0]), tiles.length);
+            return REMOVE_COPY.several(removing.length, tiles.length + alsoTiles.length);
           },
           true,
         );
@@ -556,6 +560,41 @@ export function useSessionEdits(input: SessionEditsInput) {
     [applyLayout, guard, stable, track],
   );
 
+  /** CA-20 P3: "Move to…" on the selection bar: several tiles to the end of one session, as one step. */
+  const onMoveTiles = useCallback(
+    async (ids: readonly string[], key: string): Promise<void> => {
+      await guard("Couldn't move those tiles. Try again.", async () => {
+        const target = await stable(key);
+        if (!target) return;
+        const { steps, groups } = latest.current;
+        // Only a top-level tile has a session of its own.
+        const top = ids.filter((id) => steps.some((step) => step.id === id));
+        if (top.length === 0) return;
+        const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry)).concat(target).filter((entry, at, all) => all.indexOf(entry) === at);
+        const number = groups.find((entry) => groupKey(entry) === key)?.number ?? "";
+        await track(`Moved ${top.length === 1 ? "a tile" : `${top.length} tiles`} to Session ${number}`, () => applyLayout({ order: keys, reassign: new Map(top.map((id) => [id, target])), atEnd: top }));
+      });
+    },
+    [applyLayout, guard, stable, track],
+  );
+
+  /** CA-20 P3: "Move to…" with sessions chosen: each to the end of a part, as one step. */
+  const onMoveSessionsToPart = useCallback(
+    (keys: readonly string[], to: string): Promise<void> =>
+      guard("Couldn't move those sessions. Try again.", async () => {
+        const moving = keys.filter((key) => !isLegacySession(key));
+        if (moving.length === 0) return;
+        await track(`Moved ${moving.length === 1 ? "a session" : `${moving.length} sessions`} to ${titleOf(to)}`, async () => {
+          let order = editableKeys();
+          for (const key of moving) {
+            const done = await applyParts((making) => moveSessionToWorkstream(making, order, key, to));
+            if (done) order = done.order;
+          }
+        });
+      }),
+    [applyParts, editableKeys, guard, track],
+  );
+
   /* A tile added to a session that is not the last lands at the end of the draft; once it is written it is moved up to the
      end of its own session. Armed by the add (`arm`), done when the tree has grown. */
   const armed = useRef<number | null>(null);
@@ -585,5 +624,5 @@ export function useSessionEdits(input: SessionEditsInput) {
       .catch((cause) => console.warn("[Sessions] a new tile was not put with its session", cause));
   }, [topCount, editableKeys, queryClient]);
 
-  return { onTitle, onMove, onDrop, onRemoveSessions, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };
+  return { onTitle, onMove, onDrop, onRemoveSessions, onMoveTiles, onMoveSessionsToPart, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };
 }

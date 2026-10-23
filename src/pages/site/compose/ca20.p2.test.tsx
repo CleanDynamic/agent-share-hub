@@ -101,7 +101,7 @@ describe("a tile", () => {
 
 describe("a file", () => {
   it("goes at once, out of the tiles that use it, and comes back into them", async () => {
-    await mountCa20(seedCa20);
+    await mountCa20(seedCa20, { wide: true });
     const used = JSON.stringify(nodeRow(IDS.p4)?.payload);
     await openMenu("orders.csv options");
     expect(screen.getAllByRole("menuitem").at(-1)?.textContent).toBe("Remove file");

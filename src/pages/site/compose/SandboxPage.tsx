@@ -103,6 +103,9 @@ import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
 import { BuildActionsContext, useBuildActions } from "./useBuildActions";
+import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
+import { SelectionBar } from "./removePieces";
+import type { Drawn } from "@/lib/build/buildSelection";
 import { GroupLabelsProvider } from "./groupLabels";
 import { useReferenceActions } from "./useReferenceActions";
 import { DetailsReferencesProvider, type DetailsReferencesValue } from "./DetailsReferences";
@@ -540,6 +543,17 @@ export function SandboxPage() {
   } });
   /* CA-20: removing (and, later, selecting, duplicating, converting and grouping) in one place, for the menus, the keys and the bars. */
   const { actions, dialogs: actionDialogs } = useBuildActions({ nodes, history: buildHistory, bridge, steps, groups, removeSessions: edits.onRemoveSessions });
+  /* CA-20 P3: choosing several tiles and sessions. The order is how the List draws them: a session's head, then its top-level tiles. */
+  const drawn = useMemo<Drawn>(
+    () => ({
+      sessions: groups.map((group) => {
+        const key = groupKey(group);
+        return { key: group.implicit || isLegacySession(key) ? null : key, tiles: steps.filter((step) => group.stepNumbers.includes(step.number)).map((step) => step.id) };
+      }),
+    }),
+    [groups, steps],
+  );
+  const selection = useBuildSelection({ drawn, onSelect: setSelectedId, phone });
 
   promptOpenRef.current = () => {
     const picked = chosenRef.current;
@@ -1791,6 +1805,7 @@ export function SandboxPage() {
       <BuildHistoryContext.Provider value={buildHistory}>
       <ReferenceBridgeContext.Provider value={bridge}>
       <BuildActionsContext.Provider value={actions}>
+      <BuildSelectionContext.Provider value={selection}>
       <PartRegistryProvider registry={registry}>
       <GroupLabelsProvider making={makingDrawn} onOpen={referenceActions.openGroup}>
       <DetailsReferencesProvider value={detailsRefs}>
@@ -1825,6 +1840,20 @@ export function SandboxPage() {
         addTargets={addTargets}
         viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true) }}
         sessionList={sessionList}
+        selectionBar={
+          selection.size >= 2 ? (
+            <SelectionBar
+              phone={phone}
+              count={selection.size}
+              holds={{ tiles: selection.tiles.size, sessions: selection.sessions.size }}
+              moveTo={{ sessions: addTargets.sessions, parts: (addToParts ?? []).map((part) => ({ key: part.key, label: part.title })) }}
+              onMoveToSession={(key) => void edits.onMoveTiles([...selection.tiles], key)}
+              onMoveToPart={(key) => void edits.onMoveSessionsToPart([...selection.sessions], key)}
+              onRemove={() => actions.removeSelection(selection.items)}
+              onClear={selection.clear}
+            />
+          ) : null
+        }
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         map={mapColumn}
         mapPanel={mapPanel}
@@ -1849,7 +1878,7 @@ export function SandboxPage() {
             intoResult={listFacts.intoResult}
             results={listFacts.results}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={selection.selectTile}
             onOpenPrompt={setOpenPromptId}
             onEditTile={openTile}
             onRename={prompts.rename}
@@ -1957,6 +1986,7 @@ export function SandboxPage() {
       </DetailsReferencesProvider>
       </GroupLabelsProvider>
       </PartRegistryProvider>
+      </BuildSelectionContext.Provider>
       </BuildActionsContext.Provider>
       </ReferenceBridgeContext.Provider>
       </BuildHistoryContext.Provider>

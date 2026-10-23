@@ -112,9 +112,9 @@ export const describedBy = (element: HTMLElement): string =>
     .trim();
 
 /** The CA-20 draft (see ca20Fixture.ts), mounted and loaded. */
-export async function mountCa20(seed: (rows: Record<string, Record<string, unknown>[]>) => void, options: Parameters<typeof mount>[1] = {}) {
-  // A computer's window, wide enough for Sources to stand beside the build.
-  Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: 1600 });
+export async function mountCa20(seed: (rows: Record<string, Record<string, unknown>[]>) => void, options: Parameters<typeof mount>[1] & { wide?: boolean } = {}) {
+  // `wide`: a window wide enough for Sources to stand beside the build (a click on a tile then opens Details beside it, which jsdom's layout cannot measure).
+  Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: options.wide ? 1600 : 1024 });
   mount(`/compose/${DRAFT}`, { ...options, seed });
   await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 15_000 });
 }

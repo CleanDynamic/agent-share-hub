@@ -30,6 +30,7 @@ import { SESSION_META, SESSION_NAME } from "./tileRecipes";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { ToolPicker } from "./ToolPicker";
 import { RemoveRow, useReason } from "./removePieces";
+import { useBuildSelectionContext } from "./useBuildSelection";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -190,6 +191,9 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const maker = Boolean(ops) && editable;
+  /* CA-20 P3: chosen with others (Cmd, Ctrl or Shift click on the head), it is drawn as selected is. */
+  const selection = useBuildSelectionContext();
+  const picked = Boolean(selection?.isPicked("session", session.key)) && editable;
   const handleShown = phone || hovered || focused || drag.held;
   const setRefs = (element: HTMLDivElement | null) => {
     head.current = element;
@@ -258,6 +262,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         tabIndex={-1}
         data-takes={drop.takes ? "true" : undefined}
         data-collapsed={collapsed ? "true" : undefined}
+        data-selected={picked ? "true" : undefined}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}
@@ -265,6 +270,17 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
         }}
         onKeyDown={onKeyDown}
+        onMouseDownCapture={(event) => {
+          // Cmd, Ctrl or Shift on the head chooses it: the title field must not take the focus.
+          if ((event.metaKey || event.ctrlKey || event.shiftKey) && editable) event.preventDefault();
+        }}
+        onClick={(event) => {
+          if (!editable || !selection) return;
+          const plain = !(event.metaKey || event.ctrlKey || event.shiftKey);
+          // A button, a link or a field keeps its own click unless a key is held.
+          if (plain && (event.target as HTMLElement).closest("button, input, a, [role=menuitem]")) return;
+          selection.clickHead(session.key, event);
+        }}
         onDoubleClick={
           onEdit && maker && !phone
             ? (event) => {
@@ -285,6 +301,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           minHeight: 44,
           minWidth: 0,
           ...(drop.takes ? { background: t.selectedFill, boxShadow: `inset 0 0 0 1px ${t.text2}`, borderRadius: 6 } : null),
+          ...(picked ? { background: t.selectedFill, boxShadow: `inset 0 0 0 1px ${t.selectedEdge}`, borderRadius: 6 } : null),
           ...(drag.held ? { filter: t.dimFilter } : null),
         }}
       >
@@ -351,6 +368,11 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
                   {onEdit ? (
                     <Row phone={phone} onSelect={onEdit}>
                       {SESSION_HEAD_COPY.edit}
+                    </Row>
+                  ) : null}
+                  {selection ? (
+                    <Row phone={phone} disabled={tiles === 0} reason={REASONS.noTiles} onSelect={() => selection.selectSession(session.key)}>
+                      {MENU_COPY.selectAllInSession}
                     </Row>
                   ) : null}
                   {onColour ? (

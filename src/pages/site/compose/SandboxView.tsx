@@ -119,6 +119,8 @@ export interface SandboxViewProps extends CardProps {
   viewOptions?: ViewMenuProps;
   /** CA-14 P6: the session list, a row under the header (a menu on a phone). Absent: nothing is drawn. */
   sessionList?: ReactNode;
+  /** CA-20 P3: the selection bar, sticky at the bottom of the Build column. Absent: nothing is drawn. */
+  selectionBar?: ReactNode;
   /** CA-17 P4: the map's panel, beside the map in the Map view where Details was. */
   mapPanel?: ReactNode;
   /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
@@ -1082,6 +1084,7 @@ export function SandboxView(props: SandboxViewProps) {
         </div>
       )}
       {buildPanel}
+      {props.selectionBar}
     </div>
   );
 

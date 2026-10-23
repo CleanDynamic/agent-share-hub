@@ -126,6 +126,7 @@ import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { RemoveRow, useReason } from "./removePieces";
+import { useBuildSelectionContext } from "./useBuildSelection";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
 export const ADD_FLASH_MS = 1200;
@@ -306,6 +307,9 @@ export function useClamped<T extends HTMLElement>(text: string) {
 
 export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
 export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+
+/** CA-20 P3: the tile is chosen with others, and is drawn as selected is. */
+const usePicked = (id: string): boolean => Boolean(useBuildSelectionContext()?.tiles.has(id));
 
 /* ── small pieces ── */
 
@@ -550,7 +554,8 @@ const tileName = (step: Step) => sentWithLabel(step);
 function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const named = step.kind === "code" ? (step.filename ?? step.language ?? null) : null;
   const kind = step.kind === "manual" ? "Manual step" : step.kind === "file" ? "File" : step.kind === "code" ? "Code" : step.kind === "check" ? "Check" : step.kind === "agent" ? "Agent" : step.kind === "team" ? "Team" : "Prompt";
   return (
@@ -1002,7 +1007,8 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone, selectedId } = props;
-  const selected = selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = selectedId === step.id || picked;
   const title = stepTitle(step);
   const isDefault = step.title === null;
   const sessionNumber = useContext(ListRefsContext).sessionNumbers?.get(step.id);
@@ -1311,7 +1317,8 @@ function TeamAgents({ team }: { team: Step }) {
 function ContainerCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const isTeam = step.kind === "team";
   const noun = isTeam ? "Team" : "Agent";
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const made = madeIn(step, props.steps);
   const [adding, setAdding] = useState(false);
   /** Its prompts, or a team's agents, start folded behind the footer link. */
@@ -1469,7 +1476,8 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
  */
 function PlainCard({ step, index, last, props, noun, body, after, link, typeLine }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; body: (indent: number) => ReactNode; after?: ReactNode; link?: ReactNode; typeLine?: ReactNode }) {
   const { phone } = props;
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
@@ -1572,7 +1580,8 @@ function FileCard({ step, index, last, props }: { step: Step; index: number; las
 /** CA-02 P7: lines of code, as a module like a manual step's: its type line (language and length), then its first 3 lines in a mono well. */
 function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const rename = useRename(step, props);
   const [all, setAll] = useState(false);
   const nest = useNestTile(step.id);
@@ -1635,7 +1644,8 @@ export const CODE_TILE_LINES = 3;
 /** CA-03 P5: how the build checked its work: its pass criteria, and one status line with a 7px dot. */
 function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
