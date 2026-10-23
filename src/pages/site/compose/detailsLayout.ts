@@ -61,7 +61,8 @@ export interface Measured {
   head: number;
   /** The line naming what is empty, with the 22 above it; 0 when there is none. */
   foot: number;
-  sections: readonly { key: string; height: number; prose?: boolean }[];
+  /** A `trailing` section sits after the foot line (CA-18b P3: colour and references). */
+  sections: readonly { key: string; height: number; prose?: boolean; trailing?: boolean }[];
 }
 
 export interface DetailsLayoutInput {
@@ -159,8 +160,14 @@ function fill(measured: Measured, columns: number, height: number, cut: Record<s
     out[at].push(key);
   };
   place("head", measured.head, false);
-  for (const section of measured.sections) place(section.key, cut[section.key] !== undefined ? cut[section.key] + LABEL_BLOCK + READ_ALL : section.height, true);
-  if (measured.foot > 0) place("foot", measured.foot, false);
+  const sized = (section: Measured["sections"][number]) => (cut[section.key] !== undefined ? cut[section.key] + LABEL_BLOCK + READ_ALL : section.height);
+  for (const section of measured.sections) if (!section.trailing) place(section.key, sized(section), true);
+  if (measured.foot > 0) {
+    place("foot", measured.foot, false);
+    // What follows the foot line has 22, a rule and 22 above it, as after any section.
+    sectionsHere += 1;
+  }
+  for (const section of measured.sections) if (section.trailing) place(section.key, sized(section), true);
   return { fits, assignment: out };
 }
 

@@ -16,6 +16,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 
 import { ColourDot } from "@/components/brand/ColourButton";
 import { MemberLabel, useGroupOf } from "./groupLabels";
+import { ColourReferences, useReferenceSection } from "./DetailsReferences";
 import { Button } from "@/components/brand/Button";
 import { ChangedText } from "@/components/build/ChangedText";
 import { IconButton } from "@/components/brand/IconButton";
@@ -668,12 +669,16 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
   const one = (section: ReadSection, first: boolean) => (
     <DetailsSection key={section.key} section={section} first={first} view={view} onSelect={onSelect} clamp={plan?.cut?.[section.key]} onReadAll={readAll} />
   );
+  /* CA-18b P3: colour and references close Details, after its own sections and the Not set line. */
+  const refs = useReferenceSection(colour?.to);
+  const references = (first: boolean) => (refs ? <ColourReferences key="references" section={refs.section} value={refs.value} first={first} clamp={plan?.cut?.references} /> : null);
   if (!plan) {
     return (
       <div style={COLUMN}>
         <DetailsHead view={view} colour={colour} onEdit={onEdit} />
         {sections.map((section, at) => one(section, at === 0))}
         {foot ? <p data-testid="details-not-set" style={NOT_SET}>{foot}</p> : null}
+        {references(sections.length === 0 && !foot)}
       </div>
     );
   }
@@ -685,6 +690,7 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
           <div key={section.key} data-measure={section.key} style={FLOW}>{one(section, true)}</div>
         ))}
         {foot ? <div data-measure="foot" style={FLOW}><p data-testid="details-not-set" style={NOT_SET}>{foot}</p></div> : null}
+        {refs ? <div data-measure="references" data-trailing="true" style={FLOW}>{references(true)}</div> : null}
       </div>
     );
   }
@@ -695,7 +701,9 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
         <div key={at} data-testid="details-column" style={{ ...COLUMN, width: plan.columnWidth, flexShrink: 0 }}>
           {keys.map((key, index) => {
             const section = sections.find((entry) => entry.key === key);
-            if (section) return one(section, !keys.slice(0, index).some((earlier) => earlier !== "head"));
+            const earlier = keys.slice(0, index).some((before) => before !== "head");
+            if (section) return one(section, !earlier);
+            if (key === "references") return references(!earlier);
             return byKey.get(key) ?? null;
           })}
         </div>

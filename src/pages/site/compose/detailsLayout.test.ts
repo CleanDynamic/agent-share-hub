@@ -174,6 +174,16 @@ describe("Details is one fixed column that scrolls inside", () => {
     expect(layout.assignment.flat().at(-1)).toBe("foot");
   });
 
+  it("places a trailing section after the foot line, with its separation (CA-18b P3)", () => {
+    const measure = (): Measured => ({ head: 56, foot: 40, sections: [{ key: "s0", height: 100 }, { key: "references", height: 200, trailing: true }] });
+    const layout = layoutDetails({ inner, height: 800, measure });
+    expect(layout.assignment).toEqual([["head", "s0", "foot", "references"]]);
+    expect(layout.scrolls).toBe(false);
+    // 56 + 100 + 40 (the foot carries its own 22) + 45 (separation) + 200 = 441: it fits 441 and not 440.
+    expect(layoutDetails({ inner, height: 441, measure }).scrolls).toBe(false);
+    expect(layoutDetails({ inner, height: 440, measure }).scrolls).toBe(true);
+  });
+
   it("measures once, at its one width", () => {
     const widths: number[] = [];
     layoutDetails({ inner, height: 600, measure: (width) => { widths.push(width); return wraps([450, 450])(width); } });

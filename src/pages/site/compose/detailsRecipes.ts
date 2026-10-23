@@ -86,3 +86,19 @@ export const OVERLAY_EDGE = 8;
 export const OVERLAY_PAD = 20;
 export const OVERLAY_FOOT_PAD = "14px 20px";
 export const OVERLAY_FOOT_COPY = { click: "Click to edit", tap: "Tap to edit" } as const;
+
+/* ── colour and references (CA-18b P3; board "Details: colour and references") ── */
+
+/** The one inner panel: `--tile`, radius 8, padding 14 16. */
+export const REFS_PANEL: CSSProperties = { background: t.tile, borderRadius: 8, padding: "14px 16px", minWidth: 0, boxSizing: "border-box", display: "flex", flexDirection: "column" };
+/** Notes sit 12 under the top row, the notes text 4 under its label. */
+export const REFS_NOTES_ABOVE = 12;
+export const REFS_LABEL_TO_TEXT = 4;
+/** Components, Linked text and Also used by sit 14 under what is above. */
+export const REFS_BLOCK_ABOVE = 14;
+/** A member row: 36 tall, its badge, name and kind 10 apart. */
+export const REFS_ROW_HEIGHT = 36;
+export const REFS_ROW_GAP = 10;
+/** Read all, 10 under the notes. */
+export const REFS_READ_ALL_ABOVE = 10;
+export const REFS_BUTTON_PAD = "0 10px";

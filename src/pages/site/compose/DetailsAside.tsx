@@ -38,7 +38,7 @@ function measureAt(host: HTMLElement, width: number): Measured {
   const height = (key: string) => host.querySelector<HTMLElement>(`[data-measure="${key}"]`)?.offsetHeight ?? 0;
   const sections = Array.from(host.querySelectorAll<HTMLElement>("[data-measure]"))
     .filter((node) => node.dataset.measure !== "head" && node.dataset.measure !== "foot")
-    .map((node) => ({ key: node.dataset.measure as string, height: node.offsetHeight, prose: node.querySelector("[data-prose]") !== null }));
+    .map((node) => ({ key: node.dataset.measure as string, height: node.offsetHeight, prose: node.querySelector("[data-prose]") !== null, ...(node.dataset.trailing ? { trailing: true } : null) }));
   return { head: height("head"), foot: height("foot"), sections };
 }
 
