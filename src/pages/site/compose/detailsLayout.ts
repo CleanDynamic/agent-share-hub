@@ -5,19 +5,22 @@
    the widths, whether Details sits beside the build, and for Details its width, its columns, which section sits in which, and
    whether it scrolls.
 
-   THE RULES (the boards "Details: on a 1920 window" and "Details: across window widths"):
+   THE RULES (CA-18b; the boards "Details: on a 1920 window" and "Details: across window widths"). W is the window's width:
    1. The composer's content sits 34 in from the surface's edges. The surface sits 6 in from the window, so the inner width is
       the window less 80 (`innerWidthOf`).
-   2. Sources is 216 wide, 40 from Build. `R`, the width left for Build and Details, is the inner width less 256.
-   3. Sources folds to its 52 rail (24 from Build) when `R` would leave Build under 560.
-   4. Build is `clamp(560, 0.6 R, 760)`: the window decides, never the selection.
-   5. Details' room is `R - Build - 48`. Under 300 it is not beside the build.
-   7. Details is as narrow as its content allows. One column from 300 up in steps of 20, to `min(room, 520)`: the narrowest width
+   2. Build is `clamp(560, inner - 720, 760)` and sits in the dead centre of the window: its left edge is `(W - Build) / 2`. The
+      post shares its column. The window decides, never the selection.
+   3. Sources is 216 wide with its right edge 40 left of Build, while its left edge stays 40 or more from the window's edge
+      (windows of 1152 and up). Below that it folds to its 52 rail, 24 left of Build, and between 768 and 792 Build narrows below
+      560 as far as it needs to keep the rail 40 from the edge.
+   4. Details starts 40 right of Build and may use everything up to 40 from the window's right edge: `(inner - Build) / 2 - 40`.
+      Under 280 it is not beside the build.
+   5. Details is as narrow as its content allows. One column from 280 up in steps of 20, to `min(room, 520)`: the narrowest width
       at which every section fits in the height. If none does, two columns of 360 to 440 with 48 between, then three, as far as
       the room allows: the fewest columns and then the narrowest width. Sections fill down the first column in order, then the
       next, and a section never splits. If the most columns the room holds cannot hold everything, Details uses them and scrolls.
       One prose section taller than the height is cut to fit, with Read all.
-   8. What Details does not use stays empty to its right. */
+   6. What Details does not use stays empty to its right. */
 
 export const COMPOSER_INSET = 34;
 /** The surface sits this far from the window (SiteFrame). */
@@ -28,9 +31,15 @@ export const RAIL_WIDTH = 52;
 export const RAIL_GAP = 24;
 export const BUILD_MIN = 560;
 export const BUILD_MAX = 760;
-export const BUILD_SHARE = 0.6;
-export const DETAILS_GAP = 48;
-export const DETAILS_MIN = 300;
+/** Build is the inner width less this, between BUILD_MIN and BUILD_MAX: what the two side columns and their gaps leave. */
+export const BUILD_SIDES = 720;
+/** Build's left edge sits at least this far from the window's edge when Sources is folded to its rail. */
+export const EDGE_MIN = SURFACE_MARGIN + COMPOSER_INSET;
+/** Between Build and Details, and between Details and the window's right edge. */
+export const DETAILS_GAP = 40;
+/** Between Details' columns. */
+export const COLUMN_GAP = 48;
+export const DETAILS_MIN = 280;
 export const DETAILS_ONE_MAX = 520;
 export const STEP = 20;
 export const COLUMN_MIN = 360;
@@ -69,7 +78,11 @@ export interface DetailsLayout {
   /** The gap between Sources (or its rail) and Build: 40 or 24. */
   sourcesGap: number;
   build: number;
-  /** The width left for Details, after Build and the 48 between. */
+  /** Where each column starts, from the window's left edge. Build is centred on the window. */
+  buildLeft: number;
+  sourcesLeft: number;
+  detailsLeft: number;
+  /** The width left for Details, after Build and the 40 between, up to 40 from the window's right edge. */
   room: number;
   /** Details sits beside the build. */
   beside: boolean;
@@ -85,14 +98,21 @@ export interface DetailsLayout {
   cut: Record<string, number>;
 }
 
-/** Build's width and Details' room for an inner width: what depends on the window alone. */
-export function frameOf(inner: number): Pick<DetailsLayout, "rail" | "sources" | "sourcesGap" | "build" | "room" | "beside"> {
-  const full = inner - (SOURCES_WIDTH + SOURCES_GAP);
-  const rail = full < BUILD_MIN;
-  const left = rail ? inner - (RAIL_WIDTH + RAIL_GAP) : full;
-  const build = Math.min(BUILD_MAX, Math.max(BUILD_MIN, Math.round(BUILD_SHARE * left)));
-  const room = left - build - DETAILS_GAP;
-  return { rail, sources: rail ? RAIL_WIDTH : SOURCES_WIDTH, sourcesGap: rail ? RAIL_GAP : SOURCES_GAP, build, room, beside: room >= DETAILS_MIN };
+/** The window's width for an inner width. */
+export const windowOf = (inner: number): number => inner + 2 * (SURFACE_MARGIN + COMPOSER_INSET);
+
+/** Where the columns stand for an inner width: what depends on the window alone. */
+export function frameOf(inner: number): Pick<DetailsLayout, "rail" | "sources" | "sourcesGap" | "build" | "buildLeft" | "sourcesLeft" | "detailsLeft" | "room" | "beside"> {
+  const W = windowOf(inner);
+  const wanted = Math.min(BUILD_MAX, Math.max(BUILD_MIN, inner - BUILD_SIDES));
+  const rail = (W - wanted) / 2 - (SOURCES_WIDTH + SOURCES_GAP) < EDGE_MIN;
+  // With the rail, Build gives up width only as far as it needs to keep the rail EDGE_MIN from the window's edge.
+  const build = rail ? Math.min(wanted, W - 2 * (EDGE_MIN + RAIL_WIDTH + RAIL_GAP)) : wanted;
+  const buildLeft = (W - build) / 2;
+  const sources = rail ? RAIL_WIDTH : SOURCES_WIDTH;
+  const sourcesGap = rail ? RAIL_GAP : SOURCES_GAP;
+  const room = (W - build) / 2 - SURFACE_MARGIN - COMPOSER_INSET - DETAILS_GAP;
+  return { rail, sources, sourcesGap, build, buildLeft, sourcesLeft: buildLeft - sourcesGap - sources, detailsLeft: buildLeft + build + DETAILS_GAP, room, beside: room >= DETAILS_MIN };
 }
 
 interface Fit {
@@ -152,7 +172,7 @@ export function layoutDetails({ inner, height, measure }: DetailsLayoutInput): D
     return made;
   };
 
-  // One column, from 300 up in steps of 20, to what the room allows (520 at most).
+  // One column, from 280 up in steps of 20, to what the room allows (520 at most).
   const widest = Math.min(frame.room, DETAILS_ONE_MAX);
   let last: { width: number; measured: Measured } | null = null;
   for (let width = DETAILS_MIN; width <= widest; width += STEP) {
@@ -164,10 +184,10 @@ export function layoutDetails({ inner, height, measure }: DetailsLayoutInput): D
   }
 
   // Two columns of 360 to 440, then three, as far as the room allows: the fewest columns, then the narrowest.
-  const most = Math.max(1, Math.floor((frame.room + DETAILS_GAP) / (COLUMN_MIN + DETAILS_GAP)));
+  const most = Math.max(1, Math.floor((frame.room + COLUMN_GAP) / (COLUMN_MIN + COLUMN_GAP)));
   for (let columns = 2; columns <= most; columns += 1) {
     for (let width = COLUMN_MIN; width <= COLUMN_MAX; width += STEP) {
-      const total = columns * width + (columns - 1) * DETAILS_GAP;
+      const total = columns * width + (columns - 1) * COLUMN_GAP;
       if (total > frame.room) break;
       const measured = at(width);
       const cut = cutsFor(measured, height);
@@ -181,7 +201,7 @@ export function layoutDetails({ inner, height, measure }: DetailsLayoutInput): D
     const width = COLUMN_MIN;
     const measured = at(width);
     const cut = cutsFor(measured, height);
-    return { ...frame, width: most * width + (most - 1) * DETAILS_GAP, columns: most, columnWidth: width, assignment: fill(measured, most, height, cut).assignment, scrolls: true, cut };
+    return { ...frame, width: most * width + (most - 1) * COLUMN_GAP, columns: most, columnWidth: width, assignment: fill(measured, most, height, cut).assignment, scrolls: true, cut };
   }
   const width = last?.width ?? DETAILS_MIN;
   const measured = at(width);
