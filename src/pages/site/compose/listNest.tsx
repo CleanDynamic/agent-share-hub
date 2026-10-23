@@ -35,7 +35,7 @@ import { t } from "@/lib/theme/tokens";
 import { bareButton, chipStyle } from "./refinedStyles";
 
 /** Where a held tile is dropped. */
-export type NestTarget = { kind: "tile"; id: string } | { kind: "gap"; index: number } | { kind: "session"; key: string };
+export type NestTarget = { kind: "tile"; id: string } | { kind: "gap"; index: number } | { kind: "session"; key: string } | { kind: "workstream"; key: string };
 
 interface NestState {
   /** The tile being held, or null. */
@@ -50,10 +50,14 @@ const NestContext = createContext<NestState | null>(null);
 
 /** CA-14 P4: a session's own drag. Its draggable id starts with this, so a tile's id (a node id) can never match it. */
 export const SESSION_DRAG = "sdrag:";
-export const isSessionDrag = (id: string | null | undefined): id is string => Boolean(id?.startsWith(SESSION_DRAG));
+export const isSessionDrag = (id: string | null | undefined): boolean => Boolean(id?.startsWith(SESSION_DRAG));
+/** CA-17 P2: a part's own drag. Its draggable id starts with this. */
+export const WORKSTREAM_DRAG = "wdrag:";
+export const isWorkstreamDrag = (id: string | null | undefined): boolean => Boolean(id?.startsWith(WORKSTREAM_DRAG));
 const tileTarget = (id: string) => `tile:${id}`;
 const gapTarget = (index: number) => `gap:${index}`;
 const sessionTarget = (key: string) => `session:${key}`;
+const workstreamTarget = (key: string) => `workstream:${key}`;
 
 function targetOf(droppable: string): NestTarget | null {
   const [kind, ...rest] = droppable.split(":");
@@ -61,6 +65,7 @@ function targetOf(droppable: string): NestTarget | null {
   if (kind === "tile" && value) return { kind: "tile", id: value };
   if (kind === "gap" && /^\d+$/.test(value)) return { kind: "gap", index: Number(value) };
   if (kind === "session" && value) return { kind: "session", key: value };
+  if (kind === "workstream" && value) return { kind: "workstream", key: value };
   return null;
 }
 
@@ -83,6 +88,9 @@ export function NestList({
   onDrop,
   onDropSession,
   sessionLabel,
+  onDropOnWorkstream,
+  onDropWorkstream,
+  workstreamLabel,
   children,
 }: {
   phone: boolean;
@@ -93,6 +101,12 @@ export function NestList({
   onDropSession?: (key: string, over: string) => void;
   /** CA-14 P4: names a session for the drag's announcements and its floating chip. */
   sessionLabel?: (key: string) => string;
+  /** CA-17 P2: a session's head dropped on a part's head: it goes to the end of that part. */
+  onDropOnWorkstream?: (sessionKey: string, workstreamKey: string) => void;
+  /** CA-17 P2: a part's head dropped on another's: it takes that part's place. */
+  onDropWorkstream?: (workstreamKey: string, over: string) => void;
+  /** CA-17 P2: names a part for the drag's announcements and its floating chip. */
+  workstreamLabel?: (key: string) => string;
   children: ReactNode;
 }) {
   const [active, setActive] = useState<string | null>(null);
@@ -103,7 +117,8 @@ export function NestList({
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
     useSensor(KeyboardSensor),
   );
-  const nameOf = (id: string) => (isSessionDrag(id) ? (sessionLabel?.(id.slice(SESSION_DRAG.length)) ?? "that session") : label(id));
+  const nameOf = (id: string) =>
+    isSessionDrag(id) ? (sessionLabel?.(id.slice(SESSION_DRAG.length)) ?? "that session") : isWorkstreamDrag(id) ? (workstreamLabel?.(id.slice(WORKSTREAM_DRAG.length)) ?? "that part") : label(id);
   const end = () => {
     setActive(null);
     setOver(null);
@@ -124,16 +139,23 @@ export function NestList({
           if (isSessionDrag(id)) {
             const key = id.slice(SESSION_DRAG.length);
             if (target.kind === "session" && target.key !== key) onDropSession?.(key, target.key);
+            else if (target.kind === "workstream") onDropOnWorkstream?.(key, target.key);
             return;
           }
+          if (isWorkstreamDrag(id)) {
+            const key = id.slice(WORKSTREAM_DRAG.length);
+            if (target.kind === "workstream" && target.key !== key) onDropWorkstream?.(key, target.key);
+            return;
+          }
+          if (target.kind === "workstream") return;
           if (target.kind === "tile" && (target.id === id || !canTake(id, target.id))) return;
           onDrop(id, target);
         }}
         accessibility={{
           announcements: {
             onDragStart: ({ active: held }) => `Picked up ${nameOf(String(held.id))}.`,
-            onDragOver: ({ over: under }) => (under ? `Over ${describe(String(under.id), nameOf, sessionLabel)}.` : "Not over a place to drop."),
-            onDragEnd: ({ over: under }) => (under ? `Dropped on ${describe(String(under.id), nameOf, sessionLabel)}.` : "Put back where it was."),
+            onDragOver: ({ over: under }) => (under ? `Over ${describe(String(under.id), nameOf, sessionLabel, workstreamLabel)}.` : "Not over a place to drop."),
+            onDragEnd: ({ over: under }) => (under ? `Dropped on ${describe(String(under.id), nameOf, sessionLabel, workstreamLabel)}.` : "Put back where it was."),
             onDragCancel: () => "Put back where it was.",
           },
           screenReaderInstructions: { draggable: "Press Space to pick up the tile, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
@@ -146,9 +168,10 @@ export function NestList({
   );
 }
 
-function describe(droppable: string, label: (id: string) => string, sessionLabel?: (key: string) => string): string {
+function describe(droppable: string, label: (id: string) => string, sessionLabel?: (key: string) => string, workstreamLabel?: (key: string) => string): string {
   const target = targetOf(droppable);
   if (!target) return "a place to drop";
+  if (target.kind === "workstream") return workstreamLabel?.(target.key) ?? "that part";
   if (target.kind === "tile") return label(target.id);
   if (target.kind === "gap") return `the place before step ${target.index + 1}`;
   return sessionLabel?.(target.key) ?? "that session";
@@ -286,7 +309,7 @@ export function useNestSession(key: string) {
   const state = useContext(NestContext);
   const drop = useDroppable({ id: sessionTarget(key), disabled: !state });
   const sessionHeld = isSessionDrag(state?.active);
-  return { setRef: drop.setNodeRef, takes: Boolean(state?.active) && !sessionHeld && state?.over === sessionTarget(key), sessionHeld, overForSession: sessionHeld && state?.over === sessionTarget(key) && state?.active !== `${SESSION_DRAG}${key}` };
+  return { setRef: drop.setNodeRef, takes: Boolean(state?.active) && !sessionHeld && !isWorkstreamDrag(state?.active) && state?.over === sessionTarget(key), sessionHeld, overForSession: sessionHeld && state?.over === sessionTarget(key) && state?.active !== `${SESSION_DRAG}${key}` };
 }
 
 /** CA-14 P4: whether a session is being dragged. The List folds every session to its head while it is, and opens them after the drop. */
@@ -298,5 +321,26 @@ export function useSessionDragging(): boolean {
 export function useNestSessionDrag(key: string) {
   const state = useContext(NestContext);
   const drag = useDraggable({ id: `${SESSION_DRAG}${key}`, disabled: !state });
+  return { on: Boolean(state), setRef: drag.setNodeRef, handle: { attributes: drag.attributes, listeners: drag.listeners, setActivator: drag.setActivatorNodeRef }, held: drag.isDragging, phone: Boolean(state?.phone) };
+}
+
+/** CA-17 P2: a part's head as a place to drop. A session dropped on it goes to the end of that part; a part dropped on it takes its place. */
+export function useNestWorkstream(key: string) {
+  const state = useContext(NestContext);
+  const drop = useDroppable({ id: workstreamTarget(key), disabled: !state });
+  const sessionHeld = isSessionDrag(state?.active);
+  const partHeld = isWorkstreamDrag(state?.active);
+  const over = state?.over === workstreamTarget(key);
+  return {
+    setRef: drop.setNodeRef,
+    takes: sessionHeld && over,
+    overForPart: partHeld && over && state?.active !== `${WORKSTREAM_DRAG}${key}`,
+  };
+}
+
+/** CA-17 P2: a part's head as something to drag, by the `grip` in it. */
+export function useNestWorkstreamDrag(key: string) {
+  const state = useContext(NestContext);
+  const drag = useDraggable({ id: `${WORKSTREAM_DRAG}${key}`, disabled: !state });
   return { on: Boolean(state), setRef: drag.setNodeRef, handle: { attributes: drag.attributes, listeners: drag.listeners, setActivator: drag.setActivatorNodeRef }, held: drag.isDragging, phone: Boolean(state?.phone) };
 }

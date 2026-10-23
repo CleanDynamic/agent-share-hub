@@ -9,7 +9,7 @@
    A session already in this draft cannot be added twice. */
 
 import * as Popover from "@radix-ui/react-popover";
-import { useId, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { BottomSheet } from "@/components/shell/BottomSheet";
@@ -25,6 +25,7 @@ import { FLOATING_Z } from "./ToolPicker";
 
 export const ADD_SESSION_COPY = {
   row: "Add a session",
+  addPart: "Add a part",
   adding: "Adding…",
   title: "Add a session",
   startNew: "Start a new session",
@@ -69,6 +70,8 @@ export interface AddSessionRowProps {
   onStartNew: () => void;
   /** The time the groups are read against; now when absent. */
   now?: number;
+  /** CA-17 P2: "+ Add a session to this part" opens the picker; `n` changes on every ask. */
+  openFor?: { part: string; n: number } | null;
 }
 
 const rowButton: CSSProperties = { ...bareButton, display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", boxSizing: "border-box", borderRadius: 6 };
@@ -219,11 +222,8 @@ function PickerBody({ props, close }: { props: AddSessionRowProps; close: () => 
   );
 }
 
-export function AddSessionRow(props: AddSessionRowProps) {
-  const { phone, adding } = props;
-  const [open, setOpen] = useState(false);
-  const trigger = useInteractive<HTMLButtonElement>();
-  const triggerStyle: CSSProperties = {
+/** CA-17 P2: the row's look, shared with "Add a part" under it. */
+const addRowStyle = (hovered: boolean, focusVisible: boolean, adding: boolean): CSSProperties => ({
     ...bareButton,
     display: "flex",
     alignItems: "center",
@@ -236,9 +236,33 @@ export function AddSessionRow(props: AddSessionRowProps) {
     borderRadius: 6,
     ...text(13, 500, t.text2),
     cursor: adding ? "default" : "pointer",
-    ...(trigger.state.hovered && !adding ? { background: t.controlOn } : null),
-    ...ring(trigger.state.focusVisible),
-  };
+    ...(hovered && !adding ? { background: t.controlOn } : null),
+    ...ring(focusVisible),
+});
+
+/** CA-17 P2: "Add a part", a row exactly like "Add a session", directly under it. */
+export function AddPartRow({ phone: _phone, adding, onAdd }: { phone: boolean; adding: boolean; onAdd: () => void }) {
+  const trigger = useInteractive<HTMLButtonElement>();
+  return (
+    <button type="button" data-testid="add-part-row" data-hit="" disabled={adding} onClick={onAdd} {...trigger.handlers} style={addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding)}>
+      <span aria-hidden="true" style={{ display: "inline-flex" }}>
+        <Glyph name="plus" size={16} />
+      </span>
+      {ADD_SESSION_COPY.addPart}
+    </button>
+  );
+}
+
+export function AddSessionRow(props: AddSessionRowProps) {
+  const { phone, adding } = props;
+  const [open, setOpen] = useState(false);
+  const trigger = useInteractive<HTMLButtonElement>();
+  const openN = props.openFor?.n;
+  useEffect(() => {
+    if (openN === undefined) return;
+    setOpen(true);
+  }, [openN]);
+  const triggerStyle: CSSProperties = addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding);
   const label = adding ? ADD_SESSION_COPY.adding : ADD_SESSION_COPY.row;
   const content = (
     <>

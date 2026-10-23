@@ -86,3 +86,49 @@ export const SUGGESTED_COLOURS = ["#C9A86B", "#7FB88A", "#7FA7D9", "#B79AD6", "#
 
 /** What a code that is not a colour is told: "Use a code like #7FA7D9", the third suggestion. */
 export const HEX_HINT = `Use a code like ${SUGGESTED_COLOURS[2]}`;
+
+/* ── a part's name drawn as text (CA-17 P5) ── */
+
+/** What a part's name must keep against the surface it is drawn on. */
+export const NAME_TEXT_FLOOR = 4.5;
+
+function toHsl([r, g, b]: [number, number, number, number]): [number, number, number] {
+  const [x, y, z] = [r, g, b].map((v) => v / 255);
+  const max = Math.max(x, y, z);
+  const min = Math.min(x, y, z);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === x ? (y - z) / d + (y < z ? 6 : 0) : max === y ? (z - x) / d + 2 : (x - y) / d + 4;
+  return [h / 6, s, l];
+}
+
+function fromHsl(h: number, s: number, l: number): string {
+  const channel = (n: number) => {
+    const k = (n + h * 12) % 12;
+    const a = s * Math.min(l, 1 - l);
+    return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+  };
+  return `#${[channel(0), channel(8), channel(4)].map((v) => v.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+}
+
+/**
+ * The colour a part's NAME is drawn in, as text on the surface (in the List and on the map). The maker's colour when it
+ * reaches 4.5:1 on that surface in that theme; otherwise the same colour with only its lightness moved, as far as it takes
+ * to reach 4.5:1: lighter in Dusk, darker in Noon. Hue and saturation are kept. The stored colour never changes.
+ */
+export function nameColourFor(hex: string, theme: ThemeKey): string {
+  const colour = normaliseHex(hex);
+  if (!colour) return hex;
+  const surface = ground(theme);
+  if (contrast(colour, surface) >= NAME_TEXT_FLOOR) return colour;
+  const [h, s, l] = toHsl(parse(colour));
+  const step = theme === "dusk" ? 0.005 : -0.005;
+  let last = colour;
+  for (let next = l + step; next >= 0 && next <= 1; next += step) {
+    last = fromHsl(h, s, next);
+    if (contrast(last, surface) >= NAME_TEXT_FLOOR) return last;
+  }
+  return last;
+}

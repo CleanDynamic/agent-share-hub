@@ -55,6 +55,8 @@ export interface SourceSession {
   title?: string;
   /** CA-14 P2: the session's day as the head shows it, "22 Oct"; "" for an old build's typed prompts. */
   date?: string;
+  /** CA-17 P2: "Session 2" when the session shares the stage of the session above it in its part; absent otherwise. */
+  sameStageAs?: string;
 }
 
 export interface SourceFile {

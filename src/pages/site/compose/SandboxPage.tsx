@@ -31,6 +31,7 @@ import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
@@ -42,7 +43,8 @@ import { goalRefusal, patchMaking, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
-import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { orderByWorkstream } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionToBuild } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
@@ -51,6 +53,7 @@ import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, orderKey
 import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
+import { listPartsOf } from "./partsModel";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -171,7 +174,7 @@ export function SandboxPage() {
 
   const made = (build as { making?: unknown } | null)?.making;
   /* CA-12 P5: sessions are numbered by `build_sessions.position`; a draft with no rows is numbered by its steps, as before. */
-  const order = useMemo(() => getSessionOrder(made, sessions.rows), [made, sessions.rows]);
+  const order = useMemo(() => orderByWorkstream(getSessionOrder(made, sessions.rows), sessionsMetaOf(made), storedWorkstreamsOf(made)), [made, sessions.rows]);
   /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
   const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
   const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
@@ -510,7 +513,10 @@ export function SandboxPage() {
   const [sessionSaid, setSessionSaid] = useState("");
   /** The session whose prompt box is open. An empty draft has Session 1's open without it. */
   const [promptSession, setPromptSession] = useState<string | null>(null);
-  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, onGone: (key) => {
+  /* CA-17 P2: the build's parts, when it has two or more. */
+  const theme = useResolvedTheme();
+  const partsModel = useMemo(() => listPartsOf(made, groups, theme), [made, groups, theme]);
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
   } });
@@ -1526,7 +1532,7 @@ export function SandboxPage() {
         threadNote={thread.hold}
         {...addHandlers}
         addTargets={addTargets}
-        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions }}
+        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined }}
         sessionList={sessionList}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
@@ -1709,8 +1715,21 @@ export function SandboxPage() {
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={onAddPrompt}
             addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
-            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined }}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
             onDropSession={edits.onDrop}
+            parts={
+              partsModel
+                ? {
+                    parts: partsModel.list,
+                    withAbove: partsModel.withAbove,
+                    onToggle: edits.onPartFold,
+                    ops: { onName: edits.onPartName, onMove: edits.onPartMove, onRemove: edits.onPartRemove, onStartsAfter: edits.onPartStartsAfter },
+                  }
+                : undefined
+            }
+            onDropOnWorkstream={partsModel ? edits.onDropOnPart : undefined}
+            onDropWorkstream={partsModel ? edits.onDropPart : undefined}
+            onAddPart={buildId ? () => void edits.onAddPart() : undefined}
             onSplitHere={viewOptions.splitMerge ? edits.onSplitHere : undefined}
             promptIn={promptSession}
             said={sessionSaid}

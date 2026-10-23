@@ -460,6 +460,18 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/workstreams.test.ts",
   "src/lib/build/stages.ts",
   "src/lib/build/stages.test.ts",
+  // CA-17 P2
+  "src/lib/theme/partColour.ts",
+  "src/pages/site/compose/WorkstreamHead.tsx",
+  "src/pages/site/compose/workstreamRecipes.ts",
+  "src/pages/site/compose/partsModel.ts",
+  "src/pages/site/compose/BuildList.parts.test.tsx",
+  "src/pages/site/compose/SandboxPage.parts.test.tsx",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/AddSessionRow.tsx",
+  "src/pages/site/compose/listNest.tsx",
+  "src/pages/site/compose/useSessionEdits.ts",
 ];
 
 /**
@@ -483,7 +495,7 @@ export const MODAL_FILES: readonly string[] = [
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 

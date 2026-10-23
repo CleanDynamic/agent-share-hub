@@ -102,7 +102,9 @@ import { FOOT_LINK, LIST_BOX, MarkedName, listRow, NumberBadge, RESPONSE_WORD, R
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
-import { AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
+import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
+import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "./workstreamRecipes";
+import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestGap, NestList, TAKES, useNestTile, useSessionDragging, useTileNear, type NestTarget } from "./listNest";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
@@ -211,6 +213,14 @@ export interface BuildListProps {
   sessionOps?: SessionOps;
   /** CA-14 P4: a session's head dropped on another's. */
   onDropSession?: (key: string, over: string) => void;
+  /** CA-17 P2: the build's parts (two or more). */
+  parts?: ListParts;
+  /** CA-17 P2: a session's head dropped on a part's head. */
+  onDropOnWorkstream?: (sessionKey: string, workstreamKey: string) => void;
+  /** CA-17 P2: a part's head dropped on another's. */
+  onDropWorkstream?: (workstreamKey: string, over: string) => void;
+  /** CA-17 P2: "Add a part", the row under "Add a session". Resolves once the part is made. Absent: no row. */
+  onAddPart?: () => void;
   /** CA-14 P5: the "+ Add to this session" row at the end of a session, drawn by the page (it holds the Add items). */
   addToSession?: (sessionKey: string) => ReactNode;
   /** CA-14 P5: the session whose prompt box is open. An empty draft has Session 1's open without it. */
@@ -245,6 +255,31 @@ export interface BuildListProps {
    * `to` is the part, `what` names it for the picker ("Prompt 3 · Launch email"), `anchor` is the button. Absent: no button.
    */
   onColour?: (to: string, anchor: HTMLElement, what: string, colour: string | null) => void;
+}
+
+/** CA-17 P2: one part of the build, as the List draws it. */
+export interface ListPart {
+  view: WorkstreamHeadView;
+  /** "Part B · Support agent": the part in a menu or a message. */
+  title: string;
+  /** Its sessions' keys, in order. */
+  sessions: readonly string[];
+  /** The sessions it may start after, as the menu lists them. */
+  startsAfterChoices: readonly { key: string; label: string }[];
+}
+
+/** CA-17 P2: the build's parts. Passed only with two or more; with one part the List is drawn as it always was. */
+export interface ListParts {
+  parts: readonly ListPart[];
+  /** What the maker can do to a part. Absent: heads show no maker controls (a reader's build page). */
+  ops?: WorkstreamOps;
+  onToggle?: (key: string, collapsed: boolean) => void;
+  /** The colour button and "Colour…" in a part's menu. */
+  onColour?: (key: string, anchor: HTMLElement, what: string, colour: string | null) => void;
+  /** "+ Add a session to this part" in an empty part. */
+  onAddSession?: (key: string) => void;
+  /** The sessions that share the stage of the session above them, by key. */
+  withAbove?: ReadonlySet<string>;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -634,6 +669,7 @@ const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 function SessionLines({ session }: { session: SourceSession }) {
   return (
     <>
+      {session.sameStageAs ? <DotLine testId="same-stage-line">{WORKSTREAM_HEAD_COPY.sameStage(session.sameStageAs)}</DotLine> : null}
       {session.goal ? (
         <DotLine testId="goal-line" dot={session.goal.reached ? t.evidence : t.label}>
           {session.goal.line}
@@ -1932,6 +1968,8 @@ export function BuildList(props: BuildListProps) {
   /* CA-04 P2: tiles move once there is somewhere to move them: two steps, or a tile already inside one. */
   const nestOn = Boolean(props.onNest) && (steps.length > 1 || steps.some((step) => (step.sentWith?.length ?? 0) > 0));
   const [said, setSaid] = useState("");
+  /** CA-17 P2: "+ Add a session to this part" in an empty part opens the Add a session picker with that part chosen. */
+  const [addFor, setAddFor] = useState<{ part: string; n: number } | null>(null);
   const tiles = new Map(steps.flatMap(withSentWith).map((step) => [step.id, step]));
   const label = (id: string) => {
     const tile = tiles.get(id);
@@ -2020,26 +2058,25 @@ export function BuildList(props: BuildListProps) {
   const runs = withEmptySessions(runsOf(steps, props.dividers), props.emptySessions ?? []);
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
   const headed = runs.some((run) => run.head);
-  const body = (
-    /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
-     fields' type is set here, where they inherit it. */
-    <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5 }}>
-      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
-      {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
-      <WhileDragging>
-        {(dragging) =>
-      runs.map((run, at) => {
+  /* CA-17 P2: with two or more parts the sessions stand in part groups; with one, nothing about parts is drawn. */
+  const parts = props.parts && props.parts.parts.length >= 2 ? props.parts : null;
+  const partOfSession = new Map<string, ListPart>();
+  if (parts) for (const part of parts.parts) for (const key of part.sessions) partOfSession.set(key, part);
+  const numberByKey = new Map(runs.flatMap((run) => (run.head ? [[run.head.key, run.head.number] as const] : [])));
+  const drawRun = (run: Run, at: number, dragging: boolean, inPart: ListPart | null) => {
         const key = run.head?.key ?? null;
         const closed = key !== null && Boolean(props.onToggleCollapsed) && (dragging || Boolean(props.collapsed?.has(key)));
         const tilesId = `session-tiles-${key ?? run.key}`;
         const headed = run.head !== null;
         const editable = headed && !run.head.key.startsWith("typed-legacy-");
-        const isFirstHead = headed && headOrder.indexOf(run.head.key) === 0;
-        const isLastHead = headed && headOrder.indexOf(run.head.key) === headOrder.length - 1;
+        const here = inPart ? inPart.sessions.indexOf(key ?? "") : -1;
+        const isFirstHead = inPart ? here === 0 : headed && headOrder.indexOf(run.head.key) === 0;
+        const isLastHead = inPart ? here === inPart.sessions.length - 1 : headed && headOrder.indexOf(run.head.key) === headOrder.length - 1;
         const emptyDraft = steps.length === 0 && at === 0;
         const promptHere = headed && (props.promptIn === key || emptyDraft);
+        const sameStageAs = parts && inPart && key && here > 0 && parts.withAbove?.has(key) ? `Session ${numberByKey.get(inPart.sessions[here - 1]) ?? ""}`.trim() : undefined;
         return (
-          <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0} lit={Boolean(key && props.ringedSession?.key === key)}>
+          <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0 || inPart !== null} lit={Boolean(key && props.ringedSession?.key === key)}>
             {run.head ? (
               <SessionHead
                 session={run.head}
@@ -2052,6 +2089,7 @@ export function BuildList(props: BuildListProps) {
                 last={isLastHead}
                 ops={props.sessionOps}
                 editable={editable}
+                part={parts && inPart ? { moveTo: parts.parts.filter((other) => other !== inPart).map((other) => ({ key: other.view.key, label: other.title })), firstInPart: here === 0, withAbove: Boolean(key && parts.withAbove?.has(key)) } : undefined}
                 onOpenSetup={props.onOpenSetup}
                 onPickApp={props.onPickApp}
                 inBuild={props.inBuild}
@@ -2063,7 +2101,7 @@ export function BuildList(props: BuildListProps) {
                 {closed ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
-                    <SessionLines session={run.head} />
+                    <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
                     {run.steps.length === 0 && !promptHere ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
@@ -2088,7 +2126,67 @@ export function BuildList(props: BuildListProps) {
             )}
           </SessionRun>
         );
-      })
+  };
+  const drawPart = (part: ListPart, at: number, dragging: boolean) => {
+    const view = part.view;
+    const mine = runs.filter((run) => run.head && (partOfSession.get(run.head.key) ?? parts?.parts[0]) === part);
+    const bodyId = `workstream-body-${view.key}`;
+    const neighbour = parts?.parts[at - 1] ?? parts?.parts[at + 1];
+    const count = parts?.parts.length ?? 0;
+    return (
+      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} style={WORKSTREAM_GROUP}>
+        <WorkstreamHead
+          part={view}
+          phone={props.phone}
+          first={at === 0}
+          last={at === count - 1}
+          controls={bodyId}
+          onToggle={() => parts?.onToggle?.(view.key, !view.collapsed)}
+          ops={parts?.ops}
+          startsAfterChoices={part.startsAfterChoices}
+          joins={neighbour?.view.label ?? ""}
+          onColour={parts?.onColour ? (anchor) => parts.onColour?.(view.key, anchor, part.title, view.colour ?? null) : undefined}
+        />
+        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed} style={WORKSTREAM_BODY}>
+          {view.collapsed ? null : mine.length > 0 ? (
+            mine.map((run) => drawRun(run, runs.indexOf(run), dragging, part))
+          ) : (
+            <div data-testid="workstream-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "4px 8px" }}>
+              <p style={{ ...text(13, 400, t.label), margin: 0 }}>{WORKSTREAM_HEAD_COPY.empty}</p>
+              {parts?.ops ? (
+                <TextButton
+                  target={props.phone}
+                  style={text(13, 500, t.text2)}
+                  onClick={() => {
+                    setAddFor((current) => ({ part: view.key, n: (current?.n ?? 0) + 1 }));
+                    parts.onAddSession?.(view.key);
+                  }}
+                >
+                  {WORKSTREAM_HEAD_COPY.addHere}
+                </TextButton>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  const body = (
+    /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
+     fields' type is set here, where they inherit it. */
+    <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5 }}>
+      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
+      {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
+      <WhileDragging>
+        {(dragging) =>
+          parts ? (
+            <>
+              {runs.filter((run) => !run.head).map((run) => drawRun(run, runs.indexOf(run), dragging, null))}
+              {parts.parts.map((part, at) => drawPart(part, at, dragging))}
+            </>
+          ) : (
+            runs.map((run, at) => drawRun(run, at, dragging, null))
+          )
         }
       </WhileDragging>
       {props.results.map((result) => (
@@ -2115,7 +2213,8 @@ export function BuildList(props: BuildListProps) {
           inBuild={props.inBuild}
         />
       )}
-      {props.addSession ? <AddSessionRow phone={props.phone} {...props.addSession} /> : null}
+      {props.addSession ? <AddSessionRow phone={props.phone} {...props.addSession} openFor={addFor} /> : null}
+      {props.onAddPart ? <AddPartRow phone={props.phone} adding={props.addSession?.adding ?? false} onAdd={props.onAddPart} /> : null}
     </div>
   );
   const sessionOf = new Map<string, string>();
@@ -2146,12 +2245,22 @@ export function BuildList(props: BuildListProps) {
     return head ? headName(head) : "that session";
   };
   /* Sessions move once there are two to put in order, even when no tile can move yet. */
-  const sessionsMove = Boolean(props.onDropSession) && headOrder.length > 1;
+  const sessionsMove = (Boolean(props.onDropSession) && headOrder.length > 1) || Boolean(parts?.ops);
   if (!nest && !sessionsMove) return <ListRefsContext.Provider value={refs}>{body}</ListRefsContext.Provider>;
   return (
     <ListRefsContext.Provider value={refs}>
       <ListNestContext.Provider value={nest}>
-        <NestList phone={props.phone} canTake={nest?.canNest ?? (() => false)} label={label} onDrop={onDrop} onDropSession={props.onDropSession} sessionLabel={sessionLabel}>
+        <NestList
+          phone={props.phone}
+          canTake={nest?.canNest ?? (() => false)}
+          label={label}
+          onDrop={onDrop}
+          onDropSession={props.onDropSession}
+          sessionLabel={sessionLabel}
+          onDropOnWorkstream={props.onDropOnWorkstream}
+          onDropWorkstream={props.onDropWorkstream}
+          workstreamLabel={(key) => parts?.parts.find((part) => part.view.key === key)?.title ?? "that part"}
+        >
           {body}
         </NestList>
       </ListNestContext.Provider>

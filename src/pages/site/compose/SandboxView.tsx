@@ -49,6 +49,7 @@ import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } fro
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
+import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
@@ -514,9 +515,31 @@ export interface ViewMenuProps {
   sessionList: boolean;
   splitMerge: boolean;
   onChange: (patch: { sessionList?: boolean; splitMerge?: boolean }) => void;
+  /** CA-17 P2: "Label parts", 1, 2, 3 or A, B, C for the whole build. Present only when the build has two or more parts. */
+  labels?: { value: PartLabels; onChange: (value: PartLabels) => void };
 }
 
-export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge" } as const;
+export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C" } as const;
+
+/** CA-17 P2: the "Label parts" row of the View menu. */
+function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["labels"]>; phone: boolean }) {
+  return (
+    <div data-testid="label-parts" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: phone ? "8px 12px" : "6px 12px 4px" }}>
+      <span style={text(13, 400, t.text)}>{VIEW_COPY.labelParts}</span>
+      <Segmented
+        label={VIEW_COPY.labelParts}
+        size={phone ? 50 : 28}
+        fontSize={12}
+        value={labels.value}
+        onChange={labels.onChange}
+        items={[
+          { value: "numbers", label: VIEW_COPY.numbers },
+          { value: "letters", label: VIEW_COPY.letters },
+        ]}
+      />
+    </div>
+  );
+}
 
 /**
  * "View", beside Add: two switches, both off until the maker turns them on, kept for them on this device. On a computer
@@ -539,6 +562,7 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
               {row.name}
             </button>
           ))}
+          {view.labels ? <LabelPartsRow labels={view.labels} phone /> : null}
         </BrandBottomSheet>
       </>
     );
@@ -560,6 +584,7 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
               {row.name}
             </Menu.CheckboxItem>
           ))}
+          {view.labels ? <LabelPartsRow labels={view.labels} phone={false} /> : null}
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
