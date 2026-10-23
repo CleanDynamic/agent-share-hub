@@ -27,6 +27,7 @@ import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, postType } from "@/components/post/postType";
 import { countLabel, COUNT_SHOWN_FROM } from "@/lib/build/threadEditor";
 import { linkAllowed, parseRefTo, POST_BODY_MAX } from "@/lib/build/thread";
+import { splitRepairs, stripRefMarks } from "@/lib/build/linkRules";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
@@ -630,6 +631,33 @@ export function repaintRefs(root: HTMLElement, controls: PostEditorControls): vo
   root.querySelectorAll<HTMLElement>("span[data-ref]").forEach((dom) => paintRef(dom, controls, dom === document.activeElement));
 }
 
+/**
+ * CA-19 P1: linked text stays one to one. Pasted linked text arrives as plain words; an edit that splits a link (a post
+ * break or a new line typed inside it) leaves the first part linked and the rest plain. An old post's extra links are
+ * separate stretches already, so loading or editing near them changes nothing.
+ */
+const PostLinkRules = Extension.create({
+  name: "postLinkRules",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("postLinkRules"),
+        props: { transformPasted: (slice) => stripRefMarks(slice) },
+        appendTransaction: (transactions, before, after) => {
+          if (!transactions.some((tr) => tr.docChanged)) return null;
+          const map = (pos: number, assoc?: number) => transactions.reduce((at, tr) => tr.mapping.map(at, assoc), pos);
+          const split = splitRepairs(before.doc, after.doc, map);
+          const ref = after.schema.marks.ref;
+          if (split.length === 0 || !ref) return null;
+          const tr = after.tr;
+          for (const range of split) tr.removeMark(range.from, range.end, ref);
+          return tr.setMeta("addToHistory", transactions.every((each) => each.getMeta("addToHistory") !== false));
+        },
+      }),
+    ];
+  },
+});
+
 // --- what is drawn around the text ---------------------------------------------
 
 function counterElement(length: number): HTMLElement {
@@ -809,6 +837,7 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
     paragraphSize(phone),
     PostLink,
     PostRef,
+    PostLinkRules,
     PostBreak,
     PostMediaNode.configure({ host: controls.pictures, phone }),
     PostMediaGridNode.configure({ host: controls.pictures, phone }),

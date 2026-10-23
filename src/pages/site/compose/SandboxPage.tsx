@@ -834,7 +834,8 @@ export function SandboxPage() {
   const writeColour = useCallback(
     (to: string, colour: string | null) => {
       const target = parseRefTo(to);
-      if (!target) return;
+      // CA-19: a group's colour is kept on the group, never on a component.
+      if (!target || target.kind === "group") return;
       if (target.kind === "session") void onSessionColour(target.id, colour);
       else if (target.kind === "workstream") void edits.onPartColour(target.id, colour);
       else {

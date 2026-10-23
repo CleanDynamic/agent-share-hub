@@ -544,6 +544,13 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SandboxView.test.tsx",
   "src/pages/site/compose/ComposeRoute.tsx",
   "src/components/shell/SiteFrame.tsx",
+  // CA-19 P1
+  "src/lib/build/referenceGroups.ts",
+  "src/lib/build/referenceGroups.test.ts",
+  "src/lib/build/linkRules.ts",
+  "src/lib/build/linkRules.test.ts",
+  "src/lib/build/thread.ts",
+  "src/components/post/editor/extensions.ts",
 ];
 
 /**
