@@ -1007,14 +1007,11 @@ export function SandboxView(props: SandboxViewProps) {
       {phone ? (
         postSection
       ) : (
-        /* CA-18 P4: the head of the build: its title, its status line, the post 18 below, 18 under it, the hairline. */
+        /* CA-18 P4: the post heads the Build column, 18 under the head's hairline and 18 above it. The title and its
+           status line sit in the title row at the top of the page, as they did before this change. */
         <div data-testid="sandbox-build-head" style={{ ...BUILD_HEAD, gap: 0, paddingBottom: HEAD_GAP, borderBottom: `1px solid ${t.hairline}` }}>
-          <h1 data-testid="sandbox-heading" style={{ ...text(18, 500, untitled ? t.text2 : t.text), lineHeight: "24px", margin: 0, letterSpacing: "-0.01em", overflowWrap: "anywhere" }}>
-            {untitled ? UNTITLED : props.title.trim()}
-          </h1>
-          <div style={{ lineHeight: "18px" }}>{statusLine}</div>
           {props.post ? (
-            <section ref={postRef} aria-label="Post" data-testid="sandbox-post" tabIndex={-1} style={{ outline: "none", minWidth: 0, marginTop: HEAD_GAP }}>
+            <section ref={postRef} aria-label="Post" data-testid="sandbox-post" tabIndex={-1} style={{ outline: "none", minWidth: 0 }}>
               {props.post}
             </section>
           ) : null}
@@ -1083,9 +1080,15 @@ export function SandboxView(props: SandboxViewProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, padding: `0 ${COMPOSER_PAD}px` }}>
+      {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
+          and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
+      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${COMPOSER_PAD}px 0` }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
+          {heading}
+          {statusLine}
+        </div>
         {tabs}
-        <div style={TAB_ACTIONS}>
+        <div style={{ ...TAB_ACTIONS, marginLeft: 0 }}>
           <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
             Card
           </Button>

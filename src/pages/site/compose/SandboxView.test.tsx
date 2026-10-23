@@ -228,13 +228,11 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("draws the tab row 44 tall under a hairline, 34 in at the sides (CA-18), with Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
+  it("draws the title row under a hairline, 34 in at the sides: the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
     view();
     const row = screen.getByTestId("sandbox-tabrow");
-    const style = row.getAttribute("style") ?? "";
-    expect(style).toContain("height: 44px");
-    expect(style).toContain("padding: 0px 34px");
-    expect(markup()).toContain("height:44px");
+    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 34px 0px");
+    expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
     expect(publish.getAttribute("style")).toMatch(/height:\s*28px/);
@@ -261,17 +259,18 @@ describe("the refined look (UI-P93)", () => {
     fireEvent.click(map);
   });
 
-  it("puts the draft's title and its status line at the top of the List's Build column, 18 above the hairline (CA-17 P6, CA-18 P4)", () => {
+  it("keeps the draft's title and status line in the title row in List and Map, the post heading the List's Build column (CA-18 P4)", () => {
     view({ lens: "list" });
     const head = screen.getByTestId("sandbox-build-head");
-    // CA-18 P4: the title at 18, the status line under it, 18 under the head, then the hairline.
-    expect(within(head).getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*18px/);
-    expect(within(head).getByTestId("sandbox-status")).toBeTruthy();
+    // The title and its status line are in the title row; the post heads the column, 18 above the hairline (CA-18 P4).
+    expect(within(head).queryByRole("heading", { level: 1 })).toBeNull();
+    expect(within(screen.getByTestId("sandbox-tabrow")).getByTestId("sandbox-status")).toBeTruthy();
     expect(markup()).toContain("padding-bottom:18px;border-bottom:1px solid var(--hairline)");
-    expect(within(screen.getByTestId("sandbox-tabrow")).queryByRole("heading", { level: 1 })).toBeNull();
+    expect(within(screen.getByTestId("sandbox-tabrow")).getByRole("heading", { level: 1 })).toBeTruthy();
     cleanup();
     view({ lens: "map" });
     expect(screen.queryByTestId("sandbox-build-head")).toBeNull();
+    expect(within(screen.getByTestId("sandbox-tabrow")).getByRole("heading", { level: 1 })).toBeTruthy();
   });
 
   it("puts Sources on the surface, 216 wide, with a hairline on its right", () => {
@@ -350,7 +349,7 @@ describe("the post above the build", () => {
     const build = screen.getByRole("region", { name: "Build" });
     expect(within(post).getByText("the post body")).toBeTruthy();
     expect(post.closest('[data-testid="sandbox-columns"]')).toBe(build.closest('[data-testid="sandbox-columns"]'));
-    expect(post.parentElement?.contains(screen.getByTestId("sandbox-heading"))).toBe(true);
+    expect(screen.getByTestId("sandbox-tabrow").contains(screen.getByTestId("sandbox-heading"))).toBe(true);
     expect(post.compareDocumentPosition(build) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     for (const name of ["Sources", "Details"]) expect(screen.getByRole("region", { name })).toBeTruthy();
     expect(screen.queryByRole("tablist")).toBeNull();
@@ -358,14 +357,14 @@ describe("the post above the build", () => {
     expect(screen.getByRole("group", { name: "Build view" })).toBeTruthy();
   });
 
-  it("sits in the Build head, 18 below the status line", () => {
+  it("sits at the top of the Build head, 18 under it before the hairline", () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/compose/x"]}>
         <SandboxView {...sandboxViewProps("bakery")} post={<p>the post body</p>} />
       </MemoryRouter>,
     );
+    expect(markup).toMatch(/padding-bottom:18px;border-bottom:1px solid var\(--hairline\)"><section aria-label="Post"/);
     const style = /aria-label="Post"[^>]*style="([^"]*)"/.exec(markup)?.[1] ?? "";
-    expect(style).toContain("margin-top:18px");
     expect(style).not.toContain("background");
   });
 
