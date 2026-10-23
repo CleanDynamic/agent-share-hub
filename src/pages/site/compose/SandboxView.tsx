@@ -1113,10 +1113,14 @@ export function SandboxView(props: SandboxViewProps) {
       <div
         data-testid="sandbox-tabs"
         ref={tabsRef}
-        style={{ height: 44, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: `0 ${COMPOSER_PAD}px`, borderBottom: `1px solid ${t.hairline}` }}
+        style={{ display: "flex", alignItems: "center", gap: 16, padding: `10px ${COMPOSER_PAD}px 12px`, borderBottom: `1px solid ${t.hairline}` }}
       >
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
+          {heading}
+          {statusLine}
+        </div>
         {tabs}
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <Button variant="secondary" size={28} fontSize={12} onClick={() => openCard(null)}>
             Classification Card
           </Button>
