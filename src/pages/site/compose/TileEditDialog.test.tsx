@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 const HANDLER_NAMES = [
-  "onExtras", "onDecision", "onRunsWhen", "onRuntime", "onReadHelpers", "onRename", "onOpenPrompt", "onModel", "onAddUse", "onAttach", "onRemoveUse", "onAddMade", "onRemoveMade", "onRuns", "onManual", "onManualPicture", "onInstructions", "onAgentSetup", "onRemoveInside", "onToggleSessionPrompt", "onSessionTool", "onSessionMeta", "onSessionGoal", "onSessionExtras", "onTrainedOn", "onAgentNotes", "onModelRun", "onCheckRuns", "onCheckCases", "onSessionTogether", "onToolConnection", "onAddToSetup", "onNotShared", "onDownload", "onFields", "onAddPicture", "onUseAsCover", "onSelect",
+  "onExtras", "onDecision", "onRunsWhen", "onRuntime", "onReadHelpers", "onRename", "onOpenPrompt", "onModel", "onAddUse", "onAttach", "onRemoveUse", "onAddMade", "onRemoveMade", "onRuns", "onManual", "onManualPicture", "onInstructions", "onAgentSetup", "onRemoveInside", "onToggleSessionPrompt", "onSessionTool", "onSessionMeta", "onSessionGoal", "onSessionExtras", "onTrainedOn", "onAgentNotes", "onModelRun", "onCheckRuns", "onCheckCases", "onCheckText", "onCodeSource", "onSessionTogether", "onToolConnection", "onAddToSetup", "onNotShared", "onDownload", "onFields", "onAddPicture", "onUseAsCover", "onSelect",
 ] as const;
 
 function handlers(): DetailsHandlers & Record<(typeof HANDLER_NAMES)[number], ReturnType<typeof vi.fn>> {
@@ -217,5 +217,103 @@ describe("Save writes through the same handlers with the same arguments", () => 
     fireEvent.click(screen.getByRole("menuitemradio", { name: /menu\.pdf/ }));
     save();
     expect(callsOf(h)).toEqual([]);
+  });
+});
+
+describe("CA-18: the fields that were shown and locked are editable", () => {
+  const field = (name: string) => within(dialog()).getByRole("textbox", { name }) as HTMLTextAreaElement | HTMLInputElement;
+
+  it("a check opens with its test description, pass criteria, failure notes and last run filled in, and none read only", () => {
+    open(tileView("check", "full"));
+    expect(field("Test description").value).toBe("Places a test order");
+    expect(field("Pass criteria").value).toBe("The total shows £9.00");
+    openRow("Failure notes");
+    expect((field("Failure notes") as HTMLTextAreaElement).value).toBe("The total showed 0.00");
+    openRow("Last run date");
+    expect(field("Last run date").value).toBe("2026-10-12");
+    for (const name of ["Test description", "Pass criteria", "Failure notes", "Last run date"]) expect(field(name).hasAttribute("readonly"), name).toBe(false);
+  });
+
+  it("a check: Save writes each changed field through onCheckText, and only those", () => {
+    const { h } = open(tileView("check", "full"));
+    fireEvent.change(field("Test description"), { target: { value: "Places a delivery order" } });
+    fireEvent.change(field("Pass criteria"), { target: { value: "The total shows £12.00" } });
+    openRow("Failure notes");
+    fireEvent.change(field("Failure notes"), { target: { value: "Showed £0" } });
+    openRow("Last run date");
+    fireEvent.change(field("Last run date"), { target: { value: "2026-10-20" } });
+    save();
+    expect(callsOf(h)).toEqual([["onCheckText", "k1", { tested: "Places a delivery order", passing: "The total shows £12.00", onFail: "Showed £0", runAt: "2026-10-20" }]]);
+  });
+
+  it("a check: one changed field writes one key", () => {
+    const { h } = open(tileView("check", "full"));
+    fireEvent.change(field("Pass criteria"), { target: { value: "Shows £10.00" } });
+    save();
+    expect(callsOf(h)).toEqual([["onCheckText", "k1", { passing: "Shows £10.00" }]]);
+  });
+
+  it("a check: an emptied failure note is written as empty, so the key comes off", () => {
+    const { h } = open(tileView("check", "full"));
+    openRow("Failure notes");
+    fireEvent.change(field("Failure notes"), { target: { value: "" } });
+    save();
+    expect(callsOf(h)).toEqual([["onCheckText", "k1", { onFail: "" }]]);
+  });
+
+  it("a check: a blank test description or a date that is not a day is refused and nothing is written", () => {
+    const { h } = open(tileView("check", "full"));
+    fireEvent.change(field("Test description"), { target: { value: "  " } });
+    save();
+    expect(within(dialog()).getByRole("alert").textContent).toContain("test description");
+    expect(callsOf(h)).toEqual([]);
+    fireEvent.change(field("Test description"), { target: { value: "Places a test order" } });
+    openRow("Last run date");
+    fireEvent.change(field("Last run date"), { target: { value: "2026-13-45" } });
+    save();
+    expect(within(dialog()).getByRole("alert").textContent).toContain("last run date");
+    expect(callsOf(h)).toEqual([]);
+  });
+
+  it("a check: Cancel writes nothing", () => {
+    const { h, onClose } = open(tileView("check", "full"));
+    fireEvent.change(field("Test description"), { target: { value: "Changed" } });
+    fireEvent.click(within(dialog()).getByRole("button", { name: "Cancel" }));
+    expect(callsOf(h)).toEqual([]);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("a code tile opens with its code and language filled in, in a field that can be typed in", () => {
+    open(tileView("code", "full"));
+    const code = screen.getByTestId("edit-code") as HTMLTextAreaElement;
+    expect(code.value).toBe("export const menu = [];\nexport const price = 4;");
+    expect(code.hasAttribute("readonly")).toBe(false);
+    expect(screen.getByTestId("edit-code-dialog")).toBeTruthy();
+  });
+
+  it("a code tile: Save writes the new lines through onCodeSource, and only them", () => {
+    const { h } = open(tileView("code", "full"));
+    fireEvent.change(screen.getByTestId("edit-code"), { target: { value: "export const menu = [1];" } });
+    save();
+    expect(callsOf(h)).toEqual([["onCodeSource", "c1", { source: "export const menu = [1];" }]]);
+  });
+
+  it("a code tile: the language can be changed and is written with Save", () => {
+    const { h } = open(tileView("code", "full"));
+    fireEvent.keyDown(within(dialog()).getByRole("button", { name: /Language/ }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Python" }));
+    save();
+    expect(callsOf(h)).toEqual([["onCodeSource", "c1", { language: "python" }]]);
+  });
+
+  it("a code tile: emptied code cannot be saved, and Cancel writes nothing", () => {
+    const { h, onClose } = open(tileView("code", "full"));
+    fireEvent.change(screen.getByTestId("edit-code"), { target: { value: "" } });
+    const button = within(dialog()).getByRole("button", { name: "Save" }) as HTMLButtonElement;
+    fireEvent.click(button);
+    expect(callsOf(h)).toEqual([]);
+    fireEvent.click(within(dialog()).getByRole("button", { name: "Cancel" }));
+    expect(callsOf(h)).toEqual([]);
+    expect(onClose).toHaveBeenCalled();
   });
 });

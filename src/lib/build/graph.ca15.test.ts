@@ -12,7 +12,7 @@ vi.mock("./nodes", () => ({
 const getNodeType = vi.fn();
 vi.mock("./nodeTypes", () => ({ getNodeType: (...a: unknown[]) => getNodeType(...a) }));
 
-import { CONNECTION_LABEL, addCheck, addDatasetTile, addRepoTile, addResultTile, addSystemPromptTile, addToolTile, buildSteps, setExtras } from "./graph";
+import { CONNECTION_LABEL, addCheck, addDatasetTile, addRepoTile, addResultTile, addSystemPromptTile, addToolTile, buildSteps, setCheckText, setCodeSource, setExtras } from "./graph";
 import type { Json } from "@/integrations/supabase/types";
 
 import type { BuildNode, NodeTree } from "./types";
@@ -316,5 +316,40 @@ describe("the three source tiles (CA-15 P9)", () => {
     expect(steps[0].systemPrompt).toMatchObject({ version: "v2", appliesTo: 0 });
     expect(steps[1].dataset).toMatchObject({ use: "training" });
     expect(steps[2].repo).toMatchObject({ owner: "acme", name: "shop", ownership: "owned" });
+  });
+});
+
+describe("CA-18: a check's text and a piece of code's lines, updated in place", () => {
+  const check = () => node({ type: "eval_run", payload: { tested: "Places an order", passing: "Shows £9", on_fail: "Showed 0", run_at: "2026-10-12", passed: 3, total: 4, method: "automated" } });
+  const code = () => node({ type: "code", payload: { source: "a", language: "ts", filename: "a.ts" } });
+
+  it("writes only the keys given and keeps every other key as it was", async () => {
+    const row = check();
+    await setCheckText(row, { passing: " Shows £10 ", runAt: "2026-10-20" });
+    expect(written()).toEqual({ tested: "Places an order", passing: "Shows £10", on_fail: "Showed 0", run_at: "2026-10-20", passed: 3, total: 4, method: "automated" });
+    expect(upsertNode.mock.calls.at(-1)?.[0]).toMatchObject({ id: row.id });
+  });
+
+  it("takes a failure note and a date off when they are emptied", async () => {
+    await setCheckText(check(), { onFail: "", runAt: "" });
+    expect(written()).toEqual({ tested: "Places an order", passing: "Shows £9", passed: 3, total: 4, method: "automated" });
+  });
+
+  it("holds a check to the rules Add › Check does", async () => {
+    await expect(setCheckText(check(), { tested: " " })).rejects.toThrow("Add the test description.");
+    await expect(setCheckText(check(), { passing: "x".repeat(281) })).rejects.toThrow("at most 280");
+    await expect(setCheckText(check(), { onFail: "x".repeat(601) })).rejects.toThrow("at most 600");
+    await expect(setCheckText(check(), { runAt: "12 Oct" })).rejects.toThrow("2026-10-12");
+    await expect(setCheckText(code(), { tested: "x" })).rejects.toThrow("Only a check");
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("changes code's lines and language, and holds them to the rules Add › Code does", async () => {
+    await setCodeSource(code(), { source: "b = 1", language: "python" });
+    expect(written()).toEqual({ source: "b = 1", language: "python", filename: "a.ts" });
+    await expect(setCodeSource(code(), { source: "  " })).rejects.toThrow("Code needs its lines.");
+    await expect(setCodeSource(code(), { source: "x".repeat(100_001) })).rejects.toThrow("at most 100,000");
+    await expect(setCodeSource(code(), { language: "cobol" })).rejects.toThrow("not a language");
+    await expect(setCodeSource(check(), { source: "x" })).rejects.toThrow("Only code");
   });
 });

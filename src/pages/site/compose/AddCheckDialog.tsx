@@ -149,8 +149,8 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
   const shownPassed = fromCases ? String(casesCount) : passed;
   const shownTotal = fromCases ? String(given.length) : total;
   const input = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt, ...(fromCases ? { cases: given } : null) };
-  // A check that is there keeps its counts as they are (nothing in Details wrote them), so only what Save writes can be refused.
-  const why = (edit ? null : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
+  // A check that is there keeps its counts as they are, so only its text and date are held to the Add rules.
+  const why = (edit ? checkRefusal({ ...input, passed: 0, total: 0, cases: undefined }) : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
   const missing = firstMissing([
     [tested.trim().length > 0, "a test description"],
     [passing.trim().length > 0, "pass criteria"],
@@ -201,12 +201,12 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
       {edit?.before ? edit.before(input as never) : null}
       <Block noRule>
         <BlockHead label={CHECK_DIALOG_COPY.tested} htmlFor={`${uid}-tested`} count={`${tested.length} / ${CHECK_TEXT_MAX}`} />
-        <FieldArea phone={phone} id={`${uid}-tested`} rows={2} maxLength={CHECK_TEXT_MAX} value={tested} readOnly={Boolean(edit)} placeholder={CHECK_DIALOG_COPY.testedPlaceholder} onChange={(event) => setTested(event.target.value)} />
+        <FieldArea phone={phone} id={`${uid}-tested`} rows={2} maxLength={CHECK_TEXT_MAX} value={tested} placeholder={CHECK_DIALOG_COPY.testedPlaceholder} onChange={(event) => setTested(event.target.value)} />
       </Block>
 
       <Block>
         <BlockHead label={CHECK_DIALOG_COPY.passing} htmlFor={`${uid}-passing`} />
-        <FieldArea phone={phone} id={`${uid}-passing`} rows={2} maxLength={CHECK_TEXT_MAX} value={passing} readOnly={Boolean(edit)} placeholder={CHECK_DIALOG_COPY.passingPlaceholder} onChange={(event) => setPassing(event.target.value)} />
+        <FieldArea phone={phone} id={`${uid}-passing`} rows={2} maxLength={CHECK_TEXT_MAX} value={passing} placeholder={CHECK_DIALOG_COPY.passingPlaceholder} onChange={(event) => setPassing(event.target.value)} />
       </Block>
 
       <Block label={CHECK_DIALOG_COPY.runs} testId="check-runs">
@@ -235,11 +235,11 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.failed} description={CHECK_DIALOG_COPY.failedLine} summary={summaryOf(failed)} phone={phone}>
-          <FieldArea phone={phone} rows={2} aria-label={CHECK_DIALOG_COPY.failed} maxLength={CHECK_FAIL_MAX} value={failed} readOnly={Boolean(edit)} placeholder={CHECK_DIALOG_COPY.failedPlaceholder} onChange={(event) => setFailed(event.target.value)} />
+          <FieldArea phone={phone} rows={2} aria-label={CHECK_DIALOG_COPY.failed} maxLength={CHECK_FAIL_MAX} value={failed} placeholder={CHECK_DIALOG_COPY.failedPlaceholder} onChange={(event) => setFailed(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.lastRun} description={CHECK_DIALOG_COPY.lastRunLine} summary={summaryOf(runAt)} phone={phone}>
-          <FieldInput phone={phone} mono width={NARROW.date} aria-label={CHECK_DIALOG_COPY.lastRun} inputMode="numeric" maxLength={10} value={runAt} readOnly={Boolean(edit)} placeholder={CHECK_DIALOG_COPY.lastRunPlaceholder} onChange={(event) => setRunAt(event.target.value.replace(/[^0-9-]/g, ""))} />
+          <FieldInput phone={phone} mono width={NARROW.date} aria-label={CHECK_DIALOG_COPY.lastRun} inputMode="numeric" maxLength={10} value={runAt} placeholder={CHECK_DIALOG_COPY.lastRunPlaceholder} onChange={(event) => setRunAt(event.target.value.replace(/[^0-9-]/g, ""))} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.method} description={CHECK_DIALOG_COPY.methodLine} summary={method ? CHECK_METHOD_LABEL[method] : null} phone={phone}>

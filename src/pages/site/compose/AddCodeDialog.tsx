@@ -17,7 +17,6 @@
 import { useId, useState } from "react";
 
 import { CodeEditorField } from "@/components/code/CodeEditorField";
-import { CodeLines } from "@/components/code/CodeLines";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, type CodeLanguage } from "@/lib/build/graph";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
@@ -98,7 +97,7 @@ export interface AddCodeDialogProps {
   inBuild?: readonly string[];
   /** "Keep it as code": the text pasted into Typed here, to start the well with. */
   seed?: string | null;
-  /** CA-18: a piece of code that is there. Its code is shown, never changed here: nothing in Details ever wrote it. */
+  /** CA-18: a piece of code that is there: its lines and language are filled in and saved with the rest. */
   current?: CodeSeed | null;
   edit?: EditMode<AddCodeInput>;
 }
@@ -142,7 +141,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, current, edit }: Pic
       {edit?.before ? edit.before({ steps: [{ source, language, filename: filename.trim() || null }], tool, model }) : null}
       <Block noRule>
         <BlockHead label={CODE_DIALOG_COPY.code} htmlFor={`${uid}-code`} count={typed ? CODE_DIALOG_COPY.lines(lineCount(source)) : null} />
-        {edit ? <CodeLines text={source} compact testId="edit-code" label={CODE_DIALOG_COPY.code} /> : <CodeEditorField id={`${uid}-code`} testId="code-well" value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />}
+        <CodeEditorField id={`${uid}-code`} testId={edit ? "edit-code" : "code-well"} value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />
         {tooLong ? <Alert>{CODE_COPY.tooLong}</Alert> : null}
         {edit ? null : (
           <Inline>
@@ -171,7 +170,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, current, edit }: Pic
           options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
           value={language}
           onChange={(next) => {
-            if (isCodeLanguage(next) && !edit) setChosen(next);
+            if (isCodeLanguage(next)) setChosen(next);
           }}
           phone={phone}
           field

@@ -2,6 +2,8 @@
 
    `SandboxView` with the sample builds, whatever SANDBOX_COMPOSER_ENABLED says.
    `?build=bakery` draws the second (S3); the default is the fox poster (S1).
+   `?select=3` selects the step numbered 3 (or with that id) in the List and the Map, and opens Details' overlay in a window too narrow
+   to hold it beside the build; on a build of CA-02's shapes `select` is a node id, as below.
    `?open=1` opens the full prompt window on the selected prompt (UI-P67).
    `?lens=map` draws the Map; `?build=big` is 60 steps for the long-task measurement (UI-P68).
    `?build=team` is the team build (S5): add `&lens=map` for its Map, and `&opened=t3` (or `t3b`) for the
@@ -116,7 +118,11 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const fine = useFinePointer();
   const shape = SHAPE_KEYS.find((key) => asBuild === `shape-${key}`) ?? null;
   const team = shape ? shapeFixture(shape, params.get("select"), params.get("check") === "failed") : asBuild === "team" ? sandboxTeamFixture() : asBuild === "manual" ? sandboxManualFixture() : null;
-  const list = team?.list ?? sandboxListProps(which);
+  const baseList = team?.list ?? sandboxListProps(which);
+  // CA-18: `?select=3` marks the step with that number or id, as a click on it would.
+  const asSelect = shape ? null : params.get("select");
+  const picked = asSelect ? (baseList.steps.flatMap((step) => [step, ...step.children]).find((step) => step.number === asSelect || step.id === asSelect) ?? null) : null;
+  const list = picked ? { ...baseList, selectedId: picked.id } : baseList;
   const openedId = params.get("opened");
   const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
   /* CA-03 P10: How did it run? keeps what you pick here, writing nothing, so its fields can be seen. */
@@ -137,8 +143,9 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
         lens={params.get("lens") === "map" ? "map" : "list"}
         mapAvailable={Boolean(team) || params.get("lens") === "map" || sandboxViewProps(which, state).mapAvailable}
         list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
-        map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} opened={opened} onOpenPrompt={setOpen} />}
+        map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} {...(picked ? { selectedId: picked.id } : null)} opened={opened} onOpenPrompt={setOpen} />}
         trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
+        selectedKey={picked?.id ?? null}
         selection={<DetailsPanel {...withRuns(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : asked === "pair" ? brokenPair() : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
         onAddAgent={() => setDialog("agent")}
         onAddManual={() => setDialog("manual")}

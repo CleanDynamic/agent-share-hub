@@ -52,6 +52,8 @@ export function bufferedHandlers(h: DetailsHandlers, buffer: WriteBuffer): Detai
     onModelRun: later("modelRun", h.onModelRun),
     onCheckRuns: later("checkRuns", h.onCheckRuns),
     onCheckCases: later("checkCases", h.onCheckCases),
+    onCheckText: h.onCheckText ? (id, patch) => buffer.set(`checkText:${id}:${keysOf(patch)}`, () => h.onCheckText?.(id, patch)) : undefined,
+    onCodeSource: h.onCodeSource ? (id, patch) => buffer.set(`codeSource:${id}:${keysOf(patch)}`, () => h.onCodeSource?.(id, patch)) : undefined,
     onToolConnection: later("connection", h.onToolConnection),
     onFields: (id, fields) => buffer.set(`fields:${id}:${keysOf(fields)}`, () => h.onFields(id, fields)),
     onAddPicture: (id, file) => buffer.set(`picture+:${id}:${file.name}:${file.size}`, () => h.onAddPicture(id, file)),
