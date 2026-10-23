@@ -17,6 +17,7 @@ import { kindsIn, type Chosen } from "@/lib/build/buildSelection";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession, listBuildSessionRows } from "@/lib/build/buildSessions";
 import { REMOVE_COPY, type ClearCounts } from "@/lib/build/componentMenus";
+import { REMOVED_COPY, type RemovedMeta } from "@/lib/build/removedLog";
 import { FILE_TYPE, groupKey, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { patchMaking, refreshMakingStats, storedWorkstreamsOf } from "@/lib/build/making";
 import { REF_KIND } from "@/lib/build/postRefs";
@@ -27,6 +28,7 @@ import { orderKeys } from "@/lib/build/sessionLayout";
 import { refTo } from "@/lib/build/thread";
 
 import { ClearBuildDialog } from "./ClearBuildDialog";
+import { RecentlyRemovedDialog } from "./RecentlyRemovedDialog";
 import { SessionRemoveWindow, type SessionRemoval } from "./removePieces";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import type { BuildHistoryApi } from "./useBuildHistory";
@@ -90,6 +92,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
   const queryClient = useQueryClient();
   const [removal, setRemoval] = useState<SessionRemoval | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
 
   const removeTiles = useCallback(
     (ids: readonly string[]) => {
@@ -99,16 +102,25 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       const tops = picked.filter((step) => !picked.some((other) => other !== step && flatten([other]).some((inner) => inner.id === step.id && inner !== other)));
       if (tops.length === 0) return;
       const sentence = tops.length === 1 ? REMOVE_COPY.tile(tileName(tops[0]), insideOf(tops[0])) : REMOVE_COPY.several(0, tops.length);
+      const inside = tops.length === 1 ? insideOf(tops[0]) : null;
+      const removed: RemovedMeta = {
+        kind: "tile",
+        badge: tops.length === 1 ? tops[0].number : String(tops.length),
+        name: tops.length === 1 ? tileName(tops[0]) : `${tops.length} tiles`,
+        ...(inside && inside.count > 0 ? { detail: `${inside.count} ${inside.what === "agents" ? (inside.count === 1 ? "agent" : "agents") : inside.count === 1 ? "tile" : "tiles"}` } : null),
+      };
       void history
         .track(
           sentence,
           async () => {
             const going = goingWith(nodes.current(), tops.map((step) => step.id));
+            const refs = going.map((id) => refTo({ kind: "node", id }));
+            removed.refs = bridge.snapshot(refs);
             // What points at them is let go first, so the size rule has run before they are gone.
-            bridge.release(going.map((id) => refTo({ kind: "node", id })));
+            bridge.release(refs);
             await nodes.run(() => dropNodes(nodes, tops.map((step) => step.id)));
           },
-          { notice: true },
+          { notice: true, removed },
         )
         .catch((cause) => console.error("[Compose] tiles not removed", cause));
     },
@@ -123,15 +135,18 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       if (!node) return;
       const payload = (node.payload ?? {}) as { title?: unknown };
       const name = typeof payload.title === "string" && payload.title ? payload.title : (node.title ?? "that file");
+      const removed: RemovedMeta = { kind: "file", badge: { glyph: "file" }, name };
       void history
         .track(
           REMOVE_COPY.file(name),
           async () => {
             const going = goingWith(nodes.current(), [fileId]);
-            bridge.release(going.map((id) => refTo({ kind: "node", id })));
+            const refs = going.map((id) => refTo({ kind: "node", id }));
+            removed.refs = bridge.snapshot(refs);
+            bridge.release(refs);
             await nodes.run(() => dropFile(nodes, fileId));
           },
-          { notice: true },
+          { notice: true, removed },
         )
         .catch((cause) => console.error("[Compose] file not removed", cause));
     },
@@ -190,6 +205,12 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
 
   const clearBuild = useCallback(async () => {
     if (!buildId) return;
+    const removed: RemovedMeta = {
+      kind: "build",
+      badge: { glyph: "layers" },
+      name: REMOVED_COPY.whole,
+      detail: [clearCounts.sessions > 0 ? `${clearCounts.sessions} ${clearCounts.sessions === 1 ? "session" : "sessions"}` : "", clearCounts.tiles > 0 ? `${clearCounts.tiles} ${clearCounts.tiles === 1 ? "tile" : "tiles"}` : "", clearCounts.files > 0 ? `${clearCounts.files} ${clearCounts.files === 1 ? "file" : "files"}` : ""].filter(Boolean).join(", "),
+    };
     await history
       .track(
         REMOVE_COPY.cleared,
@@ -201,6 +222,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
             ...orderKeys(groups).map((key) => refTo({ kind: "session", id: key })),
             ...storedWorkstreamsOf(made).map((part) => refTo({ kind: "workstream", id: part.key })),
           ];
+          removed.refs = bridge.snapshot(refs);
           bridge.release(refs);
           await nodes.run(async () => {
             await dropNodes(nodes, tree.map((node) => node.id));
@@ -211,18 +233,27 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           onCleared?.();
           await Promise.all([queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) }), queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
         },
-        { notice: true },
+        { notice: true, removed },
       )
       .catch((cause) => console.error("[Compose] build not cleared", cause));
-  }, [buildId, history, nodes, groups, made, bridge, onCleared, queryClient]);
+  }, [buildId, history, nodes, groups, made, bridge, onCleared, queryClient, clearCounts]);
 
   const actions = useMemo<BuildActions>(
-    () => ({ removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, clear: { counts: clearCounts, ask: () => setClearing(true) } }),
-    [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, clearCounts],
+    () => ({
+      removeTile,
+      removeTiles,
+      removeFile,
+      askRemoveSessions,
+      removeSelection,
+      recentlyRemoved: { count: history.removed.length, open: () => setListOpen(true) },
+      clear: { counts: clearCounts, ask: () => setClearing(true) },
+    }),
+    [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, clearCounts, history.removed.length],
   );
 
   const dialogs = (
     <>
+      <RecentlyRemovedDialog open={listOpen} entries={history.removed} onRestore={(id) => void history.restoreRemoved(id)} onClose={() => setListOpen(false)} />
       <ClearBuildDialog
         open={clearing}
         counts={clearCounts}

@@ -621,6 +621,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca20.p4.test.tsx",
   "src/lib/build/stepSentences.ts",
   "src/pages/site/compose/ca20.p5.test.tsx",
+  "src/lib/build/removedLog.ts",
+  "src/pages/site/compose/RecentlyRemovedDialog.tsx",
+  "src/pages/site/compose/ca20.p6.test.tsx",
 ];
 
 /**

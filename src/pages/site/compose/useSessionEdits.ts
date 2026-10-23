@@ -21,6 +21,7 @@ import { droppedKey, movedKey, orderKeys, setSessionOrder, stackBySessionMoves }
 import { dayOfNode, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
 import { goingWith, dropNodes } from "@/lib/build/removeNodes";
 import { REMOVE_COPY } from "@/lib/build/componentMenus";
+import type { RemovedMeta } from "@/lib/build/removedLog";
 import { refTo } from "@/lib/build/thread";
 import type { BuildNode, NodeTree } from "@/lib/build/types";
 import { toolFor } from "@/lib/tools/registry";
@@ -39,7 +40,7 @@ import {
 } from "@/lib/build/workstreams";
 
 import { sayFailed } from "./draftStart";
-import type { BuildHistoryApi } from "./useBuildHistory";
+import type { BuildHistoryApi, TrackOptions } from "./useBuildHistory";
 import { NOT_AVAILABLE, type ReferenceBridge } from "@/lib/build/referenceBridge";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { buildSessionRowsKey } from "./useComposeSessions";
@@ -132,9 +133,9 @@ export function useSessionEdits(input: SessionEditsInput) {
   const bridgeRef = useRef<ReferenceBridge>(NOT_AVAILABLE);
   bridgeRef.current = input.bridge ?? NOT_AVAILABLE;
   const track = useCallback(
-    <T,>(sentence: string | ((result: T) => string), task: () => Promise<T>, notice = false): Promise<T> => {
+    <T,>(sentence: string | ((result: T) => string), task: () => Promise<T>, options: boolean | TrackOptions = false): Promise<T> => {
       const current = latest.current.history;
-      return current ? current.track(sentence, task, { notice }) : task();
+      return current ? current.track(sentence, task, typeof options === "boolean" ? { notice: options } : options) : task();
     },
     [],
   );
@@ -324,7 +325,9 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   /** "Remove part": its sessions join the part above (or the one below), nothing else is lost, so it goes at once. Its colour, group and linked text go with it, and Undo brings them back. */
   const onPartRemove = useCallback(
-    (key: string) =>
+    (key: string) => {
+      const sessionsIn = [...(latest.current.parts?.partOf ?? new Map<string, string>())].filter(([, part]) => part === key).length;
+      const removedMeta: RemovedMeta = { kind: "part", badge: /^Part (\S+)/.exec(titleOf(key))?.[1] ?? "P", name: titleOf(key).split(" · ")[0], ...(sessionsIn > 0 ? { detail: `${sessionsIn} ${sessionsIn === 1 ? "session" : "sessions"}` } : null) };
       void guard("Couldn't remove that part. Try again.", () =>
         track(
           (said: string | null) => said ?? "",
@@ -332,7 +335,11 @@ export function useSessionEdits(input: SessionEditsInput) {
             const title = titleOf(key);
             let joins = "";
             // Let go of what points at the part first, so the size rule has run before the part is gone.
-            if (storedWorkstreamsOf(latest.current.made).some((part) => part.key === key)) bridgeRef.current.release([refTo({ kind: "workstream", id: key })]);
+            if (storedWorkstreamsOf(latest.current.made).some((part) => part.key === key)) {
+              const ref = [refTo({ kind: "workstream", id: key })];
+              removedMeta.refs = bridgeRef.current.snapshot(ref);
+              bridgeRef.current.release(ref);
+            }
             const done = await applyParts((making) => {
               const change = removeWorkstream(making, editableKeys(), key);
               joins = change?.joins ?? "";
@@ -344,9 +351,10 @@ export function useSessionEdits(input: SessionEditsInput) {
             latest.current.say(`${said}.`);
             return said;
           },
-          true,
+          { notice: true, removed: removedMeta },
         ),
-      ),
+      );
+    },
     [applyParts, editableKeys, guard, track],
   );
 
@@ -429,6 +437,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   const onRemoveSessions = useCallback(
     (keys: readonly string[], mode: "keep" | "all", alsoTiles: readonly string[] = []): Promise<void> =>
       guard("Couldn't remove that session. Try again.", async () => {
+        const removedMeta: RemovedMeta = { kind: "session", badge: "S", name: "Session" };
         await track(
           (said: string | null) => said ?? "",
           async () => {
@@ -444,6 +453,12 @@ export function useSessionEdits(input: SessionEditsInput) {
             const rest = withoutKeys(order, leaving);
             const collapsed = ((made as { sessions_collapsed?: unknown } | null)?.sessions_collapsed as string[] | undefined) ?? [];
             const sessionRefs = removing.map((key) => refTo({ kind: "session", id: key }));
+            const count = tiles.length + alsoTiles.length;
+            Object.assign(removedMeta, {
+              badge: removing.length === 1 ? `S${numberOf(removing[0])}` : "S",
+              name: removing.length === 1 ? `Session ${numberOf(removing[0])}` : `${removing.length} sessions`,
+              ...(count > 0 ? { detail: `${count} ${count === 1 ? "tile" : "tiles"}${mode === "keep" ? ", kept" : ""}` } : null),
+            });
 
             if (mode === "keep") {
               if (rest.length === 0) return null;
@@ -453,7 +468,9 @@ export function useSessionEdits(input: SessionEditsInput) {
               const moving = tiles.map((step) => step.id);
               // Into the end of the session above: they come last. Into the start of the one below: its own tiles go behind them.
               const atEnd = above ? moving : tilesOfSession(steps, groups, target).map((step) => step.id);
-              bridgeRef.current.release([...sessionRefs, ...goingWith(nodes.current(), [...alsoTiles]).map((id) => refTo({ kind: "node", id }))]);
+              const keepRefs = [...sessionRefs, ...goingWith(nodes.current(), [...alsoTiles]).map((id) => refTo({ kind: "node", id }))];
+              removedMeta.refs = bridgeRef.current.snapshot(keepRefs);
+              bridgeRef.current.release(keepRefs);
               if (alsoTiles.length > 0) await nodes.run(() => dropNodes(nodes, alsoTiles));
               await applyLayout({ order: rest, reassign: new Map(moving.map((id) => [id, target])), atEnd, meta: Object.fromEntries(removing.map((key) => [key, null])), dropKeys: removing });
               await nodes.run(() => patchMaking(buildId, { sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) }).then(() => undefined));
@@ -466,7 +483,9 @@ export function useSessionEdits(input: SessionEditsInput) {
             }
 
             const tileIds = [...tiles.map((step) => step.id), ...alsoTiles];
-            bridgeRef.current.release([...sessionRefs, ...goingWith(nodes.current(), tileIds).map((id) => refTo({ kind: "node", id }))]);
+            const allRefs = [...sessionRefs, ...goingWith(nodes.current(), tileIds).map((id) => refTo({ kind: "node", id }))];
+            removedMeta.refs = bridgeRef.current.snapshot(allRefs);
+            bridgeRef.current.release(allRefs);
             await nodes.run(async () => {
               await dropNodes(nodes, tileIds);
               for (const key of removing) {
@@ -481,7 +500,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             if (removing.length === 1 && alsoTiles.length === 0) return REMOVE_COPY.session(numberOf(removing[0]), tiles.length);
             return REMOVE_COPY.several(removing.length, tiles.length + alsoTiles.length);
           },
-          true,
+          { notice: true, removed: removedMeta },
         );
       }),
     [applyLayout, editableKeys, guard, refresh, track],

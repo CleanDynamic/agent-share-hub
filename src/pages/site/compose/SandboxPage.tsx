@@ -105,6 +105,7 @@ import { classificationKey } from "./useClassificationCard";
 import { writeClassification, type StoredClassification } from "@/lib/classify/storage";
 import { computeFacets, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
 import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
+import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 import { BuildActionsContext, useBuildActions } from "./useBuildActions";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar } from "./removePieces";
@@ -149,7 +150,8 @@ export function SandboxPage() {
   const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
-  const buildHistory = useBuildHistory({ buildId, nodes, peek: () => ({ making: (build as { making?: unknown } | null)?.making, sessions: sessions.rows }) });
+  const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);
+  const buildHistory = useBuildHistory({ buildId, nodes, getBridge: () => bridgeHolder.current, peek: () => ({ making: (build as { making?: unknown } | null)?.making, sessions: sessions.rows }) });
   const queryClient = useQueryClient();
   const phone = useIsPhone();
   const fine = useFinePointer();
@@ -235,6 +237,7 @@ export function SandboxPage() {
   });
   /* CA-20: the only way removing, restoring, duplicating and grouping touch colours, groups and the post's links. */
   const bridge = useReferenceBridge(references);
+  bridgeHolder.current = bridge;
   // A member is drawn in its group's colour; the picker's live colour goes over that.
   // The picker opened for a group (its window's Change…) previews the group's colour on every member.
   const previewedGroup = colourPreview && parseRefTo(colourPreview.to)?.kind === "group" ? (parseRefTo(colourPreview.to)?.id ?? null) : null;

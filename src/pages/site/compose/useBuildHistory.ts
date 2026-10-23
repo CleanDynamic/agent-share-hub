@@ -21,6 +21,8 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { EMPTY_BUILD_HISTORY, HISTORY_COPY, afterRedone, afterUndone, canRedoStep, canUndoStep, groupSteps, nextRedo, nextUndo, recordStep, type BuildHistory, type BuildStep } from "@/lib/build/buildHistory";
 import type { BuildSessionRow } from "@/lib/build/buildSessions";
 import { currentSnapshot, deltaTarget, restoreSnapshot, snapshotOf, type BuildSnapshot } from "@/lib/build/buildSnapshot";
+import { REMOVED_COPY, restoreTarget, type RemovedEntry, type RemovedMeta } from "@/lib/build/removedLog";
+import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 
 import { sayFailed } from "./draftStart";
 import type { ComposeNodes } from "./useComposeNodes";
@@ -36,6 +38,8 @@ export interface BuildNotice {
 export interface TrackOptions {
   /** A notice after the step: true for its own sentence, or the sentence to say. Absent: no notice, the title row's Undo is enough. */
   notice?: boolean | string;
+  /** The step removes something: it is listed under Recently removed, with this, and can be restored out of turn. */
+  removed?: RemovedMeta;
 }
 
 /** What CA-19's history is handed to join this one. */
@@ -71,6 +75,10 @@ export interface BuildHistoryApi {
   track: <T>(sentence: string | ((result: T) => string), task: () => Promise<T>, options?: TrackOptions) => Promise<T>;
   /** The step of changes that have already been made since `before` was captured. */
   commit: (sentence: string, before: BuildSnapshot, options?: TrackOptions) => Promise<void>;
+  /** What was removed during this visit, newest first, each with what it takes to restore it. */
+  removed: RemovedEntry[];
+  /** Bring one removal back (a step of its own): in its old place where that still holds, else at the end of its session. */
+  restoreRemoved: (id: string) => Promise<void>;
   /** What CA-19's history joins with. */
   join: BuildJoin;
   /** Tests and dev pages: the history as it stands. */
@@ -91,7 +99,11 @@ export interface HeldParts {
   sessions: readonly BuildSessionRow[];
 }
 
-export function useBuildHistory({ buildId, nodes, peek }: { buildId: string | undefined; nodes: ComposeNodes; peek?: () => HeldParts }): BuildHistoryApi {
+export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: string | undefined; nodes: ComposeNodes; peek?: () => HeldParts; getBridge?: () => ReferenceBridge | undefined }): BuildHistoryApi {
+  const bridgeRef = useRef(getBridge);
+  bridgeRef.current = getBridge;
+  /** What was removed this visit, newest first; an entry is hidden while its step is undone and gone once restored. */
+  const removedList = useRef<RemovedEntry[]>([]);
   const peekRef = useRef<() => HeldParts>(() => ({ making: null, sessions: [] }));
   peekRef.current = peek ?? peekRef.current;
   const queryClient = useQueryClient();
@@ -158,13 +170,26 @@ export function useBuildHistory({ buildId, nodes, peek }: { buildId: string | un
     [refresh],
   );
 
+  const showEntry = useCallback((id: string, visible: boolean) => {
+    removedList.current = removedList.current.map((entry) => (entry.id === id ? { ...entry, visible } : entry));
+    redraw((n) => n + 1);
+  }, []);
+
   const finish = useCallback(
-    (sentence: string, children: BuildStep[], options?: TrackOptions) => {
+    (sentence: string, children: BuildStep[], options?: TrackOptions, snapshots?: { before: BuildSnapshot; after: BuildSnapshot }) => {
       if (children.length === 0) return;
-      set(recordStep(history.current, children.length === 1 ? { ...children[0], sentence } : groupSteps(sentence, children)));
+      let made: BuildStep = children.length === 1 ? { ...children[0], sentence } : groupSteps(sentence, children);
+      // A removal is listed; while it is undone the thing is back, so it is not listed.
+      if (options?.removed && snapshots) {
+        const id = `removed-${Date.now()}-${removedList.current.length}`;
+        removedList.current = [{ ...options.removed, id, at: Date.now(), before: snapshots.before, after: snapshots.after, visible: true }, ...removedList.current];
+        const whole = made;
+        made = { ...whole, undo: async () => { await whole.undo(); showEntry(id, false); }, redo: async () => { await whole.redo(); showEntry(id, true); } };
+      }
+      set(recordStep(history.current, made));
       if (options?.notice) notify(typeof options.notice === "string" ? options.notice : sentence);
     },
-    [notify],
+    [notify, showEntry],
   );
 
   /* A step starts at once, inside the tap or the key press that made it: some of what follows needs that (a stand-in tile drawn
@@ -196,9 +221,10 @@ export function useBuildHistory({ buildId, nodes, peek }: { buildId: string | un
       const done = started.then(
         async (result) => {
           collector.current = null;
-          const own = buildStep(before, await capture());
+          const after = await capture();
+          const own = buildStep(before, after);
           if (own) children.push(own);
-          finish(typeof sentence === "string" ? sentence : sentence(result), children, options);
+          finish(typeof sentence === "string" ? sentence : sentence(result), children, options, { before, after });
           return result;
         },
         (cause) => {
@@ -261,6 +287,32 @@ export function useBuildHistory({ buildId, nodes, peek }: { buildId: string | un
     [serial, dismiss],
   );
 
+  const restoreRemoved = useCallback(
+    async (id: string): Promise<void> => {
+      const entry = removedList.current.find((candidate) => candidate.id === id && candidate.visible);
+      const { buildId: built, nodes: queue } = live.current;
+      if (!entry || !built) return;
+      try {
+        await track(
+          REMOVED_COPY.restored(entry.name),
+          async () => {
+            await restoreSnapshot(built, queue, (current) => restoreTarget(current, entry));
+            await refresh();
+            if (entry.refs) bridgeRef.current?.()?.restore(entry.refs);
+          },
+          { notice: true },
+        );
+        // It is back: gone from the list.
+        removedList.current = removedList.current.filter((candidate) => candidate.id !== id);
+        redraw((n) => n + 1);
+      } catch (cause) {
+        console.error("[History] restore failed", cause);
+        sayFailed(cause, REMOVED_COPY.cannot);
+      }
+    },
+    [track, refresh],
+  );
+
   const canUndo = canUndoStep(history.current);
   const canRedo = canRedoStep(history.current);
   const join = useMemo<BuildJoin>(() => ({ record, notify, undo: () => void undo(), redo: () => void redo(), canUndo, canRedo }), [record, notify, undo, redo, canUndo, canRedo]);
@@ -279,6 +331,8 @@ export function useBuildHistory({ buildId, nodes, peek }: { buildId: string | un
     capture,
     track,
     commit,
+    removed: removedList.current.filter((entry) => entry.visible),
+    restoreRemoved,
     join,
     read: () => history.current,
   };
