@@ -13,6 +13,7 @@
    `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code|shape-team-checks` draws one of CA-02's five
    shapes of AI use, or CA-03's sixth; `&check=failed` draws its check with one run failed
    (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
+   `?build=parts` is CA-17's "Two parts": Part A, Part B starting after Session 2, letters, the map and a post that links a part (LinksDemo).
    `?build=links` is CA-06's "A post with links": the post's links work, and nothing is written (LinksDemo).
    `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
@@ -98,7 +99,7 @@ function shapeFixture(key: ShapeKey, select: string | null, failed = false) {
 export default function SandboxDemo(props: DesignPageProps) {
   const [params] = useSearchParams();
   // CA-06 P7: "A post with links".
-  if (params.get("build") === "links") return <LinksDemo {...props} />;
+  if (params.get("build") === "links" || params.get("build") === "parts") return <LinksDemo {...props} />;
   return <ShapesDemo {...props} />;
 }
 

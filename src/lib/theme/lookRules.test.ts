@@ -175,6 +175,7 @@ export const CA03_FILES: readonly string[] = [
   "src/components/post/RefLinks.test.tsx",
   "src/components/post/RefLinks.tsx",
   "src/dev/fixtures/postLinks.ts",
+  "src/dev/fixtures/parts.ts",
   "src/lib/theme/luminance.ts",
   "src/lib/theme/partColour.ts",
   "src/pages/dev/LinksDemo.tsx",
