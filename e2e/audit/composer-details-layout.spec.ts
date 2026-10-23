@@ -1,40 +1,49 @@
-/* CA-18 P4 — Details beside the build, at 1280, 1440, 1920 and 2560 wide by 900 tall.
+/* CA-18b P2 — the build and the post in the dead centre, Sources to their left, Details to their right.
 
-   For three different selections at each width: nothing overlaps, Details stays inside the window, no text is cut off,
-   and Build's left edge and width are the same whatever is selected.
+   At 1280, 1440, 1600, 1920 and 2560 wide by 900 tall, with nothing selected and then with a long prompt selected: Build's
+   centre is the window's centre, Build's left and width are the same in both states, no column overlaps another, Details stays
+   40 from the window's right edge, and no text in Details is cut off.
 
      npm run audit -- composer-details-layout */
 
 import { expect, test } from "@playwright/test";
 
-const WIDTHS = [1280, 1440, 1920, 2560];
-const SELECTIONS = ["prompt", "session", "tool"];
+const WIDTHS = [1280, 1440, 1600, 1920, 2560];
+const STATES = ["none", "prompt"];
 
 for (const width of WIDTHS) {
   test(`composer/details-layout/${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const builds: { left: number; width: number }[] = [];
-    for (const details of SELECTIONS) {
+    for (const details of STATES) {
       await page.goto(`/dev/kit/pages/sandbox?theme=noon&build=bakery&details=${details}&window=1`);
       await page.locator('section[aria-label="Build"]').waitFor();
-      const build = await page.locator('section[aria-label="Build"]').boundingBox();
-      expect(build).not.toBeNull();
-      builds.push({ left: Math.round(build!.x), width: Math.round(build!.width) });
+      // Build's column is the post and the list together: the head and the Build section share its left and width.
+      const column = (await page.getByTestId("sandbox-build-head").boundingBox())!;
+      const build = (await page.locator('section[aria-label="Build"]').boundingBox())!;
+      expect(Math.abs(column.x + column.width / 2 - width / 2), `${details}: Build is centred`).toBeLessThanOrEqual(1);
+      expect(Math.abs(build.x - column.x), `${details}: the list is in the same column as the post`).toBeLessThanOrEqual(1);
+      builds.push({ left: Math.round(column.x), width: Math.round(column.width) });
+      const sources = (await page.getByTestId("sandbox-sources-slot").boundingBox())!;
+      expect(sources.x + sources.width, `${details}: Sources does not overlap Build`).toBeLessThanOrEqual(column.x);
+      expect(sources.x, `${details}: Sources is 40 or more from the window's edge`).toBeGreaterThanOrEqual(40 - 1);
       const aside = page.getByTestId("details-aside");
       if ((await aside.count()) === 0) continue;
       const box = (await aside.boundingBox())!;
-      expect(box.x, `${details}: no overlap with Build`).toBeGreaterThanOrEqual(build!.x + build!.width);
-      expect(box.x + box.width, `${details}: inside the window`).toBeLessThanOrEqual(width);
+      expect(box.x, `${details}: Details is 40 right of Build`).toBeGreaterThanOrEqual(column.x + column.width + 40 - 1);
+      expect(box.x + box.width, `${details}: Details is 40 or more from the window's edge`).toBeLessThanOrEqual(width - 40 + 1);
       expect(box.y + box.height, `${details}: bottom inside the window`).toBeLessThanOrEqual(900);
       const cut = await aside.evaluate((node) => {
-        const scrolls = node.getAttribute("data-scrolls") === "true";
-        if (scrolls) return [] as string[];
-        return Array.from(node.querySelectorAll<HTMLElement>("[data-section] p, [data-section] h4"))
-          .filter((el) => el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflow === "hidden" && getComputedStyle(el).textOverflow !== "ellipsis")
-          .map((el) => el.textContent ?? "");
+        const right = node.getBoundingClientRect().right;
+        const out: string[] = [];
+        for (const el of Array.from(node.querySelectorAll<HTMLElement>("p, h4, span, li"))) {
+          if (el.getBoundingClientRect().right > right + 1) out.push(el.textContent ?? "");
+          if (el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflow === "hidden" && getComputedStyle(el).textOverflow !== "ellipsis") out.push(el.textContent ?? "");
+        }
+        return out;
       });
       expect(cut, `${details}: no cut-off text`).toEqual([]);
     }
-    expect(new Set(builds.map((b) => `${b.left}:${b.width}`)).size, "Build is the same for every selection").toBe(1);
+    expect(new Set(builds.map((b) => `${b.left}:${b.width}`)).size, "Build is the same with nothing selected and with a prompt selected").toBe(1);
   });
 }

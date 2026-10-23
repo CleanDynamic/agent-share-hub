@@ -54,7 +54,7 @@ import { ClickToEdit, DetailsOverlay } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { COMPOSER_PAD, HEAD_GAP } from "./detailsRecipes";
-import { DETAILS_GAP, frameOf, innerWidthOf } from "./detailsLayout";
+import { SURFACE_MARGIN, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -210,6 +210,11 @@ export const LIST_HINT = "Click a tile to see its details · double-click to rea
 export const LIST_HINT_PHONE = "Tap a tile to see its details";
 export const listHint = (phone: boolean) => (phone ? LIST_HINT_PHONE : LIST_HINT);
 
+/** The columns start this far under the title row. */
+const COLUMNS_TOP = 32;
+/** The surface's own border, inside its 6 margin: the columns' origin is this far plus 6 from the window's edge. */
+const SURFACE_BORDER = 1;
+const ORIGIN = SURFACE_MARGIN + SURFACE_BORDER;
 export const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
 
 /** "3 sessions · 12 prompts · 2 files", leaving out any zero. */
@@ -1076,8 +1081,6 @@ export function SandboxView(props: SandboxViewProps) {
     );
   }
 
-  const rail = lens === "map" || frame.rail;
-
   return (
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
@@ -1101,30 +1104,40 @@ export function SandboxView(props: SandboxViewProps) {
         </div>
       </div>
       {banner ? <div style={{ padding: `16px ${COMPOSER_PAD}px 0` }}>{banner}</div> : null}
-      <div
-        data-testid="sandbox-columns"
-        style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: rail ? 24 : frame.sourcesGap, padding: `32px ${COMPOSER_PAD}px 0`, minWidth: 0 }}
-      >
-        <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
-          {sourcesBody}
-        </SourcesFrame>
-        {lens === "map" ? (
-          /* CA-17 P4: Details is not shown in the Map view: the map column fills, then 48, then the map's panel, 312 wide. */
+      {lens === "map" ? (
+        <div
+          data-testid="sandbox-columns"
+          style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 24, padding: `32px ${COMPOSER_PAD}px 0`, minWidth: 0 }}
+        >
+          <SourcesFrame rail titled={!props.sources} counts={props.counts} open={railOpen} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
+            {sourcesBody}
+          </SourcesFrame>
+          {/* CA-17 P4: Details is not shown in the Map view: the map column fills, then 48, then the map's panel, 312 wide. */}
           <div data-testid="map-view" style={MAP_AND_PANEL}>
             <div style={MAP_COLUMN}>{props.map ?? null}</div>
             {props.mapPanel}
           </div>
-        ) : (
-          <>
-            {buildColumn}
-            {frame.beside ? (
-              <div style={{ marginLeft: DETAILS_GAP - (rail ? 24 : frame.sourcesGap) }}>
-                <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? props.renderDetails(plan) : detailsBody)} />
-              </div>
-            ) : null}
-          </>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* CA-18b P2: the List's three columns stand where `frameOf` puts them, not in a row that lets one push another. Build
+           is in the flow, centred on the window; Sources and Details are placed beside it from the surface's edge. */
+        <div
+          data-testid="sandbox-columns"
+          style={{ position: "relative", display: "block", padding: `${COLUMNS_TOP}px ${COMPOSER_PAD}px 0`, minWidth: 0 }}
+        >
+          <div data-testid="sandbox-sources-slot" style={{ position: "absolute", top: COLUMNS_TOP, left: frame.sourcesLeft - ORIGIN, width: frame.sources, display: "flex", alignItems: "flex-start" }}>
+            <SourcesFrame rail={frame.rail} titled={!props.sources} counts={props.counts} open={railOpen && frame.rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
+              {sourcesBody}
+            </SourcesFrame>
+          </div>
+          <div style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD }}>{buildColumn}</div>
+          {frame.beside ? (
+            <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.room, display: "flex", alignItems: "stretch" }}>
+              <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? props.renderDetails(plan) : detailsBody)} />
+            </div>
+          ) : null}
+        </div>
+      )}
       {frame.beside || lens === "map" ? null : (
         <DetailsOverlay selectedKey={props.selectedKey} below={tabsRef} onEdit={props.onEditSelected}>
           {detailsBody}

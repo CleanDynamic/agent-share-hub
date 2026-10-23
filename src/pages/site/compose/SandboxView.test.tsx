@@ -276,7 +276,16 @@ describe("the refined look (UI-P93)", () => {
   it("puts Sources on the surface, 216 wide, with a hairline on its right", () => {
     const html = markup();
     expect(html).toContain("flex:0 0 216px;width:216px;box-sizing:border-box;padding-right:24px;border-right:1px solid var(--hairline)");
-    expect(html).toContain("flex:0 1 662px;width:662px");
+    expect(html).toContain("flex:0 1 640px;width:640px");
+  });
+
+  it("CA-18b: stands the three columns where frameOf puts them at 1440, not in a row", () => {
+    const html = markup();
+    // Window 1440: Build 640 from 400, Sources 216 from 144, Details 1080 wide room 320. The surface's 6, its border and the 34 are taken off.
+    expect(html).toContain("left:137px;width:216px");
+    expect(html).toContain('<div style="margin-left:359px">');
+    expect(html).toContain("left:1073px;width:320px");
+    expect(html).toContain("position:relative;display:block;padding:32px 34px 0");
   });
 
   it("opens Add from a menu button with no icon of its own but the chevron", () => {
