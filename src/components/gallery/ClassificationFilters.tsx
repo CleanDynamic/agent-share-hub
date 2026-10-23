@@ -31,8 +31,8 @@ export const QUICK_CHIPS: readonly { key: string; label: string }[] = [
   { key: "cost:free-plans-are-enough", label: "Free plans are enough" },
 ];
 
-const DASH_EDGE = `var(--dash-edge, ${t.line})`;
-const SEG_ON_BORDER = `var(--seg-on-border, ${t.controlBorder})`;
+const DASH_EDGE = t.segOnBorder;
+const SEG_ON_BORDER = t.segOnBorder;
 
 /** The facets of the first four groups, and what the "Show all" link says. */
 const MAIN: readonly { facet: Facet; tree?: boolean; search?: boolean; more: string }[] = [

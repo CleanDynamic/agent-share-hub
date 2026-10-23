@@ -1,9 +1,9 @@
 /* CA-16b: the pieces only the Classification Card uses, drawn as its board draws them: a chosen value, a suggestion, and
    the typeahead's list. Built from the tokens; nothing here is a colour of its own.
 
-   THREE EDGES COME FROM CA-15b (`--seg-on-border`, `--dash-edge`, `--window-foot`). Until its tokens are in the stylesheet
-   each reads through `var(name, fallback)` to the nearest token that exists, so the Card looks right now and picks the
-   real value up when CA-15b lands. */
+   THE EDGES ARE CA-15b's: a chosen value's edge is `t.segOnBorder`, and a dashed edge (a suggestion, an own entry) uses the
+   same token, as CA-15b's own drop zone does. The board draws the dash a step lighter (`--dash-edge`), which CA-15b did
+   not add, so the dash is one step darker than the board until it does. */
 
 import type { CSSProperties, ReactNode } from "react";
 
@@ -16,11 +16,9 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { ellipsis, text } from "./refinedStyles";
 
 /** The edge of a chosen value and of a selected segment. */
-export const SEG_ON_BORDER = `var(--seg-on-border, ${t.controlBorder})`;
+export const SEG_ON_BORDER = t.segOnBorder;
 /** The dashed edge of a suggestion and an own entry. */
-export const DASH_EDGE = `var(--dash-edge, ${t.line})`;
-/** The footer strip under a window's body. */
-export const WINDOW_FOOT = `var(--window-foot, ${t.tile})`;
+export const DASH_EDGE = t.segOnBorder;
 
 /** A chosen value: 28 tall, padding 0 6 0 10, radius 7, `--control-on` with a 1px edge, 12.5, then an 18 square remove button. */
 export function ChosenValue({
