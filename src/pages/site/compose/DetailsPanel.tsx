@@ -68,7 +68,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TRAINED_METHOD_MAX, CONNECTION_LABEL, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { type ManualWhere, isIsoDay, TRAINED_METHOD_MAX, CONNECTION_LABEL, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckCase, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -157,6 +157,8 @@ export interface PromptView extends InputsView {
 /** Work done outside AI (UI-P70). It is never detected, and has no model and no text to copy. */
 export interface ManualView extends InputsView {
   kind: "manual";
+  /** CA-18: where it was done, when it says (an app, a terminal, a phone...). */
+  where?: ManualWhere | null;
   id: string;
   number: string;
   title: string | null;
@@ -212,6 +214,7 @@ export interface SetupRow {
 export interface FileView {
   kind: "file";
   id: string;
+  number?: string;
   /** CA-04 P2, a file sent with a step: "Sent with prompt 2". */
   sentWithLine?: string;
   name: string;
@@ -224,6 +227,8 @@ export interface FileView {
 export interface ToolView {
   kind: "tool";
   id: string;
+  /** CA-18: its place on the build ("11"), for the title of its window. */
+  number?: string;
   service: string;
   scopes: string;
   usedBy: readonly GoesRow[];
@@ -265,6 +270,7 @@ export interface AgentView extends InputsView {
 export interface ResultView {
   kind: "result";
   id: string;
+  number?: string;
   summary: string;
   url: string;
   /** Pictures kept with the result. */
@@ -386,7 +392,7 @@ export interface DetailsHandlers {
   onRemoveMade?: (fileId: string) => void;
   onRuns: (id: string, runs: Runs | null) => void;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
-  onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
+  onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) => void;
   /** UI-P70: add or replace a manual step's picture. */
   onManualPicture?: (id: string, file: File) => void;
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */

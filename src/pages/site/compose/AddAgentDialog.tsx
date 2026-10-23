@@ -30,7 +30,7 @@ import { toolName } from "@/lib/tools/registry";
 import { savedModels, setupReady, useAgentSetupFields, type AgentSetupValue } from "./AgentSetupFields";
 import { ChoiceGrid } from "./ChoiceGrid";
 import { HelpersField } from "./HelpersField";
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { Block, FieldArea, FieldInput, Hint, MODAL_WIDTH, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
@@ -123,6 +123,20 @@ export interface AgentSeed {
   instructions: string;
 }
 
+/** CA-18: what the form starts with on an agent or a team that is there. */
+export interface AgentCurrent {
+  kind: "agent" | "team";
+  name: string;
+  setup: AgentSetupValue;
+  instructions: string;
+  limits: string[];
+  output: string;
+  trace: string;
+  transcript: string;
+  pattern: AgentPattern | null;
+  helpers: Helper[];
+}
+
 export interface AddAgentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -130,11 +144,14 @@ export interface AddAgentDialogProps {
   nextNumber: number;
   /** False while the `team` node type is not live. */
   teamsAvailable: boolean;
-  onAdd: (input: AddAgentInput) => void;
+  onAdd?: (input: AddAgentInput) => void;
   /** CA-02 P4: set when "Add as an agent" opened the dialog. */
   seed?: AgentSeed | null;
   /** The tools the build already uses, first in the pickers. */
   inBuild?: readonly string[];
+  /** CA-18: an agent or a team that is there. */
+  current?: AgentCurrent | null;
+  edit?: EditMode<AddAgentInput>;
 }
 
 /** The model a new agent starts on. */
@@ -155,19 +172,23 @@ function Form({
   seed,
   inBuild = [],
   onKind,
-}: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd" | "seed" | "inBuild"> & { onCancel: () => void; phone: boolean; onKind: (kind: "agent" | "team") => void }) {
-  const [kind, setKind] = useState<"agent" | "team">("agent");
-  const [name, setName] = useState("");
-  const [setup, setSetup] = useState<AgentSetupValue>(() => firstSetup(seed));
-  const [instructions, setInstructions] = useState(seed?.instructions ?? "");
+  current,
+  edit,
+}: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd" | "seed" | "inBuild" | "current" | "edit"> & { onCancel: () => void; phone: boolean; onKind: (kind: "agent" | "team") => void }) {
+  const [kind, setKind] = useState<"agent" | "team">(current?.kind ?? "agent");
+  const [name, setName] = useState(current?.name ?? "");
+  const [setup, setSetup] = useState<AgentSetupValue>(() => current?.setup ?? firstSetup(seed));
+  const [instructions, setInstructions] = useState(current?.instructions ?? seed?.instructions ?? "");
   const [start, setStart] = useState<"ask" | "schedule" | "event">("ask");
   const [startDetail, setStartDetail] = useState("");
-  const [helpers, setHelpers] = useState<Helper[]>([]);
-  const [limits, setLimits] = useState("");
-  const [output, setOutput] = useState("");
-  const [trace, setTrace] = useState("");
-  const [transcript, setTranscript] = useState("");
-  const [pattern, setPattern] = useState<AgentPattern | null>(null);
+  const [helpers, setHelpers] = useState<Helper[]>(current?.helpers ?? []);
+  const [limits, setLimits] = useState((current?.limits ?? []).join("\n"));
+  const [output, setOutput] = useState(current?.output ?? "");
+  const [trace, setTrace] = useState(current?.trace ?? "");
+  const [transcript, setTranscript] = useState(current?.transcript ?? "");
+  const [pattern, setPattern] = useState<AgentPattern | null>(current?.pattern ?? null);
+  /** A team has no model, instructions, tools or notes of its own: only a name, how it runs and its pattern. */
+  const team = kind === "team" && Boolean(edit);
   const [tried, setTried] = useState(false);
   const uid = useId();
   const ready = setupReady(setup);
@@ -180,29 +201,33 @@ function Form({
     setKind(next);
     onKind(next);
   };
+  const draftInput: AddAgentInput = {
+    kind,
+    name: name.trim() || null,
+    ...savedModels(setup),
+    harness: setup.harness,
+    tools: setup.tools,
+    ...(instructions.trim() ? { instructions } : null),
+    ...(start !== "ask" ? { runs: { how: start, ...(startDetail.trim() ? { detail: startDetail.trim() } : null) } as Runs } : null),
+    ...(setup.memory?.trim() ? { memory: setup.memory.trim() } : null),
+    ...(helpers.length ? { helpers } : null),
+    ...(limitLines.length ? { limits: limitLines } : null),
+    ...(output.trim() ? { output: output.trim() } : null),
+    ...(transcript.trim() ? { sample: transcript.trim() } : null),
+    ...(trace.trim() ? { traceUrl: trace.trim() } : null),
+    ...(kind === "team" && pattern ? { pattern } : null),
+  };
   const submit = () => {
     setTried(true);
-    if (!ready || why) return;
-    onAdd({
-      kind,
-      name: name.trim() || null,
-      ...savedModels(setup),
-      harness: setup.harness,
-      tools: setup.tools,
-      ...(instructions.trim() ? { instructions } : null),
-      ...(start !== "ask" ? { runs: { how: start, ...(startDetail.trim() ? { detail: startDetail.trim() } : null) } as Runs } : null),
-      ...(setup.memory?.trim() ? { memory: setup.memory.trim() } : null),
-      ...(helpers.length ? { helpers } : null),
-      ...(limitLines.length ? { limits: limitLines } : null),
-      ...(output.trim() ? { output: output.trim() } : null),
-      ...(transcript.trim() ? { sample: transcript.trim() } : null),
-      ...(trace.trim() ? { traceUrl: trace.trim() } : null),
-      ...(kind === "team" && pattern ? { pattern } : null),
-    });
+    if (!(ready || team) || why) return;
+    if (edit) edit.onSave(draftInput);
+    else onAdd?.(draftInput);
   };
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={firstMissing([[ready, "a model"]])} alert={tried ? why : null}>
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={firstMissing([[ready || team, "a model"]])} addLabel={edit ? MODAL_COPY.save : undefined} alert={tried ? why : null}>
+      {edit?.before ? edit.before(draftInput) : null}
+      {edit ? null : (
       <Block noRule>
         <SegmentedField<"agent" | "team">
           label="What to add"
@@ -216,25 +241,30 @@ function Form({
         />
         {!teamsAvailable ? <Hint>{AGENT_DIALOG_COPY.teamsMissing}</Hint> : null}
       </Block>
+      )}
 
-      <Row id={`${uid}-name`} label={AGENT_DIALOG_COPY.name} phone={phone}>
+      <Row id={`${uid}-name`} label={AGENT_DIALOG_COPY.name} phone={phone} noRule={Boolean(edit)}>
         <FieldInput phone={phone} id={`${uid}-name`} value={name} maxLength={TITLE_MAX} placeholder={`${kind === "team" ? "Team" : "Agent"} ${nextNumber}`} onChange={(event) => setName(event.target.value)} />
       </Row>
 
-      {parts.models}
+      {team ? null : parts.models}
 
       <OptionalSection>
+        {team ? null : (
         <OptionalField name={AGENT_DIALOG_COPY.instructions} description={AGENT_DIALOG_COPY.instructionsLine} summary={summaryOf(firstLineOf(instructions, 120))} phone={phone}>
           <FieldArea phone={phone} rows={4} aria-label={AGENT_DIALOG_COPY.instructions} value={instructions} placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder} onChange={(event) => setInstructions(event.target.value)} />
         </OptionalField>
+        )}
 
+        {team ? null : (
         <OptionalField name="Available tools" description={AGENT_DIALOG_COPY.toolsLine} summary={summaryOf(toolNames)} phone={phone}>
           {parts.tools}
         </OptionalField>
+        )}
 
-        <OptionalField name={AGENT_DIALOG_COPY.starts} description={AGENT_DIALOG_COPY.startsLine} summary={start === "ask" ? null : summaryOf(START_CHOICES.find((choice) => choice.value === start)?.label, startDetail)} phone={phone}>
-          <SegmentedField label={AGENT_DIALOG_COPY.starts} phone={phone} value={start} onChange={(next) => setStart(next)} items={START_CHOICES} />
-          {start !== "ask" ? (
+        <OptionalField name={AGENT_DIALOG_COPY.starts} description={AGENT_DIALOG_COPY.startsLine} summary={edit ? (edit.slots?.startsSummary as string | null) ?? null : start === "ask" ? null : summaryOf(START_CHOICES.find((choice) => choice.value === start)?.label, startDetail)} phone={phone}>
+          {edit?.slots?.starts ? edit.slots.starts : <SegmentedField label={AGENT_DIALOG_COPY.starts} phone={phone} value={start} onChange={(next) => setStart(next)} items={START_CHOICES} />}
+          {!edit && start !== "ask" ? (
             <FieldInput
               phone={phone}
               aria-label={start === "event" ? AGENT_DIALOG_COPY.event : AGENT_DIALOG_COPY.schedule}
@@ -246,31 +276,44 @@ function Form({
           ) : null}
         </OptionalField>
 
+        {team ? null : (
         <OptionalField name="Host platform" description={AGENT_DIALOG_COPY.hostLine} summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
           {parts.host}
         </OptionalField>
+        )}
 
+        {team ? null : (
         <OptionalField name="Memory" description={AGENT_DIALOG_COPY.memoryLine} summary={summaryOf(setup.memory)} phone={phone}>
           {parts.memory}
+          {edit?.slots?.memory}
         </OptionalField>
+        )}
 
+        {team || edit ? null : (
         <OptionalField name="Supporting models" description={AGENT_DIALOG_COPY.helpersLine} summary={helpers.length ? `${helpers.length} ${helpers.length === 1 ? "supporting model" : "supporting models"}` : null} phone={phone}>
           <HelpersField helpers={helpers} toolNames={toolNames} decisions={[]} phone={phone} onChange={setHelpers} bare />
         </OptionalField>
+        )}
 
+        {team ? null : (
         <OptionalField name={AGENT_DIALOG_COPY.limits} description={AGENT_DIALOG_COPY.limitsLine} summary={summaryOf(limitLines)} phone={phone}>
           <FieldArea phone={phone} rows={3} aria-label={AGENT_DIALOG_COPY.limits} value={limits} placeholder={AGENT_DIALOG_COPY.limitsPlaceholder} onChange={(event) => setLimits(event.target.value)} />
         </OptionalField>
+        )}
 
+        {team ? null : (
         <OptionalField name={AGENT_DIALOG_COPY.output} description={AGENT_DIALOG_COPY.outputLine} summary={summaryOf(output)} phone={phone}>
           <FieldInput phone={phone} aria-label={AGENT_DIALOG_COPY.output} maxLength={OUTPUT_MAX} value={output} placeholder={AGENT_DIALOG_COPY.outputPlaceholder} onChange={(event) => setOutput(event.target.value)} />
         </OptionalField>
+        )}
 
+        {team ? null : (
         <OptionalField name={AGENT_DIALOG_COPY.sample} description={AGENT_DIALOG_COPY.sampleLine} summary={summaryOf(trace, transcript ? firstLineOf(transcript, 80) : null)} phone={phone}>
-          <FieldInput phone={phone} aria-label={AGENT_DIALOG_COPY.trace} inputMode="url" value={trace} placeholder={AGENT_DIALOG_COPY.tracePlaceholder} onChange={(event) => setTrace(event.target.value)} />
+          {edit ? null : <FieldInput phone={phone} aria-label={AGENT_DIALOG_COPY.trace} inputMode="url" value={trace} placeholder={AGENT_DIALOG_COPY.tracePlaceholder} onChange={(event) => setTrace(event.target.value)} />}
           <FieldArea phone={phone} rows={4} mono aria-label={AGENT_DIALOG_COPY.transcript} maxLength={SAMPLE_MAX} value={transcript} placeholder={AGENT_DIALOG_COPY.transcriptPlaceholder} onChange={(event) => setTranscript(event.target.value)} />
           <Hint>Leave out anything secret. Name a key, never paste its value.</Hint>
         </OptionalField>
+        )}
 
         {kind === "team" ? (
           <OptionalField name={AGENT_DIALOG_COPY.pattern} description={AGENT_DIALOG_COPY.patternLine} titleCount={AGENT_DIALOG_COPY.patternCount} summary={pattern ? AGENT_PATTERN_LABEL[pattern] : null} phone={phone}>
@@ -278,11 +321,12 @@ function Form({
           </OptionalField>
         ) : null}
       </OptionalSection>
+      {edit?.after ? edit.after(draftInput) : null}
     </ModalForm>
   );
 }
 
-export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd, seed = null, inBuild = [] }: AddAgentDialogProps) {
+export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd, seed = null, inBuild = [], current = null, edit }: AddAgentDialogProps) {
   const phone = useIsPhone();
   const [kind, setKind] = useState<"agent" | "team">("agent");
   const title = kind === "team" ? AGENT_DIALOG_COPY.leadTitle : AGENT_DIALOG_COPY.title;
@@ -292,13 +336,13 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
   };
   const close = () => openChange(false);
   const add = (input: AddAgentInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   // Each opening starts clean: the shell mounts its form only while open.
   return (
-    <ModalShell open={open} onOpenChange={openChange} title={title} subtitle={AGENT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-agent-dialog">
-      <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={phone} seed={seed} inBuild={inBuild} onKind={setKind} />
+    <ModalShell open={open} onOpenChange={openChange} title={edit ? edit.title : title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={AGENT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-agent-dialog" : "add-agent-dialog"}>
+      <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={phone} seed={seed} inBuild={inBuild} onKind={setKind} current={current} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} />
     </ModalShell>
   );
 }

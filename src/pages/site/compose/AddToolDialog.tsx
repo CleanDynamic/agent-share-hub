@@ -26,7 +26,7 @@ import { TOOL_ALTERNATIVES_MAX, TOOL_PERMISSIONS, TOOL_PERMISSION_LABEL, TOOL_PL
 import { toolName } from "@/lib/tools/registry";
 
 import { ChoiceGrid } from "./ChoiceGrid";
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { FieldArea, FieldInput, Hint, MODAL_WIDTH, RemovableTag, Row, SegmentedField, TagList } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
@@ -79,32 +79,33 @@ export interface AddToolInput {
 export interface AddToolDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: AddToolInput) => void;
+  onAdd?: (input: AddToolInput) => void;
   /** The tools the build already uses, first in the application picker. */
   inBuild?: readonly string[];
+  /** CA-18: what the form starts with, when it is opened on a tool that is there. */
+  seed?: Partial<AddToolInput> | null;
+  /** CA-18: opened on a tool that is there: "Edit", its own line as the title, Save. */
+  edit?: EditMode<AddToolInput>;
 }
 
-function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddToolDialogProps, "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
-  const [picked, setPicked] = useState<string | null>(null);
-  const [connection, setConnection] = useState<ToolConnection | null>(null);
-  const [did, setDid] = useState("");
-  const [permissions, setPermissions] = useState<ToolPermission | null>(null);
-  const [plan, setPlan] = useState("");
-  const [setup, setSetup] = useState("");
-  const [alternatives, setAlternatives] = useState<string[]>([]);
+function Form({ onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddToolDialogProps, "onAdd" | "inBuild" | "seed" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const [picked, setPicked] = useState<string | null>(seed?.service ?? null);
+  const [connection, setConnection] = useState<ToolConnection | null>(seed?.connection ?? null);
+  const [did, setDid] = useState(seed?.scopes ?? "");
+  const [permissions, setPermissions] = useState<ToolPermission | null>(seed?.permissions ?? null);
+  const [plan, setPlan] = useState(seed?.plan ?? "");
+  const [setup, setSetup] = useState((seed?.setup ?? []).join("\n"));
+  const [alternatives, setAlternatives] = useState<string[]>(seed?.alternatives ?? []);
   const uid = useId();
   const service = picked ? (toolName(picked) ?? picked.trim()) : "";
   const missing = firstMissing([[service.length > 0, "an application"]]);
   const steps = linesOf(setup);
   const keyed = connection === "api_key";
+  const input = (): AddToolInput => ({ service, connection, scopes: did.trim(), permissions, plan: plan.trim(), setup: steps.slice(0, TOOL_SETUP_MAX).map((line) => line.slice(0, TOOL_SETUP_LINE_MAX)), alternatives });
 
   return (
-    <ModalForm
-      phone={phone}
-      missing={missing}
-      onCancel={onCancel}
-      onSubmit={() => onAdd({ service, connection, scopes: did.trim(), permissions, plan: plan.trim(), setup: steps.slice(0, TOOL_SETUP_MAX).map((line) => line.slice(0, TOOL_SETUP_LINE_MAX)), alternatives })}
-    >
+    <ModalForm phone={phone} missing={missing} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined} onSubmit={() => (edit ? edit.onSave(input()) : onAdd?.(input()))}>
+      {edit?.before ? edit.before(input()) : null}
       <Row id={`${uid}-tool`} label={TOOL_DIALOG_COPY.tool} group phone={phone} noRule>
         <ToolPicker label={TOOL_DIALOG_COPY.tool} value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="tool" list="app" placeholder={TOOL_DIALOG_COPY.selectTool} field />
       </Row>
@@ -164,20 +165,21 @@ function Form({ onAdd, onCancel, phone, inBuild = [] }: Pick<AddToolDialogProps,
           />
         </OptionalField>
       </OptionalSection>
+      {edit?.after ? edit.after(input()) : null}
     </ModalForm>
   );
 }
 
-export function AddToolDialog({ open, onOpenChange, onAdd, inBuild }: AddToolDialogProps) {
+export function AddToolDialog({ open, onOpenChange, onAdd, inBuild, seed, edit }: AddToolDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddToolInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={TOOL_DIALOG_COPY.title} subtitle={TOOL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-tool-dialog">
-      <Form inBuild={inBuild} onAdd={add} onCancel={close} phone={phone} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : TOOL_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={TOOL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-tool-dialog" : "add-tool-dialog"}>
+      <Form inBuild={inBuild} seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );
 }

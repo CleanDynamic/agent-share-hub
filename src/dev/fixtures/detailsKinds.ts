@@ -54,7 +54,7 @@ export function tileView(kind: TileKind, fill: Fill = "full"): DetailsView {
     case "manual":
       return { kind: "manual", id: "m1", number: "4", title: null, defaultTitle: "Manual step 4", tool: full ? "Figma" : "", text: full ? "Opened the file\nExported the logo" : "", picture: full ? { id: "pic", name: "logo.png" } : null, ...io, makes: [] };
     case "code":
-      return { kind: "code", id: "c1", number: "5", title: null, defaultTitle: "Code 5", language: full ? "ts" : null, filename: full ? "src/menu.ts" : null, source: "export const menu = [];\nexport const price = 4;", lines: 2, tool: full ? "Claude Code" : null, model: full ? "Sonnet 5.5" : null, ...io, makes: [] };
+      return { kind: "code", id: "c1", number: "5", title: null, defaultTitle: "Code 5", language: full ? "ts" : null, filename: full ? "src/menu.ts" : null, source: "export const menu = [];\nexport const price = 4;", lines: 2, tool: full ? "Claude Code" : null, model: full ? "Sonnet 5.5" : null, ...io, makes: [], payload: full ? { filename: "src/menu.ts", tool: "Claude Code", model: "sonnet-5-5" } : {} };
     case "check":
       return {
         kind: "check",

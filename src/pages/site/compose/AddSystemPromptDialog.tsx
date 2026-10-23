@@ -17,7 +17,7 @@ import { TITLE_MAX, type SystemPromptInput } from "@/lib/build/graph";
 import { SYSTEM_PROMPT_TEXT_MAX, SYSTEM_PROMPT_VERSION_MAX, type SystemPromptScope } from "@/lib/build/sourceTiles";
 import { VARIABLE_DESCRIPTION_MAX, variablesFor } from "@/lib/build/tileExtras";
 
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Block, BlockHead, FieldArea, FieldInput, Hint, MODAL_WIDTH, NARROW, OptionGrid, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
@@ -49,10 +49,23 @@ export const SYSTEM_PROMPT_DIALOG_COPY = {
 
 export type AddSystemPromptInput = Omit<SystemPromptInput, "session">;
 
+/** CA-18: what the form starts with on a system prompt that is there. */
+export interface SystemPromptCurrent {
+  name: string;
+  text: string;
+  applies: "all" | "session" | "prompts";
+  picked: string[];
+  model: string;
+  version: string;
+  described: Record<string, string>;
+}
+
 export interface AddSystemPromptDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (input: AddSystemPromptInput) => void;
+  onAdd?: (input: AddSystemPromptInput) => void;
+  current?: SystemPromptCurrent | null;
+  edit?: EditMode<AddSystemPromptInput>;
   /** The build's prompts, for "Selected prompts". */
   prompts: readonly { id: string; label: string }[];
   /** The session the tile is being added to: what "This session" means. Null when there is none. */
@@ -61,14 +74,14 @@ export interface AddSystemPromptDialogProps {
 
 type Applies = "all" | "session" | "prompts";
 
-function Form({ onAdd, onCancel, phone, prompts, session }: Pick<AddSystemPromptDialogProps, "onAdd" | "prompts" | "session"> & { onCancel: () => void; phone: boolean }) {
-  const [name, setName] = useState("");
-  const [body, setBody] = useState("");
-  const [applies, setApplies] = useState<Applies>("all");
-  const [picked, setPicked] = useState<string[]>([]);
-  const [model, setModel] = useState<string | null>(null);
-  const [version, setVersion] = useState("");
-  const [described, setDescribed] = useState<Record<string, string>>({});
+function Form({ onAdd, onCancel, phone, prompts, session, current, edit }: Pick<AddSystemPromptDialogProps, "onAdd" | "prompts" | "session" | "current" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const [name, setName] = useState(current?.name ?? "");
+  const [body, setBody] = useState(current?.text ?? "");
+  const [applies, setApplies] = useState<Applies>(current?.applies ?? "all");
+  const [picked, setPicked] = useState<string[]>(current?.picked ?? []);
+  const [model, setModel] = useState<string | null>(current?.model || null);
+  const [version, setVersion] = useState(current?.version ?? "");
+  const [described, setDescribed] = useState<Record<string, string>>(current?.described ?? {});
   const uid = useId();
   const variables = variablesFor(body, []).map((variable) => ({ name: variable.name, description: (described[variable.name] ?? "").trim() }));
 
@@ -81,7 +94,7 @@ function Form({ onAdd, onCancel, phone, prompts, session }: Pick<AddSystemPrompt
 
   const submit = () => {
     const scope: SystemPromptScope = applies === "all" ? { kind: "all" } : applies === "session" ? { kind: "session", key: session as string } : { kind: "prompts", ids: picked };
-    onAdd({
+    (edit ? edit.onSave : (onAdd ?? (() => undefined)))({
       name: name.trim(),
       text: body.trim(),
       scope,
@@ -92,7 +105,7 @@ function Form({ onAdd, onCancel, phone, prompts, session }: Pick<AddSystemPrompt
   };
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing}>
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} addLabel={edit ? MODAL_COPY.save : undefined}>
       <Row id={`${uid}-name`} label={SYSTEM_PROMPT_DIALOG_COPY.name} noRule phone={phone}>
         <FieldInput phone={phone} id={`${uid}-name`} value={name} maxLength={TITLE_MAX} placeholder={SYSTEM_PROMPT_DIALOG_COPY.namePlaceholder} onChange={(event) => setName(event.target.value)} />
       </Row>
@@ -153,20 +166,21 @@ function Form({ onAdd, onCancel, phone, prompts, session }: Pick<AddSystemPrompt
           ))}
         </OptionalField>
       </OptionalSection>
+      {edit?.after ? edit.after({ name, text: body, scope: { kind: "all" } }) : null}
     </ModalForm>
   );
 }
 
-export function AddSystemPromptDialog({ open, onOpenChange, onAdd, prompts, session }: AddSystemPromptDialogProps) {
+export function AddSystemPromptDialog({ open, onOpenChange, onAdd, prompts, session, current, edit }: AddSystemPromptDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddSystemPromptInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={SYSTEM_PROMPT_DIALOG_COPY.title} subtitle={SYSTEM_PROMPT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-system-prompt-dialog">
-      <Form onAdd={add} onCancel={close} phone={phone} prompts={prompts} session={session} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : SYSTEM_PROMPT_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={SYSTEM_PROMPT_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-system-prompt-dialog" : "add-system-prompt-dialog"}>
+      <Form onAdd={add} onCancel={close} phone={phone} prompts={prompts} session={session} current={current} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} />
     </ModalShell>
   );
 }

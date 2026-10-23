@@ -79,7 +79,8 @@ import { dividers, suggestionKey, type ListResult, type ListSuggestion } from ".
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { BuildMap } from "./BuildMap";
 import { attachFiles } from "./attachFiles";
-import { DetailsPanel } from "./DetailsPanel";
+import { DetailsPanel, type DetailsHandlers } from "./DetailsPanel";
+import { TileEditDialog } from "./TileEditDialog";
 import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
@@ -801,6 +802,44 @@ export function SandboxPage() {
     [selectedId, steps, groups, tree, sourceSessionRows, sourceFileRows, sessions.promptsState, listFacts.intoResult, mediaFacts],
   );
 
+  /* CA-18: the tile whose own window is open (to change it), seen as Details sees it. */
+  const [editId, setEditId] = useState<string | null>(null);
+  const editView = useMemo(
+    () =>
+      editId
+        ? resolveView({
+            selectedId: editId,
+            steps,
+            groups,
+            tree,
+            sources: sourceSessionRows,
+            sourceFiles: sourceFileRows,
+            promptsState: sessions.promptsState,
+            intoResult: listFacts.intoResult,
+            media: mediaFacts,
+          })
+        : null,
+    [editId, steps, groups, tree, sourceSessionRows, sourceFileRows, sessions.promptsState, listFacts.intoResult, mediaFacts],
+  );
+  /** CA-18: a prompt as Details reads it, for the prompt window's Model, Uses and Makes. */
+  const promptDetails = useCallback(
+    (id: string) => {
+      const found = resolveView({ selectedId: id, steps, groups, tree, sources: sourceSessionRows, sourceFiles: sourceFileRows, promptsState: sessions.promptsState, intoResult: listFacts.intoResult, media: mediaFacts });
+      return found?.kind === "prompt" ? found : null;
+    },
+    [steps, groups, tree, sourceSessionRows, sourceFileRows, sessions.promptsState, listFacts.intoResult, mediaFacts],
+  );
+  /** Select a tile and open its window: a prompt's own window, any other tile's, a session's. A tile with none (a file) is only selected. */
+  const openTile = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      const part = allParts(steps).find((candidate) => candidate.id === id);
+      if (part?.kind === "prompt" && !part.id.endsWith(":instructions")) setOpenPromptId(id);
+      else setEditId(id);
+    },
+    [steps],
+  );
+
   /** Writes to a node inside an agent or a team are not laid over the tree, so read the build again once they land. */
   const afterWrite = useCallback(() => {
     void nodes.settled().then(() => {
@@ -1480,6 +1519,109 @@ export function SandboxPage() {
     onSession: aimAt,
   };
 
+  /** The handlers Details had, which its tiles' windows now call (CA-18). */
+  const detailsHandlers: DetailsHandlers = {
+    onSelect: setSelectedId,
+    onOpenPrompt: setOpenPromptId,
+    onRename: prompts.rename,
+    onModel: prompts.setModel,
+    onAddMade: (stepId, name) => void prompts.addMadeFile(stepId, name),
+    onRemoveMade: (fileId) => {
+      prompts.removeMadeFile(fileId);
+      afterWrite();
+    },
+    onAddUse: (id, use) => {
+      prompts.accept(id, use, steps);
+      afterWrite();
+    },
+    onAttach: pickForStep,
+    onRemoveUse: (id, use) => {
+      prompts.removeUse(id, use);
+      afterWrite();
+    },
+    onDecision: (id, input) => {
+      prompts.setDecision(id, input);
+      afterWrite();
+    },
+    onRuntime: (id, patch) => {
+      prompts.setRuntime(id, patch);
+      afterWrite();
+    },
+    onReadHelpers: (id, read) => {
+      const agent = steps.find((step) => step.id === id);
+      if (!agent) return;
+      // The agent, its tools and its helpers, as found: only what the code wrote out literally.
+      prompts.setRuntime(id, { helpers: read.helpers });
+      if (read.model || read.tools.length) {
+        const have = (agent.toolRefs ?? []).map((ref) => listFacts.names[ref]).filter(Boolean);
+        prompts.setAgent(id, { model: read.model ?? agent.model ?? "", harness: agent.harness ? (toolFor(agent.harness)?.id ?? agent.harness) : "deep-agents", tools: [...new Set([...have, ...read.tools])] });
+      }
+      afterWrite();
+    },
+    onRunsWhen: (id, runsWhen) => {
+      prompts.setRunsWhen(id, steps, runsWhen);
+      afterWrite();
+    },
+    onRuns: (id, runs) => {
+      prompts.setRuns(id, runs);
+      // CA-04 P6: a pasted `claude -p "…"` keeps its command as written; its quoted text is the session's prompt.
+      const said = runs?.how === "script" && runs.detail ? claudePromptOf(runs.detail) : null;
+      if (said) {
+        const top = steps.find((step) => step.id === id || step.children.some((child) => child.id === id));
+        const group = top ? groups.find((candidate) => candidate.stepNumbers.includes(top.number)) : undefined;
+        const key = group && groupKind(group) !== "legacy" ? groupKey(group) : null;
+        void prompts.addNow({ text: said, tool: null, model: null, session: key });
+      }
+      afterWrite();
+    },
+    onManual: (id, fields) => {
+      prompts.setManual(id, fields);
+      afterWrite();
+    },
+    onManualPicture: (id, file) => {
+      void prompts.setManualPicture(id, file).then(afterWrite);
+    },
+    onInstructions: (id, text) => {
+      prompts.setInstructions(id, text);
+      afterWrite();
+    },
+    onAgentSetup: (id, setup) => {
+      prompts.setAgent(id, setup);
+      afterWrite();
+    },
+    onRemoveInside: (id) => {
+      prompts.removeInside(id);
+      afterWrite();
+    },
+    onToggleSessionPrompt: (session, row, on) => {
+      if (on) {
+        const real = sessions.library.find((candidate) => candidate.id === session.key);
+        if (real) prompts.add(real.id, row.ordinal);
+      } else if (row.stepId) prompts.remove(row.stepId);
+    },
+    onSessionTool: (sessionId, tool) => void sessions.setTool(sessionId, tool),
+    onSessionMeta: (key, change) => void onSessionMeta(key, change),
+    onSessionGoal: (key, goal) => void onSessionGoal(key, goal),
+    onSessionExtras: (key, extras) => void onSessionExtras(key, extras),
+    onExtras: (id, patch) => {
+      prompts.setExtras(id, patch);
+      afterWrite();
+    },
+    onCheckRuns: prompts.setCheckRuns,
+    onCheckCases: prompts.setCheckCases,
+    onModelRun: prompts.setModelRun,
+    onTrainedOn: (id, file) => void onTrainedOn(id, file),
+    onAgentNotes: prompts.setAgentNotes,
+    onSessionTogether: (key, keys) => void onSessionTogether(key, keys),
+    onDownload: (id) => void download(id),
+    onFields: prompts.setFields,
+    onAddPicture: (id, file) => void addPicture(id, file),
+    onUseAsCover: (mediaId) => void setAsCover(mediaId),
+    onAddToSetup: pickForSetup,
+    onToolConnection: prompts.setConnection,
+    onNotShared: onNotShared,
+  };
+
   return (
     <>
       <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
@@ -1559,113 +1701,7 @@ export function SandboxPage() {
           />
         }
         selection={
-          <DetailsPanel
-            phone={phone}
-            view={view}
-            inBuild={inBuild}
-            focusMakes={focusMakes}
-            onSelect={setSelectedId}
-            onOpenPrompt={setOpenPromptId}
-            onRename={prompts.rename}
-            onModel={prompts.setModel}
-            onAddMade={(stepId, name) => void prompts.addMadeFile(stepId, name)}
-            onRemoveMade={(fileId) => {
-              prompts.removeMadeFile(fileId);
-              afterWrite();
-            }}
-            onAddUse={(id, use) => {
-              prompts.accept(id, use, steps);
-              afterWrite();
-            }}
-            onAttach={pickForStep}
-            onRemoveUse={(id, use) => {
-              prompts.removeUse(id, use);
-              afterWrite();
-            }}
-            onDecision={(id, input) => {
-              prompts.setDecision(id, input);
-              afterWrite();
-            }}
-            onRuntime={(id, patch) => {
-              prompts.setRuntime(id, patch);
-              afterWrite();
-            }}
-            onReadHelpers={(id, read) => {
-              const agent = steps.find((step) => step.id === id);
-              if (!agent) return;
-              // The agent, its tools and its helpers, as found: only what the code wrote out literally.
-              prompts.setRuntime(id, { helpers: read.helpers });
-              if (read.model || read.tools.length) {
-                const have = (agent.toolRefs ?? []).map((ref) => listFacts.names[ref]).filter(Boolean);
-                prompts.setAgent(id, { model: read.model ?? agent.model ?? "", harness: agent.harness ? (toolFor(agent.harness)?.id ?? agent.harness) : "deep-agents", tools: [...new Set([...have, ...read.tools])] });
-              }
-              afterWrite();
-            }}
-            onRunsWhen={(id, runsWhen) => {
-              prompts.setRunsWhen(id, steps, runsWhen);
-              afterWrite();
-            }}
-            onRuns={(id, runs) => {
-              prompts.setRuns(id, runs);
-              // CA-04 P6: a pasted `claude -p "…"` keeps its command as written; its quoted text is the session's prompt.
-              const said = runs?.how === "script" && runs.detail ? claudePromptOf(runs.detail) : null;
-              if (said) {
-                const top = steps.find((step) => step.id === id || step.children.some((child) => child.id === id));
-                const group = top ? groups.find((candidate) => candidate.stepNumbers.includes(top.number)) : undefined;
-                const key = group && groupKind(group) !== "legacy" ? groupKey(group) : null;
-                void prompts.addNow({ text: said, tool: null, model: null, session: key });
-              }
-              afterWrite();
-            }}
-            onManual={(id, fields) => {
-              prompts.setManual(id, fields);
-              afterWrite();
-            }}
-            onManualPicture={(id, file) => {
-              void prompts.setManualPicture(id, file).then(afterWrite);
-            }}
-            onInstructions={(id, text) => {
-              prompts.setInstructions(id, text);
-              afterWrite();
-            }}
-            onAgentSetup={(id, setup) => {
-              prompts.setAgent(id, setup);
-              afterWrite();
-            }}
-            onRemoveInside={(id) => {
-              prompts.removeInside(id);
-              afterWrite();
-            }}
-            onToggleSessionPrompt={(session, row, on) => {
-              if (on) {
-                const real = sessions.library.find((candidate) => candidate.id === session.key);
-                if (real) prompts.add(real.id, row.ordinal);
-              } else if (row.stepId) prompts.remove(row.stepId);
-            }}
-            onSessionTool={(sessionId, tool) => void sessions.setTool(sessionId, tool)}
-            onSessionMeta={(key, change) => void onSessionMeta(key, change)}
-            onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
-            onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
-            onExtras={(id, patch) => {
-              prompts.setExtras(id, patch);
-              afterWrite();
-            }}
-            onCheckRuns={prompts.setCheckRuns}
-            onCheckCases={prompts.setCheckCases}
-            onModelRun={prompts.setModelRun}
-            onTrainedOn={(id, file) => void onTrainedOn(id, file)}
-            onAgentNotes={prompts.setAgentNotes}
-            onSessionTogether={(key, keys) => void onSessionTogether(key, keys)}
-            onDownload={(id) => void download(id)}
-            onFields={prompts.setFields}
-            onAddPicture={(id, file) => void addPicture(id, file)}
-            onUseAsCover={(mediaId) => void setAsCover(mediaId)}
-            onAddToSetup={pickForSetup}
-            onToolConnection={prompts.setConnection}
-            onNotShared={onNotShared}
-            focusSetup={focusSetup}
-            colour={detailsColour}
-          />
+          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} {...detailsHandlers} />
         }
         list={
           <BuildList
@@ -1682,6 +1718,7 @@ export function SandboxPage() {
             selectedId={selectedId}
             onSelect={setSelectedId}
             onOpenPrompt={setOpenPromptId}
+            onEditTile={openTile}
             onRename={prompts.rename}
             onMove={prompts.move}
             onRemove={prompts.remove}
@@ -1810,12 +1847,15 @@ export function SandboxPage() {
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
       <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void onAddResultInput(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void onAddTool(input)} />
+      <TileEditDialog view={editView} handlers={detailsHandlers} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
       <FullPromptWindow
         steps={steps}
         groups={groups}
         names={listFacts.names}
         openId={openPromptId}
         mode="maker"
+        details={promptDetails}
+        handlers={detailsHandlers}
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
         onReply={prompts.setReply}

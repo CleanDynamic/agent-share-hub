@@ -163,6 +163,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     title: step.title,
     defaultTitle: step.defaultTitle,
     tool: step.tool ?? "",
+    ...(step.where ? { where: step.where } : null),
     text: step.text,
     picture: step.mediaId ? { id: step.mediaId, name: facts?.name ?? "Picture" } : null,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
@@ -446,12 +447,12 @@ function resolveBase(ctx: ViewContext): DetailsView | null {
   const step = flatten(ctx.steps).find((candidate) => candidate.id === id);
   if (step?.kind === "file") {
     const node = findNode(ctx.tree, id);
-    return node ? { ...fileView(node, ctx), ...insideOf(step) } : null;
+    return node ? { ...fileView(node, ctx), ...insideOf(step), number: step.number } : null;
   }
   if (step?.kind === "tool") {
     // CA-12 P7: a tool tile opens as the tool it is.
     const node = findNode(ctx.tree, id);
-    return node ? { ...toolView(node, ctx), ...insideOf(step) } : null;
+    return node ? { ...toolView(node, ctx), ...insideOf(step), number: step.number } : null;
   }
   if (step) {
     if (step.kind === "decision") return decisionView(step, ctx);

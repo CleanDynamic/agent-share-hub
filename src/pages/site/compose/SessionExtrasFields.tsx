@@ -223,13 +223,13 @@ export interface OtherSession {
 }
 
 /** P5: Ran at the same time as (a menu, more than one allowed), and Own copy of the code (a branch or folder name). */
-export function TogetherFields({ id, extras, others, phone, onTogether, onChange }: { id: string; extras: SessionExtras; others: readonly OtherSession[]; phone: boolean; onTogether?: (keys: string[]) => void; onChange: (change: SessionExtras) => void }) {
+export function TogetherFields({ id, extras, others, phone, onTogether, onChange, part = "both" }: { id: string; extras: SessionExtras; others: readonly OtherSession[]; phone: boolean; onTogether?: (keys: string[]) => void; onChange: (change: SessionExtras) => void; /** CA-18: the session's window draws the two apart. */ part?: "both" | "together" | "copy" }) {
   const [open, setOpen] = useState(false);
   const chosen = new Set(extras.parallelWith ?? []);
   const shown = others.filter((other) => chosen.has(other.key)).map((other) => other.label.split(" · ")[0]);
   return (
     <>
-      {others.length > 0 && onTogether ? (
+      {part !== "copy" && others.length > 0 && onTogether ? (
         <Field id={`${id}-together`} label={EXTRAS_COPY.together} hint={EXTRAS_COPY.optional} group>
           <Menu.Root open={open} onOpenChange={setOpen}>
             <Menu.Trigger asChild>
@@ -259,17 +259,19 @@ export function TogetherFields({ id, extras, others, phone, onTogether, onChange
           </Menu.Root>
         </Field>
       ) : null}
-      <Field id={`${id}-copy`} label={EXTRAS_COPY.ownCopy} hint={EXTRAS_COPY.optional}>
-        <ExtrasInput
-          key={`${id}:copy:${extras.ownCopy ?? ""}`}
-          label={EXTRAS_COPY.ownCopy}
-          value={extras.ownCopy ?? ""}
-          placeholder={EXTRAS_COPY.ownCopyHint}
-          max={OWN_COPY_MAX}
-          phone={phone}
-          onCommit={(value) => onChange({ ...extras, ownCopy: value.trim() || undefined })}
-        />
-      </Field>
+      {part === "together" ? null : (
+        <Field id={`${id}-copy`} label={EXTRAS_COPY.ownCopy} hint={EXTRAS_COPY.optional}>
+          <ExtrasInput
+            key={`${id}:copy:${extras.ownCopy ?? ""}`}
+            label={EXTRAS_COPY.ownCopy}
+            value={extras.ownCopy ?? ""}
+            placeholder={EXTRAS_COPY.ownCopyHint}
+            max={OWN_COPY_MAX}
+            phone={phone}
+            onCommit={(value) => onChange({ ...extras, ownCopy: value.trim() || undefined })}
+          />
+        </Field>
+      )}
     </>
   );
 }

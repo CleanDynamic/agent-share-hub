@@ -3,7 +3,7 @@
    PURE. A runtime tile (agent, team, code, tool, decision) can run when a decision above it went a certain way (rule 1);
    nothing else is offered "Runs when". The panel reads this; it never reads payloads. */
 
-import { decisionRefsOf, topIndexOf, type Step } from "@/lib/build/graph";
+import { decisionRefsOf, topIndexOf, type RuntimePatch, type Step } from "@/lib/build/graph";
 import type { CostFigures, RunCost } from "@/lib/build/cost";
 import type { Helper } from "@/lib/build/helpers";
 import { schemaFileNames, type OutputShape } from "@/lib/build/answerShape";
@@ -99,3 +99,26 @@ export const runtimeViewOf = (step: Step, steps: readonly Step[], names: Readonl
   if (!step.id.endsWith(":instructions") && (top || step.kind === "prompt")) out.costs = { build: step.buildCost ?? null, run: step.runCost ?? null, runtime: canRunWhen(step.kind) };
   return Object.keys(out).length ? out : undefined;
 };
+
+/**
+ * CA-18: the runtime view with a patch laid over it, as it would read once the patch was written. A window that holds its writes
+ * until Save shows this, so a second change builds on the first.
+ */
+export function withRuntimePatch(runtime: RuntimeView, patch: RuntimePatch): RuntimeView {
+  const next: RuntimeView = { ...runtime };
+  if (runtime.agent) {
+    next.agent = {
+      ...runtime.agent,
+      ...("helpers" in patch ? { helpers: [...(patch.helpers ?? [])] } : null),
+      ...("definedIn" in patch ? { definedIn: [...(patch.definedIn ?? [])] } : null),
+      ...("traceUrl" in patch ? { traceUrl: patch.traceUrl ?? null } : null),
+      ...("install" in patch ? { install: patch.install ?? null } : null),
+    };
+  }
+  if ("install" in patch && !runtime.agent && runtime.install !== undefined) next.install = patch.install ?? null;
+  if ("outputShape" in patch && runtime.shape) next.shape = { ...runtime.shape, shape: patch.outputShape ?? null };
+  if (runtime.costs && ("buildCost" in patch || "runCost" in patch)) {
+    next.costs = { ...runtime.costs, ...("buildCost" in patch ? { build: patch.buildCost ?? null } : null), ...("runCost" in patch ? { run: patch.runCost ?? null } : null) };
+  }
+  return next;
+}

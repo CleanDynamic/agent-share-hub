@@ -28,7 +28,7 @@ import { MANUAL_LINES_MAX, MANUAL_TEXT_MAX, MANUAL_TOOL_MAX, type ManualWhere, t
 import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor } from "@/lib/build/media";
 
-import { ModalForm, ModalShell, firstMissing } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
 import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, GROW, Inline, LabelText, MODAL_WIDTH, OptionGrid, PANEL_LIST, TextLink } from "./modalRecipes";
 import { ToolPicker } from "./ToolPicker";
 
@@ -62,6 +62,16 @@ export interface AddManualStepInput {
   /** 1 to 12 lines, each up to 140 characters. */
   lines: string[];
   file: File | null;
+  /** CA-18: opened on a step that is there: its picture was taken off, and no other put in its place. */
+  pictureRemoved?: boolean;
+}
+
+/** CA-18: what the form starts with on a step that is there. */
+export interface ManualSeed {
+  where: ManualWhere | null;
+  lines: string[];
+  /** Its picture, by the name it was kept under. */
+  picture: string | null;
 }
 
 export interface AddManualStepDialogProps {
@@ -71,29 +81,33 @@ export interface AddManualStepDialogProps {
   after: string | null;
   /** False while the `manual_step` node type is not live. */
   available: boolean;
-  onAdd: (input: AddManualStepInput) => void;
+  onAdd?: (input: AddManualStepInput) => void;
   /** The tools the build already uses, first in the tool picker. */
   inBuild?: readonly string[];
+  seed?: ManualSeed | null;
+  edit?: EditMode<AddManualStepInput>;
 }
 
-function Form({ available, onAdd, onCancel, phone, inBuild = [] }: Pick<AddManualStepDialogProps, "available" | "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
-  const [kind, setKind] = useState<WhereKind>("app");
-  const [picked, setPicked] = useState<string | null>(null);
-  const [site, setSite] = useState("");
-  const [lines, setLines] = useState<string[]>([""]);
+function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddManualStepDialogProps, "available" | "onAdd" | "inBuild" | "seed" | "edit"> & { onCancel: () => void; phone: boolean }) {
+  const [kind, setKind] = useState<WhereKind>(seed?.where?.kind ?? "app");
+  const [picked, setPicked] = useState<string | null>(seed?.where?.kind === "app" ? seed.where.name : null);
+  const [site, setSite] = useState(seed?.where?.kind === "site" ? (seed.where.url ?? "") : "");
+  const [lines, setLines] = useState<string[]>(seed && seed.lines.length > 0 ? seed.lines : [""]);
   const [file, setFile] = useState<File | null>(null);
+  const [kept, setKept] = useState<string | null>(seed?.picture ?? null);
   const [fileError, setFileError] = useState<string | null>(null);
   const lineRefs = useRef<(HTMLInputElement | null)[]>([]);
   const uid = useId();
 
   const appName = picked ? (toolName(picked) ?? picked.trim()) : "";
-  const kept = lines.map((line) => line.trim()).filter(Boolean);
+  const done = lines.map((line) => line.trim()).filter(Boolean);
   const placeOk = kind === "app" ? appName.length > 0 && appName.length <= MANUAL_TOOL_MAX : kind === "site" ? site.trim().length > 0 : true;
   const missing = firstMissing([
     [placeOk, kind === "site" ? "a link to the website" : "an application"],
-    [kept.length > 0, "what was done"],
+    [done.length > 0, "what was done"],
   ]);
   const where = (): ManualWhere => ({ kind, name: kind === "app" ? appName : null, url: kind === "site" ? site.trim() : null });
+  const input = (): AddManualStepInput => ({ where: where(), lines: done, file, ...(seed?.picture && kept === null && !file ? { pictureRemoved: true } : null) });
 
   const setLine = (at: number, value: string) => setLines((current) => current.map((line, i) => (i === at ? value : line)));
   const addLine = (focus = true) => {
@@ -114,7 +128,8 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [] }: Pick<AddManua
   };
 
   return (
-    <ModalForm phone={phone} missing={missing} blocked={!available || kept.length > MANUAL_LINES_MAX} alert={available ? null : MANUAL_DIALOG_COPY.missing} onCancel={onCancel} onSubmit={() => onAdd({ where: where(), lines: kept, file })}>
+    <ModalForm phone={phone} missing={missing} blocked={!available || done.length > MANUAL_LINES_MAX} alert={available ? null : MANUAL_DIALOG_COPY.missing} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined} onSubmit={() => (edit ? edit.onSave(input()) : onAdd?.(input()))}>
+      {edit?.before ? edit.before(input()) : null}
       <Block label={MANUAL_DIALOG_COPY.where} noRule>
         <BlockHead label={MANUAL_DIALOG_COPY.where} />
         <OptionGrid<WhereKind> label={MANUAL_DIALOG_COPY.where} bare phone={phone} items={WHERE_CHOICES} chosen={[kind]} onPick={setKind} />
@@ -166,22 +181,24 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [] }: Pick<AddManua
           </FileButton>
         </Inline>
         {file ? <FileLine name={file.name} removeLabel="Remove" onRemove={() => setFile(null)} phone={phone} /> : null}
+        {!file && kept ? <FileLine name={kept} removeLabel="Remove the picture" onRemove={() => setKept(null)} phone={phone} /> : null}
         {fileError ? <Alert>{fileError}</Alert> : null}
       </Block>
+      {edit?.after ? edit.after(input()) : null}
     </ModalForm>
   );
 }
 
-export function AddManualStepDialog({ open, onOpenChange, after, available, onAdd, inBuild }: AddManualStepDialogProps) {
+export function AddManualStepDialog({ open, onOpenChange, after, available, onAdd, inBuild, seed, edit }: AddManualStepDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddManualStepInput) => {
-    onAdd(input);
+    onAdd?.(input);
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={MANUAL_DIALOG_COPY.title} subtitle={after ? MANUAL_DIALOG_COPY.after(after) : MANUAL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId="add-manual-dialog">
-      <Form available={available} inBuild={inBuild} onAdd={add} onCancel={close} phone={phone} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : MANUAL_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={after && !edit ? MANUAL_DIALOG_COPY.after(after) : MANUAL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-manual-dialog" : "add-manual-dialog"}>
+      <Form available={available} inBuild={inBuild} seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );
 }
