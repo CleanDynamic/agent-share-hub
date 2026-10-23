@@ -18,6 +18,7 @@ import {
   addToGroup,
   alsoUsedBy,
   clearColour,
+  deleteGroup,
   GROUP_MIN_MEMBERS,
   groupTo,
   makeGroup,
@@ -203,6 +204,14 @@ export function useReferenceActions({ references, lookup, nameOf, dropPreview }:
     [model, linkedOf, lookup, nameOf, dropPreview, history, doc, pickerGroups, addMember, removeMember],
   );
 
+  const deleteOne = useCallback(
+    (groupId: string) => {
+      const group = model.groups.find((candidate) => candidate.id === groupId);
+      history.step(NOTICE_COPY.deleted(groupName(group)), { move: deleteGroup(model, groupId) });
+    },
+    [model, history],
+  );
+
   const openGroup = useCallback(
     (groupId: string) => {
       const group = model.groups.find((candidate) => candidate.id === groupId);
@@ -238,6 +247,7 @@ export function useReferenceActions({ references, lookup, nameOf, dropPreview }:
     addMember,
     removeMember,
     saveDraft,
+    deleteGroup: deleteOne,
     keepDialog,
     askKeep: setKeep,
     linkedOf,

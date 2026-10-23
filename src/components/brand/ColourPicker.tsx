@@ -175,6 +175,8 @@ export interface ColourPickerProps {
   /** CA-19 P4: linked text and groups. */
   references?: PickerReferences;
   history?: PickerHistory;
+  /** CA-19 P6: drawn in place, inside another window (the group window's Change…), with no portal of its own. */
+  inline?: boolean;
 }
 
 /** What the EyeDropper API returns, where the browser has it. */
@@ -806,7 +808,7 @@ export function ColourPicker(props: ColourPickerProps) {
   const key = useMemo(() => `${props.what}:${props.initial ?? "none"}:${open}:${props.references?.group?.id ?? ""}`, [props.what, props.initial, open, props.references?.group?.id]);
 
   useLayoutEffect(() => {
-    if (!open || phone || !anchor) return;
+    if (!open || phone || !anchor || props.inline) return;
     const at = anchor.getBoundingClientRect();
     const height = box.current?.offsetHeight ?? 560;
     const below = at.bottom + 4;
@@ -816,7 +818,7 @@ export function ColourPicker(props: ColourPickerProps) {
 
   // A press outside puts the colour back. Not inside a menu the picker opened, nor on the notice.
   useEffect(() => {
-    if (!open || phone) return;
+    if (!open || phone || props.inline) return;
     const away = (event: globalThis.PointerEvent) => {
       const target = event.target as Element | null;
       if (box.current?.contains(target) || target?.closest?.("[data-radix-popper-content-wrapper]") || target?.closest?.('[data-testid="reference-notice"]') || target === anchor || anchor?.contains(target)) return;
@@ -824,7 +826,7 @@ export function ColourPicker(props: ColourPickerProps) {
     };
     document.addEventListener("pointerdown", away, true);
     return () => document.removeEventListener("pointerdown", away, true);
-  }, [open, phone, anchor, onCancel]);
+  }, [open, phone, anchor, onCancel, props.inline]);
 
   // Focus goes into the picker as it opens, and back to the button as it closes.
   useEffect(() => {
@@ -834,6 +836,13 @@ export function ColourPicker(props: ColourPickerProps) {
   }, [open, phone, anchor]);
 
   if (!open) return null;
+  if (props.inline) {
+    return (
+      <div ref={box} role="dialog" aria-label={`${COLOUR_PICKER_COPY.head}: ${props.what}`} data-testid="colour-picker-inline" style={{ ...frameStyle(PICKER_WIDTH), maxWidth: "100%", boxShadow: "none" }}>
+        <PickerBody key={key} {...props} phone={false} />
+      </div>
+    );
+  }
   if (phone) {
     return (
       <BottomSheet open onOpenChange={(next) => !next && onCancel()} title={COLOUR_PICKER_COPY.head}>

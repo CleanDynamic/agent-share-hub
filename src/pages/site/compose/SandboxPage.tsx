@@ -102,6 +102,7 @@ import { ReferenceNotice } from "./referencePieces";
 import { useReferences } from "./useReferences";
 import { GroupLabelsProvider } from "./groupLabels";
 import { useReferenceActions } from "./useReferenceActions";
+import { ReferenceWindows } from "./ReferenceWindows";
 import { useHistoryKeys } from "./useReferenceHistory";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
 import { allParts, PartWindow } from "@/components/build/PartWindow";
@@ -1985,6 +1986,7 @@ export function SandboxPage() {
       {colourPicker}
       <ReferenceNotice notice={references.history.notice} onUndo={references.history.undo} onDone={references.history.dismiss} phone={phone} />
       {referenceActions.keepDialog}
+      <ReferenceWindows references={references} actions={referenceActions} refGroups={postRefGroups} lookup={allTargets} phone={phone} />
       <PartWindow
         steps={steps}
         groups={groups}

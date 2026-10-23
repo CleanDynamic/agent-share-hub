@@ -38,6 +38,7 @@ import { useColourPicking } from "@/pages/site/compose/useColourPicking";
 import type { ComposeThread } from "@/pages/site/compose/useComposeThread";
 import { usePostLinks } from "@/pages/site/compose/usePostLinks";
 import { useReferenceActions } from "@/pages/site/compose/useReferenceActions";
+import { ReferenceWindows } from "@/pages/site/compose/ReferenceWindows";
 import { useHistoryKeys } from "@/pages/site/compose/useReferenceHistory";
 import { useReferences } from "@/pages/site/compose/useReferences";
 import { GroupLabelsProvider } from "@/pages/site/compose/groupLabels";
@@ -267,6 +268,7 @@ export default function ReferencesDemo({ fit = "board", state = "populated" }: D
       />
       <ReferenceNotice notice={references.history.notice} onUndo={references.history.undo} onDone={references.history.dismiss} phone={phone} />
       {actions.keepDialog}
+      <ReferenceWindows references={references} actions={actions} refGroups={postRefGroups} lookup={allTargets} phone={phone} />
     </GroupLabelsProvider>
       </PartRegistryProvider>
   );

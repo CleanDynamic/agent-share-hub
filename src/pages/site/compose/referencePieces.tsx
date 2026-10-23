@@ -16,6 +16,9 @@
 
    The board measures that are not on the site's spacing scale (10, 14, 18) live here, as the recipe files keep theirs. */
 
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 
@@ -305,5 +308,124 @@ function KeepRow({ choice, chosen, onChoose }: { choice: KeepChoice; chosen: boo
         <span style={{ ...data(11, t.label), flexShrink: 0 }}>{KEEP_COPY.post(choice.post)}</span>
       </span>
     </button>
+  );
+}
+
+/* ── a block's head with a line under its title ── */
+
+/** "Components" at 13.5/500 with "3 · drag to set the order" under it at 12.5 `--text2`; what goes at the right after. */
+export function BlockTitle({ title, sub, id, children }: { title: string; sub?: ReactNode; id?: string; children?: ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+        <span id={id} style={words(13.5, 500, t.text, 20)}>
+          {title}
+        </span>
+        {sub ? <span style={words(12.5, 400, t.text2, 18)}>{sub}</span> : null}
+      </span>
+      {children ? <span style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>{children}</span> : null}
+    </div>
+  );
+}
+
+/* ── rows ordered by dragging their grip ── */
+
+export interface SortableRow {
+  key: string;
+  /** The row's own name, for its grip: "Move Session 2". */
+  name: string;
+  render: (grip: ReactNode) => ReactNode;
+}
+
+function SortableItem({ row, height }: { row: SortableRow; height: number }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: row.key });
+  const grip = (
+    <button
+      type="button"
+      ref={setActivatorNodeRef}
+      aria-label={`Move ${row.name}`}
+      data-grip={row.key}
+      {...attributes}
+      {...listeners}
+      style={{ appearance: "none", background: "none", border: 0, padding: 0, width: 16, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label, cursor: "grab", flexShrink: 0, touchAction: "none" }}
+    >
+      <Glyph name="grip" size={14} />
+    </button>
+  );
+  return (
+    <li
+      ref={setNodeRef}
+      data-sortable={row.key}
+      style={{
+        listStyle: "none",
+        minHeight: height,
+        display: "flex",
+        alignItems: "center",
+        borderTop: `1px solid ${t.hairline}`,
+        // Up and down only: the x of the drag is dropped.
+        transform: transform ? CSS.Transform.toString({ ...transform, x: 0 }) : undefined,
+        transition,
+        position: "relative",
+        zIndex: isDragging ? 1 : 0,
+        background: isDragging ? t.tile : "transparent",
+      }}
+    >
+      {row.render(grip)}
+    </li>
+  );
+}
+
+/** Rows under rules, each with a grip that drags it into place (or picks it up with Space and moves it with the arrows). */
+export function SortableRows({ rows, height = 40, label, onOrder }: { rows: readonly SortableRow[]; height?: number; label: string; onOrder: (keys: string[]) => void }) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const keys = rows.map((row) => row.key);
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = keys.indexOf(String(active.id));
+    const to = keys.indexOf(String(over.id));
+    if (from >= 0 && to >= 0) onOrder(arrayMove(keys, from, to));
+  };
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <SortableContext items={keys} strategy={verticalListSortingStrategy}>
+        <ul aria-label={label} style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          {rows.map((row) => (
+            <SortableItem key={row.key} row={row} height={height} />
+          ))}
+        </ul>
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+/** A component's badge: its number in the data face 11 on the tag fill ("S2", "4"). */
+export function Badge({ children }: { children: ReactNode }) {
+  return <span style={{ ...data(11, t.text2), boxSizing: "border-box", minWidth: 28, height: 20, padding: "0 6px", borderRadius: 5, background: t.tagFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{children}</span>;
+}
+
+/** A confirmation: a title, a line, Cancel and the action in the danger colour. */
+export function ConfirmDialog({ open, width = 420, title, body, action, onConfirm, onCancel, testId }: { open: boolean; width?: number; title: string; body: string; action: string; onConfirm: () => void; onCancel: () => void; testId?: string }) {
+  return (
+    <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
+      <Dialog.Portal>
+        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
+        <Dialog.Content role="alertdialog" data-testid={testId} aria-describedby={undefined} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+          <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
+            <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
+            <p style={{ ...SUBTITLE, margin: 0 }}>{body}</p>
+          </div>
+          <div style={footerStyle(false)}>
+            <span style={{ flexGrow: 1 }} />
+            <RecipeButton small onClick={onCancel}>
+              {KEEP_COPY.cancel}
+            </RecipeButton>
+            <RecipeButton small onClick={onConfirm} data-tone="danger" style={{ color: DANGER }}>
+              {action}
+            </RecipeButton>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

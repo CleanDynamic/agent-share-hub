@@ -584,6 +584,11 @@ export const CA03_FILES: readonly string[] = [
   // CA-19 P5
   "src/pages/site/compose/groupLabels.tsx",
   "src/pages/site/compose/groupLabels.ui.test.tsx",
+  // CA-19 P6
+  "src/pages/site/compose/ReferenceGroupWindow.tsx",
+  "src/pages/site/compose/ReferenceGroupWindow.test.tsx",
+  "src/pages/site/compose/ReferenceWindows.tsx",
+  "src/pages/site/compose/referencePieces.test.tsx",
 ];
 
 /**

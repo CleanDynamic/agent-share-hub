@@ -70,8 +70,7 @@ describe("in the composer", () => {
   it("opens the group from a label", () => {
     inApp(<ReferencesDemo fit="content" viewport="desktop" />);
     fireEvent.click(within(screen.getByRole("group", { name: /^Code 4:/ })).getByTestId("group-label"));
-    // P6's window opens; until then, nothing breaks.
-    expect(screen.getByRole("group", { name: /^Code 4:/ })).toBeTruthy();
+    expect((within(screen.getByTestId("group-window")).getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Login flow");
   });
 
   it("says In Login flow under Details' header line, and nothing for a single colour", () => {
