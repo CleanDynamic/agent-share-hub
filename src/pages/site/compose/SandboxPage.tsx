@@ -1786,7 +1786,7 @@ export function SandboxPage() {
         threadNote={thread.hold}
         {...addHandlers}
         addTargets={addTargets}
-        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined }}
+        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true) }}
         sessionList={sessionList}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         map={mapColumn}

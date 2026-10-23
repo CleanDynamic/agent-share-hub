@@ -589,6 +589,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ReferenceGroupWindow.test.tsx",
   "src/pages/site/compose/ReferenceWindows.tsx",
   "src/pages/site/compose/referencePieces.test.tsx",
+  // CA-19 P7
+  "src/pages/site/compose/ColoursWindow.tsx",
+  "src/pages/site/compose/ColoursWindow.test.tsx",
 ];
 
 /**

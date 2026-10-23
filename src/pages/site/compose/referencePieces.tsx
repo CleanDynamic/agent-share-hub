@@ -140,7 +140,9 @@ export interface GhostIconProps extends Omit<ButtonHTMLAttributes<HTMLButtonElem
 
 /** 28 square (26 where a board says), radius 7, no fill until hovered, a 14 glyph in `--text2`. */
 export function GhostIcon({ glyph, label, phone = false, size = 28, pressed = false, disabled, style, ...rest }: GhostIconProps) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled });
+  // A menu's trigger (Radix, asChild) hands its own pointer and focus handlers in: they run first, then the look's.
+  const { onMouseEnter, onMouseLeave, onFocus, onBlur, onPointerDown, onPointerUp, onPointerCancel } = rest;
+  const { state, handlers } = useInteractive<HTMLButtonElement>({ onMouseEnter, onMouseLeave, onFocus, onBlur, onPointerDown, onPointerUp, onPointerCancel }, { disabled });
   const side = phone ? 44 : size;
   return (
     <button

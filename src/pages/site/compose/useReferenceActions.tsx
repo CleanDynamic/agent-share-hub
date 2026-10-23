@@ -12,13 +12,17 @@
 import { useCallback, useMemo, useState } from "react";
 
 import type { PickerGroup, PickerReferences } from "@/components/brand/ColourPicker";
-import { findWords, linkOf, linkWords, unlinkTarget } from "@/lib/build/linkRules";
+import { findWords, linkOf, linkRanges, linkWords, unlinkTarget } from "@/lib/build/linkRules";
 import type { RefEntry } from "@/lib/build/postRefs";
 import {
   addToGroup,
   alsoUsedBy,
+  clearAll,
   clearColour,
   deleteGroup,
+  mergeGroups,
+  orderGroups,
+  orderSingles,
   GROUP_MIN_MEMBERS,
   groupTo,
   makeGroup,
@@ -68,7 +72,9 @@ export function useReferenceActions({ references, lookup, nameOf, dropPreview }:
   const { model, history, editor } = references;
   const [selecting, setSelecting] = useState<Selecting | null>(null);
   const [groupWindow, setGroupWindow] = useState<GroupWindowState | null>(null);
-  const [keep, setKeep] = useState<{ title: string; choices: KeepChoice[]; run: (key: string) => void } | null>(null);
+  const [keep, setKeep] = useState<{ title: string; choices: KeepChoice[]; run: (key: string) => void; action?: string; body?: string } | null>(null);
+  /** CA-19 P7: the Colours window. */
+  const [coloursOpen, setColoursOpen] = useState(false);
 
   const doc = useCallback(() => (editor && !editor.isDestroyed ? editor.state.doc : null), [editor]);
   const linkedOf = useCallback((to: string) => {
@@ -212,6 +218,39 @@ export function useReferenceActions({ references, lookup, nameOf, dropPreview }:
     [model, history],
   );
 
+  /** Merge one group into another, one step. `keep` says whose linked text stays when both have one. */
+  const merge = useCallback(
+    (fromId: string, intoId: string, keepLinkOf: "from" | "into") => {
+      const from = model.groups.find((candidate) => candidate.id === fromId);
+      const into = model.groups.find((candidate) => candidate.id === intoId);
+      // A link only from has moves to into.
+      const keepFrom = keepLinkOf === "from" || (Boolean(linkedOf(groupTo(fromId))) && !linkedOf(groupTo(intoId)));
+      history.step(NOTICE_COPY.merged(groupName(from), groupName(into)), { move: mergeGroups(model, fromId, intoId, keepFrom ? "from" : "into") });
+    },
+    [model, history, linkedOf],
+  );
+
+  /** Clear every colour and link, one step: "Cleared 4 links and 5 colours". */
+  const clearEverything = useCallback(() => {
+    const current = doc();
+    const ranges = current ? linkRanges(current) : [];
+    const targets = [...new Set(ranges.map((range) => range.to))];
+    const colours = model.groups.filter((group) => group.members.length >= GROUP_MIN_MEMBERS).length + Object.keys(model.singles).filter((ref) => stateIn(model, ref).state === "single").length;
+    history.step(NOTICE_COPY.cleared(ranges.length, colours), { move: clearAll(model, targets) });
+  }, [doc, model, history]);
+
+  /** "Make them a group" for single colours that share a code. */
+  const groupThese = useCallback(
+    (refs: readonly string[], colour: string) => {
+      const keepLinkOf = refs.find((ref) => linkedOf(ref)) ?? null;
+      history.step(NOTICE_COPY.madeGroupOf(nameOf(refs[0]), refs.slice(1).map(nameOf).join(", ")), { move: saveGroup(model, { id: newGroupId(), colour, members: [...refs] }, keepLinkOf) });
+    },
+    [model, history, linkedOf, nameOf],
+  );
+
+  const orderTheGroups = useCallback((ids: string[]) => history.step(NOTICE_COPY.ordered, { move: orderGroups(model, ids) }), [model, history]);
+  const orderTheSingles = useCallback((refs: string[]) => history.step(NOTICE_COPY.ordered, { move: orderSingles(model, refs) }), [model, history]);
+
   const openGroup = useCallback(
     (groupId: string) => {
       const group = model.groups.find((candidate) => candidate.id === groupId);
@@ -224,8 +263,8 @@ export function useReferenceActions({ references, lookup, nameOf, dropPreview }:
     <KeepLinkDialog
       open
       title={keep.title}
-      body={ACTIONS_COPY.keepBody}
-      action={ACTIONS_COPY.keep}
+      body={keep.body ?? ACTIONS_COPY.keepBody}
+      action={keep.action ?? ACTIONS_COPY.keep}
       choices={keep.choices}
       onCancel={() => setKeep(null)}
       onPick={(key) => {
@@ -248,6 +287,13 @@ export function useReferenceActions({ references, lookup, nameOf, dropPreview }:
     removeMember,
     saveDraft,
     deleteGroup: deleteOne,
+    merge,
+    clearEverything,
+    groupThese,
+    orderGroups: orderTheGroups,
+    orderSingles: orderTheSingles,
+    coloursOpen,
+    setColoursOpen,
     keepDialog,
     askKeep: setKeep,
     linkedOf,

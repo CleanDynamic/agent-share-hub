@@ -12,6 +12,20 @@ import { configureSwatchSaving } from "./useColourSwatches";
 
 vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
 
+// jsdom has no DOMRect, which Radix's context menu asks for when it places itself at the pointer.
+if (typeof globalThis.DOMRect === "undefined") {
+  class Rect {
+    constructor(public x = 0, public y = 0, public width = 0, public height = 0) {}
+    get top() { return this.y; }
+    get left() { return this.x; }
+    get right() { return this.x + this.width; }
+    get bottom() { return this.y + this.height; }
+    toJSON() { return { x: this.x, y: this.y, width: this.width, height: this.height }; }
+    static fromRect(rect: { x?: number; y?: number; width?: number; height?: number } = {}) { return new Rect(rect.x, rect.y, rect.width, rect.height); }
+  }
+  vi.stubGlobal("DOMRect", Rect);
+}
+
 beforeEach(() => {
   HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }), putImageData: () => undefined })) as never;
   configureSwatchSaving(null);
