@@ -267,7 +267,7 @@ describe("the result tile body (CA-12 P9, CA-15 P3)", () => {
   it("shows at most 4 thumbnails and counts the rest", () => {
     render(<ResultTileBody facts={resultFactsOf({ payload: { media_ids: ["a", "b", "c", "d", "e", "f"] } })} />);
     expect(screen.getAllByTestId("manual-thumb")).toHaveLength(4);
-    expect(screen.getByText("+2 more")).toBeTruthy();
+    expect(screen.getByText("+2")).toBeTruthy();
   });
 
   it("a file shows its type, name and size; a model its base and method; an empty one says so", () => {

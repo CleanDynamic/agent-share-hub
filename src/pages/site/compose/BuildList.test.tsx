@@ -299,7 +299,7 @@ describe("code (CA-02 P7)", () => {
   };
 
   // CA-11: the well is CodeLines now: numbered lines. CA-15 P10: three lines show, "Show all N lines" is the footer's link, and the file name is a footer fact.
-  it("shows Code, its language, its line count and its first three lines in a numbered mono well, with the file name in the footer", () => {
+  it("shows Code, its language, its line count and its first three lines in a numbered mono well, with the file name as its title", () => {
     const base = sandboxListProps("bakery");
     const step = codeStep();
     list({ steps: [...base.steps, step] });
@@ -309,7 +309,8 @@ describe("code (CA-02 P7)", () => {
     const well = within(card).getByTestId("code-lines");
     expect(well.textContent).toBe("1\n2\n3");
     expect(within(card).getByTestId("code-gutter-numbers").textContent).toBe("1\n2\n3");
-    expect(within(card).getByTestId("tile-footer-facts").textContent).toBe("app.ts");
+    // CA-15b: the file path is the tile's title; the foot says who generated it, and there is no one here.
+    expect(within(card).getByTestId("tile-footer-facts").textContent).toBe("");
     fireEvent.click(within(card).getByRole("button", { name: "Show all 8 lines" }));
     expect(within(card).getByTestId("code-lines").textContent).toBe("1\n2\n3\n4\n5\n6\n7\n8");
     expect(within(card).getByRole("button", { name: "Show fewer lines" })).toBeTruthy();
@@ -624,7 +625,7 @@ describe("the refined look (UI-P93)", () => {
     expect(heads.map((head) => Boolean(head.querySelector("[data-mark]")))).toEqual([true, true, true]);
     const html = markup();
     expect(html).toMatch(/data-selected="true"[^>]*style="[^"]*background:var\(--selected-fill\);border:1px solid var\(--selected-edge\)/);
-    expect(html).toContain("padding-left:36px");
+    expect(html).toContain("padding-left:34px");
   });
 
   it("draws a suggestion as a dashed chip with Accept as a 20-high control and Dismiss as text", () => {

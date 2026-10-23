@@ -430,6 +430,18 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AgentSetupFields.tsx",
   "src/components/build/FullPromptWindow.tsx",
   "src/components/build/FullPromptWindow.refined.test.tsx",
+  // CA-15b P3
+  "src/pages/site/compose/tileRecipes.tsx",
+  "src/pages/site/compose/tileRecipes.test.tsx",
+  "src/components/build/tileBodies.tsx",
+  "src/lib/build/tileLines.ts",
+  "src/lib/build/tileLines.test.ts",
+  "src/pages/site/compose/SessionHead.tsx",
+  "src/pages/site/compose/BuildList.lighter.test.tsx",
+  "src/pages/site/compose/BuildList.sources.test.tsx",
+  "src/pages/site/compose/BuildList.nest.test.tsx",
+  "src/pages/site/compose/checkRuns.ui.test.tsx",
+  "src/lib/build/onePrompt.snapshot.test.tsx",
 ];
 
 /**
