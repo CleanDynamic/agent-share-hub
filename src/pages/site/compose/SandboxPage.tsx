@@ -102,10 +102,12 @@ import { ReferenceNotice } from "./referencePieces";
 import { useReferences } from "./useReferences";
 import { GroupLabelsProvider } from "./groupLabels";
 import { useReferenceActions } from "./useReferenceActions";
-import { ReferenceWindows } from "./ReferenceWindows";
+import { DetailsReferencesProvider, type DetailsReferencesValue } from "./DetailsReferences";
+import { ReferenceWindows, showWords } from "./ReferenceWindows";
 import { useHistoryKeys } from "./useReferenceHistory";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
 import { allParts, PartWindow } from "@/components/build/PartWindow";
+import { linkOf } from "@/lib/build/linkRules";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import { usePostLinks } from "./usePostLinks";
 import { useColourPicking } from "./useColourPicking";
@@ -927,6 +929,27 @@ export function SandboxPage() {
     const to = refTo({ kind: "node", id: step.id });
     return { what, colour: step.colour ?? null, to, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, step.colour ?? null) };
   }, [selectedId, shown, steps, onColour]);
+
+  /* CA-18b P3: colour and references at the foot of Details. Read only: a row selects, Go to it scrolls, Open group opens CA-19's window. */
+  const detailsRefs = useMemo<DetailsReferencesValue>(
+    () => ({
+      model: references.model,
+      lookup: allTargets,
+      linked: (to) => {
+        const doc = references.editor && !references.editor.isDestroyed ? references.editor.state.doc : null;
+        const range = doc ? linkOf(doc, to) : null;
+        return range ? { words: range.text, post: range.post } : null;
+      },
+      onSelect: (to) => {
+        const target = parseRefTo(to);
+        if (target?.kind === "node" || target?.kind === "session") setSelectedId(target.id);
+        else links.goTo(to, null);
+      },
+      onGoTo: showWords,
+      onOpenGroup: referenceActions.openGroup,
+    }),
+    [references.model, references.editor, allTargets, links, referenceActions.openGroup],
+  );
 
   /* ── tiles inside tiles (CA-04 P2) ── */
 
@@ -1757,6 +1780,7 @@ export function SandboxPage() {
       />
       <PartRegistryProvider registry={registry}>
       <GroupLabelsProvider making={makingDrawn} onOpen={referenceActions.openGroup}>
+      <DetailsReferencesProvider value={detailsRefs}>
       <SandboxView
         {...viewProps}
         classification={classification}
@@ -1916,6 +1940,7 @@ export function SandboxPage() {
         mapAvailable={mapAvailable}
         mapHint={mapAvailable && !switched}
       />
+      </DetailsReferencesProvider>
       </GroupLabelsProvider>
       </PartRegistryProvider>
       <AddAgentDialog

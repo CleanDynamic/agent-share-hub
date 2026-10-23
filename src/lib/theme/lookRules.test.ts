@@ -539,6 +539,10 @@ export const CA03_FILES: readonly string[] = [
   // CA-18 P4
   "src/pages/site/compose/detailsLayout.ts",
   "src/pages/site/compose/detailsLayout.test.ts",
+  // CA-18b P3
+  "src/pages/site/compose/DetailsReferences.tsx",
+  "src/pages/site/compose/DetailsReferences.test.tsx",
+  "src/pages/site/compose/detailsReferences.ts",
   "src/pages/site/compose/DetailsAside.tsx",
   "src/pages/site/compose/SandboxView.tsx",
   "src/pages/site/compose/SandboxView.test.tsx",

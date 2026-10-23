@@ -154,7 +154,7 @@ function ShapesDemo({ fit = "board", state = "populated" }: DesignPageProps) {
         map={devMap.column}
         mapPanel={devMap.panel}
         selectedKey={picked?.id ?? null}
-        selection={<DetailsPanel {...withRuns(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : asked === "pair" ? brokenPair() : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
+        selection={asked === "none" ? undefined : <DetailsPanel {...withRuns(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : asked === "pair" ? brokenPair() : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
         onAddAgent={() => setDialog("agent")}
         onAddManual={() => setDialog("manual")}
         onAddTool={() => setDialog("tool")}

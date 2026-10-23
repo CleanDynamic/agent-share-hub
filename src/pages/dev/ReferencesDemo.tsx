@@ -29,6 +29,8 @@ import { parseRefTo, type ThreadDoc } from "@/lib/build/thread";
 import { BuildList, partName } from "@/pages/site/compose/BuildList";
 import { dividers } from "@/pages/site/compose/buildListModel";
 import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
+import { DetailsReferencesProvider, type DetailsReferencesValue } from "@/pages/site/compose/DetailsReferences";
+import { linkOf } from "@/lib/build/linkRules";
 import { listPartsOf } from "@/pages/site/compose/partsModel";
 import { PostTab } from "@/pages/site/compose/PostTab";
 import { ReferenceNotice } from "@/pages/site/compose/referencePieces";
@@ -38,7 +40,7 @@ import { useColourPicking } from "@/pages/site/compose/useColourPicking";
 import type { ComposeThread } from "@/pages/site/compose/useComposeThread";
 import { usePostLinks } from "@/pages/site/compose/usePostLinks";
 import { useReferenceActions } from "@/pages/site/compose/useReferenceActions";
-import { ReferenceWindows } from "@/pages/site/compose/ReferenceWindows";
+import { ReferenceWindows, showWords } from "@/pages/site/compose/ReferenceWindows";
 import { useHistoryKeys } from "@/pages/site/compose/useReferenceHistory";
 import { useReferences } from "@/pages/site/compose/useReferences";
 import { GroupLabelsProvider } from "@/pages/site/compose/groupLabels";
@@ -170,9 +172,31 @@ export default function ReferencesDemo({ fit = "board", state = "populated" }: D
     return { what, colour: step.colour ?? null, to: `node:${step.id}`, onPick: (anchor: HTMLElement) => onColour(`node:${step.id}`, anchor, what, step.colour ?? null) };
   }, [selectedId, shown, onColour]);
 
+  /* CA-18b P3: colour and references at the foot of Details. */
+  const detailsRefs = useMemo<DetailsReferencesValue>(
+    () => ({
+      model: references.model,
+      lookup: allTargets,
+      linked: (to) => {
+        const doc = references.editor && !references.editor.isDestroyed ? references.editor.state.doc : null;
+        const range = doc ? linkOf(doc, to) : null;
+        return range ? { words: range.text, post: range.post } : null;
+      },
+      onSelect: (to) => {
+        const target = parseRefTo(to);
+        if (target?.kind === "node" || target?.kind === "session") setSelectedId(target.id);
+        else links.goTo(to, null);
+      },
+      onGoTo: showWords,
+      onOpenGroup: actions.openGroup,
+    }),
+    [references.model, references.editor, allTargets, links, actions.openGroup],
+  );
+
   return (
     <PartRegistryProvider registry={registry}>
       <GroupLabelsProvider making={makingDrawn} onOpen={actions.openGroup}>
+      <DetailsReferencesProvider value={detailsRefs}>
       <SandboxView
         fit={fit}
         {...sandboxViewProps("fox", state)}
@@ -270,6 +294,7 @@ export default function ReferencesDemo({ fit = "board", state = "populated" }: D
       <ReferenceNotice notice={references.history.notice} onUndo={references.history.undo} onDone={references.history.dismiss} phone={phone} />
       {actions.keepDialog}
       <ReferenceWindows references={references} actions={actions} refGroups={postRefGroups} lookup={allTargets} phone={phone} />
+      </DetailsReferencesProvider>
     </GroupLabelsProvider>
       </PartRegistryProvider>
   );

@@ -24,7 +24,7 @@ export interface ReferenceWindowsProps {
 }
 
 /** The words a link is made of, in the post: to the middle, focused, outlined. */
-function showWords(to: string) {
+export function showWords(to: string) {
   window.setTimeout(() => {
     const el = document.querySelector<HTMLElement>(`[data-ref="${CSS.escape(to)}"]`);
     if (!el) return;
