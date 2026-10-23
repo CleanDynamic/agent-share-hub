@@ -1,4 +1,5 @@
-// CA-06 P2 — highlight, then @: the picker's groups, search and keys, and what a choice does to the post.
+// CA-06 P2: highlight, then @. The picker's groups, search and keys, and what a choice does to the post. CA-19 P3 drew the
+// picker again as the link panel, with the same keys; these hold it to them.
 
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { Editor } from "@tiptap/react";
@@ -11,7 +12,7 @@ import { tidyThread } from "@/lib/build/threadEditor";
 import type { NodeTree } from "@/lib/build/types";
 import { doc, mountPostTab, p } from "@/pages/site/compose/postTabKit";
 
-import { REFERENCE_COPY } from "./ReferencePicker";
+import { LINK_PANEL_COPY as REFERENCE_COPY } from "./LinkPanel";
 
 vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
 
@@ -175,9 +176,8 @@ describe("what a choice does", () => {
       editor.commands.setTextSelection(10);
     });
     fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.button }));
-    const all = screen.getAllByRole("option");
-    expect(all[all.length - 1].textContent).toBe(REFERENCE_COPY.remove);
-    fireEvent.click(screen.getByText(REFERENCE_COPY.remove));
+    // CA-19 P3: Remove the link is in the panel's footer.
+    fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.remove }));
     expect(json(editor)).toEqual(doc(p("Read the brief")));
   });
 });

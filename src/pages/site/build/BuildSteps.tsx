@@ -14,6 +14,7 @@
    WHAT YOU NEED. No module: the column on the surface. Sections are an eyebrow over a hairline and rows 48 high; a
    Tools and models row leads with its mark at 28; a file has Download (secondary 26). */
 
+import { MemberLabel } from "@/pages/site/compose/groupLabels";
 import {
   Suspense,
   lazy,
@@ -52,7 +53,7 @@ import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
 import { groupKey, groupKind, groupOfStep, promptPlace, shownGroups, type SessionGroup } from "@/lib/build/graph";
-import { parseRefTo } from "@/lib/build/thread";
+import { parseRefTo, refTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
 import { shortDate } from "@/lib/build/readerSteps";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
@@ -680,6 +681,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
           {fold.tiles} {fold.tiles === 1 ? "tile" : "tiles"}
         </span>
       ) : null}
+      {chat.key ? <MemberLabel to={refTo({ kind: "session", id: chat.key })} /> : null}
       {chat.date ? <span style={{ ...text(13, 400, t.label), whiteSpace: "nowrap" }}>{chat.date}</span> : null}
     </div>
   );
@@ -799,6 +801,8 @@ function Title({ entry, right, place }: { entry: ReaderStep; right: ReactNode; /
           {entry.title}
         </h3>
       )}
+      {/* CA-19 P5: a member of a named group says so, as in the List. */}
+      <MemberLabel to={refTo({ kind: "node", id: entry.step.id })} />
       {right}
     </div>
   );

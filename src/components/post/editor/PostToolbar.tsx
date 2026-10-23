@@ -32,7 +32,7 @@ import { text, wellField } from "@/pages/site/compose/refinedStyles";
 
 import { currentStyle, LINK_SENTENCE, setTextStyle, TEXT_STYLES, type TextStyleName } from "./FormatBar";
 import { gapPos, picturesPerPost, postAtCaret } from "./pictures";
-import { REFERENCE_COPY } from "./ReferencePicker";
+import { LINK_PANEL_COPY } from "./LinkPanel";
 import type { InsertPicture } from "./SlashMenu";
 
 /** The title "Picture or video" takes while the post holds its four. */
@@ -250,6 +250,7 @@ function ToolButton({
   pressed,
   expanded,
   boxed = false,
+  open = false,
   disabled = false,
   onClick,
   children,
@@ -263,6 +264,8 @@ function ToolButton({
   expanded?: boolean;
   /** The control fill and its border, round: Add another post (CA-07). */
   boxed?: boolean;
+  /** CA-19: its panel is open: `--control-on` with a `--seg-on-border` edge. */
+  open?: boolean;
   disabled?: boolean;
   onClick: () => void;
   children: ReactNode;
@@ -299,6 +302,7 @@ function ToolButton({
         // Hover is a step in colour, never an opacity; pressed sinks to the well.
         ...(state.hovered && !disabled ? CONTROL_HOVER : null),
         ...(sunk ? { ...PRESSED, color: t.text } : null),
+        ...(open ? { background: t.controlOn, border: `1px solid ${t.segOnBorder}`, boxShadow: "none", color: t.text } : null),
         ...ring(state.focusVisible),
       }}
     >
@@ -474,7 +478,7 @@ export function PostToolbar({
   notice,
   onPreview,
   onReference,
-  referenceLabel,
+  referenceOpen = false,
 }: {
   editor: Editor | null;
   /** Below 768px: 44 square buttons, and Bold, Italic, Underline and Link in the Text size row. */
@@ -483,10 +487,10 @@ export function PostToolbar({
   notice: (sentence: string) => void;
   /** Opens the draft as the Gallery will draw it. Absent: no Preview button. */
   onPreview?: () => void;
-  /** CA-06 P2: @, the picker of the build's tiles and sessions. Absent: no @ button. */
+  /** CA-06 P2, CA-19 P3: the link panel of the build's groups, parts, sessions and tiles. Absent: no reference button. */
   onReference?: () => void;
-  /** CA-17 P5: the link button's name; "Link to a part, session or tile" once the build has two or more parts. */
-  referenceLabel?: string;
+  /** CA-19 P3: the link panel is open, and the button shows pressed. */
+  referenceOpen?: boolean;
 }) {
   const tools = useEditorState({ editor, selector: ({ editor: current }) => readTools(current) }) ?? NONE;
   const [panel, setPanel] = useState<"size" | "link" | null>(null);
@@ -546,8 +550,9 @@ export function PostToolbar({
             <span style={{ ...letter, fontWeight: 500 }}>Aa</span>
           </ToolButton>
           {onReference ? (
-            <ToolButton label={referenceLabel ?? REFERENCE_COPY.button} size={size} onClick={run(onReference)}>
-              <Tool glyph="at" />
+            <ToolButton label={LINK_PANEL_COPY.button} size={size} expanded={referenceOpen} open={referenceOpen} onClick={run(onReference)}>
+              {/* The board draws the target at 16, a size under its neighbours. */}
+              <Glyph name="reference" size={16} />
             </ToolButton>
           ) : null}
         </div>

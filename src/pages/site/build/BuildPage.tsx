@@ -102,6 +102,8 @@ import { runtimeFolder } from "@/lib/build/runtimeFolder";
 import { hasRuntimeFacts } from "@/lib/build/runSequence";
 import { shownGroups, type Step } from "@/lib/build/graph";
 import { readerSeesMap } from "@/lib/build/making";
+import { makingWithAllGroupColours, treeWithGroupColours } from "@/lib/build/referenceGroups";
+import { GroupLabelsProvider } from "@/pages/site/compose/groupLabels";
 import { toast } from "sonner";
 import { writeZip } from "@/lib/build/zip";
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
@@ -554,17 +556,20 @@ export function BuildPage() {
   const reader = useMemo(() => {
     if (!BUILD_PAGE_STEPS_ENABLED || !build) return null;
     const files = new Map<string, ReaderMedia>((media.data ?? []).map((row) => [row.id, row]));
-    const making = asMaking(build.making);
-    const steps = readerSteps(tree, making, files);
+    // CA-19 P5: members of a group are drawn in its colour, through the helpers a single colour takes.
+    const drawnMaking = makingWithAllGroupColours(build.making);
+    const drawnTree = treeWithGroupColours(tree, build.making);
+    const making = asMaking(drawnMaking);
+    const steps = readerSteps(drawnTree, making, files);
     if (steps.length === 0) return null;
-    const map = readerMap(tree, making, files);
+    const map = readerMap(drawnTree, making, files);
     return {
       steps,
       results: readerResults(tree, files),
       need: whatYouNeed(steps, tree, making, files),
       counts: buildCounts(steps),
       map,
-      making: build.making,
+      making: drawnMaking,
       // CA-17 P6: two or more sessions, and the maker has put the map on the build page (a build from before the map has it on).
       mapAvailable: shownGroups(map.groups).length >= 2 && readerSeesMap(build.making),
     };
@@ -1023,7 +1028,7 @@ export function BuildPage() {
   );
 
   return (
-    <>
+    <GroupLabelsProvider making={build.making}>
       <SeoHead
         title={shareTitle(build.title)}
         description={shareDescription({
@@ -1218,7 +1223,7 @@ export function BuildPage() {
           />
         </Suspense>
       ) : null}
-    </>
+    </GroupLabelsProvider>
   );
 }
 

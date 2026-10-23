@@ -13,10 +13,12 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { windowPrompts } from "@/components/build/FullPromptWindow";
-import { centre, focusable, partElement, type PartRegistry } from "@/components/build/partNav";
+import { centre, focusable, focusGroup, partElement, type PartRegistry } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
+import { focusRing } from "@/lib/theme/focus";
+import { t } from "@/lib/theme/tokens";
 import { type SessionGroup, type Step } from "@/lib/build/graph";
-import { refLookup, type RefGroup } from "@/lib/build/postRefs";
+import { refLookup, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 
 /** The steps that hold a part, outermost first, and the part; empty when it is not in the build. */
@@ -52,9 +54,11 @@ export interface PostLinksInput {
   setOpenPromptId: (id: string | null) => void;
   /** The agents and teams open in the Map, outermost first. Absent: nothing opens inside the Map (CA-17). */
   setTrail?: (ids: readonly string[]) => void;
+  /** CA-19 P3: the build's groups as link targets (`groupRefEntries`), for Go to the group. */
+  groupEntries?: ReadonlyMap<string, RefEntry>;
 }
 
-export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelectedId, setOpenPromptId, setTrail }: PostLinksInput) {
+export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelectedId, setOpenPromptId, setTrail, groupEntries }: PostLinksInput) {
   const lookup = useMemo(() => refLookup(refGroups), [refGroups]);
   const [openPart, setOpenPart] = useState<string | null>(null);
   /** The link the open window came from: its part and its words. */
@@ -90,8 +94,17 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
   const goTo = useCallback(
     (to: string, words: HTMLElement | null) => {
       const target = parseRefTo(to);
-      if (!target || !lookup.has(to)) return;
+      const entry = lookup.get(to) ?? groupEntries?.get(to);
+      if (!target || !entry) return;
       shownTo.current = to;
+      // CA-19 P3: a group has no window. Its members are selected (the first in Details) and outlined, the rest dimmed, until Escape.
+      if (target.kind === "group") {
+        const members = entry.group?.members.map((member) => member.to) ?? [];
+        const first = parseRefTo(members[0]);
+        if (first && first.kind !== "group") setSelectedId(first.id);
+        afterPaint(() => focusGroup(registry, members, t.dimFilter, { width: focusRing.outlineWidth, style: focusRing.outlineStyle, colour: focusRing.outlineColor, offset: focusRing.outlineOffset }));
+        return;
+      }
       // CA-17 P5: a whole part has no window: its head (the List) or its label (the Map) comes to the middle and is outlined.
       if (target.kind === "workstream") {
         afterPaint(() => {
@@ -122,7 +135,7 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
         else setOpenPart(to);
       });
     },
-    [lookup, steps, lens, phone, setTrail, setSelectedId, elementFor, setOpenPromptId],
+    [lookup, groupEntries, registry, steps, lens, phone, setTrail, setSelectedId, elementFor, setOpenPromptId],
   );
 
   /** The words a link is made of: to the middle, focused, outlined. */

@@ -17,6 +17,7 @@
    (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
    `?build=parts` is CA-17's "Two parts": Part A, Part B starting after Session 2, letters, the map and a post that links a part (LinksDemo).
    `?build=links` is CA-06's "A post with links": the post's links work, and nothing is written (LinksDemo).
+   `?build=references` is CA-19's "References": groups, single colours, linked text and the windows, kept in memory (ReferencesDemo).
    `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
    No board image is compared. */
@@ -49,6 +50,7 @@ import type { ComposeThread } from "@/pages/site/compose/useComposeThread";
 
 import type { DesignPageProps } from "./KitPages";
 import LinksDemo from "./LinksDemo";
+import ReferencesDemo from "./ReferencesDemo";
 
 const EMPTY_POST: ThreadDoc = { type: "doc", content: [{ type: "paragraph" }] };
 const THREAD_POST: ThreadDoc = {
@@ -102,6 +104,7 @@ export default function SandboxDemo(props: DesignPageProps) {
   const [params] = useSearchParams();
   // CA-06 P7: "A post with links".
   if (params.get("build") === "links" || params.get("build") === "parts") return <LinksDemo {...props} />;
+  if (params.get("build") === "references") return <ReferencesDemo {...props} />;
   return <ShapesDemo {...props} />;
 }
 

@@ -544,6 +544,57 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SandboxView.test.tsx",
   "src/pages/site/compose/ComposeRoute.tsx",
   "src/components/shell/SiteFrame.tsx",
+  // CA-19 P1
+  "src/lib/build/referenceGroups.ts",
+  "src/lib/build/referenceGroups.test.ts",
+  "src/lib/build/linkRules.ts",
+  "src/lib/build/linkRules.test.ts",
+  "src/lib/build/thread.ts",
+  "src/components/post/editor/extensions.ts",
+  // CA-19 P2
+  "src/lib/build/referenceHistory.ts",
+  "src/lib/build/referenceHistory.test.tsx",
+  "src/pages/site/compose/useReferenceHistory.ts",
+  "src/pages/site/compose/referencePieces.tsx",
+  "src/components/brand/glyphs.ts",
+  // CA-19 P3
+  "src/components/post/editor/LinkPanel.tsx",
+  "src/components/post/editor/LinkPanel.test.tsx",
+  "src/components/post/editor/PostToolbar.tsx",
+  "src/components/post/editor/references.test.tsx",
+  "src/components/post/RefLinks.tsx",
+  "src/components/build/partNav.tsx",
+  "src/components/brand/Glyph.tsx",
+  "src/components/brand/glyphs.test.tsx",
+  "src/lib/build/postRefs.ts",
+  "src/lib/build/referenceGroupsWrite.ts",
+  "src/pages/site/compose/PostTab.tsx",
+  "src/pages/site/compose/usePostLinks.ts",
+  "src/pages/site/compose/useReferences.ts",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/build/useReaderPostLinks.ts",
+  // CA-19 P4
+  "src/components/brand/ColourPicker.references.test.tsx",
+  "src/pages/site/compose/useReferenceActions.tsx",
+  "src/pages/site/compose/referenceActions.ui.test.tsx",
+  "src/pages/dev/ReferencesDemo.tsx",
+  "src/dev/fixtures/references.ts",
+  "src/pages/dev/SandboxDemo.tsx",
+  "src/components/brand/ColourPicker.part.test.tsx",
+  // CA-19 P5
+  "src/pages/site/compose/groupLabels.tsx",
+  "src/pages/site/compose/groupLabels.ui.test.tsx",
+  // CA-19 P6
+  "src/pages/site/compose/ReferenceGroupWindow.tsx",
+  "src/pages/site/compose/ReferenceGroupWindow.test.tsx",
+  "src/pages/site/compose/ReferenceWindows.tsx",
+  "src/pages/site/compose/referencePieces.test.tsx",
+  // CA-19 P7
+  "src/pages/site/compose/ColoursWindow.tsx",
+  "src/pages/site/compose/ColoursWindow.test.tsx",
+  // CA-19 P8
+  "src/lib/theme/partColour.ts",
+  "src/lib/theme/groupLabelContrast.test.ts",
 ];
 
 /**
@@ -570,7 +621,7 @@ export const MODAL_FILES: readonly string[] = [
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts", "src/pages/site/compose/referencePieces.tsx"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 
@@ -808,6 +859,16 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "upper case outside the Details eyebrow",
+    text: `export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: 11,`,
+    why: "CA-19's boards (\"References: from the post\", \"References: groups and the Colours window\") label the link panel's and the hover card's sections in the data face 11, in capitals, .04em apart. Only SECTION_LABEL spends it.",
+  },
+  {
+    rule: "the data face with upper case",
+    text: `export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: 11,`,
+    why: "CA-19's boards (\"References: from the post\", \"References: groups and the Colours window\") label the link panel's and the hover card's sections in the data face 11, in capitals, .04em apart. Only SECTION_LABEL spends it.",
+  },
   {
     rule: "spacing 9 is not in SPACE_REFINED",
     text: `padding: compact ? "0 9px" : "0 12px",`,

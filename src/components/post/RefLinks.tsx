@@ -21,6 +21,8 @@ import type { ThemeKey } from "@/lib/theme/resolve";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 import { TextButton } from "@/pages/site/compose/composeControls";
+import { RecipeButton } from "@/pages/site/compose/modalRecipes";
+import { ELLIPSIS, PAD, SECTION_LABEL, SquareSwatch, data, words } from "@/pages/site/compose/referencePieces";
 import { EYEBROW, moduleStyle, text } from "@/pages/site/compose/refinedStyles";
 
 export const REF_COPY = {
@@ -31,6 +33,10 @@ export const REF_COPY = {
   fromPost: "Opened from the post",
   backToPost: "Back to the post",
   mentioned: "Mentioned in the post",
+  /** CA-19 P3: a group's card. */
+  group: "Reference group",
+  goToGroup: "Go to the group",
+  noName: "No name",
 } as const;
 
 /** How long a pointer rests on a link before its card opens. */
@@ -187,6 +193,7 @@ export function RefCard({
   onLeave: () => void;
 }) {
   const rect = anchor.getBoundingClientRect();
+  if (entry.group) return <GroupCard entry={entry} rect={rect} onGo={onGo} onChange={onChange} onRemove={onRemove} onEnter={onEnter} onLeave={onLeave} />;
   const width = 280;
   const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
   return createPortal(
@@ -229,6 +236,82 @@ export function RefCard({
         ) : null}
         {onRemove ? (
           <TextButton style={text(12, 500, t.text2)} onClick={onRemove}>
+            {REF_COPY.remove}
+          </TextButton>
+        ) : null}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/**
+ * CA-19 P3: a group link's card, 360 wide, padding 16 18: REFERENCE GROUP; a 10 swatch and the name; the notes, three lines
+ * at most; under a rule its members (a badge, the name, the kind); then Go to the group, and for the maker Change and
+ * Remove the link.
+ */
+function GroupCard({ entry, rect, onGo, onChange, onRemove, onEnter, onLeave }: { entry: RefEntry; rect: DOMRect; onGo: () => void; onChange?: () => void; onRemove?: () => void; onEnter: () => void; onLeave: () => void }) {
+  const group = entry.group;
+  if (!group) return null;
+  const width = 360;
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+  return createPortal(
+    <div
+      role="dialog"
+      aria-label={`${REF_COPY.group}: ${group.name ?? REF_COPY.noName}`}
+      data-testid="ref-card"
+      data-ref-card="group"
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      style={{
+        position: "fixed",
+        zIndex: 55,
+        top: rect.bottom + 4,
+        left,
+        width,
+        maxWidth: "calc(100vw - 16px)",
+        boxSizing: "border-box",
+        padding: PAD.card,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        background: t.window,
+        border: `1px solid ${t.windowBorder}`,
+        borderRadius: 12,
+        boxShadow: t.windowShadow,
+      }}
+    >
+      <span style={SECTION_LABEL}>{REF_COPY.group}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <SquareSwatch colour={group.colour} size={10} />
+        <span style={{ ...words(14, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{group.name ?? REF_COPY.noName}</span>
+      </span>
+      {group.notes ? (
+        <p data-testid="group-card-notes" style={{ ...words(12.5, 400, t.text2, 18), margin: 0, whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          {group.notes}
+        </p>
+      ) : null}
+      <ul aria-label="Components" style={{ listStyle: "none", margin: 0, padding: "4px 0 0", borderTop: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
+        {group.members.map((member) => (
+          <li key={member.to} data-group-member={member.to} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
+            <span style={{ ...data(11, t.text2), boxSizing: "border-box", minWidth: 28, height: 20, padding: "0 6px", borderRadius: 5, background: t.tagFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{member.number}</span>
+            <span style={{ ...words(13, 500, t.text), ...ELLIPSIS, flexGrow: 1 }}>{member.title}</span>
+            <span style={{ ...words(12, 400, t.label), flexShrink: 0 }}>{member.kind}</span>
+          </li>
+        ))}
+      </ul>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 4 }}>
+        <RecipeButton small onClick={onGo}>
+          {REF_COPY.goToGroup}
+        </RecipeButton>
+        <span style={{ flexGrow: 1 }} />
+        {onChange ? (
+          <TextButton style={words(12.5, 500, t.text2)} onClick={onChange}>
+            {REF_COPY.change}
+          </TextButton>
+        ) : null}
+        {onRemove ? (
+          <TextButton style={words(12.5, 500, t.text2)} onClick={onRemove}>
             {REF_COPY.remove}
           </TextButton>
         ) : null}

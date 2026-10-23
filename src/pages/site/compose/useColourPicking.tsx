@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ColourPicker, recentAfterDone } from "@/components/brand/ColourPicker";
+import { ColourPicker, recentAfterDone, type PickerHistory, type PickerReferences } from "@/components/brand/ColourPicker";
 import { useColourSwatches } from "@/components/brand/useColourSwatches";
 import { previewColours, uncolouredSessions, uncolouredTiles, type ColourPreview } from "@/lib/build/colourPreview";
 import { groupKey, type SessionGroup, type Step } from "@/lib/build/graph";
@@ -27,9 +27,17 @@ export interface ColourPickingInput {
   phone: boolean;
   /** CA-17 P5: the keys of a part's sessions, for a part's "Also colour its sessions that have no colour". */
   sessionsOfPart?: (workstream: string) => readonly string[];
+  /**
+   * CA-19 P4: Done as one step of the history: the component's colour (or a group's, for `group:<id>`) and, for a session or a
+   * part with "Also colour…", the uncoloured ones it names. Absent: each colour goes to `write`.
+   */
+  commit?: (to: string, colour: string | null, also: readonly string[]) => void;
+  /** CA-19 P4: the component's linked text and groups, for the picker's third section and its group state. */
+  references?: (to: string, controls: { finish: () => void }) => PickerReferences | undefined;
+  history?: PickerHistory;
 }
 
-export function useColourPicking({ preview, setPreview, savedSteps, savedGroups, write, phone, sessionsOfPart }: ColourPickingInput) {
+export function useColourPicking({ preview, setPreview, savedSteps, savedGroups, write, phone, sessionsOfPart, commit, references, history }: ColourPickingInput) {
   const [open, setOpen] = useState<{ to: string; anchor: HTMLElement; what: string; colour: string | null } | null>(null);
   const [swatches, setSwatches] = useColourSwatches();
   const settling = useRef<number | null>(null);
@@ -63,14 +71,20 @@ export function useColourPicking({ preview, setPreview, savedSteps, savedGroups,
     (colour: string | null, alsoTiles: boolean) => {
       if (!open) return;
       const target = parseRefTo(open.to);
-      if (colour !== open.colour) write(open.to, colour);
+      const also: string[] = [];
       if (target?.kind === "session" && alsoTiles && colour) {
         const group = savedGroups.find((candidate) => groupKey(candidate) === target.id);
-        for (const id of group ? uncolouredTiles(savedSteps, group) : []) write(refTo({ kind: "node", id }), colour);
+        for (const id of group ? uncolouredTiles(savedSteps, group) : []) also.push(refTo({ kind: "node", id }));
       }
       // A part's colour with "Also colour its sessions that have no colour": those sessions only, and nothing else.
       if (target?.kind === "workstream" && alsoTiles && colour && sessionsOfPart) {
-        for (const key of uncolouredSessions(savedGroups, sessionsOfPart(target.id))) write(refTo({ kind: "session", id: key }), colour);
+        for (const key of uncolouredSessions(savedGroups, sessionsOfPart(target.id))) also.push(refTo({ kind: "session", id: key }));
+      }
+      if (commit) {
+        if (colour !== open.colour || also.length > 0) commit(open.to, colour, also);
+      } else {
+        if (colour !== open.colour) write(open.to, colour);
+        for (const to of also) write(to, colour);
       }
       setSwatches(recentAfterDone(swatches, colour));
       setOpen(null);
@@ -81,8 +95,10 @@ export function useColourPicking({ preview, setPreview, savedSteps, savedGroups,
         setPreview(null);
       }, SETTLE_MS);
     },
-    [open, write, savedGroups, savedSteps, setSwatches, swatches, setPreview, sessionsOfPart],
+    [open, write, commit, savedGroups, savedSteps, setSwatches, swatches, setPreview, sessionsOfPart],
   );
+  /** Keeps what the picker shows and closes it: a reference action (Select words, Make a group) that leaves the picker. */
+  const finish = useCallback(() => done(preview && open && preview.to === open.to ? preview.colour : (open?.colour ?? null), Boolean(preview?.alsoTiles)), [done, preview, open]);
 
   const picker = open ? (
     <ColourPicker
@@ -92,6 +108,8 @@ export function useColourPicking({ preview, setPreview, savedSteps, savedGroups,
       initial={open.colour}
       session={parseRefTo(open.to)?.kind === "session"}
       part={parseRefTo(open.to)?.kind === "workstream"}
+      references={references?.(open.to, { finish })}
+      history={history}
       swatches={swatches}
       onSwatches={setSwatches}
       onPreview={(colour, alsoTiles) => setPreview({ to: open.to, colour, alsoTiles })}
@@ -101,5 +119,5 @@ export function useColourPicking({ preview, setPreview, savedSteps, savedGroups,
     />
   ) : null;
 
-  return { onColour, picker };
+  return { onColour, picker, open: Boolean(open), finish, close: cancel };
 }

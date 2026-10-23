@@ -7,12 +7,15 @@
 
 import { useCallback, useMemo, useRef } from "react";
 
-import { centre } from "@/components/build/partNav";
+import { centre, focusGroup } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
-import { refGroups, refLookup } from "@/lib/build/postRefs";
-import { parseRefTo } from "@/lib/build/thread";
+import { sessionOrderOf, sessionsMetaOf, WORKSTREAM_PREFIX, type Making } from "@/lib/build/making";
+import { refGroups, refLookup, withGroupEntries } from "@/lib/build/postRefs";
+import { makingWithGroupColours, referenceGroupsOf, withGroupColours } from "@/lib/build/referenceGroups";
+import { parseRefTo, refTo } from "@/lib/build/thread";
+import { focusRing } from "@/lib/theme/focus";
+import { t } from "@/lib/theme/tokens";
 import type { NodeTree } from "@/lib/build/types";
 
 export type ReaderFocus = { id: string; n: number; open?: string; fromPost?: boolean };
@@ -38,7 +41,10 @@ export function useReaderPostLinks({
       const group = groups.find((candidate) => groupKey(candidate) === key);
       return group ? (steps.find((step) => group.stepNumbers.includes(step.number))?.id ?? null) : null;
     };
-    return { groups, firstStep, lookup: refLookup(refGroups({ steps, groups, making })) };
+    // CA-19: members are drawn in their group's colour, and a link can point at a whole group.
+    const drawn = withGroupColours(steps, groups, making);
+    const lookup = withGroupEntries(refLookup(refGroups({ steps: drawn.steps, groups: drawn.groups, making: makingWithGroupColours(making) })), referenceGroupsOf(making));
+    return { groups, firstStep, lookup };
   }, [enabled, making, tree]);
 
   const words = useRef<{ to: string; words: HTMLElement } | null>(null);
@@ -47,6 +53,23 @@ export function useReaderPostLinks({
     (to: string, el: HTMLElement) => {
       const target = parseRefTo(to);
       if (!target || !links) return;
+      // CA-19 P3, Go to the group: its members are outlined and the rest of the steps dimmed, until Escape.
+      if (target.kind === "group") {
+        const members = links.lookup.get(to)?.group?.members.map((member) => member.to) ?? [];
+        const registry = new Map<string, HTMLElement>();
+        document.querySelectorAll<HTMLElement>('[id^="step-"]').forEach((node) => {
+          const key = node.id.slice("step-".length);
+          registry.set(refTo({ kind: key.startsWith(WORKSTREAM_PREFIX) ? "workstream" : "node", id: key }), node);
+        });
+        for (const member of members) {
+          const at = parseRefTo(member);
+          const first = at?.kind === "session" ? links.firstStep(at.id) : null;
+          const node = first ? document.getElementById(`step-${first}`) : null;
+          if (node) registry.set(member, node);
+        }
+        focusGroup(registry, members, t.dimFilter, { width: focusRing.outlineWidth, style: focusRing.outlineStyle, colour: focusRing.outlineColor, offset: focusRing.outlineOffset });
+        return;
+      }
       const id = target.kind === "session" ? links.firstStep(target.id) : target.id;
       if (!id) return;
       words.current = { to, words: el };

@@ -529,9 +529,11 @@ export interface ViewMenuProps {
   onChange: (patch: { sessionList?: boolean; splitMerge?: boolean }) => void;
   /** CA-17 P2: "Label parts", 1, 2, 3 or A, B, C for the whole build. Present only when the build has two or more parts. */
   labels?: { value: PartLabels; onChange: (value: PartLabels) => void };
+  /** CA-19 P7: "Colours…", the window of every reference group and single colour in the build. The maker's only. */
+  onColours?: () => void;
 }
 
-export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C" } as const;
+export const VIEW_COPY = { button: "View", sessionList: "Session list", splitMerge: "Split and merge", labelParts: "Label parts", numbers: "1, 2, 3", letters: "A, B, C", colours: "Colours…" } as const;
 
 /** CA-17 P2: the "Label parts" row of the View menu. */
 function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["labels"]>; phone: boolean }) {
@@ -575,6 +577,21 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
             </button>
           ))}
           {view.labels ? <LabelPartsRow labels={view.labels} phone /> : null}
+          {view.onColours ? (
+            <button
+              type="button"
+              role="menuitem"
+              data-testid="view-colours"
+              onClick={() => {
+                setOpen(false);
+                view.onColours?.();
+              }}
+              style={{ ...bareButton, ...menuItem(true, true), width: "100%", gap: 8, textAlign: "left", borderTop: `1px solid ${t.hairline}` }}
+            >
+              <span style={{ width: 16, display: "inline-flex" }} />
+              {VIEW_COPY.colours}
+            </button>
+          ) : null}
         </BrandBottomSheet>
       </>
     );
@@ -597,6 +614,15 @@ function ViewMenu({ phone, view }: { phone: boolean; view: ViewMenuProps }) {
             </Menu.CheckboxItem>
           ))}
           {view.labels ? <LabelPartsRow labels={view.labels} phone={false} /> : null}
+          {view.onColours ? (
+            <>
+              <Menu.Separator style={{ height: 1, margin: "4px 0", background: t.hairline }} />
+              <Menu.Item data-testid="view-colours" onSelect={() => view.onColours?.()} style={{ ...menuItem(true, false), gap: 8 }}>
+                <span style={{ width: 16, display: "inline-flex" }} />
+                {VIEW_COPY.colours}
+              </Menu.Item>
+            </>
+          ) : null}
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>

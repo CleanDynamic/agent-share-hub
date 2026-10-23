@@ -4,6 +4,8 @@
    them (a timeline of the tile-level sentences), and the tiles it holds. With nothing selected: the parts, then the
    stages. Nothing here writes. The maker's panel has "Open in the build"; a reader's does not. */
 
+import { refTo } from "@/lib/build/thread";
+import { MemberLabel } from "./groupLabels";
 import { ChevronRight } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 
@@ -140,6 +142,8 @@ function SelectedPanel({ model, session, onOpenInBuild, onOpenTile, theme }: { m
             {sessionTitle(session)}
           </h2>
           <Where model={model} session={session} theme={theme} />
+          {/* CA-19 P5: a session in a named group says so under its head line. */}
+          <MemberLabel to={refTo({ kind: "session", id: session.key })} testId="panel-group-label" />
         </div>
         {onOpenInBuild ? <IconButton icon={ChevronRight} glyph="chev" label={PANEL_COPY.openInBuild} size={26} onClick={() => onOpenInBuild(session.key)} /> : null}
       </div>

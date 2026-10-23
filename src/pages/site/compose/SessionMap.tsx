@@ -9,6 +9,7 @@
    The head's controls (direction, Fit to screen, Map options) are the maker's; a reader's head has Fit to screen only.
    Below 768 wide the map is always vertical. */
 
+import { GROUP_LABEL_COPY, useGroupLookup } from "./groupLabels";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Maximize2, MoreHorizontal } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
@@ -154,6 +155,12 @@ function MapOptionsMenu({ controls }: { controls: MapControls }) {
 
 /** The map's drawing: dividers and lines under the boxes. `scale` fits it to its column. */
 function Drawing({ model, direction, selected, onSelect, scale }: { model: SessionMapModel; direction: MapDirection; selected: string | null; onSelect: (key: string | null) => void; scale: number }) {
+  /* CA-19 P5: no label on a box, which keeps its outline; its tooltip says "Session 2 · in Login flow". */
+  const groupOf = useGroupLookup();
+  const tooltipFor = (session: { key: string; number: number }) => {
+    const group = groupOf(refTo({ kind: "session", id: session.key }));
+    return group?.name ? GROUP_LABEL_COPY.tooltip(`Session ${session.number}`, group.name) : `Session ${session.number}`;
+  };
   const theme = useResolvedTheme();
   const register = usePartRegister();
   const layout = useMemo(() => layoutSessionMap(model, direction), [model, direction]);
@@ -242,6 +249,7 @@ function Drawing({ model, direction, selected, onSelect, scale }: { model: Sessi
               data-session-colour={session.colour}
               data-dimmed={dim || undefined}
               aria-label={boxName(session)}
+              title={tooltipFor(session)}
               aria-pressed={isSelected}
               onClick={() => onSelect(box.key)}
               style={{ ...MAP_BOX, left: box.x, top: box.y + top, width: box.w, height: box.h, ...coloured, ...(shadow ? { boxShadow: shadow } : null), ...(dim ? { filter: t.dimFilter } : null) }}
