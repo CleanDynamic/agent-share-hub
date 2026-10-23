@@ -157,7 +157,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** A session's title: trimmed, 1 to 80 characters, or none. */
   const onTitle = useCallback(
     (key: string, title: string) =>
-      void guard("Couldn't save that title. Try again.", async () => {
+      void guard("Couldn't save that title. Try again.", () => track(`Changed the title of Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(), async () => {
         const real = await stable(key);
         const { buildId, made, groups } = latest.current;
         if (!real || !buildId) return;
@@ -167,8 +167,8 @@ export function useSessionEdits(input: SessionEditsInput) {
         // In the node queue, behind any write already going: two saves in a row each read `making` as the one before left it.
         await latest.current.nodes.run(() => setSessionMeta(buildId, real, title.trim() ? { ...rest, title: title.trim() } : rest));
         await refresh(buildId);
-      }),
-    [guard, refresh, stable],
+      })),
+    [guard, refresh, stable, track],
   );
 
   /** CA-17 P2: set once `moveToPart` is made, further down; a drop between another part's sessions calls it. */
@@ -178,11 +178,13 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   const move = useCallback(
     (key: string, next: string[], from: number, to: number) =>
-      guard("Couldn't move that session. Try again.", async () => {
-        await applyLayout({ order: next });
-        sayMoved(from, to);
-      }),
-    [applyLayout, guard, sayMoved],
+      guard("Couldn't move that session. Try again.", () =>
+        track(`Moved Session ${from}${to < from ? " up" : " down"}`, async () => {
+          await applyLayout({ order: next });
+          sayMoved(from, to);
+        }),
+      ),
+    [applyLayout, guard, sayMoved, track],
   );
 
   /** Move Up and Move Down, Alt with Up or Down on the head. */
@@ -271,27 +273,29 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Add a part". Resolves the new part's key. */
   const onAddPart = useCallback(async (): Promise<string | null> => {
     let key: string | null = null;
-    await guard("Couldn't add a part. Try again.", async () => {
-      const change = await applyParts((making) => addWorkstream(making, editableKeys()));
-      key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
-      if (key) latest.current.say("Added a part.");
-    });
+    await guard("Couldn't add a part. Try again.", () =>
+      track("Added a part", async () => {
+        const change = await applyParts((making) => addWorkstream(making, editableKeys()));
+        key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
+        if (key) latest.current.say("Added a part.");
+      }),
+    );
     return key;
-  }, [applyParts, editableKeys, guard]);
+  }, [applyParts, editableKeys, guard, track]);
 
-  const onPartName = useCallback((key: string, name: string) => void editPart("Couldn't save that name. Try again.", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined })), [editPart]);
+  const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Couldn't save that name. Try again.", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
   const onPartFold = useCallback((key: string, collapsed: boolean) => void editPart("Couldn't save that. Try again.", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
   const onPartColour = useCallback((key: string, colour: string | null) => editPart("Couldn't save that colour. Try again.", (stored) => withWorkstream(stored, key, { colour: colour ?? undefined })), [editPart]);
   const onPartStartsAfter = useCallback(
     (key: string, session: string | null) =>
-      void editPart("Couldn't save that. Try again.", (stored) => {
+      void track(`Changed when ${titleOf(key)} starts`, () => editPart("Couldn't save that. Try again.", (stored) => {
         const { made, groups } = latest.current;
         const parts = workstreamsOf(made, orderKeys(groups));
         if (session && !startsAfterChoices(key, parts).includes(session)) return stored;
         const partOf = new Map(parts.flatMap((part) => part.sessions.map((entry) => [entry, part.key] as const)));
         return sanitisedStarts(withWorkstream(stored, key, { startsAfter: session ?? undefined }), (entry) => partOf.get(entry));
-      }),
-    [editPart],
+      })),
+    [editPart, track],
   );
 
   /** Move up and Move down on a part's head. */
@@ -372,41 +376,47 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Same stage as the session above" in a session's menu. */
   const onWithAbove = useCallback(
     (key: string, on: boolean) =>
-      void guard("Couldn't save that. Try again.", async () => {
-        const { buildId, nodes } = latest.current;
-        if (!buildId || isLegacySession(key)) return;
-        await nodes.run(async () => {
-          const fresh = await readMaking(buildId);
-          const { sessions_meta } = workstreamPatch(fresh, { workstreams: storedWorkstreamsOf(fresh), sessions: { [key]: { withAbove: on ? true : undefined } }, order: [] });
-          await patchMaking(buildId, { sessions_meta });
-        });
-        await refresh(buildId);
-      }),
-    [guard, refresh],
+      void guard("Couldn't save that. Try again.", () =>
+        track(`${on ? "Put" : "Took"} Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""} ${on ? "at the same stage as" : "off the stage of"} the session above`, async () => {
+          const { buildId, nodes } = latest.current;
+          if (!buildId || isLegacySession(key)) return;
+          await nodes.run(async () => {
+            const fresh = await readMaking(buildId);
+            const { sessions_meta } = workstreamPatch(fresh, { workstreams: storedWorkstreamsOf(fresh), sessions: { [key]: { withAbove: on ? true : undefined } }, order: [] });
+            await patchMaking(buildId, { sessions_meta });
+          });
+          await refresh(buildId);
+        }),
+      ),
+    [guard, refresh, track],
   );
 
   /** CA-17 P4, P6: Create a map, Remove map, the direction and Show on build page. */
   const onMapSettings = useCallback(
     (next: MapSettings) =>
-      void guard("Couldn't save that. Try again.", async () => {
-        const { buildId, nodes } = latest.current;
-        if (!buildId) return;
-        await nodes.run(() => setMapSettings(buildId, next).then(() => undefined));
-        await refresh(buildId);
-      }),
-    [guard, refresh],
+      void guard("Couldn't save that. Try again.", () =>
+        track(next.on ? "Changed the map" : "Removed the map", async () => {
+          const { buildId, nodes } = latest.current;
+          if (!buildId) return;
+          await nodes.run(() => setMapSettings(buildId, next).then(() => undefined));
+          await refresh(buildId);
+        }),
+      ),
+    [guard, refresh, track],
   );
 
   /** "Label parts": 1, 2, 3 or A, B, C for the whole build. */
   const onLabels = useCallback(
     (labels: PartLabels) =>
-      void guard("Couldn't save that. Try again.", async () => {
-        const { buildId, nodes } = latest.current;
-        if (!buildId) return;
-        await nodes.run(() => setPartLabels(buildId, labels).then(() => undefined));
-        await refresh(buildId);
-      }),
-    [guard, refresh],
+      void guard("Couldn't save that. Try again.", () =>
+        track(`Labelled the parts ${labels === "letters" ? "A, B, C" : "1, 2, 3"}`, async () => {
+          const { buildId, nodes } = latest.current;
+          if (!buildId) return;
+          await nodes.run(() => setPartLabels(buildId, labels).then(() => undefined));
+          await refresh(buildId);
+        }),
+      ),
+    [guard, refresh, track],
   );
 
   /**

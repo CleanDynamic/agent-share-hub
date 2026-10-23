@@ -1,7 +1,8 @@
 /* CA-20 P2, P5: the build's one history, on the composer.
 
    `lib/build/buildHistory.ts` keeps the steps; this hook takes them. A step is made by `track(sentence, task)`: the build is
-   snapshotted, the task runs, the build is snapshotted again, and the difference is the step. Undo puts back only what the
+   snapshotted from what the page holds, the task runs at once, the build is read from the database when it is done, and the
+   difference is the step. Undo puts back only what the
    step changed (`deltaTarget`), with the same ids, so anything written since that the step did not touch stays; redo writes it
    again. Everything CA-19 does to colours, groups and the post's links joins the same history through `join` (the history
    keeps its own steps and API; each of its steps is handed over with its own undo and redo), and a step that changes both is
@@ -18,7 +19,8 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { EMPTY_BUILD_HISTORY, HISTORY_COPY, afterRedone, afterUndone, canRedoStep, canUndoStep, groupSteps, nextRedo, nextUndo, recordStep, type BuildHistory, type BuildStep } from "@/lib/build/buildHistory";
-import { currentSnapshot, deltaTarget, restoreSnapshot, type BuildSnapshot } from "@/lib/build/buildSnapshot";
+import type { BuildSessionRow } from "@/lib/build/buildSessions";
+import { currentSnapshot, deltaTarget, restoreSnapshot, snapshotOf, type BuildSnapshot } from "@/lib/build/buildSnapshot";
 
 import { sayFailed } from "./draftStart";
 import type { ComposeNodes } from "./useComposeNodes";
@@ -83,7 +85,15 @@ export const useBuildHistoryContext = (): BuildHistoryApi | null => useContext(B
 const EMPTY: BuildSnapshot = { nodes: [], sessions: [], making: {} };
 const same = (a: BuildSnapshot, b: BuildSnapshot) => JSON.stringify([a.nodes, a.sessions, a.making]) === JSON.stringify([b.nodes, b.sessions, b.making]);
 
-export function useBuildHistory({ buildId, nodes }: { buildId: string | undefined; nodes: ComposeNodes }): BuildHistoryApi {
+/** What the page holds of the build besides its tiles: `making` and the session rows, as last read. */
+export interface HeldParts {
+  making: unknown;
+  sessions: readonly BuildSessionRow[];
+}
+
+export function useBuildHistory({ buildId, nodes, peek }: { buildId: string | undefined; nodes: ComposeNodes; peek?: () => HeldParts }): BuildHistoryApi {
+  const peekRef = useRef<() => HeldParts>(() => ({ making: null, sessions: [] }));
+  peekRef.current = peek ?? peekRef.current;
   const queryClient = useQueryClient();
   const history = useRef<BuildHistory>(EMPTY_BUILD_HISTORY);
   const [, redraw] = useState(0);
@@ -92,7 +102,7 @@ export function useBuildHistory({ buildId, nodes }: { buildId: string | undefine
   live.current = { buildId, nodes };
   /** While a `track` runs, the steps taken in it are collected here instead of recorded. */
   const collector = useRef<BuildStep[] | null>(null);
-  /** One undo, redo or tracked change at a time, in the order asked. */
+  /** One undo, redo or `commit` at a time, in the order asked. */
   const chain = useRef<Promise<unknown>>(Promise.resolve());
   const serial = useCallback(<T,>(task: () => Promise<T>): Promise<T> => {
     const next = chain.current.then(task, task);
@@ -157,29 +167,51 @@ export function useBuildHistory({ buildId, nodes }: { buildId: string | undefine
     [notify],
   );
 
+  /* A step starts at once, inside the tap or the key press that made it: some of what follows needs that (a stand-in tile drawn
+     and scrolled to, a keyboard raised on a phone). So the "before" is taken from what the page holds (the tiles as the node
+     queue has them, `making` and the session rows as last read), not from the database; the "after" is read from the database
+     once every queued write has landed. The step is the difference. Another change made while one is being made is part of it. */
+  const running = useRef<Promise<unknown> | null>(null);
   const track = useCallback(
-    <T,>(sentence: string | ((result: T) => string), task: () => Promise<T>, options?: TrackOptions): Promise<T> =>
-      serial(async () => {
-        const before = await capture();
-        const children: BuildStep[] = [];
-        const outer = collector.current;
-        collector.current = children;
-        let result: T;
-        try {
-          result = await task();
-        } catch (cause) {
-          collector.current = outer;
+    <T,>(sentence: string | ((result: T) => string), task: () => Promise<T>, options?: TrackOptions): Promise<T> => {
+      if (collector.current) {
+        // Inside a step that is already being made (a window's Save runs many writes), this change is part of that step.
+        return (async () => {
+          const result = await task();
+          if (options?.notice) notify(typeof sentence === "string" ? sentence : sentence(result));
+          return result;
+        })();
+      }
+      const { buildId: id, nodes: queue } = live.current;
+      const held = peekRef.current();
+      const before: BuildSnapshot = id ? snapshotOf(queue.current(), held.making, held.sessions) : EMPTY;
+      const children: BuildStep[] = [];
+      collector.current = children;
+      let started: Promise<T>;
+      try {
+        started = Promise.resolve(task());
+      } catch (cause) {
+        started = Promise.reject(cause);
+      }
+      const done = started.then(
+        async (result) => {
+          collector.current = null;
+          const own = buildStep(before, await capture());
+          if (own) children.push(own);
+          finish(typeof sentence === "string" ? sentence : sentence(result), children, options);
+          return result;
+        },
+        (cause) => {
+          collector.current = null;
           // What was taken before it failed (CA-19's steps) is still on their history: keep them undoable.
           finish(typeof sentence === "string" ? sentence : "", children);
           throw cause;
-        }
-        collector.current = outer;
-        const own = buildStep(before, await capture());
-        if (own) children.push(own);
-        finish(typeof sentence === "string" ? sentence : sentence(result), children, options);
-        return result;
-      }),
-    [serial, capture, buildStep, finish],
+        },
+      );
+      running.current = done.catch(() => undefined);
+      return done;
+    },
+    [capture, buildStep, finish, notify],
   );
 
   const commit = useCallback(
@@ -194,6 +226,7 @@ export function useBuildHistory({ buildId, nodes }: { buildId: string | undefine
   const undo = useCallback(
     (): Promise<void> =>
       serial(async () => {
+        await running.current;
         if (!canUndoStep(history.current)) return;
         const step = history.current.done.at(-1) as BuildStep;
         try {
@@ -212,6 +245,7 @@ export function useBuildHistory({ buildId, nodes }: { buildId: string | undefine
   const redo = useCallback(
     (): Promise<void> =>
       serial(async () => {
+        await running.current;
         if (!canRedoStep(history.current)) return;
         const step = history.current.undone.at(-1) as BuildStep;
         try {

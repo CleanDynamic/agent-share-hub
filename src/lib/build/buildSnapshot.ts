@@ -2,7 +2,7 @@
 //
 // WHAT A SNAPSHOT HOLDS. Every placed node row of the build, parents first (so a team comes back with its agents), the
 // `build_sessions` rows, and the slices of `builds.making` that removing, moving and merging change: the sessions' entries,
-// their order, the parts and which sessions are folded. Colours, groups and the post's links are the reference bridge's.
+// their order, the parts, their labels, the map's settings and which sessions are folded. Colours, groups and the post's links are the reference bridge's.
 //
 // PUTTING IT BACK WRITES THE SAME IDS. A snapshot is restored by planning the difference between the build as it is and the
 // snapshot (`planRestore`, pure), then writing it: what is not in the snapshot goes, what is missing comes back with its
@@ -19,7 +19,7 @@ import { flatRows, writeNodeRows } from "./sessionEdit";
 import type { BuildNode, NodeTree } from "./types";
 
 /** The slices of `making` a snapshot keeps. A key the build did not have is put back as absent. */
-export const MAKING_KEYS = ["sessions_meta", "session_order", "workstreams", "sessions_collapsed"] as const;
+export const MAKING_KEYS = ["sessions_meta", "session_order", "workstreams", "sessions_collapsed", "part_labels", "map"] as const;
 
 export interface BuildSnapshot {
   /** Every placed node row, parents first, in position order. */
