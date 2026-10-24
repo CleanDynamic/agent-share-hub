@@ -18,6 +18,9 @@ export interface Box extends Spot {
 
 export const SLIDE_ATTR = "data-slide-id";
 
+/** Whether any of a box is in the window. Nothing is slid that is not in it, before or after: it cannot be seen to move. */
+const seen = (box: Box): boolean => box.y + box.h > 0 && box.y < (typeof window === "undefined" ? 0 : window.innerHeight || Number.POSITIVE_INFINITY);
+
 const boxOf = (element: Element): Box => {
   const r = element.getBoundingClientRect();
   return { x: r.left, y: r.top, w: r.width, h: r.height };
@@ -73,6 +76,7 @@ export function play(root: ParentNode, before: ReadonlyMap<string, Box>, ms: num
     const was = before.get(element.getAttribute(SLIDE_ATTR) as string);
     if (!was) continue;
     const now = boxOf(element);
+    if (!seen(was) && !seen(now)) continue;
     // Components keep their size; only a lane (which the layer draws) changes it.
     if (animateFrom(element, { ...was, w: now.w, h: now.h }, now, ms, delay)) slid += 1;
     // CA-22: a thing that grew (a tile that took a nested row, a tile converted to a taller kind) opens down over `BASE`: its new part is revealed by `clip-path`, nothing is stretched.

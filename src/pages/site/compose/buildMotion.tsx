@@ -556,6 +556,13 @@ export function goToIt(element: HTMLElement, colour?: string | null): MotionRun 
 
 /* ── crossfade ── */
 
+const inWindow = (element: HTMLElement): boolean => {
+  const box = element.getBoundingClientRect();
+  // No layout to read (a test's jsdom): it is taken to be there.
+  if (box.width === 0 && box.height === 0) return true;
+  return box.bottom > 0 && box.top < (window.innerHeight || Number.POSITIVE_INFINITY);
+};
+
 /** Words as they stood: a copy of the element, and where it was, kept for a crossfade. */
 export interface Words {
   clone: HTMLElement;
@@ -606,7 +613,8 @@ export function useCrossfade<E extends HTMLElement = HTMLElement>(value: string 
   const old = useRef<Words | null>(null);
   // While rendering, the page still shows the old words: take them now.
   if (was.current !== value) {
-    old.current = ref.current && canAnimate(ref.current) ? captureWords(ref.current) : null;
+    // Only words that can be seen change before the eye: 300 numbers below the fold are simply the new ones.
+    old.current = ref.current && canAnimate(ref.current) && inWindow(ref.current) ? captureWords(ref.current) : null;
     was.current = value;
   }
   useLayoutEffect(() => {

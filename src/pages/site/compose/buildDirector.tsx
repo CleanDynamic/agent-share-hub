@@ -194,8 +194,11 @@ export function planLift(root: HTMLElement, change: Change, before: Layout, kind
     const staggered = seen.slice(0, STAGGER_CAP);
     const together = [...seen.slice(STAGGER_CAP), ...rest];
     const last = staggerDelay(Math.max(staggered.length - 1, 0), stagger);
-    const elements = [...staggered, ...together];
-    const delays = [...staggered.map((_, at) => staggerDelay(at, stagger)), ...together.map(() => last)];
+    // What is not in the window is not lifted by the eye: it simply goes with the rest.
+    const elements = [...staggered, ...seen.slice(STAGGER_CAP)];
+    void rest;
+    const delays = [...staggered.map((_, at) => staggerDelay(at, stagger)), ...seen.slice(STAGGER_CAP).map(() => last)];
+    void together;
     return { elements, delays, span: (elements.length > 0 ? Math.max(...delays) : 0) + LIFT, scope: null };
   }
   const elements: HTMLElement[] = [];
