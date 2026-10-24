@@ -151,8 +151,11 @@ describe("the ⋯ menu and keys", () => {
     const arrow = within(head(2)).getByRole("button", { name: "Collapse Session 2" });
     fireEvent.keyDown(arrow, { key: "ArrowUp", altKey: true });
     expect(props.sessionOps?.onMove).toHaveBeenCalledWith(expect.any(String), -1);
+    // CA-21: the move shows at once, so the first session is looked for in a page of its own.
+    cleanup();
+    const again = list();
     fireEvent.keyDown(within(head(1)).getByRole("button", { name: "Collapse Session 1" }), { key: "ArrowUp", altKey: true });
-    expect(props.sessionOps?.onMove).toHaveBeenCalledTimes(1);
+    expect(again.sessionOps?.onMove).not.toHaveBeenCalled();
   });
 });
 
