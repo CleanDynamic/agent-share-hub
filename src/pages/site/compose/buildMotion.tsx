@@ -112,6 +112,11 @@ export function dropIn(elements: readonly Element[], { stagger = 0, cap = STAGGE
   return runOf(animations);
 }
 
+/** Something that was not there fades in where it stands: opacity alone. */
+export function fadeIn(elements: readonly Element[], { ms = CROSSFADE, delay = 0 }: { ms?: number; delay?: number } = {}): MotionRun {
+  return runOf(elements.map((element) => (canAnimate(element) ? start(element, "fade", [{ opacity: 0 }, { opacity: 1 }], { duration: ms, delay, fill: "backwards" }) : null)));
+}
+
 /* ── liftOut: the other half of a drop ── */
 
 export interface LiftOptions {
@@ -384,75 +389,63 @@ export function outlineOnce(element: HTMLElement, colour: string = t.selectedEdg
 
 /* ── crossfade ── */
 
-/**
- * Words that change: the old words (a copy of the element as it was) fade out above the new, which fade in, over `CROSSFADE`. The
- * copy is a separate, fixed layer, so nothing in the page moves. Call it just before `change` writes the new words.
- */
-export function crossfade(element: HTMLElement, change: () => void, ms: number = CROSSFADE): MotionRun {
-  if (!canAnimate(element) || typeof getComputedStyle !== "function") {
-    change();
-    return DONE;
-  }
-  finishRunning(element);
-  const box = element.getBoundingClientRect();
-  const style = getComputedStyle(element);
-  const ghost = element.cloneNode(true) as HTMLElement;
-  ghost.setAttribute("aria-hidden", "true");
-  ghost.setAttribute("data-testid", "crossfade-old");
-  Object.assign(ghost.style, {
-    position: "fixed",
-    left: `${box.left}px`,
-    top: `${box.top}px`,
-    width: `${box.width}px`,
-    height: `${box.height}px`,
-    margin: "0",
-    pointerEvents: "none",
-    font: style.font,
-    color: style.color,
-    letterSpacing: style.letterSpacing,
-    textAlign: style.textAlign,
-    whiteSpace: style.whiteSpace,
-    lineHeight: style.lineHeight,
-    zIndex: "100",
-  });
-  element.ownerDocument.body.appendChild(ghost);
-  change();
-  const gone = ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: STANDARD, fill: "forwards", id: `${OURS}crossfade-old` });
-  const arriving = start(element, "crossfade", [{ opacity: 0 }, { opacity: 1 }], { duration: ms, fill: "backwards" });
-  return runOf([gone, arriving], () => ghost.remove());
+/** Words as they stood: a copy of the element, and where it was, kept for a crossfade. */
+export interface Words {
+  clone: HTMLElement;
+  box: { left: number; top: number; width: number; height: number };
+  style: Pick<CSSStyleDeclaration, "font" | "color" | "letterSpacing" | "textAlign" | "whiteSpace" | "lineHeight">;
 }
 
-/** `<Crossfade value>`: its words crossfade whenever `value` changes. At rest it draws nothing but its children. */
+export function captureWords(element: HTMLElement): Words | null {
+  if (typeof getComputedStyle !== "function") return null;
+  const box = element.getBoundingClientRect();
+  const style = getComputedStyle(element);
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.setAttribute("aria-hidden", "true");
+  clone.setAttribute("data-testid", "crossfade-old");
+  return {
+    clone,
+    box: { left: box.left, top: box.top, width: box.width, height: box.height },
+    style: { font: style.font, color: style.color, letterSpacing: style.letterSpacing, textAlign: style.textAlign, whiteSpace: style.whiteSpace, lineHeight: style.lineHeight },
+  };
+}
+
+/** The old words (a fixed layer, so nothing in the page moves) fade out over the new, which fade in, over `CROSSFADE`. */
+export function crossfadeFrom(words: Words | null, element: HTMLElement, ms: number = CROSSFADE): MotionRun {
+  if (!words || !canAnimate(element)) return DONE;
+  finishRunning(element);
+  const { clone, box, style } = words;
+  Object.assign(clone.style, { position: "fixed", left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px`, margin: "0", pointerEvents: "none", zIndex: "100", ...style });
+  element.ownerDocument.body.appendChild(clone);
+  const gone = clone.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: STANDARD, fill: "forwards", id: `${OURS}crossfade-old` });
+  const arriving = start(element, "crossfade", [{ opacity: 0 }, { opacity: 1 }], { duration: ms, fill: "backwards" });
+  return runOf([gone, arriving], () => clone.remove());
+}
+
+/** Words that change: call it just before `change` writes the new words. */
+export function crossfade(element: HTMLElement, change: () => void, ms: number = CROSSFADE): MotionRun {
+  const words = canAnimate(element) ? captureWords(element) : null;
+  change();
+  return crossfadeFrom(words, element, ms);
+}
+
+/**
+ * `<Crossfade value>`: its words crossfade whenever `value` changes. At rest it draws a plain `<span>` round its children and
+ * nothing else; the old words are a separate fixed layer in the body for `CROSSFADE`, so the page's own text is always the new.
+ */
 export function Crossfade({ value, children, ms = CROSSFADE }: { value: string | number; children: ReactNode; ms?: number }) {
-  const was = useRef<{ value: string | number; children: ReactNode }>({ value, children });
-  const [old, setOld] = useState<ReactNode>(null);
-  const fresh = useRef<HTMLSpanElement | null>(null);
-  const stale = useRef<HTMLSpanElement | null>(null);
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const was = useRef(value);
+  const old = useRef<Words | null>(null);
+  // While rendering, the page still shows the old words: take them now.
+  if (was.current !== value) {
+    old.current = ref.current && canAnimate(ref.current) ? captureWords(ref.current) : null;
+    was.current = value;
+  }
   useLayoutEffect(() => {
-    if (was.current.value === value) {
-      was.current = { value, children };
-      return;
-    }
-    const before = was.current.children;
-    was.current = { value, children };
-    if (prefersReducedMotion()) return;
-    setOld(before);
-    const timer = window.setTimeout(() => setOld(null), ms);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-  useLayoutEffect(() => {
-    if (old === null) return;
-    if (fresh.current && canAnimate(fresh.current)) start(fresh.current, "crossfade", [{ opacity: 0 }, { opacity: 1 }], { duration: ms, fill: "backwards" });
-    if (stale.current && canAnimate(stale.current)) start(stale.current, "crossfade-old", [{ opacity: 1 }, { opacity: 0 }], { duration: ms, fill: "forwards" });
-  }, [old, ms]);
-  if (old === null) return <>{children}</>;
-  return (
-    <span style={{ position: "relative", display: "inline-block" }}>
-      <span ref={fresh}>{children}</span>
-      <span ref={stale} aria-hidden="true" data-testid="crossfade-old" style={{ position: "absolute", left: 0, top: 0, whiteSpace: "nowrap", pointerEvents: "none" }}>
-        {old}
-      </span>
-    </span>
-  );
+    const words = old.current;
+    old.current = null;
+    if (words && ref.current) crossfadeFrom(words, ref.current, ms);
+  });
+  return <span ref={ref}>{children}</span>;
 }

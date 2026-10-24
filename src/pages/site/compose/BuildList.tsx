@@ -115,6 +115,7 @@ import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
 import { SLIDE_ATTR } from "./flip";
 import { runsOf, withEmptySessions, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
+import { useFoldMotion } from "./foldMotion";
 import { outlineOnce } from "./buildMotion";
 import { SLIDE } from "@/lib/build/buildMotion";
 import { prefersReducedMotion } from "@/lib/theme/motion";
@@ -2057,6 +2058,9 @@ export function BuildList(incoming: BuildListProps) {
   const busyHolder = useRef(false);
   const director = useBuildDirector(incoming, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
   const base = director.view;
+  /* CA-22 P5: a session or part being folded keeps its tiles drawn while they rise away behind the head. */
+  const partsFolded = useMemo(() => new Set((base.parts?.parts ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)), [base.parts]);
+  const folding = useFoldMotion({ sessions: base.collapsed, parts: partsFolded, getRoot: useCallback(() => rootHolder.current?.current ?? null, []) });
   const [said, setSaid] = useState("");
   /* CA-21 P3: while something is held, or its write is on its way, the page is drawn from the live order. */
   const baseModel = useMemo(
@@ -2224,6 +2228,8 @@ export function BuildList(incoming: BuildListProps) {
   const drawRun = (run: Run, at: number, inPart: ListPart | null = null) => {
         const key = run.head?.key ?? null;
         const closed = key !== null && Boolean(props.onToggleCollapsed) && Boolean(props.collapsed?.has(key));
+        /** What is drawn: a fold in progress still shows the tiles. */
+        const shut = closed && !(key !== null && folding.sessions.has(key));
         const tilesId = `session-tiles-${key ?? run.key}`;
         const headed = run.head !== null;
         const editable = headed && !run.head.key.startsWith("typed-legacy-");
@@ -2257,8 +2263,8 @@ export function BuildList(incoming: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <div id={tilesId} data-testid="session-tiles" hidden={closed} style={headed ? RUN : undefined}>
-                {closed ? null : (
+              <div id={tilesId} data-testid="session-tiles" hidden={shut} style={headed ? RUN : undefined}>
+                {shut ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
@@ -2308,8 +2314,8 @@ export function BuildList(incoming: BuildListProps) {
           onColour={parts?.onColour ? (anchor) => parts.onColour?.(view.key, anchor, part.title, view.colour ?? null) : undefined}
         />
         <MentionedLine to={refTo({ kind: "workstream", id: view.key })} phone={props.phone} />
-        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed} style={WORKSTREAM_BODY}>
-          {view.collapsed ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
+        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed && !folding.parts.has(view.key)} style={WORKSTREAM_BODY}>
+          {view.collapsed && !folding.parts.has(view.key) ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
             <>
               {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
               {arrival.block && base.arriving && arrivingPart === view.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}

@@ -24,12 +24,12 @@ import { FADE_AFTER_MS, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SKELETON_IN, SKEL
 import type { Step } from "@/lib/build/graph";
 import { peekIntent, spendIntent, type MotionIntent } from "@/lib/build/motionIntent";
 import type { Skeleton } from "@/lib/build/sortLayout";
-import { prefersReducedMotion } from "@/lib/theme/motion";
+import { BASE as BASE_MS, prefersReducedMotion } from "@/lib/theme/motion";
 
 import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
 import { runsOf, withEmptySessions } from "./buildRuns";
-import { dropIn, finishRunning, liftOut, liftSpan, openClip, outlineOnce, slideOut, staggerDelay, useFlip, type MotionRun } from "./buildMotion";
+import { captureWords, crossfadeFrom, dropIn, finishRunning, liftOut, liftSpan, openClip, outlineOnce, slideOut, staggerDelay, useFlip, type MotionRun, type Words } from "./buildMotion";
 import { finishSlides, type Box } from "./flip";
 
 /* ── what is on the page ── */
@@ -305,6 +305,8 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
   const frozen = useRef<Frozen | null>(null);
   const arrive = useRef<{ change: Change; intent: MotionIntent; after: Layout; before: Layout } | null>(null);
   const settle = useRef<{ change: Change; intent: MotionIntent; after: Layout; before: Layout; changed: string[] } | null>(null);
+  /** A tile turned into another kind: the words of its kind line as they were, to crossfade from. */
+  const converted = useRef<{ ids: string[]; words: (Words | null)[]; intent: MotionIntent } | null>(null);
   const released = useRef(false);
   const remeasure = useRef<Set<string> | null | undefined>(undefined);
   const timers = useRef<number[]>([]);
@@ -363,7 +365,14 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
       // (A drag, and the write after it, is CA-21's: its own skeleton, its own slide and settle.)
       if (intent && !reduced && mine && root && !hasAdded(change) && !hasRemoved(change) && !getBusy()) {
         // Something moved (or only its words changed): it slides, and is outlined once where it lands.
-        if (hasMoved(change)) settle.current = { change, intent, after: layout, before, changed: [] };
+        if (intent.kind === "convert") {
+          const ids = changedTiles(shownView.current, incoming);
+          if (ids.length > 0 && root) {
+            // The tile may be taller or shorter: what stood below slides with it (measured now, played once it is drawn).
+            flip.measure({ ms: SLIDE });
+            converted.current = { ids, intent, words: ids.map((id) => { const eyebrow = tileEl(root, id)?.querySelector<HTMLElement>('[data-testid$="-eyebrow"]'); return eyebrow ? captureWords(eyebrow) : null; }) };
+          }
+        } else if (hasMoved(change)) settle.current = { change, intent, after: layout, before, changed: [] };
         else if (intent.kind === "undo" || intent.kind === "redo") {
           const changed = changedTiles(shownView.current, incoming);
           if (changed.length > 0) settle.current = { change, intent, after: layout, before, changed };
@@ -411,6 +420,17 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
         const spent = active.current;
         if (spent) spendIntent(spent);
       });
+    }
+
+    // Converted: its kind line crossfades ("Prompt" to "Agent"); the tile's new size opens down and what is below slides with it.
+    const turned = converted.current;
+    if (turned) {
+      converted.current = null;
+      turned.ids.forEach((id, at) => {
+        const eyebrow = tileEl(element, id)?.querySelector<HTMLElement>('[data-testid$="-eyebrow"]');
+        if (eyebrow) runs.current.push(crossfadeFrom(turned.words[at], eyebrow));
+      });
+      later(BASE_MS, () => spendIntent(turned.intent));
     }
 
     // Moved, or only its words changed: the skeleton of the containers involved shows while it slides, and it is outlined once.

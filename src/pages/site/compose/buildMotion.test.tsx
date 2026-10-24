@@ -341,13 +341,13 @@ describe("crossfade", () => {
     expect(played).toHaveLength(0);
   });
 
-  it("<Crossfade> draws only its children at rest, and the old words too while they fade", () => {
+  it("<Crossfade> draws a plain span at rest; when the value changes the old words are a separate layer, then gone", () => {
     const view = render(<Crossfade value="2">2 selected</Crossfade>);
-    expect(view.container.innerHTML).toBe("2 selected");
+    expect(view.container.innerHTML).toBe("<span>2 selected</span>");
     view.rerender(<Crossfade value="3">3 selected</Crossfade>);
-    expect(view.container.textContent).toBe("3 selected2 selected");
-    expect(played.map((entry) => entry.keyframes.map((frame) => frame.opacity))).toEqual([[0, 1], [1, 0]]);
-    act(() => vi.advanceTimersByTime(CROSSFADE));
     expect(view.container.textContent).toBe("3 selected");
+    expect(document.querySelector('[data-testid="crossfade-old"]')?.textContent).toBe("2 selected");
+    expect(played.map((entry) => entry.keyframes.map((frame) => frame.opacity))).toEqual([[1, 0], [0, 1]]);
+    return vi.waitFor(() => expect(document.querySelector('[data-testid="crossfade-old"]')).toBeNull());
   });
 });

@@ -360,3 +360,20 @@ describe("P4 · moving and undoing", () => {
     expect(outlines()).toHaveLength(0);
   });
 });
+
+describe("P5 · converting a tile", () => {
+  it("crossfades the kind line over 150 (the old words fade out above the new) and starts the slide for what is below", () => {
+    const props = base();
+    const { again } = mount(props);
+    announce("convert", "Converted Prompt 3 to an agent");
+    again({ ...props, steps: props.steps.map((step) => (step.id === "p3" ? { ...step, title: "Now something else" } : step)) });
+    const eyebrow = tile("p3")?.querySelector('[data-testid$="-eyebrow"]');
+    expect(eyebrow).not.toBeNull();
+    const fades = played.filter((entry) => entry.element === eyebrow);
+    expect(fades).toHaveLength(1);
+    expect(fades[0].keyframes).toEqual([{ opacity: 0 }, { opacity: 1 }]);
+    expect(fades[0].options.duration).toBe(150);
+    const old = played.find((entry) => (entry.element as HTMLElement).getAttribute?.("data-testid") === "crossfade-old");
+    expect(old?.keyframes).toEqual([{ opacity: 1 }, { opacity: 0 }]);
+  });
+});
