@@ -479,6 +479,21 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     heldSnap.current = null;
   });
 
+  // The held copy: the markup of its own element at its own size, taken after the page has drawn the hold.
+  const copied = drag?.held.id ?? null;
+  const copyDone = drag ? drag.html !== "" : true;
+  useLayoutEffect(() => {
+    const current = dragRef.current;
+    const root = rootRef.current;
+    if (!current || !root || current.html !== "") return;
+    const element = root.querySelector<HTMLElement>(`${SELECTOR[current.held.type]}[data-skel-id="${current.held.id}"]`);
+    if (!element) return;
+    const box = element.getBoundingClientRect();
+    const source = element.firstElementChild instanceof HTMLElement && (current.held.type === "tile" || current.held.type === "nested") ? element.firstElementChild : element;
+    set({ ...current, html: cloneHtml(source), size: { w: box.width, h: box.height } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [copied, copyDone]);
+
   const decide = useCallback(() => {
     const current = dragRef.current;
     const root = rootRef.current;
@@ -570,9 +585,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     viaKeys.current = (event.activatorEvent as Event | null)?.type === "keydown";
     setKeyboardAt(null);
     if (from) pointer.current = from;
-    const element = root.querySelector<HTMLElement>(`${SELECTOR[held.type]}[data-skel-id="${held.id}"]`);
-    const box = element ? element.getBoundingClientRect() : null;
-    const next: Drag = { held, start: o.model, live: o.model, send: null, html: element ? cloneHtml(element.firstElementChild instanceof HTMLElement && (held.type === "tile" || held.type === "nested") ? (element.firstElementChild as HTMLElement) : element) : "", size: { w: box?.width ?? 0, h: box?.height ?? 0 } };
+    // Its copy is made once the page has drawn the hold (no tile shows what it shows when it is near), in `useLayoutEffect` below.
+    const next: Drag = { held, start: o.model, live: o.model, send: null, html: "", size: { w: 0, h: 0 } };
     setHidden(held.id);
     setSkeletonShown(true);
     setPending(null);
@@ -713,7 +727,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setRefocus(null);
   }, [refocus, drag, tick]);
 
-  const overlay = useMemo(() => (drag ? { html: drag.html, w: drag.size.w, h: drag.size.h, type: drag.held.type } : null), [drag]);
+  const overlay = useMemo(() => (drag && drag.html ? { html: drag.html, w: drag.size.w, h: drag.size.h, type: drag.held.type } : null), [drag]);
 
   return {
     rootRef,

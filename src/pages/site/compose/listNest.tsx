@@ -1,4 +1,4 @@
-/* CA-04 P2, CA-21 P3 — dragging in the List: a tile, a session or a part, by the `grip` at its left.
+/* CA-04 P2, CA-21 P3: dragging in the List: a tile, a session or a part, by the `grip` at its left.
 
    `@dnd-kit/core` with its pointer, touch and keyboard sensors; the `grip` handle is the only drag start (18 by 22, 44 high on a
    phone, where a long press starts the drag); the rest of a tile keeps its click and double-click. What is held is drawn in the
@@ -67,7 +67,7 @@ function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
   const shadow = heldShadow(dusk);
   const whole = overlay.type === "session" || overlay.type === "part";
   return (
-    <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, cursor: "grabbing", pointerEvents: "none", position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
+    <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: 13.5, cursor: "grabbing", pointerEvents: "none", position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
       {whole ? <span aria-hidden="true" style={{ position: "absolute", inset: -6, borderRadius: 14, boxShadow: `0 0 0 1px ${t.segOnBorder}`, pointerEvents: "none" }} /> : null}
       <div dangerouslySetInnerHTML={{ __html: overlay.html }} />
     </div>
@@ -152,6 +152,8 @@ export const TAKES: CSSProperties = { background: t.selectedFill, borderColor: t
  */
 export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean): boolean {
   const [near, setNear] = useState(false);
+  // CA-21: while something is held no tile shows what it shows when it is near, so none changes size under the pointer.
+  const holding = Boolean(useContext(NestContext)?.active);
   useEffect(() => {
     const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"]');
     if (!tile || phone) return;
@@ -172,7 +174,7 @@ export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean):
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone, ref.current]);
-  return phone || near;
+  return phone || (near && !holding);
 }
 
 /** The `grip` at a tile's left: the only place a drag starts. 18 by 22; 44 high on a phone. It is drawn while its tile is hovered or has focus, and on a phone. */

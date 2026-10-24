@@ -2158,9 +2158,10 @@ export function BuildList(base: BuildListProps) {
     ? {
         move,
         canNest: (id, parentId) => props.canNest?.(id, parentId) ?? false,
+        // The step above is read from the build as it stands (not the live order of a drag), so no tile gains or loses its "Send with" line, and so its size, while something is held.
         above: (id) => {
-          const at = steps.findIndex((step) => step.id === id);
-          return at > 0 ? steps[at - 1] : null;
+          const at = base.steps.findIndex((step) => step.id === id);
+          return at > 0 ? base.steps[at - 1] : null;
         },
         after: (id) => {
           const top = topOf(id);

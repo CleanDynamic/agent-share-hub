@@ -6,7 +6,7 @@
 
    `&select=<id>` selects a tile or a session. */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
@@ -19,6 +19,10 @@ import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making"
 import { applyWrite, type MemoryBuild } from "@/lib/build/moveMemory";
 import { locate, moveBy, movedLine, placePart, placeSession, writeOf, type MoveModel, type Write } from "@/lib/build/moveRules";
 import { BuildList } from "@/pages/site/compose/BuildList";
+import type { Arriving } from "@/pages/site/compose/arrival";
+import { NO_APP, type SourceLibraryItem } from "@/pages/site/compose/sourcesModel";
+import type { NodeTree } from "@/lib/build/types";
+import type { Json } from "@/integrations/supabase/types";
 import { dividers } from "@/pages/site/compose/buildListModel";
 import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
 import { listPartsOf } from "@/pages/site/compose/partsModel";
@@ -102,6 +106,39 @@ export default function MovingDemo({ fit = "board", state = "populated" }: Desig
   );
   const onNest = useCallback((id: string, parent: string | null, index: number) => write(parent ? { kind: "nested", id, parent, index } : null), [write]);
 
+  /* Adding a session from a chat or starting an empty one: a short wait, then its prompts are in the build (CA-21 P7). */
+  const [library] = useState<SourceLibraryItem[]>(() => sandboxSourcesProps("bakery").library.map((row, at) => ({ ...row, promptCount: at === 0 ? 3 : row.promptCount, line: at === 0 ? `${row.date} · 3 prompts` : row.line })));
+  const [adding, setAdding] = useState<ReadonlySet<string>>(new Set());
+  const [arriving, setArriving] = useState<Arriving | null>(null);
+  const added = useRef(0);
+  const sessionsNow = groups.filter((group) => !group.implicit);
+  const add = useCallback(
+    (item: SourceLibraryItem | null, part?: string) => {
+      const key = item ? item.id : `typed-0c21c21c-0000-4000-8000-0000000000b${(added.current += 1)}`;
+      const number = sessionsNow.length + 1;
+      const target = part ?? partsModel?.list[partsModel.list.length - 1].view.key;
+      const count = item ? item.promptCount : 0;
+      setAdding((previous) => new Set(previous).add(key));
+      setArriving({ key, kind: item ? "chat" : "empty", head: { key, number, tool: item ? item.label : NO_APP, detail: item ? item.date : "", prompts: [], date: item?.date ?? "23 Oct" }, count, part: target, status: "writing" });
+      setSaid(item ? `Adding ${item.label} · ${item.date} as Session ${number}…` : "");
+      window.setTimeout(() => {
+        setBuild((previous) => {
+          const nodes: NodeTree[] = Array.from({ length: count }, (_, at) => ({ id: `${key}-p${at + 1}`, build_id: "ca21-build", parent_id: null, type: "prompt", title: null, note: null, payload: { text: `Prompt ${at + 1} of the new session, written in the chat.`, tool: "claude", model: "Opus 5.5", session: key } as Json, position: 100 + at, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-23T09:00:00Z", children: [] }) as NodeTree);
+          const making = { ...previous.making, session_order: [...(previous.making.session_order ?? []), key], sessions_meta: { ...(previous.making.sessions_meta ?? {}), [key]: { tool: item ? "claude" : null, date: "2026-10-23", ...(target ? { workstream: target } : null) } } };
+          return { tree: [...previous.tree, ...nodes], making: making as Making };
+        });
+        setArriving((current) => (current ? { ...current, status: "written" } : current));
+        setAdding((previous) => {
+          const next = new Set(previous);
+          next.delete(key);
+          return next;
+        });
+      }, 1600);
+    },
+    [sessionsNow.length, partsModel],
+  );
+  const libraryRows = useMemo(() => library.map((row) => ({ ...row, adding: adding.has(row.id), inThisDraft: row.inThisDraft || Boolean(build.making.session_order?.includes(row.id)) })), [library, adding, build.making.session_order]);
+
   const mapData = { ...shapeMapProps("one-sitting", source), steps, groups };
   const devMap = useDevMap({ fixture: mapData, making: build.making as Making, direction: "horizontal", selected: selectedId, onSelect: setSelectedId, none: false });
 
@@ -137,13 +174,18 @@ export default function MovingDemo({ fit = "board", state = "populated" }: Desig
           onAddPart={() => undefined}
           onDropSession={onDropSession}
           sessionOps={{ onTitle: () => undefined, onMove, onRemove: () => undefined, onMoveToPart: () => undefined, onWithAbove: () => undefined }}
-          addSession={{ library: sandboxSourcesProps("bakery").library, adding: false, onAdd: () => undefined, onStartNew: () => undefined, parts: addToParts }}
+          addSession={{ library: libraryRows, adding: adding.size > 0, onAdd: (id, part) => add(libraryRows.find((row) => row.id === id) ?? null, part), onStartNew: (part) => add(null, part), parts: addToParts }}
+          arriving={arriving}
+          onArrived={(key, status) => {
+            setArriving((current) => (current && current.key === key ? null : current));
+            if (status === "written") setSaid((line) => (line.startsWith("Adding") ? `Added Session ${arriving?.head.number ?? ""} with ${arriving?.count ?? 0} prompts.` : line));
+          }}
           onDropOnWorkstream={onDropOnWorkstream}
           onDropWorkstream={onDropWorkstream}
           dividers={heads}
         />
       }
-      sources={<SourcesPanel {...sandboxSourcesProps("bakery", state)} phone={phone} fine={fine} parts={addToParts} />}
+      sources={<SourcesPanel {...sandboxSourcesProps("bakery", state)} library={libraryRows} onAddSession={(id, part) => add(libraryRows.find((row) => row.id === id) ?? null, part)} phone={phone} fine={fine} parts={addToParts} />}
       map={devMap.column}
       mapPanel={devMap.panel}
       selection={selectedId ? <DetailsPanel {...shapeDetailsProps("one-sitting", selectedId, source)} phone={phone} onSelect={setSelectedId} /> : undefined}
