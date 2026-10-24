@@ -62,8 +62,9 @@ import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { BuildTitleActions } from "./BuildTitleActions";
 import { PublishChecklist } from "./PublishChecklist";
+import { PublishConfirm } from "./PublishConfirm";
 import { outlineOnce } from "./buildMotion";
-import type { Checklist, ChecklistItem } from "@/lib/build/publishChecklist";
+import { confirmRows, type Checklist, type ChecklistItem, type ConfirmInput, type ConfirmRow } from "@/lib/build/publishChecklist";
 import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
@@ -99,6 +100,8 @@ export interface PublishPanel {
   checklist: Checklist;
   /** Runs when Publish is pressed, before anything opens: false stops it (offline). */
   prepare?: () => Promise<boolean>;
+  /** What Confirm shows, read when it opens (the post's words are not state). */
+  confirm: () => ConfirmInput;
   /** "Show" on the sessions with no app: choose them and scroll to the first. */
   onShowApps: (keys: readonly string[]) => void;
 }
@@ -926,6 +929,8 @@ function SandboxBody(props: SandboxViewProps) {
   const [railOpen, setRailOpen] = useState(false);
   /** CA-25: the Publish checklist is open; `latest` is what an action sees after a window has closed or an await has passed. */
   const [checklistOpen, setChecklistOpen] = useState(false);
+  /** CA-25 P2: Confirm is open, with the rows it was opened on. */
+  const [confirming, setConfirming] = useState<ConfirmRow[] | null>(null);
   const latest = useRef(props);
   latest.current = props;
   const buildRef = useRef<HTMLElement>(null);
@@ -977,6 +982,12 @@ function SandboxBody(props: SandboxViewProps) {
     if (panel.prepare && !(await panel.prepare())) return;
     const checklist = latest.current.publish?.checklist;
     if (checklist?.needed) setChecklistOpen(true);
+    else openConfirm();
+  };
+  /** Publish with nothing left to say (or Publish in the checklist) asks once more, in Confirm. */
+  const openConfirm = () => {
+    const panel = latest.current.publish;
+    if (panel) setConfirming(confirmRows(panel.confirm()));
     else latest.current.onPublish();
   };
   const goTo = (item: ChecklistItem) => {
@@ -1008,7 +1019,10 @@ function SandboxBody(props: SandboxViewProps) {
     window.setTimeout(run, 0);
   };
   const checklistWindow = props.publish ? (
-    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={() => props.onPublish()} />
+    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={openConfirm} />
+  ) : null;
+  const confirmWindow = props.publish ? (
+    <PublishConfirm open={confirming !== null} title={props.title.trim()} rows={confirming ?? []} onCancel={() => setConfirming(null)} onPublish={() => props.onPublish()} />
   ) : null;
 
   const statusLine = (
@@ -1243,6 +1257,7 @@ function SandboxBody(props: SandboxViewProps) {
         </BottomSheet>
         {card}
         {checklistWindow}
+        {confirmWindow}
       </div>
     );
   }
@@ -1313,6 +1328,7 @@ function SandboxBody(props: SandboxViewProps) {
       )}
       {card}
       {checklistWindow}
+      {confirmWindow}
     </div>
   );
 }

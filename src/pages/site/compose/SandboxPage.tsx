@@ -65,7 +65,8 @@ import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
 import { runtimeChecks, runtimeFindings } from "@/lib/build/runtimeChecks";
-import { publishChecklist } from "@/lib/build/publishChecklist";
+import { postFacts, publishChecklist, type ConfirmInput } from "@/lib/build/publishChecklist";
+import { classificationLines } from "@/lib/classify/lines";
 import { allTiles, orderOf } from "@/lib/build/buildSelection";
 import { useComposePage } from "./ComposePage";
 import type { PreviewMaker } from "@/components/post/PostPreview";
@@ -1368,6 +1369,21 @@ export function SandboxPage() {
       }),
     [missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored],
   );
+  /* CA-25 P2: what Confirm lists, read when it opens: the post as it stands, and the parts, sessions, tiles and files. */
+  const confirmInput = useCallback(
+    (): ConfirmInput => {
+      const lines = hasClassification(classificationCard.stored) ? classificationLines(classificationCard.stored) : null;
+      return {
+        post: postFacts(thread.readDoc()),
+        parts: partsModel?.list.length ?? 1,
+        sessions: counts.sessions,
+        tiles: tileCount,
+        files: sourceFileRows.map((file) => file.name),
+        card: lines ? [...new Set([...lines.line1, ...lines.line2])] : [],
+      };
+    },
+    [thread, partsModel, counts.sessions, tileCount, sourceFileRows, classificationCard.stored],
+  );
   const showApps = useCallback(
     (keys: readonly string[]) => {
       selection.selectSessions(keys);
@@ -2123,7 +2139,7 @@ export function SandboxPage() {
         lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}
         onRetrySave={onRetrySave}
         onPublish={onPublish}
-        publish={{ checklist, prepare: preparePublish, onShowApps: showApps }}
+        publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps }}
         post={
           <PostTab
             thread={thread}

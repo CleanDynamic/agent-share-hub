@@ -43,7 +43,7 @@ function view(over: Partial<ChecklistInput> = {}, extra: Partial<SandboxViewProp
     onLens: vi.fn(),
     onAddPromptFocus: vi.fn(),
     post: <p contentEditable suppressContentEditableWarning>the post body</p>,
-    publish: { checklist: publishChecklist(input(over)), onShowApps },
+    publish: { checklist: publishChecklist(input(over)), confirm: () => ({ post: { words: 240, links: 3 }, parts: 1, sessions: 4, tiles: 18, files: [], card: [] }), onShowApps },
     ...extra,
   } as SandboxViewProps;
   render(
@@ -103,14 +103,17 @@ describe("the checklist window", () => {
     const publish = screen.getByTestId("checklist-publish") as HTMLButtonElement;
     expect(publish.disabled).toBe(false);
     fireEvent.click(publish);
-    expect(props.onPublish).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("publish-checklist")).toBeNull();
+    expect(screen.getByTestId("publish-confirm")).toBeTruthy();
+    expect(props.onPublish).not.toHaveBeenCalled();
   });
 
-  it("publishes straight away when nothing is open", async () => {
+  it("goes straight to Confirm when nothing is open", async () => {
     const { props } = view();
     await press();
     expect(screen.queryByTestId("publish-checklist")).toBeNull();
-    expect(props.onPublish).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("publish-confirm")).toBeTruthy();
+    expect(props.onPublish).not.toHaveBeenCalled();
   });
 
   it("makes no toast", async () => {
