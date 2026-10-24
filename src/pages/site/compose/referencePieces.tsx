@@ -193,7 +193,7 @@ export function UndoRedo({ canUndo, canRedo, onUndo, onRedo, phone = false }: { 
 /* ── the notice ── */
 
 /** The sentence after a step, with Undo: six seconds, or until the next step. */
-export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number; noUndo?: boolean } | null; onUndo: () => void; onDone: () => void; phone?: boolean }) {
+export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number; noUndo?: boolean } | null; onUndo: () => void; onDone: (n: number) => void; phone?: boolean }) {
   const done = useRef(onDone);
   done.current = onDone;
   /* CA-22 P6: it rises 8 and fades in over FAST, and fades out over FAST; a new notice replaces the words with a crossfade, not a second rise. */
@@ -210,7 +210,9 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
   }, [held.leaving, notice === null]);
   useEffect(() => {
     if (!given) return;
-    const timer = window.setTimeout(() => done.current(), NOTICE_MS);
+    // The notice's own `n` goes with it: a timer that fires late (a long step kept the page busy) must not take down the next notice.
+    const n = given.n;
+    const timer = window.setTimeout(() => done.current(n), NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [given]);
   if (!notice) return null;

@@ -70,7 +70,8 @@ export interface BuildHistoryApi {
   record: (step: BuildStep) => void;
   notice: BuildNotice | null;
   notify: (sentence: string, options?: { undo?: boolean }) => void;
-  dismiss: () => void;
+  /** Take the notice down; with `n`, only while that notice is the one showing. */
+  dismiss: (n?: number) => void;
   /** The build as it stands, once every write queued so far has landed. */
   capture: () => Promise<BuildSnapshot>;
   /**
@@ -135,7 +136,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
   };
 
   const notify = useCallback((sentence: string, options?: { undo?: boolean }) => setNotice((current) => ({ sentence, n: (current?.n ?? 0) + 1, ...(options?.undo === false ? { noUndo: true } : null) })), []);
-  const dismiss = useCallback(() => setNotice(null), []);
+  const dismiss = useCallback((n?: number) => setNotice((current) => (n === undefined || current?.n === n ? null : current)), []);
 
   const refresh = useCallback(async () => {
     const id = live.current.buildId;

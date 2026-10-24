@@ -59,7 +59,8 @@ export interface ReferenceHistoryControls {
   canUndo: boolean;
   canRedo: boolean;
   notice: Notice | null;
-  dismiss: () => void;
+  /** Take the notice down; with `n`, only while that notice is the one showing. */
+  dismiss: (n?: number) => void;
   /** Tests and dev pages: the history as it stands. */
   read: () => ReferenceHistory;
 }
@@ -171,7 +172,7 @@ export function useReferenceHistory({ editor, applyColours, join }: ReferenceHis
     canUndo: join ? join.canUndo : canUndo(history.current),
     canRedo: join ? join.canRedo : canRedo(history.current),
     notice: join ? null : notice,
-    dismiss: useCallback(() => setNotice(null), []),
+    dismiss: useCallback((n?: number) => setNotice((current) => (n === undefined || current?.n === n ? null : current)), []),
     read: () => history.current,
   };
 }
