@@ -688,6 +688,20 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/useTwoTabs.tsx",
   // CA-23 P5
   "src/pages/dev/SavingDemo.tsx",
+  // CA-24 P1
+  "e2e/audit/composer-ca24-loading.spec.ts",
+  "src/pages/site/compose/ComposeRoute.tsx",
+  "src/pages/site/compose/ComposeSkeleton.test.tsx",
+  "src/pages/site/compose/ComposeSkeleton.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/LoadingBlocks.test.tsx",
+  "src/pages/site/compose/LoadingBlocks.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/SessionDialog.tsx",
+  "src/pages/site/compose/SessionMap.tsx",
+  "src/pages/site/compose/SourcesPanel.tsx",
+  "src/pages/site/compose/loadingBlocks.test.ts",
+  "src/pages/site/compose/loadingBlocks.ts",
 ];
 
 /**

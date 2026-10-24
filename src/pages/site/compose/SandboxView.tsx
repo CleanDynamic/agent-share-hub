@@ -35,7 +35,6 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
-import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -66,6 +65,7 @@ import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
 import { useLensMorph } from "./mapMorph";
+import { ComposeArrival } from "./ComposeSkeleton";
 
 export type SandboxLens = "list" | "map";
 
@@ -861,23 +861,6 @@ function DefaultSources() {
   );
 }
 
-function Skeletons({ phone }: { phone: boolean }) {
-  return (
-    <LoadingRegion what="the composer" announce>
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 20, borderBottom: `1px solid ${t.hairline}` }}>
-          <Skeleton width={phone ? "70%" : 280} height={22} radius={4} />
-          <Skeleton width={phone ? "50%" : 220} height={13} radius={4} />
-        </div>
-        <div style={{ ...moduleStyle(), display: "flex", flexDirection: "column", gap: 12 }}>
-          <Skeleton width={120} height={14} />
-          <Skeleton height={phone ? 180 : 320} radius={6} />
-        </div>
-      </div>
-    </LoadingRegion>
-  );
-}
-
 function NotFound() {
   return (
     <div style={{ ...moduleStyle(false, 24), maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -896,7 +879,13 @@ const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: 
 
 /* ── the view ── */
 
+/** CA-24 P1: while the build's first queries load, building blocks stand where the columns will; the content then takes their place. */
 export function SandboxView(props: SandboxViewProps) {
+  const loading = props.status === "loading";
+  return <ComposeArrival loading={loading}>{loading ? null : <SandboxBody {...props} />}</ComposeArrival>;
+}
+
+function SandboxBody(props: SandboxViewProps) {
   const phone = useIsPhone();
   const win = useWindowSize();
   const { status, published, save } = props;
@@ -913,7 +902,6 @@ export function SandboxView(props: SandboxViewProps) {
   /* CA-22 P7: List and Map morph into one another (a computer only; the hook does nothing where motion is off). */
   const morph = useLensMorph({ lens: props.lens, onLens: props.onLens, getRoot: useCallback(() => tabsRef.current?.parentElement ?? null, []) });
 
-  if (status === "loading") return <Skeletons phone={phone} />;
   if (status === "error") {
     return (
       <div style={moduleStyle()}>

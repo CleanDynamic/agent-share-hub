@@ -10,6 +10,9 @@
    Built from `modalRecipes` (lookRules holds this file to it); the fields that are not the recipes' own (the cost fields, the
    command it started with, the menu of sessions it ran beside) are the ones Details had, drawn as they always were. */
 
+import { LoadingRegion } from "@/components/brand/Skeleton";
+import { LoadingBlocks } from "./LoadingBlocks";
+import { SESSION_PROMPT_ROWS } from "./loadingBlocks";
 import { useMemo, useState } from "react";
 
 import { Checkbox } from "@/components/brand/Checkbox";
@@ -272,7 +275,11 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
 
         <Block label={SESSION_DIALOG_COPY.prompts} testId="session-prompts">
           <BlockHead label={SESSION_DIALOG_COPY.prompts} count={SESSION_DIALOG_COPY.promptsIn(Object.values(shared).filter(Boolean).length, view.total)} />
-          {view.status === "loading" ? <Hint>Loading this session&apos;s prompts…</Hint> : null}
+          {view.status === "loading" ? (
+            <LoadingRegion what="this session's prompts" data-testid="session-prompts-loading">
+              <LoadingBlocks kind="box" rows={SESSION_PROMPT_ROWS} width="fill" />
+            </LoadingRegion>
+          ) : null}
           {view.status === "error" ? <Hint>This session&apos;s prompts did not load.</Hint> : null}
           <div role="group" aria-label="Prompts in this session" style={PANEL_LIST}>
             {view.checklist.map((row) => (

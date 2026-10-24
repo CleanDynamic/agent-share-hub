@@ -20,6 +20,8 @@ import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { LoadingBlocks } from "./LoadingBlocks";
+import { LIBRARY_MORE_WIDTH } from "./loadingBlocks";
 import { PLUS_OUT_MS, WORDS_IN_MS } from "@/lib/build/buildMotion";
 import { peekIntent } from "@/lib/build/motionIntent";
 import { ring } from "@/lib/theme/controls";
@@ -502,9 +504,15 @@ export function SourcesPanel(props: SourcesPanelProps) {
           <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} />} />
           {props.libraryHasMore ? (
             <div style={{ ...rowLine, paddingTop: 8 }}>
-              <TextButton onClick={() => props.onLibraryMore?.()} target={phone} disabled={props.libraryLoadingMore} style={text(12.5, 500, t.text2)}>
-                {props.libraryLoadingMore ? "Loading…" : SOURCES_COPY.showMoreSessions}
-              </TextButton>
+              {props.libraryLoadingMore ? (
+                <LoadingRegion what="more sessions" data-testid="library-more-loading">
+                  <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
+                </LoadingRegion>
+              ) : (
+                <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={text(12.5, 500, t.text2)}>
+                  {SOURCES_COPY.showMoreSessions}
+                </TextButton>
+              )}
             </div>
           ) : null}
         </section>
