@@ -61,6 +61,9 @@ import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { BuildTitleActions } from "./BuildTitleActions";
+import { PublishChecklist } from "./PublishChecklist";
+import { outlineOnce } from "./buildMotion";
+import type { Checklist, ChecklistItem } from "@/lib/build/publishChecklist";
 import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
@@ -91,6 +94,15 @@ export interface SandboxCounts {
   files: number;
 }
 
+/** CA-25: what Publish asks first. */
+export interface PublishPanel {
+  checklist: Checklist;
+  /** Runs when Publish is pressed, before anything opens: false stops it (offline). */
+  prepare?: () => Promise<boolean>;
+  /** "Show" on the sessions with no app: choose them and scroll to the first. */
+  onShowApps: (keys: readonly string[]) => void;
+}
+
 export interface SandboxViewProps extends CardProps {
   fit?: "board" | "content";
   status: ComposeStatus;
@@ -112,7 +124,10 @@ export interface SandboxViewProps extends CardProps {
   slug: string | null;
   published: ComposePublished | null;
   publishing: boolean;
+  /** Writes the build live. With `publish` set, it runs once the checklist is clear and the maker has said Publish. */
   onPublish: () => void;
+  /** CA-25: the Publish checklist. Absent, Publish runs `onPublish` at once. */
+  publish?: PublishPanel;
 
   counts: SandboxCounts;
   lens: SandboxLens;
@@ -909,6 +924,10 @@ function SandboxBody(props: SandboxViewProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   /** Map: the Sources rail has been opened out over the map. */
   const [railOpen, setRailOpen] = useState(false);
+  /** CA-25: the Publish checklist is open; `latest` is what an action sees after a window has closed or an await has passed. */
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const latest = useRef(props);
+  latest.current = props;
   const buildRef = useRef<HTMLElement>(null);
   const postRef = useRef<HTMLElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -949,6 +968,48 @@ function SandboxBody(props: SandboxViewProps) {
     }, 0);
   };
 
+
+  /* CA-25 P1: Publish opens the checklist while anything is open, else it publishes. Each action closes the window, then takes the
+     maker to the thing: the page's own focus moves wait a tick so the window's own focus return does not take them back. */
+  const pressPublish = async () => {
+    const panel = latest.current.publish;
+    if (!panel) return latest.current.onPublish();
+    if (panel.prepare && !(await panel.prepare())) return;
+    const checklist = latest.current.publish?.checklist;
+    if (checklist?.needed) setChecklistOpen(true);
+    else latest.current.onPublish();
+  };
+  const goTo = (item: ChecklistItem) => {
+    const id = item.stepId;
+    const target = id ? document.querySelector<HTMLElement>(`[data-tile-id="${id}"], [data-node-id="${id}"]`) : postRef.current;
+    if (!target) return;
+    target.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    outlineOnce(target);
+  };
+  const onChecklistAction = (item: ChecklistItem) => {
+    const run = () => {
+      switch (item.action?.id) {
+        case "add_cover":
+          return openPost();
+        case "add_title":
+          return openCard("title");
+        case "add_description":
+          return openCard("summary");
+        case "add_prompt":
+          return void latest.current.onAddPromptFocus?.();
+        case "go_to":
+          return goTo(item);
+        case "show_apps":
+          return latest.current.publish?.onShowApps(item.sessions ?? []);
+        case "open_card":
+          return openCard(null);
+      }
+    };
+    window.setTimeout(run, 0);
+  };
+  const checklistWindow = props.publish ? (
+    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={() => props.onPublish()} />
+  ) : null;
 
   const statusLine = (
     <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
@@ -1167,7 +1228,7 @@ function SandboxBody(props: SandboxViewProps) {
             Preview
           </LinkButton>
           <div style={{ flexGrow: 1 }}>
-            <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={props.onPublish}>
+            <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
               {publishLabel}
             </Button>
           </div>
@@ -1181,6 +1242,7 @@ function SandboxBody(props: SandboxViewProps) {
           </ClickToEdit>
         </BottomSheet>
         {card}
+        {checklistWindow}
       </div>
     );
   }
@@ -1203,7 +1265,7 @@ function SandboxBody(props: SandboxViewProps) {
           <LinkButton to={previewTo} phone={false} height={28}>
             Preview
           </LinkButton>
-          <Button size={28} fontSize={12} disabled={publishDisabled} onClick={props.onPublish}>
+          <Button size={28} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
             {publishLabel}
           </Button>
         </div>
@@ -1250,6 +1312,7 @@ function SandboxBody(props: SandboxViewProps) {
         </DetailsOverlay>
       )}
       {card}
+      {checklistWindow}
     </div>
   );
 }

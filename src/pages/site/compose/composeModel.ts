@@ -72,11 +72,6 @@ export function missingList(keys: readonly PublishKey[]): string {
   return keys.map((key) => PUBLISH_WORDS[key]).join(", ");
 }
 
-/** The toast when Publish is pressed with something missing. */
-export function publishToast(keys: readonly PublishKey[]): string {
-  return `To publish, add ${missingList(keys)}.`;
-}
-
 /** "photographers, families" → ["photographers", "families"]: trimmed, deduplicated, at most four. */
 export function parseAudience(text: string): string[] {
   const seen = new Set<string>();
