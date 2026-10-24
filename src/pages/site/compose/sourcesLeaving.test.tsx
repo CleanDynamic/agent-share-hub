@@ -1,0 +1,72 @@
+// CA-22 P2 - removing a file in Sources: its row lifts out in place, then the rows below slide up.
+
+import { act, cleanup, render } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { sandboxSourcesProps } from "@/dev/fixtures/sandbox";
+import { LIFT } from "@/lib/build/buildMotion";
+import { announce, resetIntent } from "@/lib/build/motionIntent";
+import { __resetMotionMediaCache } from "@/lib/theme/motion";
+
+import { SourcesPanel } from "./SourcesPanel";
+
+const played: { element: Element; keyframes: Keyframe[]; options: KeyframeAnimationOptions }[] = [];
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  played.length = 0;
+  resetIntent();
+  vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+  __resetMotionMediaCache();
+  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
+    played.push({ element: this, keyframes, options });
+    return { id: options.id ?? "", finished: Promise.resolve(), finish: () => undefined, cancel: () => undefined } as unknown as Animation;
+  }) as never;
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  delete (Element.prototype as { animate?: unknown }).animate;
+  resetIntent();
+});
+
+const rows = () => document.querySelectorAll("[data-file-id]");
+
+function mount(files: ReturnType<typeof sandboxSourcesProps>["files"], onRemoveFile?: (id: string) => void) {
+  const props = { ...sandboxSourcesProps("bakery"), onRemoveFile };
+  const view = (list: typeof files) => (
+    <MemoryRouter>
+      <SourcesPanel {...props} files={list} />
+    </MemoryRouter>
+  );
+  const first = render(view(files));
+  return { again: (list: typeof files) => first.rerender(view(list)) };
+}
+
+describe("a file removed in Sources", () => {
+  it("lifts its row out in place (fades, rises 8) and lets it go after 200", () => {
+    const files = sandboxSourcesProps("bakery").files;
+    expect(files.length).toBeGreaterThan(0);
+    const { again } = mount(files, vi.fn());
+    const before = rows().length;
+    announce("remove", "Removed menu.pdf");
+    again(files.slice(1));
+    expect(rows()).toHaveLength(before);
+    const lift = played.find((entry) => entry.keyframes.some((frame) => frame.transform === "translateY(-8px)"));
+    expect(lift?.element).toBe(document.querySelector(`[data-file-id="${files[0].id}"]`));
+    expect(lift?.options.duration).toBe(LIFT);
+    act(() => vi.advanceTimersByTime(LIFT));
+    expect(rows()).toHaveLength(before - 1);
+  });
+
+  it("without an announced change the row just goes", () => {
+    const files = sandboxSourcesProps("bakery").files;
+    const { again } = mount(files);
+    const before = rows().length;
+    again(files.slice(1));
+    expect(rows()).toHaveLength(before - 1);
+    expect(played).toHaveLength(0);
+  });
+});

@@ -12,7 +12,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { MoreHorizontal, Plus } from "lucide-react";
-import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -21,6 +21,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PLUS_OUT_MS, WORDS_IN_MS } from "@/lib/build/buildMotion";
+import { peekIntent } from "@/lib/build/motionIntent";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { fade, prefersReducedMotion } from "@/lib/theme/motion";
@@ -32,7 +33,9 @@ import type { AddToPart } from "./AddSessionRow";
 import { MenuContent } from "./ComposeMenu";
 import { MENU_COPY } from "@/lib/build/componentMenus";
 import { RemoveRow } from "./removePieces";
+import { useFlip, useLeaving } from "./buildMotion";
 import { holdsFolder, readDrop } from "./dropFolders";
+import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
@@ -247,9 +250,9 @@ function SessionRow({
   );
 }
 
-function FileRow({ file, phone, onRemove }: { file: SourceFile; phone: boolean; onRemove?: (id: string) => void }) {
+function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile; phone: boolean; onRemove?: (id: string) => void; leaving?: boolean }) {
   return (
-    <div style={{ ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
+    <div data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
       <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
         <Glyph name="file" size={16} />
       </span>
@@ -428,7 +431,15 @@ function DropZone({ fine, onDropFiles, onPick }: Pick<SourcesPanelProps, "fine" 
 const group: CSSProperties = { display: "flex", flexDirection: "column", minWidth: 0 };
 
 export function SourcesPanel(props: SourcesPanelProps) {
-  const { phone, fine, status, sessions, files, library } = props;
+  const { phone, fine, status, sessions, library } = props;
+  /* CA-22 P2: a removed file's row lifts out in place; then the rows below slide up. */
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const flip = useFlip(rootRef);
+  const { items: files, leaving } = useLeaving(props.files, (file) => file.id, {
+    find: (key) => rootRef.current?.querySelector<HTMLElement>(`[data-file-id="${key}"]`) ?? null,
+    enabled: peekIntent() !== null,
+    onRelease: () => flip.measure(),
+  });
   const reminders = (props.reminders ?? []).slice(0, REMINDER_ROWS);
   const inBuild = sessions.length + files.length;
   const empty = sessions.length === 0 && files.length === 0;
@@ -447,7 +458,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
   if (status === "error") return <ErrorState line="Your sources didn't load." panel="Sources" onRetry={props.onRetry} />;
 
   return (
-    <div data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+    <div ref={rootRef} data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: 2, marginBottom: -8 }}>
         {/* On a phone the bottom sheet's own title is "Sources". */}
         {phone ? null : <h2 style={{ ...text(14, 500, t.text), margin: 0 }}>Sources</h2>}
@@ -465,7 +476,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
       ) : null}
 
       {sessions.length > 0 ? (
-        <section aria-label={SOURCES_COPY.inBuild} style={group}>
+        <section aria-label={SOURCES_COPY.inBuild} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.inBuild}` }} style={group}>
           <GroupHead name={SOURCES_COPY.inBuild} count={sessions.length} />
           <Capped
             rows={sessions}
@@ -476,9 +487,9 @@ export function SourcesPanel(props: SourcesPanelProps) {
       ) : null}
 
       {files.length > 0 || reminders.length > 0 ? (
-        <section aria-label={SOURCES_COPY.files} style={group}>
+        <section aria-label={SOURCES_COPY.files} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.files}` }} style={group}>
           <GroupHead name={SOURCES_COPY.files} count={files.length} />
-          <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} onRemove={props.onRemoveFile} />} />
+          <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
           {reminders.map((reminder) => (
             <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
           ))}
@@ -486,7 +497,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
       ) : null}
 
       {library.length > 0 ? (
-        <section aria-label={SOURCES_COPY.yourSessions} style={group}>
+        <section aria-label={SOURCES_COPY.yourSessions} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.yourSessions}` }} style={group}>
           <GroupHead name={SOURCES_COPY.yourSessions} count={library.length} hollow />
           <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} />} />
           {props.libraryHasMore ? (
@@ -500,14 +511,14 @@ export function SourcesPanel(props: SourcesPanelProps) {
       ) : null}
 
       {(props.arriving ?? []).length > 0 ? (
-        <section aria-label={SOURCES_COPY.stillArriving} style={group}>
+        <section aria-label={SOURCES_COPY.stillArriving} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.stillArriving}` }} style={group}>
           <GroupHead name={SOURCES_COPY.stillArriving} count={(props.arriving ?? []).length} hollow />
           <Capped rows={props.arriving ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
         </section>
       ) : null}
 
       {(props.didntFinish ?? []).length > 0 ? (
-        <section aria-label={SOURCES_COPY.didntFinish} style={group}>
+        <section aria-label={SOURCES_COPY.didntFinish} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.didntFinish}` }} style={group}>
           <GroupHead name={SOURCES_COPY.didntFinish} count={(props.didntFinish ?? []).length} hollow />
           <Capped rows={props.didntFinish ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
         </section>

@@ -133,10 +133,22 @@ export function liftOut(elements: readonly Element[], { stagger = 0, cap = STAGG
 /** How long a lift of `count` items takes from the first starting to the last ending. */
 export const liftSpan = (count: number, stagger: number = STAGGER, cap: number = STAGGER_CAP, ms: number = LIFT): number => (count > 0 ? staggerDelay(count - 1, stagger, cap) + ms : 0);
 
+/* ── openClip: a frame that opens ── */
+
+/**
+ * A frame that grows to hold what is in it, drawn with `clip-path: inset()` so no layout property moves: it is revealed from the
+ * top down over `BASE`. Used for a part's frame, which holds sessions and so cannot fade without fading them.
+ */
+export function openClip(elements: readonly Element[], { delay = 0, ms = LIFT }: { delay?: number; ms?: number } = {}): MotionRun {
+  return runOf(
+    elements.map((element) => (canAnimate(element) ? start(element, "clip", [{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: ms, delay, fill: "backwards" }) : null)),
+  );
+}
+
 /* ── slideOut: arriving from under something ── */
 
 /** An element that starts at `from` (behind what it comes out of) and moves to where it is, fading in, over `DROP`. A copy slides out from under its original. */
-export function slideOut(element: Element, from: Box, ms: number = DROP): MotionRun {
+export function slideOut(element: Element, from: Box, ms: number = DROP, delay = 0): MotionRun {
   if (!canAnimate(element)) return DONE;
   const now = element.getBoundingClientRect();
   const dx = from.x - now.left;
@@ -144,7 +156,7 @@ export function slideOut(element: Element, from: Box, ms: number = DROP): Motion
   const sx = now.width > 0 ? from.w / now.width : 1;
   const sy = now.height > 0 ? from.h / now.height : 1;
   return runOf([
-    start(element, "out", [{ opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, transformOrigin: "0 0" }, { opacity: 1, transform: "none", transformOrigin: "0 0" }], { duration: ms, fill: "backwards" }),
+    start(element, "out", [{ opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, transformOrigin: "0 0" }, { opacity: 1, transform: "none", transformOrigin: "0 0" }], { duration: ms, delay, fill: "backwards" }),
   ]);
 }
 
@@ -207,6 +219,8 @@ export interface LeavingOptions {
   /** Only lift when told to: a build that is swapped for another, or a first load, must not lift everything. */
   enabled?: boolean;
   ms?: number;
+  /** Just before the lifted items are let go: measure what is about to slide up (`useFlip().measure`). */
+  onRelease?: () => void;
 }
 
 export interface Leaving<T> {
@@ -222,14 +236,14 @@ const NONE: ReadonlySet<string> = new Set();
  * Keep what was removed on screen, in place, while it lifts out; then let it go. Everything else stays where it was meanwhile, so
  * nothing jumps, and the gap closes (a slide) only once the lift has ended.
  */
-export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, { find, stagger = 0, reverse = false, enabled = true, ms = LIFT }: LeavingOptions): Leaving<T> {
+export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, { find, stagger = 0, reverse = false, enabled = true, ms = LIFT, onRelease }: LeavingOptions): Leaving<T> {
   const previous = useRef<readonly T[]>(items);
   const held = useRef(new Map<string, { item: T; after: string | null }>());
   const fresh = useRef<string[]>([]);
   const timers = useRef<number[]>([]);
   const [, redraw] = useState(0);
-  const options = useRef({ find, stagger, reverse, ms });
-  options.current = { find, stagger, reverse, ms };
+  const options = useRef({ find, stagger, reverse, ms, onRelease });
+  options.current = { find, stagger, reverse, ms, onRelease };
 
   if (previous.current !== items) {
     const now = new Set(items.map(keyOf));
@@ -264,6 +278,7 @@ export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, {
     const span = liftSpan(ordered.length, step, STAGGER_CAP, duration);
     timers.current.push(
       window.setTimeout(() => {
+        options.current.onRelease?.();
         for (const key of keys) held.current.delete(key);
         redraw((value) => value + 1);
       }, span),
