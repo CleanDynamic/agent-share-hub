@@ -70,7 +70,8 @@ import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { useClassificationCard } from "./useClassificationCard";
-import { AddMenu, SandboxView, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
+import { AddMenu, SandboxView, type PanelState, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
+import type { PanelName } from "./PanelBoundary";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
 import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
@@ -2026,6 +2027,35 @@ export function SandboxPage() {
       : null;
   const heldBar = useHeld(barProps, BASE);
 
+  /* The Add a session row's props, shared by the List's row and the empty build's "Import from connected chats". */
+  const addSessionProps = {
+    library: libraryRows,
+    hasMore: sessions.libraryHasMore,
+    loadingMore: sessions.libraryLoadingMore,
+    onMore: sessions.libraryMore,
+    adding: adding.size > 0 || startingSession,
+    onAdd: (importId: string, part?: string) => void stepOf.session(importId, part),
+    onStartNew: (part?: string) => void stepOf.startSession(part),
+    parts: addToParts,
+  };
+  /* CA-24 P2: no sessions and no tiles (a new post's default Session 1 doesn't count): "Add your first session" stands in place
+     of the list. Add › Prompt chooses to write one, so it brings the first session's prompt box back. */
+  const stillEmpty = steps.length === 0 && shown.length === 0 && emptySessions.every((row) => row.key === FIRST_SESSION_KEY) && promptSession === null && !pendingAdd && !arriving && !ringed;
+  /* Once the maker has started the build, the panel does not come back in between (a tile that is written but not read yet is not an empty build). */
+  const leftEmpty = useRef(false);
+  if (!stillEmpty) leftEmpty.current = true;
+  const emptyBuildShown = stillEmpty && !leftEmpty.current;
+  /* CA-24 P3: what each panel's own queries say. Retry reads that panel's queries again and no others. Sources and the post draw their own
+     failure (their read is theirs); the build's sessions and Details' prompts are read here. The map reads nothing. */
+  const detailsFailed = view?.kind === "session" && view.status === "error" ? view.key : null;
+  const panels: Partial<Record<PanelName, PanelState>> = {
+    Build: { failed: sessions.buildFailed, error: sessions.buildError, onRetry: sessions.retryBuild },
+    Details: { failed: detailsFailed !== null, onRetry: () => (detailsFailed ? sessions.retryPrompts(detailsFailed) : undefined) },
+  };
+  const emptyBuildProps = emptyBuildShown
+    ? { phone, fine, available: libraryRows.filter((row) => !row.inThisDraft).length, addSession: addSessionProps, onDropFiles: (files: File[], paths?: string[]) => void stepOf.dropped(files, paths), onPick: pick }
+    : null;
+
   return (
     <BuildHistoryContext.Provider value={buildHistory}>
       <ReferenceBridgeContext.Provider value={bridge}>
@@ -2105,6 +2135,8 @@ export function SandboxPage() {
         selection={
           <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsStepped} />
         }
+        panels={panels}
+        emptyBuild={emptyBuildProps}
         list={
           <BuildList
             phone={phone}
@@ -2174,16 +2206,7 @@ export function SandboxPage() {
             addPromptFlash={addPromptFlash}
             pendingAdd={pendingAdd}
             ringedId={ringed?.id ?? null}
-            addSession={{
-              library: libraryRows,
-              hasMore: sessions.libraryHasMore,
-              loadingMore: sessions.libraryLoadingMore,
-              onMore: sessions.libraryMore,
-              adding: adding.size > 0 || startingSession,
-              onAdd: (importId, part) => void stepOf.session(importId, part),
-              onStartNew: (part) => void stepOf.startSession(part),
-              parts: addToParts,
-            }}
+            addSession={addSessionProps}
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
             ringedSession={ringedSession}
@@ -2202,6 +2225,7 @@ export function SandboxPage() {
             fine={fine}
             status={sessions.status}
             onRetry={sessions.retry}
+            error={sessions.libraryError}
             sessions={sourceSessionRows}
             files={sourceFileRows}
             library={libraryRows}

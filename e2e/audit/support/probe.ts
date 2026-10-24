@@ -304,7 +304,7 @@ export const collectContrast = (tokenNames: string[]) => {
            it reads as unavailable BECAUSE it is harder to see. Reported so
            the numbers are on the record, never failed. */
         const inactive = !!el.closest(
-          '[disabled],[aria-disabled="true"],[data-disabled],[data-state="unavailable"]',
+          '[disabled],[aria-disabled="true"],[data-disabled],[data-state="unavailable"],[data-loading-blocks]',
         );
         const notes: string[] = [];
         if (large) notes.push("large-text");

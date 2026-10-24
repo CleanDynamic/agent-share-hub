@@ -255,6 +255,17 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/__audit__/fakeSupabase.ts",
   "src/pages/site/compose/ComposePage.tsx",
   "src/pages/site/compose/useComposeSessions.ts",
+  // CA-24 P5
+  "e2e/audit/composer-ca24-shots.spec.ts",
+  "src/pages/dev/Ca24Demo.tsx",
+  "src/pages/dev/SandboxDemo.tsx",
+  // CA-24 P4
+  "src/pages/site/compose/ImportingPieces.test.tsx",
+  "src/pages/site/compose/ImportingPieces.tsx",
+  "src/pages/site/compose/SessionHead.tsx",
+  "src/pages/site/compose/SourcesPanel.test.tsx",
+  "src/pages/site/compose/arrival.tsx",
+  "src/pages/site/compose/ca24.p4.test.tsx",
   "src/pages/site/drafts/DraftsPage.tsx",
   "src/pages/site/drafts/DraftsView.test.tsx",
   "src/pages/site/drafts/DraftsView.tsx",
@@ -688,6 +699,37 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/useTwoTabs.tsx",
   // CA-23 P5
   "src/pages/dev/SavingDemo.tsx",
+  // CA-24 P1
+  "e2e/audit/composer-ca24-loading.spec.ts",
+  "src/pages/site/compose/ComposeRoute.tsx",
+  "src/pages/site/compose/ComposeSkeleton.test.tsx",
+  "src/pages/site/compose/ComposeSkeleton.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/LoadingBlocks.test.tsx",
+  "src/pages/site/compose/LoadingBlocks.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/SessionDialog.tsx",
+  "src/pages/site/compose/SessionMap.tsx",
+  "src/pages/site/compose/SourcesPanel.tsx",
+  "src/pages/site/compose/loadingBlocks.test.ts",
+  "src/pages/site/compose/loadingBlocks.ts",
+  // CA-24 P2
+  "src/pages/site/compose/AddSessionRow.tsx",
+  "src/pages/site/compose/EmptyBuild.test.tsx",
+  "src/pages/site/compose/EmptyBuild.tsx",
+  "src/pages/site/compose/SandboxPage.add.test.tsx",
+  "src/pages/site/compose/SandboxPage.empty.test.tsx",
+  "src/pages/site/compose/SandboxPage.parts.test.tsx",
+  "src/pages/site/compose/SandboxPage.sessionEdits.test.tsx",
+  "src/pages/site/compose/SandboxPage.sessions.test.tsx",
+  "src/pages/site/compose/ca20Harness.tsx",
+  "src/pages/site/compose/ca21.p7.test.tsx",
+  "src/pages/site/compose/emptyBuildRecipes.ts",
+  // CA-24 P3
+  "src/pages/site/compose/PanelBoundary.test.tsx",
+  "src/pages/site/compose/PanelBoundary.tsx",
+  "src/pages/site/compose/PostTab.tsx",
+  "src/pages/site/compose/useComposeSessions.ts",
 ];
 
 /**
@@ -714,7 +756,7 @@ export const MODAL_FILES: readonly string[] = [
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts", "src/pages/site/compose/referencePieces.tsx"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts", "src/pages/site/compose/referencePieces.tsx", "src/pages/site/compose/emptyBuildRecipes.ts"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 
@@ -1331,6 +1373,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 14 is not in SPACE_REFINED",
     text: 'padding: "12px 14px"',
     why: "The clash window's two panels (CA-23): padding 12 14 is the board's own measure.",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: 'padding: "0 7px",',
+    why: "The Importing tag (CA-24 P4): 20 tall, padding 0 7, radius 5 is the board's own measure, as the tag in modalRecipes.tsx has.",
   },
 ];
 

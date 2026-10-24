@@ -64,6 +64,9 @@ import {
   MAP_SUB,
   MAP_TITLE,
 } from "./mapRecipes";
+import { LoadingRegion } from "@/components/brand/Skeleton";
+import { LoadingBlocks } from "./LoadingBlocks";
+import { MAP_LOADING_ROWS } from "./loadingBlocks";
 import { ToolMark } from "./refinedPieces";
 import { RecipeButton } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
@@ -120,6 +123,8 @@ export interface SessionMapColumnProps {
   controls?: MapControls;
   /** The head's second line ends with this ("Shown on build page"). Absent for a reader. */
   shownLine?: string;
+  /** CA-24 P1: the map is still being laid out: building blocks in its box. */
+  loading?: boolean;
 }
 
 function MapOptionsMenu({ controls }: { controls: MapControls }) {
@@ -312,7 +317,7 @@ function Legend({ model, selected }: { model: SessionMapModel; selected: string 
 }
 
 /** The map column: head, drawing, legend. */
-export function SessionMapColumn({ model, direction: wanted, selected, onSelect, controls, shownLine }: SessionMapColumnProps) {
+export function SessionMapColumn({ model, direction: wanted, selected, onSelect, controls, shownLine, loading = false }: SessionMapColumnProps) {
   const wide = useMinWidth(768);
   const direction: MapDirection = wide ? wanted : "vertical";
   const [fit, setFit] = useState(false);
@@ -341,6 +346,16 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
   };
 
   const summary = [model.stages.stages.length > 0 ? mapSummary(model) : "", shownLine].filter(Boolean).join(" · ");
+
+  if (loading) {
+    return (
+      <div data-testid="session-map" style={MAP_COLUMN}>
+        <LoadingRegion what="the map" data-testid="map-loading">
+          <LoadingBlocks kind="box" rows={MAP_LOADING_ROWS} width="fill" />
+        </LoadingRegion>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="session-map" onKeyDown={onKeyDown} style={MAP_COLUMN}>

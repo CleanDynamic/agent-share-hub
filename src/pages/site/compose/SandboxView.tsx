@@ -35,7 +35,6 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
-import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -66,8 +65,18 @@ import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
 import { useLensMorph } from "./mapMorph";
+import { ComposeArrival } from "./ComposeSkeleton";
+import { PanelBoundary, type PanelName } from "./PanelBoundary";
+import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
 
 export type SandboxLens = "list" | "map";
+
+/** CA-24 P3: a panel whose own query has failed (`failed`), and the refetch of that panel's queries alone. */
+export interface PanelState {
+  failed?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
+}
 
 export interface SandboxMissingItem {
   /** CA-13 P18: "runtime-0" for a Decision or Runs when that stops Publish. */
@@ -125,6 +134,10 @@ export interface SandboxViewProps extends CardProps {
   addTargets?: AddTargets;
   /** CA-14 P6: the View menu's two switches. Absent: no View menu. */
   viewOptions?: ViewMenuProps;
+  /** CA-24 P3: each panel's own failure and how to ask again; a panel that throws while drawing is caught by its own boundary whatever is passed. */
+  panels?: Partial<Record<PanelName, PanelState>>;
+  /** CA-24 P2: the build has no sessions and no tiles: "Add your first session" stands in the Build column in place of the list and its add rows. */
+  emptyBuild?: EmptyBuildProps | null;
   /** CA-14 P6: the session list, a row under the header (a menu on a phone). Absent: nothing is drawn. */
   sessionList?: ReactNode;
   /** CA-20 P3: the selection bar, sticky at the bottom of the Build column. Absent: nothing is drawn. */
@@ -861,23 +874,6 @@ function DefaultSources() {
   );
 }
 
-function Skeletons({ phone }: { phone: boolean }) {
-  return (
-    <LoadingRegion what="the composer" announce>
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 20, borderBottom: `1px solid ${t.hairline}` }}>
-          <Skeleton width={phone ? "70%" : 280} height={22} radius={4} />
-          <Skeleton width={phone ? "50%" : 220} height={13} radius={4} />
-        </div>
-        <div style={{ ...moduleStyle(), display: "flex", flexDirection: "column", gap: 12 }}>
-          <Skeleton width={120} height={14} />
-          <Skeleton height={phone ? 180 : 320} radius={6} />
-        </div>
-      </div>
-    </LoadingRegion>
-  );
-}
-
 function NotFound() {
   return (
     <div style={{ ...moduleStyle(false, 24), maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -896,7 +892,13 @@ const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: 
 
 /* ── the view ── */
 
+/** CA-24 P1: while the build's first queries load, building blocks stand where the columns will; the content then takes their place. */
 export function SandboxView(props: SandboxViewProps) {
+  const loading = props.status === "loading";
+  return <ComposeArrival loading={loading}>{loading ? null : <SandboxBody {...props} />}</ComposeArrival>;
+}
+
+function SandboxBody(props: SandboxViewProps) {
   const phone = useIsPhone();
   const win = useWindowSize();
   const { status, published, save } = props;
@@ -913,7 +915,6 @@ export function SandboxView(props: SandboxViewProps) {
   /* CA-22 P7: List and Map morph into one another (a computer only; the hook does nothing where motion is off). */
   const morph = useLensMorph({ lens: props.lens, onLens: props.onLens, getRoot: useCallback(() => tabsRef.current?.parentElement ?? null, []) });
 
-  if (status === "loading") return <Skeletons phone={phone} />;
   if (status === "error") {
     return (
       <div style={moduleStyle()}>
@@ -1006,8 +1007,16 @@ export function SandboxView(props: SandboxViewProps) {
     </div>
   ) : null;
 
-  const detailsBody = props.selection ?? <p style={quiet}>{DETAILS_EMPTY}</p>;
-  const sourcesBody = props.sources ?? <DefaultSources />;
+  /* CA-24 P3: every panel stands in its own boundary, so one that fails alone leaves the others as they are. */
+  const guard = (panel: PanelName, node: ReactNode) => (
+    <PanelBoundary panel={panel} failed={props.panels?.[panel]?.failed} error={props.panels?.[panel]?.error} onRetry={props.panels?.[panel]?.onRetry}>
+      {node}
+    </PanelBoundary>
+  );
+  const detailsBody = guard("Details", props.selection ?? <p style={quiet}>{DETAILS_EMPTY}</p>);
+  const sourcesBody = guard("Sources", props.sources ?? <DefaultSources />);
+  const postNode = props.post ? guard("Post", props.post) : null;
+  const mapNode = guard("Map", props.map ?? null);
 
   const addMenu = (
     <AddMenu
@@ -1068,14 +1077,14 @@ export function SandboxView(props: SandboxViewProps) {
         {phone ? null : addMenu}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>}
+      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>))}
     </section>
   );
 
   /* PT-05: the post heads the Build column, above the first prompt, under nothing but its own hairline. Not while an
      agent or team is open in the Map: the trail is about that one part. */
   const postSection =
-    props.post ? (
+    postNode ? (
       <section
         ref={postRef}
         aria-label="Post"
@@ -1083,7 +1092,7 @@ export function SandboxView(props: SandboxViewProps) {
         tabIndex={-1}
         style={{ outline: "none", minWidth: 0, paddingBottom: 16, borderBottom: `1px solid ${t.hairline}` }}
       >
-        {props.post}
+        {postNode}
       </section>
     ) : null;
   /* The column the post and the build share. */
@@ -1107,9 +1116,9 @@ export function SandboxView(props: SandboxViewProps) {
         /* CA-18 P4: the post heads the Build column, 18 under the head's hairline and 18 above it. The title and its
            status line sit in the title row at the top of the page, as they did before this change. */
         <div data-testid="sandbox-build-head" style={{ ...BUILD_HEAD, gap: 0, paddingBottom: HEAD_GAP, borderBottom: `1px solid ${t.hairline}` }}>
-          {props.post ? (
+          {postNode ? (
             <section ref={postRef} aria-label="Post" data-testid="sandbox-post" tabIndex={-1} style={{ outline: "none", minWidth: 0 }}>
-              {props.post}
+              {postNode}
             </section>
           ) : null}
         </div>
@@ -1211,8 +1220,8 @@ export function SandboxView(props: SandboxViewProps) {
           </SourcesFrame>
           {/* CA-17 P4: Details is not shown in the Map view: the map column fills, then 48, then the map's panel, 312 wide. */}
           <div data-testid="map-view" style={MAP_AND_PANEL}>
-            <div style={MAP_COLUMN}>{props.map ?? null}</div>
-            {props.mapPanel}
+            <div style={MAP_COLUMN}>{mapNode}</div>
+            {props.mapPanel ? guard("Map", props.mapPanel) : null}
           </div>
         </div>
       ) : (
@@ -1230,7 +1239,7 @@ export function SandboxView(props: SandboxViewProps) {
           <div style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD }}>{buildColumn}</div>
           {frame.beside ? (
             <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth, display: "flex", alignItems: "stretch" }}>
-              <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? props.renderDetails(plan) : detailsBody)} />
+              <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? guard("Details", props.renderDetails(plan)) : detailsBody)} />
             </div>
           ) : null}
         </div>

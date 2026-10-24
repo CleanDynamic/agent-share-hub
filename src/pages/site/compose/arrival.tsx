@@ -20,6 +20,7 @@ import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } 
 import { prefersReducedMotion, scrollBehavior, STANDARD } from "@/lib/theme/motion";
 
 import { play, SLIDE_ATTR, snapshot, type Box } from "./flip";
+import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
 import { SessionHead } from "./SessionHead";
 import type { SourceSession } from "./sourcesModel";
 import { RUN } from "./tileRecipes";
@@ -37,6 +38,12 @@ export interface Arriving {
   count: number;
   /** The part it joins; none: the end of the build (the last part, with parts). */
   part?: string;
+  /** CA-24 P4: how far the import has got, when it can say. Absent: the tag and the sockets show, with no bar or count. */
+  progress?: { done: number; total: number };
+  /** CA-24 P4: the text of the prompts already in, when the import can say. Their sockets show them; the others show building blocks. */
+  written?: readonly string[];
+  /** CA-24 P4: ends the import, keeping what is in. Absent: it cannot be stopped, and there is no Stop. */
+  onStop?: () => void;
   /** Writing: the rows are on their way. Written: the data has them. Failed: nothing was added. */
   status: "writing" | "written" | "failed";
 }
@@ -232,6 +239,8 @@ export function ArrivingBlock({ arriving, rootRef, first }: { arriving: Arriving
   useLayoutEffect(() => {
     if (head.current && typeof head.current.animate === "function" && !prefersReducedMotion()) fall(head.current, HEAD_AFTER_MS);
   }, []);
+  /* CA-24 P4: past a second, a chat's import shows it is working: the tag, building blocks in each empty socket, and, when the import can say how far it is, the bar. */
+  const slow = useSlow(arriving.kind === "chat" && arriving.status === "writing");
   return (
     <div
       data-testid="arriving-session"
@@ -243,15 +252,18 @@ export function ArrivingBlock({ arriving, rootRef, first }: { arriving: Arriving
       style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(first ? null : { marginTop: 16 }) }}
     >
       <div ref={head} data-testid="arriving-head" style={{ position: "relative" }}>
-        <SessionHead session={arriving.head} phone={false} tiles={arriving.count} collapsed={false} controls={`session-tiles-${arriving.key}`} onToggle={() => undefined} first={false} last={false} editable={false} />
+        <SessionHead session={arriving.head} phone={false} tiles={arriving.count} collapsed={false} controls={`session-tiles-${arriving.key}`} onToggle={() => undefined} first={false} last={false} editable={false} importing={slow} />
       </div>
       {arriving.count > 0 ? (
         <div id={`session-tiles-${arriving.key}`} data-testid="session-tiles" style={RUN}>
           {Array.from({ length: arriving.count }, (_, at) => (
-            <div key={at} data-skel-kind="tile" data-skel-id={`${arriving.key}:wait:${at}`} data-skel-container={arriving.key} data-testid="arriving-place" style={{ height: height.current ?? 108, visibility: "hidden" }} />
+            <div key={at} data-skel-kind="tile" data-skel-id={`${arriving.key}:wait:${at}`} data-skel-container={arriving.key} data-testid="arriving-place" style={{ position: "relative", height: height.current ?? 108, visibility: "hidden" }}>
+              {arriving.written && at < arriving.written.length ? <WrittenPrompt text={arriving.written[at]} /> : slow ? <SocketBlocks /> : null}
+            </div>
           ))}
         </div>
       ) : null}
+      {slow ? <ImportProgress progress={arriving.progress} onStop={arriving.progress ? arriving.onStop : undefined} /> : null}
     </div>
   );
 }

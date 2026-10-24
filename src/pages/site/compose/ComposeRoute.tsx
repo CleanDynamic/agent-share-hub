@@ -35,6 +35,8 @@ import { getBuild } from "@/lib/build/builds";
 import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 import type { BuildRecord } from "@/lib/build/types";
 
+import { ComposeSkeleton } from "./ComposeSkeleton";
+
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));
 /** UI-P63: the new composer, its own chunk, only fetched while the switch is on. */
@@ -78,7 +80,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
       {/* No RouteBoundary: it is keyed by pathname, and the first change replaces
           /compose/new with /compose/{id}, which would remount the page under the
           creator's cursor. */}
-      <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+      <Suspense fallback={SANDBOX_COMPOSER_ENABLED ? <ComposeSkeleton /> : <div style={{ minHeight: "60vh" }} />}>
         {SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />}
       </Suspense>
     </SiteFrame>

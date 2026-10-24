@@ -29,8 +29,11 @@ import type { RuntimePatch } from "@/lib/build/graph";
 import type { RuntimeView } from "./runtimeView";
 import type { DecisionDraft } from "@/lib/build/decisionDraft";
 import type { DecisionInput } from "@/lib/build/graph";
+import { LoadingRegion } from "@/components/brand/Skeleton";
 import type { RunsWhen } from "@/lib/build/decision";
 import type { GoesRow, InputOption, UseRow, ChecklistRow, MakesRow } from "./detailsModel";
+import { LoadingBlocks } from "./LoadingBlocks";
+import { DETAILS_WIDTHS as DETAILS_LINES, LINE_GAP } from "./loadingBlocks";
 import { ToolMark } from "./refinedPieces";
 import { text } from "./refinedStyles";
 import {
@@ -720,8 +723,21 @@ function DetailsFade({ view, children }: { view: DetailsView | null; children: R
   return <Swap id={subject ? `${subject.kind}:${subject.id ?? subject.key ?? ""}` : "none"}>{children}</Swap>;
 }
 
+/** CA-24 P1: Details while a selection loads: 6 lines, 22 apart. */
+export function DetailsLoading() {
+  return (
+    <LoadingRegion what="details" data-testid="details-loading" style={{ display: "flex", flexDirection: "column", gap: LINE_GAP }}>
+      {DETAILS_LINES.map((width, at) => (
+        <LoadingBlocks key={at} kind="line" width={width} />
+      ))}
+    </LoadingRegion>
+  );
+}
+
 export function DetailsPanel({ view, colour = null, build, onEdit, plan, onSelect, onOpenPrompt }: DetailsPanelProps) {
   if (!view) return <DetailsFade view={null}><p style={EMPTY}>{DETAILS_COPY.empty}</p></DetailsFade>;
+  /* CA-24 P1: a selection that is still loading is six lines of building blocks, scaled to Details' width. */
+  if (view.kind === "session" && view.status === "loading") return <DetailsLoading />;
   return (
     <DetailsFade view={view}>
       <div data-testid="details-panel" data-kind={view.kind} style={{ ...COLUMN, fontSize: 13 }}>

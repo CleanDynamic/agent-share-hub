@@ -10,7 +10,7 @@ import { PG } from "@/lib/build/__audit__/fakeSupabase";
 import { promptStart } from "@/lib/build/buildMotion";
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
-import { DRAFT, field, harnessAfter, harnessBefore, mount, openRow, sessionsOf, stubWidth } from "./ca20Harness";
+import { DRAFT, field, harnessAfter, harnessBefore, mount, openRow, sessionsOf, startNewSession, stubWidth } from "./ca20Harness";
 
 vi.setConfig({ testTimeout: 40_000 });
 
@@ -138,8 +138,7 @@ describe("Start a new session", () => {
   it("opens the lane and drops the head in, with no places for prompts, and shows 'Drop a tile here' until it is done", async () => {
     mount(`/compose/${DRAFT}`, { delays: [{ method: "PATCH", path: /^\/rest\/v1\/builds/, delayMs: 900 }] });
     await field();
-    fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
-    fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
+    await startNewSession();
     const block = await screen.findByTestId("arriving-session", undefined, { timeout: 10_000 });
     expect(within(block).queryAllByTestId("arriving-place")).toHaveLength(0);
     await waitFor(() => expect(screen.queryByTestId("arriving-session")).toBeNull(), { timeout: 15_000 });

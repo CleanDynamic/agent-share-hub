@@ -589,3 +589,83 @@ describe("CA-13 P1 · Add › Decision", () => {
     expect(on?.line).toBe("A structured classification your application requests from a model");
   });
 });
+
+describe("CA-24 P2 · the empty build in the Build column", () => {
+  const emptyBuild = {
+    phone: false,
+    fine: true,
+    available: 8,
+    addSession: { library: [], adding: false, onAdd: vi.fn(), onStartNew: vi.fn() },
+    onDropFiles: vi.fn(),
+    onPick: vi.fn(),
+  };
+
+  it("stands in place of the list when the page says the build is empty, after the post", () => {
+    view({ emptyBuild, post: <p>the post</p>, list: <p>the list</p> });
+    const panel = screen.getByTestId("empty-build");
+    expect(screen.queryByText("the list")).toBeNull();
+    expect(screen.getByText("8 available")).toBeTruthy();
+    expect(screen.getByText("the post").compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is not drawn for a build that has something in it", () => {
+    view({ emptyBuild: null, list: <p>the list</p> });
+    expect(screen.queryByTestId("empty-build")).toBeNull();
+    expect(screen.getByText("the list")).toBeTruthy();
+  });
+});
+
+describe("CA-24 P3 · one boundary per panel", () => {
+  function Bomb(): never {
+    throw new Error("a prompt's secret text");
+  }
+  const SLOTS = {
+    Sources: (node: React.ReactNode) => ({ sources: node }),
+    Post: (node: React.ReactNode) => ({ post: node }),
+    Build: (node: React.ReactNode) => ({ list: node }),
+    Details: (node: React.ReactNode) => ({ selection: node }),
+    Map: (node: React.ReactNode) => ({ lens: "map" as const, map: node }),
+  } as const;
+
+  beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  const others = { sources: <p>sources work</p>, post: <p>post works</p>, list: <p>build works</p>, selection: <p>details work</p> };
+
+  it.each(Object.keys(SLOTS) as (keyof typeof SLOTS)[])("%s failing alone: its words and Retry, the others still drawn", (broken) => {
+    const lens = broken === "Map" ? ({ lens: "map" } as const) : ({} as const);
+    const slots = broken === "Map" ? { ...others, ...lens, map: <Bomb />, mapPanel: <p>map panel works</p> } : { ...others, ...SLOTS[broken](<Bomb />) };
+    view(slots as Partial<SandboxViewProps>);
+    expect(screen.getByText(`${broken} didn't load`)).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);
+    const alive: [string, string][] = [["Sources", "sources work"], ["Post", "post works"], ["Build", "build works"], ["Details", "details work"]];
+    for (const [name, words] of alive) {
+      if (name === broken) continue;
+      // The Map view has no Build, Post or Details columns, and Sources stands as its rail.
+      if (broken === "Map") continue;
+      expect(screen.getByText(words), `${name} still drawn`).toBeTruthy();
+    }
+    if (broken === "Map") expect(screen.getByText("map panel works")).toBeTruthy();
+  });
+
+  it("a panel's own query failing shows the same fallback; Retry runs that panel's refetch and no other", () => {
+    const refetch = { Build: vi.fn(), Details: vi.fn(), Sources: vi.fn() };
+    view({
+      ...others,
+      panels: {
+        Build: { failed: true, error: new Error("boom"), onRetry: refetch.Build },
+        Details: { onRetry: refetch.Details },
+        Sources: { onRetry: refetch.Sources },
+      },
+    });
+    expect(screen.getByText("Build didn't load")).toBeTruthy();
+    expect(screen.queryByText("build works")).toBeNull();
+    expect(screen.getByText("details work")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(refetch.Build).toHaveBeenCalledTimes(1);
+    expect(refetch.Details).not.toHaveBeenCalled();
+    expect(refetch.Sources).not.toHaveBeenCalled();
+  });
+});

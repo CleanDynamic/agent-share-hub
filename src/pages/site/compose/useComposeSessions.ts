@@ -79,6 +79,13 @@ export interface ComposeSessions {
   /** The library's read. */
   status: "loading" | "error" | "ready";
   retry: () => void;
+  /** The library's real error, for the log. */
+  libraryError: unknown;
+  /** CA-24 P3: the build's own sessions or their rows never loaded. */
+  buildFailed: boolean;
+  buildError: unknown;
+  /** Reads the build's own sessions and their rows again, and nothing else. */
+  retryBuild: () => void;
   setOpenIds: (ids: readonly string[]) => void;
   /** A session's prompts once read, and whether reading them failed. */
   promptsState: (sessionId: string) => { prompts: SessionPrompt[] | undefined; error: boolean };
@@ -311,6 +318,10 @@ export function useComposeSessions({
     unfinished: library.unfinished,
     status,
     retry: () => void library.refetch(),
+    libraryError: library.error ?? undefined,
+    buildFailed: (buildSessions.isError && buildSessions.data === undefined) || (rows.isError && rows.data === undefined),
+    buildError: buildSessions.error ?? rows.error ?? undefined,
+    retryBuild: () => void Promise.all([queryClient.refetchQueries({ queryKey: buildSessionsKey(buildId), exact: true }), queryClient.refetchQueries({ queryKey: buildSessionRowsKey(buildId), exact: true })]),
     setOpenIds,
     promptsState,
     promptsOf,
