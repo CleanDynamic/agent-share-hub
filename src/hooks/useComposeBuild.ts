@@ -44,6 +44,7 @@ import type {
 } from "@/lib/build";
 import { connection, isNetworkFailure } from "@/lib/build/connection";
 import { pendingWrites } from "@/lib/build/pendingWrites";
+import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
 import { canSucceedLater, errorCode, errorLine, shortReason } from "@/lib/errors/code";
 import { composeBuildQueryKey } from "./composeBuildQueryKey";
 
@@ -131,6 +132,12 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     refetchOnWindowFocus: false,
     retry: 1,
   });
+
+  /* CA-23 P4: what this tab last knew of the build, for the checks that stop a write from undoing another tab's change. The first
+     read is learned; a later one only adds what is new. */
+  useEffect(() => {
+    if (buildId && query.data) noteRecord(buildId, { build: query.data.build as unknown as Record<string, unknown>, tree: flatNodes(query.data.tree) });
+  }, [buildId, query.data]);
 
   /**
    * Unsaved local edits, keyed by column, laid over the loaded row.

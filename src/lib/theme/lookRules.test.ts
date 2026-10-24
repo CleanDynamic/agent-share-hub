@@ -669,6 +669,23 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca23.p3.test.tsx",
   "src/pages/site/compose/saveWindows.tsx",
   "src/pages/site/compose/useLeaveGuard.ts",
+  // CA-23 P4
+  "e2e/tier3/two-tabs.spec.ts",
+  "src/lib/build/builds.ts",
+  "src/lib/build/clash.test.ts",
+  "src/lib/build/clash.ts",
+  "src/lib/build/clashView.test.ts",
+  "src/lib/build/clashView.ts",
+  "src/lib/build/nodes.ts",
+  "src/lib/build/removedLog.ts",
+  "src/lib/build/sessionEdit.ts",
+  "src/lib/build/staleWrites.test.ts",
+  "src/lib/build/staleWrites.ts",
+  "src/lib/build/tabSync.test.ts",
+  "src/lib/build/tabSync.ts",
+  "src/pages/site/compose/ClashWindow.tsx",
+  "src/pages/site/compose/ca23.p4.test.tsx",
+  "src/pages/site/compose/useTwoTabs.tsx",
 ];
 
 /**
@@ -1307,6 +1324,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 14 is not in SPACE_REFINED",
     text: 'padding: "8px 8px 8px 14px"',
     why: "The strips at the top of the Build column (CA-23): padding 8 8 8 14 is the board's own measure for the Offline and Changed in another tab strips.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: 'padding: "12px 14px"',
+    why: "The clash window's two panels (CA-23): padding 12 14 is the board's own measure.",
   },
 ];
 

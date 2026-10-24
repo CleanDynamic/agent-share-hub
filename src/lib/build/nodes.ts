@@ -5,6 +5,7 @@
 // position IS NULL is sitting in the compose tray and is none of those things.
 
 import { supabase } from "@/integrations/supabase/client";
+import { checkRows, noteNodes } from "./staleWrites";
 import {
   buildLayerError,
   type BuildNode,
@@ -33,14 +34,35 @@ export interface NodeMove {
  * Omitting `position` (or passing null) puts the node in the tray.
  */
 export async function upsertNode(node: BuildNodeInsert): Promise<BuildNode> {
+  // CA-23 P4: a node this tab knows is read against the database first; one changed elsewhere is merged, never overwritten.
+  let toWrite: BuildNodeInsert = node;
+  if (node.id && node.build_id) {
+    const { write } = await checkRows(node.build_id, [node as unknown as BuildNode], readNodeRows, async (rows) => (await upsertRows(rows)) as BuildNode[]);
+    toWrite = write[0] as unknown as BuildNodeInsert;
+  }
   const { data, error } = await supabase
     .from("build_nodes")
-    .upsert(node, { onConflict: "id" })
+    .upsert(toWrite, { onConflict: "id" })
     .select(NODE_COLUMNS)
     .single();
 
   if (error) throw buildLayerError("upsertNode", error);
+  if ((data as BuildNode).build_id) noteNodes((data as BuildNode).build_id, [data as BuildNode]);
   return data as BuildNode;
+}
+
+/** The rows by id, as they stand in the database now. */
+export async function readNodeRows(ids: string[]): Promise<BuildNode[]> {
+  const { data, error } = await supabase.from("build_nodes").select(NODE_COLUMNS).in("id", ids).limit(NODE_LIMIT);
+  if (error) throw buildLayerError("readNodeRows", error);
+  return (data ?? []) as unknown as BuildNode[];
+}
+
+/** Whole rows, written as given: for a clash the maker has settled, whose baseline is already the database's. */
+export async function upsertRows(rows: BuildNode[]): Promise<BuildNode[]> {
+  const { data, error } = await supabase.from("build_nodes").upsert(rows as never[], { onConflict: "id" }).select(NODE_COLUMNS);
+  if (error) throw buildLayerError("upsertRows", error);
+  return (data ?? []) as unknown as BuildNode[];
 }
 
 /**

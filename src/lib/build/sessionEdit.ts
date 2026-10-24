@@ -11,8 +11,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { buildSteps, groupKey, sessionGroups, type SessionGroup, type Step } from "./graph";
 import { sessionToolsOf, sessionsMetaOf, type MakingSession, type SessionMeta } from "./making";
-import { NODE_COLUMNS, deleteNode, type NodeMove } from "./nodes";
+import { NODE_COLUMNS, deleteNode, readNodeRows, type NodeMove } from "./nodes";
 import { orderKeys, stackBySessionMoves } from "./sessionLayout";
+import { checkRows, noteNodes } from "./staleWrites";
 import { buildLayerError, type BuildNode, type NodeTree } from "./types";
 
 const makingSessionsOf = (making: unknown): MakingSession[] => {
@@ -92,6 +93,15 @@ const BATCH = 100;
 
 /** Write whole node rows back (their payloads changed, or they were removed and come back). One request per 100 rows. */
 export async function writeNodeRows(rows: readonly BuildNode[]): Promise<BuildNode[]> {
+  const buildId = rows[0]?.build_id;
+  // CA-23 P4: rows this tab knows are read against the database first; one changed elsewhere is merged, never overwritten.
+  const checked = buildId ? (await checkRows(buildId, rows, readNodeRows, writeRowsPlain)).write : [...rows];
+  const out = await writeRowsPlain(checked);
+  if (buildId) noteNodes(buildId, out);
+  return out;
+}
+
+async function writeRowsPlain(rows: readonly BuildNode[]): Promise<BuildNode[]> {
   const out: BuildNode[] = [];
   for (let at = 0; at < rows.length; at += BATCH) {
     const { data, error } = await supabase.from("build_nodes").upsert(rows.slice(at, at + BATCH) as never[], { onConflict: "id" }).select(NODE_COLUMNS);
