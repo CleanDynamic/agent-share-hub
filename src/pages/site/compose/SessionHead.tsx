@@ -24,6 +24,7 @@ import { t } from "@/lib/theme/tokens";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { TextButton } from "./composeControls";
 import { DragHandle, useNestSession, useNestSessionDrag } from "./listNest";
+import { ImportingTag } from "./ImportingPieces";
 import { ToolMark } from "./refinedPieces";
 import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { SESSION_META, SESSION_NAME } from "./tileRecipes";
@@ -98,6 +99,8 @@ export interface SessionHeadProps {
   editable: boolean;
   /** CA-17 P2: with two or more parts. */
   part?: SessionPartInfo;
+  /** CA-24 P4: the session is being imported and it is taking long: an "Importing" tag after the app name. */
+  importing?: boolean;
 }
 
 /** "Session 1 · Claude": the head's name, and the group's accessible name. */
@@ -187,7 +190,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
 /** CA-15b: the session line's facts, 12.5 `--label`. */
 const quiet = (colour: string) => ({ ...SESSION_META, color: colour, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 });
 
-export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, canMove, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part }: SessionHeadProps) {
+export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, canMove, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part, importing = false }: SessionHeadProps) {
   /* CA-22 P4: the folded head's count crossfades when a tile joins or leaves. */
   const countRef = useCrossfade<HTMLSpanElement>(tiles);
   const drop = useNestSession(session.key);
@@ -330,6 +333,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           <ToolMark tool={session.tool} size={20} />
         )}
         {app}
+        {importing ? <ImportingTag /> : null}
         {phone ? <div data-testid="session-head-meta" style={{ order: 3, flex: "1 1 100%", display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 8, rowGap: 4, minWidth: 0, paddingLeft: 40 }}>{metaRow}</div> : metaRow}
         {maker ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: "auto", order: phone ? 2 : undefined }}>

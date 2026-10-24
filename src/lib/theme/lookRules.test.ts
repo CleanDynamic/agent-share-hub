@@ -255,6 +255,13 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/__audit__/fakeSupabase.ts",
   "src/pages/site/compose/ComposePage.tsx",
   "src/pages/site/compose/useComposeSessions.ts",
+  // CA-24 P4
+  "src/pages/site/compose/ImportingPieces.test.tsx",
+  "src/pages/site/compose/ImportingPieces.tsx",
+  "src/pages/site/compose/SessionHead.tsx",
+  "src/pages/site/compose/SourcesPanel.test.tsx",
+  "src/pages/site/compose/arrival.tsx",
+  "src/pages/site/compose/ca24.p4.test.tsx",
   "src/pages/site/drafts/DraftsPage.tsx",
   "src/pages/site/drafts/DraftsView.test.tsx",
   "src/pages/site/drafts/DraftsView.tsx",
@@ -1362,6 +1369,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 14 is not in SPACE_REFINED",
     text: 'padding: "12px 14px"',
     why: "The clash window's two panels (CA-23): padding 12 14 is the board's own measure.",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: 'padding: "0 7px",',
+    why: "The Importing tag (CA-24 P4): 20 tall, padding 0 7, radius 5 is the board's own measure, as the tag in modalRecipes.tsx has.",
   },
 ];
 

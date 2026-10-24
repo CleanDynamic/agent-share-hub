@@ -170,3 +170,23 @@ describe("a file a step makes (TF-08)", () => {
     expect(within(group).getByText("added by you")).toBeTruthy();
   });
 });
+
+describe("CA-24 P3 · Sources failing to load", () => {
+  it("says Sources didn't load, with Retry, which asks again", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const props = panel({ status: "error", error: new Error("boom"), onRetry: vi.fn() });
+    expect(screen.getByText("Sources didn't load")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(props.onRetry).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("sources-panel")).toBeNull();
+  });
+});
+
+describe("CA-24 P1 · Sources loading more", () => {
+  it("shows building blocks where 'Show more sessions' was, while the next page is read", () => {
+    panel({ library: libraryRows(3), libraryHasMore: true, libraryLoadingMore: true });
+    expect(screen.queryByRole("button", { name: "Show more sessions" })).toBeNull();
+    expect(within(screen.getByTestId("library-more-loading")).getByTestId("loading-blocks")).toBeTruthy();
+    expect(screen.getByText("Loading more sessions")).toBeTruthy();
+  });
+});
