@@ -17,7 +17,7 @@
 //
 // CA-10: A SAVE THE DATABASE REFUSES STOPS. Only a failure that can succeed
 // later (the network, 408, 429, 500, 502, 503, 504, 520) is tried again, three
-// times, after 1 s, 3 s and 9 s. Any other answer, or the third retry failing,
+// times, after 1 s, 4 s and 10 s. Any other answer, or the third retry failing,
 // stops: the change stays in memory, `saveFailure` says what failed and its
 // code ("Not saved: a value isn't allowed. Code 23514."), it is logged once,
 // and `retrySave` (Try again) or the maker's next edit sends it again.
@@ -42,6 +42,9 @@ import type {
   NodeTree,
   NodeType,
 } from "@/lib/build";
+import { connection, isNetworkFailure } from "@/lib/build/connection";
+import { pendingWrites } from "@/lib/build/pendingWrites";
+import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
 import { canSucceedLater, errorCode, errorLine, shortReason } from "@/lib/errors/code";
 import { composeBuildQueryKey } from "./composeBuildQueryKey";
 
@@ -49,8 +52,8 @@ import { composeBuildQueryKey } from "./composeBuildQueryKey";
  *  indicator settles while the creator is still looking at the field. */
 export const SAVE_DEBOUNCE_MS = 800;
 
-/** CA-10: how long to wait before each retry of a save that can succeed later; three, then stop. */
-export const SAVE_RETRY_DELAYS_MS = [1_000, 3_000, 9_000] as const;
+/** CA-10 / CA-23: how long to wait before each retry of a save that can succeed later: 1, 4 and 10 seconds, then stop. */
+export const SAVE_RETRY_DELAYS_MS = [1_000, 4_000, 10_000] as const;
 
 /** CA-10: a save that stopped, in the maker's words. */
 export interface SaveFailure {
@@ -130,6 +133,12 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     retry: 1,
   });
 
+  /* CA-23 P4: what this tab last knew of the build, for the checks that stop a write from undoing another tab's change. The first
+     read is learned; a later one only adds what is new. */
+  useEffect(() => {
+    if (buildId && query.data) noteRecord(buildId, { build: query.data.build as unknown as Record<string, unknown>, tree: flatNodes(query.data.tree) });
+  }, [buildId, query.data]);
+
   /**
    * Unsaved local edits, keyed by column, laid over the loaded row.
    *
@@ -173,8 +182,14 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
   isOwnerRef.current = isOwner;
 
   const flushRef = useRef<() => Promise<void>>(async () => {});
+  /** CA-23: the header's share of the pending count: one change while fields wait to go or a write is in the air. */
+  const report = useCallback(() => {
+    pendingWrites.set("header", Object.keys(pendingRef.current).length > 0 || inFlightRef.current ? 1 : 0);
+  }, []);
   /** CA-10: set by a failed save that will be tried again: how long to wait first. */
   const retryInRef = useRef<number | null>(null);
+  /** CA-23: the last write got no answer; nothing is sent again until the connection is back (or the maker edits). */
+  const waitingOnlineRef = useRef(false);
 
   const schedule = useCallback((delay: number = SAVE_DEBOUNCE_MS) => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -202,6 +217,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     pendingRef.current = {};
     inFlightRef.current = true;
     setIsSaving(true);
+    report();
 
     try {
       const row = await updateBuild(id, patch);
@@ -229,6 +245,16 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       // Put the failed keys back, in memory, without overwriting anything the
       // creator has typed since.
       pendingRef.current = { ...patch, ...pendingRef.current };
+      // CA-23: no answer at all is not an error: the connection is down, and the change goes out when it is back.
+      if (isNetworkFailure(cause)) {
+        connection.noteNetworkFailure();
+        waitingOnlineRef.current = true;
+        void connection.whenOnline().then(() => {
+          waitingOnlineRef.current = false;
+          if (mountedRef.current && buildIdRef.current === id && Object.keys(pendingRef.current).length > 0) schedule(0);
+        });
+        return;
+      }
       setSaveError(cause instanceof Error ? cause : new Error(String(cause)));
       // CA-10: try again only what can succeed later, three times; otherwise stop and say so, once.
       if (canSucceedLater(cause) && attemptRef.current < SAVE_RETRY_DELAYS_MS.length) {
@@ -241,14 +267,15 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       }
     } finally {
       inFlightRef.current = false;
+      report();
       if (mountedRef.current && buildIdRef.current === id) {
         setIsSaving(false);
         const retryIn = retryInRef.current;
         retryInRef.current = null;
-        if (!stoppedRef.current && Object.keys(pendingRef.current).length > 0) schedule(retryIn ?? SAVE_DEBOUNCE_MS);
+        if (!stoppedRef.current && !waitingOnlineRef.current && Object.keys(pendingRef.current).length > 0) schedule(retryIn ?? SAVE_DEBOUNCE_MS);
       }
     }
-  }, [queryClient, schedule]);
+  }, [queryClient, schedule, report]);
 
   useEffect(() => {
     flushRef.current = flush;
@@ -260,12 +287,13 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       if (Object.keys(patch).length === 0) return;
       setOverlay((current) => ({ ...current, ...patch }));
       pendingRef.current = { ...pendingRef.current, ...patch };
+      report();
       // A real edit is a fresh try, even after a save stopped: it may be the change that fixes it.
       stoppedRef.current = false;
       attemptRef.current = 0;
       schedule();
     },
-    [schedule]
+    [schedule, report]
   );
 
   /** CA-10: Try again. Sends what is pending now, with three retries again if it can succeed later. */
@@ -286,6 +314,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     setSaveFailure(null);
     setPublishError(null);
     pendingRef.current = {};
+    report();
     stoppedRef.current = false;
     attemptRef.current = 0;
     openedScoreRef.current = null;
@@ -303,6 +332,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       const id = buildIdRef.current;
       const patch = pendingRef.current;
       pendingRef.current = {};
+      pendingWrites.set("header", 0);
       if (id && isOwnerRef.current && Object.keys(patch).length > 0) {
         void updateBuild(id, patch).catch(() => {
           /* unmounted: nowhere to surface this */
@@ -379,6 +409,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
 
       const pending = pendingRef.current;
       pendingRef.current = {};
+      report();
       // CA-10: publishing is a real edit, so it carries the score when the stored one is out of date.
       const score = completenessRef.current;
       const scored = score !== null && score !== storedCompletenessRef.current ? { completeness: score } : {};
@@ -440,6 +471,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
         // The creator's own edits go back on the queue: a failed publish must
         // not also lose the sentence they had just typed.
         pendingRef.current = { ...pending, ...pendingRef.current };
+        report();
         throw cause;
       }
     } catch (cause) {
@@ -456,7 +488,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
         if (Object.keys(pendingRef.current).length > 0) schedule();
       }
     }
-  }, [queryClient, schedule]);
+  }, [queryClient, schedule, report]);
 
   return {
     build,

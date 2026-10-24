@@ -22,11 +22,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { composeBuildQueryKey, SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
+import { composeBuildQueryKey, SAVE_DEBOUNCE_MS, SAVE_RETRY_DELAYS_MS } from "@/hooks/useComposeBuild";
 import { syncThreadCover } from "@/lib/build/composeCover";
 import { getThreadMedia, isThreadDoc, saveThread, splitThread, threadMediaIds, threadOf, type ThreadDoc } from "@/lib/build/thread";
 import { emptyThread, holdSentence, sameThread, tidyThread } from "@/lib/build/threadEditor";
 import type { Build } from "@/lib/build/types";
+import { canSucceedLater, errorLine } from "@/lib/errors/code";
+
+import { pendingWrites } from "@/lib/build/pendingWrites";
 
 import { saveState, type SaveState } from "./composeModel";
 
@@ -49,12 +52,16 @@ export interface ComposeThread {
   /** Posts, counted as the Gallery counts them (an empty post at either end is not one). */
   posts: number;
   save: SaveState;
+  /** CA-23: when the last write landed, for "saved 2 min ago". */
+  lastSavedAt?: Date | null;
   /** A sentence while the save is waiting, else null. */
   hold: string | null;
   /** Writes what is waiting now; resolves once it has landed or cannot. */
   flush: () => Promise<void>;
   retry: () => void;
   retryLoad: () => void;
+  /** CA-23: open the document again on the build as it stands (what another tab wrote). Words not yet written are kept unless `force`. */
+  reload?: (force?: boolean) => void;
 }
 
 export interface UseComposeThreadInput {
@@ -77,6 +84,12 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
   const timerRef = useRef<number | null>(null);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const againRef = useRef(false);
+  /** CA-23: retries spent on the failure now open (1, 4 and 10 seconds); reset by a save that lands, an edit, or Retry. */
+  const attemptRef = useRef(0);
+  /** CA-23: a failed write will be tried again on its own: the line reads saving, not not saved, until it has stopped. */
+  const retryingRef = useRef(false);
+  /** CA-23: the write has stopped (not saved): nothing is sent until the maker edits or presses Retry. */
+  const stoppedRef = useRef(false);
   const writableRef = useRef(false);
   const ensureRef = useRef(ensureBuild);
   ensureRef.current = ensureBuild;
@@ -89,6 +102,12 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<Error | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  /** CA-23: the post is one pending change while it has words that are not yet written (or being written). */
+  const report = useCallback(() => {
+    pendingWrites.set("thread", (dirtyRef.current && !holdRef.current && writableRef.current) || inFlightRef.current ? 1 : 0);
+  }, []);
 
   /* ── opening ── */
 
@@ -114,13 +133,14 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
       docRef.current = doc;
       savedRef.current = doc;
       dirtyRef.current = false;
+      report();
       lastFirstRef.current = threadMediaIds(doc)[0] ?? null;
       holdRef.current = holdSentence(doc);
       setHold(holdRef.current);
       setPosts(splitThread(doc).length);
       setVersion((current) => current + 1);
     },
-    [clearTimer],
+    [clearTimer, report],
   );
 
   useEffect(() => {
@@ -138,7 +158,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     if (!build || build.id !== buildId) return;
     if (needsMedia && !media.isSuccess) return;
     start(threadOf(build, needsMedia ? (media.data ?? []) : []) ?? emptyThread(), buildId);
-  }, [buildId, build, needsMedia, media.isSuccess, media.data, start]);
+  }, [buildId, build, needsMedia, media.isSuccess, media.data, start, reloadTick]);
 
   /* ── saving ── */
 
@@ -166,6 +186,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
           await saveThread(id, tidyThread(doc));
           savedRef.current = doc;
           dirtyRef.current = !sameThread(docRef.current, doc);
+          report();
         }
 
         // The cover's evidence follows the thread's first picture.
@@ -175,24 +196,41 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
           lastFirstRef.current = first;
           await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
         }
+        attemptRef.current = 0;
         setSaveError(null);
         setLastSavedAt(new Date());
       } catch (cause) {
-        console.error("[Compose] thread save failed", cause);
-        setSaveError(cause instanceof Error ? cause : new Error(String(cause)));
+        // CA-23: a write that can succeed later is tried again 3 times, after 1, 4 and 10 seconds; only then is it not saved.
+        if (canSucceedLater(cause) && attemptRef.current < SAVE_RETRY_DELAYS_MS.length) {
+          const delay = SAVE_RETRY_DELAYS_MS[attemptRef.current];
+          attemptRef.current += 1;
+          retryingRef.current = true;
+          clearTimer();
+          timerRef.current = window.setTimeout(() => {
+            timerRef.current = null;
+            retryingRef.current = false;
+            void flush();
+          }, delay);
+        } else {
+          console.error(errorLine("[Compose] thread save failed", cause));
+          stoppedRef.current = true;
+          setSaveError(cause instanceof Error ? cause : new Error(String(cause)));
+        }
       } finally {
-        setIsSaving(false);
+        if (!retryingRef.current) setIsSaving(false);
       }
     };
 
     const open = run();
     inFlightRef.current = open;
+    report();
     try {
       await open;
     } finally {
       inFlightRef.current = null;
+      report();
       // Typed while the write was open: it goes out on the next quiet moment.
-      if ((againRef.current || dirtyRef.current) && !holdRef.current && timerRef.current === null) {
+      if ((againRef.current || dirtyRef.current) && !holdRef.current && timerRef.current === null && !retryingRef.current && !stoppedRef.current) {
         againRef.current = false;
         timerRef.current = window.setTimeout(() => {
           timerRef.current = null;
@@ -200,7 +238,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
         }, SAVE_DEBOUNCE_MS);
       }
     }
-  }, [clearTimer, queryClient]);
+  }, [clearTimer, queryClient, report]);
 
   const schedule = useCallback(() => {
     clearTimer();
@@ -218,11 +256,16 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
       setHold(sentence);
       setPosts(splitThread(doc).length);
       dirtyRef.current = !sameThread(doc, savedRef.current);
+      report();
       clearTimer();
+      // An edit is a fresh try, even after a save stopped.
+      attemptRef.current = 0;
+      retryingRef.current = false;
+      stoppedRef.current = false;
       if (!dirtyRef.current || sentence || !writableRef.current) return;
       schedule();
     },
-    [clearTimer, schedule],
+    [clearTimer, schedule, report],
   );
 
   // Typed while the build it makes was still loading (so its owner was not yet known): written once it is.
@@ -234,6 +277,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
   useEffect(
     () => () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      pendingWrites.set("thread", 0);
       const id = idRef.current;
       if (id && dirtyRef.current && !holdRef.current && writableRef.current) {
         void saveThread(id, tidyThread(docRef.current)).catch(() => undefined);
@@ -242,8 +286,22 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     [],
   );
 
+  const reload = useCallback(
+    (force = false) => {
+      if (dirtyRef.current && !force) return;
+      originRef.current = null;
+      dirtyRef.current = false;
+      report();
+      setReloadTick((tick) => tick + 1);
+    },
+    [report],
+  );
+
   const readDoc = useCallback(() => docRef.current, []);
   const retry = useCallback(() => {
+    attemptRef.current = 0;
+    retryingRef.current = false;
+    stoppedRef.current = false;
     setSaveError(null);
     void flush();
   }, [flush]);
@@ -262,9 +320,11 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     onDoc,
     posts,
     save: saveState({ isSaving, saveError, lastSavedAt }),
+    lastSavedAt,
     hold,
     flush,
     retry,
     retryLoad,
+    reload,
   };
 }

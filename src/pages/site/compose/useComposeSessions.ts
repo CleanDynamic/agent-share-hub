@@ -40,6 +40,8 @@ import {
   type UnfinishedSession,
 } from "@/lib/build/sessions";
 
+import { trackWrite } from "@/lib/build/pendingWrites";
+
 import type { MadeWithChip } from "./composeModel";
 import { sayFailed } from "./draftStart";
 
@@ -174,7 +176,7 @@ export function useComposeSessions({
   const enqueue = useCallback(
     <T,>(task: () => Promise<{ id: string; state: MadeWithState | null; value: T }>): Promise<T> => {
       pending.current += 1;
-      const next = queue.current.then(task).finally(() => {
+      const next = trackWrite("sessions", task, { after: queue.current }).finally(() => {
         pending.current -= 1;
       });
       queue.current = next.then(

@@ -8,10 +8,14 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { uiTransition } from "@/lib/theme/controls";
 
 export function ConnectionBanner() {
+  /* CA-23: the composer says so itself, in its own strip, and keeps what is written until the connection is back, so
+     "refresh to try again" is not what it should hear. */
+  const inComposer = /^\/compose(\/|$)/.test(useLocation().pathname);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [dismissed, setDismissed] = useState(false);
 
@@ -26,7 +30,7 @@ export function ConnectionBanner() {
     };
   }, []);
 
-  if (!offline || dismissed) return null;
+  if (!offline || dismissed || inComposer) return null;
 
   return (
     <div

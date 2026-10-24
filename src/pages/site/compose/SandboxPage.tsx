@@ -39,12 +39,17 @@ import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, re
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
+import { connection } from "@/lib/build/connection";
+import { pendingWrites, trackWrite } from "@/lib/build/pendingWrites";
+import { fieldLabel } from "@/lib/build/clash";
+import type { RawClash } from "@/lib/build/staleWrites";
+import { RECONNECTED } from "@/lib/build/reconnect";
 import { goalRefusal, patchMaking, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
-import { defaultWorkstream, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamsOf } from "@/lib/build/workstreams";
+import { defaultWorkstream, labelsOf, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamLabel, workstreamMark, workstreamsOf } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionToBuild } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
@@ -101,6 +106,13 @@ import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { makingWithGroupColours, previewGroupColour, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { ReferenceNotice } from "./referencePieces";
+import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
+import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
+import { useLeaveGuard } from "./useLeaveGuard";
+import { useWriteGuard } from "./useWriteGuard";
+import { LeaveWindow } from "./saveWindows";
+import { ClashWindow } from "./ClashWindow";
+import { useTwoTabs, type ClashDescription } from "./useTwoTabs";
 import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { classificationKey } from "./useClassificationCard";
@@ -108,11 +120,11 @@ import { writeClassification, type StoredClassification } from "@/lib/classify/s
 import { computeFacets, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
 import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
-import { BuildActionsContext, useBuildActions } from "./useBuildActions";
+import { BuildActionsContext, tileName, useBuildActions } from "./useBuildActions";
 import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar, type SelectionBarProps } from "./removePieces";
-import { useHeld } from "./buildMotion";
+import { useFlip, useHeld } from "./buildMotion";
 import { BASE } from "@/lib/theme/motion";
 import type { Drawn } from "@/lib/build/buildSelection";
 import { ADDED, HANDLERS_THAT_CHANGE_NOTHING, HANDLERS_THAT_REMOVE, handlerSentence } from "@/lib/build/stepSentences";
@@ -149,10 +161,16 @@ async function previewOfFile(file: File): Promise<string[]> {
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
+/** Shown when Publish is pressed with no connection. */
+const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
+
+/** The later of two moments, either of which may be missing. */
+const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
+
 export function SandboxPage() {
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
-  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
+  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate } = useComposePage({ sessionsActive: sourcesOnScreen });
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
   const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);
@@ -181,6 +199,11 @@ export function SandboxPage() {
   const [viewOptions, setViewOptions] = useViewOptions(user?.id ?? null);
   const runtimeIssues = useMemo(() => runtimeChecks(buildSteps(tree)), [tree]);
   const onPublish = useCallback(async () => {
+    // Publishing waits for a connection: a publish held until later would go live when the maker has long moved on.
+    if (connection.isOffline()) {
+      toast(PUBLISH_OFFLINE);
+      return;
+    }
     await flushThread();
     // A thread that cannot be saved is not published half-written.
     if (threadHold) {
@@ -195,10 +218,33 @@ export function SandboxPage() {
     for (const line of runtimeIssues.reminders) toast(line);
     viewProps.onPublish();
   }, [flushThread, threadHold, viewProps, runtimeIssues]);
+  /* CA-23: the one pending-writes count, and whether there is a connection. The write guard holds writes while there is none. */
+  useConnectionWatch();
+  /* CA-23 P4: two tabs (or two devices) on one build. What each clash is called and where it falls is said once the page knows its tiles (`describeClash`, below). */
+  const describeClash = useRef<(clash: RawClash) => ClashDescription>(() => ({ name: "This", badge: "", rank: 0 }));
+  const motionRoot = useRef<HTMLElement | null>(typeof document === "undefined" ? null : document.body);
+  const flip = useFlip(motionRoot);
+  const twoTabs = useTwoTabs({ buildId, nodes, history: buildHistory, thread, rehydrate, flip, describe: (clash) => describeClash.current(clash) });
+  useWriteGuard(buildId, { onWritten: twoTabs.announce });
+  useEffect(() => () => pendingWrites.reset(), []);
+  const offline = useOffline();
+  const { pending, failed: writesFailed, failedCount, retry: retryWrites } = usePendingWrites();
+  /* CA-23 P3: leaving with changes that have not landed (or have stopped) asks first; closing the tab asks the browser's way. */
+  const leaving = useLeaveGuard(pending + failedCount);
+  useReconnected((count) => buildHistory.notify(RECONNECTED.saved(count), { undo: false }));
+  const strips =
+    offline || twoTabs.changedElsewhere ? (
+      <Strips>
+        {offline ? <OfflineStrip /> : null}
+        {twoTabs.changedElsewhere ? <OtherTabStrip onShow={() => void twoTabs.showChanges()} /> : null}
+      </Strips>
+    ) : null;
+  /* Retry sends every write that stopped, in order: the header's, the post's, and the node queue's and the rest of the tasks'. */
   const onRetrySave = useCallback(() => {
     if (thread.save === "error") thread.retry();
     if (viewProps.save === "error") viewProps.onRetrySave();
-  }, [thread, viewProps]);
+    if (writesFailed) void retryWrites();
+  }, [thread, viewProps, writesFailed, retryWrites]);
 
   const [lens, setLens] = useState<SandboxLens>("list");
   const [switched, setSwitched] = useState(false);
@@ -253,6 +299,25 @@ export function SandboxPage() {
   }, [savedSteps, savedGroups, makingDrawn, references.pending, colourPreview, sessionsOfPart]);
   const madeShown = useMemo(() => previewWorkstreams(makingWithGroupColours(makingDrawn, references.pending), colourPreview), [makingDrawn, references.pending, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
+
+  /* CA-23 P4: what a clash is called, and where it falls in the build: the post, the build's own fields, parts, then each session before its tiles. */
+  describeClash.current = (clash) => {
+    if (clash.kind === "post") return { name: "Post", badge: "P", rank: 0 };
+    if (clash.kind === "field") return { name: fieldLabel(clash.key), badge: "F", rank: 1 };
+    if (clash.kind === "part") {
+      const at = Math.max(0, storedWorkstreamsOf(made).findIndex((part) => part.key === clash.key));
+      return { name: workstreamLabel(at, labelsOf(made)), badge: workstreamMark(at, labelsOf(made)), rank: 10 + at };
+    }
+    const all = flatten(savedSteps);
+    if (clash.kind === "session") {
+      const group = savedGroups.find((entry) => groupKey(entry) === clash.key);
+      const first = group ? all.findIndex((step) => group.stepNumbers.includes(step.number)) : -1;
+      return { name: `Session ${group?.number ?? ""}`.trim(), badge: `S${group?.number ?? ""}`, rank: first < 0 ? 1500 : 2000 + first - 0.5 };
+    }
+    const at = all.findIndex((step) => step.id === clash.key);
+    const step = all[at];
+    return { name: step ? tileName(step) : "Tile", badge: step?.number ? String(step.number) : "T", rank: at < 0 ? 9000 : 2000 + at };
+  };
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
   const inBuild = useMemo(() => {
@@ -659,10 +724,12 @@ export function SandboxPage() {
         key = newSessionKey();
         setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
-        await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
-        await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
-        if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
-        else await patchMaking(id, { session_order: [...keys, key] });
+        await trackWrite("making", async () => {
+          await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
+          await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
+          if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
+          else await patchMaking(id, { session_order: [...keys, key] });
+        });
       }
       await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
       setChosenSession(key);
@@ -1997,7 +2064,10 @@ export function SandboxPage() {
         classification={classification}
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}
-        save={mergeSave(viewProps.save, thread.save)}
+        save={mergeSave(viewProps.save, thread.save, writesFailed ? "error" : "idle", offline ? "offline" : "idle")}
+        pendingWrites={pending}
+        strips={strips}
+        lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}
         onRetrySave={onRetrySave}
         onPublish={() => void onPublish()}
         post={
@@ -2228,6 +2298,8 @@ export function SandboxPage() {
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
       {colourPicker}
+      <ClashWindow view={twoTabs.clash} busy={twoTabs.busy} onUseOther={twoTabs.useOther} onKeepThis={twoTabs.keepThis} />
+      <LeaveWindow open={leaving.open} count={leaving.count} onStay={leaving.stay} onLeave={leaving.leave} />
       <ReferenceNotice notice={buildHistory.notice} onUndo={() => void buildHistory.undo()} onDone={buildHistory.dismiss} phone={phone} />
       {actionDialogs}
       {referenceActions.keepDialog}

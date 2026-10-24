@@ -44,8 +44,9 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
 import { Field, TextButton } from "./composeControls";
+import { SaveLine } from "./SaveLine";
 import { fieldBase, useRing } from "./composeFields";
-import { DESCRIPTION_MAX, isUntitled, SAVE_WORDS, UNTITLED, type MadeWithChip, type SaveState } from "./composeModel";
+import { DESCRIPTION_MAX, isUntitled, UNTITLED, type MadeWithChip, type SaveState } from "./composeModel";
 import { MadeWithLine } from "./MadeWithLine";
 import { MoreDetails, type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
 import { PromptsPanel, type ComposePromptRow, type PromptFocus } from "./PromptsPanel";
@@ -89,6 +90,9 @@ export interface ComposeViewProps {
 
   save: SaveState;
   onRetrySave: () => void;
+  /** CA-23: when the last write landed, and the writes waiting for a connection. */
+  lastSavedAt?: Date | null;
+  pendingWrites?: number;
   /** What publishing still needs, in plain words and in order. */
   missing: readonly string[];
 
@@ -467,7 +471,7 @@ export function ComposeView(props: ComposeViewProps) {
     <>
     <p data-testid="compose-status" style={{ margin: "4px 0 0", fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
       {published ? "Published" : "Draft"}
-      {save !== "idle" ? <> · {SAVE_WORDS[save]}{save === "error" ? <TextButton onClick={props.onRetrySave}>Try again</TextButton> : null}</> : null}
+      <SaveLine save={save} lastSavedAt={props.lastSavedAt} pending={props.pendingWrites} onRetry={props.onRetrySave} />
       {needs && !published ? ` · still needs ${missing.join(", ")}` : null}
     </p>
     {props.intakeHref ? (

@@ -22,6 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode, BuildRecord, NodeTree } from "@/lib/build";
+import { trackWrite } from "@/lib/build/pendingWrites";
 
 import { applyNodeWrites } from "./composeModel";
 
@@ -38,6 +39,8 @@ export interface ComposeNodes {
   record: (id: string, node: BuildNode | null) => void;
   /** Resolves once every write queued so far has finished, failed or not. */
   settled: () => Promise<void>;
+  /** CA-23: let go of what this tab wrote for these rows (all of them when none are named), so what was read afresh shows. */
+  forget: (ids?: readonly string[]) => void;
 }
 
 /** A tree node as the row it is: the columns, without its children. */
@@ -92,12 +95,19 @@ export function useComposeNodes(buildId: string | undefined, recordTree: NodeTre
   }, [buildId, recordTree, version, overlay, queryClient]);
 
   const queue = useRef<Promise<unknown>>(Promise.resolve());
+  /* CA-23: each task counts as a pending change from the moment it is queued, is tried again by itself when it can pass later
+     (1, 4 and 10 seconds), and, if it stops, waits for Retry, which sends it through this queue again. */
   const run = useCallback(<T,>(task: () => Promise<T>): Promise<T> => {
-    const next = queue.current.then(task);
+    const next = trackWrite("nodes", task, { after: queue.current, again: (again) => run(again) });
     queue.current = next.catch(() => undefined);
     return next;
   }, []);
   const settled = useCallback(() => queue.current.then(() => undefined), []);
+  const forget = useCallback((ids?: readonly string[]) => {
+    if (ids) for (const id of ids) writes.current.delete(id);
+    else writes.current = new Map();
+    setVersion((value) => value + 1);
+  }, []);
 
-  return useMemo(() => ({ tree, current, run, record, settled }), [tree, current, run, record, settled]);
+  return useMemo(() => ({ tree, current, run, record, settled, forget }), [tree, current, run, record, settled, forget]);
 }

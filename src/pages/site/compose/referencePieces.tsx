@@ -34,6 +34,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { fallOut, riseIn, useCrossfade, useHeld } from "./buildMotion";
+import { BAR_AIR, PHONE_BARS_BOTTOM } from "./composeChrome";
 import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, frameStyle } from "./modalRecipes";
 
 /* ── type ── */
@@ -192,7 +193,7 @@ export function UndoRedo({ canUndo, canRedo, onUndo, onRedo, phone = false }: { 
 /* ── the notice ── */
 
 /** The sentence after a step, with Undo: six seconds, or until the next step. */
-export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number } | null; onUndo: () => void; onDone: () => void; phone?: boolean }) {
+export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number; noUndo?: boolean } | null; onUndo: () => void; onDone: () => void; phone?: boolean }) {
   const done = useRef(onDone);
   done.current = onDone;
   /* CA-22 P6: it rises 8 and fades in over FAST, and fades out over FAST; a new notice replaces the words with a crossfade, not a second rise. */
@@ -221,7 +222,8 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
       style={{
         position: "fixed",
         left: "50%",
-        bottom: phone ? 16 : 24,
+        // On a phone the dock and the action bar cover the foot of the screen, and the page (z-index 1) is under the dock: the notice stands above them.
+        bottom: phone ? `calc(${PHONE_BARS_BOTTOM + BAR_AIR}px + env(safe-area-inset-bottom))` : 24,
         transform: "translateX(-50%)",
         zIndex: 80,
         boxSizing: "border-box",
@@ -242,9 +244,11 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
       <span ref={sentence} style={ELLIPSIS}>
         {notice.sentence}
       </span>
-      <RecipeButton small onClick={onUndo} data-testid="notice-undo">
-        {NOTICE_COPY.undo}
-      </RecipeButton>
+      {notice.noUndo ? null : (
+        <RecipeButton small onClick={onUndo} data-testid="notice-undo">
+          {NOTICE_COPY.undo}
+        </RecipeButton>
+      )}
     </div>
   );
 }

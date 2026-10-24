@@ -387,12 +387,12 @@ describe("the post above the build", () => {
 
   it("puts a thread's waiting sentence in the status line", () => {
     viewAt("/compose/x", { threadNote: "Post 3 is over 1,000 characters", missing: [] });
-    expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved just now · Post 3 is over 1,000 characters");
+    expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved · Post 3 is over 1,000 characters");
   });
 
   it("adds what kind of build it is after the save state (CA-03 P8)", () => {
     viewAt("/compose/x", { summary: "A team of 4 agents · checks its own work", missing: [] });
-    expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved just now · A team of 4 agents · checks its own work");
+    expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved · A team of 4 agents · checks its own work");
     cleanup();
     viewAt("/compose/x", { summary: undefined, missing: [] });
     expect(screen.queryByTestId("sandbox-summary")).toBeNull();
@@ -556,11 +556,16 @@ describe("CA-10 · words on a phone (CA-09 F12)", () => {
 });
 
 describe("CA-10 · a save that stopped says what failed", () => {
-  it("reads 'Not saved: {reason}. Code {code}.' with Try again", () => {
+  it("reads 'not saved · Retry', the reason and code in its tooltip (CA-23)", () => {
     const onRetrySave = vi.fn();
     view({ save: "error", saveProblem: { reason: "a value isn't allowed", code: "23514" }, onRetrySave });
-    expect(screen.getByTestId("save-problem").textContent).toBe("Not saved: a value isn't allowed. Code 23514.");
-    fireEvent.click(within(screen.getByTestId("sandbox-status")).getByRole("button", { name: "Try again" }));
+    expect(screen.getByTestId("sandbox-status").textContent).toContain("Draft · not saved");
+    expect(within(screen.getByTestId("sandbox-status")).getByRole("button", { name: "Retry" })).toBeTruthy();
+    const words = screen.getByTestId("save-problem");
+    expect(words.textContent).toBe("not saved");
+    expect(words.getAttribute("title")).toBe("Not saved: a value isn't allowed. Code 23514.");
+    expect(document.getElementById(words.getAttribute("aria-describedby") as string)?.textContent).toBe("Not saved: a value isn't allowed. Code 23514.");
+    fireEvent.click(within(screen.getByTestId("sandbox-status")).getByRole("button", { name: "Retry" }));
     expect(onRetrySave).toHaveBeenCalled();
     expect(notSavedLine({ reason: "no connection" })).toBe("Not saved: no connection.");
   });

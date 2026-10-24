@@ -93,25 +93,53 @@ export function parseAudience(text: string): string[] {
   return out;
 }
 
-export type SaveState = "idle" | "saved" | "saving" | "error";
+export type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
 
-/** The save half of the status line. "not saved · " is followed by a button the view draws. */
+/** The save half of the status line, state by state. `saved` and `offline` carry more words: see `saveWords`. */
 export const SAVE_WORDS: Record<Exclude<SaveState, "idle">, string> = {
-  saved: "saved just now",
   saving: "saving…",
-  error: "not saved · ",
+  saved: "saved",
+  offline: "offline",
+  error: "not saved",
 };
 
-/** The saving state, from the hook's three facts. An error outranks a save in flight. */
-export function saveState(input: { isSaving: boolean; saveError: unknown; lastSavedAt: Date | null }): SaveState {
+/** CA-23: how long a write must be in flight before the line says so, so a quick save never flickers. */
+export const SAVING_SHOWN_AFTER_MS = 300;
+
+const MINUTE = 60_000;
+
+/** "14:05": 24-hour, in the viewer's own time. */
+export function clockTime(at: Date): string {
+  return `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+}
+
+/** "3 changes pending", "1 change pending". */
+export const pendingLine = (pending: number): string => `${pending} ${pending === 1 ? "change" : "changes"} pending`;
+
+/**
+ * The words after "Draft · " (CA-23): `saving…`, `saved` for the first minute, `saved 2 min ago` from one to fifty-nine
+ * minutes, `saved at 14:05` after an hour, `offline · 3 changes pending` and `not saved`. PURE.
+ */
+export function saveWords(state: Exclude<SaveState, "idle">, input: { lastSavedAt: Date | null; pending: number; now: number }): string {
+  if (state === "offline") return `${SAVE_WORDS.offline} · ${pendingLine(Math.max(1, input.pending))}`;
+  if (state !== "saved" || !input.lastSavedAt) return SAVE_WORDS[state];
+  const minutes = Math.floor(Math.max(0, input.now - input.lastSavedAt.getTime()) / MINUTE);
+  if (minutes < 1) return SAVE_WORDS.saved;
+  if (minutes < 60) return `${SAVE_WORDS.saved} ${minutes} min ago`;
+  return `${SAVE_WORDS.saved} at ${clockTime(input.lastSavedAt)}`;
+}
+
+/** The saving state, from the hook's facts. An error outranks no connection, which outranks a save in flight. */
+export function saveState(input: { isSaving: boolean; saveError: unknown; lastSavedAt: Date | null; offline?: boolean }): SaveState {
   if (input.saveError) return "error";
+  if (input.offline) return "offline";
   if (input.isSaving) return "saving";
   return input.lastSavedAt ? "saved" : "idle";
 }
 
-/** Two saves read as one: an error outranks a save in flight, which outranks a save that landed (PT-05: the header and the thread save apart). */
+/** Several saves read as one: error, then offline, then saving, then saved (PT-05: the header and the thread save apart). */
 export function mergeSave(...states: readonly SaveState[]): SaveState {
-  for (const wanted of ["error", "saving", "saved"] as const) if (states.includes(wanted)) return wanted;
+  for (const wanted of ["error", "offline", "saving", "saved"] as const) if (states.includes(wanted)) return wanted;
   return "idle";
 }
 

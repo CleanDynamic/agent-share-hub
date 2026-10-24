@@ -44,8 +44,8 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
-import { TextButton } from "./composeControls";
-import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
+import { SaveLine } from "./SaveLine";
+import { isUntitled, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
 import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
@@ -89,6 +89,12 @@ export interface SandboxViewProps extends CardProps {
 
   save: SaveState;
   onRetrySave: () => void;
+  /** CA-23: when the last write landed, for "saved 2 min ago". */
+  lastSavedAt?: Date | null;
+  /** CA-23: writes waiting for a connection, for "offline · 3 changes pending". */
+  pendingWrites?: number;
+  /** CA-23: the strips at the top of the Build column (Offline; Changed in another tab). Absent or empty: none is drawn. */
+  strips?: ReactNode;
   /** CA-10: a save that stopped: its reason and code, for "Not saved: {reason}. Code {code}." */
   saveProblem?: SaveFailure | null;
   /** CA-10: why the build did not load: logged once, its code shown under "This build didn't load." */
@@ -946,24 +952,15 @@ export function SandboxView(props: SandboxViewProps) {
   const statusLine = (
     <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
       {published ? "Published" : "Draft"}
-      {save !== "idle" ? (
-        <>
-          {" · "}
-          {save === "error" && props.saveProblem ? (
-            <span data-testid="save-problem">{notSavedLine(props.saveProblem)}</span>
-          ) : (
-            SAVE_WORDS[save]
-          )}
-          {save === "error" ? (
-            <>
-              {" "}
-              <TextButton underline onClick={props.onRetrySave} style={underlined}>
-                Try again
-              </TextButton>
-            </>
-          ) : null}
-        </>
-      ) : null}
+      <SaveLine
+        save={save}
+        lastSavedAt={props.lastSavedAt}
+        pending={props.pendingWrites}
+        detail={props.saveProblem ? notSavedLine(props.saveProblem) : undefined}
+        onRetry={props.onRetrySave}
+        retryUnderline
+        retryStyle={underlined}
+      />
       {props.threadNote ? ` · ${props.threadNote}` : null}
       {/* CA-03 P8: what kind of build it is, once it has more than one step. */}
       {props.summary ? <span data-testid="sandbox-summary">{` · ${props.summary}`}</span> : null}
@@ -1100,6 +1097,10 @@ export function SandboxView(props: SandboxViewProps) {
         ...(phone ? { flex: "999 1 480px" } : { flex: `0 1 ${frame.build}px`, width: frame.build }),
       }}
     >
+      {props.strips && !phone && lens !== "map" ? (
+        /* CA-23: 8 under the title row: the columns start 32 below it, so the strips pull up by the difference. */
+        <div style={{ marginTop: -(COLUMNS_TOP - 8) }}>{props.strips}</div>
+      ) : null}
       {phone ? (
         postSection
       ) : (
@@ -1131,6 +1132,7 @@ export function SandboxView(props: SandboxViewProps) {
           <BuildTitleActions phone />
         </div>
         {banner}
+        {props.strips}
         {buildColumn}
         <div
           role="group"
@@ -1198,6 +1200,7 @@ export function SandboxView(props: SandboxViewProps) {
         </div>
       </div>
       {banner ? <div style={{ padding: `16px ${padRight}px 0 ${padLeft}px` }}>{banner}</div> : null}
+      {props.strips && lens === "map" ? <div style={{ padding: `8px ${padRight}px 0 ${padLeft}px` }}>{props.strips}</div> : null}
       {lens === "map" ? (
         <div
           data-testid="sandbox-columns"

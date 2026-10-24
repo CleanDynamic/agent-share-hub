@@ -2,9 +2,12 @@
 // record for a consumer.
 
 import { supabase } from "@/integrations/supabase/client";
+import { differingFields, mergeMaking, rowClashes, same } from "./clash";
 import { getEvents } from "./events";
 import { getNodeTree, getTray } from "./nodes";
 import { getNodeTypes } from "./nodeTypes";
+import { isStaleWrite, StaleWriteError } from "./pendingWrites";
+import { acceptColumns, baseRow, clashHandler, isWatched, isZeroRows, knownStamp, latestRow, noteBuildRow, noteLatest, serial, tellMerged, type RawClash } from "./staleWrites";
 import {
   buildLayerError,
   type Build,
@@ -204,21 +207,126 @@ async function composeRecord(build: Build): Promise<BuildRecord> {
   return { build, tree, tray, events, nodeTypes };
 }
 
+/** The patch as a plain write, guarded by `updated_at` when a stamp is given: a stale write changes no rows (CA-23 P4). */
+async function updateBuildOnce(id: string, patch: BuildPatch, stamp?: string | null): Promise<Build> {
+  let query = supabase.from("builds").update(patch).eq("id", id);
+  if (stamp) query = query.eq("updated_at", stamp);
+  const { data, error, status } = await query.select(BUILD_COLUMNS).single();
+
+  // CA-10: the HTTP status rides with the error, so a save can tell a refusal from a failure that may pass later.
+  if (error) {
+    if (stamp && isZeroRows(error)) throw new StaleWriteError("builds", id);
+    throw buildLayerError("updateBuild", { code: error.code, details: error.details, hint: error.hint, message: error.message, status });
+  }
+  return data as unknown as Build;
+}
+
 /** Patch the header. Returns the row as it stands after the write. */
 export async function updateBuild(
   id: string,
   patch: BuildPatch
 ): Promise<Build> {
-  const { data, error, status } = await supabase
-    .from("builds")
-    .update(patch)
-    .eq("id", id)
-    .select(BUILD_COLUMNS)
-    .single();
+  // Not open in the composer: nobody else's change to look out for, and the write is as it always was.
+  if (!isWatched(id)) return updateBuildOnce(id, patch);
+  return serial(id, () => updateBuildChecked(id, patch));
+}
 
-  // CA-10: the HTTP status rides with the error, so a save can tell a refusal from a failure that may pass later.
-  if (error) throw buildLayerError("updateBuild", { code: error.code, details: error.details, hint: error.hint, message: error.message, status });
-  return data as unknown as Build;
+/** A write made offline and kept across a reload, whose edit may collide with what was changed meanwhile: settled as any stale write is (CA-23 P4). */
+export function replayBuildPatch(id: string, patch: BuildPatch, base: Record<string, unknown>): Promise<Build> {
+  if (!isWatched(id)) return updateBuildOnce(id, patch);
+  return serial(id, () => updateBuildChecked(id, patch, { base }));
+}
+
+const asRecord = (value: unknown): Record<string, unknown> => (value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {});
+
+/**
+ * The write the composer makes (CA-23 P4). It is compared first with what the database last showed this tab: a column both this tab
+ * and the other place changed, to different things, is left as the other place has it and handed to the page as a clash; a column
+ * only one changed merges. Then what is left is written with the `updated_at` that last showed: if the row has moved on since, the
+ * database refuses it (no rows change), the row is read again, and the comparison is made again.
+ */
+async function updateBuildChecked(id: string, patch: BuildPatch, from?: { base: Record<string, unknown> }): Promise<Build> {
+  let wanted: Record<string, unknown> = { ...(patch as Record<string, unknown>) };
+  // A write kept across a reload is compared with what is there now, against what it was based on.
+  if (from) noteLatest(id, ((await getBuildHeader(id)) as unknown as Record<string, unknown> | null) ?? {});
+  let merged = false;
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const there = latestRow(id);
+    if (!there || !knownStamp(id)) return updateBuildOnce(id, wanted as BuildPatch);
+    const base = from && attempt === 0 ? { ...baseRow(id), ...from.base } : baseRow(id);
+    const handler = clashHandler(id);
+    const theirsAt = Date.parse(String(there.updated_at ?? "")) || Date.now();
+
+    const next: Record<string, unknown> = { ...wanted };
+    const clashes: RawClash[] = [];
+    const raise = (clash: Omit<RawClash, "mineAt" | "theirsAt">) => clashes.push({ ...clash, mineAt: Date.now(), theirsAt });
+
+    for (const clash of rowClashes(base, wanted, there)) {
+      delete next[clash.key];
+      const post = clash.key === "post_doc";
+      raise({
+        kind: post ? "post" : "field",
+        key: post ? "post" : clash.key,
+        fields: [{ key: clash.key, mine: clash.mine, theirs: clash.theirs }],
+        write: async (side) => void (await updateBuild(id, { [clash.key]: side === "mine" ? clash.mine : clash.theirs } as unknown as BuildPatch)),
+      });
+      // The maker settles it in the window: from here on what the database holds for it is the base.
+      base[clash.key] = there[clash.key];
+      acceptColumns(id, [clash.key]);
+    }
+
+    if ("making" in wanted) {
+      const result = mergeMaking(base.making, wanted.making, there.making);
+      if (!same(result.merged, wanted.making)) merged = true;
+      if (same(result.merged, there.making)) delete next.making;
+      else next.making = result.merged;
+      for (const clash of result.clashes) {
+        raise({
+          kind: clash.kind,
+          key: clash.key,
+          fields: differingFields(asRecord(clash.mine), asRecord(clash.theirs)),
+          write: async (side) => {
+            const chosen = side === "mine" ? clash.mine : clash.theirs;
+            const making = asRecord(((await getBuildHeader(id)) as unknown as Record<string, unknown> | null)?.making);
+            if (clash.kind === "session") {
+              const meta = { ...asRecord(making.sessions_meta) };
+              if (chosen === null) delete meta[clash.key];
+              else meta[clash.key] = chosen;
+              await updateBuild(id, { making: { ...making, sessions_meta: meta } } as unknown as BuildPatch);
+            } else {
+              const list = Array.isArray(making.workstreams) ? (making.workstreams as Record<string, unknown>[]) : [];
+              const at = list.findIndex((part) => part?.key === clash.key);
+              const parts = list.filter((part) => part?.key !== clash.key);
+              if (chosen !== null) parts.splice(at < 0 ? parts.length : at, 0, chosen as Record<string, unknown>);
+              await updateBuild(id, { making: { ...making, workstreams: parts } } as unknown as BuildPatch);
+            }
+          },
+        });
+      }
+    }
+
+    if (handler) for (const clash of clashes) handler(clash);
+    if (clashes.length > 0 || merged) tellMerged(id);
+    wanted = next;
+    if (Object.keys(wanted).length === 0) {
+      if (clashes.length > 0) acceptColumns(id, ["making"]);
+      return there as unknown as Build;
+    }
+
+    try {
+      const row = await updateBuildOnce(id, wanted as BuildPatch, String(there.updated_at));
+      noteBuildRow(id, row as unknown as Record<string, unknown>, Object.keys(wanted));
+      return row;
+    } catch (cause) {
+      if (!isStaleWrite(cause)) throw cause;
+      // The row moved on since this tab last saw it: read it again and compare again.
+      const fresh = await getBuildHeader(id);
+      if (!fresh) throw new StaleWriteError("builds", id, "That build is no longer available.");
+      noteLatest(id, fresh as unknown as Record<string, unknown>);
+    }
+  }
+  throw new StaleWriteError("builds", id);
 }
 
 /**
