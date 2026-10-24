@@ -45,19 +45,19 @@ describe("opening", () => {
     openFromLabel();
     expect(within(win()).getByText("Reference group")).toBeTruthy();
     expect(within(win()).getByText("Components that work together, under one colour")).toBeTruthy();
-    expect(within(win()).getByRole("button", { name: "Close" })).toBeTruthy();
+    expect(within(win()).getByRole("button", { name: /^Close/ })).toBeTruthy();
   });
 
   it("opens from Open group in a member's picker", () => {
     mount();
-    fireEvent.click(colourButton(/^Colour for Check 5/));
+    fireEvent.click(colourButton(/^Check 5 colour/));
     fireEvent.click(screen.getByRole("button", { name: "Open group" }));
     expect((within(win()).getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Login flow");
   });
 
   it("opens from Make a group with the component in it, unsaved, and no Delete group", () => {
     mount();
-    fireEvent.click(colourButton(/^Colour for Manual step 2/));
+    fireEvent.click(colourButton(/^Manual step 2 colour/));
     fireEvent.click(within(screen.getByTestId("picker-group")).getByRole("button", { name: "Make a group" }));
     expect(members()).toEqual(["node:rf-m2"]);
     expect(within(win()).queryByTestId("group-delete")).toBeNull();

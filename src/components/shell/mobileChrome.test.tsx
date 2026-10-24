@@ -112,7 +112,7 @@ describe("BottomSheet", () => {
   it("is a named dialog with a visible Close control", () => {
     render(<Harness onClose={() => undefined} />);
     expect(screen.getByRole("dialog", { name: "Filters" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Close/ })).toBeTruthy();
   });
 
   it("closes on Escape and on the Close control", () => {
@@ -184,7 +184,7 @@ describe("phone chrome under the refined look", () => {
       ),
     );
     expect(screen.getByRole("dialog", { name: "Account" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Close/ })).toBeTruthy();
     const sheet = screen.getByTestId("bottom-sheet");
     expect(sheet.style.borderRadius).toBe("12px 12px 0 0");
     expect(sheet.style.backdropFilter ?? "").toBe("");

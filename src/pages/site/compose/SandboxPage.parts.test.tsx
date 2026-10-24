@@ -357,7 +357,7 @@ describe("CA-17 P5 · a part's colour", () => {
     // The picker previews on the head at once, then Done keeps it.
     fireEvent.click(await screen.findByRole("checkbox", { name: "Also colour its sessions that have no colour" }));
     fireEvent.click(screen.getByRole("button", { name: "#8FBFB8" }));
-    expect(await screen.findByRole("button", { name: "Colour for Part 1: #8FBFB8" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Part 1 colour" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     await waitFor(() => expect(storedWorkstreamsOf(draftRow()?.making)[0].colour).toBe("#8FBFB8"), { timeout: 15_000 });
     await waitFor(() => expect(sessionsMetaOf(draftRow()?.making)[WAITING]?.colour).toBe("#8FBFB8"), { timeout: 15_000 });

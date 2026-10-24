@@ -625,6 +625,14 @@ function CopyTogetherRow({ step, phone }: { step: Step; phone: boolean }) {
 /** A tile's name in the List's lines: its file name, else "prompt 2", else its kind. */
 const tileName = (step: Step) => sentWithLabel(step);
 
+/** CA-26: the name a tile's grip goes by: "Prompt 2", "Agent 5", the file's own name, or for a tile sent with another, whose it is. */
+const gripName = (step: Step) => {
+  const label = sentWithLabel(step);
+  if ((step.kind === "code" || step.kind === "file") && step.filename) return label;
+  if (!step.number && step.inside) return `${REF_KIND[step.kind] ?? "Prompt"} sent with ${step.inside.label}`;
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
 /** A tile inside another: its eyebrow says what it is sent with; it has no number. It can hold more tiles. */
 function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   const focus = useItemRing();
@@ -676,7 +684,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
+        <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
         <Quiet style={{ ...ellipsis, minWidth: 0, flexGrow: 1 }}>{NEST_LIST_COPY.sentWith(step.inside?.label ?? "the step above")}</Quiet>
         <CardColour step={step} phone={props.phone} />
       </div>
@@ -1014,7 +1022,7 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
 function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode }) {
   return (
     <div style={TILE_HEAD}>
-      <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
+      <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
       <NumberBadge>{step.number}</NumberBadge>
       <div style={TILE_TEXT}>
         <span data-testid={typeTestId} style={TILE_EYEBROW}>

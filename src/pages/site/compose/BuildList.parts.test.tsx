@@ -256,8 +256,8 @@ describe("a part's colour", () => {
     const parts = partsOf({ onColour });
     parts.parts[0].view.colour = "#8FBFB8";
     list({ parts });
-    const button = screen.getByRole("button", { name: "Colour for Part A: #8FBFB8" });
-    expect(screen.queryByRole("button", { name: /^Colour for Part B/ })).toBeNull();
+    const button = screen.getByRole("button", { name: "Part A colour" });
+    expect(screen.queryByRole("button", { name: /^Part B colour/ })).toBeNull();
     fireEvent.click(button);
     expect(onColour).toHaveBeenLastCalledWith("ws-a", expect.any(HTMLElement), "Part A · Tenant portal", "#8FBFB8");
     openMenu("Part B options");

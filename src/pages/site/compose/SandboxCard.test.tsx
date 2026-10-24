@@ -174,7 +174,7 @@ describe("Classification Card: the sheet", () => {
   it("closes from Close and from Cancel", async () => {
     live();
     const { onOpenChange } = mount();
-    fireEvent.click(await screen.findByRole("button", { name: "Close" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Close/ }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
     onOpenChange.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));

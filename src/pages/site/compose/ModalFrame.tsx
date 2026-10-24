@@ -136,7 +136,7 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
               </Dialog.Description>
             </div>
             <div style={HEADER_ICONS}>
-              <IconSquare glyph="x" label={MODAL_COPY.close} onClick={() => onOpenChange(false)} />
+              <IconSquare glyph="x" label={`${MODAL_COPY.close} ${title}`} onClick={() => onOpenChange(false)} />
             </div>
           </div>
           {open ? children : null}
