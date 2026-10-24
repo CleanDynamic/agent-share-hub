@@ -119,3 +119,19 @@ describe("on the draft", () => {
     expect((await screen.findByTestId("view-fold")).textContent).toBe("Expand all");
   });
 });
+
+describe("Group, with the reference bridge", () => {
+  beforeEach(harnessBefore);
+  afterEach(harnessAfter);
+
+  it("Ctrl G groups the chosen tiles in one step with one notice, and Undo takes the group away", async () => {
+    await mountCa20(seedCa20);
+    fireEvent.click(screen.getByText("Add the order form"), { ctrlKey: true });
+    fireEvent.click(screen.getByText("Read the orders"), { ctrlKey: true });
+    fireEvent.keyDown(document.body, { key: "g", ctrlKey: true });
+    await waitFor(() => expect((draftRow()?.making as { reference_groups: unknown[] }).reference_groups).toHaveLength(2), { timeout: 15_000 });
+    expect(await screen.findByText("Grouped 2 components")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("title-undo"));
+    await waitFor(() => expect((draftRow()?.making as { reference_groups: unknown[] }).reference_groups).toHaveLength(1), { timeout: 15_000 });
+  });
+});

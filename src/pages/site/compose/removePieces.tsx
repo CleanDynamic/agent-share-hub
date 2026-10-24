@@ -1,4 +1,4 @@
-/* CA-20 — the small pieces removing, selecting, undoing and the shortcuts need, built from tokens and `modalRecipes.tsx`.
+/* CA-20 - the small pieces removing, selecting, undoing and the shortcuts need, built from tokens and `modalRecipes.tsx`.
 
    P1: the reason a greyed item gives. A menu item that cannot be used says why: as a tooltip, and in words a screen reader
    reads (`aria-describedby`). The words sit next to the item, hidden, so the item's own name and text stay "Move up" and the

@@ -1,4 +1,4 @@
-// CA-20 P3 — selecting several tiles and sessions, and acting on them together (the CA-20 draft, mounted for real).
+// CA-20 P3 - selecting several tiles and sessions, and acting on them together (the CA-20 draft, mounted for real).
 
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

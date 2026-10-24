@@ -1,4 +1,4 @@
-/* CA-14 P6 — the switch under "View": the session list. It is off until the maker turns it on, and is remembered for that maker on
+/* CA-14 P6 - the switch under "View": the session list. It is off until the maker turns it on, and is remembered for that maker on
    this device (`localStorage`). Storage can be missing or refuse (a private window, site data blocked): every read and write is in a
    try/catch, and a failed read is "off". No migration, nothing sent anywhere.
 

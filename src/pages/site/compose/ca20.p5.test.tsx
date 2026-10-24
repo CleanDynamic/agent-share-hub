@@ -1,4 +1,4 @@
-// CA-20 P5 — one undo for the whole build: the history as plain rules, and every kind of step on the CA-20 draft.
+// CA-20 P5 - one undo for the whole build: the history as plain rules, and every kind of step on the CA-20 draft.
 
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Toaster } from "sonner";

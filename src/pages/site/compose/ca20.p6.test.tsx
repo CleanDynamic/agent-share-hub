@@ -1,4 +1,4 @@
-// CA-20 P6 — Recently removed: everything removed during this visit, each with Restore.
+// CA-20 P6 - Recently removed: everything removed during this visit, each with Restore.
 
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

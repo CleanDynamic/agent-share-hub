@@ -1,4 +1,4 @@
-// CA-20 P1 — every button does something you can see, or is greyed out with a reason.
+// CA-20 P1 - every button does something you can see, or is greyed out with a reason.
 
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

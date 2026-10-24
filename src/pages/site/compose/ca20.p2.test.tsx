@@ -1,4 +1,4 @@
-// CA-20 P2 — one way to remove anything, on the CA-20 draft (ca20Fixture.ts) mounted for real.
+// CA-20 P2 - one way to remove anything, on the CA-20 draft (ca20Fixture.ts) mounted for real.
 
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

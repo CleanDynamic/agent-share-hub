@@ -1,4 +1,4 @@
-// CA-20 P4 — the title row: Undo, Redo and the build's menu, and Clear the build.
+// CA-20 P4 - the title row: Undo, Redo and the build's menu, and Clear the build.
 
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
