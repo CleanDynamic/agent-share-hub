@@ -702,6 +702,18 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SourcesPanel.tsx",
   "src/pages/site/compose/loadingBlocks.test.ts",
   "src/pages/site/compose/loadingBlocks.ts",
+  // CA-24 P2
+  "src/pages/site/compose/AddSessionRow.tsx",
+  "src/pages/site/compose/EmptyBuild.test.tsx",
+  "src/pages/site/compose/EmptyBuild.tsx",
+  "src/pages/site/compose/SandboxPage.add.test.tsx",
+  "src/pages/site/compose/SandboxPage.empty.test.tsx",
+  "src/pages/site/compose/SandboxPage.parts.test.tsx",
+  "src/pages/site/compose/SandboxPage.sessionEdits.test.tsx",
+  "src/pages/site/compose/SandboxPage.sessions.test.tsx",
+  "src/pages/site/compose/ca20Harness.tsx",
+  "src/pages/site/compose/ca21.p7.test.tsx",
+  "src/pages/site/compose/emptyBuildRecipes.ts",
 ];
 
 /**
@@ -728,7 +740,7 @@ export const MODAL_FILES: readonly string[] = [
 ];
 
 /** CA-15b: the recipe modules hold the boards' exact measures (14, 18, 9, 7 ...) and the fields' focus edge. */
-const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts", "src/pages/site/compose/referencePieces.tsx"];
+const RECIPE_FILES: readonly string[] = ["src/pages/site/compose/detailsRecipes.ts", "src/pages/site/compose/modalRecipes.tsx", "src/pages/site/compose/modalRecipes.test.tsx", "src/pages/site/compose/tileRecipes.tsx", "src/pages/site/compose/tileRecipes.test.tsx", "src/pages/site/compose/workstreamRecipes.ts", "src/pages/site/compose/mapRecipes.ts", "src/pages/site/compose/tabRowRecipes.ts", "src/pages/site/compose/referencePieces.tsx", "src/pages/site/compose/emptyBuildRecipes.ts"];
 
 const ROOT = path.resolve(__dirname, "../../..");
 

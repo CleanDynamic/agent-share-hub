@@ -66,6 +66,7 @@ import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
 import { useLensMorph } from "./mapMorph";
 import { ComposeArrival } from "./ComposeSkeleton";
+import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
 
 export type SandboxLens = "list" | "map";
 
@@ -125,6 +126,8 @@ export interface SandboxViewProps extends CardProps {
   addTargets?: AddTargets;
   /** CA-14 P6: the View menu's two switches. Absent: no View menu. */
   viewOptions?: ViewMenuProps;
+  /** CA-24 P2: the build has no sessions and no tiles: "Add your first session" stands in the Build column in place of the list and its add rows. */
+  emptyBuild?: EmptyBuildProps | null;
   /** CA-14 P6: the session list, a row under the header (a menu on a phone). Absent: nothing is drawn. */
   sessionList?: ReactNode;
   /** CA-20 P3: the selection bar, sticky at the bottom of the Build column. Absent: nothing is drawn. */
@@ -1056,7 +1059,7 @@ function SandboxBody(props: SandboxViewProps) {
         {phone ? null : addMenu}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>}
+      {props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>)}
     </section>
   );
 

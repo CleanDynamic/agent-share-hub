@@ -66,13 +66,32 @@ export function mount(path: string, { faults = [], delays = [], keep = false, se
   );
 }
 
-export const field = () => screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+/** The page has loaded: the Add button is there. CA-24 P2: an empty build has no prompt box until Add › Prompt. */
+export const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
 
-/** "Add a session", then "Add from your connected chats": the list. */
+/** "Add a session", then "Add from your connected chats": the list. CA-24 P2: an empty build offers it in "Add your first session". */
 export async function openRow() {
-  fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
+  await waitFor(() => expect(screen.queryByTestId("add-session-row") ?? screen.queryByTestId("empty-build-chats")).toBeTruthy(), { timeout: 10_000 });
+  const panel = screen.queryByTestId("empty-build-chats");
+  if (panel) {
+    fireEvent.click(panel);
+    return screen.findByTestId("add-session-picker");
+  }
+  fireEvent.click(screen.getByTestId("add-session-row"));
   fireEvent.click(await screen.findByRole("button", { name: /Add from your connected chats/ }));
   return screen.findByTestId("add-session-picker");
+}
+
+/** Start a new session, from the empty build's "New empty session" or the Add a session row. */
+export async function startNewSession() {
+  await waitFor(() => expect(screen.queryByTestId("add-session-row") ?? screen.queryByTestId("empty-build-new")).toBeTruthy(), { timeout: 10_000 });
+  const panel = screen.queryByTestId("empty-build-new");
+  if (panel) {
+    fireEvent.click(panel);
+    return;
+  }
+  fireEvent.click(screen.getByTestId("add-session-row"));
+  fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
 }
 
 /** The draft with Session 1 = the one-prompt session only. */

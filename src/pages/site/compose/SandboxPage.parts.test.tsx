@@ -66,17 +66,26 @@ function mount(path: string, { faults = [], delays = [], keep = false }: { fault
   );
 }
 
-const field = () => screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
 
 const WAITING = "0e0e0e0e-0000-4000-8000-000000000001";
 const LONG = "0e0e0e0e-0000-4000-8000-000000000003";
 
-/** "Add a session", then "Add from your connected chats": the list. */
+/** CA-24 P2: an empty build offers its first session in "Add your first session"; one with sessions has the Add a session row. Either opens the same list. */
 async function openRow() {
-  fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
+  await waitFor(() => expect(screen.queryByTestId("add-session-row") ?? screen.queryByTestId("empty-build-chats")).toBeTruthy(), { timeout: 10_000 });
+  const panel = screen.queryByTestId("empty-build-chats");
+  if (panel) {
+    fireEvent.click(panel);
+    return screen.findByTestId("add-session-picker");
+  }
+  fireEvent.click(screen.getByTestId("add-session-row"));
   fireEvent.click(await screen.findByRole("button", { name: /Add from your connected chats/ }));
   return screen.findByTestId("add-session-picker");
 }
+
+/** The page has loaded: the Add button is there (an empty build has no prompt box until Add › Prompt). */
+const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+
 
 /** The draft with Session 1 = the one-prompt session and Session 2 = the 66-prompt one (folded). */
 async function twoSessions(options: Parameters<typeof mount>[1] = {}) {

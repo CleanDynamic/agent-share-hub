@@ -65,12 +65,21 @@ function mount(path: string, { faults = [], delays = [], keep = false }: { fault
   );
 }
 
-const field = () => screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+
+/** CA-24 P2: Add › Prompt on an empty build brings the first session's prompt box in place of "Add your first session". */
+async function openPromptBox() {
+  await field();
+  fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
+  fireEvent.click(await screen.findByRole("menuitem", { name: /^Prompt/ }));
+  return screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+}
 
 describe("CA-12 P3 · Session 1", () => {
-  it("a new post shows Session 1 with no app chosen above the prompt box, and says neither 'Unknown tool' nor 'typed here'", async () => {
+  it("a new post shows Add your first session; Add › Prompt gives it Session 1 with no app chosen above the prompt box, and says neither 'Unknown tool' nor 'typed here'", async () => {
     mount("/compose/new");
-    await field();
+    expect(await screen.findByTestId("empty-build", undefined, { timeout: 10_000 })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: /^Session 1/ })).toBeNull();
+    await openPromptBox();
     expect(screen.getByRole("group", { name: "Session 1 · No app chosen" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Pick an app for session 1" })).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/Unknown tool|typed here/i);
@@ -78,7 +87,7 @@ describe("CA-12 P3 · Session 1", () => {
 
   it("the first prompt makes the draft with Session 1 in it, and goes into that session", async () => {
     mount("/compose/new");
-    const box = await field();
+    const box = await openPromptBox();
     fireEvent.change(box, { target: { value: "Plan the launch email" } });
     fireEvent.keyDown(box, { key: "Enter" });
 
@@ -103,11 +112,32 @@ const LONG = "0e0e0e0e-0000-4000-8000-000000000003";
 const WAITING = "0e0e0e0e-0000-4000-8000-000000000001";
 const IN_DRAFT_1 = "0e0e0e0e-0000-4000-8000-000000000002";
 
-/** "Add a session", then "Add from your connected chats": the list. */
+/** CA-24 P2: an empty build offers its first session in "Add your first session"; one with sessions has the Add a session row. Either opens the same list. */
 async function openRow() {
-  fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
+  await waitFor(() => expect(screen.queryByTestId("add-session-row") ?? screen.queryByTestId("empty-build-chats")).toBeTruthy(), { timeout: 10_000 });
+  const panel = screen.queryByTestId("empty-build-chats");
+  if (panel) {
+    fireEvent.click(panel);
+    return screen.findByTestId("add-session-picker");
+  }
+  fireEvent.click(screen.getByTestId("add-session-row"));
   fireEvent.click(await screen.findByRole("button", { name: /Add from your connected chats/ }));
   return screen.findByTestId("add-session-picker");
+}
+
+/** The page has loaded: the Add button is there (an empty build has no prompt box until Add › Prompt). */
+const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+
+/** CA-24 P2: Start a new session, from the empty build's "New empty session" or the Add a session row. */
+async function startNew() {
+  await waitFor(() => expect(screen.queryByTestId("add-session-row") ?? screen.queryByTestId("empty-build-new")).toBeTruthy(), { timeout: 10_000 });
+  const panel = screen.queryByTestId("empty-build-new");
+  if (panel) {
+    fireEvent.click(panel);
+    return;
+  }
+  fireEvent.click(screen.getByTestId("add-session-row"));
+  fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
 }
 
 describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
@@ -244,8 +274,7 @@ describe("CA-12 P5 · adding a session", () => {
   it("Start a new session on a new post uses the empty Session 1: still one session, none added", async () => {
     mount("/compose/new");
     await field();
-    fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
-    fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
+    await startNew();
     await waitFor(() => expect(tableRows("builds").some((row) => !String(row.id).startsWith("0d0d") && row.status === "draft")).toBe(true), { timeout: 15_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 500)));
     expect(tableRows("build_sessions").filter((row) => !String(row.build_id).startsWith("0d0d"))).toHaveLength(1);
@@ -257,8 +286,7 @@ describe("CA-12 P5 · adding a session", () => {
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
     await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
-    fireEvent.click(await screen.findByTestId("add-session-row"));
-    fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
+    await startNew();
     expect(await screen.findByRole("group", { name: "Session 2 · No app chosen" }, { timeout: 10_000 })).toBeTruthy();
     // CA-21 P7: until its skeleton fades it shows its place to drop; then "No tiles yet".
     await waitFor(() => expect(screen.queryByText("No tiles yet") ?? screen.queryByText("Drop a tile here")).toBeTruthy());
@@ -271,8 +299,7 @@ describe("CA-12 P5 · adding a session", () => {
   it("works before the table is live: with no build_sessions the new session is kept in the draft alone", async () => {
     mount(`/compose/${DRAFT}`, { faults: [{ path: /^\/rest\/v1\/build_sessions/, answer: PG.missingTable("build_sessions") }] });
     await field();
-    fireEvent.click(await screen.findByTestId("add-session-row", undefined, { timeout: 10_000 }));
-    fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
+    await startNew();
     expect(await screen.findByRole("group", { name: "Session 1 · No app chosen" }, { timeout: 10_000 })).toBeTruthy();
     // An empty draft shows Session 1's prompt box open, as Prompt 1 of it.
     expect(await field()).toBeTruthy();

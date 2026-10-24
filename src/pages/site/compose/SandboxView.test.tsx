@@ -589,3 +589,28 @@ describe("CA-13 P1 · Add › Decision", () => {
     expect(on?.line).toBe("A structured classification your application requests from a model");
   });
 });
+
+describe("CA-24 P2 · the empty build in the Build column", () => {
+  const emptyBuild = {
+    phone: false,
+    fine: true,
+    available: 8,
+    addSession: { library: [], adding: false, onAdd: vi.fn(), onStartNew: vi.fn() },
+    onDropFiles: vi.fn(),
+    onPick: vi.fn(),
+  };
+
+  it("stands in place of the list when the page says the build is empty, after the post", () => {
+    view({ emptyBuild, post: <p>the post</p>, list: <p>the list</p> });
+    const panel = screen.getByTestId("empty-build");
+    expect(screen.queryByText("the list")).toBeNull();
+    expect(screen.getByText("8 available")).toBeTruthy();
+    expect(screen.getByText("the post").compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is not drawn for a build that has something in it", () => {
+    view({ emptyBuild: null, list: <p>the list</p> });
+    expect(screen.queryByTestId("empty-build")).toBeNull();
+    expect(screen.getByText("the list")).toBeTruthy();
+  });
+});

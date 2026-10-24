@@ -98,7 +98,8 @@ describe.each([
   it.each(cases)("on $where: the add field has the caret at 0 ms and at 600 ms, was scrolled to the middle in the tap, and is ringed", async ({ path }) => {
     stubWidth(width);
     mount(path);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    // CA-24 P2: an empty build shows "Add your first session"; the add field comes with Add › Prompt. The Add button is the sign the page has loaded.
+    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
     await choose(phone, /^Prompt/);
     // 0 ms: in the same tap.
     expect(document.activeElement).toBe(field());
@@ -127,7 +128,8 @@ describe.each([
   it.each(dialogs)("%s opens its dialog", async (item, title) => {
     stubWidth(width);
     mount(`/compose/${DRAFT}`);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    // CA-24 P2: an empty build shows "Add your first session"; the add field comes with Add › Prompt. The Add button is the sign the page has loaded.
+    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
     await choose(phone, item);
     const dialog = await screen.findByRole("dialog", { name: title }, { timeout: 5_000 });
     expect(dialog).toBeTruthy();
@@ -136,7 +138,8 @@ describe.each([
   it.each(cases)("Result on $where draws a tile at once, scrolls it into view, then rings the new Result", async ({ path }) => {
     stubWidth(width);
     mount(path);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    // CA-24 P2: an empty build shows "Add your first session"; the add field comes with Add › Prompt. The Add button is the sign the page has loaded.
+    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
     const before = screen.queryAllByTestId("result-card").length;
     await choose(phone, /^Result/);
     fireEvent.change(await screen.findByLabelText("URL"), { target: { value: "plumandrye.example" } });
@@ -156,7 +159,8 @@ describe.each([
     stubWidth(width);
     const picked = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => undefined);
     mount(`/compose/${DRAFT}`);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    // CA-24 P2: an empty build shows "Add your first session"; the add field comes with Add › Prompt. The Add button is the sign the page has loaded.
+    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
     await choose(phone, /^File/);
     expect(picked).toHaveBeenCalled();
     expect((picked.mock.contexts[0] as HTMLInputElement).type).toBe("file");
@@ -165,7 +169,8 @@ describe.each([
   it("Check opens its dialog, or is shown disabled saying why", async () => {
     stubWidth(width);
     mount(`/compose/${DRAFT}`);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    // CA-24 P2: an empty build shows "Add your first session"; the add field comes with Add › Prompt. The Add button is the sign the page has loaded.
+    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
     const sheet = await openAdd(phone);
     const row = sheet ? sheet.getByRole("button", { name: /^Check/ }) : await screen.findByRole("menuitem", { name: /^Check/ });
     const disabled = row.hasAttribute("disabled") || row.getAttribute("aria-disabled") === "true";
@@ -185,7 +190,8 @@ describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)
     stubWidth(1280);
     const said = vi.spyOn(toast, "error");
     mount("/compose/new", [{ method: "POST", path: /^\/rest\/v1\/builds(\?|$)/, answer: PG.rlsInsert("builds") }]);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    // CA-24 P2: an empty build shows "Add your first session"; the add field comes with Add › Prompt. The Add button is the sign the page has loaded.
+    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
     await choose(false, item);
     fireEvent.change(await screen.findByLabelText("URL"), { target: { value: "plumandrye.example" } });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
@@ -203,7 +209,8 @@ describe.each([
   const addFrom = async (item: RegExp, dialog: RegExp) => {
     stubWidth(width);
     mount(`/compose/${DRAFT}`);
-    await screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
+    // CA-24 P2: an empty build shows "Add your first session"; the add field comes with Add › Prompt. The Add button is the sign the page has loaded.
+    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
     await choose(phone, item);
     return within(await screen.findByRole("dialog", { name: dialog }, { timeout: 5_000 }));
   };

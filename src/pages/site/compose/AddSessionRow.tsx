@@ -10,7 +10,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
@@ -298,6 +298,37 @@ export function AddPartRow({ phone: _phone, adding, onAdd }: { phone: boolean; a
       </span>
       {ADD_SESSION_COPY.addPart}
     </button>
+  );
+}
+
+/**
+ * CA-24 P2: the list of connected chats, opened straight onto its list (Add a session, then Add from your connected chats),
+ * anchored to whatever is passed as `children`. The empty build's "Import from connected chats" row opens it.
+ */
+export function ChatsPicker({ props, open, onOpenChange, children }: { props: AddSessionRowProps; open: boolean; onOpenChange: (open: boolean) => void; children: ReactNode }) {
+  const close = () => onOpenChange(false);
+  const body = open ? <ChatList props={props} close={close} back={close} /> : null;
+  if (props.phone) {
+    return (
+      <>
+        {children}
+        <BottomSheet open={open} onOpenChange={onOpenChange} title={ADD_SESSION_COPY.yours}>
+          {body}
+        </BottomSheet>
+      </>
+    );
+  }
+  return (
+    <Popover.Root open={open} onOpenChange={onOpenChange}>
+      <Popover.Anchor asChild>
+        <div>{children}</div>
+      </Popover.Anchor>
+      <Popover.Portal>
+        <Popover.Content aria-label={ADD_SESSION_COPY.yours} align="start" sideOffset={6} collisionPadding={16} style={{ ...menuSurface(380), zIndex: FLOATING_Z, padding: 8, maxHeight: "min(560px, var(--radix-popover-content-available-height))" }}>
+          {body}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
