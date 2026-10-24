@@ -21,6 +21,7 @@
    `?build=ca21` is CA-21's "Moving": two parts, the second empty, moved by the composer's own rules, kept in memory (MovingDemo).
    `?build=ca22` is CA-22's "Motion": the sixteen moments on a fixture, with a bar of buttons that make each change (MotionDemo; `&bar=0` hides the bar, `&tiles=300` adds a long session).
    `?build=ca24&show=<what>` is CA-24's loading, empty and error states (Ca24Demo). `?build=ca23&show=<what>` is CA-23's "Saving, offline and two tabs": the status line's states, the strips, the notice and the two windows (SavingDemo).
+   `?build=ca25&show=<what>` is CA-25's Publish checklist, Confirm and a published build's menu (Ca25Demo).
    `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
    No board image is compared. */
@@ -57,6 +58,7 @@ import MovingDemo from "./MovingDemo";
 import MotionDemo from "./MotionDemo";
 import SavingDemo from "./SavingDemo";
 import Ca24Demo from "./Ca24Demo";
+import Ca25Demo from "./Ca25Demo";
 import ReferencesDemo from "./ReferencesDemo";
 
 const EMPTY_POST: ThreadDoc = { type: "doc", content: [{ type: "paragraph" }] };
@@ -116,6 +118,7 @@ export default function SandboxDemo(props: DesignPageProps) {
   if (params.get("build") === "ca22") return <MotionDemo {...props} />;
   if (params.get("build") === "ca23") return <SavingDemo {...props} />;
   if (params.get("build") === "ca24") return <Ca24Demo {...props} />;
+  if (params.get("build") === "ca25") return <Ca25Demo {...props} />;
   return <ShapesDemo {...props} />;
 }
 
