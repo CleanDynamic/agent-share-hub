@@ -124,6 +124,12 @@ import {
 } from "./refinedStyles";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
+import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
+import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
+import { COUNT } from "./modalRecipes";
+import { RemoveRow, useReason } from "./removePieces";
+import { useBuildActionsContext } from "./useBuildActions";
+import { useBuildSelectionContext } from "./useBuildSelection";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
 export const ADD_FLASH_MS = 1200;
@@ -305,13 +311,64 @@ export function useClamped<T extends HTMLElement>(text: string) {
 export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
 export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
+/** CA-20 P3: the tile is chosen with others, and is drawn as selected is. */
+const usePicked = (id: string): boolean => Boolean(useBuildSelectionContext()?.tiles.has(id));
+
 /* ── small pieces ── */
 
-function MenuRow({ children, disabled, onSelect, phone }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean }) {
+function MenuRow({ children, disabled, onSelect, phone, reason, shortcut }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean; reason?: string; shortcut?: ShortcutId }) {
+  const why = useReason(disabled ? reason : undefined);
   return (
-    <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)}>
-      {children}
-    </Menu.Item>
+    <>
+      <Menu.Item disabled={disabled} onSelect={onSelect} style={shortcut && !phone ? { ...menuItem(!disabled, phone), justifyContent: "space-between", gap: 12 } : menuItem(!disabled, phone)} {...why.props}>
+        {shortcut && !phone ? (
+          <>
+            <span>{children}</span>
+            <span aria-hidden="true" style={COUNT}>{shortcutLabel(shortcut)}</span>
+          </>
+        ) : (
+          children
+        )}
+      </Menu.Item>
+      {why.note}
+    </>
+  );
+}
+
+/** CA-20 P7: Duplicate, in every tile's menu after Move down. */
+function DuplicateRow({ step, phone }: { step: Step; phone: boolean }) {
+  const actions = useBuildActionsContext();
+  if (!actions) return null;
+  return (
+    <MenuRow phone={phone} shortcut="duplicate" onSelect={() => actions.duplicate([step.id])}>
+      Duplicate
+    </MenuRow>
+  );
+}
+
+/** CA-20 P7: "Convert to Agent" and the like, after Rename, for the tiles that can change kind. */
+function ConvertRows({ step, phone }: { step: Step; phone: boolean }) {
+  const actions = useBuildActionsContext();
+  if (!actions) return null;
+  return (
+    <>
+      {actions.convertTargets(step.id).map((target) => (
+        <MenuRow key={target.to} phone={phone} disabled={Boolean(target.reason)} reason={target.reason} onSelect={() => actions.convert(step.id, target.to)}>
+          {`Convert to ${target.label.toLowerCase()}…`}
+        </MenuRow>
+      ))}
+    </>
+  );
+}
+
+/** CA-20 P7: Ungroup, after Colour, only when the tile is in a group. */
+function UngroupRow({ step, phone }: { step: Step; phone: boolean }) {
+  const actions = useBuildActionsContext();
+  if (!actions || !actions.grouped(step.id)) return null;
+  return (
+    <MenuRow phone={phone} shortcut="ungroup" onSelect={() => actions.ungroup([step.id])}>
+      Ungroup
+    </MenuRow>
   );
 }
 
@@ -393,8 +450,8 @@ function ColourMenuRow({ step, phone, anchor }: { step: Step; phone: boolean; an
 }
 
 /**
- * CA-14 P5, P7: "Move to session…" (the other sessions, in a submenu) and, with Split and merge on, "Split session here"
- * (any tile but the first of its session). Nothing for a tile that is not in a session of its own, or with one session.
+ * CA-14 P5, P7: "Move to session…" (the other sessions, in a submenu, greyed with its reason while there is only one session)
+ * and "Split session here" (any tile but the first of its session). Nothing for a tile that is not in a session of its own.
  */
 function SessionTileRows({ step, phone }: { step: Step; phone: boolean }) {
   const refs = useContext(ListRefsContext);
@@ -403,6 +460,7 @@ function SessionTileRows({ step, phone }: { step: Step; phone: boolean }) {
   const others = (refs.sessions ?? []).filter((session) => session.key !== mine);
   return (
     <>
+      {refs.onMoveToSession && others.length === 0 ? <MenuRow phone={phone} disabled reason={REASONS.oneSession}>Move to session…</MenuRow> : null}
       {refs.onMoveToSession && others.length > 0 ? (
         <Menu.Sub>
           <Menu.SubTrigger style={menuItem(true, phone)}>Move to session…</Menu.SubTrigger>
@@ -543,7 +601,8 @@ const tileName = (step: Step) => sentWithLabel(step);
 function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const named = step.kind === "code" ? (step.filename ?? step.language ?? null) : null;
   const kind = step.kind === "manual" ? "Manual step" : step.kind === "file" ? "File" : step.kind === "code" ? "Code" : step.kind === "check" ? "Check" : step.kind === "agent" ? "Agent" : step.kind === "team" ? "Team" : "Prompt";
   return (
@@ -884,7 +943,7 @@ function useRename(step: Step, props: BuildListProps) {
   };
 }
 
-/** The ⋯ menu at the right of a tile's header: rename, copy together, move, colour, session, remove. */
+/** The ⋯ menu at the right of a tile's header: rename, copy together, move, colour, session, then Remove tile. */
 function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun: string; index: number; last: boolean; props: BuildListProps; rename: ReturnType<typeof useRename> }) {
   const { phone } = props;
   return (
@@ -895,12 +954,15 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()} onCloseAutoFocus={rename.onCloseAutoFocus}>
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
+          <ConvertRows step={step} phone={phone} />
           <CopyTogetherRow step={step} phone={phone} />
-          <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-          <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <MenuRow phone={phone} disabled={index === 0} shortcut="moveUp" reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+          <MenuRow phone={phone} disabled={last} shortcut="moveDown" reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <DuplicateRow step={step} phone={phone} />
           <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+          <UngroupRow step={step} phone={phone} />
           <SessionTileRows step={step} phone={phone} />
-          <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+          <RemoveRow label={MENU_COPY.removeTile} phone={phone} shortcut={phone ? undefined : <span aria-hidden="true" style={COUNT}>{shortcutLabel("remove")}</span>} onSelect={() => props.onRemove(step.id)} />
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
@@ -995,7 +1057,8 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone, selectedId } = props;
-  const selected = selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = selectedId === step.id || picked;
   const title = stepTitle(step);
   const isDefault = step.title === null;
   const sessionNumber = useContext(ListRefsContext).sessionNumbers?.get(step.id);
@@ -1123,15 +1186,18 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 }}
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
-                <MenuRow phone={phone} disabled={!open} onSelect={open}>Read all of it</MenuRow>
+                <ConvertRows step={step} phone={phone} />
+                <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all of it</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
-                <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-                <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+                <MenuRow phone={phone} disabled={index === 0} shortcut="moveUp" reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+                <MenuRow phone={phone} disabled={last} shortcut="moveDown" reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <DuplicateRow step={step} phone={phone} />
                 <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+          <UngroupRow step={step} phone={phone} />
               <SessionTileRows step={step} phone={phone} />
-              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+              <RemoveRow label={MENU_COPY.removeTile} phone={phone} shortcut={phone ? undefined : <span aria-hidden="true" style={COUNT}>{shortcutLabel("remove")}</span>} onSelect={() => props.onRemove(step.id)} />
               </MenuContent>
             </Menu.Portal>
           </Menu.Root>
@@ -1304,7 +1370,8 @@ function TeamAgents({ team }: { team: Step }) {
 function ContainerCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const isTeam = step.kind === "team";
   const noun = isTeam ? "Team" : "Agent";
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const made = madeIn(step, props.steps);
   const [adding, setAdding] = useState(false);
   /** Its prompts, or a team's agents, start folded behind the footer link. */
@@ -1462,7 +1529,8 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
  */
 function PlainCard({ step, index, last, props, noun, body, after, link, typeLine }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; body: (indent: number) => ReactNode; after?: ReactNode; link?: ReactNode; typeLine?: ReactNode }) {
   const { phone } = props;
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);
@@ -1565,7 +1633,8 @@ function FileCard({ step, index, last, props }: { step: Step; index: number; las
 /** CA-02 P7: lines of code, as a module like a manual step's: its type line (language and length), then its first 3 lines in a mono well. */
 function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const rename = useRename(step, props);
   const [all, setAll] = useState(false);
   const nest = useNestTile(step.id);
@@ -1628,7 +1697,8 @@ export const CODE_TILE_LINES = 3;
 /** CA-03 P5: how the build checked its work: its pass criteria, and one status line with a 7px dot. */
 function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
-  const selected = props.selectedId === step.id;
+  const picked = usePicked(step.id);
+  const selected = props.selectedId === step.id || picked;
   const rename = useRename(step, props);
   const nest = useNestTile(step.id);
   const cardRef = useCardRef(step.id, nest.setRef);

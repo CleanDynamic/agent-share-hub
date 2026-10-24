@@ -72,7 +72,8 @@ export const GLYPHS = {
 } as const;
 
 /** The glyphs drawn at a stroke of their own: CA-19's reference target at 1.4. */
-export const GLYPH_STROKES: Partial<Record<keyof typeof GLYPHS, number>> = { reference: 1.4 };
+/* CA-20 P4: Undo and Redo in the title row are drawn at stroke 1.4, as the reference glyph is. */
+export const GLYPH_STROKES: Partial<Record<keyof typeof GLYPHS, number>> = { reference: 1.4, undo: 1.4, redo: 1.4 };
 
 export type GlyphName = keyof typeof GLYPHS;
 

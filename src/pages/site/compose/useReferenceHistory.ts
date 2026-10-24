@@ -7,11 +7,16 @@
    writers. Then the step is recorded and its sentence becomes the notice.
 
    Every other edit of the post moves the steps' positions, as the editor's own history does. Undo and Redo put the links
-   and the colours back exactly; a reload starts empty, and everything is already saved. */
+   and the colours back exactly; a reload starts empty, and everything is already saved.
+
+   CA-20 P5: with `join` (the build's history), each step is also handed to it, with its own undo and redo and its sentence for the
+   one notice, and the Undo and Redo this hook offers are the build's: one Cmd Z takes back the last step of either kind. Without
+   `join` nothing changes. */
 
 import type { Editor } from "@tiptap/react";
 import type { Transaction } from "@tiptap/pm/state";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { BuildJoin } from "./useBuildHistory";
 
 import { applyLinkInstructions, applyRefChanges, refChangesOf } from "@/lib/build/linkRules";
 import type { ColourMove, ColourWrites } from "@/lib/build/referenceGroups";
@@ -37,6 +42,8 @@ export interface ReferenceHistoryInput {
   editor: Editor | null;
   /** Hands a move's writes to the composer's writers. */
   applyColours: (writes: ColourWrites) => void;
+  /** CA-20 P5: the build's history, which takes each step as one of its own. */
+  join?: BuildJoin;
 }
 
 export interface Notice {
@@ -60,7 +67,9 @@ export interface ReferenceHistoryControls {
 /** Marks the history's own transactions, which the editor's other listeners can tell apart. */
 export const HISTORY_META = "referenceHistory";
 
-export function useReferenceHistory({ editor, applyColours }: ReferenceHistoryInput): ReferenceHistoryControls {
+export function useReferenceHistory({ editor, applyColours, join }: ReferenceHistoryInput): ReferenceHistoryControls {
+  const joinRef = useRef(join);
+  joinRef.current = join;
   const history = useRef<ReferenceHistory>(EMPTY_HISTORY);
   const [, redraw] = useState(0);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -105,7 +114,11 @@ export function useReferenceHistory({ editor, applyColours }: ReferenceHistoryIn
       if (colours) applyRef.current(colours.writes);
       if (!colours && !refs?.length) return false;
       set(record(history.current, { sentence, ...(colours ? { colours } : null), ...(refs?.length ? { refs } : null) }));
-      setNotice((current) => ({ sentence, n: (current?.n ?? 0) + 1 }));
+      const joined = joinRef.current;
+      if (joined) {
+        joined.record({ sentence, undo: () => undoOwn.current(), redo: () => redoOwn.current() });
+        joined.notify(sentence);
+      } else setNotice((current) => ({ sentence, n: (current?.n ?? 0) + 1 }));
       return true;
     },
     [live],
@@ -128,6 +141,10 @@ export function useReferenceHistory({ editor, applyColours }: ReferenceHistoryIn
     [live],
   );
 
+  /** This history's own undo and redo, which the build's history calls for its steps. */
+  const undoOwn = useRef<() => void>(() => undefined);
+  const redoOwn = useRef<() => void>(() => undefined);
+
   const undo = useCallback(() => {
     const taken = takeUndo(history.current);
     if (!taken) return;
@@ -144,13 +161,16 @@ export function useReferenceHistory({ editor, applyColours }: ReferenceHistoryIn
     setNotice(null);
   }, [reverse]);
 
+  undoOwn.current = undo;
+  redoOwn.current = redo;
+
   return {
     step,
-    undo,
-    redo,
-    canUndo: canUndo(history.current),
-    canRedo: canRedo(history.current),
-    notice,
+    undo: join ? join.undo : undo,
+    redo: join ? join.redo : redo,
+    canUndo: join ? join.canUndo : canUndo(history.current),
+    canRedo: join ? join.canRedo : canRedo(history.current),
+    notice: join ? null : notice,
     dismiss: useCallback(() => setNotice(null), []),
     read: () => history.current,
   };

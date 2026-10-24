@@ -102,10 +102,10 @@ describe("Glyph", () => {
     expect(svg).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("draws every glyph at stroke 1.3 but `more` and `grip`, which are dots only and take 2, and CA-19's reference at 1.4", () => {
+  it("draws every glyph at stroke 1.3 but `more` and `grip`, which are dots only and take 2, and CA-19's reference and CA-20's undo and redo at 1.4", () => {
     for (const name of GLYPH_NAMES) {
       const svg = svgOf(render(<Glyph name={name} />).container);
-      expect(svg.getAttribute("stroke-width"), name).toBe(name === "more" || name === "grip" ? "2" : name === "reference" ? "1.4" : "1.3");
+      expect(svg.getAttribute("stroke-width"), name).toBe(name === "more" || name === "grip" ? "2" : ["reference", "undo", "redo"].includes(name) ? "1.4" : "1.3");
     }
   });
 

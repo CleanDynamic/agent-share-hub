@@ -27,6 +27,7 @@ import { CheckRunsField } from "./SessionExtrasFields";
 import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import { WriteBuffer } from "./editBuffer";
 import { bufferedHandlers } from "./editHandlers";
+import { useBuildHistoryContext } from "./useBuildHistory";
 import { GoesBlock, InsideBlock, MakesBlock, PicturesBlock, RuntimeBlocks, SummaryRow, TitleRow, ToolsUsedBlock, TrainedBlock, UsesBlock, WhereRanBlock } from "./editKit";
 import { ModelRunFields } from "./ModelRunFields";
 import { SessionDialog } from "./SessionDialog";
@@ -81,13 +82,25 @@ interface Session {
   discard: (open: boolean) => void;
 }
 
-function useEditing(handlers: DetailsHandlers, onClose: () => void): Session {
+function useEditing(handlers: DetailsHandlers, onClose: () => void, view?: DetailsView | null): Session {
   const [buffer] = useState(() => new WriteBuffer());
   // The buffered handlers read the page's handlers as they are when each call is made, so the buffer outlives a re-render.
   const h = useMemo(() => bufferedHandlers(handlers, buffer), [handlers, buffer]);
+  const history = useBuildHistoryContext();
   return {
     h,
-    flush: () => void buffer.flush(),
+    // CA-20 P5: Save is one step of the build's history, however many writes it makes.
+    flush: () => {
+      if (!history || buffer.size === 0) {
+        buffer.flush();
+        return;
+      }
+      // Taken out now, before the window closes and drops what is queued; written inside the step.
+      const writes = buffer.drain();
+      void history.track(view ? `Saved ${editTitle(view)}` : "Saved changes", async () => {
+        for (const run of writes) run();
+      });
+    },
     discard: (open) => {
       if (open) return;
       buffer.clear();
@@ -109,7 +122,7 @@ function inputs(view: Extract<DetailsView, { uses: readonly unknown[] }>, h: Det
 
 function ToolEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { view: V<"tool"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   const [runsAt, setRunsAt] = useState(view.runsAt ?? null);
   return (
     <AddToolDialog
@@ -138,7 +151,7 @@ function ToolEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { 
 
 function ManualEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { view: V<"manual"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   return (
     <AddManualStepDialog
       open
@@ -167,7 +180,7 @@ function ManualEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & 
 
 function CodeEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { view: V<"code"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   // A rule or a skill opened from a session's setup is a code tile too; its own fields are not written here.
   return (
     <AddCodeDialog
@@ -195,7 +208,7 @@ function CodeEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { 
 
 function CheckEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<"check"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   const [runs, setRuns] = useState(view.check.runs ?? []);
   return (
     <AddCheckDialog
@@ -223,7 +236,7 @@ function CheckEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<
 
 function DecisionEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { view: V<"decision"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   return (
     <AddDecisionDialog
       open
@@ -247,7 +260,7 @@ function DecisionEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps 
 
 function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: TileEditDialogProps & { view: V<"agent" | "team"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   const current = agentCurrent(view);
   const how = view.runs?.how ?? (view.sessionGoal ? "goal" : "once");
   const startsSummary = how === "once" ? null : [view.runs?.detail, how === "parallel" ? `${view.runs?.count ?? ""} at the same time` : null].filter(Boolean).join(" · ") || how;
@@ -285,7 +298,7 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
 
 function ResultEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { view: V<"result"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   return (
     <AddResultDialog
       open
@@ -312,7 +325,7 @@ function ResultEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & 
 
 function SystemPromptEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<"system_prompt"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   return (
     <AddSystemPromptDialog
       open
@@ -334,7 +347,7 @@ function SystemPromptEdit({ view, handlers, onClose }: TileEditDialogProps & { v
 
 function DatasetEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<"dataset"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   return (
     <AddDatasetDialog
       open
@@ -354,7 +367,7 @@ function DatasetEdit({ view, handlers, onClose }: TileEditDialogProps & { view: 
 
 function RepoEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & { view: V<"repo"> }) {
   const phone = useIsPhone();
-  const { h, flush, discard } = useEditing(handlers, onClose);
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
   const current = repoCurrent(view);
   if (!current) return null;
   return (

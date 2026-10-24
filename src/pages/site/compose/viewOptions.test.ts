@@ -10,12 +10,12 @@ afterEach(() => {
 describe("the View switches (CA-14 P6)", () => {
   it("are off until they are turned on", () => {
     expect(readViewOptions("maker-1")).toEqual(VIEW_OFF);
-    expect(VIEW_OFF).toEqual({ sessionList: false, splitMerge: false });
+    expect(VIEW_OFF).toEqual({ sessionList: false });
   });
 
   it("are remembered for that maker, and for nobody else", () => {
-    writeViewOptions("maker-1", { sessionList: true, splitMerge: false });
-    expect(readViewOptions("maker-1")).toEqual({ sessionList: true, splitMerge: false });
+    writeViewOptions("maker-1", { sessionList: true });
+    expect(readViewOptions("maker-1")).toEqual({ sessionList: true });
     expect(readViewOptions("maker-2")).toEqual(VIEW_OFF);
     expect(viewOptionsKey("maker-1")).not.toBe(viewOptionsKey("maker-2"));
   });
@@ -23,10 +23,17 @@ describe("the View switches (CA-14 P6)", () => {
   it("read anything that is not a switch as off", () => {
     window.localStorage.setItem(viewOptionsKey("m"), "not json");
     expect(readViewOptions("m")).toEqual(VIEW_OFF);
-    window.localStorage.setItem(viewOptionsKey("m"), JSON.stringify({ sessionList: "yes", splitMerge: 1 }));
+    window.localStorage.setItem(viewOptionsKey("m"), JSON.stringify({ sessionList: "yes" }));
     expect(readViewOptions("m")).toEqual(VIEW_OFF);
     window.localStorage.setItem(viewOptionsKey("m"), "null");
     expect(readViewOptions("m")).toEqual(VIEW_OFF);
+  });
+
+  it("read a value an earlier visit kept for Split and merge without error, and ignore it (CA-20 P1)", () => {
+    window.localStorage.setItem(viewOptionsKey("m"), JSON.stringify({ sessionList: true, splitMerge: true }));
+    expect(readViewOptions("m")).toEqual({ sessionList: true });
+    writeViewOptions("m", readViewOptions("m"));
+    expect(JSON.parse(window.localStorage.getItem(viewOptionsKey("m")) as string)).toEqual({ sessionList: true });
   });
 
   it("stay off when storage refuses to be read, and a refused write says nothing", () => {
@@ -37,6 +44,6 @@ describe("the View switches (CA-14 P6)", () => {
       throw new Error("full");
     });
     expect(readViewOptions("m")).toEqual(VIEW_OFF);
-    expect(() => writeViewOptions("m", { sessionList: true, splitMerge: true })).not.toThrow();
+    expect(() => writeViewOptions("m", { sessionList: true })).not.toThrow();
   });
 });

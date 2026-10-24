@@ -132,7 +132,7 @@ describe("a part's menu", () => {
     list({ parts });
     openMenu("Part A options");
     const rows = (await screen.findAllByRole("menuitem")).map((row) => row.textContent);
-    expect(rows).toEqual(["Colour…", "Starts after…", "Move up", "Move down", "Remove part…"]);
+    expect(rows).toEqual(["Colour…", "Starts after…", "Move up", "Move down", "Remove part"]);
     expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBe("true");
     expect(screen.getByRole("menuitem", { name: "Move down" }).getAttribute("aria-disabled")).toBeNull();
     fireEvent.click(screen.getByRole("menuitem", { name: "Move down" }));
@@ -144,10 +144,10 @@ describe("a part's menu", () => {
     expect((await screen.findByRole("menuitem", { name: "Move down" })).getAttribute("aria-disabled")).toBe("true");
     expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBeNull();
   });
-  it("draws Remove part… in the danger text colour", async () => {
+  it("draws Remove part in the danger text colour", async () => {
     list({ parts: partsOf() });
     openMenu("Part A options");
-    expect((await screen.findByRole("menuitem", { name: "Remove part…" })).getAttribute("data-tone")).toBe("danger");
+    expect((await screen.findByRole("menuitem", { name: "Remove part" })).getAttribute("data-tone")).toBe("danger");
   });
   it("offers Starts after… with a tick on the current one and None", async () => {
     const parts = partsOf();
@@ -163,26 +163,14 @@ describe("a part's menu", () => {
     fireEvent.click(choices.find((row) => row.textContent === "None") as HTMLElement);
     expect(parts.ops?.onStartsAfter).toHaveBeenCalledWith("ws-b", null);
   });
-  it("asks before removing, says where the sessions go, and removes on Remove", async () => {
+  it("removes at once, with no window: nothing is lost, since its sessions join the part next to it (CA-20 P2)", async () => {
     const parts = partsOf();
     list({ parts });
     openMenu("Part B options");
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove part…" }));
-    const dialog = await screen.findByTestId("remove-workstream-dialog");
-    expect(within(dialog).getByText("Remove Part B?")).toBeTruthy();
-    expect(within(dialog).getByText("Its 1 session joins Part A.")).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(parts.ops?.onRemove).not.toHaveBeenCalled();
-    openMenu("Part B options");
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove part…" }));
-    fireEvent.click(within(await screen.findByTestId("remove-workstream-dialog")).getByRole("button", { name: "Remove" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove part" }));
     expect(parts.ops?.onRemove).toHaveBeenCalledWith("ws-b");
-  });
-  it("says the first part's sessions join the one below", async () => {
-    list({ parts: partsOf() });
-    openMenu("Part A options");
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove part…" }));
-    expect(within(await screen.findByTestId("remove-workstream-dialog")).getByText("Its 2 sessions join Part B.")).toBeTruthy();
+    expect(screen.queryByTestId("remove-workstream-dialog")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 });
 

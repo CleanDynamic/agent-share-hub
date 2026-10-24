@@ -8,7 +8,6 @@
    callbacks (`ops`) are the maker's, and a reader's head is drawn without them. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
@@ -17,7 +16,6 @@ import { ColourButton } from "@/components/brand/ColourButton";
 import { MemberLabel } from "./groupLabels";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
-import { BottomSheet } from "@/components/shell/BottomSheet";
 import { WORKSTREAM_NAME_MAX } from "@/lib/build/making";
 import { refTo } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
@@ -25,8 +23,9 @@ import { DM_MONO } from "@/lib/theme/type";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { DragHandle, useNestWorkstream, useNestWorkstreamDrag } from "./listNest";
-import { GROUP_TITLE, LABEL, RecipeButton, frameStyle } from "./modalRecipes";
 import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
+import { MENU_COPY, moveReason } from "@/lib/build/componentMenus";
+import { RemoveRow, useReason } from "./removePieces";
 import { WORKSTREAM_STARTS } from "./workstreamRecipes";
 
 export const WORKSTREAM_HEAD_COPY = {
@@ -36,11 +35,6 @@ export const WORKSTREAM_HEAD_COPY = {
   startsAfterNone: "None",
   moveUp: "Move up",
   moveDown: "Move down",
-  remove: "Remove part…",
-  removeTitle: (label: string) => `Remove ${label}?`,
-  removeBody: (sessions: number, joins: string) => (sessions === 0 ? "It has no sessions." : `Its ${sessions} ${sessions === 1 ? "session joins" : "sessions join"} ${joins}.`),
-  confirm: "Remove",
-  cancel: "Cancel",
   count: (n: number) => `${n} ${n === 1 ? "session" : "sessions"}`,
   empty: "No sessions yet",
   addHere: "+ Add a session to this part",
@@ -160,52 +154,15 @@ function NameField({ part, phone, onSave }: { part: WorkstreamHeadView; phone: b
   );
 }
 
-function Row({ children, disabled, onSelect, phone }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean }) {
+function Row({ children, disabled, onSelect, phone, reason }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean; reason?: string }) {
+  const why = useReason(disabled ? reason : undefined);
   return (
-    <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)}>
-      {children}
-    </Menu.Item>
-  );
-}
-
-/** "Remove Part B?": a small window, Cancel and Remove at the right. A sheet on a phone. */
-function RemoveDialog({ open, part, joins, phone, onClose, onConfirm }: { open: boolean; part: WorkstreamHeadView; joins: string; phone: boolean; onClose: () => void; onConfirm: () => void }) {
-  const title = WORKSTREAM_HEAD_COPY.removeTitle(part.label);
-  const body = (
     <>
-      <p style={{ ...LABEL, margin: "4px 0 16px" }}>{WORKSTREAM_HEAD_COPY.removeBody(part.sessions, joins)}</p>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <RecipeButton phone={phone} onClick={onClose}>
-          {WORKSTREAM_HEAD_COPY.cancel}
-        </RecipeButton>
-        <RecipeButton phone={phone} data-testid="remove-workstream-confirm" style={{ color: t.breakage }} onClick={onConfirm}>
-          {WORKSTREAM_HEAD_COPY.confirm}
-        </RecipeButton>
-      </div>
+      <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)} {...why.props}>
+        {children}
+      </Menu.Item>
+      {why.note}
     </>
-  );
-  if (phone) {
-    return (
-      <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title}>
-        {body}
-      </BottomSheet>
-    );
-  }
-  return (
-    <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
-        <Dialog.Content
-          role="alertdialog"
-          aria-describedby={undefined}
-          data-testid="remove-workstream-dialog"
-          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...frameStyle(380), padding: 20 }}
-        >
-          <Dialog.Title style={{ ...GROUP_TITLE }}>{title}</Dialog.Title>
-          {body}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
   );
 }
 
@@ -245,16 +202,13 @@ function PartMenuRows({ props, colour, remove }: { props: WorkstreamHeadProps; c
       ) : null}
       {ops ? (
         <>
-          <Row phone={phone} disabled={first} onSelect={() => ops.onMove(part.key, -1)}>
+          <Row phone={phone} disabled={first} reason={moveReason("part", -1, first)} onSelect={() => ops.onMove(part.key, -1)}>
             {WORKSTREAM_HEAD_COPY.moveUp}
           </Row>
-          <Row phone={phone} disabled={last} onSelect={() => ops.onMove(part.key, 1)}>
+          <Row phone={phone} disabled={last} reason={moveReason("part", 1, last)} onSelect={() => ops.onMove(part.key, 1)}>
             {WORKSTREAM_HEAD_COPY.moveDown}
           </Row>
-          <Menu.Separator style={{ height: 1, margin: "4px 0", background: t.hairline }} />
-          <Menu.Item onSelect={remove} data-tone="danger" style={{ ...menuItem(true, phone), color: t.breakage }}>
-            {WORKSTREAM_HEAD_COPY.remove}
-          </Menu.Item>
+          <RemoveRow label={MENU_COPY.removePart} phone={phone} onSelect={remove} />
         </>
       ) : null}
     </>
@@ -267,7 +221,6 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
   const drag = useNestWorkstreamDrag(part.key);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [removing, setRemoving] = useState(false);
   const head = useRef<HTMLDivElement | null>(null);
   const registered = usePartRef(refTo({ kind: "workstream", id: part.key }));
   const maker = Boolean(ops);
@@ -351,7 +304,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
             </Menu.Trigger>
             <Menu.Portal>
               <MenuContent align="end" sideOffset={4} style={menuSurface()}>
-                <PartMenuRows props={props} colour={onColour ? openColour : undefined} remove={() => setRemoving(true)} />
+                <PartMenuRows props={props} colour={onColour ? openColour : undefined} remove={() => ops?.onRemove(part.key)} />
               </MenuContent>
             </Menu.Portal>
           </Menu.Root>
@@ -373,17 +326,6 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
           {WORKSTREAM_HEAD_COPY.startsLine(part.startsAfterLine)}
         </p>
       ) : null}
-      <RemoveDialog
-        open={removing}
-        part={part}
-        joins={props.joins}
-        phone={phone}
-        onClose={() => setRemoving(false)}
-        onConfirm={() => {
-          setRemoving(false);
-          ops?.onRemove(part.key);
-        }}
-      />
     </>
   );
 }

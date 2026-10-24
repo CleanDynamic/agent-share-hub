@@ -22,6 +22,7 @@ import { modelLabel } from "@/lib/models/registry";
 import type { DetailsHandlers, SessionView } from "./DetailsPanel";
 import { WriteBuffer } from "./editBuffer";
 import { bufferedHandlers } from "./editHandlers";
+import { useBuildHistoryContext } from "./useBuildHistory";
 import { MODAL_COPY, ModalForm, ModalShell } from "./ModalFrame";
 import { BODY_TEXT, Block, BlockHead, FieldArea, FieldInput, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, PANEL_LIST, RecipeButton, Row, SegmentedField, TextLink } from "./modalRecipes";
 import { SessionFactsFields, StartedWithField, TogetherFields } from "./SessionExtrasFields";
@@ -114,8 +115,15 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
     buffer.clear();
     onClose();
   };
+  const history = useBuildHistoryContext();
   const submit = () => {
-    buffer.flush();
+    // CA-20 P5: Save is one step of the build's history, however many writes it makes.
+    if (history && buffer.size > 0) {
+      const writes = buffer.drain();
+      void history.track(`Saved Session ${view.number}`, async () => {
+        for (const run of writes) run();
+      });
+    } else buffer.flush();
     onClose();
   };
 

@@ -100,6 +100,19 @@ import { makingWithGroupColours, previewGroupColour, withGroupColours, type Refe
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { ReferenceNotice } from "./referencePieces";
 import { useReferences } from "./useReferences";
+import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
+import { classificationKey } from "./useClassificationCard";
+import { writeClassification, type StoredClassification } from "@/lib/classify/storage";
+import { computeFacets, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
+import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
+import type { ReferenceBridge } from "@/lib/build/referenceBridge";
+import { BuildActionsContext, useBuildActions } from "./useBuildActions";
+import { useBuildShortcuts } from "./useBuildShortcuts";
+import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
+import { SelectionBar } from "./removePieces";
+import type { Drawn } from "@/lib/build/buildSelection";
+import { ADDED, HANDLERS_THAT_CHANGE_NOTHING, HANDLERS_THAT_REMOVE, handlerSentence } from "@/lib/build/stepSentences";
+import { NOTICE_COPY } from "@/lib/build/referenceHistory";
 import { GroupLabelsProvider } from "./groupLabels";
 import { useReferenceActions } from "./useReferenceActions";
 import { DetailsReferencesProvider, type DetailsReferencesValue } from "./DetailsReferences";
@@ -137,6 +150,9 @@ export function SandboxPage() {
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
   const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId } = useComposePage({ sessionsActive: sourcesOnScreen });
   const navigate = useNavigate();
+  /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
+  const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);
+  const buildHistory = useBuildHistory({ buildId, nodes, getBridge: () => bridgeHolder.current, peek: () => ({ making: (build as { making?: unknown } | null)?.making, sessions: sessions.rows }) });
   const queryClient = useQueryClient();
   const phone = useIsPhone();
   const fine = useFinePointer();
@@ -218,7 +234,11 @@ export function SandboxPage() {
     saveGroups: (list, order) => saveGroupsRef.current(list, order),
     loaded: Boolean(build),
     nameOf: (to) => nameRef.current(to),
+    join: buildHistory.join,
   });
+  /* CA-20: the only way removing, restoring, duplicating and grouping touch colours, groups and the post's links. */
+  const bridge = useReferenceBridge(references);
+  bridgeHolder.current = bridge;
   // A member is drawn in its group's colour; the picker's live colour goes over that.
   // The picker opened for a group (its window's Change…) previews the group's colour on every member.
   const previewedGroup = colourPreview && parseRefTo(colourPreview.to)?.kind === "group" ? (parseRefTo(colourPreview.to)?.id ?? null) : null;
@@ -526,10 +546,45 @@ export function SandboxPage() {
   const partsModel = useMemo(() => listPartsOf(madeShown, groups, theme), [madeShown, groups, theme]);
   /** CA-17 P3: the parts "Add to" can choose; none until the build has two. */
   const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
-  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, onGone: (key) => {
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, history: buildHistory, bridge, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
   } });
+  /* CA-20: removing (and, later, selecting, duplicating, converting and grouping) in one place, for the menus, the keys and the bars. */
+  const { actions, dialogs: actionDialogs } = useBuildActions({
+    buildId,
+    made,
+    onCleared: () => {
+      setChosenSession(null);
+      setPromptSession(null);
+    },
+    nodes,
+    history: buildHistory,
+    bridge,
+    steps,
+    groups,
+    removeSessions: edits.onRemoveSessions,
+    onGrouped: (group) => referenceActions.setGroupWindow({ draft: { ...group, members: [...group.members] }, isNew: false }),
+  });
+  /* CA-20 P3: choosing several tiles and sessions. The order is how the List draws them: a session's head, then its top-level tiles. */
+  const drawn = useMemo<Drawn>(
+    () => ({
+      sessions: groups.map((group) => {
+        const key = groupKey(group);
+        return { key: group.implicit || isLegacySession(key) ? null : key, tiles: steps.filter((step) => group.stepNumbers.includes(step.number)).map((step) => step.id) };
+      }),
+    }),
+    [groups, steps],
+  );
+  const selection = useBuildSelection({ drawn, onSelect: setSelectedId, phone });
+  /* CA-20 P5: every change the maker makes, other than typing, is a step of the build's history. `asStep` makes a handler one. */
+  const track = buildHistory.track;
+  const asStep = useCallback(
+    <A extends unknown[], R>(sentence: string | ((first: A[0]) => string), fn: (...args: A) => R | Promise<R>) =>
+      (...args: A): Promise<R> =>
+        track(typeof sentence === "string" ? sentence : sentence(args[0]), async () => fn(...args)),
+    [track],
+  );
 
   promptOpenRef.current = () => {
     const picked = chosenRef.current;
@@ -629,6 +684,21 @@ export function SandboxPage() {
     },
     [buildId, queryClient, made],
   );
+
+  /* CA-20 P7: Collapse all folds every session and part; once all are folded the same item opens them. Not a step of the history. */
+  const foldAll = useMemo(() => {
+    const keys = orderKeys(groups).filter((key) => !isLegacySession(key));
+    const parts = storedWorkstreamsOf(made);
+    if (keys.length + parts.length === 0) return undefined;
+    const anyOpen = keys.some((key) => !collapsedKeys.has(key)) || parts.some((part) => !part.collapsed);
+    return {
+      anyOpen,
+      run: (closed: boolean) => {
+        for (const key of keys) if (collapsedKeys.has(key) !== closed) onToggleCollapsed(key, closed);
+        for (const part of parts) if (Boolean(part.collapsed) !== closed) edits.onPartFold(part.key, closed);
+      },
+    };
+  }, [groups, made, collapsedKeys, onToggleCollapsed, edits]);
 
   const onSessionMeta = useCallback(
     async (key: string, change: { tool?: string | null; date?: string }) => {
@@ -1161,9 +1231,30 @@ export function SandboxPage() {
     owner: compose.isOwner,
     ensureBuild,
   });
+  /* CA-20 P5: Save in the Classification Card is a step: the card as it was is written back by Undo. */
+  const saveCard = useCallback(
+    async (draft: Parameters<typeof classificationCard.onSave>[0]) => {
+      const id = await ensureBuild();
+      const read = () => queryClient.getQueryData<StoredClassification>(classificationKey(id))?.classification;
+      const before = read() ?? classificationCard.stored;
+      const result = await classificationCard.onSave(draft);
+      const after = read();
+      if (result.written && after) {
+        const put = (value: typeof before) => async () => {
+          await writeClassification(id, value, { shape: shapeFromBuilt(shownValues(value, "built").values) });
+          queryClient.setQueryData<StoredClassification>(classificationKey(id), { live: true, classification: value, facets: computeFacets(value) });
+          await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
+        };
+        buildHistory.record({ sentence: "Saved the Classification Card", undo: put(before), redo: put(after) });
+      }
+      return result;
+    },
+    [ensureBuild, queryClient, classificationCard, buildHistory],
+  );
   const classification = useMemo(
     () => ({
       ...classificationCard,
+      onSave: saveCard,
       maker,
       onSelectSource: (id: string) => setSelectedId(id),
       onAction: (action: "add-code" | "add-run" | "add-cost" | "add-tool", question: { tileId?: string }) => {
@@ -1173,7 +1264,7 @@ export function SandboxPage() {
         else if (question.tileId) setSelectedId(question.tileId);
       },
     }),
-    [classificationCard, maker],
+    [classificationCard, saveCard, maker],
   );
   useEffect(() => {
     if (!ringed) return;
@@ -1655,7 +1746,7 @@ export function SandboxPage() {
     onModel: prompts.setModel,
     onAddMade: (stepId, name) => void prompts.addMadeFile(stepId, name),
     onRemoveMade: (fileId) => {
-      prompts.removeMadeFile(fileId);
+      actions.removeFile(fileId);
       afterWrite();
     },
     onAddUse: (id, use) => {
@@ -1718,14 +1809,14 @@ export function SandboxPage() {
       afterWrite();
     },
     onRemoveInside: (id) => {
-      prompts.removeInside(id);
+      actions.removeTile(id);
       afterWrite();
     },
     onToggleSessionPrompt: (session, row, on) => {
       if (on) {
         const real = sessions.library.find((candidate) => candidate.id === session.key);
         if (real) prompts.add(real.id, row.ordinal);
-      } else if (row.stepId) prompts.remove(row.stepId);
+      } else if (row.stepId) actions.removeTile(row.stepId);
     },
     onSessionTool: (sessionId, tool) => void sessions.setTool(sessionId, tool),
     onSessionMeta: (key, change) => void onSessionMeta(key, change),
@@ -1752,7 +1843,58 @@ export function SandboxPage() {
     onNotShared: onNotShared,
   };
 
+  /* CA-20 P5: what a change was made to, in the screen's words ("Prompt 3", "Session 2"). */
+  const whatIs = (id: unknown): string => {
+    if (typeof id !== "string") return "the build";
+    const isSession = sourceSessionRows.some((row) => row.key === id) || id.startsWith("typed-");
+    const named = nameOfTarget(refTo({ kind: isSession ? "session" : "node", id }));
+    return named && named !== NOTICE_COPY.noName ? named : "the build";
+  };
+  /** The tiles' and sessions' handlers, each one a step named after what it changed. Opening, picking and the removals (steps of their own) are left as they are. */
+  const detailsStepped = Object.fromEntries(
+    Object.entries(detailsHandlers).map(([name, fn]) => [name, typeof fn === "function" && !HANDLERS_THAT_CHANGE_NOTHING.has(name) && !HANDLERS_THAT_REMOVE.has(name) ? (...args: unknown[]) => track(handlerSentence(name, whatIs(args[0])), async () => (fn as (...a: unknown[]) => unknown)(...args)) : fn]),
+  ) as unknown as DetailsHandlers;
+  const stepOf = {
+    prompt: asStep(ADDED.prompt, onAddPrompt),
+    agent: asStep(ADDED.agent, onAddAgentOrTeam),
+    decision: asStep(ADDED.decision, onAddDecision),
+    manual: asStep(ADDED.manual, onAddManual),
+    code: asStep(ADDED.code, onAddCode),
+    check: asStep(ADDED.check, onAddCheck),
+    result: asStep(ADDED.result, onAddResultInput),
+    tool: asStep(ADDED.tool, onAddTool),
+    sourceTile: (what: string) => asStep(what, onAddSourceTile),
+    agentPrompt: asStep(ADDED.promptToAgent, onAddAgentPrompt),
+    agentTo: asStep(ADDED.agentToTeam, onAddAgentTo),
+    nest: asStep((id: string) => `Moved ${whatIs(id)}`, onNest),
+    move: (id: string, direction: -1 | 1) => void track(`Moved ${whatIs(id)} ${direction === -1 ? "up" : "down"}`, async () => prompts.move(id, direction)),
+    session: asStep(ADDED.session, onAddSession),
+    startSession: asStep(ADDED.session, onStartSession),
+    picked: asStep(ADDED.file, onPicked),
+    dropped: asStep(ADDED.file, onDropFiles),
+    attach: asStep((id: string) => `Attached a file to ${whatIs(id)}`, attach),
+    dropOnStep: asStep((id: string) => `Attached a file to ${whatIs(id)}`, onDropOnStep),
+    setup: asStep("Added setup files", addSetup),
+  };
+
+  /* CA-20 P8: the build page's keys. */
+  useBuildShortcuts({
+    phone,
+    history: buildHistory,
+    actions,
+    selection,
+    selectedId,
+    tiles: drawn.sessions.flatMap((session) => session.tiles),
+    onSelect: setSelectedId,
+    onMove: stepOf.move,
+    openHelp: actions.shortcuts.open,
+  });
+
   return (
+    <BuildHistoryContext.Provider value={buildHistory}>
+      <ReferenceBridgeContext.Provider value={bridge}>
+        <BuildActionsContext.Provider value={actions}>
+          <BuildSelectionContext.Provider value={selection}>
     <>
       <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
       <input
@@ -1769,12 +1911,12 @@ export function SandboxPage() {
           pickFor.current = null;
           setupFor.current = null;
           if (files.length === 0) return;
-          if (setupKey) void addSetup(files, undefined, { session: setupKey, all: true });
-          else if (stepId) void attach(stepId, files);
+          if (setupKey) void stepOf.setup(files, undefined, { session: setupKey, all: true });
+          else if (stepId) void stepOf.attach(stepId, files);
           else {
             const tile = tileNext.current;
             tileNext.current = false;
-            void onPicked(files, tile);
+            void stepOf.picked(files, tile);
           }
         }}
       />
@@ -1810,18 +1952,35 @@ export function SandboxPage() {
         threadNote={thread.hold}
         {...addHandlers}
         addTargets={addTargets}
-        viewOptions={{ sessionList: viewOptions.sessionList, splitMerge: viewOptions.splitMerge, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true) }}
+        viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true), fold: foldAll }}
         sessionList={sessionList}
+        selectionBar={
+          selection.size >= 2 ? (
+            <SelectionBar
+              phone={phone}
+              count={selection.size}
+              holds={{ tiles: selection.tiles.size, sessions: selection.sessions.size }}
+              moveTo={{ sessions: addTargets.sessions, parts: (addToParts ?? []).map((part) => ({ key: part.key, label: part.title })) }}
+              onMoveToSession={(key) => void edits.onMoveTiles([...selection.tiles], key)}
+              onMoveToPart={(key) => void edits.onMoveSessionsToPart([...selection.sessions], key)}
+              onDuplicate={selection.tiles.size > 0 ? () => actions.duplicate([...selection.tiles]) : undefined}
+              onGroup={bridge.available() && selection.tiles.size >= 2 ? () => actions.group([...selection.tiles]) : undefined}
+              onUngroup={bridge.available() && [...selection.tiles].some((id) => actions.grouped(id)) ? () => actions.ungroup([...selection.tiles].filter((id) => actions.grouped(id))) : undefined}
+              onRemove={() => actions.removeSelection(selection.items)}
+              onClear={selection.clear}
+            />
+          ) : null
+        }
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         map={mapColumn}
         mapPanel={mapPanel}
         selectedKey={selectedId}
         onEditSelected={selectedId ? () => openTile(selectedId) : undefined}
         renderDetails={(plan) => (
-          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsHandlers} plan={plan} />
+          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsStepped} plan={plan} />
         )}
         selection={
-          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsHandlers} />
+          <DetailsPanel phone={phone} view={view} inBuild={inBuild} focusMakes={focusMakes} focusSetup={focusSetup} colour={detailsColour} build={buildFacts} onEdit={selectedId ? () => openTile(selectedId) : undefined} {...detailsStepped} />
         }
         list={
           <BuildList
@@ -1836,19 +1995,19 @@ export function SandboxPage() {
             intoResult={listFacts.intoResult}
             results={listFacts.results}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={selection.selectTile}
             onOpenPrompt={setOpenPromptId}
             onEditTile={openTile}
             onRename={prompts.rename}
-            onMove={prompts.move}
-            onRemove={prompts.remove}
-            onAddAgentPrompt={onAddAgentPrompt}
-            onAddAgentTo={(teamId) => void onAddAgentTo(teamId)}
+            onMove={stepOf.move}
+            onRemove={actions.removeTile}
+            onAddAgentPrompt={stepOf.agentPrompt}
+            onAddAgentTo={(teamId) => void stepOf.agentTo(teamId)}
             onAttach={pickForStep}
             onNameMade={onNameMade}
             madeNames={madeByStep}
-            onDropOnStep={(id, files) => void onDropOnStep(id, files)}
-            onNest={onNest}
+            onDropOnStep={(id, files) => void stepOf.dropOnStep(id, files)}
+            onNest={stepOf.nest}
             canNest={canNest}
             onMoveToSession={edits.onMoveTile}
             onKeepSentWith={(suggestion) => {
@@ -1864,9 +2023,9 @@ export function SandboxPage() {
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
-            onAddPrompt={onAddPrompt}
+            onAddPrompt={stepOf.prompt}
             addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
-            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: edits.onRemove, onMergeUp: viewOptions.splitMerge ? edits.onMergeUp : undefined, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: (key) => actions.askRemoveSessions([key]), onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
             onDropSession={edits.onDrop}
             parts={
               partsModel
@@ -1882,7 +2041,7 @@ export function SandboxPage() {
             onDropOnWorkstream={partsModel ? edits.onDropOnPart : undefined}
             onDropWorkstream={partsModel ? edits.onDropPart : undefined}
             onAddPart={buildId ? () => void edits.onAddPart() : undefined}
-            onSplitHere={viewOptions.splitMerge ? edits.onSplitHere : undefined}
+            onSplitHere={edits.onSplitHere}
             promptIn={promptSession}
             said={sessionSaid}
                 onAddAsAgent={onAddAsAgent}
@@ -1898,8 +2057,8 @@ export function SandboxPage() {
               loadingMore: sessions.libraryLoadingMore,
               onMore: sessions.libraryMore,
               adding: adding.size > 0 || startingSession,
-              onAdd: (importId, part) => void onAddSession(importId, part),
-              onStartNew: (part) => void onStartSession(part),
+              onAdd: (importId, part) => void stepOf.session(importId, part),
+              onStartNew: (part) => void stepOf.startSession(part),
               parts: addToParts,
             }}
             collapsed={collapsedKeys}
@@ -1927,9 +2086,10 @@ export function SandboxPage() {
             onSelect={setSelectedId}
             onAddSession={(id, part) => void onAddSession(id, part)}
             parts={addToParts}
-            onDropFiles={onDropFiles}
+            onDropFiles={(files, paths) => void stepOf.dropped(files, paths)}
             onPick={pick}
             connectHref="/connect"
+            onRemoveFile={actions.removeFile}
           />
           </div>
         }
@@ -1950,7 +2110,7 @@ export function SandboxPage() {
         teamsAvailable={teamsAvailable}
         seed={agentSeed}
         inBuild={inBuild}
-        onAdd={(input) => void onAddAgentOrTeam(input)}
+        onAdd={(input) => void stepOf.agent(input)}
       />
       <AddDecisionDialog
         open={addDecisionOpen}
@@ -1962,30 +2122,30 @@ export function SandboxPage() {
           setAddDecisionOpen(false);
           setAddCodeOpen(true);
         }}
-        onAdd={(input) => void onAddDecision(input)}
+        onAdd={(input) => void stepOf.decision(input)}
       />
       <AddSystemPromptDialog
         open={addSystemPromptOpen}
         onOpenChange={setAddSystemPromptOpen}
         prompts={flatten(steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions")).map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }))}
         session={currentSession}
-        onAdd={(input) => void onAddSourceTile((session) => prompts.addSystemPromptTile({ ...input, session }))}
+        onAdd={(input) => void stepOf.sourceTile(ADDED.systemPrompt)((session) => prompts.addSystemPromptTile({ ...input, session }))}
       />
-      <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void onAddSourceTile((session) => prompts.addDatasetTile({ ...input, session }))} />
-      <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void onAddSourceTile((session) => prompts.addRepoTile({ ...input, session }))} />
+      <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void stepOf.sourceTile(ADDED.dataset)((session) => prompts.addDatasetTile({ ...input, session }))} />
+      <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void stepOf.sourceTile(ADDED.repo)((session) => prompts.addRepoTile({ ...input, session }))} />
       <AddManualStepDialog
         open={addManualOpen}
         onOpenChange={setAddManualOpen}
         after={afterStep ? `${afterStep.number} · ${afterStep.title ?? afterStep.defaultTitle}` : null}
         available={manualAvailable}
         inBuild={inBuild}
-        onAdd={(input) => void onAddManual(input)}
+        onAdd={(input) => void stepOf.manual(input)}
       />
-      <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
-      <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
-      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void onAddResultInput(input)} />
-      <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void onAddTool(input)} />
-      <TileEditDialog view={editView} handlers={detailsHandlers} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
+      <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void stepOf.check(input)} />
+      <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void stepOf.code(input)} />
+      <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void stepOf.result(input)} />
+      <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void stepOf.tool(input)} />
+      <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
       <FullPromptWindow
         steps={steps}
         groups={groups}
@@ -1993,7 +2153,7 @@ export function SandboxPage() {
         openId={openPromptId}
         mode="maker"
         details={promptDetails}
-        handlers={detailsHandlers}
+        handlers={detailsStepped}
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
         onReply={prompts.setReply}
@@ -2009,7 +2169,8 @@ export function SandboxPage() {
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
       {colourPicker}
-      <ReferenceNotice notice={references.history.notice} onUndo={references.history.undo} onDone={references.history.dismiss} phone={phone} />
+      <ReferenceNotice notice={buildHistory.notice} onUndo={() => void buildHistory.undo()} onDone={buildHistory.dismiss} phone={phone} />
+      {actionDialogs}
       {referenceActions.keepDialog}
       <ReferenceWindows references={references} actions={referenceActions} refGroups={postRefGroups} lookup={allTargets} phone={phone} />
       <PartWindow
@@ -2027,6 +2188,10 @@ export function SandboxPage() {
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
     </>
+          </BuildSelectionContext.Provider>
+        </BuildActionsContext.Provider>
+      </ReferenceBridgeContext.Provider>
+    </BuildHistoryContext.Provider>
   );
 }
 

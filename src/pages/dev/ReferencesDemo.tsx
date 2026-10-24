@@ -205,7 +205,7 @@ export default function ReferencesDemo({ fit = "board", state = "populated" }: D
         lens={lens}
         onLens={setLens}
         mapAvailable
-        viewOptions={{ sessionList: false, splitMerge: false, onChange: () => undefined, labels: { value: "letters", onChange: () => undefined }, onColours: () => actions.setColoursOpen(true) }}
+        viewOptions={{ sessionList: false, onChange: () => undefined, labels: { value: "letters", onChange: () => undefined }, onColours: () => actions.setColoursOpen(true) }}
         list={
           <BuildList
             {...list}

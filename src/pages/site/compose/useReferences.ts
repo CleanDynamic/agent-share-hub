@@ -25,6 +25,7 @@ import { refTo } from "@/lib/build/thread";
 import { storedWorkstreamsOf } from "@/lib/build/making";
 
 import { useReferenceHistory, type ReferenceHistoryControls } from "./useReferenceHistory";
+import type { BuildJoin } from "./useBuildHistory";
 
 /** How long a write is laid over the saved build at most, should the saved build never show it. */
 const PENDING_MS = 8000;
@@ -49,6 +50,8 @@ export interface ReferencesInput {
   loaded: boolean;
   /** The screen's name for a component: "Code 4", "Session 2". */
   nameOf: (to: string) => string;
+  /** CA-20 P5: the build's history, so a colour or link step is one step of it. */
+  join?: BuildJoin;
 }
 
 export interface References {
@@ -74,7 +77,7 @@ export interface References {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-export function useReferences({ made, savedSteps, savedGroups, writeColour, saveGroups, loaded, nameOf }: ReferencesInput): References {
+export function useReferences({ made, savedSteps, savedGroups, writeColour, saveGroups, loaded, nameOf, join }: ReferencesInput): References {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [pending, setPending] = useState<Pending>({ singles: {} });
   const timer = useRef<number | undefined>(undefined);
@@ -124,7 +127,7 @@ export function useReferences({ made, savedSteps, savedGroups, writeColour, save
   groupsRef.current = model.groups;
   const apply = useCallback((writes: ColourWrites) => applyColours(writes.order && !writes.groups ? { ...writes, groups: groupsRef.current } : writes), [applyColours]);
 
-  const history = useReferenceHistory({ editor, applyColours: apply });
+  const history = useReferenceHistory({ editor, applyColours: apply, join });
 
   /* The size rule after a deletion elsewhere: only components this visit has seen, so a build still loading folds nothing. */
   const seen = useRef<Set<string>>(new Set());

@@ -572,10 +572,10 @@ describe("a manual step (UI-P70)", () => {
     expect(within(card()).queryByText("1 screenshot")).toBeNull();
   });
 
-  it("has Rename, Move up, Move down and Remove, and no 'Read all of it'", async () => {
+  it("has Rename, Move up, Move down and Remove tile, and no 'Read all of it'", async () => {
     const props = manualList();
     fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
-    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent)).toEqual(["Rename", "Move up", "Move down", "Remove"]);
+    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Move up", "Move down", "Remove tile"]);
     fireEvent.click(screen.getByRole("menuitem", { name: "Move up" }));
     expect(props.onMove).toHaveBeenCalledWith("m3", -1);
   });
@@ -583,7 +583,7 @@ describe("a manual step (UI-P70)", () => {
   it("removes, and cannot move up from the first step or down from the last", async () => {
     const props = manualList();
     fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
     expect(props.onRemove).toHaveBeenCalledWith("m3");
     cleanup();
     const fixture = sandboxManualFixture().list;
@@ -654,18 +654,18 @@ describe("the refined look (UI-P93)", () => {
     list({ onAttach, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent)).toEqual(["Rename", "Read all of it", "Attach a file", "Move up", "Move down", "Remove"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all of it", "Attach a file", "Move up", "Move down", "Remove tile"]);
     fireEvent.click(screen.getByRole("menuitem", { name: "Attach a file" }));
     expect(onAttach).toHaveBeenCalledWith("p2");
   });
 
-  it("has Name a file it makes after Attach a file: 7 items, the most a menu may hold", async () => {
+  it("has Name a file it makes after Attach a file, and Remove tile last", async () => {
     const onNameMade = vi.fn();
     list({ onAttach: vi.fn(), onNameMade, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent)).toEqual(["Rename", "Read all of it", "Attach a file", "Name a file it makes", "Move up", "Move down", "Remove"]);
-    expect(items).toHaveLength(7);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all of it", "Attach a file", "Name a file it makes", "Move up", "Move down", "Remove tile"]);
+    expect(items.at(-1)?.getAttribute("data-tone")).toBe("danger");
     fireEvent.click(screen.getByRole("menuitem", { name: "Name a file it makes" }));
     // CA-10: asked once the menu has let go of focus, so it cannot take it back from the field.
     await waitFor(() => expect(onNameMade).toHaveBeenCalledWith("p2"));

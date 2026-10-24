@@ -245,7 +245,7 @@ describe("CA-14 P5 · adding to the right session", () => {
   });
 });
 
-const turnOn = async (name: "Session list" | "Split and merge") => {
+const turnOn = async (name: "Session list") => {
   fireEvent.keyDown(await screen.findByTestId("sandbox-view"), { key: "Enter" });
   fireEvent.click(await screen.findByRole("menuitemcheckbox", { name }));
   fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
@@ -253,11 +253,11 @@ const turnOn = async (name: "Session list" | "Split and merge") => {
 const sessionsOf = () => tableRows("build_sessions").filter((row) => row.build_id === DRAFT);
 
 describe("CA-14 P6 · View", () => {
-  it("holds two switches, both off to begin with, and draws no session list until it is on", async () => {
+  it("holds one switch, off to begin with, and draws no session list until it is on (CA-20 P1: no Split and merge switch)", async () => {
     await twoSessions();
     fireEvent.keyDown(screen.getByTestId("sandbox-view"), { key: "Enter" });
     const boxes = await screen.findAllByRole("menuitemcheckbox");
-    expect(boxes.map((box) => [box.textContent, box.getAttribute("aria-checked")])).toEqual([["Session list", "false"], ["Split and merge", "false"]]);
+    expect(boxes.map((box) => [box.textContent, box.getAttribute("aria-checked")])).toEqual([["Session list", "false"]]);
     expect(screen.queryByTestId("session-list")).toBeNull();
   });
 
@@ -315,20 +315,19 @@ describe("CA-14 P7 · split and merge", () => {
     await screen.findByRole("menuitem", { name: "Move up" });
   };
 
-  it("shows neither menu item while Split and merge is off", async () => {
+  it("shows both menu items without any switch (CA-20 P1)", async () => {
     await twoSessions();
     fireEvent.click(screen.getByRole("button", { name: "Expand Session 2" }));
     await tileMenu(3);
-    expect(screen.queryByRole("menuitem", { name: "Split session here" })).toBeNull();
+    expect(screen.getByRole("menuitem", { name: "Split session here" })).toBeTruthy();
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 2 options" }), { key: "Enter" });
-    await screen.findByRole("menuitem", { name: "Remove session…" });
-    expect(screen.queryByRole("menuitem", { name: "Merge with the session above" })).toBeNull();
+    await screen.findByRole("menuitem", { name: "Move up" });
+    expect(screen.getByRole("menuitem", { name: "Merge with the session above" })).toBeTruthy();
   });
 
   it("splits a session at a tile: the tile and every tile after it start a new session after this one, copying its app, dated as the tile; Undo puts it back", async () => {
     await twoSessions();
-    await turnOn("Split and merge");
     fireEvent.click(screen.getByRole("button", { name: "Expand Session 2" }));
     // Tile 2 is the long session's first, so it has no split; tile 12 is its eleventh.
     await tileMenu(2);
@@ -357,7 +356,6 @@ describe("CA-14 P7 · split and merge", () => {
 
   it("merges a session with the one above: its tiles go to the end of that one, in order, and its row goes; Undo brings it back with its import", async () => {
     await twoSessions();
-    await turnOn("Split and merge");
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 2 options" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Merge with the session above" }));
     await waitFor(() => expect(sessionsOf()).toHaveLength(1), { timeout: 15_000 });
@@ -375,7 +373,6 @@ describe("CA-14 P7 · split and merge", () => {
 
   it("keeps the upper title on a clash and says what was removed", async () => {
     await twoSessions();
-    await turnOn("Split and merge");
     for (const [n, name] of [[1, "Planning"], [2, "Router"]] as const) {
       const field = screen.getByRole("textbox", { name: `Title of Session ${n}` }) as HTMLInputElement;
       act(() => field.focus());
@@ -396,7 +393,7 @@ describe("CA-14 P7 · split and merge", () => {
 });
 
 describe("CA-14 P5 · Move to session", () => {
-  it("lists the other sessions in a tile's menu and moves the tile to the end of the one chosen; Undo puts it back", async () => {
+  it("lists the other sessions in a tile's menu and moves the tile to the end of the one chosen", async () => {
     await twoSessions();
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 1 options" }), { key: "Enter" });
     fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to session…" }), { key: "ArrowRight" });
@@ -404,29 +401,27 @@ describe("CA-14 P5 · Move to session", () => {
     fireEvent.click(target);
     await waitFor(() => expect(positions().at(-1)?.payload).toMatchObject({ session: LONG }), { timeout: 15_000 });
     expect(positions().at(-1)?.source_ref).toMatchObject({ import_session_id: WAITING });
-    fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
-    await waitFor(() => expect(positions()[0].payload).not.toMatchObject({ session: LONG }), { timeout: 15_000 });
-    expect(positions()).toHaveLength(67);
   });
 });
 
 describe("CA-14 P2 · removing a session", () => {
-  it("asks first, removes the session with its tiles, and puts them back from Undo", async () => {
+  it("asks first (CA-20 P2: Cancel, Keep the tiles, Remove all), removes the session with its tiles, and puts them back from Undo", async () => {
     await twoSessions();
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 1 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove session…" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove session" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Remove Session 1?")).toBeTruthy();
-    expect(within(dialog).getByText("Its 1 tile is removed too.")).toBeTruthy();
+    expect(within(dialog).getByText("It has 1 tile.")).toBeTruthy();
     // Nothing has gone yet.
     expect(positions()).toHaveLength(67);
-    fireEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Remove all" }));
     await waitFor(() => expect(positions()).toHaveLength(66), { timeout: 15_000 });
     await waitFor(() => expect(sessionsOf()).toHaveLength(1), { timeout: 15_000 });
     expect(sessionsMetaOf(draftRow()?.making)[WAITING]).toBeUndefined();
     expect(screen.getAllByTestId("session-head")).toHaveLength(1);
     expect(await screen.findByRole("group", { name: /^Session 1 · / })).toBeTruthy();
-    fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
+    expect(await screen.findByText("Removed Session 1 and its 1 tile")).toBeTruthy();
+    fireEvent.click(await screen.findByTestId("notice-undo"));
     await waitFor(() => expect(positions()).toHaveLength(67), { timeout: 15_000 });
     await waitFor(() => expect(sessionsOf()).toHaveLength(2), { timeout: 15_000 });
     expect(order()).toEqual([WAITING, LONG]);

@@ -29,6 +29,13 @@ export class WriteBuffer {
     return keys.length;
   }
 
+  /** CA-20 P5: take every queued write out, in order, and empty the queue, without running them: they run later, as one step. */
+  drain(): (() => void)[] {
+    const runs = this.order.flatMap((key) => this.runs.get(key) ?? []);
+    this.clear();
+    return runs;
+  }
+
   /** Take one write off the queue (the maker put a thing back as it was). */
   drop(key: string): void {
     this.order = this.order.filter((held) => held !== key);
