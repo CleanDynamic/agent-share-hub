@@ -97,7 +97,7 @@ describe("building and the swap", () => {
   it("builds on the first show only", () => {
     stage(1440);
     const first = render(<ComposeSkeleton />);
-    const built = (container: HTMLElement) => (container.querySelector('[data-testid="loading-blocks"] > div') as HTMLElement).style.animation;
+    const built = (container: HTMLElement) => (container.querySelector('[data-testid="loading-blocks"] > span > div') as HTMLElement).style.animation;
     expect(built(first.container)).toContain("bgLoadRise");
     first.unmount();
     const second = render(<ComposeSkeleton />);

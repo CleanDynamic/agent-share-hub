@@ -255,6 +255,10 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/__audit__/fakeSupabase.ts",
   "src/pages/site/compose/ComposePage.tsx",
   "src/pages/site/compose/useComposeSessions.ts",
+  // CA-24 P5
+  "e2e/audit/composer-ca24-shots.spec.ts",
+  "src/pages/dev/Ca24Demo.tsx",
+  "src/pages/dev/SandboxDemo.tsx",
   // CA-24 P4
   "src/pages/site/compose/ImportingPieces.test.tsx",
   "src/pages/site/compose/ImportingPieces.tsx",

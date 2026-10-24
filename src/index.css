@@ -1004,7 +1004,7 @@ input[type="search"] { border-radius: var(--r-control); }
   50%      { opacity: .55; }
 }
 
-/* CA-24 P1 — the building blocks. Ten frames in 1,600 ms, `step-end` (set where the animation is used), four characters
+/* CA-24 P1, the building blocks. Ten frames in 1,600 ms, `step-end` (set where the animation is used), four characters
    stacked in a cell: · ▫ ▪ ■ ■ ▪ ▫ · · ·. Each keyframe is one character's opacity and nothing else moves: the character
    shows its colour at 62% (· and ▫), 80% (▪) or 100% (■) in its frames and is gone in the rest. `bgLoadRise` is a block's
    rows building on first show: up 4 and in over 200 ms. `loadingBlocks.test.ts` holds these to `FRAME_GLYPHS`. */
@@ -1381,7 +1381,11 @@ input[type="search"] { border-radius: var(--r-control); }
 /* MOTION. Nothing in the refined look animates except the theme change: no hover fade, no pulse, no reveal, no
    enter or exit. The theme change is `[data-theme-changing]`, which has its own rule above, so these stand down
    while it is set. Whatever a dependency adds (a Radix dialog's enter keyframes) is covered by the same rule. */
-:root:not([data-theme-changing]) *,
+/* CA-24 P1: the one exception is a loading placeholder. The building blocks ARE a motion (a character cycle and a wave, opacity
+   only) and the content that arrives over them fades in; `data-loading-blocks` (a block and everything inside it) and
+   `data-content-in` (the one element that fades in, not what is inside it) stand outside this rule. Reduced motion is answered
+   in `LoadingBlocks` and in the global reduced-motion rule at the end of this file. */
+:root:not([data-theme-changing]) *:not([data-loading-blocks], [data-loading-blocks] *, [data-content-in]),
 :root:not([data-theme-changing]) *::before,
 :root:not([data-theme-changing]) *::after {
   transition: none !important;

@@ -61,7 +61,9 @@ test("composer/ca-24/frame-rate", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(URL("loading"));
   await page.getByTestId("compose-skeleton").waitFor();
-  const cells = await page.getByTestId("loading-blocks").evaluateAll((nodes) => nodes.reduce((sum, node) => sum + node.querySelectorAll("span > span").length, 0));
+  const cells = await page.getByTestId("loading-blocks").evaluateAll((nodes) => nodes.reduce((sum, node) => sum + Number(node.getAttribute("data-rows")) * Number(node.getAttribute("data-cols")), 0));
+  const layers = await page.evaluate(() => document.getAnimations().length);
+  const drawn = await page.getByTestId("loading-blocks").evaluateAll((nodes) => nodes.reduce((sum, node) => sum + Number(node.getAttribute("data-layers")), 0));
   await page.waitForTimeout(1500);
   const reading = await page.evaluate(
     () =>
@@ -80,8 +82,8 @@ test("composer/ca-24/frame-rate", async ({ page }) => {
   );
   const fps = reading.frames / reading.seconds;
   mkdirSync("e2e/audit/out", { recursive: true });
-  writeFileSync("e2e/audit/out/ca24-frame-rate.json", JSON.stringify({ ...reading, fps, animatedLayers: cells * 4 }, null, 2));
-  console.log(`CA-24 first load: ${fps.toFixed(1)} fps over ${reading.seconds.toFixed(1)} s, worst frame ${reading.worst.toFixed(1)} ms, ${cells} cells`);
+  writeFileSync("e2e/audit/out/ca24-frame-rate.json", JSON.stringify({ ...reading, fps, cells, layers: drawn, animations: layers }, null, 2));
+  console.log(`CA-24 first load: ${fps.toFixed(1)} fps over ${reading.seconds.toFixed(1)} s, worst frame ${reading.worst.toFixed(1)} ms, ${cells} cells, ${drawn} layers, ${layers} running animations`);
   expect(fps).toBeGreaterThan(55);
 });
 

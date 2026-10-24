@@ -171,6 +171,20 @@ describe("the bar, the count and Stop", () => {
   });
 });
 
+describe("prompts already in", () => {
+  it("stand in their sockets, and only the sockets still empty hold blocks", () => {
+    block({ count: 3, written: ["First prompt", "Second prompt"], progress: { done: 2, total: 3 } });
+    act(() => {
+      vi.advanceTimersByTime(SLOW_IMPORT_MS);
+    });
+    const places = screen.getAllByTestId("arriving-place");
+    expect(within(places[0]).getByText("First prompt")).toBeTruthy();
+    expect(within(places[1]).getByText("Second prompt")).toBeTruthy();
+    expect(within(places[0]).queryByTestId("socket-blocks")).toBeNull();
+    expect(within(places[2]).getByTestId("socket-blocks")).toBeTruthy();
+  });
+});
+
 describe("the blocks wave with the rest of the page", () => {
   it("are plain building blocks, hidden from a screen reader", () => {
     render(<SocketBlocks />);

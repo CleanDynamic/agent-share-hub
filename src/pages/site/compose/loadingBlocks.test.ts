@@ -20,7 +20,11 @@ import {
   ROW_STEP_MS,
   buildDelay,
   columnsOf,
+  PHASE_MS,
   framesOf,
+  layersOf,
+  lineOf,
+  phaseOf,
   resetFirstShow,
   rowsOf,
   takeFirstShow,
@@ -132,5 +136,39 @@ describe("building, on first show only", () => {
   it("builds once, and every later placeholder is simply there", () => {
     expect(takeFirstShow()).toBe(true);
     expect(takeFirstShow()).toBe(false);
+  });
+});
+
+describe("layers", () => {
+  it("rounds the wave to the nearest 160 ms (one frame), and never leaves the cycle", () => {
+    expect(PHASE_MS).toBe(160);
+    expect(phaseOf(0, 0)).toBe(0);
+    // 22 ms is less than half of 160: the next cell across starts with this one; eight cells across are 176 ms: one step.
+    expect(phaseOf(8, 0)).toBe(0);
+    expect(phaseOf(64, 0)).toBe(160);
+    expect(phaseOf(8 * 70, 0)).toBeLessThan(1600);
+    expect(phaseOf(0, 12, 1599)).toBeLessThan(1600);
+  });
+
+  it("groups the cells of a block by start: each cell once, the starts in order, a delay never positive", () => {
+    const layers = layersOf(30, 3, { x: 16, y: 8 });
+    expect(layers.length).toBeLessThanOrEqual(1600 / PHASE_MS);
+    const seen = new Set<string>();
+    for (const layer of layers) {
+      expect(layer.delay).toBeLessThanOrEqual(0);
+      layer.rows.forEach((members, row) => {
+        for (const col of members) {
+          expect(seen.has(`${row}:${col}`)).toBe(false);
+          seen.add(`${row}:${col}`);
+          expect(layer.delay === 0 ? 0 : -layer.delay).toBe(phaseOf(16 + col * 8, 8 + row * 12));
+        }
+      });
+    }
+    expect(seen.size).toBe(90);
+  });
+
+  it("writes a row as text: the character at the cells that start here and a space at the rest", () => {
+    expect(lineOf(6, [1, 4], "■")).toBe(" ■  ■ ");
+    expect(lineOf(3, [], "·")).toBe("   ");
   });
 });

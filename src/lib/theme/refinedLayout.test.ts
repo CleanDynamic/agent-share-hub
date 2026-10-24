@@ -44,7 +44,11 @@ describe("the focus, motion and phone rules in index.css", () => {
   });
 
   it("stops every transition and animation except the theme change", () => {
-    expect(css).toMatch(/:root:not\(\[data-theme-changing\]\) \*,[\s\S]*?transition: none !important;\s*animation: none !important;/);
+    expect(css).toMatch(/:root:not\(\[data-theme-changing\]\) \*(?::not\([^)]*\))?,[\s\S]*?transition: none !important;\s*animation: none !important;/);
+  });
+
+  it("leaves out of that rule only a loading placeholder (CA-24): a block with what is inside it, and the one element that fades in", () => {
+    expect(css).toContain(":not([data-loading-blocks], [data-loading-blocks] *, [data-content-in])");
   });
 
   it("makes a phone's fields 16px", () => {

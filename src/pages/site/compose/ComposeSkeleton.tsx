@@ -144,7 +144,9 @@ export function ComposeArrival({ loading, children }: { loading: boolean; childr
   const settled = done || reduced;
   return (
     <div data-testid="compose-arrival" style={{ position: "relative" }}>
-      <div style={settled ? undefined : { animation: `bgContentIn ${CONTENT_IN_MS}ms backwards` }}>{children}</div>
+      <div {...(settled ? null : { "data-content-in": "" })} style={settled ? undefined : { animation: `bgContentIn ${CONTENT_IN_MS}ms backwards` }}>
+        {children}
+      </div>
       {settled ? null : (
         <div aria-hidden="true" data-testid="compose-skeleton-ghost" onTransitionEnd={() => setDone(true)} style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
           <ComposeSkeleton gone={fading} ghost />

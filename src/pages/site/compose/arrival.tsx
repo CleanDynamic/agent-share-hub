@@ -20,7 +20,7 @@ import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } 
 import { prefersReducedMotion, scrollBehavior, STANDARD } from "@/lib/theme/motion";
 
 import { play, SLIDE_ATTR, snapshot, type Box } from "./flip";
-import { ImportProgress, SocketBlocks, useSlow } from "./ImportingPieces";
+import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
 import { SessionHead } from "./SessionHead";
 import type { SourceSession } from "./sourcesModel";
 import { RUN } from "./tileRecipes";
@@ -40,6 +40,8 @@ export interface Arriving {
   part?: string;
   /** CA-24 P4: how far the import has got, when it can say. Absent: the tag and the sockets show, with no bar or count. */
   progress?: { done: number; total: number };
+  /** CA-24 P4: the text of the prompts already in, when the import can say. Their sockets show them; the others show building blocks. */
+  written?: readonly string[];
   /** CA-24 P4: ends the import, keeping what is in. Absent: it cannot be stopped, and there is no Stop. */
   onStop?: () => void;
   /** Writing: the rows are on their way. Written: the data has them. Failed: nothing was added. */
@@ -256,7 +258,7 @@ export function ArrivingBlock({ arriving, rootRef, first }: { arriving: Arriving
         <div id={`session-tiles-${arriving.key}`} data-testid="session-tiles" style={RUN}>
           {Array.from({ length: arriving.count }, (_, at) => (
             <div key={at} data-skel-kind="tile" data-skel-id={`${arriving.key}:wait:${at}`} data-skel-container={arriving.key} data-testid="arriving-place" style={{ position: "relative", height: height.current ?? 108, visibility: "hidden" }}>
-              {slow ? <SocketBlocks /> : null}
+              {arriving.written && at < arriving.written.length ? <WrittenPrompt text={arriving.written[at]} /> : slow ? <SocketBlocks /> : null}
             </div>
           ))}
         </div>

@@ -76,6 +76,56 @@ export function resetFirstShow(): void {
   shown = false;
 }
 
+/* ── layers: how a block is drawn cheaply ──
+
+   Four animated characters in each of a few thousand cells is tens of thousands of compositor layers, and a page that size
+   does not hold 60 frames a second (measured: 1 to 10 fps in headless Chromium). The characters of cells that start their cycle
+   together are therefore drawn together: one animated layer for each glyph and each start (`PHASE_MS` apart), holding the
+   glyph at every cell of that start and a space at the others, in one line of text for each row. A block is at most
+   `1600 / PHASE_MS` starts times four glyphs, whatever its size. The wave is the same one, `waveDelay`, rounded to the nearest
+   `PHASE_MS`; the cell is the same 8 by 12, since the text's letter spacing is the rest of its 8 (`LoadingBlocks`). */
+
+/** How far apart two starts of the cycle are, in ms: one frame. Finer waves cost layers (measured on the first load in headless Chromium: 160 → 416 layers at 60 fps; 80 → 756 layers at 48 to 50 fps). */
+export const PHASE_MS = 160;
+
+/** The start of the cycle, as a positive offset into it in ms, for a cell at page position (x, y), rounded to `PHASE_MS`. */
+export function phaseOf(x: number, y: number, now = 0, step: number = PHASE_MS): number {
+  const raw = -waveDelay(x, y, now);
+  return ((Math.round(raw / step) * step) % CYCLE_MS) + 0;
+}
+
+export interface PhaseLayer {
+  /** The start, as a delay in ms (zero or negative). */
+  delay: number;
+  /** For each row, the columns that start here. */
+  rows: readonly (readonly number[])[];
+}
+
+/** The cells of a block, grouped by when their cycle starts. `origin` is the block's place on the page. */
+export function layersOf(cols: number, rows: number, origin: { x: number; y: number }, now = 0, step: number = PHASE_MS): PhaseLayer[] {
+  const groups = new Map<number, number[][]>();
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const phase = phaseOf(origin.x + col * CELL_W, origin.y + row * CELL_H, now, step);
+      let held = groups.get(phase);
+      if (!held) {
+        held = Array.from({ length: rows }, () => []);
+        groups.set(phase, held);
+      }
+      held[row].push(col);
+    }
+  }
+  return [...groups.entries()].sort((a, b) => a[0] - b[0]).map(([phase, members]) => ({ delay: phase === 0 ? 0 : -phase, rows: members }));
+}
+
+/** One row of a layer as text: `glyph` at the columns that start here, a space at the rest. */
+export function lineOf(cols: number, members: readonly number[], glyph: string): string {
+  const held = new Set(members);
+  let out = "";
+  for (let col = 0; col < cols; col += 1) out += held.has(col) ? glyph : " ";
+  return out;
+}
+
 /* ── the shapes of the first load ("Loading: building blocks") ── */
 
 /** The gap under a line before the next one: lines are 12 tall and 22 apart. */

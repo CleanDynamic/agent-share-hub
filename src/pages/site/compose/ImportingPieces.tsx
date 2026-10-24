@@ -24,6 +24,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { LoadingBlocks } from "./LoadingBlocks";
+import { tileStyle } from "./tileRecipes";
 
 export const SLOW_IMPORT_MS = 1000;
 export const SOCKET_INSET = 12;
@@ -88,6 +89,15 @@ export function SocketBlocks() {
 }
 
 /* The arriving block is a column with a gap of 4, so 4 more makes the 8 under the sockets. */
+/** A prompt that is already in, standing in its socket where its blocks were. */
+export function WrittenPrompt({ text }: { text: string }) {
+  return (
+    <div data-testid="written-prompt" style={{ ...tileStyle(false), position: "absolute", inset: 0, visibility: "visible", overflow: "hidden" }}>
+      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "normal", color: t.text, overflow: "hidden" }}>{text}</p>
+    </div>
+  );
+}
+
 const ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 12, marginTop: 4, minWidth: 0 };
 const BAR: CSSProperties = { flex: "1 1 auto", minWidth: 0, height: 4, borderRadius: 2, background: t.hairline, overflow: "hidden" };
 const COUNT: CSSProperties = { fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "normal", color: t.label, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" };

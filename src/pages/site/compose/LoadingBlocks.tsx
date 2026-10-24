@@ -4,10 +4,16 @@
    the numbers). A `line` is one row; a `box` is `rows`. The block is `aria-hidden`: whoever shows it supplies the one
    visually hidden "Loading" (`LoadingStatus`, below).
 
-   NO TIMERS AND NO STATE PER CELL. The cycle is the `bgLoad*` keyframes in index.css; each cell carries only its delay, as the
-   inline variable `--bd`. A block reads where it stands on the page once (one state for the whole block) so that the wave is
-   the page's, not its own. `order` and `building` are for the first load: the block's rows rise in, bottom row first. `gone`
-   fades the block out over 200 ms (the content is ready); the block stays where it was, so nothing moves.
+   HOW A BLOCK IS DRAWN. The cell is 8 by 12 and holds one of four characters, which change in ten step-end frames over 1,600 ms
+   (the `bgLoad*` keyframes in index.css; only opacity moves). Cells that start their cycle together share their animated layers:
+   one layer for each of the four characters and each start, holding that character at every cell of that start and a space at
+   the rest, a line of text for each row, 8 to the cell (the letter spacing is the rest of the 8 after the character's own
+   advance). So a block costs at most 10 starts times four layers whatever its size, which is what lets a whole first-load
+   skeleton hold its frame rate. The wave is `waveDelay` from the page position, to the nearest `PHASE_MS`.
+
+   NO TIMERS AND NO STATE PER CELL. A block reads where it stands on the page once (one state for the whole block) so that the
+   wave is the page's, not its own. `order` and `building` are for the first load: each row rises 4 and fades in, bottom row
+   first. `gone` fades the block out over 200 ms (the content is ready); the block stays where it was, so nothing moves.
 
    REDUCED MOTION: a still `·` fill in the same shapes. No wave, no building, an instant swap. */
 
@@ -29,9 +35,10 @@ import {
   GLYPH_OPACITY,
   buildDelay,
   columnsOf,
+  layersOf,
+  lineOf,
   pageClock,
   rowsOf,
-  waveDelay,
 } from "./loadingBlocks";
 
 export interface LoadingBlocksProps {
@@ -53,29 +60,30 @@ export interface LoadingBlocksProps {
 
 const bgLoadNames = ["bgLoadDot", "bgLoadOpen", "bgLoadSmall", "bgLoadFull"] as const;
 
-const glyphStyle = (at: number): CSSProperties => ({
+/** The text's own advance is one `ch`; the rest of the cell's 8 is letter spacing, and half of it is put before the first character. */
+const SPARE = `calc(${CELL_W}px - 1ch)`;
+
+const TEXT: CSSProperties = {
   position: "absolute",
-  inset: 0,
-  textAlign: "center",
-  opacity: 0,
-  animation: `${bgLoadNames[at]} ${CYCLE_MS}ms step-end var(--bd) infinite`,
-});
-
-const GLYPH_STYLES = bgLoadNames.map((_, at) => glyphStyle(at));
-
-const CELL: CSSProperties = {
-  position: "relative",
-  flex: `0 0 ${CELL_W}px`,
-  width: CELL_W,
-  height: CELL_H,
+  top: 0,
+  left: `calc(${SPARE} / 2)`,
+  whiteSpace: "pre",
+  letterSpacing: SPARE,
   fontFamily: DM_MONO,
   fontSize: CELL_FONT,
   lineHeight: `${CELL_H}px`,
   color: t.textDisabled,
 };
 
+/** A layer: the characters of every cell that starts its cycle at `delay`, one glyph, opacity the only thing that moves. */
+const layerStyle = (glyph: number, delay: number): CSSProperties => ({
+  ...TEXT,
+  opacity: 0,
+  animation: `${bgLoadNames[glyph]} ${CYCLE_MS}ms step-end ${delay}ms infinite`,
+});
+
 /** The still fill: a `·` at 62%. */
-const STILL: CSSProperties = { ...CELL, textAlign: "center", opacity: GLYPH_OPACITY[0] };
+const STILL: CSSProperties = { ...TEXT, opacity: GLYPH_OPACITY[0] };
 
 export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, building = false, gone = false, at, style }: LoadingBlocksProps) {
   const root = useRef<HTMLDivElement | null>(null);
@@ -112,53 +120,52 @@ export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, buildi
   const cols = columnsOf(total);
   const base = at ?? origin ?? { x: 0, y: 0 };
   const out = gone && !reduced;
+  const rising = building && !reduced;
 
-  const lines: ReactNode[] = [];
-  for (let row = 0; row < count; row += 1) {
-    const cells: ReactNode[] = [];
-    for (let col = 0; col < cols; col += 1) {
-      if (reduced) {
-        cells.push(
-          <span key={col} style={STILL}>
-            {GLYPHS[0]}
-          </span>,
-        );
-        continue;
-      }
-      const delay = waveDelay(base.x + col * CELL_W, base.y + row * CELL_H, clock);
-      cells.push(
-        <span key={col} style={{ ...CELL, ["--bd" as string]: `${delay}ms` }}>
-          {GLYPHS.map((glyph, at) => (
-            <span key={glyph} style={GLYPH_STYLES[at]}>
-              {glyph}
-            </span>
+  /** A row of a layer: its own element only while the block builds, when the rows rise one after another. */
+  const rowOf = (row: number, text: string) => (
+    <div key={row} style={{ height: CELL_H, ...(rising ? { animation: `bgLoadRise ${BUILD_MS}ms backwards`, animationDelay: `${buildDelay(order, row, count)}ms` } : null) }}>
+      {text}
+    </div>
+  );
+
+  const layers: ReactNode[] = [];
+  if (cols > 0) {
+    if (reduced) {
+      layers.push(
+        <span key="still" style={STILL}>
+          {Array.from({ length: count }, (_, row) => (
+            <div key={row} style={{ height: CELL_H }}>
+              {GLYPHS[0].repeat(cols)}
+            </div>
           ))}
         </span>,
       );
+    } else {
+      for (const layer of layersOf(cols, count, base, clock)) {
+        GLYPHS.forEach((glyph, at) => {
+          layers.push(
+            <span key={`${layer.delay}:${at}`} style={layerStyle(at, layer.delay)}>
+              {layer.rows.map((members, row) => rowOf(row, lineOf(cols, members, glyph)))}
+            </span>,
+          );
+        });
+      }
     }
-    lines.push(
-      <div
-        key={row}
-        style={{
-          display: "flex",
-          height: CELL_H,
-          ...(building && !reduced ? { animation: `bgLoadRise ${BUILD_MS}ms backwards`, animationDelay: `${buildDelay(order, row, count)}ms` } : null),
-        }}
-      >
-        {cells}
-      </div>,
-    );
   }
 
   return (
     <div
       ref={root}
       aria-hidden="true"
+      data-loading-blocks=""
       data-testid="loading-blocks"
       data-kind={kind}
       data-rows={count}
       data-cols={cols}
+      data-layers={layers.length}
       style={{
+        position: "relative",
         width: width === "fill" ? "100%" : width,
         height: count * CELL_H,
         overflow: "hidden",
@@ -170,7 +177,7 @@ export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, buildi
         ...style,
       }}
     >
-      {lines}
+      {layers}
     </div>
   );
 }
