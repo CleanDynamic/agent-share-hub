@@ -6,6 +6,7 @@
    a 1px `--hairline`. The footer is on `--window-foot`: the note on the left, Close, then Publish (greyed while a required item is
    open). Every action closes the window first, so the page can take focus. */
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, type CSSProperties, type ReactNode } from "react";
 
@@ -42,6 +43,9 @@ export function PublishFrame({
   closeFocus?: () => boolean;
 }) {
   const phone = useIsPhone();
+  const focus = useWindowFocus(open, (event) => {
+    if (closeFocus?.()) event.preventDefault();
+  });
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title}>
@@ -59,9 +63,8 @@ export function PublishFrame({
         <Dialog.Content
           data-testid={testId}
           aria-describedby={undefined}
-          onCloseAutoFocus={(event) => {
-            if (closeFocus?.()) event.preventDefault();
-          }}
+          onOpenAutoFocus={focus.onOpenAutoFocus}
+          onCloseAutoFocus={focus.onCloseAutoFocus}
           style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}
         >
           <div style={{ padding: 20, flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}>

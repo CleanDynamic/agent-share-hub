@@ -767,6 +767,19 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/WorkstreamHead.tsx",
   "src/pages/site/compose/buildFocus.tsx",
   "src/pages/site/compose/ca26.p1.test.tsx",
+  // CA-26 P2
+  "src/components/brand/BottomSheet.tsx",
+  "src/components/shell/BottomSheet.tsx",
+  "src/lib/focus/buildItems.ts",
+  "src/lib/focus/windowFocus.ts",
+  "src/pages/site/compose/DetailsOverlay.tsx",
+  "src/pages/site/compose/ModalFrame.tsx",
+  "src/pages/site/compose/PublishChecklist.tsx",
+  "src/pages/site/compose/ca26.menuHost.tsx",
+  "src/pages/site/compose/ca26.p2.test.tsx",
+  "src/pages/site/compose/referencePieces.tsx",
+  "src/pages/site/compose/removePieces.tsx",
+  "src/pages/site/compose/saveWindows.tsx",
 ];
 
 /**
@@ -1425,6 +1438,16 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 10 is not in SPACE_REFINED",
     text: "gap: 10, minHeight: 48",
     why: "The Publish checklist's rows (CA-25): the circle sits 10 before the words, the board's own measure.",
+  },
+  {
+    rule: "spacing 17 is not in SPACE_REFINED",
+    text: 'padding: "4px 17px", touchAction',
+    why: "The phone sheet's grabber (UI-P19), unchanged by CA-26: its 40 by 5 bar sits in a 17-wide grip. CA-26 only gives the sheet its focus handlers.",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: 'justifyContent: "space-between", gap: 9',
+    why: "The phone sheet's title row (UI-P55's 9 between its parts), unchanged by CA-26.",
   },
 ];
 

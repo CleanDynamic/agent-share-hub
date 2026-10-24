@@ -10,6 +10,7 @@
 
    The notice after a step is CA-19's (`ReferenceNotice`): the page has one, whichever kind of step made it. */
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useId, useLayoutEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
@@ -68,6 +69,7 @@ export interface SmallWindowProps {
 /** The 420 window every removal, clearing and conversion asks in. Escape and a click outside cancel. */
 export function SmallWindow({ open, onClose, title, body, buttons, testId, width = 420, children }: SmallWindowProps) {
   const phone = useIsPhone();
+  const focus = useWindowFocus(open);
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title}>
@@ -83,7 +85,7 @@ export function SmallWindow({ open, onClose, title, body, buttons, testId, width
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content role="alertdialog" aria-describedby={undefined} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
             {body ? <p style={{ ...LABEL, margin: 0 }}>{body}</p> : null}

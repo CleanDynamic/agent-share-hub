@@ -7,29 +7,16 @@
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent } from "react";
 
 import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
+import { ROVING_ITEM, itemKey, itemsOf, shown } from "@/lib/focus/buildItems";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { text } from "./refinedStyles";
 
 import { takesKeys } from "./useBuildSelection";
 
-/** Everything in the build list that holds a place in the arrow order. */
-export const ROVING_ITEM = '[data-testid="step-card"], [data-testid="sent-with-tile"], [data-testid="result-card"], [data-testid="session-head"], [data-testid="workstream-head"]';
 const INNER = 'button, a[href], input, select, textarea, [role="button"], [contenteditable="true"], [tabindex]';
-
-const keyOf = (item: HTMLElement): string => {
-  const node = item.dataset.nodeId ?? item.dataset.tileId;
-  if (node) return `n:${node}`;
-  const session = item.closest<HTMLElement>("[data-session-key]")?.dataset.sessionKey;
-  if (item.dataset.testid === "session-head" && session) return `s:${session}`;
-  if (item.dataset.workstreamKey) return `w:${item.dataset.workstreamKey}`;
-  return "";
-};
-
-const visible = (el: HTMLElement) => !el.closest('[hidden], [aria-hidden="true"]') && el.style.visibility !== "hidden";
-const itemsOf = (root: ParentNode): HTMLElement[] => [...root.querySelectorAll<HTMLElement>(ROVING_ITEM)].filter(visible);
 const innerOf = (item: HTMLElement): HTMLElement[] =>
-  [...item.querySelectorAll<HTMLElement>(INNER)].filter((el) => el.closest(ROVING_ITEM) === item && !el.matches(ROVING_ITEM) && visible(el) && !el.hasAttribute("disabled"));
+  [...item.querySelectorAll<HTMLElement>(INNER)].filter((el) => el.closest(ROVING_ITEM) === item && !el.matches(ROVING_ITEM) && shown(el) && !el.hasAttribute("disabled"));
 
 /** The item a Tab press lands on: the last one that had focus, or the first. */
 export function currentBuildItem(): HTMLElement | null {
@@ -63,7 +50,7 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
 
     const apply = () => {
       const items = itemsOf(root);
-      const at = last.current ? items.findIndex((item) => keyOf(item) === last.current?.key) : -1;
+      const at = last.current ? items.findIndex((item) => itemKey(item) === last.current?.key) : -1;
       const current = items[at >= 0 ? at : Math.min(last.current?.index ?? 0, Math.max(items.length - 1, 0))];
       for (const item of items) {
         const want = item === current ? "0" : "-1";
@@ -79,7 +66,7 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
       const item = (event.target as HTMLElement | null)?.closest<HTMLElement>(ROVING_ITEM);
       if (!item) return;
       const items = itemsOf(root);
-      last.current = { key: keyOf(item), index: Math.max(items.indexOf(item), 0) };
+      last.current = { key: itemKey(item), index: Math.max(items.indexOf(item), 0) };
       apply();
       item.scrollIntoView?.({ block: "nearest" });
     };

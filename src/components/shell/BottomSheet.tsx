@@ -19,6 +19,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { IconButton } from "@/components/brand/IconButton";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -40,6 +41,7 @@ export interface BottomSheetProps {
 export function BottomSheet({ open, onOpenChange, title, hideTitle = false, children }: BottomSheetProps) {
   /* UI-P87, refined: the window recipe, as a side sheet: `--window`, a 1px `--window-border`, radius 12 at the top,
      `--sheet-shadow`, over `--scrim`, no blur. Everything else, the drag to close included, is the same. */
+  const focus = useWindowFocus(open);
   const start = useRef<number | null>(null);
   const [drag, setDrag] = useState(0);
 
@@ -65,6 +67,8 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
         <Dialog.Content
           data-testid="bottom-sheet"
           aria-describedby={undefined}
+          onOpenAutoFocus={focus.onOpenAutoFocus}
+          onCloseAutoFocus={focus.onCloseAutoFocus}
           style={{
             position: "fixed",
             left: 0,

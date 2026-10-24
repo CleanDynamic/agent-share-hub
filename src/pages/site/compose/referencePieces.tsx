@@ -16,6 +16,7 @@
 
    The board measures that are not on the site's spacing scale (10, 14, 18) live here, as the recipe files keep theirs. */
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -277,11 +278,12 @@ export interface KeepChoice {
 export function KeepLinkDialog({ open, title, body, action, choices, onPick, onCancel }: { open: boolean; title: string; body?: string; action: string; choices: readonly KeepChoice[]; onPick: (key: string) => void; onCancel: () => void }) {
   const [chosen, setChosen] = useState<string | null>(choices[0]?.key ?? null);
   useEffect(() => setChosen(choices[0]?.key ?? null), [choices]);
+  const focus = useWindowFocus(open);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content data-testid="keep-link-dialog" aria-describedby={undefined} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(420) }}>
+        <Dialog.Content data-testid="keep-link-dialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(420) }}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
             {body ? <p style={{ ...SUBTITLE, margin: 0 }}>{body}</p> : null}
@@ -434,11 +436,12 @@ export function Badge({ children }: { children: ReactNode }) {
 
 /** A confirmation: a title, a line, Cancel and the action in the danger colour. */
 export function ConfirmDialog({ open, width = 420, title, body, action, onConfirm, onCancel, testId }: { open: boolean; width?: number; title: string; body: string; action: string; onConfirm: () => void; onCancel: () => void; testId?: string }) {
+  const focus = useWindowFocus(open);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content role="alertdialog" data-testid={testId} aria-describedby={undefined} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+        <Dialog.Content role="alertdialog" data-testid={testId} aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
             <p style={{ ...SUBTITLE, margin: 0 }}>{body}</p>

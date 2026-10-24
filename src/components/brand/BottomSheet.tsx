@@ -17,6 +17,7 @@
 // something outside it in the very handler that chose it; while the sheet is open its focus trap would take that
 // focus straight back.
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
@@ -50,6 +51,7 @@ export interface BottomSheetProps {
 }
 
 export function BottomSheet({ open, onOpenChange, title, onCloseAutoFocus, children, ...rest }: BottomSheetProps) {
+  const focus = useWindowFocus(open, onCloseAutoFocus);
   const start = useRef<number | null>(null);
   const [drag, setDrag] = useState(0);
 
@@ -75,7 +77,8 @@ export function BottomSheet({ open, onOpenChange, title, onCloseAutoFocus, child
         <Dialog.Content
           data-testid={rest["data-testid"] ?? "brand-bottom-sheet"}
           aria-describedby={undefined}
-          onCloseAutoFocus={onCloseAutoFocus}
+          onOpenAutoFocus={focus.onOpenAutoFocus}
+          onCloseAutoFocus={focus.onCloseAutoFocus}
           style={{
             position: "fixed",
             left: 0,

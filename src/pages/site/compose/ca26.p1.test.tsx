@@ -8,7 +8,8 @@ import { SiteFrameView } from "@/components/shell/SiteFrame";
 import { sandboxListProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 
 import { BuildList } from "./BuildList";
-import { ROVING_ITEM, SkipToBuild, currentBuildItem } from "./buildFocus";
+import { ROVING_ITEM } from "@/lib/focus/buildItems";
+import { SkipToBuild, currentBuildItem } from "./buildFocus";
 import { done, mountList, partsOf, stubMedia } from "./ca21Harness";
 import { SandboxView, type SandboxViewProps } from "./SandboxView";
 
