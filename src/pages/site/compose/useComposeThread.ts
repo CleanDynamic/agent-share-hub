@@ -22,11 +22,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { composeBuildQueryKey, SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
+import { composeBuildQueryKey, SAVE_DEBOUNCE_MS, SAVE_RETRY_DELAYS_MS } from "@/hooks/useComposeBuild";
 import { syncThreadCover } from "@/lib/build/composeCover";
 import { getThreadMedia, isThreadDoc, saveThread, splitThread, threadMediaIds, threadOf, type ThreadDoc } from "@/lib/build/thread";
 import { emptyThread, holdSentence, sameThread, tidyThread } from "@/lib/build/threadEditor";
 import type { Build } from "@/lib/build/types";
+import { canSucceedLater, errorLine } from "@/lib/errors/code";
 
 import { saveState, type SaveState } from "./composeModel";
 
@@ -49,6 +50,8 @@ export interface ComposeThread {
   /** Posts, counted as the Gallery counts them (an empty post at either end is not one). */
   posts: number;
   save: SaveState;
+  /** CA-23: when the last write landed, for "saved 2 min ago". */
+  lastSavedAt?: Date | null;
   /** A sentence while the save is waiting, else null. */
   hold: string | null;
   /** Writes what is waiting now; resolves once it has landed or cannot. */
@@ -77,6 +80,12 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
   const timerRef = useRef<number | null>(null);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const againRef = useRef(false);
+  /** CA-23: retries spent on the failure now open (1, 4 and 10 seconds); reset by a save that lands, an edit, or Retry. */
+  const attemptRef = useRef(0);
+  /** CA-23: a failed write will be tried again on its own: the line reads saving, not not saved, until it has stopped. */
+  const retryingRef = useRef(false);
+  /** CA-23: the write has stopped (not saved): nothing is sent until the maker edits or presses Retry. */
+  const stoppedRef = useRef(false);
   const writableRef = useRef(false);
   const ensureRef = useRef(ensureBuild);
   ensureRef.current = ensureBuild;
@@ -175,13 +184,28 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
           lastFirstRef.current = first;
           await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
         }
+        attemptRef.current = 0;
         setSaveError(null);
         setLastSavedAt(new Date());
       } catch (cause) {
-        console.error("[Compose] thread save failed", cause);
-        setSaveError(cause instanceof Error ? cause : new Error(String(cause)));
+        // CA-23: a write that can succeed later is tried again 3 times, after 1, 4 and 10 seconds; only then is it not saved.
+        if (canSucceedLater(cause) && attemptRef.current < SAVE_RETRY_DELAYS_MS.length) {
+          const delay = SAVE_RETRY_DELAYS_MS[attemptRef.current];
+          attemptRef.current += 1;
+          retryingRef.current = true;
+          clearTimer();
+          timerRef.current = window.setTimeout(() => {
+            timerRef.current = null;
+            retryingRef.current = false;
+            void flush();
+          }, delay);
+        } else {
+          console.error(errorLine("[Compose] thread save failed", cause));
+          stoppedRef.current = true;
+          setSaveError(cause instanceof Error ? cause : new Error(String(cause)));
+        }
       } finally {
-        setIsSaving(false);
+        if (!retryingRef.current) setIsSaving(false);
       }
     };
 
@@ -192,7 +216,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     } finally {
       inFlightRef.current = null;
       // Typed while the write was open: it goes out on the next quiet moment.
-      if ((againRef.current || dirtyRef.current) && !holdRef.current && timerRef.current === null) {
+      if ((againRef.current || dirtyRef.current) && !holdRef.current && timerRef.current === null && !retryingRef.current && !stoppedRef.current) {
         againRef.current = false;
         timerRef.current = window.setTimeout(() => {
           timerRef.current = null;
@@ -219,6 +243,10 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
       setPosts(splitThread(doc).length);
       dirtyRef.current = !sameThread(doc, savedRef.current);
       clearTimer();
+      // An edit is a fresh try, even after a save stopped.
+      attemptRef.current = 0;
+      retryingRef.current = false;
+      stoppedRef.current = false;
       if (!dirtyRef.current || sentence || !writableRef.current) return;
       schedule();
     },
@@ -244,6 +272,9 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
 
   const readDoc = useCallback(() => docRef.current, []);
   const retry = useCallback(() => {
+    attemptRef.current = 0;
+    retryingRef.current = false;
+    stoppedRef.current = false;
     setSaveError(null);
     void flush();
   }, [flush]);
@@ -262,6 +293,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     onDoc,
     posts,
     save: saveState({ isSaving, saveError, lastSavedAt }),
+    lastSavedAt,
     hold,
     flush,
     retry,

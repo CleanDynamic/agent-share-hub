@@ -17,7 +17,7 @@
 //
 // CA-10: A SAVE THE DATABASE REFUSES STOPS. Only a failure that can succeed
 // later (the network, 408, 429, 500, 502, 503, 504, 520) is tried again, three
-// times, after 1 s, 3 s and 9 s. Any other answer, or the third retry failing,
+// times, after 1 s, 4 s and 10 s. Any other answer, or the third retry failing,
 // stops: the change stays in memory, `saveFailure` says what failed and its
 // code ("Not saved: a value isn't allowed. Code 23514."), it is logged once,
 // and `retrySave` (Try again) or the maker's next edit sends it again.
@@ -49,8 +49,8 @@ import { composeBuildQueryKey } from "./composeBuildQueryKey";
  *  indicator settles while the creator is still looking at the field. */
 export const SAVE_DEBOUNCE_MS = 800;
 
-/** CA-10: how long to wait before each retry of a save that can succeed later; three, then stop. */
-export const SAVE_RETRY_DELAYS_MS = [1_000, 3_000, 9_000] as const;
+/** CA-10 / CA-23: how long to wait before each retry of a save that can succeed later: 1, 4 and 10 seconds, then stop. */
+export const SAVE_RETRY_DELAYS_MS = [1_000, 4_000, 10_000] as const;
 
 /** CA-10: a save that stopped, in the maker's words. */
 export interface SaveFailure {

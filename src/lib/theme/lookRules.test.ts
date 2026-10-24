@@ -629,6 +629,20 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/shortcuts.ts",
   "src/pages/site/compose/ShortcutsDialog.tsx",
   "src/pages/site/compose/useBuildShortcuts.ts",
+  // CA-23 P1
+  "src/hooks/useComposeBuild.ts",
+  "src/hooks/useComposeBuild.save.test.tsx",
+  "src/pages/site/compose/ComposePage.tsx",
+  "src/pages/site/compose/ComposeView.test.tsx",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/SandboxView.test.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/SaveLine.tsx",
+  "src/pages/site/compose/composeModel.ts",
+  "src/pages/site/compose/saveLine.test.tsx",
+  "src/pages/site/compose/useComposeThread.test.tsx",
+  "src/pages/site/compose/useComposeThread.ts",
+  "src/pages/site/compose/useSaveLine.ts",
 ];
 
 /**

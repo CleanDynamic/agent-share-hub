@@ -358,6 +358,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     /* CA-10: while a failed save is being tried again it reads as saving; it reads as not saved once it has stopped,
        with the reason and the code, and Try again sends it again. */
     save: saveState({ isSaving: compose.isSaving || Boolean(compose.saveError && !compose.saveFailure), saveError: compose.saveFailure, lastSavedAt: compose.lastSavedAt }),
+    lastSavedAt: compose.lastSavedAt,
     onRetrySave: () => (compose.saveFailure ? compose.retrySave() : compose.patchBuild({ title: title.trim() || UNTITLED })),
     missing: missing.map((key) => PUBLISH_WORDS[key]),
     intakeHref: buildId ? null : "/compose/start",

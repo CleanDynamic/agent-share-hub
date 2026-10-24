@@ -44,8 +44,8 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
-import { TextButton } from "./composeControls";
-import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
+import { SaveLine } from "./SaveLine";
+import { isUntitled, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
 import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
@@ -88,6 +88,10 @@ export interface SandboxViewProps extends CardProps {
 
   save: SaveState;
   onRetrySave: () => void;
+  /** CA-23: when the last write landed, for "saved 2 min ago". */
+  lastSavedAt?: Date | null;
+  /** CA-23: writes waiting for a connection, for "offline · 3 changes pending". */
+  pendingWrites?: number;
   /** CA-10: a save that stopped: its reason and code, for "Not saved: {reason}. Code {code}." */
   saveProblem?: SaveFailure | null;
   /** CA-10: why the build did not load: logged once, its code shown under "This build didn't load." */
@@ -943,24 +947,15 @@ export function SandboxView(props: SandboxViewProps) {
   const statusLine = (
     <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
       {published ? "Published" : "Draft"}
-      {save !== "idle" ? (
-        <>
-          {" · "}
-          {save === "error" && props.saveProblem ? (
-            <span data-testid="save-problem">{notSavedLine(props.saveProblem)}</span>
-          ) : (
-            SAVE_WORDS[save]
-          )}
-          {save === "error" ? (
-            <>
-              {" "}
-              <TextButton underline onClick={props.onRetrySave} style={underlined}>
-                Try again
-              </TextButton>
-            </>
-          ) : null}
-        </>
-      ) : null}
+      <SaveLine
+        save={save}
+        lastSavedAt={props.lastSavedAt}
+        pending={props.pendingWrites}
+        detail={props.saveProblem ? notSavedLine(props.saveProblem) : undefined}
+        onRetry={props.onRetrySave}
+        retryUnderline
+        retryStyle={underlined}
+      />
       {props.threadNote ? ` · ${props.threadNote}` : null}
       {/* CA-03 P8: what kind of build it is, once it has more than one step. */}
       {props.summary ? <span data-testid="sandbox-summary">{` · ${props.summary}`}</span> : null}

@@ -170,8 +170,8 @@ describe("saving", () => {
     expect(saveThread).toHaveBeenCalledTimes(1);
   });
 
-  it("reports a failure and writes again on retry", async () => {
-    saveThread.mockRejectedValueOnce(new Error("offline"));
+  it("reports a failure the database refuses at once, and writes again on retry", async () => {
+    saveThread.mockRejectedValueOnce(Object.assign(new Error("not allowed"), { code: "23514" }));
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { result } = mount({ build: build({ post_doc: doc(p("a")) }), buildId: "b1", isOwner: true });
     act(() => result.current.onDoc(doc(p("ab"))));
@@ -181,6 +181,31 @@ describe("saving", () => {
     await act(async () => void (await vi.advanceTimersByTimeAsync(10)));
     expect(saveThread).toHaveBeenCalledTimes(2);
     expect(result.current.save).toBe("saved");
+  });
+
+  it("CA-23: tries a write that can succeed later 3 times, after 1, 4 and 10 seconds, reading saving until then", async () => {
+    const calls: number[] = [];
+    saveThread.mockImplementation(async () => {
+      calls.push(Date.now());
+      throw Object.assign(new Error("busy"), { status: 503 });
+    });
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { result } = mount({ build: build({ post_doc: doc(p("a")) }), buildId: "b1", isOwner: true });
+    act(() => result.current.onDoc(doc(p("ab"))));
+    await quiet();
+    expect(calls).toHaveLength(1);
+    expect(result.current.save).toBe("saving");
+    await act(async () => void (await vi.advanceTimersByTimeAsync(30_000)));
+    expect(calls.slice(1).map((at, n) => at - calls[n])).toEqual([1_000, 4_000, 10_000]);
+    expect(result.current.save).toBe("error");
+    await act(async () => void (await vi.advanceTimersByTimeAsync(60_000)));
+    expect(calls).toHaveLength(4);
+    // Retry is a fresh try with its three again.
+    saveThread.mockResolvedValue({});
+    act(() => result.current.retry());
+    await act(async () => void (await vi.advanceTimersByTimeAsync(10)));
+    expect(result.current.save).toBe("saved");
+    expect(result.current.lastSavedAt).toBeInstanceOf(Date);
   });
 });
 

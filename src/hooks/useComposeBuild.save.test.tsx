@@ -98,7 +98,7 @@ describe("CA-10 · the header save", () => {
     await waitFor(() => expect(patches().map((r) => r.status)).toEqual([400, 200]));
   });
 
-  it("a network failure is tried again 3 times, after 1 s, 3 s and 9 s, then stops", async () => {
+  it("a failure that may pass is tried again 3 times, after 1 s, 4 s and 10 s, then stops", async () => {
     const hook = await open([{ method: "PATCH", path: PATCHES, answer: "network" }]);
     vi.useFakeTimers();
     act(() => hook.result.current.patchBuild({ title: "Pantry" }));

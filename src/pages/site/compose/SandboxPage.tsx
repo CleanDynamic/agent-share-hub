@@ -147,6 +147,9 @@ async function previewOfFile(file: File): Promise<string[]> {
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
+/** The later of two moments, either of which may be missing. */
+const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
+
 export function SandboxPage() {
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
@@ -1973,6 +1976,7 @@ export function SandboxPage() {
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}
         save={mergeSave(viewProps.save, thread.save)}
+        lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}
         onRetrySave={onRetrySave}
         onPublish={() => void onPublish()}
         post={
