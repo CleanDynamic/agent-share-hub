@@ -1,12 +1,12 @@
-/* CA-04 P2 — dragging tiles in the List: one tile into another (sent with it, at the same time, in the same message),
-   onto a gap (its own step there) or onto another session's head (into that session).
+/* CA-04 P2, CA-21 P3: dragging in the List: a tile, a session or a part, by the `grip` at its left.
 
-   `@dnd-kit/core` with its pointer, touch and keyboard sensors. The `grip` handle at a tile's left is the only drag
-   start (18 by 22, 44 high on a phone, where a long press starts the drag); the rest of the tile keeps its click and
-   double-click. While dragging, a tile that can take the one held gets the selected fill and a `--text2` edge; one that
-   can't doesn't change. Between top-level tiles a 2px `--text2` line shows where it would land as its own step.
+   `@dnd-kit/core` with its pointer, touch and keyboard sensors; the `grip` handle is the only drag start (18 by 22, 44 high on a
+   phone, where a long press starts the drag); the rest of a tile keeps its click and double-click. What is held is drawn in the
+   `DragOverlay` as a copy of its own element at its own size, with a shadow and nothing else. Where it will land is not drawn on the
+   tiles: the build slides to make room (`useBuildSorting`) and the skeleton behind it says where (`skeleton.tsx`). Held over
+   the middle third of a tile that can take it for half a second, that tile becomes the target (the selected fill and a `--text2` edge).
 
-   Nothing here writes. `NestList` hands a drop to the List's handlers, which say what happened in one polite line. */
+   Nothing here writes. `useBuildSorting` hands a drop to the List's handlers, which say what happened in one polite line. */
 
 import {
   DndContext,
@@ -14,167 +14,112 @@ import {
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
-  pointerWithin,
-  rectIntersection,
   useDraggable,
-  useDroppable,
   useSensor,
   useSensors,
   type CollisionDetection,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
+  type Modifier,
 } from "@dnd-kit/core";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
+import { SETTLE_MS } from "@/lib/build/buildMotion";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
-import { bareButton, chipStyle } from "./refinedStyles";
+import { bareButton } from "./refinedStyles";
+import { SESSION_DRAG, WORKSTREAM_DRAG, type Held, type Sorting } from "./useBuildSorting";
 
 /** Where a held tile is dropped. */
 export type NestTarget = { kind: "tile"; id: string } | { kind: "gap"; index: number } | { kind: "session"; key: string } | { kind: "workstream"; key: string };
 
 interface NestState {
-  /** The tile being held, or null. */
+  /** The drag's id, or null. */
   active: string | null;
-  /** The target under the pointer, as a droppable id. */
-  over: string | null;
-  canTake: (id: string, parentId: string) => boolean;
+  held: Held | null;
+  /** The tile that has become the target of the one held, or null. */
+  send: string | null;
   phone: boolean;
 }
 
 const NestContext = createContext<NestState | null>(null);
 
 /** CA-14 P4: a session's own drag. Its draggable id starts with this, so a tile's id (a node id) can never match it. */
-export const SESSION_DRAG = "sdrag:";
+export { SESSION_DRAG, WORKSTREAM_DRAG };
 export const isSessionDrag = (id: string | null | undefined): boolean => Boolean(id?.startsWith(SESSION_DRAG));
 /** CA-17 P2: a part's own drag. Its draggable id starts with this. */
-export const WORKSTREAM_DRAG = "wdrag:";
 export const isWorkstreamDrag = (id: string | null | undefined): boolean => Boolean(id?.startsWith(WORKSTREAM_DRAG));
-const tileTarget = (id: string) => `tile:${id}`;
-const gapTarget = (index: number) => `gap:${index}`;
-const sessionTarget = (key: string) => `session:${key}`;
-const workstreamTarget = (key: string) => `workstream:${key}`;
 
-function targetOf(droppable: string): NestTarget | null {
-  const [kind, ...rest] = droppable.split(":");
-  const value = rest.join(":");
-  if (kind === "tile" && value) return { kind: "tile", id: value };
-  if (kind === "gap" && /^\d+$/.test(value)) return { kind: "gap", index: Number(value) };
-  if (kind === "session" && value) return { kind: "session", key: value };
-  if (kind === "workstream" && value) return { kind: "workstream", key: value };
-  return null;
+/** Nothing is "over" anything: the place is decided from the pointer and the page's own boxes (`useBuildSorting`). */
+const noCollisions: CollisionDetection = () => [];
+
+/** The shadow a held copy carries, and nothing else is added to it: no scale, no turn, no fade. */
+export function heldShadow(dusk: boolean): string {
+  return dusk ? `0 0 0 1px ${t.segOnBorder}, 0 18px 40px color-mix(in srgb, black 55%, transparent)` : `0 0 0 1px ${t.segOnBorder}, 0 14px 32px color-mix(in srgb, black 18%, transparent)`;
 }
 
-/** The innermost target under the pointer: a tile inside a tile wins over the tile around it. */
-const innermost: CollisionDetection = (args) => {
-  const within = pointerWithin(args);
-  const hits = within.length > 0 ? within : rectIntersection(args);
-  const area = (id: string | number) => {
-    const rect = args.droppableRects.get(id);
-    return rect ? rect.width * rect.height : Number.POSITIVE_INFINITY;
-  };
-  return [...hits].sort((a, b) => area(a.id) - area(b.id));
-};
+/** The held copy: the element's own markup at its own size. A session or a part has no ground of its own, so it sits on a block. */
+function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
+  const dusk = useResolvedTheme() === "dusk";
+  const shadow = heldShadow(dusk);
+  const whole = overlay.type === "session" || overlay.type === "part";
+  return (
+    <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: 13.5, cursor: "grabbing", pointerEvents: "none", position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
+      {whole ? <span aria-hidden="true" style={{ position: "absolute", inset: -6, borderRadius: 14, boxShadow: `0 0 0 1px ${t.segOnBorder}`, pointerEvents: "none" }} /> : null}
+      <div dangerouslySetInnerHTML={{ __html: overlay.html }} />
+    </div>
+  );
+}
 
-/** The drag around the List. `label` names a tile in the floating chip; `onDrop` gets the tile and where it went. */
-export function NestList({
-  phone,
-  canTake,
-  label,
-  onDrop,
-  onDropSession,
-  sessionLabel,
-  onDropOnWorkstream,
-  onDropWorkstream,
-  workstreamLabel,
-  children,
-}: {
-  phone: boolean;
-  canTake: (id: string, parentId: string) => boolean;
-  label: (id: string) => string;
-  onDrop: (id: string, target: NestTarget) => void;
-  /** CA-14 P4: a session's head dropped on another's: move the first before (or after) the second. */
-  onDropSession?: (key: string, over: string) => void;
-  /** CA-14 P4: names a session for the drag's announcements and its floating chip. */
-  sessionLabel?: (key: string) => string;
-  /** CA-17 P2: a session's head dropped on a part's head: it goes to the end of that part. */
-  onDropOnWorkstream?: (sessionKey: string, workstreamKey: string) => void;
-  /** CA-17 P2: a part's head dropped on another's: it takes that part's place. */
-  onDropWorkstream?: (workstreamKey: string, over: string) => void;
-  /** CA-17 P2: names a part for the drag's announcements and its floating chip. */
-  workstreamLabel?: (key: string) => string;
-  children: ReactNode;
-}) {
-  const [active, setActive] = useState<string | null>(null);
-  const [over, setOver] = useState<string | null>(null);
+/**
+ * The drag around the List. Its state is `useBuildSorting`'s; this is the `DndContext` (sensors, the held copy in the
+ * `DragOverlay`) and the context the tiles and heads read.
+ */
+export function NestList({ phone, sorting, children }: { phone: boolean; sorting: Sorting; children: ReactNode }) {
   const press = phone ? { delay: 250, tolerance: 6 } : { distance: 4 };
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: press }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sorting.coordinateGetter }),
   );
-  const nameOf = (id: string) =>
-    isSessionDrag(id) ? (sessionLabel?.(id.slice(SESSION_DRAG.length)) ?? "that session") : isWorkstreamDrag(id) ? (workstreamLabel?.(id.slice(WORKSTREAM_DRAG.length)) ?? "that part") : label(id);
-  const end = () => {
-    setActive(null);
-    setOver(null);
-  };
+  const holding = sorting.holding;
+  /* The held thing's own element moves as the page slides (and is made again where it lands), so its measured box moves too: the
+     copy keeps to where it was picked up, plus the pointer's travel. */
+  const initial = sorting.initial;
+  const at = sorting.keyboardAt;
+  const keepToStart: Modifier = ({ transform, activeNodeRect }) => (at ? { ...transform, x: at.x, y: at.y } : initial && activeNodeRect ? { ...transform, x: transform.x - (activeNodeRect.left - initial.left), y: transform.y - (activeNodeRect.top - initial.top) } : transform);
+  useEffect(() => {
+    if (!holding) return;
+    const before = document.body.style.cursor;
+    document.body.style.cursor = "grabbing";
+    return () => {
+      document.body.style.cursor = before;
+    };
+  }, [holding]);
+  const state: NestState = { active: sorting.held ? (sorting.held.type === "session" ? `${SESSION_DRAG}${sorting.held.id}` : sorting.held.type === "part" ? `${WORKSTREAM_DRAG}${sorting.held.id}` : sorting.held.id) : null, held: sorting.held, send: sorting.send, phone };
   return (
-    <NestContext.Provider value={{ active, over, canTake, phone }}>
+    <NestContext.Provider value={state}>
       <DndContext
         sensors={sensors}
-        collisionDetection={innermost}
-        onDragStart={(event: DragStartEvent) => setActive(String(event.active.id))}
-        onDragOver={(event: DragOverEvent) => setOver(event.over ? String(event.over.id) : null)}
-        onDragCancel={end}
-        onDragEnd={(event: DragEndEvent) => {
-          const id = String(event.active.id);
-          const target = event.over ? targetOf(String(event.over.id)) : null;
-          end();
-          if (!target) return;
-          if (isSessionDrag(id)) {
-            const key = id.slice(SESSION_DRAG.length);
-            if (target.kind === "session" && target.key !== key) onDropSession?.(key, target.key);
-            else if (target.kind === "workstream") onDropOnWorkstream?.(key, target.key);
-            return;
-          }
-          if (isWorkstreamDrag(id)) {
-            const key = id.slice(WORKSTREAM_DRAG.length);
-            if (target.kind === "workstream" && target.key !== key) onDropWorkstream?.(key, target.key);
-            return;
-          }
-          if (target.kind === "workstream") return;
-          if (target.kind === "tile" && (target.id === id || !canTake(id, target.id))) return;
-          onDrop(id, target);
-        }}
+        collisionDetection={noCollisions}
+        onDragStart={sorting.onDragStart}
+        onDragMove={sorting.onDragMove}
+        onDragCancel={sorting.onDragCancel}
+        onDragEnd={sorting.onDragEnd}
         accessibility={{
-          announcements: {
-            onDragStart: ({ active: held }) => `Picked up ${nameOf(String(held.id))}.`,
-            onDragOver: ({ over: under }) => (under ? `Over ${describe(String(under.id), nameOf, sessionLabel, workstreamLabel)}.` : "Not over a place to drop."),
-            onDragEnd: ({ over: under }) => (under ? `Dropped on ${describe(String(under.id), nameOf, sessionLabel, workstreamLabel)}.` : "Put back where it was."),
-            onDragCancel: () => "Put back where it was.",
-          },
+          // The line under the build is the polite announcement (`sorting.said`): these say nothing of their own.
+          announcements: { onDragStart: () => "", onDragOver: () => "", onDragEnd: () => "", onDragCancel: () => "" },
           screenReaderInstructions: { draggable: "Press Space to pick up the tile, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
         }}
       >
         {children}
-        <DragOverlay dropAnimation={null}>{active ? <span style={{ ...chipStyle, boxShadow: t.shadowFloat }}>{nameOf(active)}</span> : null}</DragOverlay>
+        <DragOverlay modifiers={sorting.holding ? [keepToStart] : undefined} dropAnimation={prefersReducedMotion() ? null : { duration: SETTLE_MS, easing: STANDARD }}>{sorting.overlay ? <HeldCopy overlay={sorting.overlay} /> : null}</DragOverlay>
       </DndContext>
     </NestContext.Provider>
   );
-}
-
-function describe(droppable: string, label: (id: string) => string, sessionLabel?: (key: string) => string, workstreamLabel?: (key: string) => string): string {
-  const target = targetOf(droppable);
-  if (!target) return "a place to drop";
-  if (target.kind === "workstream") return workstreamLabel?.(target.key) ?? "that part";
-  if (target.kind === "tile") return label(target.id);
-  if (target.kind === "gap") return `the place before step ${target.index + 1}`;
-  return sessionLabel?.(target.key) ?? "that session";
 }
 
 /**
@@ -185,13 +130,11 @@ export function useNestTile(id: string) {
   const state = useContext(NestContext);
   const disabled = !state;
   const drag = useDraggable({ id, disabled });
-  const drop = useDroppable({ id: tileTarget(id), disabled });
-  const takes = Boolean(state?.active && state.active !== id && state.over === tileTarget(id) && state.canTake(state.active, id));
+  const takes = Boolean(state?.send && state.send === id);
   return {
     on: !disabled,
     setRef: (element: HTMLElement | null) => {
       drag.setNodeRef(element);
-      drop.setNodeRef(element);
     },
     handle: { attributes: drag.attributes, listeners: drag.listeners, setActivator: drag.setActivatorNodeRef },
     takes,
@@ -209,6 +152,8 @@ export const TAKES: CSSProperties = { background: t.selectedFill, borderColor: t
  */
 export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean): boolean {
   const [near, setNear] = useState(false);
+  // CA-21: while something is held no tile shows what it shows when it is near, so none changes size under the pointer.
+  const holding = Boolean(useContext(NestContext)?.active);
   useEffect(() => {
     const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"]');
     if (!tile || phone) return;
@@ -229,7 +174,7 @@ export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean):
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone, ref.current]);
-  return phone || near;
+  return phone || (near && !holding);
 }
 
 /** The `grip` at a tile's left: the only place a drag starts. 18 by 22; 44 high on a phone. It is drawn while its tile is hovered or has focus, and on a phone. */
@@ -282,39 +227,9 @@ export function DragHandle({ label, nest, testId = "drag-handle" }: { label: str
   );
 }
 
-/**
- * A place between top-level tiles. It takes no room, so nothing moves while nobody drags: it lies over the gap above
- * the tile it stands with (or below the last one), inside that tile's wrapper. Held over it, a 2px `--text2` line
- * shows where the tile lands as its own step.
- */
-export function NestGap({ index, edge = "top" }: { index: number; edge?: "top" | "bottom" }) {
-  const state = useContext(NestContext);
-  const drop = useDroppable({ id: gapTarget(index), disabled: !state });
-  if (!state) return null;
-  const shown = Boolean(state.active) && state.over === gapTarget(index);
-  return (
-    <div
-      ref={drop.setNodeRef}
-      data-testid={`nest-gap-${index}`}
-      aria-hidden="true"
-      style={{ position: "absolute", left: 0, right: 0, ...(edge === "top" ? { top: -12 } : { bottom: -12 }), height: 12, display: "flex", alignItems: "center", pointerEvents: "none" }}
-    >
-      {shown ? <div data-testid="nest-line" style={{ width: "100%", height: 2, background: t.text2 }} /> : null}
-    </div>
-  );
-}
-
-/** A session's head as a place to drop: a tile dropped on it goes into that session. */
-export function useNestSession(key: string) {
-  const state = useContext(NestContext);
-  const drop = useDroppable({ id: sessionTarget(key), disabled: !state });
-  const sessionHeld = isSessionDrag(state?.active);
-  return { setRef: drop.setNodeRef, takes: Boolean(state?.active) && !sessionHeld && !isWorkstreamDrag(state?.active) && state?.over === sessionTarget(key), sessionHeld, overForSession: sessionHeld && state?.over === sessionTarget(key) && state?.active !== `${SESSION_DRAG}${key}` };
-}
-
-/** CA-14 P4: whether a session is being dragged. The List folds every session to its head while it is, and opens them after the drop. */
-export function useSessionDragging(): boolean {
-  return isSessionDrag(useContext(NestContext)?.active);
+/** A session's head: nothing draws on it while a tile is held (the place is the skeleton's), so it takes nothing and shows no line. */
+export function useNestSession(_key: string) {
+  return { setRef: (_element: HTMLElement | null) => undefined, takes: false, sessionHeld: false, overForSession: false };
 }
 
 /** CA-14 P4: a session's head as something to drag. The `grip` in the head starts it, as a tile's does. */
@@ -324,18 +239,9 @@ export function useNestSessionDrag(key: string) {
   return { on: Boolean(state), setRef: drag.setNodeRef, handle: { attributes: drag.attributes, listeners: drag.listeners, setActivator: drag.setActivatorNodeRef }, held: drag.isDragging, phone: Boolean(state?.phone) };
 }
 
-/** CA-17 P2: a part's head as a place to drop. A session dropped on it goes to the end of that part; a part dropped on it takes its place. */
-export function useNestWorkstream(key: string) {
-  const state = useContext(NestContext);
-  const drop = useDroppable({ id: workstreamTarget(key), disabled: !state });
-  const sessionHeld = isSessionDrag(state?.active);
-  const partHeld = isWorkstreamDrag(state?.active);
-  const over = state?.over === workstreamTarget(key);
-  return {
-    setRef: drop.setNodeRef,
-    takes: sessionHeld && over,
-    overForPart: partHeld && over && state?.active !== `${WORKSTREAM_DRAG}${key}`,
-  };
+/** A part's head: the same, nothing is drawn on it. */
+export function useNestWorkstream(_key: string) {
+  return { setRef: (_element: HTMLElement | null) => undefined, takes: false, overForPart: false };
 }
 
 /** CA-17 P2: a part's head as something to drag, by the `grip` in it. */

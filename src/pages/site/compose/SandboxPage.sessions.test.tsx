@@ -260,7 +260,8 @@ describe("CA-12 P5 · adding a session", () => {
     fireEvent.click(await screen.findByTestId("add-session-row"));
     fireEvent.click(await screen.findByRole("button", { name: /Start a new session/ }));
     expect(await screen.findByRole("group", { name: "Session 2 · No app chosen" }, { timeout: 10_000 })).toBeTruthy();
-    expect(screen.getByText("No tiles yet")).toBeTruthy();
+    // CA-21 P7: until its skeleton fades it shows its place to drop; then "No tiles yet".
+    await waitFor(() => expect(screen.queryByText("No tiles yet") ?? screen.queryByText("Drop a tile here")).toBeTruthy());
     await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 10_000 });
     const making = tableRows("builds").find((row) => row.id === DRAFT)?.making as { session_order?: string[] };
     expect(making.session_order).toHaveLength(2);

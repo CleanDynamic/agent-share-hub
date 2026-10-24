@@ -166,6 +166,9 @@ export const TOKEN_NAMES = [
   "bar-mid",
   "paper",
   "dim-filter",
+  // CA-21: the skeleton layer behind the build while something is held.
+  "skeleton-edge",
+  "skeleton-target",
 ] as const;
 
 export type TokenName = (typeof TOKEN_NAMES)[number];
@@ -301,6 +304,9 @@ export const noon: Record<TokenName, string> = {
   "bar-mid": "#C4C4C4",
   paper: "#F1F1F1",
   "dim-filter": "contrast(.42) brightness(1.32)",
+  // CA-21
+  "skeleton-edge": "#C2C2C2",
+  "skeleton-target": "#878787",
 };
 
 /** Dusk, dark. */
@@ -433,6 +439,9 @@ export const dusk: Record<TokenName, string> = {
   "bar-mid": "#55555B",
   paper: "#0C0C0D",
   "dim-filter": "brightness(.48) saturate(.5)",
+  // CA-21
+  "skeleton-edge": "#36363C",
+  "skeleton-target": "#6A6A72",
 };
 export const themes: Record<ThemeName, Record<TokenName, string>> = {
   noon,

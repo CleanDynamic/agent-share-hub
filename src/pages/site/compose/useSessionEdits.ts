@@ -22,6 +22,7 @@ import { dayOfNode, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reas
 import { goingWith, dropNodes } from "@/lib/build/removeNodes";
 import { REMOVE_COPY } from "@/lib/build/componentMenus";
 import type { RemovedMeta } from "@/lib/build/removedLog";
+import { flatOrder, moveBy, type MoveModel } from "@/lib/build/moveRules";
 import { refTo } from "@/lib/build/thread";
 import type { BuildNode, NodeTree } from "@/lib/build/types";
 import { toolFor } from "@/lib/tools/registry";
@@ -64,6 +65,8 @@ export interface SessionEditsInput {
   history?: BuildHistoryApi | null;
   /** CA-20 P2: the reference bridge, to let go of what points at a session or a part that goes. Absent: nothing to let go of. */
   bridge?: ReferenceBridge;
+  /** CA-21 P1: where every tile, session and part stands, so Move up and Move down always have somewhere to go. Absent: a session swaps with the one next to it in its part. */
+  moveModel?: MoveModel;
 }
 
 const findTop = (tree: readonly NodeTree[], id: string): NodeTree | undefined => tree.find((node) => node.id === id);
@@ -188,38 +191,41 @@ export function useSessionEdits(input: SessionEditsInput) {
     [applyLayout, guard, sayMoved, track],
   );
 
-  /** Move Up and Move Down, Alt with Up or Down on the head. */
+  /** Move Up and Move Down, Alt with Up or Down on the head. CA-21 P1: at the edge of its part a session goes into the next part, never a silent refusal. */
   const onMove = useCallback(
-    (key: string, by: -1 | 1) => {
+    (key: string, by: -1 | 1): Promise<void> | void => {
+      const model = latest.current.moveModel;
+      const result = model ? moveBy(model, key, by) : null;
+      if (model && result?.move.crossed && result.move.to.part) {
+        const part = result.model.parts.find((entry) => entry.key === result.move.to.part);
+        return moveToPartRef.current?.(key, result.move.to.part, part?.sessions[result.move.to.index + 1]);
+      }
       const keys = editableKeys();
-      const next = movedKey(keys, key, by);
+      const next = result ? flatOrder(result.model).filter((entry) => keys.includes(entry)) : movedKey(keys, key, by);
       if (next.join() === keys.join()) return;
-      // CA-17 P2: with parts a session moves within its part; "Move to part…" is the way across.
+      // Without a model, a session moves within its part; "Move to part…" is the way across.
       const { parts } = latest.current;
       const neighbour = keys[keys.indexOf(key) + by];
-      if (parts && parts.partOf.get(neighbour) !== parts.partOf.get(key)) return;
+      if (!result && parts && parts.partOf.get(neighbour) !== parts.partOf.get(key)) return;
       const shown = orderKeys(latest.current.groups);
       const from = shown.indexOf(key) + 1;
-      void move(key, next, from, from + by);
+      return move(key, next, from, from + by);
     },
     [editableKeys, move],
   );
 
   /** A session's head dropped on another's. */
   const onDrop = useCallback(
-    (key: string, over: string) => {
+    (key: string, over: string): Promise<void> | void => {
       const keys = editableKeys();
       // CA-17 P2: dropped between another part's sessions, it joins that part, before the one it was dropped on.
       const { parts } = latest.current;
-      if (parts && parts.partOf.get(over) && parts.partOf.get(over) !== parts.partOf.get(key)) {
-        void moveToPartRef.current?.(key, parts.partOf.get(over) as string, over);
-        return;
-      }
+      if (parts && parts.partOf.get(over) && parts.partOf.get(over) !== parts.partOf.get(key)) return moveToPartRef.current?.(key, parts.partOf.get(over) as string, over);
       const next = droppedKey(keys, key, over);
       if (next.join() === keys.join()) return;
       const shown = orderKeys(latest.current.groups);
       const offset = shown.length - keys.length;
-      void move(key, next, shown.indexOf(key) + 1, next.indexOf(key) + 1 + offset);
+      return move(key, next, shown.indexOf(key) + 1, next.indexOf(key) + 1 + offset);
     },
     [editableKeys, move],
   );
@@ -302,7 +308,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** Move up and Move down on a part's head. */
   const onPartMove = useCallback(
     (key: string, by: -1 | 1) =>
-      void guard("Couldn't move that part. Try again.", () =>
+      guard("Couldn't move that part. Try again.", () =>
         track(`Moved ${titleOf(key)} ${by === -1 ? "up" : "down"}`, async () => {
           const done = await applyParts((making) => moveWorkstream(making, editableKeys(), key, by));
           if (done) latest.current.say(`${titleOf(key)} moved ${by === -1 ? "up" : "down"}.`);
@@ -314,7 +320,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** A part's head dropped on another's. */
   const onDropPart = useCallback(
     (key: string, over: string) =>
-      void guard("Couldn't move that part. Try again.", () =>
+      guard("Couldn't move that part. Try again.", () =>
         track(`Moved ${titleOf(key)}`, async () => {
           const done = await applyParts((making) => droppedWorkstream(making, editableKeys(), key, over));
           if (done) latest.current.say(`${titleOf(key)} moved.`);
@@ -379,7 +385,7 @@ export function useSessionEdits(input: SessionEditsInput) {
     [applyParts, editableKeys, guard, track],
   );
   moveToPartRef.current = moveToPart;
-  const onMoveToPart = useCallback((key: string, to: string) => void moveToPart(key, to), [moveToPart]);
+  const onMoveToPart = useCallback((key: string, to: string) => moveToPart(key, to), [moveToPart]);
 
   /** "Same stage as the session above" in a session's menu. */
   const onWithAbove = useCallback(
@@ -570,18 +576,24 @@ export function useSessionEdits(input: SessionEditsInput) {
     [applyLayout, editableKeys, guard, track],
   );
 
-  /** "Move to session…", or a tile dropped on a session's head: to the end of that session. */
+  /**
+   * "Move to session…", or a tile dropped on a session's head: to the end of that session. CA-21 P1, P3: with `order`, the session's
+   * tiles are put in that order (a tile moved up or down, or dropped between tiles); `sentence` names the step, `said` is the line under
+   * the build, and `notice` shows it with Undo.
+   */
   const onMoveTile = useCallback(
-    async (id: string, key: string): Promise<boolean> => {
+    async (id: string, key: string, options: { order?: readonly string[]; sentence?: string; said?: string; notice?: boolean; failed?: string } = {}): Promise<boolean> => {
       let ok = false;
-      await guard("Couldn't move that tile. Try again.", async () => {
+      await guard(options.failed ?? "Couldn't move that tile. Try again.", async () => {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
         const step = steps.find((entry) => entry.id === id);
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry)).concat(target).filter((entry, at, all) => all.indexOf(entry) === at);
         const number = groups.find((entry) => groupKey(entry) === key)?.number ?? "";
-        await track(`Moved ${step ? `tile ${step.number}` : "the tile"} to Session ${number}`, () => applyLayout({ order: keys, reassign: new Map([[id, target]]), atEnd: [id] }));
+        const sentence = options.sentence ?? `Moved ${step ? `tile ${step.number}` : "the tile"} to Session ${number}`;
+        await track(sentence, () => applyLayout({ order: keys, reassign: new Map([[id, target]]), atEnd: options.order ? [...options.order] : [id] }), options.notice ?? false);
+        if (options.said) latest.current.say(options.said);
         ok = true;
       });
       return ok;

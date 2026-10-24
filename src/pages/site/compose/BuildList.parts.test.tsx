@@ -203,7 +203,7 @@ describe("a session in a part", () => {
     list({ parts: partsOf({ withAbove: new Set([keys()[1]]) }) });
     expect(screen.getByTestId("same-stage-line").textContent).toBe("Same stage as Session 1");
   });
-  it("moves within its part only: Move up is off for the first session of a part, Move down for the last", async () => {
+  it("CA-21 P1: a session at the edge of its part goes into the next part; only the first and last place in the build are off", async () => {
     list({ parts: partsOf() });
     openMenu("Session 1 options");
     expect((await screen.findByRole("menuitem", { name: "Move up" })).getAttribute("aria-disabled")).toBe("true");
@@ -212,12 +212,12 @@ describe("a session in a part", () => {
     cleanup();
     list({ parts: partsOf() });
     openMenu("Session 2 options");
-    expect((await screen.findByRole("menuitem", { name: "Move down" })).getAttribute("aria-disabled")).toBe("true");
+    expect((await screen.findByRole("menuitem", { name: "Move down" })).getAttribute("aria-disabled")).toBeNull();
     fireEvent.keyDown(document.body, { key: "Escape" });
     cleanup();
     list({ parts: partsOf() });
     openMenu("Session 3 options");
-    expect((await screen.findByRole("menuitem", { name: "Move up" })).getAttribute("aria-disabled")).toBe("true");
+    expect((await screen.findByRole("menuitem", { name: "Move up" })).getAttribute("aria-disabled")).toBeNull();
     expect(screen.getByRole("menuitem", { name: "Move down" }).getAttribute("aria-disabled")).toBe("true");
   });
 });

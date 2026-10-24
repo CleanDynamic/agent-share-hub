@@ -151,8 +151,11 @@ describe("the ⋯ menu and keys", () => {
     const arrow = within(head(2)).getByRole("button", { name: "Collapse Session 2" });
     fireEvent.keyDown(arrow, { key: "ArrowUp", altKey: true });
     expect(props.sessionOps?.onMove).toHaveBeenCalledWith(expect.any(String), -1);
+    // CA-21: the move shows at once, so the first session is looked for in a page of its own.
+    cleanup();
+    const again = list();
     fireEvent.keyDown(within(head(1)).getByRole("button", { name: "Collapse Session 1" }), { key: "ArrowUp", altKey: true });
-    expect(props.sessionOps?.onMove).toHaveBeenCalledTimes(1);
+    expect(again.sessionOps?.onMove).not.toHaveBeenCalled();
   });
 });
 
@@ -206,19 +209,20 @@ describe("empty sessions and mixed tiles", () => {
 describe("moving by drag", () => {
   const handleOf = (n: number) => within(head(n)).getByTestId("session-drag-handle");
 
-  it("folds every session to its head while one is held, and opens them again once it is let go", async () => {
+  it("CA-21 P4: folds nothing while one is held, says what was picked up, and says it was put back", async () => {
     const props = list({ onDropSession: vi.fn() });
     expect(screen.getAllByTestId("session-drag-handle")).toHaveLength(3);
-    expect(screen.getAllByTestId("step-card").length).toBeGreaterThan(0);
+    const cards = screen.getAllByTestId("step-card").length;
+    expect(cards).toBeGreaterThan(0);
     act(() => handleOf(2).focus());
     fireEvent.keyDown(handleOf(2), { code: "Space", key: " " });
-    // Held: every session is a head and nothing else; each head says it is folded.
     await screen.findByText(/Picked up Session 2/);
-    expect(screen.queryAllByTestId("step-card")).toHaveLength(0);
-    expect(screen.getAllByTestId("session-head").every((el) => el.getAttribute("data-collapsed") === "true")).toBe(true);
+    // Held: nothing folds and nothing changes size.
+    expect(screen.getAllByTestId("step-card")).toHaveLength(cards);
+    expect(screen.getAllByTestId("session-head").some((el) => el.getAttribute("data-collapsed") === "true")).toBe(false);
     fireEvent.keyDown(handleOf(2), { code: "Escape", key: "Escape" });
-    await screen.findByText(/Put back where it was/);
-    expect(screen.getAllByTestId("step-card").length).toBeGreaterThan(0);
+    await screen.findByText(/Put back in/);
+    expect(screen.getAllByTestId("step-card")).toHaveLength(cards);
     expect(props.onDropSession).not.toHaveBeenCalled();
   });
 

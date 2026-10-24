@@ -284,6 +284,9 @@
   --bar-mid: #C4C4C4;
   --paper: #F1F1F1;
   --dim-filter: contrast(.42) brightness(1.32);
+  /* CA-21 */
+  --skeleton-edge: #C2C2C2;
+  --skeleton-target: #878787;
 
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
@@ -518,6 +521,9 @@
   --bar-mid: #55555B;
   --paper: #0C0C0D;
   --dim-filter: brightness(.48) saturate(.5);
+  /* CA-21 */
+  --skeleton-edge: #36363C;
+  --skeleton-target: #6A6A72;
 
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is

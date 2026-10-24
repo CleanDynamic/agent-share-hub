@@ -53,7 +53,9 @@ import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessi
 import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
+import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } from "@/lib/build/moveRules";
 import { listPartsOf } from "./partsModel";
+import type { Arriving } from "./arrival";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -92,7 +94,7 @@ import { SessionMapPanel } from "./SessionMapPanel";
 import { makerMapOf, type MapSettings } from "@/lib/build/making";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
+import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups, refLookup } from "@/lib/build/postRefs";
@@ -546,7 +548,12 @@ export function SandboxPage() {
   const partsModel = useMemo(() => listPartsOf(madeShown, groups, theme), [madeShown, groups, theme]);
   /** CA-17 P3: the parts "Add to" can choose; none until the build has two. */
   const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
-  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, history: buildHistory, bridge, onGone: (key) => {
+  /* CA-21 P1: where every tile, session and part stands: Move up, Move down, the keys and keyboard dragging all ask it. */
+  const moveModel = useMemo(
+    () => moveModelOf({ steps, heads: dividerRows, empties: emptySessions, parts: partsModel?.list.map((part) => ({ key: part.view.key, sessions: part.sessions })) }),
+    [steps, dividerRows, emptySessions, partsModel],
+  );
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, moveModel, parts: partsModel ?? undefined, history: buildHistory, bridge, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
   } });
@@ -616,6 +623,9 @@ export function SandboxPage() {
   /* CA-12 P4/P5: the session just added is scrolled to and outlined once; the row says "Adding…" until the write lands. */
   const [ringedSession, setRingedSession] = useState<{ key: string; n: number } | null>(null);
   const [startingSession, setStartingSession] = useState(false);
+  /* CA-21 P7: the session on its way, for the List to open a lane for and fill; it lets go when its animation is over. */
+  const [arriving, setArriving] = useState<Arriving | null>(null);
+  const nextSessionNumber = useCallback(() => Math.max(0, ...groups.filter((group) => !group.implicit).map((group) => group.number)) + 1, [groups]);
   useEffect(() => {
     if (!ringedSession) return;
     document.querySelector(`[data-session-key="${ringedSession.key}"]`)?.scrollIntoView?.({ block: "center" });
@@ -643,6 +653,7 @@ export function SandboxPage() {
       else if (emptyFirst && first) key = groupKey(first);
       else {
         key = newSessionKey();
+        setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
         await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
         await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
@@ -651,14 +662,16 @@ export function SandboxPage() {
       }
       await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
       setChosenSession(key);
+      setArriving((current) => (current && current.key === key ? { ...current, status: "written" } : current));
       setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
     } catch (cause) {
+      setArriving((current) => (current ? { ...current, status: "failed" } : current));
       console.error("[Sandbox] session not made", cause);
       sayFailed(cause, "Couldn't make that session. Try again.");
     } finally {
       setStartingSession(false);
     }
-  }, [ensureBuild, buildId, shown, groups, made, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession]);
+  }, [ensureBuild, buildId, shown, groups, made, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession, nextSessionNumber]);
 
   /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
   const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
@@ -1348,6 +1361,13 @@ export function SandboxPage() {
   const onAddSession = useCallback(
     async (importId: string, workstream?: string) => {
       setAdding((previous) => new Set(previous).add(importId));
+      // CA-21 P7: the lane opens as soon as it is pressed; the count is all it needs of the chat to make a place for each prompt.
+      const item = libraryRows.find((row) => row.id === importId);
+      const number = nextSessionNumber();
+      if (item) {
+        setArriving({ key: importId, kind: "chat", head: { key: importId, number, tool: item.label, detail: [item.model, item.date].filter(Boolean).join(" · "), prompts: [], date: item.date }, count: item.promptCount, part: workstream, status: "writing" });
+        setSessionSaid(`Adding ${item.label} · ${item.date} as Session ${number}…`);
+      }
       try {
         const id = await ensureBuild();
         const added = await addSessionToBuild(importId, { kind: "existing", buildId: id, workstream });
@@ -1358,8 +1378,10 @@ export function SandboxPage() {
           queryClient.invalidateQueries({ queryKey: librarySessionsKey }),
         ]);
         setChosenSession(added.sessionKey);
+        setArriving((current) => (current && current.key === importId ? { ...current, status: "written" } : current));
         setRingedSession((current) => ({ key: added.sessionKey, n: (current?.n ?? 0) + 1 }));
       } catch (cause) {
+        setArriving((current) => (current && current.key === importId ? { ...current, status: "failed" } : current));
         console.error("[Sandbox] session not added", cause);
         sayFailed(cause, "Couldn't add that session. Try again.");
       } finally {
@@ -1370,7 +1392,7 @@ export function SandboxPage() {
         });
       }
     },
-    [ensureBuild, queryClient],
+    [ensureBuild, queryClient, libraryRows, nextSessionNumber],
   );
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
@@ -1854,6 +1876,28 @@ export function SandboxPage() {
   const detailsStepped = Object.fromEntries(
     Object.entries(detailsHandlers).map(([name, fn]) => [name, typeof fn === "function" && !HANDLERS_THAT_CHANGE_NOTHING.has(name) && !HANDLERS_THAT_REMOVE.has(name) ? (...args: unknown[]) => track(handlerSentence(name, whatIs(args[0])), async () => (fn as (...a: unknown[]) => unknown)(...args)) : fn]),
   ) as unknown as DetailsHandlers;
+  /* CA-21 P1: one place that moves a tile, a session or a part by one place. Never a silent refusal: it goes to the next session or part. */
+  const moveOne = (id: string, by: -1 | 1): Promise<unknown> | void => {
+    const result = moveBy(moveModel, id, by);
+    const write = result ? writeOf(moveModel, result.model, id) : null;
+    if (!result || !write) return;
+    if (write.kind === "session") return edits.onMove(id, by);
+    if (write.kind === "part") return edits.onPartMove(id, by);
+    const names: MoveNames = {
+      tile: whatIs,
+      session: (key) => `Session ${groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(),
+      part: (key) => partsModel?.titles.get(key) ?? "that part",
+    };
+    const sentence = movedStep(whatIs(id), by);
+    const said = movedLine(result.move, names);
+    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Couldn't move that. Try again." });
+    if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) {
+      const parent = write.parent;
+      const index = write.index;
+      return track(sentence, async () => prompts.nest(id, parent, index)).then((done) => (setSessionSaid(said), done));
+    }
+    return track(sentence, async () => prompts.move(id, by)).then(() => setSessionSaid(said));
+  };
   const stepOf = {
     prompt: asStep(ADDED.prompt, onAddPrompt),
     agent: asStep(ADDED.agent, onAddAgentOrTeam),
@@ -1867,8 +1911,8 @@ export function SandboxPage() {
     agentPrompt: asStep(ADDED.promptToAgent, onAddAgentPrompt),
     agentTo: asStep(ADDED.agentToTeam, onAddAgentTo),
     nest: asStep((id: string) => `Moved ${whatIs(id)}`, onNest),
-    move: (id: string, direction: -1 | 1) => void track(`Moved ${whatIs(id)} ${direction === -1 ? "up" : "down"}`, async () => prompts.move(id, direction)),
-    session: asStep(ADDED.session, onAddSession),
+    move: (id: string, direction: -1 | 1) => moveOne(id, direction),
+    session: (importId: string, workstream?: string) => track(`Added Session ${nextSessionNumber()}`, async () => onAddSession(importId, workstream), { notice: true }),
     startSession: asStep(ADDED.session, onStartSession),
     picked: asStep(ADDED.file, onPicked),
     dropped: asStep(ADDED.file, onDropFiles),
@@ -2064,6 +2108,12 @@ export function SandboxPage() {
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
             ringedSession={ringedSession}
+            arriving={arriving}
+            onArrived={(key, status) => {
+              setArriving((current) => (current && current.key === key ? null : current));
+              if (status === "written" && arriving && arriving.key === key) setSessionSaid(arriving.count > 0 ? `Added Session ${arriving.head.number} with ${arriving.count} ${arriving.count === 1 ? "prompt" : "prompts"}.` : `Added Session ${arriving.head.number}.`);
+              if (status === "failed") setSessionSaid(arriving?.kind === "empty" ? "Couldn't make that session. Try again." : "Couldn't add that session. Try again.");
+            }}
           />
         }
         sources={
@@ -2084,7 +2134,7 @@ export function SandboxPage() {
             reminders={reminderRows}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onAddSession={(id, part) => void onAddSession(id, part)}
+            onAddSession={(id, part) => void stepOf.session(id, part)}
             parts={addToParts}
             onDropFiles={(files, paths) => void stepOf.dropped(files, paths)}
             onPick={pick}
