@@ -1,4 +1,4 @@
-// CA-23 P4 — two tabs on one build, in a real browser: two pages of one browser context, and the BroadcastChannel between them.
+// CA-23 P4, two tabs on one build, in a real browser: two pages of one browser context, and the BroadcastChannel between them.
 //
 // The channel is the browser's own, so this is the one thing jsdom cannot show. The page imports the app's own `tabSync` module from
 // the dev server (nothing is faked but there being no composer on the page), opens `bg-build-{buildId}` on each page, and a write

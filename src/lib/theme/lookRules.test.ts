@@ -686,6 +686,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ClashWindow.tsx",
   "src/pages/site/compose/ca23.p4.test.tsx",
   "src/pages/site/compose/useTwoTabs.tsx",
+  // CA-23 P5
+  "src/pages/dev/SavingDemo.tsx",
 ];
 
 /**

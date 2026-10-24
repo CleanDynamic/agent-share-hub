@@ -39,6 +39,12 @@ export interface RecipeWindowProps {
   small?: boolean;
 }
 
+/** The window opens with the primary button focused, not the first: neither question here is one to answer by accident. */
+const focusPrimary = (event: Event) => {
+  event.preventDefault();
+  (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('[data-variant="primary"]')?.focus();
+};
+
 export function RecipeWindow({ open, onClose, title, note, buttons, testId, width, children, small = false }: RecipeWindowProps) {
   const phone = useIsPhone();
   const noteStyle = small ? { ...NOTE, color: t.text2, margin: 0 } : { ...LABEL, margin: 0 };
@@ -57,7 +63,7 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content role="alertdialog" aria-describedby={undefined} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focusPrimary} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
           <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", minHeight: 0 }}>
             <Dialog.Title style={TITLE}>{title}</Dialog.Title>
             {note ? <p style={noteStyle}>{note}</p> : null}
