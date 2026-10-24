@@ -55,6 +55,7 @@ import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
 import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } from "@/lib/build/moveRules";
 import { listPartsOf } from "./partsModel";
+import type { Arriving } from "./arrival";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -93,7 +94,7 @@ import { SessionMapPanel } from "./SessionMapPanel";
 import { makerMapOf, type MapSettings } from "@/lib/build/making";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
+import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups, refLookup } from "@/lib/build/postRefs";
@@ -622,6 +623,9 @@ export function SandboxPage() {
   /* CA-12 P4/P5: the session just added is scrolled to and outlined once; the row says "Adding…" until the write lands. */
   const [ringedSession, setRingedSession] = useState<{ key: string; n: number } | null>(null);
   const [startingSession, setStartingSession] = useState(false);
+  /* CA-21 P7: the session on its way, for the List to open a lane for and fill; it lets go when its animation is over. */
+  const [arriving, setArriving] = useState<Arriving | null>(null);
+  const nextSessionNumber = useCallback(() => Math.max(0, ...groups.filter((group) => !group.implicit).map((group) => group.number)) + 1, [groups]);
   useEffect(() => {
     if (!ringedSession) return;
     document.querySelector(`[data-session-key="${ringedSession.key}"]`)?.scrollIntoView?.({ block: "center" });
@@ -649,6 +653,7 @@ export function SandboxPage() {
       else if (emptyFirst && first) key = groupKey(first);
       else {
         key = newSessionKey();
+        setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
         await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
         await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
@@ -657,14 +662,16 @@ export function SandboxPage() {
       }
       await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
       setChosenSession(key);
+      setArriving((current) => (current && current.key === key ? { ...current, status: "written" } : current));
       setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
     } catch (cause) {
+      setArriving((current) => (current ? { ...current, status: "failed" } : current));
       console.error("[Sandbox] session not made", cause);
       sayFailed(cause, "Couldn't make that session. Try again.");
     } finally {
       setStartingSession(false);
     }
-  }, [ensureBuild, buildId, shown, groups, made, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession]);
+  }, [ensureBuild, buildId, shown, groups, made, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession, nextSessionNumber]);
 
   /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
   const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
@@ -1354,6 +1361,13 @@ export function SandboxPage() {
   const onAddSession = useCallback(
     async (importId: string, workstream?: string) => {
       setAdding((previous) => new Set(previous).add(importId));
+      // CA-21 P7: the lane opens as soon as it is pressed; the count is all it needs of the chat to make a place for each prompt.
+      const item = libraryRows.find((row) => row.id === importId);
+      const number = nextSessionNumber();
+      if (item) {
+        setArriving({ key: importId, kind: "chat", head: { key: importId, number, tool: item.label, detail: [item.model, item.date].filter(Boolean).join(" · "), prompts: [], date: item.date }, count: item.promptCount, part: workstream, status: "writing" });
+        setSessionSaid(`Adding ${item.label} · ${item.date} as Session ${number}…`);
+      }
       try {
         const id = await ensureBuild();
         const added = await addSessionToBuild(importId, { kind: "existing", buildId: id, workstream });
@@ -1364,8 +1378,10 @@ export function SandboxPage() {
           queryClient.invalidateQueries({ queryKey: librarySessionsKey }),
         ]);
         setChosenSession(added.sessionKey);
+        setArriving((current) => (current && current.key === importId ? { ...current, status: "written" } : current));
         setRingedSession((current) => ({ key: added.sessionKey, n: (current?.n ?? 0) + 1 }));
       } catch (cause) {
+        setArriving((current) => (current && current.key === importId ? { ...current, status: "failed" } : current));
         console.error("[Sandbox] session not added", cause);
         sayFailed(cause, "Couldn't add that session. Try again.");
       } finally {
@@ -1376,7 +1392,7 @@ export function SandboxPage() {
         });
       }
     },
-    [ensureBuild, queryClient],
+    [ensureBuild, queryClient, libraryRows, nextSessionNumber],
   );
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
@@ -1896,7 +1912,7 @@ export function SandboxPage() {
     agentTo: asStep(ADDED.agentToTeam, onAddAgentTo),
     nest: asStep((id: string) => `Moved ${whatIs(id)}`, onNest),
     move: (id: string, direction: -1 | 1) => moveOne(id, direction),
-    session: asStep(ADDED.session, onAddSession),
+    session: (importId: string, workstream?: string) => track(`Added Session ${nextSessionNumber()}`, async () => onAddSession(importId, workstream), { notice: true }),
     startSession: asStep(ADDED.session, onStartSession),
     picked: asStep(ADDED.file, onPicked),
     dropped: asStep(ADDED.file, onDropFiles),
@@ -2092,6 +2108,12 @@ export function SandboxPage() {
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
             ringedSession={ringedSession}
+            arriving={arriving}
+            onArrived={(key, status) => {
+              setArriving((current) => (current && current.key === key ? null : current));
+              if (status === "written" && arriving && arriving.key === key) setSessionSaid(arriving.count > 0 ? `Added Session ${arriving.head.number} with ${arriving.count} ${arriving.count === 1 ? "prompt" : "prompts"}.` : `Added Session ${arriving.head.number}.`);
+              if (status === "failed") setSessionSaid(arriving?.kind === "empty" ? "Couldn't make that session. Try again." : "Couldn't add that session. Try again.");
+            }}
           />
         }
         sources={
@@ -2112,7 +2134,7 @@ export function SandboxPage() {
             reminders={reminderRows}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onAddSession={(id, part) => void onAddSession(id, part)}
+            onAddSession={(id, part) => void stepOf.session(id, part)}
             parts={addToParts}
             onDropFiles={(files, paths) => void stepOf.dropped(files, paths)}
             onPick={pick}

@@ -112,6 +112,7 @@ import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNes
 import { EmptyPlace, SkeletonLayer } from "./skeleton";
 import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
 import { SLIDE_ATTR } from "./flip";
+import { ArrivingBlock, useArrival, type Arriving } from "./arrival";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
@@ -243,6 +244,10 @@ export interface BuildListProps {
   said?: string;
   /** CA-14 P7: "Split session here" in a tile's menu. Absent: no item. */
   onSplitHere?: (stepId: string) => void;
+  /** CA-21 P7: a session on its way (added from a chat, or started empty): its lane opens at the end of its part and its prompts fall into place. */
+  arriving?: Arriving | null;
+  /** CA-21 P7: its animation is over (or it closed again because nothing was added). */
+  onArrived?: (key: string, status: Arriving["status"]) => void;
   /** CA-12 P5: the session just added is scrolled to and outlined once. `n` changes on every add. */
   ringedSession?: { key: string; n: number } | null;
   /**
@@ -2213,6 +2218,7 @@ export function BuildList(base: BuildListProps) {
     );
   };
   const runs = withEmptySessions(runsOf(steps, props.dividers), props.emptySessions ?? []);
+  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, onArrived: base.onArrived });
   const containerOfTile = new Map(runs.flatMap((run) => (run.head ? run.steps.map((step) => [step.id, run.head?.key ?? ""] as const) : [])));
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
   const headed = runs.some((run) => run.head);
@@ -2223,6 +2229,8 @@ export function BuildList(base: BuildListProps) {
   const numberByKey = new Map(runs.flatMap((run) => (run.head ? [[run.head.key, run.head.number] as const] : [])));
   /* CA-21 P1: where everything stands, for Move up and Move down. */
   const moveModel: MoveModel = moveModelOf({ steps, heads: props.dividers, empties: props.emptySessions, parts: parts?.parts.map((part) => ({ key: part.view.key, sessions: part.sessions })) });
+  /* CA-21 P7: the part a session on its way joins: the one it was added to, else the last. */
+  const arrivingPart = parts ? (parts.parts.find((part) => part.view.key === base.arriving?.part)?.view.key ?? parts.parts[parts.parts.length - 1].view.key) : null;
   const drawRun = (run: Run, at: number, inPart: ListPart | null = null) => {
         const key = run.head?.key ?? null;
         const closed = key !== null && Boolean(props.onToggleCollapsed) && Boolean(props.collapsed?.has(key));
@@ -2265,7 +2273,7 @@ export function BuildList(base: BuildListProps) {
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
-                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {run.steps.length === 0 && !promptHere ? (sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part") || (arrival.active && base.arriving?.kind === "empty" && key === base.arriving.key) ? <EmptyPlace words="Drop a tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}
@@ -2311,8 +2319,11 @@ export function BuildList(base: BuildListProps) {
         />
         <MentionedLine to={refTo({ kind: "workstream", id: view.key })} phone={props.phone} />
         <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed} style={WORKSTREAM_BODY}>
-          {view.collapsed ? null : mine.length > 0 ? (
-            mine.map((run) => drawRun(run, runs.indexOf(run), part))
+          {view.collapsed ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
+            <>
+              {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
+              {arrival.block && base.arriving && arrivingPart === view.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}
+            </>
           ) : (
             <div data-testid="workstream-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "4px 8px" }}>
               {sorting.held?.type === "session" ? <EmptyPlace words="Drop a session here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{WORKSTREAM_HEAD_COPY.empty}</p>}
@@ -2337,8 +2348,8 @@ export function BuildList(base: BuildListProps) {
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
-      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : null}
+    <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} /> : null}
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {parts ? (
@@ -2347,7 +2358,10 @@ export function BuildList(base: BuildListProps) {
           {parts.parts.map((part, at) => drawPart(part, at))}
         </>
       ) : (
-        runs.map((run, at) => drawRun(run, at))
+        <>
+          {runs.map((run, at) => drawRun(run, at))}
+          {arrival.block && base.arriving ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={runs.length === 0} /> : null}
+        </>
       )}
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.phone ? undefined : props.onEditTile} />

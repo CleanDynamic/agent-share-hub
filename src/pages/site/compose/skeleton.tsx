@@ -7,12 +7,12 @@
 
    Where a box moves because things slid, it slides too (a translate, and a scale for a lane): `animateFrom`, `FAST`, `STANDARD`. */
 
-import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { SKELETON_IN, SKELETON_OUT } from "@/lib/build/buildMotion";
+import { LANE_OPEN_MS, SKELETON_IN, SKELETON_OUT, SOCKETS_AFTER_MS, SOCKETS_IN_MS } from "@/lib/build/buildMotion";
 import { EMPTY_PLACE_HEIGHT, type Lane, type Rail, type Rect, type Skeleton, type Socket, type Target } from "@/lib/build/sortLayout";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { fade } from "@/lib/theme/motion";
+import { fade, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { mono } from "@/lib/theme/type";
 
@@ -22,9 +22,13 @@ import { text } from "./refinedStyles";
 const place = (rect: Rect): CSSProperties => ({ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxSizing: "border-box" });
 
 /** A box of the layer: where it stands, and a slide from where it stood when that changes. */
-function Box({ id, rect, style, children, testId }: { id: string; rect: Rect; style: CSSProperties; children?: ReactNode; testId: string }) {
+function Box({ id, rect, style, children, testId, onMount }: { id: string; rect: Rect; style: CSSProperties; children?: ReactNode; testId: string; onMount?: (element: HTMLDivElement) => void }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const was = useRef<Rect | null>(null);
+  useLayoutEffect(() => {
+    if (ref.current && onMount) onMount(ref.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useLayoutEffect(() => {
     const before = was.current;
     was.current = rect;
@@ -40,13 +44,25 @@ function Box({ id, rect, style, children, testId }: { id: string; rect: Rect; st
 /** A thin dashed edge round a place, on the well. */
 const socketStyle = (radius: number, edge: string): CSSProperties => ({ border: `1px dashed ${edge}`, borderRadius: radius, background: t.well });
 
-function SocketBox({ socket }: { socket: Socket }) {
-  return <Box id={socket.id} rect={socket.rect} testId="skeleton-socket" style={socketStyle(socket.radius, t.skeletonEdge)} />;
+/** A socket that fades in with a new session's lane: 80 ms after it starts to open, over 160. */
+const fadeSocket = (element: HTMLElement) => {
+  if (prefersReducedMotion() || typeof element.animate !== "function") return;
+  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SOCKETS_IN_MS, delay: SOCKETS_AFTER_MS, easing: STANDARD, fill: "backwards" });
+};
+
+/** A lane that opens: from nothing to its height, over 200 ms (a scale from its top; nothing else of it changes). */
+const openLane = (element: HTMLElement) => {
+  if (prefersReducedMotion() || typeof element.animate !== "function") return;
+  element.animate([{ transform: "scaleY(0)", transformOrigin: "0 0" }, { transform: "none", transformOrigin: "0 0" }], { duration: LANE_OPEN_MS, easing: STANDARD, fill: "backwards" });
+};
+
+function SocketBox({ socket, fadeIn }: { socket: Socket; fadeIn: boolean }) {
+  return <Box id={socket.id} rect={socket.rect} testId="skeleton-socket" onMount={fadeIn ? fadeSocket : undefined} style={socketStyle(socket.radius, t.skeletonEdge)} />;
 }
 
-function LaneBox({ lane, dusk }: { lane: Lane; dusk: boolean }) {
+function LaneBox({ lane, dusk, opens }: { lane: Lane; dusk: boolean; opens: boolean }) {
   if (!lane.outline) return null;
-  return <Box id={lane.id} rect={lane.rect} testId="skeleton-lane" style={{ border: `1px solid ${t.hairlineModule}`, borderRadius: lane.radius, background: tokenAlpha("text", dusk ? 0.012 : 0.015) }} />;
+  return <Box id={lane.id} rect={lane.rect} testId="skeleton-lane" onMount={opens ? openLane : undefined} style={{ border: `1px solid ${t.hairlineModule}`, borderRadius: lane.radius, background: tokenAlpha("text", dusk ? 0.012 : 0.015) }} />;
 }
 
 /** "Lands here", then, 8 apart, the place: "Session 2 · 2 of 3". Over its own start, a plain socket. */
@@ -82,23 +98,29 @@ function RailBox({ rail }: { rail: Rail }) {
 }
 
 /** The layer. `shown` fades it in; false fades it out (it stays mounted until the page takes it away). */
-export function SkeletonLayer({ skeleton, shown }: { skeleton: Skeleton; shown: boolean }) {
+export function SkeletonLayer({ skeleton, shown, fadeIn, opening }: { skeleton: Skeleton; shown: boolean; fadeIn?: ReadonlySet<string>; opening?: ReadonlySet<string> }) {
   const dusk = useResolvedTheme() === "dusk";
   const held = skeleton.target?.id;
+  // It comes in from nothing: mounted see-through, then shown, so the fade has somewhere to start from.
+  const [entered, setEntered] = useState(prefersReducedMotion());
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setEntered(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
   return (
     <div
       data-testid="skeleton-layer"
       data-kind={skeleton.kind}
       aria-hidden="true"
-      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: shown ? 1 : 0, transition: fade(shown ? SKELETON_IN : SKELETON_OUT) }}
+      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: shown && entered ? 1 : 0, transition: fade(shown ? SKELETON_IN : SKELETON_OUT) }}
     >
       {skeleton.lanes.map((lane) => (
-        <LaneBox key={`lane:${lane.id}`} lane={lane} dusk={dusk} />
+        <LaneBox key={`lane:${lane.id}`} lane={lane} dusk={dusk} opens={Boolean(opening?.has(lane.id))} />
       ))}
       {skeleton.sockets
         .filter((socket) => socket.id !== held)
         .map((socket) => (
-          <SocketBox key={`socket:${socket.id}`} socket={socket} />
+          <SocketBox key={`socket:${socket.id}`} socket={socket} fadeIn={Boolean(fadeIn?.has(socket.id))} />
         ))}
       {skeleton.target ? <TargetBox target={skeleton.target} /> : null}
       {skeleton.rails.map((rail) => (

@@ -12,7 +12,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { MoreHorizontal, Plus } from "lucide-react";
-import { useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -20,8 +20,10 @@ import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PLUS_OUT_MS, WORDS_IN_MS } from "@/lib/build/buildMotion";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { fade, prefersReducedMotion } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -317,12 +319,31 @@ function LibraryRow({ item, phone, onAdd, parts }: { item: SourceLibraryItem; ph
       </span>
       {item.inThisDraft ? (
         <span style={{ ...text(11.5, 400, t.label), flexShrink: 0 }}>{SOURCES_COPY.inThisDraft}</span>
+      ) : item.adding ? (
+        <PlusToWords />
       ) : parts && parts.length >= 2 ? (
         <AddToMenu item={item} parts={parts} phone={phone} onAdd={onAdd} />
       ) : (
         <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
       )}
     </div>
+  );
+}
+
+/** CA-21 P7: the moment a session is pressed, its + is gone and "In this draft" stands there: the + fades out over 120 ms, the words fade in over 160. */
+function PlusToWords() {
+  const [on, setOn] = useState(prefersReducedMotion());
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setOn(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+  return (
+    <span data-testid="plus-to-words" style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "flex-end", flexShrink: 0 }}>
+      <span aria-hidden="true" data-testid="plus-leaving" style={{ position: "absolute", right: 0, opacity: on ? 0 : 1, transition: fade(PLUS_OUT_MS), pointerEvents: "none" }}>
+        <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled />
+      </span>
+      <span style={{ ...text(11.5, 400, t.label), opacity: on ? 1 : 0, transition: fade(WORDS_IN_MS) }}>{SOURCES_COPY.inThisDraft}</span>
+    </span>
   );
 }
 

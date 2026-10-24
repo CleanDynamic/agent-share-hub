@@ -116,7 +116,7 @@ function slidBy(element: Element): { x: number; y: number } {
 }
 
 /** A box where it stands, not where a slide has it for now. */
-function naturalBox(element: Element): Box {
+export function naturalBox(element: Element): Box {
   const r = element.getBoundingClientRect();
   const by = slidBy(element);
   return { x: r.left - by.x, y: r.top - by.y, w: r.width, h: r.height };
