@@ -44,6 +44,8 @@ describe("Recently removed", () => {
     return screen.findByTestId("recently-removed-window");
   };
   const rows = () => screen.queryAllByTestId("removed-row");
+  /* CA-22: a removed tile lifts out of the page for 200 ms before the rest closes up and renumbers; what comes next waits for that. */
+  const lifted = (id: string) => waitFor(() => expect(document.querySelector(`[data-skel-id="${id}"]`)).toBeNull(), { timeout: 15_000 });
 
   it("shows how many are in the build's menu, and the empty window says nothing was removed", async () => {
     await mountCa20(seedCa20);
@@ -63,6 +65,7 @@ describe("Recently removed", () => {
     await mountCa20(seedCa20);
     await removeTile("Prompt 2 options");
     await waitFor(() => expect(ids()).not.toContain(IDS.p2), { timeout: 15_000 });
+    await lifted(IDS.p2);
     await removeTile(/^Team \d+ options/);
     await waitFor(() => expect(ids()).not.toContain(IDS.team), { timeout: 15_000 });
     fireEvent.keyDown(screen.getByTestId("build-options"), { key: "Enter" });
@@ -97,6 +100,7 @@ describe("Recently removed", () => {
     await mountCa20(seedCa20);
     await removeTile("Prompt 4 options");
     await waitFor(() => expect(ids()).not.toContain(IDS.p3), { timeout: 15_000 });
+    await lifted(IDS.p3);
     // Prompt 4 is now the last of Session 2: it goes to Session 1, so the old place is inside Session 1's tiles.
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 4 options" }), { key: "Enter" });
     fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to session…" }), { key: "ArrowRight" });

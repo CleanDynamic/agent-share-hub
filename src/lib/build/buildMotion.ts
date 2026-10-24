@@ -45,3 +45,58 @@ export const FADE_AFTER_MS = 200;
 
 /** When prompt `n` (from 0) starts falling, counted from when the head starts to fall. */
 export const promptStart = (n: number): number => PROMPT_STEP_MS * (Math.min(n, STAGGERED_PROMPTS - 1) + 1);
+
+/* ── CA-22: motion across the build page ──
+
+   One language for sixteen moments: sockets and lanes for structure, a slide to open or close a gap, a drop for anything arriving,
+   a lift for anything leaving, a crossfade for words that change, and an outline once for what just moved or was found.
+
+   `motion.ts` keeps its three durations and its 200 ms ceiling for feedback. Three timings below are longer BECAUSE they carry
+   something to a new place and are not feedback: `DROP` (240), `MAP_MORPH` (300) and `SCROLL_TO` (450). Everything else is
+   `FAST` or `BASE`, or a pause between two of them. */
+
+/** Opening or closing a gap, moving, undo and redo, a part or lane resizing. */
+export const SLIDE = FAST;
+/** Anything leaving fades out and rises `LIFT_RISE`. */
+export const LIFT = BASE;
+export const LIFT_RISE = 8;
+/** Anything arriving fades in and falls `DROP_FALL` from above. Longer than the ceiling: it carries the thing to its place. */
+export const DROP = FALL_MS;
+export const DROP_FALL = FALL_SHIFT;
+/** Between items when several leave or arrive together. */
+export const STAGGER = 60;
+/** Items past this go together with the 12th, so nothing takes more than about a second. */
+export const STAGGER_CAP = 12;
+/** Words and labels that change, Details, counts. */
+export const CROSSFADE = FAST;
+/** The outline once: in, hold, out. */
+export const OUTLINE_IN = 150;
+export const OUTLINE_HOLD = 500;
+export const OUTLINE_OUT = 300;
+/** Go to it: the same ring, held longer so the eye has time to arrive. */
+export const GOTO_HOLD = 800;
+export const GOTO_OUT = 600;
+/** Folding: the tiles rise `FOLD_RISE` behind the head. */
+export const FOLD = BASE;
+export const FOLD_RISE = 24;
+/** Between tiles coming down when a session unfolds; from the 8th on they come together. */
+export const UNFOLD_STAGGER = 40;
+export const UNFOLD_STAGGERED = 8;
+/** The selection bar rises this far and fades in. */
+export const BAR_RISE = 16;
+/** Selection rings fade in and out. */
+export const RING_IN = 100;
+export const RING_OUT = 150;
+/** The notice rises this far and fades in. */
+export const NOTICE_RISE = 8;
+/** Scrolling to something off screen. Longer than the ceiling: it carries the eye to a new place. */
+export const SCROLL_TO = 450;
+/** List to Map: the tiles fold behind their heads, each head morphs into its box, the lines draw in. */
+export const MAP_FOLD = 180;
+/** Longer than the ceiling: a head travels to a new place. */
+export const MAP_MORPH = 300;
+export const MAP_LINES = 200;
+/** Map to List: the lines retract first. */
+export const MAP_LINES_BACK = 100;
+/** With more sessions than this, or boxes that do not fit on screen, the two views crossfade instead of morphing. */
+export const MAP_MORPH_MAX = 30;

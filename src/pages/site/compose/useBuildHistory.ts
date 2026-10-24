@@ -23,6 +23,7 @@ import type { BuildSessionRow } from "@/lib/build/buildSessions";
 import { currentSnapshot, deltaTarget, restoreSnapshot, snapshotOf, type BuildSnapshot } from "@/lib/build/buildSnapshot";
 import { REMOVED_COPY, restoreTarget, type RemovedEntry, type RemovedMeta } from "@/lib/build/removedLog";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
+import { announce, type MotionKind } from "@/lib/build/motionIntent";
 
 import { sayFailed } from "./draftStart";
 import type { ComposeNodes } from "./useComposeNodes";
@@ -40,6 +41,8 @@ export interface TrackOptions {
   notice?: boolean | string;
   /** The step removes something: it is listed under Recently removed, with this, and can be restored out of turn. */
   removed?: RemovedMeta;
+  /** CA-22: how the build page moves for this step ("duplicate": the copy slides out from under its original). Absent: from what the step did. */
+  motion?: MotionKind;
 }
 
 /** What CA-19's history is handed to join this one. */
@@ -207,6 +210,8 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
           return result;
         })();
       }
+      // CA-22: the page moves for what this step does to the build: it reads this when the data catches up.
+      announce(options?.motion ?? (options?.removed?.kind === "build" ? "clear" : options?.removed ? "remove" : "change"), typeof sentence === "string" ? sentence : undefined);
       const { buildId: id, nodes: queue } = live.current;
       const held = peekRef.current();
       const before: BuildSnapshot = id ? snapshotOf(queue.current(), held.making, held.sessions) : EMPTY;
@@ -255,6 +260,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
         await running.current;
         if (!canUndoStep(history.current)) return;
         const step = history.current.done.at(-1) as BuildStep;
+        announce("undo", step.sentence);
         try {
           await step.undo();
         } catch (cause) {
@@ -274,6 +280,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
         await running.current;
         if (!canRedoStep(history.current)) return;
         const step = history.current.undone.at(-1) as BuildStep;
+        announce("redo", step.sentence);
         try {
           await step.redo();
         } catch (cause) {
@@ -300,7 +307,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
             await refresh();
             if (entry.refs) bridgeRef.current?.()?.restore(entry.refs);
           },
-          { notice: true },
+          { notice: true, motion: "restore" },
         );
         // It is back: gone from the list.
         removedList.current = removedList.current.filter((candidate) => candidate.id !== id);

@@ -228,7 +228,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       if (picked.length === 0) return;
       const sentence = picked.length === 1 ? DUPLICATE_COPY.one(tileName(picked[0])) : DUPLICATE_COPY.several(picked.length);
       void history
-        .track(sentence, () => restoreSnapshot(buildId, nodes, (current) => duplicateTiles(current, picked.map((step) => step.id), () => crypto.randomUUID()).snapshot), { notice: true })
+        .track(sentence, () => restoreSnapshot(buildId, nodes, (current) => duplicateTiles(current, picked.map((step) => step.id), () => crypto.randomUUID()).snapshot), { notice: true, motion: "duplicate" })
         .catch((cause) => console.error("[Compose] not duplicated", cause));
     },
     [buildId, steps, nodes, history],
@@ -258,7 +258,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
               const plan = row ? convertRow(row, to, DEFAULT_AGENT_MODEL) : null;
               return plan?.row ? convertTiles(current, new Map([[id, plan.row]])) : current;
             }),
-          { notice: true },
+          { notice: true, motion: "convert" },
         )
         .catch((cause) => console.error("[Compose] not converted", cause));
     },

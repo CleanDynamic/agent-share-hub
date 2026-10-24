@@ -31,6 +31,7 @@ import { NO_APP, type SourceSession } from "./sourcesModel";
 import { ToolPicker } from "./ToolPicker";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildSelectionContext } from "./useBuildSelection";
+import { useCrossfade } from "./buildMotion";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -187,6 +188,8 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
 const quiet = (colour: string) => ({ ...SESSION_META, color: colour, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 });
 
 export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, canMove, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part }: SessionHeadProps) {
+  /* CA-22 P4: the folded head's count crossfades when a tile joins or leaves. */
+  const countRef = useCrossfade<HTMLSpanElement>(tiles);
   const drop = useNestSession(session.key);
   const drag = useNestSessionDrag(session.key);
   const head = useRef<HTMLDivElement>(null);
@@ -236,7 +239,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           <span style={{ flex: "1 1 0", minWidth: 0 }} />
         )}
         {collapsed ? (
-          <span data-testid="session-count" style={quiet(t.text2)}>
+          <span ref={countRef} data-testid="session-count" style={quiet(t.text2)}>
             {SESSION_HEAD_COPY.count(tiles)}
           </span>
         ) : null}

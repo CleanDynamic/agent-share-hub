@@ -27,6 +27,7 @@ import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { MENU_COPY, moveReason } from "@/lib/build/componentMenus";
 import { RemoveRow, useReason } from "./removePieces";
 import { WORKSTREAM_STARTS } from "./workstreamRecipes";
+import { useCrossfade } from "./buildMotion";
 
 export const WORKSTREAM_HEAD_COPY = {
   namePlaceholder: "Add a name",
@@ -217,6 +218,8 @@ function PartMenuRows({ props, colour, remove }: { props: WorkstreamHeadProps; c
 
 export function WorkstreamHead(props: WorkstreamHeadProps) {
   const { part, phone, first, last, controls, onToggle, ops, onColour } = props;
+  /* CA-22 P4: the count ("2 sessions" to "1 session") crossfades when a session joins or leaves. */
+  const countRef = useCrossfade<HTMLSpanElement>(part.sessions);
   const drop = useNestWorkstream(part.key);
   const drag = useNestWorkstreamDrag(part.key);
   const [hovered, setHovered] = useState(false);
@@ -291,7 +294,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
         ) : (
           <span style={{ flex: "1 1 0", minWidth: 0 }} />
         )}
-        <span data-testid="workstream-count" style={quiet}>
+        <span ref={countRef} data-testid="workstream-count" style={quiet}>
           {WORKSTREAM_HEAD_COPY.count(part.sessions)}
         </span>
         {/* CA-19 P5: a part in a named group says so, just before its menu. */}

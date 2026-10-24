@@ -20,17 +20,20 @@ import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, us
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
+import { NOTICE_RISE } from "@/lib/build/buildMotion";
 import { NOTICE_COPY, NOTICE_MS } from "@/lib/build/referenceHistory";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { FAST } from "@/lib/theme/motion";
 import { nameColourFor, swatchFor } from "@/lib/theme/partColour";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { fallOut, riseIn, useCrossfade, useHeld } from "./buildMotion";
 import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, frameStyle } from "./modalRecipes";
 
 /* ── type ── */
@@ -189,17 +192,30 @@ export function UndoRedo({ canUndo, canRedo, onUndo, onRedo, phone = false }: { 
 /* ── the notice ── */
 
 /** The sentence after a step, with Undo: six seconds, or until the next step. */
-export function ReferenceNotice({ notice, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number } | null; onUndo: () => void; onDone: () => void; phone?: boolean }) {
+export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number } | null; onUndo: () => void; onDone: () => void; phone?: boolean }) {
   const done = useRef(onDone);
   done.current = onDone;
+  /* CA-22 P6: it rises 8 and fades in over FAST, and fades out over FAST; a new notice replaces the words with a crossfade, not a second rise. */
+  const held = useHeld(given, FAST);
+  const notice = held.value;
+  const box = useRef<HTMLDivElement | null>(null);
+  const sentence = useCrossfade<HTMLSpanElement>(notice?.n ?? 0);
+  useLayoutEffect(() => {
+    if (!box.current) return;
+    if (held.leaving) fallOut(box.current, { by: NOTICE_RISE, ms: FAST, base: "translateX(-50%)" });
+    else if (notice) riseIn(box.current, { by: NOTICE_RISE, ms: FAST, base: "translateX(-50%)" });
+    // The rise belongs to the notice appearing, not to its words changing: `n` is not a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [held.leaving, notice === null]);
   useEffect(() => {
-    if (!notice) return;
+    if (!given) return;
     const timer = window.setTimeout(() => done.current(), NOTICE_MS);
     return () => window.clearTimeout(timer);
-  }, [notice]);
+  }, [given]);
   if (!notice) return null;
   return (
     <div
+      ref={box}
       role="status"
       data-testid="reference-notice"
       style={{
@@ -220,9 +236,12 @@ export function ReferenceNotice({ notice, onUndo, onDone, phone = false }: { not
         borderRadius: 10,
         boxShadow: t.windowShadow,
         ...words(13, 400, t.text),
+        ...(held.leaving ? { pointerEvents: "none" } : null),
       }}
     >
-      <span style={ELLIPSIS}>{notice.sentence}</span>
+      <span ref={sentence} style={ELLIPSIS}>
+        {notice.sentence}
+      </span>
       <RecipeButton small onClick={onUndo} data-testid="notice-undo">
         {NOTICE_COPY.undo}
       </RecipeButton>
