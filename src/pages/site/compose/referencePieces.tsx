@@ -189,7 +189,7 @@ export function UndoRedo({ canUndo, canRedo, onUndo, onRedo, phone = false }: { 
 /* ── the notice ── */
 
 /** The sentence after a step, with Undo: six seconds, or until the next step. */
-export function ReferenceNotice({ notice, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number } | null; onUndo: () => void; onDone: () => void; phone?: boolean }) {
+export function ReferenceNotice({ notice, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number; noUndo?: boolean } | null; onUndo: () => void; onDone: () => void; phone?: boolean }) {
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
@@ -223,9 +223,11 @@ export function ReferenceNotice({ notice, onUndo, onDone, phone = false }: { not
       }}
     >
       <span style={ELLIPSIS}>{notice.sentence}</span>
-      <RecipeButton small onClick={onUndo} data-testid="notice-undo">
-        {NOTICE_COPY.undo}
-      </RecipeButton>
+      {notice.noUndo ? null : (
+        <RecipeButton small onClick={onUndo} data-testid="notice-undo">
+          {NOTICE_COPY.undo}
+        </RecipeButton>
+      )}
     </div>
   );
 }

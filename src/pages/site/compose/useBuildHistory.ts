@@ -30,6 +30,8 @@ import { buildSessionRowsKey } from "./useComposeSessions";
 
 export interface BuildNotice {
   sentence: string;
+  /** CA-23: a notice that is only news (Reconnected) has no Undo. */
+  noUndo?: boolean;
   /** Changes with every step, so the same sentence twice still restarts the notice. */
   n: number;
 }
@@ -64,7 +66,7 @@ export interface BuildHistoryApi {
   /** A step that has been taken. While a `track` is running, it is one of that step's children. */
   record: (step: BuildStep) => void;
   notice: BuildNotice | null;
-  notify: (sentence: string) => void;
+  notify: (sentence: string, options?: { undo?: boolean }) => void;
   dismiss: () => void;
   /** The build as it stands, once every write queued so far has landed. */
   capture: () => Promise<BuildSnapshot>;
@@ -79,6 +81,8 @@ export interface BuildHistoryApi {
   removed: RemovedEntry[];
   /** Bring one removal back (a step of its own): in its old place where that still holds, else at the end of its session. */
   restoreRemoved: (id: string) => Promise<void>;
+  /** CA-23: the version of a thing changed in two tabs that was not kept goes to Recently removed, and Restore writes it back. */
+  addVersion: (meta: RemovedMeta, restore: () => Promise<void>) => void;
   /** What CA-19's history joins with. */
   join: BuildJoin;
   /** Tests and dev pages: the history as it stands. */
@@ -127,7 +131,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
     redraw((n) => n + 1);
   };
 
-  const notify = useCallback((sentence: string) => setNotice((current) => ({ sentence, n: (current?.n ?? 0) + 1 })), []);
+  const notify = useCallback((sentence: string, options?: { undo?: boolean }) => setNotice((current) => ({ sentence, n: (current?.n ?? 0) + 1, ...(options?.undo === false ? { noUndo: true } : null) })), []);
   const dismiss = useCallback(() => setNotice(null), []);
 
   const refresh = useCallback(async () => {
@@ -287,12 +291,29 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
     [serial, dismiss],
   );
 
+  const addVersion = useCallback((meta: RemovedMeta, restore: () => Promise<void>) => {
+    const id = `removed-${Date.now()}-${removedList.current.length}`;
+    removedList.current = [{ ...meta, id, at: Date.now(), before: EMPTY, after: EMPTY, visible: true, custom: restore }, ...removedList.current];
+    redraw((n) => n + 1);
+  }, []);
+
   const restoreRemoved = useCallback(
     async (id: string): Promise<void> => {
       const entry = removedList.current.find((candidate) => candidate.id === id && candidate.visible);
       const { buildId: built, nodes: queue } = live.current;
       if (!entry || !built) return;
       try {
+        if (entry.custom) {
+          // A version written back is a step like any other.
+          const write = entry.custom;
+          await track(REMOVED_COPY.restored(entry.name), async () => {
+            await write();
+            await refresh();
+          }, { notice: true });
+          removedList.current = removedList.current.filter((candidate) => candidate.id !== id);
+          redraw((n) => n + 1);
+          return;
+        }
         await track(
           REMOVED_COPY.restored(entry.name),
           async () => {
@@ -333,6 +354,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
     commit,
     removed: removedList.current.filter((entry) => entry.visible),
     restoreRemoved,
+    addVersion,
     join,
     read: () => history.current,
   };

@@ -643,6 +643,27 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/useComposeThread.test.tsx",
   "src/pages/site/compose/useComposeThread.ts",
   "src/pages/site/compose/useSaveLine.ts",
+  // CA-23 P2
+  "src/lib/build/connection.ts",
+  "src/lib/build/connection.test.ts",
+  "src/lib/build/pendingWrites.ts",
+  "src/lib/build/pendingWrites.test.ts",
+  "src/lib/build/reconnect.ts",
+  "src/lib/build/reconnect.test.ts",
+  "src/lib/build/writeGuard.ts",
+  "src/lib/build/writeGuard.test.ts",
+  "src/pages/site/compose/ca23.harness.tsx",
+  "src/pages/site/compose/ca23.p2.test.tsx",
+  "src/pages/site/compose/referencePieces.tsx",
+  "src/pages/site/compose/saveStrips.tsx",
+  "src/pages/site/compose/saveStrips.test.tsx",
+  "src/pages/site/compose/useBuildHistory.ts",
+  "src/pages/site/compose/useClassificationCard.ts",
+  "src/pages/site/compose/useComposeNodes.ts",
+  "src/pages/site/compose/useComposeNodes.count.test.tsx",
+  "src/pages/site/compose/useComposeSessions.ts",
+  "src/pages/site/compose/usePendingWrites.ts",
+  "src/pages/site/compose/useWriteGuard.ts",
 ];
 
 /**
@@ -1276,6 +1297,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "the lucide icon ChevronDown drawn on its own",
     text: "<ChevronDown",
     why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: 'padding: "8px 8px 8px 14px"',
+    why: "The strips at the top of the Build column (CA-23): padding 8 8 8 14 is the board's own measure for the Offline and Changed in another tab strips.",
   },
 ];
 

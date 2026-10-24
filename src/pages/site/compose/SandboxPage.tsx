@@ -39,6 +39,9 @@ import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, re
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
+import { connection } from "@/lib/build/connection";
+import { pendingWrites, trackWrite } from "@/lib/build/pendingWrites";
+import { RECONNECTED } from "@/lib/build/reconnect";
 import { goalRefusal, patchMaking, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
@@ -101,6 +104,9 @@ import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { makingWithGroupColours, previewGroupColour, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { ReferenceNotice } from "./referencePieces";
+import { OfflineStrip, Strips } from "./saveStrips";
+import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
+import { useWriteGuard } from "./useWriteGuard";
 import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { classificationKey } from "./useClassificationCard";
@@ -147,6 +153,9 @@ async function previewOfFile(file: File): Promise<string[]> {
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
+/** Shown when Publish is pressed with no connection. */
+const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
+
 /** The later of two moments, either of which may be missing. */
 const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
 
@@ -182,6 +191,11 @@ export function SandboxPage() {
   const [viewOptions, setViewOptions] = useViewOptions(user?.id ?? null);
   const runtimeIssues = useMemo(() => runtimeChecks(buildSteps(tree)), [tree]);
   const onPublish = useCallback(async () => {
+    // Publishing waits for a connection: a publish held until later would go live when the maker has long moved on.
+    if (connection.isOffline()) {
+      toast(PUBLISH_OFFLINE);
+      return;
+    }
     await flushThread();
     // A thread that cannot be saved is not published half-written.
     if (threadHold) {
@@ -196,10 +210,24 @@ export function SandboxPage() {
     for (const line of runtimeIssues.reminders) toast(line);
     viewProps.onPublish();
   }, [flushThread, threadHold, viewProps, runtimeIssues]);
+  /* CA-23: the one pending-writes count, and whether there is a connection. The write guard holds writes while there is none. */
+  useConnectionWatch();
+  useWriteGuard(buildId);
+  useEffect(() => () => pendingWrites.reset(), []);
+  const offline = useOffline();
+  const { pending, failed: writesFailed, retry: retryWrites } = usePendingWrites();
+  useReconnected((count) => buildHistory.notify(RECONNECTED.saved(count), { undo: false }));
+  const strips = offline ? (
+    <Strips>
+      <OfflineStrip />
+    </Strips>
+  ) : null;
+  /* Retry sends every write that stopped, in order: the header's, the post's, and the node queue's and the rest of the tasks'. */
   const onRetrySave = useCallback(() => {
     if (thread.save === "error") thread.retry();
     if (viewProps.save === "error") viewProps.onRetrySave();
-  }, [thread, viewProps]);
+    if (writesFailed) void retryWrites();
+  }, [thread, viewProps, writesFailed, retryWrites]);
 
   const [lens, setLens] = useState<SandboxLens>("list");
   const [switched, setSwitched] = useState(false);
@@ -254,6 +282,7 @@ export function SandboxPage() {
   }, [savedSteps, savedGroups, makingDrawn, references.pending, colourPreview, sessionsOfPart]);
   const madeShown = useMemo(() => previewWorkstreams(makingWithGroupColours(makingDrawn, references.pending), colourPreview), [makingDrawn, references.pending, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
+
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
   const inBuild = useMemo(() => {
@@ -658,10 +687,12 @@ export function SandboxPage() {
         key = newSessionKey();
         setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
-        await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
-        await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
-        if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
-        else await patchMaking(id, { session_order: [...keys, key] });
+        await trackWrite("making", async () => {
+          await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
+          await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
+          if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
+          else await patchMaking(id, { session_order: [...keys, key] });
+        });
       }
       await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
       setChosenSession(key);
@@ -1975,7 +2006,9 @@ export function SandboxPage() {
         classification={classification}
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}
-        save={mergeSave(viewProps.save, thread.save)}
+        save={mergeSave(viewProps.save, thread.save, writesFailed ? "error" : "idle", offline ? "offline" : "idle")}
+        pendingWrites={pending}
+        strips={strips}
         lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}
         onRetrySave={onRetrySave}
         onPublish={() => void onPublish()}

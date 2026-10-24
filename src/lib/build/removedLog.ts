@@ -33,6 +33,8 @@ export interface RemovedMeta {
 }
 
 export interface RemovedEntry extends RemovedMeta {
+  /** CA-23: a version of something that changed in two tabs, not kept: Restore writes it back, rather than putting rows back. */
+  custom?: () => Promise<void>;
   id: string;
   at: number;
   before: BuildSnapshot;

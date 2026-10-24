@@ -29,6 +29,8 @@ import { emptyThread, holdSentence, sameThread, tidyThread } from "@/lib/build/t
 import type { Build } from "@/lib/build/types";
 import { canSucceedLater, errorLine } from "@/lib/errors/code";
 
+import { pendingWrites } from "@/lib/build/pendingWrites";
+
 import { saveState, type SaveState } from "./composeModel";
 
 /** Marks a thread that was opened before its build existed. */
@@ -58,6 +60,8 @@ export interface ComposeThread {
   flush: () => Promise<void>;
   retry: () => void;
   retryLoad: () => void;
+  /** CA-23: open the document again on the build as it stands (what another tab wrote). Words not yet written are kept unless `force`. */
+  reload?: (force?: boolean) => void;
 }
 
 export interface UseComposeThreadInput {
@@ -98,6 +102,12 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<Error | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  /** CA-23: the post is one pending change while it has words that are not yet written (or being written). */
+  const report = useCallback(() => {
+    pendingWrites.set("thread", (dirtyRef.current && !holdRef.current && writableRef.current) || inFlightRef.current ? 1 : 0);
+  }, []);
 
   /* ── opening ── */
 
@@ -123,13 +133,14 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
       docRef.current = doc;
       savedRef.current = doc;
       dirtyRef.current = false;
+      report();
       lastFirstRef.current = threadMediaIds(doc)[0] ?? null;
       holdRef.current = holdSentence(doc);
       setHold(holdRef.current);
       setPosts(splitThread(doc).length);
       setVersion((current) => current + 1);
     },
-    [clearTimer],
+    [clearTimer, report],
   );
 
   useEffect(() => {
@@ -147,7 +158,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     if (!build || build.id !== buildId) return;
     if (needsMedia && !media.isSuccess) return;
     start(threadOf(build, needsMedia ? (media.data ?? []) : []) ?? emptyThread(), buildId);
-  }, [buildId, build, needsMedia, media.isSuccess, media.data, start]);
+  }, [buildId, build, needsMedia, media.isSuccess, media.data, start, reloadTick]);
 
   /* ── saving ── */
 
@@ -175,6 +186,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
           await saveThread(id, tidyThread(doc));
           savedRef.current = doc;
           dirtyRef.current = !sameThread(docRef.current, doc);
+          report();
         }
 
         // The cover's evidence follows the thread's first picture.
@@ -211,10 +223,12 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
 
     const open = run();
     inFlightRef.current = open;
+    report();
     try {
       await open;
     } finally {
       inFlightRef.current = null;
+      report();
       // Typed while the write was open: it goes out on the next quiet moment.
       if ((againRef.current || dirtyRef.current) && !holdRef.current && timerRef.current === null && !retryingRef.current && !stoppedRef.current) {
         againRef.current = false;
@@ -224,7 +238,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
         }, SAVE_DEBOUNCE_MS);
       }
     }
-  }, [clearTimer, queryClient]);
+  }, [clearTimer, queryClient, report]);
 
   const schedule = useCallback(() => {
     clearTimer();
@@ -242,6 +256,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
       setHold(sentence);
       setPosts(splitThread(doc).length);
       dirtyRef.current = !sameThread(doc, savedRef.current);
+      report();
       clearTimer();
       // An edit is a fresh try, even after a save stopped.
       attemptRef.current = 0;
@@ -250,7 +265,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
       if (!dirtyRef.current || sentence || !writableRef.current) return;
       schedule();
     },
-    [clearTimer, schedule],
+    [clearTimer, schedule, report],
   );
 
   // Typed while the build it makes was still loading (so its owner was not yet known): written once it is.
@@ -262,12 +277,24 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
   useEffect(
     () => () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      pendingWrites.set("thread", 0);
       const id = idRef.current;
       if (id && dirtyRef.current && !holdRef.current && writableRef.current) {
         void saveThread(id, tidyThread(docRef.current)).catch(() => undefined);
       }
     },
     [],
+  );
+
+  const reload = useCallback(
+    (force = false) => {
+      if (dirtyRef.current && !force) return;
+      originRef.current = null;
+      dirtyRef.current = false;
+      report();
+      setReloadTick((tick) => tick + 1);
+    },
+    [report],
   );
 
   const readDoc = useCallback(() => docRef.current, []);
@@ -298,5 +325,6 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     flush,
     retry,
     retryLoad,
+    reload,
   };
 }

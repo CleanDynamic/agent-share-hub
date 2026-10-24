@@ -16,6 +16,7 @@ import { buildSteps, type Step } from "@/lib/build/graph";
 import type { Making } from "@/lib/build/making";
 import type { Build, NodeTree } from "@/lib/build/types";
 import { deriveClassification } from "@/lib/classify/derive";
+import { trackWrite } from "@/lib/build/pendingWrites";
 import { computeFacets, emptyClassification, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
 import { getClassification, writeClassification, type StoredClassification } from "@/lib/classify/storage";
 import { TAXONOMY_VERSION } from "@/lib/classify/taxonomy";
@@ -103,7 +104,7 @@ export function useClassificationCard({ buildId, build, tree, title, description
 
   const onSave = useCallback(
     (draft: ClassificationDraft): Promise<ClassificationSaved> => {
-      const run = chain.current.then(async (): Promise<ClassificationSaved> => {
+      const run = trackWrite("card", async (): Promise<ClassificationSaved> => {
         const id = await ensureBuild();
         const base = queryClient.getQueryData<StoredClassification>(classificationKey(id))?.classification ?? storedClassification;
         const merged = applyDraft(base, derivation.derived, draft);
@@ -112,7 +113,7 @@ export function useClassificationCard({ buildId, build, tree, title, description
         else if (result.missing) setMissing(true);
         await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
         return result;
-      });
+      }, { after: chain.current });
       chain.current = run.catch(() => undefined);
       return run;
     },

@@ -13,6 +13,8 @@ vi.mock("@/integrations/supabase/client", async () => (await import("@/lib/build
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PG, REPO_SCHEMA, requests, startAuditBackend, type Fault } from "@/lib/build/__audit__/fakeSupabase";
 
+import { connection } from "@/lib/build/connection";
+import { pendingWrites } from "@/lib/build/pendingWrites";
 import { SAVE_DEBOUNCE_MS, SAVE_RETRY_DELAYS_MS, useComposeBuild } from "./useComposeBuild";
 
 const DRAFT = "0d0d0d0d-0000-4000-8000-000000000001";
@@ -99,7 +101,7 @@ describe("CA-10 · the header save", () => {
   });
 
   it("a failure that may pass is tried again 3 times, after 1 s, 4 s and 10 s, then stops", async () => {
-    const hook = await open([{ method: "PATCH", path: PATCHES, answer: "network" }]);
+    const hook = await open([{ method: "PATCH", path: PATCHES, answer: { status: 503, body: { code: "PGRST003", message: "Timed out acquiring connection from connection pool." } } }]);
     vi.useFakeTimers();
     act(() => hook.result.current.patchBuild({ title: "Pantry" }));
     await act(() => vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 50));
@@ -114,7 +116,36 @@ describe("CA-10 · the header save", () => {
     await act(() => vi.advanceTimersByTimeAsync(60_000));
     vi.useRealTimers();
     expect(patches()).toHaveLength(4);
-    expect(hook.result.current.saveFailure).toEqual({ reason: "no connection", code: undefined });
+    expect(hook.result.current.saveFailure).toEqual({ reason: "the database didn't answer", code: "PGRST003" });
     expect(lines()).toHaveLength(1);
+  });
+
+  it("CA-23: the header is one pending change from the edit until the write lands, however many fields", async () => {
+    const hook = await open();
+    pendingWrites.reset();
+    act(() => {
+      hook.result.current.patchBuild({ title: "Pantry" });
+      hook.result.current.patchBuild({ outcome: "Bread" });
+    });
+    expect(pendingWrites.of("header")).toBe(1);
+    await waitFor(() => expect(patches()).toHaveLength(1), { timeout: 3_000 });
+    await waitFor(() => expect(pendingWrites.of("header")).toBe(0), { timeout: 3_000 });
+  });
+
+  it("CA-23: a write that gets no answer at all is not an error: the change waits for the connection and goes out when it is back", async () => {
+    const stop = connection.start();
+    const hook = await open([{ method: "PATCH", path: PATCHES, answer: "network", times: 1 }]);
+    act(() => hook.result.current.patchBuild({ title: "Pantry" }));
+    await waitFor(() => expect(patches()).toHaveLength(1), { timeout: 3_000 });
+    expect(hook.result.current.saveFailure).toBeNull();
+    expect(connection.isOffline()).toBe(true);
+    // Nothing is sent again while there is no connection.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1_200)));
+    expect(patches()).toHaveLength(1);
+    act(() => void window.dispatchEvent(new Event("online")));
+    await waitFor(() => expect(patches().map((r) => r.status)).toEqual([0, 200]), { timeout: 3_000 });
+    expect(hook.result.current.saveFailure).toBeNull();
+    expect(hook.result.current.saveError).toBeNull();
+    stop();
   });
 });

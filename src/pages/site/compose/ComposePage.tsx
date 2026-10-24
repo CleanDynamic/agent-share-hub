@@ -88,6 +88,13 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
   /** The build id whose fields the inputs already show. Null until one has been read or made here. */
   const hydratedFor = useRef<string | null>(null);
 
+  /** CA-23 P4: Show changes read the build again; the fields are opened on it again, with this tab's unsaved edits over it. */
+  const [rehydrateTick, setRehydrateTick] = useState(0);
+  const rehydrate = useCallback(() => {
+    hydratedFor.current = null;
+    setRehydrateTick((tick) => tick + 1);
+  }, []);
+
   useEffect(() => {
     if (!build || hydratedFor.current === build.id) return;
     hydratedFor.current = build.id;
@@ -100,7 +107,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     setTitle(next.title);
     setDescription(next.description);
     setAudience(next.audience);
-  }, [build]);
+  }, [build, rehydrateTick]);
 
   /* ── the first change makes the draft ── */
 
@@ -397,7 +404,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     onGapSwitch: details.setGapOn,
   };
 
-  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts };
+  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts, rehydrate };
 }
 
 export function ComposePage() {

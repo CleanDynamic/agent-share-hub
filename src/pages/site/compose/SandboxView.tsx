@@ -92,6 +92,8 @@ export interface SandboxViewProps extends CardProps {
   lastSavedAt?: Date | null;
   /** CA-23: writes waiting for a connection, for "offline · 3 changes pending". */
   pendingWrites?: number;
+  /** CA-23: the strips at the top of the Build column (Offline; Changed in another tab). Absent or empty: none is drawn. */
+  strips?: ReactNode;
   /** CA-10: a save that stopped: its reason and code, for "Not saved: {reason}. Code {code}." */
   saveProblem?: SaveFailure | null;
   /** CA-10: why the build did not load: logged once, its code shown under "This build didn't load." */
@@ -1092,6 +1094,10 @@ export function SandboxView(props: SandboxViewProps) {
         ...(phone ? { flex: "999 1 480px" } : { flex: `0 1 ${frame.build}px`, width: frame.build }),
       }}
     >
+      {props.strips && !phone && lens !== "map" ? (
+        /* CA-23: 8 under the title row: the columns start 32 below it, so the strips pull up by the difference. */
+        <div style={{ marginTop: -(COLUMNS_TOP - 8) }}>{props.strips}</div>
+      ) : null}
       {phone ? (
         postSection
       ) : (
@@ -1123,6 +1129,7 @@ export function SandboxView(props: SandboxViewProps) {
           <BuildTitleActions phone />
         </div>
         {banner}
+        {props.strips}
         {buildColumn}
         <div
           role="group"
@@ -1190,6 +1197,7 @@ export function SandboxView(props: SandboxViewProps) {
         </div>
       </div>
       {banner ? <div style={{ padding: `16px ${padRight}px 0 ${padLeft}px` }}>{banner}</div> : null}
+      {props.strips && lens === "map" ? <div style={{ padding: `8px ${padRight}px 0 ${padLeft}px` }}>{props.strips}</div> : null}
       {lens === "map" ? (
         <div
           data-testid="sandbox-columns"

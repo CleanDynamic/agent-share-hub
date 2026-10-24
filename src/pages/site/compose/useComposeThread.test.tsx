@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
+import { pendingWrites } from "@/lib/build/pendingWrites";
 import type { ThreadBlock, ThreadDoc } from "@/lib/build/thread";
 import type { Build } from "@/lib/build/types";
 
@@ -206,6 +207,31 @@ describe("saving", () => {
     await act(async () => void (await vi.advanceTimersByTimeAsync(10)));
     expect(result.current.save).toBe("saved");
     expect(result.current.lastSavedAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("CA-23 · the thread's share of the pending count", () => {
+  it("is one change from the first word typed until the write has landed", async () => {
+    pendingWrites.reset();
+    let land: () => void = () => undefined;
+    saveThread.mockImplementation(() => new Promise((resolve) => void (land = () => resolve({}))));
+    const { result } = mount({ build: build({ post_doc: doc(p("a")) }), buildId: "b1", isOwner: true });
+    expect(pendingWrites.of("thread")).toBe(0);
+    act(() => result.current.onDoc(doc(p("ab"))));
+    expect(pendingWrites.of("thread")).toBe(1);
+    await quiet();
+    expect(saveThread).toHaveBeenCalledTimes(1);
+    expect(pendingWrites.of("thread")).toBe(1);
+    await act(async () => land());
+    await act(async () => void (await vi.advanceTimersByTimeAsync(5)));
+    expect(pendingWrites.of("thread")).toBe(0);
+  });
+
+  it("is nothing while the post waits to be short enough: nothing is being sent", () => {
+    pendingWrites.reset();
+    const { result } = mount({ build: build({ post_doc: doc(p("a")) }), buildId: "b1", isOwner: true });
+    act(() => result.current.onDoc(doc(p("x".repeat(1001)))));
+    expect(pendingWrites.of("thread")).toBe(0);
   });
 });
 
