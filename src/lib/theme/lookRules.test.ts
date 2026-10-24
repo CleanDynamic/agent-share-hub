@@ -759,6 +759,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/PanelBoundary.tsx",
   "src/pages/site/compose/PostTab.tsx",
   "src/pages/site/compose/useComposeSessions.ts",
+  // CA-26 P1
+  "src/components/shell/SiteFrame.tsx",
+  "src/pages/site/compose/BuildList.tsx",
+  "src/pages/site/compose/ComposeRoute.tsx",
+  "src/pages/site/compose/SessionHead.tsx",
+  "src/pages/site/compose/WorkstreamHead.tsx",
+  "src/pages/site/compose/buildFocus.tsx",
+  "src/pages/site/compose/ca26.p1.test.tsx",
 ];
 
 /**

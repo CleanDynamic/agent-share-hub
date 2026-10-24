@@ -7,6 +7,7 @@
 
    The head writes nothing. Its callbacks (`ops`) are the maker's; a reader's build page draws its own head. */
 
+import { useItemRing } from "./buildFocus";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { MoreHorizontal, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -198,6 +199,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
   const head = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  const itemRing = useItemRing();
   const maker = Boolean(ops) && editable;
   /* CA-20 P3: chosen with others (Cmd, Ctrl or Shift click on the head), it is drawn as selected is. */
   const selection = useBuildSelectionContext();
@@ -273,8 +275,12 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         data-selected={picked ? "true" : undefined}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onFocus={() => setFocused(true)}
+        onFocus={(event) => {
+          setFocused(true);
+          itemRing.bind.onFocus(event);
+        }}
         onBlur={(event) => {
+          itemRing.bind.onBlur(event);
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
         }}
         onKeyDown={onKeyDown}
@@ -301,6 +307,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         style={{
           position: "relative",
           outline: "none",
+          ...itemRing.ring,
           display: "flex",
           flexWrap: phone ? "wrap" : "nowrap",
           alignItems: "center",

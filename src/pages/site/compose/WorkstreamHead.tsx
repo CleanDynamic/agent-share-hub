@@ -7,6 +7,7 @@
    In code a part is a "workstream", because "part" already means a tile or a session here. The head writes nothing: its
    callbacks (`ops`) are the maker's, and a reader's head is drawn without them. */
 
+import { useItemRing } from "./buildFocus";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -224,6 +225,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
   const drag = useNestWorkstreamDrag(part.key);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  const itemRing = useItemRing();
   const head = useRef<HTMLDivElement | null>(null);
   const registered = usePartRef(refTo({ kind: "workstream", id: part.key }));
   const maker = Boolean(ops);
@@ -256,14 +258,19 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
         data-collapsed={part.collapsed ? "true" : undefined}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onFocus={() => setFocused(true)}
+        onFocus={(event) => {
+          setFocused(true);
+          itemRing.bind.onFocus(event);
+        }}
         onBlur={(event) => {
+          itemRing.bind.onBlur(event);
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
         }}
         onKeyDown={onKeyDown}
         style={{
           position: "relative",
           outline: "none",
+          ...itemRing.ring,
           display: "flex",
           flexWrap: phone ? "wrap" : "nowrap",
           alignItems: "center",
