@@ -7,6 +7,7 @@
 
    The head writes nothing. Its callbacks (`ops`) are the maker's; a reader's build page draws its own head. */
 
+import { useAnnounce } from "./BuildAnnouncer";
 import { useItemRing } from "./buildFocus";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { MoreHorizontal, ChevronRight } from "lucide-react";
@@ -113,6 +114,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
   const [draft, setDraft] = useState(saved);
   const [editing, setEditing] = useState(false);
   const field = useRef<HTMLInputElement>(null);
+  const announce = useAnnounce();
   /* The global field rule paints a field's fill with !important, which only an !important inline value outranks: the title
      is a line of text until it is touched, so its fill is taken off here, and its border is transparent until hover or focus. */
   const [hover, setHover] = useState(false);
@@ -148,6 +150,9 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
     }
   };
   const past = editing && draft.length > TITLE_COUNT_FROM;
+  useEffect(() => {
+    if (past) announce(SESSION_HEAD_COPY.typedPast(draft.length));
+  }, [past, draft.length, announce]);
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, flex: phone ? "1 1 100%" : "1 1 120px" }}>
       <input
@@ -179,7 +184,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
         }}
       />
       {past ? (
-        <span aria-live="polite" style={{ ...text(11, 400, t.label), ...tnum, flexShrink: 0 }}>
+        <span style={{ ...text(11, 400, t.label), ...tnum, flexShrink: 0 }}>
           {SESSION_HEAD_COPY.typedPast(draft.length)}
         </span>
       ) : null}

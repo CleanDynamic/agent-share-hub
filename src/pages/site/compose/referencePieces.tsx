@@ -220,7 +220,6 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
   return (
     <div
       ref={box}
-      role="status"
       data-testid="reference-notice"
       style={{
         position: "fixed",

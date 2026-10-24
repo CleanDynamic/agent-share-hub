@@ -1,13 +1,14 @@
 // CA-18 P3: the Details panel, read only. It shows the selected tile with the same sections, names and order as the tile's
 // window, and nothing in it can be typed into; every change is made in the window, which Edit opens.
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildFacts, tileView } from "@/dev/fixtures/detailsKinds";
 import { TILE_KINDS } from "@/lib/build/tileSections";
 
+import { BuildAnnouncer } from "./BuildAnnouncer";
 import { DETAILS_COPY, DetailsPanel, type DetailsPanelProps } from "./DetailsPanel";
 
 beforeEach(() => {
@@ -190,10 +191,17 @@ describe("what it keeps: it reads or moves, it does not change", () => {
   it("Copy puts the prose on the clipboard, and says so", async () => {
     const writeText = vi.fn(async () => undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
-    panel();
+    const props: DetailsPanelProps = baseProps();
+    render(
+      <BuildAnnouncer>
+        <DetailsPanel {...props} />
+      </BuildAnnouncer>,
+    );
     fireEvent.click(within(screen.getAllByTestId("details-section")[0]).getByRole("button", { name: "Copy" }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("The menu grid overflows on a phone."));
-    expect(await screen.findByText("Copied")).toBeTruthy();
+    // The page's one announcer says it; the panel has no live region of its own.
+    await waitFor(() => expect(screen.getByTestId("build-announcer").textContent).toBe("Copied"));
+    expect(document.querySelectorAll("[aria-live]")).toHaveLength(1);
   });
 
   it("Copy is on prose that can be copied, and nowhere else", () => {

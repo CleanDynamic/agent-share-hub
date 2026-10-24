@@ -193,7 +193,7 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Plan it", tool: "claude", model: "Opus 5.5" });
   });
 
-  it("clears a model the new tool does not offer, and says so once in a polite region", () => {
+  it("clears a model the new tool does not offer, and says so once, in the visible line (the announcer says it aloud, CA-26)", () => {
     list();
     pickTool("claude", "Claude");
     openMenu("model");
@@ -201,7 +201,7 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     pickTool("chatgpt", "ChatGPT");
     expect(screen.getByRole("button", { name: "model" })).toBeTruthy();
     const region = screen.getByTestId("model-cleared");
-    expect(region.getAttribute("aria-live")).toBe("polite");
+    expect(region.getAttribute("aria-live")).toBeNull();
     expect(region.textContent).toBe("ChatGPT doesn't offer Opus 5.5. Model cleared.");
   });
 

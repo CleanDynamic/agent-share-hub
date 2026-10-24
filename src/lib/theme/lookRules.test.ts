@@ -708,6 +708,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca23.p3.page.test.tsx",
   "src/pages/site/compose/ca23.p3.test.tsx",
   "src/pages/site/compose/saveWindows.tsx",
+  // CA-26 P4
+  "src/pages/site/compose/AgentSetupFields.tsx",
+  "src/pages/site/compose/BuildAnnouncer.tsx",
+  "src/pages/site/compose/DetailsPanel.test.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/SaveLine.tsx",
+  "src/pages/site/compose/ca26.p4.test.tsx",
   // CA-26 P3
   "src/components/brand/ColourButton.tsx",
   "src/pages/site/compose/BuildList.lighter.test.tsx",

@@ -109,7 +109,7 @@ describe("the List (CA-04 P2)", () => {
     fireEvent.click(within(code).getAllByRole("button", { name: NEST_LIST_COPY.ownStep }).at(-1) as HTMLElement);
     expect(props.onNest).toHaveBeenLastCalledWith("c1", null, 2);
     await waitFor(() => expect(screen.getByTestId("nest-said").textContent).toBe("order-form.tsx is now its own step."));
-    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBeNull();
     expect(within(screen.getByRole("group", { name: /^Prompt 1/ })).queryByRole("button", { name: NEST_LIST_COPY.sendWithAbove })).toBeNull();
   });
 

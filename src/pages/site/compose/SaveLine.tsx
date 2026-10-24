@@ -5,8 +5,9 @@
    is its tooltip, and a screen reader reads it as its description. The line keeps its size and colour: 12.5 `t.text2`, set by
    the paragraph this sits in. */
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 
+import { useAnnounce } from "./BuildAnnouncer";
 import { SAVE_WORDS, saveWords, type SaveState } from "./composeModel";
 import { TextButton } from "./composeControls";
 import { DANGER } from "./referencePieces";
@@ -14,6 +15,9 @@ import { useReason } from "./removePieces";
 import { useMinuteNow, useShownSave } from "./useSaveLine";
 
 /** The tooltip when the failure has no reason of its own. */
+/** What a screen reader is told of the save: `Saved.` once, after a save that was under way, and that a failed one can be retried. */
+export const SAVE_SAID = { saved: "Saved.", notSaved: "Not saved. Retry available." } as const;
+
 export const NOT_SAVED_DETAIL = "Your last change didn't save.";
 
 export interface SaveLineProps {
@@ -42,6 +46,15 @@ function NotSaved({ detail }: { detail: string }) {
 
 export function SaveLine({ save, lastSavedAt = null, pending = 0, detail, onRetry, retryUnderline = false, retryStyle }: SaveLineProps) {
   const shown = useShownSave(save);
+  const announce = useAnnounce();
+  const before = useRef<SaveState>(save);
+  useEffect(() => {
+    // The state the write is in, not the one drawn: a save that lands inside the 300 ms before `saving…` is drawn is still a save.
+    // Coming back online says "Reconnected" in its own notice, so offline to saved says nothing more.
+    if (save === "saved" && (before.current === "saving" || before.current === "idle")) announce(SAVE_SAID.saved);
+    else if (save === "error" && before.current !== "error") announce(SAVE_SAID.notSaved);
+    before.current = save;
+  }, [save, announce]);
   const now = useMinuteNow();
   if (shown === "idle") return null;
   if (shown === "error") {

@@ -56,7 +56,7 @@ describe("picking a tile up", () => {
     const [first] = tileIds();
     await pickUp(grip(first));
     expect(said()).toMatch(/^Picked up Prompt 1\. Session 1, 1 of \d+\.$/);
-    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBeNull();
   });
 });
 

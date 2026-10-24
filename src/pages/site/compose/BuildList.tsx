@@ -54,6 +54,7 @@ import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
 import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { GlyphButton } from "./ModalFrame";
+import { useAnnounce } from "./BuildAnnouncer";
 import { useItemRing, useRovingList } from "./buildFocus";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
@@ -1918,6 +1919,10 @@ function AddPrompt({
   const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cleared, setCleared] = useState<string | null>(null);
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (cleared) announce(cleared);
+  }, [cleared, announce]);
   const field = useRef<HTMLTextAreaElement | null>(null);
   const setField = useCallback(
     (element: HTMLTextAreaElement | null) => {
@@ -2040,7 +2045,7 @@ function AddPrompt({
           </Button>
         </div>
       ) : null}
-      <div aria-live="polite" data-testid="model-cleared">
+      <div data-testid="model-cleared">
         {cleared ? <Quiet>{cleared}</Quiet> : null}
       </div>
     </div>
@@ -2086,6 +2091,10 @@ export function BuildList(incoming: BuildListProps) {
   const partsFolded = useMemo(() => new Set((base.parts?.parts ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)), [base.parts]);
   const folding = useFoldMotion({ sessions: base.collapsed, parts: partsFolded, getRoot: useCallback(() => rootHolder.current?.current ?? null, []) });
   const [said, setSaid] = useState("");
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (said) announce(said);
+  }, [said, announce]);
   /* CA-21 P3: while something is held, or its write is on its way, the page is drawn from the live order. */
   const baseModel = useMemo(
     () => moveModelOf({ steps: base.steps, heads: base.dividers, empties: base.emptySessions, parts: base.parts?.parts.map((part) => ({ key: part.view.key, sessions: part.sessions })) }),
@@ -2389,11 +2398,11 @@ export function BuildList(incoming: BuildListProps) {
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
       {nestOn || said ? (
-        <div aria-live="polite" data-testid="nest-said">
+        <div data-testid="nest-said">
           {said ? <Quiet>{said}</Quiet> : null}
         </div>
       ) : null}
-      <div aria-live="polite" data-testid="sessions-said" style={props.said ? undefined : { display: "none" }}>
+      <div data-testid="sessions-said" style={props.said ? undefined : { display: "none" }}>
         {props.said ? <Quiet>{props.said}</Quiet> : null}
       </div>
       {/* CA-14 P5: with session heads the prompt box stands in its session; an old draft with none keeps it at the foot, as it was. */}
