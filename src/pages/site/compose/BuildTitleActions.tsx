@@ -33,7 +33,7 @@ interface TitleIconProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "
 }
 
 /** A ghost icon button: 28 square (44 on a phone), radius 7, nothing under the glyph until the pointer is, a 16 glyph in `--text2`. */
-function TitleIcon({ glyph, label, phone, disabled, style, ...rest }: TitleIconProps) {
+export function TitleIcon({ glyph, label, phone, disabled, style, ...rest }: TitleIconProps) {
   const { onMouseEnter, onMouseLeave, onFocus, onBlur, onPointerDown, onPointerUp, onPointerCancel } = rest;
   const { state, handlers } = useInteractive<HTMLButtonElement>({ onMouseEnter, onMouseLeave, onFocus, onBlur, onPointerDown, onPointerUp, onPointerCancel }, { disabled });
   const side = phone ? 44 : 28;

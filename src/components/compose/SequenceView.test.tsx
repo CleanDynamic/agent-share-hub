@@ -135,6 +135,7 @@ function composeFixture(): ComposeBuild {
     setSelectedNodeId: () => {},
     patchBuild: () => {},
     publish: () => Promise.reject(new Error("not under test")),
+    unpublish: () => Promise.reject(new Error("not under test")),
     isPublishing: false,
     publishError: null,
     isSaving: false,

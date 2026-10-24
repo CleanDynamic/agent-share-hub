@@ -255,6 +255,35 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/__audit__/fakeSupabase.ts",
   "src/pages/site/compose/ComposePage.tsx",
   "src/pages/site/compose/useComposeSessions.ts",
+  // CA-25 P4
+  "e2e/audit/composer-ca25-shots.spec.ts",
+  "src/pages/dev/Ca25Demo.tsx",
+  "src/pages/dev/SandboxDemo.tsx",
+  // CA-25 P3
+  "src/components/compose/SequenceView.test.tsx",
+  "src/components/compose/TrayDrop.test.tsx",
+  "src/hooks/useComposeBuild.ts",
+  "src/hooks/useComposeBuild.unpublish.test.tsx",
+  "src/pages/site/compose/BuildTitleActions.tsx",
+  "src/pages/site/compose/PublishedMenu.tsx",
+  "src/pages/site/compose/ca25.p3.test.tsx",
+  // CA-25 P2
+  "e2e/tier1/post-thread.spec.ts",
+  "src/pages/site/compose/PublishConfirm.tsx",
+  "src/pages/site/compose/ca25.p2.test.tsx",
+  // CA-25 P1
+  "e2e/tier3/compose-v2.spec.ts",
+  "src/lib/build/publishChecklist.test.ts",
+  "src/lib/build/publishChecklist.ts",
+  "src/lib/build/runtimeChecks.ts",
+  "src/pages/site/compose/ComposePage.tsx",
+  "src/pages/site/compose/PublishChecklist.tsx",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/ca25.p1.test.tsx",
+  "src/pages/site/compose/composeModel.test.ts",
+  "src/pages/site/compose/composeModel.ts",
+  "src/pages/site/compose/useBuildSelection.ts",
   // CA-24 P5
   "e2e/audit/composer-ca24-shots.spec.ts",
   "src/pages/dev/Ca24Demo.tsx",
@@ -1378,6 +1407,16 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 7 is not in SPACE_REFINED",
     text: 'padding: "0 7px",',
     why: "The Importing tag (CA-24 P4): 20 tall, padding 0 7, radius 5 is the board's own measure, as the tag in modalRecipes.tsx has.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: 'margin: "14px 0 4px"',
+    why: "The Publish checklist (CA-25): a section's label 14 below the line (or the section above) and 4 above its rows is the board's own measure.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: "gap: 10, minHeight: 48",
+    why: "The Publish checklist's rows (CA-25): the circle sits 10 before the words, the board's own measure.",
   },
 ];
 

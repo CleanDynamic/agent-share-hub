@@ -14,7 +14,6 @@ import {
   parsePromptDragData,
   promptDragData,
   promptSourceLine,
-  publishToast,
   mergeSave,
   saveState,
   UNTITLED,
@@ -38,7 +37,6 @@ describe("missingForPublish", () => {
       completeness: missing("instruction_or_artefact", "outcome", "evidence"),
     });
     expect(keys).toEqual(["evidence", "title", "outcome", "instruction_or_artefact"]);
-    expect(publishToast(keys)).toBe("To publish, add a cover picture or video, a title, a description, a prompt.");
   });
 
   it("counts an untitled title as missing, and a real one as present", () => {

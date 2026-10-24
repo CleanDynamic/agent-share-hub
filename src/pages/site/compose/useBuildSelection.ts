@@ -27,6 +27,8 @@ export interface BuildSelection {
   clear: () => void;
   selectAll: () => void;
   selectSession: (key: string) => void;
+  /** CA-25: chooses these session heads (those that are in the build), and no tiles. */
+  selectSessions: (keys: readonly string[]) => void;
   /** A phone, once a long press has started choosing. */
   choosing: boolean;
 }
@@ -126,6 +128,16 @@ export function useBuildSelection({ drawn, onSelect, phone }: { drawn: Drawn; on
       const tiles = tilesOfSession(drawnRef.current, key);
       anchor.current = tiles.at(-1) ?? null;
       set(tiles);
+    },
+    [set],
+  );
+
+  const selectSessions = useCallback(
+    (keys: readonly string[]) => {
+      const present = new Set(orderRef.current.map(chosenKey));
+      const picks = keys.map((id): Chosen => ({ kind: "session", id })).filter((pick) => present.has(chosenKey(pick)));
+      anchor.current = picks.at(-1) ?? null;
+      set(picks);
     },
     [set],
   );
@@ -234,7 +246,7 @@ export function useBuildSelection({ drawn, onSelect, phone }: { drawn: Drawn; on
   const isPicked = useCallback((kind: ChosenKind, id: string) => chosen.some((entry) => sameChosen(entry, { kind, id })), [chosen]);
 
   return useMemo(
-    () => ({ items, size: chosen.length, tiles, sessions, isPicked, selectTile, clickHead, clear, selectAll, selectSession, choosing }),
-    [items, chosen.length, tiles, sessions, isPicked, selectTile, clickHead, clear, selectAll, selectSession, choosing],
+    () => ({ items, size: chosen.length, tiles, sessions, isPicked, selectTile, clickHead, clear, selectAll, selectSession, selectSessions, choosing }),
+    [items, chosen.length, tiles, sessions, isPicked, selectTile, clickHead, clear, selectAll, selectSession, selectSessions, choosing],
   );
 }

@@ -66,6 +66,11 @@ async function describeAndPublish(page: Page) {
   await card.getByRole("button", { name: "Close" }).click();
 
   await page.getByRole("button", { name: "Publish", exact: true }).click();
+  // CA-25: the checklist opens while a recommended item (the Classification Card) is open; Confirm follows.
+  const checklist = page.getByTestId("publish-checklist");
+  await expect(checklist.or(page.getByTestId("publish-confirm"))).toBeVisible();
+  if (await checklist.isVisible()) await checklist.getByTestId("checklist-publish").click();
+  await page.getByTestId("confirm-publish").click();
 }
 
 test("writes a two-post thread, publishes it, and it reads in the Gallery and on the build page", async ({ page }) => {

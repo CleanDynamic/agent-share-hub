@@ -51,7 +51,6 @@ import {
   missingForPublish,
   parseAudience,
   PUBLISH_WORDS,
-  publishToast,
   saveState,
   UNTITLED,
 } from "./composeModel";
@@ -301,10 +300,8 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     await Promise.all([prompts.flush(), details.flush()]);
     const counted = compose.build ? computeCompleteness(compose.build, nodes.current(), compose.nodeTypes) : null;
     const needed = missingForPublish({ title, completeness: counted ?? compose.completeness, hasPrompt });
-    if (needed.length > 0) {
-      toast(publishToast(needed));
-      return;
-    }
+    // CA-25: the checklist names what is missing before Publish gets here; this only keeps an unfinished build from going live.
+    if (needed.length > 0) return;
     try {
       const row = await compose.publish();
       try {

@@ -320,14 +320,16 @@ test("typing a title creates the build and the URL becomes /compose/{id}", async
   await expect(page.getByLabel("Title")).toBeFocused();
 });
 
-test("Publish with nothing says what is needed, and writes nothing", async ({ page }) => {
+test("Publish with nothing opens the checklist, and writes nothing", async ({ page }) => {
   const backend = await fakeBackend(page);
   await page.goto("/compose/new");
 
   await expect(publish(page)).toBeEnabled();
   await publish(page).click();
 
-  await expect(page.getByText("To publish, add a cover picture or video, a title, a description, a prompt.")).toBeVisible();
+  const checklist = page.getByTestId("publish-checklist");
+  await expect(checklist.getByText("Publish checklist")).toBeVisible();
+  await expect(checklist.getByText("Complete 4 required items to publish")).toBeVisible();
   expect(backend.writes).toEqual([]);
 });
 

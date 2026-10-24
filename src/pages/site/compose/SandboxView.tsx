@@ -61,6 +61,11 @@ import { type CardProps } from "./SandboxCard";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { BuildTitleActions } from "./BuildTitleActions";
+import { PublishChecklist } from "./PublishChecklist";
+import { PublishConfirm } from "./PublishConfirm";
+import { PUBLISHED_COPY, PublishedOptions } from "./PublishedMenu";
+import { outlineOnce } from "./buildMotion";
+import { confirmRows, publishedWords, type Checklist, type ChecklistItem, type ConfirmInput, type ConfirmRow } from "@/lib/build/publishChecklist";
 import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
@@ -91,6 +96,17 @@ export interface SandboxCounts {
   files: number;
 }
 
+/** CA-25: what Publish asks first. */
+export interface PublishPanel {
+  checklist: Checklist;
+  /** Runs when Publish is pressed, before anything opens: false stops it (offline). */
+  prepare?: () => Promise<boolean>;
+  /** What Confirm shows, read when it opens (the post's words are not state). */
+  confirm: () => ConfirmInput;
+  /** "Show" on the sessions with no app: choose them and scroll to the first. */
+  onShowApps: (keys: readonly string[]) => void;
+}
+
 export interface SandboxViewProps extends CardProps {
   fit?: "board" | "content";
   status: ComposeStatus;
@@ -112,7 +128,14 @@ export interface SandboxViewProps extends CardProps {
   slug: string | null;
   published: ComposePublished | null;
   publishing: boolean;
+  /** Writes the build live. With `publish` set, it runs once the checklist is clear and the maker has said Publish. */
   onPublish: () => void;
+  /** CA-25: the Publish checklist. Absent, Publish runs `onPublish` at once. */
+  publish?: PublishPanel;
+  /** CA-25 P3: `published_at`, for "Published 2 days ago". */
+  publishedAt?: string | null;
+  /** CA-25 P3: takes the build back to a draft. "refused" is the database saying no (Unpublish… is then left out), "failed" a try that can be made again. Absent: no Unpublish… item. */
+  onUnpublish?: () => Promise<"done" | "refused" | "failed">;
 
   counts: SandboxCounts;
   lens: SandboxLens;
@@ -909,6 +932,14 @@ function SandboxBody(props: SandboxViewProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   /** Map: the Sources rail has been opened out over the map. */
   const [railOpen, setRailOpen] = useState(false);
+  /** CA-25: the Publish checklist is open; `latest` is what an action sees after a window has closed or an await has passed. */
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  /** CA-25 P2: Confirm is open, with the rows it was opened on. */
+  const [confirming, setConfirming] = useState<ConfirmRow[] | null>(null);
+  /** CA-25 P3: the database refused to unpublish: the menu stops offering it. */
+  const [unpublishRefused, setUnpublishRefused] = useState(false);
+  const latest = useRef(props);
+  latest.current = props;
   const buildRef = useRef<HTMLElement>(null);
   const postRef = useRef<HTMLElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -950,9 +981,60 @@ function SandboxBody(props: SandboxViewProps) {
   };
 
 
+  /* CA-25 P1: Publish opens the checklist while anything is open, else it publishes. Each action closes the window, then takes the
+     maker to the thing: the page's own focus moves wait a tick so the window's own focus return does not take them back. */
+  const pressPublish = async () => {
+    const panel = latest.current.publish;
+    if (!panel) return latest.current.onPublish();
+    if (panel.prepare && !(await panel.prepare())) return;
+    const checklist = latest.current.publish?.checklist;
+    if (checklist?.needed) setChecklistOpen(true);
+    else openConfirm();
+  };
+  /** Publish with nothing left to say (or Publish in the checklist) asks once more, in Confirm. */
+  const openConfirm = () => {
+    const panel = latest.current.publish;
+    if (panel) setConfirming(confirmRows(panel.confirm()));
+    else latest.current.onPublish();
+  };
+  const goTo = (item: ChecklistItem) => {
+    const id = item.stepId;
+    const target = id ? document.querySelector<HTMLElement>(`[data-tile-id="${id}"], [data-node-id="${id}"]`) : postRef.current;
+    if (!target) return;
+    target.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    outlineOnce(target);
+  };
+  const onChecklistAction = (item: ChecklistItem) => {
+    const run = () => {
+      switch (item.action?.id) {
+        case "add_cover":
+          return openPost();
+        case "add_title":
+          return openCard("title");
+        case "add_description":
+          return openCard("summary");
+        case "add_prompt":
+          return void latest.current.onAddPromptFocus?.();
+        case "go_to":
+          return goTo(item);
+        case "show_apps":
+          return latest.current.publish?.onShowApps(item.sessions ?? []);
+        case "open_card":
+          return openCard(null);
+      }
+    };
+    window.setTimeout(run, 0);
+  };
+  const checklistWindow = props.publish ? (
+    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={openConfirm} />
+  ) : null;
+  const confirmWindow = props.publish ? (
+    <PublishConfirm open={confirming !== null} title={props.title.trim()} rows={confirming ?? []} onCancel={() => setConfirming(null)} onPublish={() => props.onPublish()} />
+  ) : null;
+
   const statusLine = (
     <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
-      {published ? "Published" : "Draft"}
+      {published ? publishedWords(props.publishedAt) : "Draft"}
       <SaveLine
         save={save}
         lastSavedAt={props.lastSavedAt}
@@ -977,6 +1059,14 @@ function SandboxBody(props: SandboxViewProps) {
     </h1>
   );
 
+  /* CA-25 P3: a published build has View live and its options where Preview and Publish were. */
+  const unpublish = async () => {
+    const result = await props.onUnpublish?.();
+    if (result === "refused") setUnpublishRefused(true);
+  };
+  const publishedOptions = published ? (
+    <PublishedOptions slug={published.slug} title={props.title.trim()} onUnpublish={() => void unpublish()} canUnpublish={Boolean(props.onUnpublish) && !unpublishRefused} />
+  ) : null;
   const publishLabel = published ? "Published" : props.publishing ? "Publishing…" : "Publish";
   const publishDisabled = Boolean(published) || props.publishing;
   /* The board draws Publish at full strength whatever is still outstanding. */
@@ -1163,14 +1253,25 @@ function SandboxBody(props: SandboxViewProps) {
           <Button variant="ghost" size={48} fontSize={14} onClick={() => openCard(null)}>
             Classification Card
           </Button>
-          <LinkButton to={previewTo} phone>
-            Preview
-          </LinkButton>
-          <div style={{ flexGrow: 1 }}>
-            <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={props.onPublish}>
-              {publishLabel}
-            </Button>
-          </div>
+          {published ? (
+            <>
+              <LinkButton to={`/b2/${published.slug}`} phone>
+                {PUBLISHED_COPY.viewLive}
+              </LinkButton>
+              {publishedOptions}
+            </>
+          ) : (
+            <>
+              <LinkButton to={previewTo} phone>
+                Preview
+              </LinkButton>
+              <div style={{ flexGrow: 1 }}>
+                <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
+                  {publishLabel}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
         <BottomSheet open={sourcesOpen} onOpenChange={setSourcesOpen} title="Sources">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{sourcesBody}</div>
@@ -1181,6 +1282,8 @@ function SandboxBody(props: SandboxViewProps) {
           </ClickToEdit>
         </BottomSheet>
         {card}
+        {checklistWindow}
+        {confirmWindow}
       </div>
     );
   }
@@ -1200,12 +1303,23 @@ function SandboxBody(props: SandboxViewProps) {
           <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
             Card
           </Button>
-          <LinkButton to={previewTo} phone={false} height={28}>
-            Preview
-          </LinkButton>
-          <Button size={28} fontSize={12} disabled={publishDisabled} onClick={props.onPublish}>
-            {publishLabel}
-          </Button>
+          {published ? (
+            <>
+              <LinkButton to={`/b2/${published.slug}`} phone={false} height={28}>
+                {PUBLISHED_COPY.viewLive}
+              </LinkButton>
+              {publishedOptions}
+            </>
+          ) : (
+            <>
+              <LinkButton to={previewTo} phone={false} height={28}>
+                Preview
+              </LinkButton>
+              <Button size={28} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
+                {publishLabel}
+              </Button>
+            </>
+          )}
         </div>
       </div>
       {banner ? <div style={{ padding: `16px ${padRight}px 0 ${padLeft}px` }}>{banner}</div> : null}
@@ -1250,6 +1364,8 @@ function SandboxBody(props: SandboxViewProps) {
         </DetailsOverlay>
       )}
       {card}
+      {checklistWindow}
+      {confirmWindow}
     </div>
   );
 }

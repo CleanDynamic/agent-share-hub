@@ -28,6 +28,7 @@ import { flushSync } from "react-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { shortReason } from "@/lib/errors/code";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,7 +65,10 @@ import type { Arriving } from "./arrival";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
-import { runtimeChecks } from "@/lib/build/runtimeChecks";
+import { runtimeChecks, runtimeFindings } from "@/lib/build/runtimeChecks";
+import { postFacts, publishChecklist, unpublishFailure, type ConfirmInput } from "@/lib/build/publishChecklist";
+import { classificationLines } from "@/lib/classify/lines";
+import { allTiles, orderOf } from "@/lib/build/buildSelection";
 import { useComposePage } from "./ComposePage";
 import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
@@ -118,7 +122,7 @@ import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { classificationKey } from "./useClassificationCard";
 import { writeClassification, type StoredClassification } from "@/lib/classify/storage";
-import { computeFacets, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
+import { computeFacets, hasClassification, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
 import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 import { BuildActionsContext, tileName, useBuildActions } from "./useBuildActions";
@@ -199,26 +203,32 @@ export function SandboxPage() {
   /* CA-14 P6: the View switches, kept for this maker on this device. */
   const [viewOptions, setViewOptions] = useViewOptions(user?.id ?? null);
   const runtimeIssues = useMemo(() => runtimeChecks(buildSteps(tree)), [tree]);
-  const onPublish = useCallback(async () => {
+  /* CA-25 P3: unpublish through the build's own update. A refusal (row-level security, a trigger) is told apart from a try that can be
+     made again, and nothing is done to get around it. */
+  const unpublish = useCallback(async (): Promise<"done" | "refused" | "failed"> => {
+    try {
+      await compose.unpublish();
+      return "done";
+    } catch (cause) {
+      console.error("[Sandbox] unpublish failed", cause);
+      const failure = unpublishFailure(cause);
+      toast.error(failure === "failed" ? "Couldn't unpublish. Try again." : `Couldn't unpublish: ${shortReason(cause)}.`);
+      return failure;
+    }
+  }, [compose]);
+  const runtimeFound = useMemo(() => runtimeFindings(buildSteps(tree)), [tree]);
+  /* CA-25: what Publish waits for before the checklist opens: a connection, and the post's words written. The checklist and Confirm replace the
+     toasts: a broken Decision, a post that cannot be saved and the reminders are items there. */
+  const preparePublish = useCallback(async (): Promise<boolean> => {
     // Publishing waits for a connection: a publish held until later would go live when the maker has long moved on.
     if (connection.isOffline()) {
       toast(PUBLISH_OFFLINE);
-      return;
+      return false;
     }
     await flushThread();
-    // A thread that cannot be saved is not published half-written.
-    if (threadHold) {
-      toast(threadHold);
-      return;
-    }
-    // CA-13 P18: a broken Decision or Runs when stops Publish; the rest are reminders said once and do not.
-    if (runtimeIssues.blockers.length > 0) {
-      toast(`To publish, fix this: ${runtimeIssues.blockers[0]}.`);
-      return;
-    }
-    for (const line of runtimeIssues.reminders) toast(line);
-    viewProps.onPublish();
-  }, [flushThread, threadHold, viewProps, runtimeIssues]);
+    return true;
+  }, [flushThread]);
+  const onPublish = useCallback(() => viewProps.onPublish(), [viewProps]);
   /* CA-23: the one pending-writes count, and whether there is a connection. The write guard holds writes while there is none. */
   useConnectionWatch();
   /* CA-23 P4: two tabs (or two devices) on one build. What each clash is called and where it falls is said once the page knows its tiles (`describeClash`, below). */
@@ -1353,6 +1363,49 @@ export function SandboxPage() {
     }),
     [classificationCard, saveCard, maker],
   );
+  /* CA-25: the Publish checklist's input. The sessions with no app are the ones a maker can still give one; a legacy session cannot be. */
+  const appless = useMemo(() => sourceSessionRows.filter((row) => row.tool === NO_APP && !isLegacySession(row.key)).map((row) => ({ key: row.key, number: row.number })), [sourceSessionRows]);
+  const tileCount = useMemo(() => allTiles(orderOf(drawn)).length, [drawn]);
+  const checklist = useMemo(
+    () =>
+      publishChecklist({
+        missing,
+        title: viewProps.title,
+        description: viewProps.description,
+        cover: viewProps.cover?.kind ?? null,
+        tiles: tileCount,
+        blockers: runtimeFound.blockers,
+        threadHold,
+        reminders: runtimeFound.reminders,
+        appless: appless,
+        // Until the database holds the classification, the Card cannot be filled: it is not asked for.
+        cardFilled: !classificationCard.live || hasClassification(classificationCard.stored),
+      }),
+    [missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored],
+  );
+  /* CA-25 P2: what Confirm lists, read when it opens: the post as it stands, and the parts, sessions, tiles and files. */
+  const confirmInput = useCallback(
+    (): ConfirmInput => {
+      const lines = hasClassification(classificationCard.stored) ? classificationLines(classificationCard.stored) : null;
+      return {
+        post: postFacts(thread.readDoc()),
+        parts: partsModel?.list.length ?? 1,
+        sessions: counts.sessions,
+        tiles: tileCount,
+        files: sourceFileRows.map((file) => file.name),
+        card: lines ? [...new Set([...lines.line1, ...lines.line2])] : [],
+      };
+    },
+    [thread, partsModel, counts.sessions, tileCount, sourceFileRows, classificationCard.stored],
+  );
+  const showApps = useCallback(
+    (keys: readonly string[]) => {
+      selection.selectSessions(keys);
+      const first = keys.find((key) => document.querySelector(`[data-session-key="${key}"]`));
+      if (first) document.querySelector(`[data-session-key="${first}"]`)?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    },
+    [selection],
+  );
   useEffect(() => {
     if (!ringed) return;
     document.querySelector(`[data-tile-id="${ringed.id}"]`)?.scrollIntoView?.({ block: "center" });
@@ -2099,7 +2152,10 @@ export function SandboxPage() {
         strips={strips}
         lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}
         onRetrySave={onRetrySave}
-        onPublish={() => void onPublish()}
+        onPublish={onPublish}
+        onUnpublish={unpublish}
+        publishedAt={build?.published_at}
+        publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps }}
         post={
           <PostTab
             thread={thread}
