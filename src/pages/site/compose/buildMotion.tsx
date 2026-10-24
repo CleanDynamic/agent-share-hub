@@ -13,7 +13,7 @@
    animated; never a layout property, never `box-shadow`. Under reduced motion nothing moves or fades: every change arrives at once,
    in the same end state (the helpers return an already-finished run). */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { cloneElement, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type RefObject } from "react";
 
 import {
   CROSSFADE,
@@ -21,9 +21,12 @@ import {
   DROP_FALL,
   LIFT,
   LIFT_RISE,
+  GOTO_HOLD,
+  GOTO_OUT,
   OUTLINE_HOLD,
   OUTLINE_IN,
   OUTLINE_OUT,
+  SCROLL_TO,
   SLIDE,
   STAGGER,
   STAGGER_CAP,
@@ -49,6 +52,9 @@ const DONE: MotionRun = { finished: Promise.resolve(), finish: () => undefined, 
 const OURS = "bm:";
 
 const canAnimate = (element: Element): element is HTMLElement => !prefersReducedMotion() && typeof (element as HTMLElement).animate === "function";
+
+/** Whether anything here moves at all: not under reduced motion, and not where the Web Animations API is missing. A hold that waits for a motion that cannot play is only a delay, so none is made. */
+export const motionOn = (): boolean => !prefersReducedMotion() && typeof Element !== "undefined" && typeof Element.prototype.animate === "function";
 
 /** A change mid-animation: whatever of ours is running on this element ends at once, in its end state. */
 export function finishRunning(element: Element): void {
@@ -254,7 +260,7 @@ export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, {
     const now = new Set(items.map(keyOf));
     // Something that came back while it was leaving is simply there again.
     for (const key of now) if (held.current.has(key)) held.current.delete(key);
-    if (enabled && !prefersReducedMotion()) {
+    if (enabled && motionOn()) {
       let after: string | null = null;
       const gone: string[] = [];
       for (const item of previous.current) {
@@ -307,6 +313,95 @@ export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, {
     void key;
   }
   return { items: merged, leaving: new Set(held.current.keys()) };
+}
+
+/* ── useHeld: what stays on screen while it leaves ── */
+
+/**
+ * `value` while there is one; once it is null, the last one for `ms` more, flagged `leaving`, so a component that has no data any more
+ * can still be drawn while it falls away. Under reduced motion it goes at once.
+ */
+export function useHeld<T>(value: T | null, ms: number): { value: T | null; leaving: boolean } {
+  const last = useRef<T | null>(value);
+  const timer = useRef<number | undefined>(undefined);
+  const [, redraw] = useState(0);
+  if (value !== null) last.current = value;
+  const gone = value === null;
+  useEffect(() => {
+    window.clearTimeout(timer.current);
+    if (!gone || last.current === null) return;
+    if (!motionOn()) {
+      last.current = null;
+      redraw((n) => n + 1);
+      return;
+    }
+    timer.current = window.setTimeout(() => {
+      last.current = null;
+      redraw((n) => n + 1);
+    }, ms);
+    return () => window.clearTimeout(timer.current);
+  }, [gone, ms]);
+  if (gone && !motionOn()) return { value: null, leaving: false };
+  return { value: gone ? last.current : value, leaving: gone && last.current !== null };
+}
+
+/** A fixed or sticky thing that rises `by` and fades in; the same thing falling and fading out when `leaving`. Keyframes carry `base` so a centring transform is not lost. */
+export function riseIn(element: HTMLElement, { by, ms, base = "" }: { by: number; ms: number; base?: string }): MotionRun {
+  if (!canAnimate(element)) return DONE;
+  const there = base || "none";
+  return runOf([start(element, "rise", [{ opacity: 0, transform: `${base} translateY(${by}px)`.trim() }, { opacity: 1, transform: there }], { duration: ms, fill: "backwards" })]);
+}
+
+export function fallOut(element: HTMLElement, { by, ms, base = "" }: { by: number; ms: number; base?: string }): MotionRun {
+  if (!canAnimate(element)) return DONE;
+  const there = base || "none";
+  return runOf([start(element, "fall", [{ opacity: 1, transform: there }, { opacity: 0, transform: `${base} translateY(${by}px)`.trim() }], { duration: ms, fill: "both" })]);
+}
+
+/* ── Swap: content that changes its subject ── */
+
+/**
+ * Content for one thing replaced by content for another: the old fades out over `ms`, then the new fades in over `ms`. Nothing
+ * slides and nothing around it changes (it draws the one element it is given, with a ref added). While the old fades out it is
+ * the last one drawn, however the new props read. With the same `id`, it is simply what it is given, live.
+ */
+export function Swap({ id, children, ms = CROSSFADE }: { id: string; children: ReactElement; ms?: number }) {
+  const [drawn, setDrawn] = useState(id);
+  const latest = useRef(id);
+  latest.current = id;
+  const kept = useRef<ReactElement>(children);
+  const element = useRef<HTMLElement | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const settling = useRef(false);
+  const reduced = !motionOn();
+  if (drawn === id || reduced) kept.current = children;
+  const showing = drawn === id || reduced ? children : kept.current;
+  // The subject changed: the old content fades out, then the new is drawn and fades in.
+  useLayoutEffect(() => {
+    if (drawn === id) return;
+    if (reduced) {
+      setDrawn(id);
+      return;
+    }
+    if (element.current) fallOutFade(element.current, ms);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      settling.current = true;
+      setDrawn(latest.current);
+    }, ms);
+    return () => window.clearTimeout(timer.current);
+  }, [id, drawn, ms, reduced]);
+  useLayoutEffect(() => {
+    if (!settling.current) return;
+    settling.current = false;
+    if (element.current) fadeIn([element.current], { ms });
+  }, [drawn, ms]);
+  return cloneElement(showing, { ref: element } as Record<string, unknown>);
+}
+
+function fallOutFade(element: HTMLElement, ms: number): MotionRun {
+  if (!canAnimate(element)) return DONE;
+  return runOf([start(element, "swap-out", [{ opacity: 1 }, { opacity: 0 }], { duration: ms, fill: "both" })]);
 }
 
 /* ── outlineOnce ── */
@@ -387,6 +482,78 @@ export function outlineOnce(element: HTMLElement, colour: string = t.selectedEdg
   return runOf([animation], remove);
 }
 
+/* ── Go to it ── */
+
+const onScreenWhole = (element: HTMLElement): boolean => {
+  const box = element.getBoundingClientRect();
+  return box.top >= 0 && box.bottom <= (window.innerHeight || Number.POSITIVE_INFINITY);
+};
+
+/** Scrolls the window so the element is in the middle, over `ms`, easing out. Resolves when it has arrived (or was cut short). */
+export function scrollToMiddle(element: HTMLElement, ms: number = SCROLL_TO): { finished: Promise<void>; cancel: () => void } {
+  const box = element.getBoundingClientRect();
+  const from = window.scrollY;
+  const to = Math.max(0, from + box.top - (window.innerHeight - box.height) / 2);
+  let frame = 0;
+  let stop = false;
+  const finished = new Promise<void>((resolve) => {
+    if (prefersReducedMotion() || ms <= 0 || Math.abs(to - from) < 1 || typeof window.requestAnimationFrame !== "function") {
+      window.scrollTo?.(0, to);
+      resolve();
+      return;
+    }
+    const began = performance.now();
+    const step = (now: number) => {
+      if (stop) return resolve();
+      const done = Math.min(1, (now - began) / ms);
+      // The product's one curve, as a cubic ease-out: fast away, settling.
+      window.scrollTo?.(0, from + (to - from) * (1 - (1 - done) ** 3));
+      if (done < 1) frame = window.requestAnimationFrame(step);
+      else resolve();
+    };
+    frame = window.requestAnimationFrame(step);
+  });
+  return {
+    finished,
+    cancel: () => {
+      stop = true;
+      window.cancelAnimationFrame?.(frame);
+    },
+  };
+}
+
+/**
+ * Go to it. A component that is off screen is scrolled to the middle over `SCROLL_TO`; then it is outlined once in the link's colour
+ * (1.5px, 4 outside), holding `GOTO_HOLD` and fading over `GOTO_OUT`, so the eye has time to arrive.
+ */
+export function goToIt(element: HTMLElement, colour?: string | null): MotionRun {
+  let ring: MotionRun | null = null;
+  let scrolling: { cancel: () => void } | null = null;
+  const draw = () => {
+    ring = outlineOnce(element, colour || t.selectedEdge, { hold: GOTO_HOLD, out: GOTO_OUT });
+  };
+  const done = (async () => {
+    if (!onScreenWhole(element)) {
+      const scroll = scrollToMiddle(element);
+      scrolling = scroll;
+      await scroll.finished;
+    }
+    draw();
+    await ring?.finished;
+  })();
+  return {
+    finished: done,
+    finish: () => {
+      scrolling?.cancel();
+      ring?.finish();
+    },
+    cancel: () => {
+      scrolling?.cancel();
+      ring?.cancel();
+    },
+  };
+}
+
 /* ── crossfade ── */
 
 /** Words as they stood: a copy of the element, and where it was, kept for a crossfade. */
@@ -430,11 +597,11 @@ export function crossfade(element: HTMLElement, change: () => void, ms: number =
 }
 
 /**
- * `<Crossfade value>`: its words crossfade whenever `value` changes. At rest it draws a plain `<span>` round its children and
- * nothing else; the old words are a separate fixed layer in the body for `CROSSFADE`, so the page's own text is always the new.
+ * `useCrossfade(value)`: put the ref it returns on the element that holds the words; whenever `value` changes the old words (a copy,
+ * in a fixed layer in the body, for `CROSSFADE`) fade out over the new. At rest it draws nothing and adds nothing to the page.
  */
-export function Crossfade({ value, children, ms = CROSSFADE }: { value: string | number; children: ReactNode; ms?: number }) {
-  const ref = useRef<HTMLSpanElement | null>(null);
+export function useCrossfade<E extends HTMLElement = HTMLElement>(value: string | number, ms: number = CROSSFADE): RefObject<E | null> {
+  const ref = useRef<E | null>(null);
   const was = useRef(value);
   const old = useRef<Words | null>(null);
   // While rendering, the page still shows the old words: take them now.
@@ -447,5 +614,5 @@ export function Crossfade({ value, children, ms = CROSSFADE }: { value: string |
     old.current = null;
     if (words && ref.current) crossfadeFrom(words, ref.current, ms);
   });
-  return <span ref={ref}>{children}</span>;
+  return ref;
 }

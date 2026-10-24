@@ -9,7 +9,7 @@ import { __resetMotionMediaCache } from "@/lib/theme/motion";
 import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, STAGGER_CAP, CROSSFADE } from "@/lib/build/buildMotion";
 
 import { SLIDE_ATTR } from "./flip";
-import { Crossfade, crossfade, dropIn, finishRunning, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useFlip, useLeaving } from "./buildMotion";
+import { crossfade, useCrossfade, dropIn, finishRunning, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useFlip, useLeaving } from "./buildMotion";
 
 interface Played {
   element: Element;
@@ -341,10 +341,14 @@ describe("crossfade", () => {
     expect(played).toHaveLength(0);
   });
 
-  it("<Crossfade> draws a plain span at rest; when the value changes the old words are a separate layer, then gone", () => {
-    const view = render(<Crossfade value="2">2 selected</Crossfade>);
+  it("useCrossfade adds nothing to the page; when the value changes the old words are a separate layer, then gone", () => {
+    function Count({ n }: { n: number }) {
+      const ref = useCrossfade<HTMLSpanElement>(n);
+      return <span ref={ref}>{n} selected</span>;
+    }
+    const view = render(<Count n={2} />);
     expect(view.container.innerHTML).toBe("<span>2 selected</span>");
-    view.rerender(<Crossfade value="3">3 selected</Crossfade>);
+    view.rerender(<Count n={3} />);
     expect(view.container.textContent).toBe("3 selected");
     expect(document.querySelector('[data-testid="crossfade-old"]')?.textContent).toBe("2 selected");
     expect(played.map((entry) => entry.keyframes.map((frame) => frame.opacity))).toEqual([[1, 0], [0, 1]]);

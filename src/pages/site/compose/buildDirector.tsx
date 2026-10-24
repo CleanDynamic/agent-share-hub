@@ -7,7 +7,7 @@
    LEAVING (something went). The old view is held on screen, in place, while what went lifts out (`LIFT`: fades and rises 8). The
    skeleton of the sessions involved shows meanwhile (their lanes and sockets; the removed one's socket stays where it was). Then
    the new view is drawn and everything slides by the gap (`SLIDE`), the skeleton's boxes with it, and the numbers crossfade
-   (`<Crossfade>` in the number badges). The skeleton fades out `FADE_AFTER_MS` later.
+   (`useCrossfade` in the number badges). The skeleton fades out `FADE_AFTER_MS` later.
    A clear lifts every head and tile that is on screen from the last to the first, `STAGGER` apart, up to `STAGGER_CAP`.
 
    ARRIVING (something came). The new view is drawn at once, so its place is already measured; the things below slide to open
@@ -24,12 +24,12 @@ import { FADE_AFTER_MS, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SKELETON_IN, SKEL
 import type { Step } from "@/lib/build/graph";
 import { peekIntent, spendIntent, type MotionIntent } from "@/lib/build/motionIntent";
 import type { Skeleton } from "@/lib/build/sortLayout";
-import { BASE as BASE_MS, prefersReducedMotion } from "@/lib/theme/motion";
+import { BASE as BASE_MS } from "@/lib/theme/motion";
 
 import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
 import { runsOf, withEmptySessions } from "./buildRuns";
-import { captureWords, crossfadeFrom, dropIn, finishRunning, liftOut, liftSpan, openClip, outlineOnce, slideOut, staggerDelay, useFlip, type MotionRun, type Words } from "./buildMotion";
+import { captureWords, crossfadeFrom, dropIn, finishRunning, liftOut, liftSpan, motionOn, openClip, outlineOnce, slideOut, staggerDelay, useFlip, type MotionRun, type Words } from "./buildMotion";
 import { finishSlides, type Box } from "./flip";
 
 /* ── what is on the page ── */
@@ -340,7 +340,7 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
   let view = incoming;
   const intent = peekIntent();
   const root = getRoot();
-  const reduced = prefersReducedMotion();
+  const reduced = !motionOn();
   if (frozen.current && intent && intent !== frozen.current.intent) {
     // Another change came while this one lifted: that one ends now, in its end state, and this one is drawn from there.
     shownView.current = frozen.current.target;

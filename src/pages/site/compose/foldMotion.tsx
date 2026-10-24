@@ -16,7 +16,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { FOLD, FOLD_RISE, SLIDE, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
 import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
-import { dropIn, fadeIn, finishRunning, liftOut, type MotionRun } from "./buildMotion";
+import { dropIn, fadeIn, finishRunning, liftOut, motionOn, type MotionRun } from "./buildMotion";
 import { finishSlides, play, snapshot, type Box } from "./flip";
 
 export interface FoldHold {
@@ -75,7 +75,7 @@ export function useFoldMotion({ sessions, parts, getRoot }: { sessions: Readonly
     const closing = { sessions: [...now.sessions].filter((key) => !last.current?.sessions.has(key)), parts: [...now.parts].filter((key) => !last.current?.parts.has(key)) };
     const opening = { sessions: [...last.current.sessions].filter((key) => !now.sessions.has(key)), parts: [...last.current.parts].filter((key) => !now.parts.has(key)) };
     last.current = now;
-    if (root && !prefersReducedMotion()) {
+    if (root && motionOn()) {
       // A fold while another is running: that one ends now, then this one is measured.
       finishAll();
       pending.current = { closing, opening, before: snapshot(root) };

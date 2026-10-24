@@ -10,16 +10,19 @@
 
    The List says which parts the post mentions, with its own Back to the post. */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type MutableRefObject } from "react";
 
 import { windowPrompts } from "@/components/build/FullPromptWindow";
 import { centre, focusable, focusGroup, partElement, type PartRegistry } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { focusRing } from "@/lib/theme/focus";
 import { t } from "@/lib/theme/tokens";
-import { type SessionGroup, type Step } from "@/lib/build/graph";
+import { FOLD } from "@/lib/build/buildMotion";
+import { groupKey, type SessionGroup, type Step } from "@/lib/build/graph";
 import { refLookup, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import { parseRefTo, refTo } from "@/lib/build/thread";
+
+import { goToIt } from "./buildMotion";
 
 /** The steps that hold a part, outermost first, and the part; empty when it is not in the build. */
 export function pathTo(steps: readonly Step[], id: string): Step[] {
@@ -56,9 +59,11 @@ export interface PostLinksInput {
   setTrail?: (ids: readonly string[]) => void;
   /** CA-19 P3: the build's groups as link targets (`groupRefEntries`), for Go to the group. */
   groupEntries?: ReadonlyMap<string, RefEntry>;
+  /** CA-22 P6: the sessions that are folded, and the way to open one. A component inside a folded session opens it first (it unfolds over `FOLD`). */
+  fold?: MutableRefObject<{ closed: ReadonlySet<string>; open: (key: string) => void } | null>;
 }
 
-export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelectedId, setOpenPromptId, setTrail, groupEntries }: PostLinksInput) {
+export function usePostLinks({ steps, groups, refGroups, registry, lens, phone, setSelectedId, setOpenPromptId, setTrail, groupEntries, fold }: PostLinksInput) {
   const lookup = useMemo(() => refLookup(refGroups), [refGroups]);
   const [openPart, setOpenPart] = useState<string | null>(null);
   /** The link the open window came from: its part and its words. */
@@ -90,8 +95,19 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
     [registry, steps],
   );
 
+  /** The List: to the middle over `SCROLL_TO` when off screen, then outlined once in the link's colour. The Map's well scrolls sideways too, and keeps its way. */
+  const arrive = useCallback(
+    (el: HTMLElement, colour: string | null) => {
+      if (lens === "map" && !phone) {
+        centre(el);
+        flashOutline(el);
+      } else goToIt(el, colour);
+    },
+    [lens, phone],
+  );
+
   /** Brings a part in: centred, outlined, selected, its window open. `words` is the link it came from, if any. */
-  const goTo = useCallback(
+  const goToNow = useCallback(
     (to: string, words: HTMLElement | null) => {
       const target = parseRefTo(to);
       const entry = lookup.get(to) ?? groupEntries?.get(to);
@@ -109,10 +125,7 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
       if (target.kind === "workstream") {
         afterPaint(() => {
           const el = elementFor(to);
-          if (el) {
-            centre(el);
-            flashOutline(el);
-          }
+          if (el) arrive(el, entry.colour);
         });
         return;
       }
@@ -125,17 +138,34 @@ export function usePostLinks({ steps, refGroups, registry, lens, phone, setSelec
       setSelectedId(target.id);
       afterPaint(() => {
         const el = elementFor(to);
-        if (el) {
-          centre(el);
-          flashOutline(el);
-        }
+        if (el) arrive(el, entry.colour);
         setFromPost(words ? { to, words } : null);
         const isPrompt = target.kind === "node" && windowPrompts(steps).some((step) => step.id === target.id);
         if (isPrompt) setOpenPromptId(target.id);
         else setOpenPart(to);
       });
     },
-    [lookup, groupEntries, registry, steps, lens, phone, setTrail, setSelectedId, elementFor, setOpenPromptId],
+    [lookup, groupEntries, registry, steps, lens, phone, setTrail, setSelectedId, elementFor, setOpenPromptId, arrive],
+  );
+
+  /** CA-22 P6: a component inside a folded session unfolds that session first, and is gone to once it has opened. */
+  const goTo = useCallback(
+    (to: string, words: HTMLElement | null) => {
+      const target = parseRefTo(to);
+      const closed = fold?.current?.closed;
+      if (closed && closed.size > 0 && target?.kind === "node") {
+        const top = pathTo(steps, target.id)[0];
+        const session = top ? groups.find((group) => group.stepNumbers.includes(top.number)) : undefined;
+        const key = session ? groupKey(session) : null;
+        if (key && closed.has(key)) {
+          fold?.current?.open(key);
+          window.setTimeout(() => goToNow(to, words), FOLD);
+          return;
+        }
+      }
+      goToNow(to, words);
+    },
+    [fold, steps, groups, goToNow],
   );
 
   /** The words a link is made of: to the middle, focused, outlined. */
