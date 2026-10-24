@@ -26,7 +26,7 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
 import { X } from "lucide-react";
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
@@ -65,6 +65,7 @@ import { BuildTitleActions } from "./BuildTitleActions";
 import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
+import { useLensMorph } from "./mapMorph";
 
 export type SandboxLens = "list" | "map";
 
@@ -903,6 +904,8 @@ export function SandboxView(props: SandboxViewProps) {
   const buildRef = useRef<HTMLElement>(null);
   const postRef = useRef<HTMLElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
+  /* CA-22 P7: List and Map morph into one another (a computer only; the hook does nothing where motion is off). */
+  const morph = useLensMorph({ lens: props.lens, onLens: props.onLens, getRoot: useCallback(() => tabsRef.current?.parentElement ?? null, []) });
 
   if (status === "loading") return <Skeletons phone={phone} />;
   if (status === "error") {
@@ -985,7 +988,7 @@ export function SandboxView(props: SandboxViewProps) {
   const tabs = (
     <div role="group" aria-label="Build view" data-testid="sandbox-tabs" style={TAB_GROUP}>
       {(props.mapAvailable && !phone ? (["list", "map"] as const) : (["list"] as const)).map((value) => (
-        <button key={value} type="button" aria-pressed={props.lens === value} data-testid={`sandbox-tab-${value}`} onClick={() => props.onLens(value)} style={tabStyle(props.lens === value)}>
+        <button key={value} type="button" aria-pressed={props.lens === value} data-testid={`sandbox-tab-${value}`} onClick={() => morph.switchTo(value)} style={tabStyle(props.lens === value)}>
           {value === "list" ? "List" : "Map"}
         </button>
       ))}
