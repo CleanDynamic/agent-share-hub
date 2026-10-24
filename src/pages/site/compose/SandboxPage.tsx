@@ -53,6 +53,7 @@ import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessi
 import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
+import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } from "@/lib/build/moveRules";
 import { listPartsOf } from "./partsModel";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
@@ -546,7 +547,12 @@ export function SandboxPage() {
   const partsModel = useMemo(() => listPartsOf(madeShown, groups, theme), [madeShown, groups, theme]);
   /** CA-17 P3: the parts "Add to" can choose; none until the build has two. */
   const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
-  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, parts: partsModel ?? undefined, history: buildHistory, bridge, onGone: (key) => {
+  /* CA-21 P1: where every tile, session and part stands: Move up, Move down, the keys and keyboard dragging all ask it. */
+  const moveModel = useMemo(
+    () => moveModelOf({ steps, heads: dividerRows, empties: emptySessions, parts: partsModel?.list.map((part) => ({ key: part.view.key, sessions: part.sessions })) }),
+    [steps, dividerRows, emptySessions, partsModel],
+  );
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, moveModel, parts: partsModel ?? undefined, history: buildHistory, bridge, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
   } });
@@ -1854,6 +1860,28 @@ export function SandboxPage() {
   const detailsStepped = Object.fromEntries(
     Object.entries(detailsHandlers).map(([name, fn]) => [name, typeof fn === "function" && !HANDLERS_THAT_CHANGE_NOTHING.has(name) && !HANDLERS_THAT_REMOVE.has(name) ? (...args: unknown[]) => track(handlerSentence(name, whatIs(args[0])), async () => (fn as (...a: unknown[]) => unknown)(...args)) : fn]),
   ) as unknown as DetailsHandlers;
+  /* CA-21 P1: one place that moves a tile, a session or a part by one place. Never a silent refusal: it goes to the next session or part. */
+  const moveOne = (id: string, by: -1 | 1) => {
+    const result = moveBy(moveModel, id, by);
+    const write = result ? writeOf(moveModel, result.model, id) : null;
+    if (!result || !write) return;
+    if (write.kind === "session") return edits.onMove(id, by);
+    if (write.kind === "part") return edits.onPartMove(id, by);
+    const names: MoveNames = {
+      tile: whatIs,
+      session: (key) => `Session ${groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(),
+      part: (key) => partsModel?.titles.get(key) ?? "that part",
+    };
+    const sentence = movedStep(whatIs(id), by);
+    const said = movedLine(result.move, names);
+    if (write.kind === "tile" && write.session) return void edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Couldn't move that. Try again." });
+    if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) {
+      const parent = write.parent;
+      const index = write.index;
+      return void track(sentence, async () => prompts.nest(id, parent, index)).then(() => setSessionSaid(said));
+    }
+    void track(sentence, async () => prompts.move(id, by)).then(() => setSessionSaid(said));
+  };
   const stepOf = {
     prompt: asStep(ADDED.prompt, onAddPrompt),
     agent: asStep(ADDED.agent, onAddAgentOrTeam),
@@ -1867,7 +1895,7 @@ export function SandboxPage() {
     agentPrompt: asStep(ADDED.promptToAgent, onAddAgentPrompt),
     agentTo: asStep(ADDED.agentToTeam, onAddAgentTo),
     nest: asStep((id: string) => `Moved ${whatIs(id)}`, onNest),
-    move: (id: string, direction: -1 | 1) => void track(`Moved ${whatIs(id)} ${direction === -1 ? "up" : "down"}`, async () => prompts.move(id, direction)),
+    move: (id: string, direction: -1 | 1) => moveOne(id, direction),
     session: asStep(ADDED.session, onAddSession),
     startSession: asStep(ADDED.session, onStartSession),
     picked: asStep(ADDED.file, onPicked),

@@ -125,6 +125,7 @@ import {
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
+import { canMove as canMoveIn, moveModelOf, type MoveModel } from "@/lib/build/moveRules";
 import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
 import { COUNT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
@@ -248,7 +249,7 @@ export interface BuildListProps {
   /** CA-04 P2: whether a tile can go inside a step (`nestRefusal` says no to none of it). */
   canNest?: (id: string, parentId: string) => boolean;
   /** CA-04 P2: a tile dropped on another session's head goes into that session. Resolves true once written. */
-  onMoveToSession?: (id: string, sessionKey: string) => Promise<boolean>;
+  onMoveToSession?: (id: string, sessionKey: string, options?: { order?: readonly string[]; sentence?: string; said?: string; notice?: boolean; failed?: string }) => Promise<boolean>;
   /** CA-04 P2: Accept and Ignore on code sent with an imported prompt. Absent: nothing is offered. */
   onKeepSentWith?: (suggestion: CodeSuggestion) => void;
   onIgnoreSentWith?: (stepId: string, key: string) => void;
@@ -387,6 +388,14 @@ interface ListRefs {
   firstOf?: ReadonlySet<string>;
   onMoveToSession?: BuildListProps["onMoveToSession"];
   onSplitHere?: BuildListProps["onSplitHere"];
+  /** CA-21 P1: whether a tile can move a place up or down: only the very first and last place in the build say no. */
+  canMove?: (id: string, by: -1 | 1) => boolean;
+}
+
+/** CA-21 P1: a tile's Move up and Move down are greyed by its place in the build, not by its number among prompts. */
+function useCanMove(id: string, index: number, last: boolean): (by: -1 | 1) => boolean {
+  const { canMove } = useContext(ListRefsContext);
+  return (by) => (canMove ? canMove(id, by) : by === -1 ? index !== 0 : !last);
 }
 
 const ListRefsContext = createContext<ListRefs>({ mentioned: new Set(), reveal: null });
@@ -946,6 +955,7 @@ function useRename(step: Step, props: BuildListProps) {
 /** The ⋯ menu at the right of a tile's header: rename, copy together, move, colour, session, then Remove tile. */
 function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun: string; index: number; last: boolean; props: BuildListProps; rename: ReturnType<typeof useRename> }) {
   const { phone } = props;
+  const can = useCanMove(step.id, index, last);
   return (
     <Menu.Root>
       <Menu.Trigger asChild>
@@ -956,8 +966,8 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
           <ConvertRows step={step} phone={phone} />
           <CopyTogetherRow step={step} phone={phone} />
-          <MenuRow phone={phone} disabled={index === 0} shortcut="moveUp" reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-          <MenuRow phone={phone} disabled={last} shortcut="moveDown" reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+          <MenuRow phone={phone} disabled={!can(-1)} shortcut="moveUp" reason={moveReason("tile", -1, !can(-1))} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+          <MenuRow phone={phone} disabled={!can(1)} shortcut="moveDown" reason={moveReason("tile", 1, !can(1))} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />
           <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
           <UngroupRow step={step} phone={phone} />
@@ -1057,6 +1067,7 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone, selectedId } = props;
+  const can = useCanMove(step.id, index, last);
   const picked = usePicked(step.id);
   const selected = selectedId === step.id || picked;
   const title = stepTitle(step);
@@ -1191,8 +1202,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
-                <MenuRow phone={phone} disabled={index === 0} shortcut="moveUp" reason={moveReason("tile", -1, index === 0)} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
-                <MenuRow phone={phone} disabled={last} shortcut="moveDown" reason={moveReason("tile", 1, last)} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+                <MenuRow phone={phone} disabled={!can(-1)} shortcut="moveUp" reason={moveReason("tile", -1, !can(-1))} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+                <MenuRow phone={phone} disabled={!can(1)} shortcut="moveDown" reason={moveReason("tile", 1, !can(1))} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />
                 <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
           <UngroupRow step={step} phone={phone} />
@@ -2149,6 +2160,8 @@ export function BuildList(props: BuildListProps) {
   const partOfSession = new Map<string, ListPart>();
   if (parts) for (const part of parts.parts) for (const key of part.sessions) partOfSession.set(key, part);
   const numberByKey = new Map(runs.flatMap((run) => (run.head ? [[run.head.key, run.head.number] as const] : [])));
+  /* CA-21 P1: where everything stands, for Move up and Move down. */
+  const moveModel: MoveModel = moveModelOf({ steps, heads: props.dividers, empties: props.emptySessions, parts: parts?.parts.map((part) => ({ key: part.view.key, sessions: part.sessions })) });
   const drawRun = (run: Run, at: number, dragging: boolean, inPart: ListPart | null) => {
         const key = run.head?.key ?? null;
         const closed = key !== null && Boolean(props.onToggleCollapsed) && (dragging || Boolean(props.collapsed?.has(key)));
@@ -2173,6 +2186,7 @@ export function BuildList(props: BuildListProps) {
                 onToggle={() => props.onToggleCollapsed?.(run.head.key, !closed)}
                 first={isFirstHead}
                 last={isLastHead}
+                canMove={editable ? (by) => canMoveIn(moveModel, run.head.key, by) : undefined}
                 ops={props.sessionOps}
                 editable={editable}
                 part={parts && inPart ? { moveTo: parts.parts.filter((other) => other !== inPart).map((other) => ({ key: other.view.key, label: other.title })), firstInPart: here === 0, withAbove: Boolean(key && parts.withAbove?.has(key)) } : undefined}
@@ -2327,6 +2341,7 @@ export function BuildList(props: BuildListProps) {
     firstOf,
     onMoveToSession: props.onMoveToSession,
     onSplitHere: props.onSplitHere,
+    canMove: (id, by) => canMoveIn(moveModel, id, by),
   };
   const sessionLabel = (key: string) => {
     const head = runs.find((run) => run.head?.key === key)?.head;

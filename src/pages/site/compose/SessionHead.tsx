@@ -83,6 +83,8 @@ export interface SessionHeadProps {
   onToggle: () => void;
   first: boolean;
   last: boolean;
+  /** CA-21 P1: whether Move up or Move down can move it (only the very first and last place in the build say no). Absent: by `first` and `last`. */
+  canMove?: (by: -1 | 1) => boolean;
   ops?: SessionOps;
   onOpenSetup?: (key: string) => void;
   onPickApp?: (key: string, tool: string | null) => void;
@@ -184,7 +186,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
 /** CA-15b: the session line's facts, 12.5 `--label`. */
 const quiet = (colour: string) => ({ ...SESSION_META, color: colour, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 });
 
-export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part }: SessionHeadProps) {
+export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, canMove, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part }: SessionHeadProps) {
   const drop = useNestSession(session.key);
   const drag = useNestSessionDrag(session.key);
   const head = useRef<HTMLDivElement>(null);
@@ -206,7 +208,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
     if (event.target instanceof HTMLInputElement && event.target.getAttribute("data-testid") !== "session-title") return;
     event.preventDefault();
     const by = event.key === "ArrowUp" ? -1 : 1;
-    if ((by === -1 && first) || (by === 1 && last)) return;
+    if (canMove ? !canMove(by) : (by === -1 && first) || (by === 1 && last)) return;
     ops?.onMove(session.key, by);
   };
 
@@ -337,10 +339,10 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
               </Menu.Trigger>
               <Menu.Portal>
                 <MenuContent align="end" sideOffset={4} style={menuSurface()}>
-                  <Row phone={phone} disabled={first} reason={moveReason("session", -1, first)} onSelect={() => ops?.onMove(session.key, -1)}>
+                  <Row phone={phone} disabled={canMove ? !canMove(-1) : first} reason={moveReason("session", -1, canMove ? !canMove(-1) : first)} onSelect={() => ops?.onMove(session.key, -1)}>
                     {SESSION_HEAD_COPY.moveUp}
                   </Row>
-                  <Row phone={phone} disabled={last} reason={moveReason("session", 1, last)} onSelect={() => ops?.onMove(session.key, 1)}>
+                  <Row phone={phone} disabled={canMove ? !canMove(1) : last} reason={moveReason("session", 1, canMove ? !canMove(1) : last)} onSelect={() => ops?.onMove(session.key, 1)}>
                     {SESSION_HEAD_COPY.moveDown}
                   </Row>
                   {part && ops?.onMoveToPart && part.moveTo.length === 0 ? (

@@ -455,25 +455,13 @@ export function useComposePrompts({
       .run(async () => {
         const build = latest.current.buildId;
         if (!build) return;
-        // A manual step, code or a check swaps with the step next to it, whatever that is.
-        const type = findTop(nodes.current(), id)?.type;
-        if (type === MANUAL_STEP_TYPE || type === CODE_TYPE || type === CHECK_TYPE) {
-          for (const step of await moveStep(build, nodes.current(), id, direction)) {
-            const node = findTop(nodes.current(), step.id);
-            if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
-          }
-          return;
-        }
-        const prompts = promptNodes(nodes.current());
-        const index = prompts.findIndex((node) => node.id === id);
-        if (index === -1) return;
-        const moves = await movePrompt(build, prompts, index, direction);
-        for (const step of moves) {
-          const node = prompts.find((candidate) => candidate.id === step.id);
+        // CA-21 P1: every kind of tile swaps with the step next to it, whatever either is.
+        for (const step of await moveStep(build, nodes.current(), id, direction)) {
+          const node = findTop(nodes.current(), step.id);
           if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
         }
       })
-      .catch(failed("Couldn't move that prompt. Try again."));
+      .catch(failed("Couldn't move that. Try again."));
   };
 
   /** A file goes: it comes out of every step's uses first, so no step is left naming a file that is gone. */
