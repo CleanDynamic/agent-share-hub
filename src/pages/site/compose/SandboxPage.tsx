@@ -106,7 +106,9 @@ import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { ReferenceNotice } from "./referencePieces";
 import { OfflineStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
+import { useLeaveGuard } from "./useLeaveGuard";
 import { useWriteGuard } from "./useWriteGuard";
+import { LeaveWindow } from "./saveWindows";
 import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { classificationKey } from "./useClassificationCard";
@@ -215,7 +217,9 @@ export function SandboxPage() {
   useWriteGuard(buildId);
   useEffect(() => () => pendingWrites.reset(), []);
   const offline = useOffline();
-  const { pending, failed: writesFailed, retry: retryWrites } = usePendingWrites();
+  const { pending, failed: writesFailed, failedCount, retry: retryWrites } = usePendingWrites();
+  /* CA-23 P3: leaving with changes that have not landed (or have stopped) asks first; closing the tab asks the browser's way. */
+  const leaving = useLeaveGuard(pending + failedCount);
   useReconnected((count) => buildHistory.notify(RECONNECTED.saved(count), { undo: false }));
   const strips = offline ? (
     <Strips>
@@ -2256,6 +2260,7 @@ export function SandboxPage() {
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
       {colourPicker}
+      <LeaveWindow open={leaving.open} count={leaving.count} onStay={leaving.stay} onLeave={leaving.leave} />
       <ReferenceNotice notice={buildHistory.notice} onUndo={() => void buildHistory.undo()} onDone={buildHistory.dismiss} phone={phone} />
       {actionDialogs}
       {referenceActions.keepDialog}

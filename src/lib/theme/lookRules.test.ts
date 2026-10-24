@@ -664,6 +664,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/useComposeSessions.ts",
   "src/pages/site/compose/usePendingWrites.ts",
   "src/pages/site/compose/useWriteGuard.ts",
+  // CA-23 P3
+  "src/pages/site/compose/ca23.p3.page.test.tsx",
+  "src/pages/site/compose/ca23.p3.test.tsx",
+  "src/pages/site/compose/saveWindows.tsx",
+  "src/pages/site/compose/useLeaveGuard.ts",
 ];
 
 /**
