@@ -123,7 +123,9 @@ import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 import { BuildActionsContext, tileName, useBuildActions } from "./useBuildActions";
 import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
-import { SelectionBar } from "./removePieces";
+import { SelectionBar, type SelectionBarProps } from "./removePieces";
+import { useFlip, useHeld } from "./buildMotion";
+import { BASE } from "@/lib/theme/motion";
 import type { Drawn } from "@/lib/build/buildSelection";
 import { ADDED, HANDLERS_THAT_CHANGE_NOTHING, HANDLERS_THAT_REMOVE, handlerSentence } from "@/lib/build/stepSentences";
 import { NOTICE_COPY } from "@/lib/build/referenceHistory";
@@ -220,7 +222,9 @@ export function SandboxPage() {
   useConnectionWatch();
   /* CA-23 P4: two tabs (or two devices) on one build. What each clash is called and where it falls is said once the page knows its tiles (`describeClash`, below). */
   const describeClash = useRef<(clash: RawClash) => ClashDescription>(() => ({ name: "This", badge: "", rank: 0 }));
-  const twoTabs = useTwoTabs({ buildId, nodes, history: buildHistory, thread, rehydrate, describe: (clash) => describeClash.current(clash) });
+  const motionRoot = useRef<HTMLElement | null>(typeof document === "undefined" ? null : document.body);
+  const flip = useFlip(motionRoot);
+  const twoTabs = useTwoTabs({ buildId, nodes, history: buildHistory, thread, rehydrate, flip, describe: (clash) => describeClash.current(clash) });
   useWriteGuard(buildId, { onWritten: twoTabs.announce });
   useEffect(() => () => pendingWrites.reset(), []);
   const offline = useOffline();
@@ -541,7 +545,9 @@ export function SandboxPage() {
   const baseLookup = useMemo(() => refLookup(postRefGroups), [postRefGroups]);
   const groupEntriesOf = references.groupEntries;
   const groupTargets = useMemo(() => groupEntriesOf(baseLookup), [groupEntriesOf, baseLookup]);
+  const foldRef = useRef<{ closed: ReadonlySet<string>; open: (key: string) => void } | null>(null);
   const links = usePostLinks({
+    fold: foldRef,
     steps,
     groups,
     refGroups: postRefGroups,
@@ -762,6 +768,8 @@ export function SandboxPage() {
     },
     [buildId, queryClient, made],
   );
+
+  foldRef.current = { closed: collapsedKeys, open: (key) => onToggleCollapsed(key, false) };
 
   /* CA-20 P7: Collapse all folds every session and part; once all are folded the same item opens them. Not a step of the history. */
   const foldAll = useMemo(() => {
@@ -1999,6 +2007,25 @@ export function SandboxPage() {
     openHelp: actions.shortcuts.open,
   });
 
+  /* CA-22 P6: the selection bar is held while it falls away (on Esc or Clear selection), with the words it last had. */
+  const barProps: SelectionBarProps | null =
+    selection.size >= 2
+      ? {
+          phone,
+          count: selection.size,
+          holds: { tiles: selection.tiles.size, sessions: selection.sessions.size },
+          moveTo: { sessions: addTargets.sessions, parts: (addToParts ?? []).map((part) => ({ key: part.key, label: part.title })) },
+          onMoveToSession: (key) => void edits.onMoveTiles([...selection.tiles], key),
+          onMoveToPart: (key) => void edits.onMoveSessionsToPart([...selection.sessions], key),
+          onDuplicate: selection.tiles.size > 0 ? () => actions.duplicate([...selection.tiles]) : undefined,
+          onGroup: bridge.available() && selection.tiles.size >= 2 ? () => actions.group([...selection.tiles]) : undefined,
+          onUngroup: bridge.available() && [...selection.tiles].some((id) => actions.grouped(id)) ? () => actions.ungroup([...selection.tiles].filter((id) => actions.grouped(id))) : undefined,
+          onRemove: () => actions.removeSelection(selection.items),
+          onClear: selection.clear,
+        }
+      : null;
+  const heldBar = useHeld(barProps, BASE);
+
   return (
     <BuildHistoryContext.Provider value={buildHistory}>
       <ReferenceBridgeContext.Provider value={bridge}>
@@ -2066,23 +2093,7 @@ export function SandboxPage() {
         addTargets={addTargets}
         viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true), fold: foldAll }}
         sessionList={sessionList}
-        selectionBar={
-          selection.size >= 2 ? (
-            <SelectionBar
-              phone={phone}
-              count={selection.size}
-              holds={{ tiles: selection.tiles.size, sessions: selection.sessions.size }}
-              moveTo={{ sessions: addTargets.sessions, parts: (addToParts ?? []).map((part) => ({ key: part.key, label: part.title })) }}
-              onMoveToSession={(key) => void edits.onMoveTiles([...selection.tiles], key)}
-              onMoveToPart={(key) => void edits.onMoveSessionsToPart([...selection.sessions], key)}
-              onDuplicate={selection.tiles.size > 0 ? () => actions.duplicate([...selection.tiles]) : undefined}
-              onGroup={bridge.available() && selection.tiles.size >= 2 ? () => actions.group([...selection.tiles]) : undefined}
-              onUngroup={bridge.available() && [...selection.tiles].some((id) => actions.grouped(id)) ? () => actions.ungroup([...selection.tiles].filter((id) => actions.grouped(id))) : undefined}
-              onRemove={() => actions.removeSelection(selection.items)}
-              onClear={selection.clear}
-            />
-          ) : null
-        }
+        selectionBar={heldBar.value ? <SelectionBar {...heldBar.value} leaving={heldBar.leaving} /> : null}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         map={mapColumn}
         mapPanel={mapPanel}

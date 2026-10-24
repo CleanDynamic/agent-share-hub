@@ -21,6 +21,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
 import { TextButton } from "./composeControls";
+import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { draftNote, groupLibrary, openingWords, type SourceLibraryItem } from "./sourcesModel";
@@ -291,7 +292,7 @@ const addRowStyle = (hovered: boolean, focusVisible: boolean, adding: boolean): 
 export function AddPartRow({ phone: _phone, adding, onAdd }: { phone: boolean; adding: boolean; onAdd: () => void }) {
   const trigger = useInteractive<HTMLButtonElement>();
   return (
-    <button type="button" data-testid="add-part-row" data-hit="" disabled={adding} onClick={onAdd} {...trigger.handlers} style={addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding)}>
+    <button type="button" data-testid="add-part-row" {...{ [SLIDE_ATTR]: "add:part" }} data-hit="" disabled={adding} onClick={onAdd} {...trigger.handlers} style={addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding)}>
       <span aria-hidden="true" style={{ display: "inline-flex" }}>
         <Glyph name="plus" size={16} />
       </span>
@@ -333,6 +334,7 @@ export function AddSessionRow(props: AddSessionRowProps) {
         <button
           type="button"
           data-testid="add-session-row"
+          {...{ [SLIDE_ATTR]: "add:session" }}
           data-hit=""
           disabled={adding}
           aria-haspopup="dialog"
@@ -361,7 +363,7 @@ export function AddSessionRow(props: AddSessionRowProps) {
       }}
     >
       <Popover.Trigger asChild>
-        <button type="button" data-testid="add-session-row" data-hit="" disabled={adding} aria-haspopup="dialog" {...trigger.handlers} style={triggerStyle}>
+        <button type="button" data-testid="add-session-row" {...{ [SLIDE_ATTR]: "add:session" }} data-hit="" disabled={adding} aria-haspopup="dialog" {...trigger.handlers} style={triggerStyle}>
           {content}
         </button>
       </Popover.Trigger>

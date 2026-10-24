@@ -64,17 +64,17 @@ function estimate(root: HTMLElement): number {
   return heights.length > 0 ? Math.round(heights[Math.floor(heights.length / 2)]) : 108;
 }
 
-/** The page, as a skeleton with nothing held: every tile's socket, every session's lane, the numbers. */
-export function measureStill(root: HTMLElement): Skeleton {
+/** The page, as a skeleton with nothing held: every tile's socket, every session's lane, the numbers. `only` (CA-22): just these sessions. */
+export function measureStill(root: HTMLElement, only?: ReadonlySet<string>): Skeleton {
   const origin = naturalBox(root);
   const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
-  const items: SkeletonItem[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].map((element) => ({
+  const items: SkeletonItem[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].filter((element) => !only || only.has(element.getAttribute("data-skel-container") ?? "")).map((element) => ({
     id: element.getAttribute("data-skel-id") as string,
     container: element.getAttribute("data-skel-container") ?? "",
     rect: rel(naturalBox(element)),
     radius: Number.parseFloat(typeof getComputedStyle === "function" ? getComputedStyle(element.firstElementChild ?? element).borderTopLeftRadius : "") || 10,
   }));
-  const containers: SkeletonContainer[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="session"]')].map((element) => {
+  const containers: SkeletonContainer[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="session"]')].filter((element) => !only || only.has(element.getAttribute("data-skel-id") ?? "")).map((element) => {
     const id = element.getAttribute("data-skel-id") as string;
     return { id, rect: rel(naturalBox(element)), items: items.filter((item) => item.container === id).map((item) => item.id), framed: false, name: element.getAttribute("data-skel-name") ?? `Session` };
   });

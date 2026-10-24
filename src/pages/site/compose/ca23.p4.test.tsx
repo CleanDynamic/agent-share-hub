@@ -91,6 +91,22 @@ describe("hearing the other tab", () => {
     await waitFor(() => expect(screen.getByTestId("sandbox-heading").textContent).toBe("Written in the other tab"), { timeout: 10_000 });
   });
 
+  it("outlines once what the other tab changed, when it is shown (CA-22's outline)", async () => {
+    await mountCa20(seedCa20);
+    const p1 = tableRows("build_nodes").find((row) => row.id === IDS.p1) as Row;
+    p1.payload = { ...(p1.payload as object), text: "Rewritten in the other tab" };
+    tell(IDS.p1);
+    fireEvent.click(await screen.findByRole("button", { name: "Show changes" }));
+    const tile = await waitFor(() => {
+      const element = document.querySelector(`[data-slide-id="tile:${IDS.p1}"]`);
+      if (!element) throw new Error("the tile is not drawn");
+      return element as HTMLElement;
+    });
+    await waitFor(() => expect(within(tile).getAllByTestId("outline-once")).toHaveLength(1), { timeout: 10_000 });
+    // Only that one tile: Prompt 2 was not touched.
+    expect(within(document.querySelector(`[data-slide-id="tile:${IDS.p2}"]`) as HTMLElement).queryByTestId("outline-once")).toBeNull();
+  });
+
   it("announces what this tab writes, with the ids of the rows it changed", async () => {
     await mountCa20(seedCa20);
     await updateBuild(DRAFT, { outcome: "Said in this tab" } as BuildPatch);

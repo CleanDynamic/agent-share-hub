@@ -12,17 +12,20 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { BAR_RISE } from "@/lib/build/buildMotion";
 import { SELECTION_COPY } from "@/lib/build/buildSelection";
 import { SESSION_WINDOW_COPY } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
+import { BASE } from "@/lib/theme/motion";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
+import { fallOut, riseIn, useCrossfade } from "./buildMotion";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { MenuContent } from "./ComposeMenu";
 import { GROUP_TITLE, IconSquare, LABEL, RecipeButton, footerStyle, frameStyle } from "./modalRecipes";
@@ -217,6 +220,8 @@ function BarButton({ children, onClick, danger = false, disabled = false, testId
 }
 
 export interface SelectionBarProps {
+  /** CA-22: it is falling away; it keeps its last words and takes no clicks. */
+  leaving?: boolean;
   phone: boolean;
   count: number;
   /** Where the chosen can go: sessions for tiles, parts for sessions. Empty: Move to… is greyed with its reason. */
@@ -233,13 +238,22 @@ export interface SelectionBarProps {
   onClear: () => void;
 }
 
-export function SelectionBar({ phone, count, moveTo, holds, onMoveToSession, onMoveToPart, onDuplicate, onGroup, onUngroup, onRemove, onClear }: SelectionBarProps) {
+export function SelectionBar({ leaving = false, phone, count, moveTo, holds, onMoveToSession, onMoveToPart, onDuplicate, onGroup, onUngroup, onRemove, onClear }: SelectionBarProps) {
   const sessions = holds.tiles > 0 ? moveTo.sessions : [];
   const parts = holds.sessions > 0 ? moveTo.parts : [];
   const none = sessions.length + parts.length === 0;
   const reason = useReason(none ? SELECTION_COPY.noPlace : undefined);
+  /* CA-22 P6: on the second pick it rises 16 and fades in over BASE; on Esc or Clear selection it falls 16 and fades out. */
+  const bar = useRef<HTMLDivElement | null>(null);
+  const countRef = useCrossfade<HTMLSpanElement>(count);
+  useLayoutEffect(() => {
+    if (!bar.current) return;
+    if (leaving) fallOut(bar.current, { by: BAR_RISE, ms: BASE });
+    else riseIn(bar.current, { by: BAR_RISE, ms: BASE });
+  }, [leaving]);
   return (
     <div
+      ref={bar}
       role="toolbar"
       aria-label="Selection"
       data-testid="selection-bar"
@@ -261,9 +275,10 @@ export function SelectionBar({ phone, count, moveTo, holds, onMoveToSession, onM
         borderRadius: 10,
         boxShadow: t.windowShadow,
         overflowX: "auto",
+        ...(leaving ? { pointerEvents: "none" } : null),
       }}
     >
-      <span data-testid="selection-count" style={{ ...words(13, 500, t.text), whiteSpace: "nowrap", paddingRight: 8 }}>
+      <span ref={countRef} data-testid="selection-count" style={{ ...words(13, 500, t.text), whiteSpace: "nowrap", paddingRight: 8 }}>
         {SELECTION_COUNT(count)}
       </span>
       <span aria-hidden="true" style={{ width: 1, height: 20, background: t.hairline, marginRight: 4, flexShrink: 0 }} />

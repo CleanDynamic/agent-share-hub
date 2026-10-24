@@ -5,10 +5,11 @@
    changed becomes a clash; it opens the clashes one at a time, in build order, in the clash window; and it puts the version not
    kept into Recently removed, with Restore.
 
-   "Show changes" reads the build again and lets go of what this tab had laid over it. Words not yet written are kept (the post
-   is not opened again over an unsaved edit): the write that follows is refused as a clash, and the window asks. A device that
-   changed the build is heard of when the window is next looked at (the page is focused again), or when this tab's own write is
-   refused. CA-22's sliding and outlining are not on main, so Show changes redraws without them. */
+   "Show changes" reads the build again and lets go of what this tab had laid over it. What moved slides to where it now stands, and
+   what the other tab changed is outlined once (CA-22's `useFlip` and `outlineOnce`; nothing slides or is outlined under reduced
+   motion beyond the outline's hold). Words not yet written are kept (the post is not opened again over an unsaved edit): the write
+   that follows is refused as a clash, and the window asks. A device that changed the build is heard of when the window is next
+   looked at (the page is focused again), or when this tab's own write is refused. */
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -21,10 +22,30 @@ import { openBuildChannel, rowsChanged, type BuildChannel } from "@/lib/build/ta
 import { pendingWrites } from "@/lib/build/pendingWrites";
 import type { RemovedMeta } from "@/lib/build/removedLog";
 import type { BuildRecord } from "@/lib/build";
+import { nodeContent, same } from "@/lib/build/clash";
+import { sessionsMetaOf } from "@/lib/build/making";
 
+import { outlineOnce, type Flip } from "./buildMotion";
 import type { BuildHistoryApi } from "./useBuildHistory";
 import type { ComposeNodes } from "./useComposeNodes";
 import type { ComposeThread } from "./useComposeThread";
+
+/** The slide ids (`data-slide-id`) of what differs between two reads of a build: tiles whose contents changed or are new, and sessions whose entry changed. */
+export function changedSlides(before: BuildRecord, after: BuildRecord): string[] {
+  const rows = (record: BuildRecord) => new Map(flatNodes(record.tree).map((row) => [row.id, row]));
+  const was = rows(before);
+  const out: string[] = [];
+  for (const [id, row] of rows(after)) {
+    const old = was.get(id);
+    if (!old || !same(nodeContent(old), nodeContent(row))) out.push(`tile:${id}`);
+  }
+  const oldMeta = sessionsMetaOf((before.build as unknown as { making?: unknown }).making);
+  const newMeta = sessionsMetaOf((after.build as unknown as { making?: unknown }).making);
+  for (const [key, entry] of Object.entries(newMeta)) if (!same(oldMeta[key], entry)) out.push(`session:${key}`);
+  return out;
+}
+
+const nextFrame = (): Promise<void> => new Promise((resolve) => (typeof requestAnimationFrame === "function" ? requestAnimationFrame(() => resolve()) : window.setTimeout(resolve, 0)));
 
 /** What the page says about a clash: its name ("Prompt 2"), its badge in Recently removed, and where it falls in the build. */
 export interface ClashDescription {
@@ -42,6 +63,8 @@ export interface TwoTabsInput {
   describe: (clash: RawClash) => ClashDescription;
   /** Show changes read the build again: the header's own fields (title, description) are opened on it again. */
   rehydrate?: () => void;
+  /** CA-22's slide: what moved when the build is read again slides to where it now stands. */
+  flip?: Pick<Flip, "measure">;
 }
 
 interface Open {
@@ -149,13 +172,27 @@ export function useTwoTabs(input: TwoTabsInput): TwoTabs {
   /* ── Show changes ── */
   const showChanges = useCallback(async () => {
     if (!buildId) return;
+    const key = composeBuildQueryKey(buildId);
+    const was = queryClient.getQueryData<BuildRecord | null>(key);
     setChanged(false);
     latest.current.nodes.forget();
+    // The strip goes and the page settles; then where everything stands is measured, and what is read slides from there.
+    await nextFrame();
+    latest.current.flip?.measure();
     await refresh();
-    const record = queryClient.getQueryData<BuildRecord | null>(composeBuildQueryKey(buildId));
+    const record = queryClient.getQueryData<BuildRecord | null>(key);
     if (record) noteRecord(buildId, { build: record.build as unknown as Record<string, unknown>, tree: flatNodes(record.tree) }, true);
     latest.current.thread.reload?.();
     latest.current.rehydrate?.();
+    // What the other tab changed is outlined once, once it is drawn.
+    if (was && record) {
+      const ids = changedSlides(was, record);
+      await nextFrame();
+      for (const id of ids) {
+        const element = document.querySelector<HTMLElement>(`[data-slide-id="${id}"]`);
+        if (element) outlineOnce(element);
+      }
+    }
   }, [buildId, queryClient, refresh]);
 
   /* ── the clash window ── */

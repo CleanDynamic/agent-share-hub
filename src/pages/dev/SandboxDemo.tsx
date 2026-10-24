@@ -19,6 +19,7 @@
    `?build=links` is CA-06's "A post with links": the post's links work, and nothing is written (LinksDemo).
    `?build=references` is CA-19's "References": groups, single colours, linked text and the windows, kept in memory (ReferencesDemo).
    `?build=ca21` is CA-21's "Moving": two parts, the second empty, moved by the composer's own rules, kept in memory (MovingDemo).
+   `?build=ca22` is CA-22's "Motion": the sixteen moments on a fixture, with a bar of buttons that make each change (MotionDemo; `&bar=0` hides the bar, `&tiles=300` adds a long session).
    `?build=ca23&show=<what>` is CA-23's "Saving, offline and two tabs": the status line's states, the strips, the notice and the two windows (SavingDemo).
    `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
@@ -53,6 +54,7 @@ import type { ComposeThread } from "@/pages/site/compose/useComposeThread";
 import type { DesignPageProps } from "./KitPages";
 import LinksDemo from "./LinksDemo";
 import MovingDemo from "./MovingDemo";
+import MotionDemo from "./MotionDemo";
 import SavingDemo from "./SavingDemo";
 import ReferencesDemo from "./ReferencesDemo";
 
@@ -110,6 +112,7 @@ export default function SandboxDemo(props: DesignPageProps) {
   if (params.get("build") === "links" || params.get("build") === "parts") return <LinksDemo {...props} />;
   if (params.get("build") === "references") return <ReferencesDemo {...props} />;
   if (params.get("build") === "ca21") return <MovingDemo {...props} />;
+  if (params.get("build") === "ca22") return <MotionDemo {...props} />;
   if (params.get("build") === "ca23") return <SavingDemo {...props} />;
   return <ShapesDemo {...props} />;
 }

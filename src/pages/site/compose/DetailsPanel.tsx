@@ -12,7 +12,7 @@
    `DetailsHandlers` stays: the handlers are the ones the windows call (CA-18 P2), written here once and typed here. */
 
 import { Copy } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 
 import { ColourDot } from "@/components/brand/ColourButton";
 import { MemberLabel, useGroupOf } from "./groupLabels";
@@ -72,6 +72,7 @@ import type { OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import type { SessionGoal } from "@/lib/build/making";
 import type { SetupLoaded } from "@/lib/build/setup";
+import { Swap } from "./buildMotion";
 
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
@@ -713,12 +714,20 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
 }
 
 /** The selected tile, read: its sections, in the modal's order. Nothing in it can be typed into. */
+/** CA-22 P6: when the selection changes, the content fades out over FAST and the new content fades in over FAST. Nothing slides. */
+function DetailsFade({ view, children }: { view: DetailsView | null; children: ReactElement }) {
+  const subject = view as ({ id?: string; key?: string } & { kind: string }) | null;
+  return <Swap id={subject ? `${subject.kind}:${subject.id ?? subject.key ?? ""}` : "none"}>{children}</Swap>;
+}
+
 export function DetailsPanel({ view, colour = null, build, onEdit, plan, onSelect, onOpenPrompt }: DetailsPanelProps) {
-  if (!view) return <p style={EMPTY}>{DETAILS_COPY.empty}</p>;
+  if (!view) return <DetailsFade view={null}><p style={EMPTY}>{DETAILS_COPY.empty}</p></DetailsFade>;
   return (
-    <div data-testid="details-panel" data-kind={view.kind} style={{ ...COLUMN, fontSize: 13 }}>
-      <Body view={view} plan={plan} colour={colour} build={build} onSelect={onSelect} onEdit={onEdit} onOpenPrompt={onOpenPrompt} />
-    </div>
+    <DetailsFade view={view}>
+      <div data-testid="details-panel" data-kind={view.kind} style={{ ...COLUMN, fontSize: 13 }}>
+        <Body view={view} plan={plan} colour={colour} build={build} onSelect={onSelect} onEdit={onEdit} onOpenPrompt={onOpenPrompt} />
+      </div>
+    </DetailsFade>
   );
 }
 

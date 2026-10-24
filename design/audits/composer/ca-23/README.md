@@ -19,6 +19,11 @@ from `/dev/kit/pages/sandbox?build=ca23&show=<state>` (`src/pages/dev/SavingDemo
 | `leave` | the window `Changes still saving` |
 | `clash-tile`, `clash-fields`, `clash-session`, `clash-post` | `{Name} changed in another tab`: one field, several fields, a session's title, the post |
 
+## Motion
+
+CA-22 landed on main while this was being made (`21a0b69`), and is merged in. "Show changes" slides what moved (CA-22's `useFlip`) and outlines
+once what the other tab changed (`outlineOnce`); the reconnected notice is CA-22's own, risen 8 and faded in, without Undo.
+
 ## At rest
 
 `before/` was taken on the branch's base (`03184fa`, before Part 1) and `after/` at the end, by `node scripts/ca23-rest.mjs <before|after>`

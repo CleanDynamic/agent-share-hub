@@ -12,6 +12,8 @@ import { CONTROL, SELECTED, controlPaint } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { useCrossfade } from "./buildMotion";
+
 const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: px, fontWeight: weight, lineHeight: line ? `${line}px` : "normal", color });
 const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
 const clamp = (lines: number): CSSProperties => ({ display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" });
@@ -51,8 +53,11 @@ export const TILE_TITLE: CSSProperties = { ...type(14, 500, t.text, 20), margin:
 
 /** The number badge: 22 square, radius 5, the control recipe, the data face 11 `--text2`, 1 down. */
 export function NumberBadge({ children }: { children: ReactNode }) {
+  /* CA-22: when the number changes (a tile above went, or came) the old one fades out over the new. */
+  const badge = useCrossfade<HTMLSpanElement>(typeof children === "string" || typeof children === "number" ? children : "");
   return (
     <span
+      ref={badge}
       aria-hidden="true"
       data-testid="number-badge"
       style={{ ...CONTROL, boxSizing: "border-box", flexShrink: 0, minWidth: 22, height: 22, marginTop: 1, padding: "0 4px", borderRadius: 5, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, fontVariantNumeric: "tabular-nums" }}

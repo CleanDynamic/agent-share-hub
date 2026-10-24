@@ -41,6 +41,7 @@ import {
   type MutableRefObject,
   type ReactNode,
   type Ref,
+  type RefObject,
   useLayoutEffect,
 } from "react";
 
@@ -112,6 +113,12 @@ import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNes
 import { EmptyPlace, SkeletonLayer } from "./skeleton";
 import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
 import { SLIDE_ATTR } from "./flip";
+import { runsOf, withEmptySessions, type Run } from "./buildRuns";
+import { useBuildDirector } from "./buildDirector";
+import { useFoldMotion } from "./foldMotion";
+import { outlineOnce } from "./buildMotion";
+import { SLIDE } from "@/lib/build/buildMotion";
+import { prefersReducedMotion } from "@/lib/theme/motion";
 import { ArrivingBlock, useArrival, type Arriving } from "./arrival";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
@@ -2026,13 +2033,6 @@ const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
   return tile ? tileName(tile) : "that tile";
 };
 
-/** A run of steps on the page: a session's head and the prompts that follow it, or one step that stands alone. */
-interface Run {
-  key: string;
-  head: SourceSession | null;
-  steps: Step[];
-}
-
 /** A session's head and its tiles, registered for the post's links by the session's key. */
 function SessionRun({ head, phone: _phone, first, lit = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
@@ -2052,33 +2052,15 @@ function SessionRun({ head, phone: _phone, first, lit = false, part: partKey = "
   );
 }
 
-/**
- * The runs on the page. A session's head starts its run and every step after it, of any kind, belongs to it until the next
- * head (CA-14: a session holds every kind of step, so an agent or a manual step in it is drawn inside it). Steps before any
- * head, and every step of a draft that has no heads, stand on their own, as they did.
- */
-function runsOf(steps: readonly Step[], dividers: BuildListProps["dividers"]): Run[] {
-  const runs: Run[] = [];
-  for (const step of steps) {
-    const head = dividers.get(step.number) ?? null;
-    const last = runs[runs.length - 1];
-    if (head || !last || !last.head) runs.push({ key: step.id, head, steps: [step] });
-    else last.steps.push(step);
-  }
-  return runs;
-}
-
-/** CA-14 P1: sessions with no tile yet are drawn too, each in the place its number gives it: before the first session numbered after it. */
-function withEmptySessions(runs: readonly Run[], empties: readonly SourceSession[]): Run[] {
-  const out = [...runs];
-  for (const head of [...empties].sort((a, b) => a.number - b.number)) {
-    const at = out.findIndex((run) => run.head !== null && run.head.number > head.number);
-    out.splice(at < 0 ? out.length : at, 0, { key: `empty:${head.key}`, head, steps: [] });
-  }
-  return out;
-}
-
-export function BuildList(base: BuildListProps) {
+export function BuildList(incoming: BuildListProps) {
+  /* CA-22 P2, P3: what leaves is held on screen while it lifts out, then the new view is drawn and the rest slides; what arrives drops in. */
+  const rootHolder = useRef<RefObject<HTMLDivElement | null> | null>(null);
+  const busyHolder = useRef(false);
+  const director = useBuildDirector(incoming, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
+  const base = director.view;
+  /* CA-22 P5: a session or part being folded keeps its tiles drawn while they rise away behind the head. */
+  const partsFolded = useMemo(() => new Set((base.parts?.parts ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)), [base.parts]);
+  const folding = useFoldMotion({ sessions: base.collapsed, parts: partsFolded, getRoot: useCallback(() => rootHolder.current?.current ?? null, []) });
   const [said, setSaid] = useState("");
   /* CA-21 P3: while something is held, or its write is on its way, the page is drawn from the live order. */
   const baseModel = useMemo(
@@ -2126,7 +2108,16 @@ export function BuildList(base: BuildListProps) {
   const slid = (id: string, by: -1 | 1, run: (id: string, by: -1 | 1) => unknown) => {
     const result = moveBy(baseModel, id, by);
     const written = run(id, by);
-    if (result) sorting.show(result.model, "", Promise.resolve(written) as Promise<unknown>);
+    if (result) {
+      sorting.show(result.model, "", Promise.resolve(written) as Promise<unknown>);
+      // CA-22 P4: it slides (CA-21), and is outlined once where it lands.
+      if (!prefersReducedMotion()) {
+        window.setTimeout(() => {
+          const moved = rootHolder.current?.current?.querySelector<HTMLElement>(`[data-skel-id="${id}"]`);
+          if (moved) outlineOnce(moved);
+        }, SLIDE);
+      }
+    }
     return written as Promise<unknown> | void;
   };
   const shown = viewOf(base, sorting.live);
@@ -2136,6 +2127,8 @@ export function BuildList(base: BuildListProps) {
     sessionOps: shown.sessionOps ? { ...shown.sessionOps, onMove: (key, by) => void slid(key, by, base.sessionOps?.onMove ?? (() => undefined)) } : undefined,
     parts: shown.parts ? { ...shown.parts, ops: shown.parts.ops ? { ...shown.parts.ops, onMove: (key, by) => void slid(key, by, base.parts?.ops?.onMove ?? (() => undefined)) } : undefined } : undefined,
   };
+  rootHolder.current = sorting.rootRef;
+  busyHolder.current = sorting.live !== null || sorting.skeleton !== null;
   const { steps } = props;
   const prompts = steps.filter((step) => step.kind === "prompt");
   /* CA-04 P2: tiles move once there is somewhere to move them: two steps, or a tile already inside one. */
@@ -2235,6 +2228,8 @@ export function BuildList(base: BuildListProps) {
   const drawRun = (run: Run, at: number, inPart: ListPart | null = null) => {
         const key = run.head?.key ?? null;
         const closed = key !== null && Boolean(props.onToggleCollapsed) && Boolean(props.collapsed?.has(key));
+        /** What is drawn: a fold in progress still shows the tiles. */
+        const shut = closed && !(key !== null && folding.sessions.has(key));
         const tilesId = `session-tiles-${key ?? run.key}`;
         const headed = run.head !== null;
         const editable = headed && !run.head.key.startsWith("typed-legacy-");
@@ -2268,8 +2263,8 @@ export function BuildList(base: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <div id={tilesId} data-testid="session-tiles" hidden={closed} style={headed ? RUN : undefined}>
-                {closed ? null : (
+              <div id={tilesId} data-testid="session-tiles" hidden={shut} style={headed ? RUN : undefined}>
+                {shut ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
@@ -2319,8 +2314,8 @@ export function BuildList(base: BuildListProps) {
           onColour={parts?.onColour ? (anchor) => parts.onColour?.(view.key, anchor, part.title, view.colour ?? null) : undefined}
         />
         <MentionedLine to={refTo({ kind: "workstream", id: view.key })} phone={props.phone} />
-        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed} style={WORKSTREAM_BODY}>
-          {view.collapsed ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
+        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed && !folding.parts.has(view.key)} style={WORKSTREAM_BODY}>
+          {view.collapsed && !folding.parts.has(view.key) ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
             <>
               {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
               {arrival.block && base.arriving && arrivingPart === view.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}
@@ -2349,8 +2344,8 @@ export function BuildList(base: BuildListProps) {
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
-      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} /> : null}
+    <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} /> : null}
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {parts ? (
