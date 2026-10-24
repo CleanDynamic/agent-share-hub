@@ -255,6 +255,14 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/__audit__/fakeSupabase.ts",
   "src/pages/site/compose/ComposePage.tsx",
   "src/pages/site/compose/useComposeSessions.ts",
+  // CA-25 P3
+  "src/components/compose/SequenceView.test.tsx",
+  "src/components/compose/TrayDrop.test.tsx",
+  "src/hooks/useComposeBuild.ts",
+  "src/hooks/useComposeBuild.unpublish.test.tsx",
+  "src/pages/site/compose/BuildTitleActions.tsx",
+  "src/pages/site/compose/PublishedMenu.tsx",
+  "src/pages/site/compose/ca25.p3.test.tsx",
   // CA-25 P2
   "e2e/tier1/post-thread.spec.ts",
   "src/pages/site/compose/PublishConfirm.tsx",

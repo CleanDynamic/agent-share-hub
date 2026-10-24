@@ -63,8 +63,9 @@ import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { BuildTitleActions } from "./BuildTitleActions";
 import { PublishChecklist } from "./PublishChecklist";
 import { PublishConfirm } from "./PublishConfirm";
+import { PUBLISHED_COPY, PublishedOptions } from "./PublishedMenu";
 import { outlineOnce } from "./buildMotion";
-import { confirmRows, type Checklist, type ChecklistItem, type ConfirmInput, type ConfirmRow } from "@/lib/build/publishChecklist";
+import { confirmRows, publishedWords, type Checklist, type ChecklistItem, type ConfirmInput, type ConfirmRow } from "@/lib/build/publishChecklist";
 import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
@@ -131,6 +132,10 @@ export interface SandboxViewProps extends CardProps {
   onPublish: () => void;
   /** CA-25: the Publish checklist. Absent, Publish runs `onPublish` at once. */
   publish?: PublishPanel;
+  /** CA-25 P3: `published_at`, for "Published 2 days ago". */
+  publishedAt?: string | null;
+  /** CA-25 P3: takes the build back to a draft. "refused" is the database saying no (Unpublish… is then left out), "failed" a try that can be made again. Absent: no Unpublish… item. */
+  onUnpublish?: () => Promise<"done" | "refused" | "failed">;
 
   counts: SandboxCounts;
   lens: SandboxLens;
@@ -931,6 +936,8 @@ function SandboxBody(props: SandboxViewProps) {
   const [checklistOpen, setChecklistOpen] = useState(false);
   /** CA-25 P2: Confirm is open, with the rows it was opened on. */
   const [confirming, setConfirming] = useState<ConfirmRow[] | null>(null);
+  /** CA-25 P3: the database refused to unpublish: the menu stops offering it. */
+  const [unpublishRefused, setUnpublishRefused] = useState(false);
   const latest = useRef(props);
   latest.current = props;
   const buildRef = useRef<HTMLElement>(null);
@@ -1027,7 +1034,7 @@ function SandboxBody(props: SandboxViewProps) {
 
   const statusLine = (
     <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
-      {published ? "Published" : "Draft"}
+      {published ? publishedWords(props.publishedAt) : "Draft"}
       <SaveLine
         save={save}
         lastSavedAt={props.lastSavedAt}
@@ -1052,6 +1059,14 @@ function SandboxBody(props: SandboxViewProps) {
     </h1>
   );
 
+  /* CA-25 P3: a published build has View live and its options where Preview and Publish were. */
+  const unpublish = async () => {
+    const result = await props.onUnpublish?.();
+    if (result === "refused") setUnpublishRefused(true);
+  };
+  const publishedOptions = published ? (
+    <PublishedOptions slug={published.slug} title={props.title.trim()} onUnpublish={() => void unpublish()} canUnpublish={Boolean(props.onUnpublish) && !unpublishRefused} />
+  ) : null;
   const publishLabel = published ? "Published" : props.publishing ? "Publishing…" : "Publish";
   const publishDisabled = Boolean(published) || props.publishing;
   /* The board draws Publish at full strength whatever is still outstanding. */
@@ -1238,14 +1253,25 @@ function SandboxBody(props: SandboxViewProps) {
           <Button variant="ghost" size={48} fontSize={14} onClick={() => openCard(null)}>
             Classification Card
           </Button>
-          <LinkButton to={previewTo} phone>
-            Preview
-          </LinkButton>
-          <div style={{ flexGrow: 1 }}>
-            <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
-              {publishLabel}
-            </Button>
-          </div>
+          {published ? (
+            <>
+              <LinkButton to={`/b2/${published.slug}`} phone>
+                {PUBLISHED_COPY.viewLive}
+              </LinkButton>
+              {publishedOptions}
+            </>
+          ) : (
+            <>
+              <LinkButton to={previewTo} phone>
+                Preview
+              </LinkButton>
+              <div style={{ flexGrow: 1 }}>
+                <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
+                  {publishLabel}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
         <BottomSheet open={sourcesOpen} onOpenChange={setSourcesOpen} title="Sources">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{sourcesBody}</div>
@@ -1277,12 +1303,23 @@ function SandboxBody(props: SandboxViewProps) {
           <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
             Card
           </Button>
-          <LinkButton to={previewTo} phone={false} height={28}>
-            Preview
-          </LinkButton>
-          <Button size={28} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
-            {publishLabel}
-          </Button>
+          {published ? (
+            <>
+              <LinkButton to={`/b2/${published.slug}`} phone={false} height={28}>
+                {PUBLISHED_COPY.viewLive}
+              </LinkButton>
+              {publishedOptions}
+            </>
+          ) : (
+            <>
+              <LinkButton to={previewTo} phone={false} height={28}>
+                Preview
+              </LinkButton>
+              <Button size={28} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
+                {publishLabel}
+              </Button>
+            </>
+          )}
         </div>
       </div>
       {banner ? <div style={{ padding: `16px ${padRight}px 0 ${padLeft}px` }}>{banner}</div> : null}

@@ -9,6 +9,8 @@
 
 import { PUBLISH_ORDER, type PublishKey } from "@/pages/site/compose/composeModel";
 
+import { canSucceedLater } from "@/lib/errors/code";
+
 import { postPlainText, splitThread, type ThreadDoc } from "./thread";
 
 export type ChecklistAction = "add_cover" | "add_title" | "add_description" | "add_prompt" | "go_to" | "show_apps" | "open_card";
@@ -204,6 +206,15 @@ export function postFacts(doc: ThreadDoc | null | undefined): { words: number; l
 }
 
 /* ── Published ── */
+
+/**
+ * What a failed unpublish was: "failed" is a try that can be made again (no connection, a busy database); "refused" is the database
+ * saying no (row-level security, a trigger, a constraint), which a second try will not change. The caller leaves "Unpublish…" out
+ * after a refusal and does nothing to get past it.
+ */
+export function unpublishFailure(cause: unknown): "refused" | "failed" {
+  return canSucceedLater(cause) ? "failed" : "refused";
+}
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

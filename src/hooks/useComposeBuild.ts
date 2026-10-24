@@ -102,6 +102,12 @@ export interface ComposeBuild {
    * `null`: null is a rebuild whose creator wrote nothing.
    */
   publish: (rebuildNote?: string | null) => Promise<Build>;
+  /**
+   * CA-25: take a published build back to a draft (`status` draft, `published_at` cleared), through `updateBuild`, with any unsaved
+   * header edits in the same write as `publish` does. Throws what the database answers: a refusal (row-level security, a trigger)
+   * is the caller's to read, and nothing here works around it.
+   */
+  unpublish: () => Promise<Build>;
   isPublishing: boolean;
   publishError: Error | null;
   isSaving: boolean;
@@ -490,6 +496,52 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     }
   }, [queryClient, schedule, report]);
 
+  const unpublish = useCallback(async (): Promise<Build> => {
+    const id = buildIdRef.current;
+    if (!id || !buildRef.current) throw new Error("There is no build to unpublish.");
+    if (!isOwnerRef.current) throw new Error("Only a build's creator can unpublish it.");
+
+    setIsPublishing(true);
+    try {
+      if (settleRef.current) await settleRef.current.catch(() => {});
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      const pending = pendingRef.current;
+      pendingRef.current = {};
+      report();
+      const patch: BuildPatch = { ...pending, status: "draft", published_at: null };
+      inFlightRef.current = true;
+      try {
+        const row = await updateBuild(id, patch);
+        if (mountedRef.current && buildIdRef.current === id) {
+          queryClient.setQueryData<BuildRecord | null>(composeBuildQueryKey(id), (previous) => (previous ? { ...previous, build: row } : previous));
+          setOverlay((currentOverlay) => {
+            const next = { ...currentOverlay };
+            for (const key of Object.keys(patch)) {
+              if (!(key in pendingRef.current)) delete next[key as keyof BuildPatch];
+            }
+            return next;
+          });
+          setLastSavedAt(new Date());
+        }
+        return row;
+      } catch (cause) {
+        // The creator's own edits go back on the queue: a refused unpublish must not lose them.
+        pendingRef.current = { ...pending, ...pendingRef.current };
+        report();
+        throw cause;
+      }
+    } finally {
+      inFlightRef.current = false;
+      if (mountedRef.current && buildIdRef.current === id) {
+        setIsPublishing(false);
+        if (Object.keys(pendingRef.current).length > 0) schedule();
+      }
+    }
+  }, [queryClient, schedule, report]);
+
   return {
     build,
     tree,
@@ -501,6 +553,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     setSelectedNodeId,
     patchBuild,
     publish,
+    unpublish,
     isPublishing,
     publishError,
     isSaving,

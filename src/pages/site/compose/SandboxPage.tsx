@@ -28,6 +28,7 @@ import { flushSync } from "react-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { shortReason } from "@/lib/errors/code";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,7 +66,7 @@ import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
 import { runtimeChecks, runtimeFindings } from "@/lib/build/runtimeChecks";
-import { postFacts, publishChecklist, type ConfirmInput } from "@/lib/build/publishChecklist";
+import { postFacts, publishChecklist, unpublishFailure, type ConfirmInput } from "@/lib/build/publishChecklist";
 import { classificationLines } from "@/lib/classify/lines";
 import { allTiles, orderOf } from "@/lib/build/buildSelection";
 import { useComposePage } from "./ComposePage";
@@ -202,6 +203,19 @@ export function SandboxPage() {
   /* CA-14 P6: the View switches, kept for this maker on this device. */
   const [viewOptions, setViewOptions] = useViewOptions(user?.id ?? null);
   const runtimeIssues = useMemo(() => runtimeChecks(buildSteps(tree)), [tree]);
+  /* CA-25 P3: unpublish through the build's own update. A refusal (row-level security, a trigger) is told apart from a try that can be
+     made again, and nothing is done to get around it. */
+  const unpublish = useCallback(async (): Promise<"done" | "refused" | "failed"> => {
+    try {
+      await compose.unpublish();
+      return "done";
+    } catch (cause) {
+      console.error("[Sandbox] unpublish failed", cause);
+      const failure = unpublishFailure(cause);
+      toast.error(failure === "failed" ? "Couldn't unpublish. Try again." : `Couldn't unpublish: ${shortReason(cause)}.`);
+      return failure;
+    }
+  }, [compose]);
   const runtimeFound = useMemo(() => runtimeFindings(buildSteps(tree)), [tree]);
   /* CA-25: what Publish waits for before the checklist opens: a connection, and the post's words written. The checklist and Confirm replace the
      toasts: a broken Decision, a post that cannot be saved and the reminders are items there. */
@@ -2139,6 +2153,8 @@ export function SandboxPage() {
         lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}
         onRetrySave={onRetrySave}
         onPublish={onPublish}
+        onUnpublish={unpublish}
+        publishedAt={build?.published_at}
         publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps }}
         post={
           <PostTab

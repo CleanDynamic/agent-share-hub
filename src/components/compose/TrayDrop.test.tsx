@@ -155,6 +155,7 @@ function Harness({ selectedNodeId = null }: { selectedNodeId?: string | null }) 
         setSelectedNodeId: () => {},
         patchBuild: () => {},
         publish: () => Promise.reject(new Error("not under test")),
+        unpublish: () => Promise.reject(new Error("not under test")),
         isPublishing: false,
         publishError: null,
         isSaving: false,
