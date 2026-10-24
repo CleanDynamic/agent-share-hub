@@ -17,7 +17,7 @@ import { useDesignTheme } from "@/dev/useDesignTheme";
 import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
 import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
 import { applyWrite, type MemoryBuild } from "@/lib/build/moveMemory";
-import { moveBy, movedLine, writeOf, type MoveModel } from "@/lib/build/moveRules";
+import { locate, moveBy, movedLine, placePart, placeSession, writeOf, type MoveModel, type Write } from "@/lib/build/moveRules";
 import { BuildList } from "@/pages/site/compose/BuildList";
 import { dividers } from "@/pages/site/compose/buildListModel";
 import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
@@ -69,6 +69,39 @@ export default function MovingDemo({ fit = "board", state = "populated" }: Desig
     [model, steps, groups, partsModel],
   );
 
+  /* The writes a drop asks for, kept in memory (a short wait, as a save takes). */
+  const write = useCallback((made: Write | null) => {
+    if (!made) return Promise.resolve(false);
+    return new Promise<boolean>((resolve) =>
+      window.setTimeout(() => {
+        setBuild((previous) => applyWrite(previous, made));
+        resolve(true);
+      }, 120),
+    );
+  }, []);
+  const onMoveToSession = useCallback(
+    (id: string, key: string, options?: { order?: readonly string[]; sentence?: string }) => write({ kind: "tile", id, session: key, reassign: { id, session: key }, atEnd: options?.order ? [...options.order] : [id] }),
+    [write],
+  );
+  const onDropSession = useCallback(
+    (key: string, over: string) => {
+      const found = locate(model, over);
+      if (found?.kind !== "session") return Promise.resolve();
+      const next = placeSession(model, key, found.part, found.index);
+      return write(writeOf(model, next, key)).then(() => undefined);
+    },
+    [model, write],
+  );
+  const onDropOnWorkstream = useCallback((key: string, part: string) => write(writeOf(model, placeSession(model, key, part, Number.MAX_SAFE_INTEGER), key)).then(() => undefined), [model, write]);
+  const onDropWorkstream = useCallback(
+    (key: string, over: string) => {
+      const found = locate(model, over);
+      return write(found?.kind === "part" ? writeOf(model, placePart(model, key, found.index), key) : null).then(() => undefined);
+    },
+    [model, write],
+  );
+  const onNest = useCallback((id: string, parent: string | null, index: number) => write(parent ? { kind: "nested", id, parent, index } : null), [write]);
+
   const mapData = { ...shapeMapProps("one-sitting", source), steps, groups };
   const devMap = useDevMap({ fixture: mapData, making: build.making as Making, direction: "horizontal", selected: selectedId, onSelect: setSelectedId, none: false });
 
@@ -87,6 +120,8 @@ export default function MovingDemo({ fit = "board", state = "populated" }: Desig
           selectedId={selectedId}
           onSelect={setSelectedId}
           onMove={onMove}
+          onMoveToSession={onMoveToSession}
+          onNest={onNest}
           said={said}
           parts={
             partsModel
@@ -100,11 +135,11 @@ export default function MovingDemo({ fit = "board", state = "populated" }: Desig
               : undefined
           }
           onAddPart={() => undefined}
-          onDropSession={() => undefined}
+          onDropSession={onDropSession}
           sessionOps={{ onTitle: () => undefined, onMove, onRemove: () => undefined, onMoveToPart: () => undefined, onWithAbove: () => undefined }}
           addSession={{ library: sandboxSourcesProps("bakery").library, adding: false, onAdd: () => undefined, onStartNew: () => undefined, parts: addToParts }}
-          onDropOnWorkstream={() => undefined}
-          onDropWorkstream={() => undefined}
+          onDropOnWorkstream={onDropOnWorkstream}
+          onDropWorkstream={onDropWorkstream}
           dividers={heads}
         />
       }

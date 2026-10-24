@@ -32,6 +32,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -107,7 +108,10 @@ import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSession
 import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "./workstreamRecipes";
 import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
-import { DragHandle, NestGap, NestList, TAKES, useNestTile, useSessionDragging, useTileNear, type NestTarget } from "./listNest";
+import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNest";
+import { EmptyPlace, SkeletonLayer } from "./skeleton";
+import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
+import { SLIDE_ATTR } from "./flip";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
@@ -125,7 +129,7 @@ import {
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
-import { canMove as canMoveIn, moveModelOf, type MoveModel } from "@/lib/build/moveRules";
+import { canMove as canMoveIn, locate, moveModelOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
 import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
 import { COUNT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
@@ -174,7 +178,7 @@ export interface BuildListProps {
   /** CA-18: a double click on any other tile opens its own window, to change it. Absent: nothing opens. A phone has no double click. */
   onEditTile?: (id: string) => void;
   onRename: (id: string, title: string) => void;
-  onMove: (id: string, direction: -1 | 1) => void;
+  onMove: (id: string, direction: -1 | 1) => Promise<unknown> | void;
   onRemove: (id: string) => void;
   onAccept: (suggestion: ListSuggestion) => void;
   onDismiss: (suggestion: ListSuggestion) => void;
@@ -222,13 +226,13 @@ export interface BuildListProps {
   /** CA-14 P2: what the maker can do to a session's head. Absent: heads show no maker controls. */
   sessionOps?: SessionOps;
   /** CA-14 P4: a session's head dropped on another's. */
-  onDropSession?: (key: string, over: string) => void;
+  onDropSession?: (key: string, over: string) => Promise<unknown> | void;
   /** CA-17 P2: the build's parts (two or more). */
   parts?: ListParts;
   /** CA-17 P2: a session's head dropped on a part's head. */
-  onDropOnWorkstream?: (sessionKey: string, workstreamKey: string) => void;
+  onDropOnWorkstream?: (sessionKey: string, workstreamKey: string) => Promise<unknown> | void;
   /** CA-17 P2: a part's head dropped on another's. */
-  onDropWorkstream?: (workstreamKey: string, over: string) => void;
+  onDropWorkstream?: (workstreamKey: string, over: string) => Promise<unknown> | void;
   /** CA-17 P2: "Add a part", the row under "Add a session". Resolves once the part is made. Absent: no row. */
   onAddPart?: () => void;
   /** CA-14 P5: the "+ Add Tile" row at the end of a session, drawn by the page (it holds the Add items). */
@@ -390,6 +394,8 @@ interface ListRefs {
   onSplitHere?: BuildListProps["onSplitHere"];
   /** CA-21 P1: whether a tile can move a place up or down: only the very first and last place in the build say no. */
   canMove?: (id: string, by: -1 | 1) => boolean;
+  /** CA-21 P3: the tile (or session or part) held right now: its own element stays in the layout, hidden, as its place. */
+  hidden?: string | null;
 }
 
 /** CA-21 P1: a tile's Move up and Move down are greyed by its place in the build, not by its number among prompts. */
@@ -609,6 +615,7 @@ const tileName = (step: Step) => sentWithLabel(step);
 /** A tile inside another: its eyebrow says what it is sent with; it has no number. It can hold more tiles. */
 function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   const nest = useNestTile(step.id);
+  const hidden = useContext(ListRefsContext).hidden === step.id;
   const cardRef = useCardRef(step.id, nest.setRef);
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
@@ -621,6 +628,10 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       aria-label={`${kind} sent with ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
       data-testid="sent-with-tile"
       data-kind={step.kind}
+      data-skel-kind="nested"
+      data-skel-id={step.id}
+      data-skel-container={step.inside?.id ?? ""}
+      {...{ [SLIDE_ATTR]: `nested:${step.id}` }}
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={(event) => {
@@ -645,6 +656,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         ...(selected ? { background: t.selectedFill, borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
         ...colourEdge(step.colour),
         ...(nest.takes ? TAKES : null),
+        ...(hidden ? { visibility: "hidden" } : null),
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -2001,12 +2013,13 @@ function AddPrompt({
 
 /* ── the list ── */
 
-/** CA-14 P4: while a session is dragged every session is folded to its head, so a long one can be moved; they open again after the drop. */
-function WhileDragging({ children }: { children: (dragging: boolean) => ReactNode }) {
-  return <>{children(useSessionDragging())}</>;
-}
-
 /** The tiles of a session: 16 in from its head, with the 2px line down their left, 8 in from their edge. */
+
+/** A tile's name in the List's lines, from the tiles by id. */
+const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
+  const tile = tiles.get(id);
+  return tile ? tileName(tile) : "that tile";
+};
 
 /** A run of steps on the page: a session's head and the prompts that follow it, or one step that stands alone. */
 interface Run {
@@ -2016,7 +2029,7 @@ interface Run {
 }
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
-function SessionRun({ head, phone: _phone, first, lit = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; children: ReactNode }) {
+function SessionRun({ head, phone: _phone, first, lit = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
   const colour = head?.colour;
@@ -2024,9 +2037,10 @@ function SessionRun({ head, phone: _phone, first, lit = false, children }: { hea
     <div
       ref={part}
       data-session-key={head?.key}
+      {...(head ? { "data-skel-kind": "session", "data-skel-id": head.key, "data-skel-container": partKey, [SLIDE_ATTR]: `session:${head.key}` } : null)}
       data-lit={lit || undefined}
       data-session-colour={colour}
-      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(head && !first ? { marginTop: 16 } : null), ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null) }}
+      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(head && !first ? { marginTop: 16 } : null), ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null), ...(hidden ? { visibility: "hidden" } : null) }}
     >
       {children}
     </div>
@@ -2059,12 +2073,55 @@ function withEmptySessions(runs: readonly Run[], empties: readonly SourceSession
   return out;
 }
 
-export function BuildList(props: BuildListProps) {
+export function BuildList(base: BuildListProps) {
+  const [said, setSaid] = useState("");
+  /* CA-21 P3: while something is held, or its write is on its way, the page is drawn from the live order. */
+  const baseModel = useMemo(
+    () => moveModelOf({ steps: base.steps, heads: base.dividers, empties: base.emptySessions, parts: base.parts?.parts.map((part) => ({ key: part.view.key, sessions: part.sessions })) }),
+    [base.steps, base.dividers, base.emptySessions, base.parts],
+  );
+  const stepsById = new Map(base.steps.flatMap(withSentWith).map((step) => [step.id, step]));
+  const headByKey = new Map([...base.dividers.values(), ...(base.emptySessions ?? [])].map((head) => [head.key, head]));
+  const names: MoveNames = {
+    tile: (id) => {
+      const step = stepsById.get(id);
+      if (!step) return "that tile";
+      const word = tileName(step);
+      return step.number && !step.filename ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+    },
+    session: (key) => (headByKey.get(key) ? `Session ${(headByKey.get(key) as SourceSession).number}` : "that session"),
+    part: (key) => base.parts?.parts.find((part) => part.view.key === key)?.view.label ?? "that part",
+  };
+  const sorting = useBuildSorting({
+    model: baseModel,
+    phone: base.phone,
+    names,
+    canTake: (id, parentId) => base.canNest?.(id, parentId) ?? false,
+    collapsed: base.collapsed,
+    onOpen: (key) => base.onToggleCollapsed?.(key, false),
+    commit: (commit: Commit) => {
+      const write = commit.write;
+      if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Couldn't move that. Try again." });
+      if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) return base.onNest?.(write.id, write.parent, write.index);
+      if (write.kind === "session") {
+        if (write.toPart) return write.before ? base.onDropSession?.(write.id, write.before) : base.onDropOnWorkstream?.(write.id, write.toPart);
+        // Within its part it takes the place of the session that stood where it lands.
+        const now = locate(commit.end, write.id);
+        const over = now?.kind === "session" ? commit.start.parts.find((part) => part.key === now.part)?.sessions[now.index] : undefined;
+        return over ? base.onDropSession?.(write.id, over) : undefined;
+      }
+      if (write.kind === "part" && write.over) return base.onDropWorkstream?.(write.id, write.over);
+      return undefined;
+    },
+    send: async (id, parentId) => (await base.onNest?.(id, parentId, Number.MAX_SAFE_INTEGER)) ?? false,
+    sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
+    say: setSaid,
+  });
+  const props = viewOf(base, sorting.live);
   const { steps } = props;
   const prompts = steps.filter((step) => step.kind === "prompt");
   /* CA-04 P2: tiles move once there is somewhere to move them: two steps, or a tile already inside one. */
   const nestOn = Boolean(props.onNest) && (steps.length > 1 || steps.some((step) => (step.sentWith?.length ?? 0) > 0));
-  const [said, setSaid] = useState("");
   /** CA-17 P2: "+ Add a session to this part" in an empty part opens the Add a session picker with that part chosen. */
   const [addFor, setAddFor] = useState<{ part: string; n: number } | null>(null);
   const tiles = new Map(steps.flatMap(withSentWith).map((step) => [step.id, step]));
@@ -2102,19 +2159,6 @@ export function BuildList(props: BuildListProps) {
         },
       }
     : null;
-  const onDrop = (id: string, target: NestTarget) => {
-    if (target.kind === "tile") move(id, target.id, Number.MAX_SAFE_INTEGER);
-    else if (target.kind === "gap") {
-      const from = steps.findIndex((step) => step.id === id);
-      move(id, null, from >= 0 && from < target.index ? target.index - 1 : target.index);
-    } else {
-      const session = [...props.dividers.values()].find((entry) => entry.key === target.key);
-      void props.onMoveToSession?.(id, target.key).then((done) => {
-        if (done) setSaid(NEST_LIST_COPY.nowIn(label(id), session ? `Session ${session.number}` : "that session"));
-      });
-    }
-  };
-
   const card = (step: Step) =>
     step.kind === "prompt" ? (
       <StepCard key={step.id} step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
@@ -2139,20 +2183,24 @@ export function BuildList(props: BuildListProps) {
     ) : (
       <ContainerCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     );
-  /* While tiles move, each top-level tile stands in a wrapper that holds the place to drop before it (and, for the
-     last, after it). Otherwise the cards are drawn as they always were. */
+  /* Each top-level tile stands in a wrapper the page can find (to measure, to slide and to hide while it is held). */
   const placed = (step: Step) => {
     if (!nestOn) return card(step);
-    const at = steps.indexOf(step);
     return (
-      <div key={step.id} style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <NestGap index={at} />
+      <div
+        key={step.id}
+        data-skel-kind="tile"
+        data-skel-id={step.id}
+        data-skel-container={containerOfTile.get(step.id) ?? ""}
+        {...{ [SLIDE_ATTR]: `tile:${step.id}` }}
+        style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0, ...(sorting.hidden === step.id ? { visibility: "hidden" } : null) }}
+      >
         {card(step)}
-        {at === steps.length - 1 ? <NestGap index={steps.length} edge="bottom" /> : null}
       </div>
     );
   };
   const runs = withEmptySessions(runsOf(steps, props.dividers), props.emptySessions ?? []);
+  const containerOfTile = new Map(runs.flatMap((run) => (run.head ? run.steps.map((step) => [step.id, run.head?.key ?? ""] as const) : [])));
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
   const headed = runs.some((run) => run.head);
   /* CA-17 P2: with two or more parts the sessions stand in part groups; with one, nothing about parts is drawn. */
@@ -2162,9 +2210,9 @@ export function BuildList(props: BuildListProps) {
   const numberByKey = new Map(runs.flatMap((run) => (run.head ? [[run.head.key, run.head.number] as const] : [])));
   /* CA-21 P1: where everything stands, for Move up and Move down. */
   const moveModel: MoveModel = moveModelOf({ steps, heads: props.dividers, empties: props.emptySessions, parts: parts?.parts.map((part) => ({ key: part.view.key, sessions: part.sessions })) });
-  const drawRun = (run: Run, at: number, dragging: boolean, inPart: ListPart | null) => {
+  const drawRun = (run: Run, at: number, inPart: ListPart | null = null) => {
         const key = run.head?.key ?? null;
-        const closed = key !== null && Boolean(props.onToggleCollapsed) && (dragging || Boolean(props.collapsed?.has(key)));
+        const closed = key !== null && Boolean(props.onToggleCollapsed) && Boolean(props.collapsed?.has(key));
         const tilesId = `session-tiles-${key ?? run.key}`;
         const headed = run.head !== null;
         const editable = headed && !run.head.key.startsWith("typed-legacy-");
@@ -2175,7 +2223,7 @@ export function BuildList(props: BuildListProps) {
         const promptHere = headed && (props.promptIn === key || emptyDraft);
         const sameStageAs = parts && inPart && key && here > 0 && parts.withAbove?.has(key) ? `Session ${numberByKey.get(inPart.sessions[here - 1]) ?? ""}`.trim() : undefined;
         return (
-          <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0 || inPart !== null} lit={Boolean(key && props.ringedSession?.key === key)}>
+          <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0 || inPart !== null} lit={Boolean(key && props.ringedSession?.key === key)} part={inPart?.view.key} hidden={Boolean(key && sorting.hidden === key)}>
             {run.head ? (
               <SessionHead
                 session={run.head}
@@ -2204,7 +2252,7 @@ export function BuildList(props: BuildListProps) {
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
-                    {run.steps.length === 0 && !promptHere ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}
@@ -2228,14 +2276,14 @@ export function BuildList(props: BuildListProps) {
           </SessionRun>
         );
   };
-  const drawPart = (part: ListPart, at: number, dragging: boolean) => {
+  const drawPart = (part: ListPart, at: number) => {
     const view = part.view;
     const mine = runs.filter((run) => run.head && (partOfSession.get(run.head.key) ?? parts?.parts[0]) === part);
     const bodyId = `workstream-body-${view.key}`;
     const neighbour = parts?.parts[at - 1] ?? parts?.parts[at + 1];
     const count = parts?.parts.length ?? 0;
     return (
-      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} style={WORKSTREAM_GROUP}>
+      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={sorting.hidden === view.key ? { ...WORKSTREAM_GROUP, visibility: "hidden" } : WORKSTREAM_GROUP}>
         <WorkstreamHead
           part={view}
           phone={props.phone}
@@ -2251,10 +2299,10 @@ export function BuildList(props: BuildListProps) {
         <MentionedLine to={refTo({ kind: "workstream", id: view.key })} phone={props.phone} />
         <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed} style={WORKSTREAM_BODY}>
           {view.collapsed ? null : mine.length > 0 ? (
-            mine.map((run) => drawRun(run, runs.indexOf(run), dragging, part))
+            mine.map((run) => drawRun(run, runs.indexOf(run), part))
           ) : (
             <div data-testid="workstream-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "4px 8px" }}>
-              <p style={{ ...text(13, 400, t.label), margin: 0 }}>{WORKSTREAM_HEAD_COPY.empty}</p>
+              {sorting.held?.type === "session" ? <EmptyPlace words="Drop a session here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{WORKSTREAM_HEAD_COPY.empty}</p>}
               {parts?.ops ? (
                 <TextButton
                   target={props.phone}
@@ -2273,29 +2321,26 @@ export function BuildList(props: BuildListProps) {
       </div>
     );
   };
-  const body = (
+  const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5 }}>
+    <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : null}
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
-      <WhileDragging>
-        {(dragging) =>
-          parts ? (
-            <>
-              {runs.filter((run) => !run.head).map((run) => drawRun(run, runs.indexOf(run), dragging, null))}
-              {parts.parts.map((part, at) => drawPart(part, at, dragging))}
-            </>
-          ) : (
-            runs.map((run, at) => drawRun(run, at, dragging, null))
-          )
-        }
-      </WhileDragging>
+      {parts ? (
+        <>
+          {runs.filter((run) => !run.head).map((run) => drawRun(run, runs.indexOf(run)))}
+          {parts.parts.map((part, at) => drawPart(part, at))}
+        </>
+      ) : (
+        runs.map((run, at) => drawRun(run, at))
+      )}
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.phone ? undefined : props.onEditTile} />
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
-      {nestOn ? (
+      {nestOn || said ? (
         <div aria-live="polite" data-testid="nest-said">
           {said ? <Quiet>{said}</Quiet> : null}
         </div>
@@ -2319,6 +2364,7 @@ export function BuildList(props: BuildListProps) {
       {props.onAddPart ? <AddPartRow phone={props.phone} adding={props.addSession?.adding ?? false} onAdd={props.onAddPart} /> : null}
     </div>
   );
+  const body = list;
   const sessionOf = new Map<string, string>();
   const sessionNumbers = new Map<string, number>();
   const firstOf = new Set<string>();
@@ -2342,6 +2388,7 @@ export function BuildList(props: BuildListProps) {
     onMoveToSession: props.onMoveToSession,
     onSplitHere: props.onSplitHere,
     canMove: (id, by) => canMoveIn(moveModel, id, by),
+    hidden: sorting.hidden,
   };
   const sessionLabel = (key: string) => {
     const head = runs.find((run) => run.head?.key === key)?.head;
@@ -2353,17 +2400,7 @@ export function BuildList(props: BuildListProps) {
   return (
     <ListRefsContext.Provider value={refs}>
       <ListNestContext.Provider value={nest}>
-        <NestList
-          phone={props.phone}
-          canTake={nest?.canNest ?? (() => false)}
-          label={label}
-          onDrop={onDrop}
-          onDropSession={props.onDropSession}
-          sessionLabel={sessionLabel}
-          onDropOnWorkstream={props.onDropOnWorkstream}
-          onDropWorkstream={props.onDropWorkstream}
-          workstreamLabel={(key) => parts?.parts.find((part) => part.view.key === key)?.title ?? "that part"}
-        >
+        <NestList phone={props.phone} sorting={sorting}>
           {body}
         </NestList>
       </ListNestContext.Provider>

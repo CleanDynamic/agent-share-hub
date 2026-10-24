@@ -126,6 +126,13 @@ export function placeTile(model: MoveModel, id: string, session: string, index: 
   return { ...model, tiles };
 }
 
+/** The model with a top-level tile taken out of every session: held over a tile that takes it, it has no place of its own. */
+export function withoutTile(model: MoveModel, id: string): MoveModel {
+  const tiles: Record<string, string[]> = {};
+  for (const [key, list] of Object.entries(model.tiles)) tiles[key] = without(list, id);
+  return { ...model, tiles };
+}
+
 /** A tile put at `index` among its siblings. */
 export function placeNested(model: MoveModel, id: string, index: number): MoveModel {
   const found = locate(model, id);

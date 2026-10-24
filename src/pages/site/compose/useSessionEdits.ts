@@ -217,19 +217,16 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   /** A session's head dropped on another's. */
   const onDrop = useCallback(
-    (key: string, over: string) => {
+    (key: string, over: string): Promise<void> | void => {
       const keys = editableKeys();
       // CA-17 P2: dropped between another part's sessions, it joins that part, before the one it was dropped on.
       const { parts } = latest.current;
-      if (parts && parts.partOf.get(over) && parts.partOf.get(over) !== parts.partOf.get(key)) {
-        void moveToPartRef.current?.(key, parts.partOf.get(over) as string, over);
-        return;
-      }
+      if (parts && parts.partOf.get(over) && parts.partOf.get(over) !== parts.partOf.get(key)) return moveToPartRef.current?.(key, parts.partOf.get(over) as string, over);
       const next = droppedKey(keys, key, over);
       if (next.join() === keys.join()) return;
       const shown = orderKeys(latest.current.groups);
       const offset = shown.length - keys.length;
-      void move(key, next, shown.indexOf(key) + 1, next.indexOf(key) + 1 + offset);
+      return move(key, next, shown.indexOf(key) + 1, next.indexOf(key) + 1 + offset);
     },
     [editableKeys, move],
   );
@@ -324,7 +321,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** A part's head dropped on another's. */
   const onDropPart = useCallback(
     (key: string, over: string) =>
-      void guard("Couldn't move that part. Try again.", () =>
+      guard("Couldn't move that part. Try again.", () =>
         track(`Moved ${titleOf(key)}`, async () => {
           const done = await applyParts((making) => droppedWorkstream(making, editableKeys(), key, over));
           if (done) latest.current.say(`${titleOf(key)} moved.`);
@@ -389,7 +386,7 @@ export function useSessionEdits(input: SessionEditsInput) {
     [applyParts, editableKeys, guard, track],
   );
   moveToPartRef.current = moveToPart;
-  const onMoveToPart = useCallback((key: string, to: string) => void moveToPart(key, to), [moveToPart]);
+  const onMoveToPart = useCallback((key: string, to: string) => moveToPart(key, to), [moveToPart]);
 
   /** "Same stage as the session above" in a session's menu. */
   const onWithAbove = useCallback(
