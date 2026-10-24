@@ -177,7 +177,7 @@ export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: 
     const part = model.parts.find((entry) => entry.key === target.item);
     const collapsed = Boolean(options.collapsed?.has(target.item));
     const others = itemsOf(root, "session").filter((element) => idOf(element) !== held.id && (part?.sessions ?? []).includes(idOf(element)));
-    const at = collapsed ? others.length : countAbove(others, point.y);
+    const at = collapsed ? (part?.sessions ?? []).filter((id) => id !== held.id).length : countAbove(others, point.y);
     return { ...none, model: placeSession(model, held.id, target.item, at) };
   }
   // A top-level tile: the session under the pointer, then its place among that session's tiles.
@@ -187,7 +187,7 @@ export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: 
   const key = target.item;
   const closed = Boolean(options.collapsed?.has(key));
   const tiles = itemsOf(root, "tile").filter((element) => containerOf(element) === key && idOf(element) !== held.id);
-  const at = closed ? tiles.length : countAbove(tiles, point.y);
+  const at = closed ? (model.tiles[key] ?? []).filter((id) => id !== held.id).length : countAbove(tiles, point.y);
   const next = placeTile(model, held.id, key, at);
   // Over the middle third of a tile that can take it: it may become the target.
   let sendCandidate: string | null = null;
