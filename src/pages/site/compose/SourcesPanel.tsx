@@ -15,12 +15,12 @@ import { MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { ErrorState } from "@/components/brand/ErrorState";
 import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LoadingBlocks } from "./LoadingBlocks";
+import { PanelFailed } from "./PanelBoundary";
 import { LIBRARY_MORE_WIDTH } from "./loadingBlocks";
 import { PLUS_OUT_MS, WORDS_IN_MS } from "@/lib/build/buildMotion";
 import { peekIntent } from "@/lib/build/motionIntent";
@@ -65,6 +65,8 @@ export interface SourcesPanelProps {
   fine: boolean;
   status: "loading" | "error" | "ready";
   onRetry: () => void;
+  /** The library read's real error, for the log. */
+  error?: unknown;
   sessions: readonly SourceSession[];
   files: readonly SourceFile[];
   library: readonly SourceLibraryItem[];
@@ -457,7 +459,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
       </LoadingRegion>
     );
   }
-  if (status === "error") return <ErrorState line="Your sources didn't load." panel="Sources" onRetry={props.onRetry} />;
+  if (status === "error") return <PanelFailed panel="Sources" onRetry={props.onRetry} error={props.error} />;
 
   return (
     <div ref={rootRef} data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>

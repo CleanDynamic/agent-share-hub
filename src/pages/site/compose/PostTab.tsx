@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import { Avatar } from "@/components/brand/Avatar";
 import { IconButton } from "@/components/brand/IconButton";
-import { ErrorState } from "@/components/brand/ErrorState";
+import { PanelFailed } from "./PanelBoundary";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
@@ -687,7 +687,7 @@ function SelectWordsBar({ name, refusal, onCancel }: { name: string; refusal: st
 export function PostTab(props: PostTabProps) {
   const { thread, phone } = props;
   if (thread.status === "error") {
-    return <ErrorState line="The post didn't load." panel="The post" onRetry={thread.retryLoad} />;
+    return <PanelFailed panel="Post" onRetry={thread.retryLoad} />;
   }
   if (thread.status === "loading") {
     return (

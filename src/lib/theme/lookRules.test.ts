@@ -714,6 +714,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca20Harness.tsx",
   "src/pages/site/compose/ca21.p7.test.tsx",
   "src/pages/site/compose/emptyBuildRecipes.ts",
+  // CA-24 P3
+  "src/pages/site/compose/PanelBoundary.test.tsx",
+  "src/pages/site/compose/PanelBoundary.tsx",
+  "src/pages/site/compose/PostTab.tsx",
+  "src/pages/site/compose/useComposeSessions.ts",
 ];
 
 /**
