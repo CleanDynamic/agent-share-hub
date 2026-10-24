@@ -240,6 +240,16 @@ describe("the notice, the buttons and the keys", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it("hands its own n to onDone, so a timer that fires late takes down only its own notice", () => {
+    vi.useFakeTimers();
+    const onDone = vi.fn();
+    const { rerender } = render(<ReferenceNotice notice={{ sentence: "Added Session 2", n: 1 }} onUndo={() => undefined} onDone={onDone} />);
+    rerender(<ReferenceNotice notice={{ sentence: "Split Session 2 at tile 12", n: 2 }} onUndo={() => undefined} onDone={onDone} />);
+    act(() => void vi.advanceTimersByTime(NOTICE_MS));
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(onDone).toHaveBeenCalledWith(2);
+  });
+
   it("greys Undo and Redo when there is nothing to do", () => {
     render(<UndoRedo canUndo={false} canRedo onUndo={() => undefined} onRedo={() => undefined} />);
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
