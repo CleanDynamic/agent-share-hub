@@ -461,6 +461,24 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick]);
 
+  /* Any other change of order (a menu's Move up, Option with the arrows, Undo, a write from another tab) slides the same way: what
+     stood where is measured as the new order is drawn, and everything slides from there to where it now stands. */
+  const sig = useMemo(() => JSON.stringify([options.model.parts, options.model.tiles, options.model.nested, options.model.loose]), [options.model]);
+  const lastSig = useRef(sig);
+  const heldSnap = useRef<Map<string, Box> | null>(null);
+  if (lastSig.current !== sig) {
+    lastSig.current = sig;
+    if (!drag && !pending && rootRef.current) heldSnap.current = snapshot(rootRef.current);
+  }
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (heldSnap.current && root) {
+      settle(root);
+      play(root, heldSnap.current, SLIDE_MS);
+    }
+    heldSnap.current = null;
+  });
+
   const decide = useCallback(() => {
     const current = dragRef.current;
     const root = rootRef.current;
@@ -681,7 +699,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   const show = (model: MoveModel, line: string, run: Promise<unknown> | void) => {
     capture();
     const start = optionsRef.current.model;
-    setSaid(line);
+    if (line) setSaid(line);
     setTick((value) => value + 1);
     hold(model, null, start, run, "Couldn't move that. Try again.");
   };

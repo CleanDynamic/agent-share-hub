@@ -1861,7 +1861,7 @@ export function SandboxPage() {
     Object.entries(detailsHandlers).map(([name, fn]) => [name, typeof fn === "function" && !HANDLERS_THAT_CHANGE_NOTHING.has(name) && !HANDLERS_THAT_REMOVE.has(name) ? (...args: unknown[]) => track(handlerSentence(name, whatIs(args[0])), async () => (fn as (...a: unknown[]) => unknown)(...args)) : fn]),
   ) as unknown as DetailsHandlers;
   /* CA-21 P1: one place that moves a tile, a session or a part by one place. Never a silent refusal: it goes to the next session or part. */
-  const moveOne = (id: string, by: -1 | 1) => {
+  const moveOne = (id: string, by: -1 | 1): Promise<unknown> | void => {
     const result = moveBy(moveModel, id, by);
     const write = result ? writeOf(moveModel, result.model, id) : null;
     if (!result || !write) return;
@@ -1874,13 +1874,13 @@ export function SandboxPage() {
     };
     const sentence = movedStep(whatIs(id), by);
     const said = movedLine(result.move, names);
-    if (write.kind === "tile" && write.session) return void edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Couldn't move that. Try again." });
+    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Couldn't move that. Try again." });
     if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) {
       const parent = write.parent;
       const index = write.index;
-      return void track(sentence, async () => prompts.nest(id, parent, index)).then(() => setSessionSaid(said));
+      return track(sentence, async () => prompts.nest(id, parent, index)).then((done) => (setSessionSaid(said), done));
     }
-    void track(sentence, async () => prompts.move(id, by)).then(() => setSessionSaid(said));
+    return track(sentence, async () => prompts.move(id, by)).then(() => setSessionSaid(said));
   };
   const stepOf = {
     prompt: asStep(ADDED.prompt, onAddPrompt),

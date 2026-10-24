@@ -193,13 +193,12 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   /** Move Up and Move Down, Alt with Up or Down on the head. CA-21 P1: at the edge of its part a session goes into the next part, never a silent refusal. */
   const onMove = useCallback(
-    (key: string, by: -1 | 1) => {
+    (key: string, by: -1 | 1): Promise<void> | void => {
       const model = latest.current.moveModel;
       const result = model ? moveBy(model, key, by) : null;
       if (model && result?.move.crossed && result.move.to.part) {
         const part = result.model.parts.find((entry) => entry.key === result.move.to.part);
-        void moveToPartRef.current?.(key, result.move.to.part, part?.sessions[result.move.to.index + 1]);
-        return;
+        return moveToPartRef.current?.(key, result.move.to.part, part?.sessions[result.move.to.index + 1]);
       }
       const keys = editableKeys();
       const next = result ? flatOrder(result.model).filter((entry) => keys.includes(entry)) : movedKey(keys, key, by);
@@ -210,7 +209,7 @@ export function useSessionEdits(input: SessionEditsInput) {
       if (!result && parts && parts.partOf.get(neighbour) !== parts.partOf.get(key)) return;
       const shown = orderKeys(latest.current.groups);
       const from = shown.indexOf(key) + 1;
-      void move(key, next, from, from + by);
+      return move(key, next, from, from + by);
     },
     [editableKeys, move],
   );
@@ -309,7 +308,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** Move up and Move down on a part's head. */
   const onPartMove = useCallback(
     (key: string, by: -1 | 1) =>
-      void guard("Couldn't move that part. Try again.", () =>
+      guard("Couldn't move that part. Try again.", () =>
         track(`Moved ${titleOf(key)} ${by === -1 ? "up" : "down"}`, async () => {
           const done = await applyParts((making) => moveWorkstream(making, editableKeys(), key, by));
           if (done) latest.current.say(`${titleOf(key)} moved ${by === -1 ? "up" : "down"}.`);

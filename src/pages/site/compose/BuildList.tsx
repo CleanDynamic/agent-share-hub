@@ -129,7 +129,7 @@ import {
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
-import { canMove as canMoveIn, locate, moveModelOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
+import { canMove as canMoveIn, locate, moveBy, moveModelOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
 import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
 import { COUNT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
@@ -2117,7 +2117,20 @@ export function BuildList(base: BuildListProps) {
     sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
     say: setSaid,
   });
-  const props = viewOf(base, sorting.live);
+  /* CA-21 P6: Move up and Move down in the menus show the move at once, sliding; when the write does not land, they slide back. */
+  const slid = (id: string, by: -1 | 1, run: (id: string, by: -1 | 1) => unknown) => {
+    const result = moveBy(baseModel, id, by);
+    const written = run(id, by);
+    if (result) sorting.show(result.model, "", Promise.resolve(written) as Promise<unknown>);
+    return written as Promise<unknown> | void;
+  };
+  const shown = viewOf(base, sorting.live);
+  const props: BuildListProps = {
+    ...shown,
+    onMove: (id, by) => slid(id, by, base.onMove),
+    sessionOps: shown.sessionOps ? { ...shown.sessionOps, onMove: (key, by) => void slid(key, by, base.sessionOps?.onMove ?? (() => undefined)) } : undefined,
+    parts: shown.parts ? { ...shown.parts, ops: shown.parts.ops ? { ...shown.parts.ops, onMove: (key, by) => void slid(key, by, base.parts?.ops?.onMove ?? (() => undefined)) } : undefined } : undefined,
+  };
   const { steps } = props;
   const prompts = steps.filter((step) => step.kind === "prompt");
   /* CA-04 P2: tiles move once there is somewhere to move them: two steps, or a tile already inside one. */
