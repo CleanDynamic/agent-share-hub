@@ -115,6 +115,9 @@ import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
 import { SLIDE_ATTR } from "./flip";
 import { runsOf, withEmptySessions, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
+import { outlineOnce } from "./buildMotion";
+import { SLIDE } from "@/lib/build/buildMotion";
+import { prefersReducedMotion } from "@/lib/theme/motion";
 import { ArrivingBlock, useArrival, type Arriving } from "./arrival";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
@@ -2051,7 +2054,8 @@ function SessionRun({ head, phone: _phone, first, lit = false, part: partKey = "
 export function BuildList(incoming: BuildListProps) {
   /* CA-22 P2, P3: what leaves is held on screen while it lifts out, then the new view is drawn and the rest slides; what arrives drops in. */
   const rootHolder = useRef<RefObject<HTMLDivElement | null> | null>(null);
-  const director = useBuildDirector(incoming, useCallback(() => rootHolder.current?.current ?? null, []));
+  const busyHolder = useRef(false);
+  const director = useBuildDirector(incoming, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
   const base = director.view;
   const [said, setSaid] = useState("");
   /* CA-21 P3: while something is held, or its write is on its way, the page is drawn from the live order. */
@@ -2100,7 +2104,16 @@ export function BuildList(incoming: BuildListProps) {
   const slid = (id: string, by: -1 | 1, run: (id: string, by: -1 | 1) => unknown) => {
     const result = moveBy(baseModel, id, by);
     const written = run(id, by);
-    if (result) sorting.show(result.model, "", Promise.resolve(written) as Promise<unknown>);
+    if (result) {
+      sorting.show(result.model, "", Promise.resolve(written) as Promise<unknown>);
+      // CA-22 P4: it slides (CA-21), and is outlined once where it lands.
+      if (!prefersReducedMotion()) {
+        window.setTimeout(() => {
+          const moved = rootHolder.current?.current?.querySelector<HTMLElement>(`[data-skel-id="${id}"]`);
+          if (moved) outlineOnce(moved);
+        }, SLIDE);
+      }
+    }
     return written as Promise<unknown> | void;
   };
   const shown = viewOf(base, sorting.live);
@@ -2111,6 +2124,7 @@ export function BuildList(incoming: BuildListProps) {
     parts: shown.parts ? { ...shown.parts, ops: shown.parts.ops ? { ...shown.parts.ops, onMove: (key, by) => void slid(key, by, base.parts?.ops?.onMove ?? (() => undefined)) } : undefined } : undefined,
   };
   rootHolder.current = sorting.rootRef;
+  busyHolder.current = sorting.live !== null || sorting.skeleton !== null;
   const { steps } = props;
   const prompts = steps.filter((step) => step.kind === "prompt");
   /* CA-04 P2: tiles move once there is somewhere to move them: two steps, or a tile already inside one. */

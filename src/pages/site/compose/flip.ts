@@ -2,7 +2,7 @@
    `transform` and let go to `none`, over `FAST` in `STANDARD` easing (Web Animations, so nothing is left in a style attribute).
    Under reduced motion nothing slides: the thing is simply where it now is. */
 
-import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
+import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
 import { SLIDE_MS } from "@/lib/build/buildMotion";
 
@@ -56,6 +56,12 @@ export function animateFrom(element: HTMLElement, from: Box, to: Box, ms: number
   return animation;
 }
 
+/** The new part of an element that grew, revealed from the top down: `clip-path: inset()`, no layout property, no stretching. */
+export function grow(element: HTMLElement, by: number, delay = 0): Animation | null {
+  if (prefersReducedMotion() || typeof element.animate !== "function") return null;
+  return element.animate([{ clipPath: `inset(0 0 ${by}px 0)` }, { clipPath: "inset(0 0 0 0)" }], { duration: BASE, easing: STANDARD, id: "slide", ...(delay > 0 ? { delay, fill: "backwards" as const } : null) });
+}
+
 /**
  * Play every slide: what `before` says stood somewhere else slides from there to where it stands now. Resolves how many slid.
  * Call it after the change is in the DOM and before it is painted.
@@ -69,6 +75,8 @@ export function play(root: ParentNode, before: ReadonlyMap<string, Box>, ms: num
     const now = boxOf(element);
     // Components keep their size; only a lane (which the layer draws) changes it.
     if (animateFrom(element, { ...was, w: now.w, h: now.h }, now, ms, delay)) slid += 1;
+    // CA-22: a thing that grew (a tile that took a nested row, a tile converted to a taller kind) opens down over `BASE`: its new part is revealed by `clip-path`, nothing is stretched.
+    if (now.h - was.h > 1) grow(element, now.h - was.h, delay);
   }
   return slid;
 }

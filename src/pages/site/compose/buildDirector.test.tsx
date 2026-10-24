@@ -264,8 +264,8 @@ describe("the stagger cap", () => {
       root.appendChild(el);
     }
     document.body.appendChild(root);
-    const before = { tiles: new Map(Array.from({ length: 20 }, (_, at) => [`t${at}`, "s"])), sessions: new Map([["s", ""]]), parts: new Set<string>() };
-    const plan = planLift(root, { removedTiles: [...before.tiles.keys()], addedTiles: [], removedSessions: ["s"], addedSessions: [], removedParts: [], addedParts: [] }, before, "clear");
+    const before = { tiles: new Map(Array.from({ length: 20 }, (_, at) => [`t${at}`, "s"])), sessions: new Map([["s", ""]]), parts: new Set<string>(), order: new Map<string, string[]>() };
+    const plan = planLift(root, { removedTiles: [...before.tiles.keys()], addedTiles: [], removedSessions: ["s"], addedSessions: [], removedParts: [], addedParts: [], movedTiles: [], movedSessions: [], movedParts: [] }, before, "clear");
     expect(plan.elements[0].getAttribute("data-skel-id")).toBe("t19");
     expect(plan.delays.slice(0, 13)).toEqual([0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 660]);
     expect(Math.max(...plan.delays)).toBe(660);
@@ -297,5 +297,66 @@ describe("adding a part", () => {
     const clip = played.filter((entry) => entry.keyframes.some((frame) => frame.clipPath));
     expect(clip).toHaveLength(2);
     expect(clip[0].keyframes).toEqual([{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }]);
+  });
+});
+
+describe("P4 · moving and undoing", () => {
+  it("names the one thing that moved inside a container", async () => {
+    const { movedWithin } = await import("./buildDirector");
+    expect(movedWithin(["a", "b", "c", "d"], ["a", "b", "c", "d"])).toEqual([]);
+    expect(movedWithin(["a", "b", "c", "d"], ["a", "c", "d", "b"])).toEqual(["b"]);
+    // Moving b past c is also c moving before b: both are named.
+    expect(movedWithin(["a", "b", "c"], ["a", "x", "c", "b"])).toEqual(["b", "c"]);
+    expect(movedWithin(["a", "b", "c"], ["b", "a"])).toEqual(["a", "b"]);
+  });
+
+  const outlines = () => document.querySelectorAll('[data-testid="outline-once"]');
+
+  it("an undone move shows the skeleton of its containers while it slides, then outlines what moved once, where it lands", async () => {
+    const props = base();
+    const { again } = mount(props);
+    const last = props.steps.length - 1;
+    const swapped = [...props.steps];
+    [swapped[last - 1], swapped[last]] = [swapped[last], swapped[last - 1]];
+    announce("undo", "Moved Prompt 4");
+    again({ ...props, steps: swapped });
+    expect(document.querySelector('[data-testid="skeleton-layer"]')).not.toBeNull();
+    expect(outlines()).toHaveLength(0);
+    act(() => vi.advanceTimersByTime(SLIDE));
+    expect(outlines().length).toBeGreaterThan(0);
+    const ring = played.find((entry) => (entry.element as HTMLElement).getAttribute("data-testid") === "outline-once");
+    expect(ring?.keyframes.every((frame) => Object.keys(frame).every((key) => key === "opacity" || key === "offset"))).toBe(true);
+    expect(ring?.options.duration).toBe(150 + 500 + 300);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150 + 500 + 300);
+    });
+    expect(outlines()).toHaveLength(0);
+  });
+
+  it("an undo that changed only words outlines the changed tile once, with no skeleton", () => {
+    const props = base();
+    const { again } = mount(props);
+    announce("undo", "Renamed Prompt 3");
+    again({ ...props, steps: props.steps.map((step) => (step.id === "p3" ? { ...step, title: "A new name" } : step)) });
+    expect(outlines()).toHaveLength(1);
+    expect(tile("p3")?.contains(outlines()[0])).toBe(true);
+    expect(document.querySelector('[data-testid="skeleton-layer"]')).toBeNull();
+  });
+
+  it("a plain edit with nothing announced is outlined by nothing", () => {
+    const props = base();
+    const { again } = mount(props);
+    again({ ...props, steps: props.steps.map((step) => (step.id === "p3" ? { ...step, title: "A new name" } : step)) });
+    expect(outlines()).toHaveLength(0);
+  });
+
+  it("under reduced motion nothing is outlined", () => {
+    reduced = true;
+    __resetMotionMediaCache();
+    const props = base();
+    const { again } = mount(props);
+    announce("undo");
+    again({ ...props, steps: props.steps.map((step) => (step.id === "p3" ? { ...step, title: "A new name" } : step)) });
+    expect(outlines()).toHaveLength(0);
   });
 });

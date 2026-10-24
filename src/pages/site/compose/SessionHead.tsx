@@ -31,6 +31,7 @@ import { NO_APP, type SourceSession } from "./sourcesModel";
 import { ToolPicker } from "./ToolPicker";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildSelectionContext } from "./useBuildSelection";
+import { Crossfade } from "./buildMotion";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -237,7 +238,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         )}
         {collapsed ? (
           <span data-testid="session-count" style={quiet(t.text2)}>
-            {SESSION_HEAD_COPY.count(tiles)}
+            <Crossfade value={tiles}>{SESSION_HEAD_COPY.count(tiles)}</Crossfade>
           </span>
         ) : null}
         {session.date ? <span style={quiet(t.label)}>{session.date}</span> : null}

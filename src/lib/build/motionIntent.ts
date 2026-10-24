@@ -20,6 +20,8 @@ let current: MotionIntent | null = null;
 
 /** Says what is about to change. The newest wins; an older intent that was never used is gone. */
 export function announce(kind: MotionKind, sentence?: string): MotionIntent {
+  // The step that was just announced by name ("move") is not made vaguer by the history recording it ("change").
+  if (kind === "change" && current && current.kind !== "change" && Date.now() - current.at < 2000) return current;
   current = { kind, at: Date.now(), sentence };
   return current;
 }

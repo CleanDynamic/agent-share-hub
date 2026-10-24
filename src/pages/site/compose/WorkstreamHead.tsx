@@ -27,6 +27,7 @@ import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { MENU_COPY, moveReason } from "@/lib/build/componentMenus";
 import { RemoveRow, useReason } from "./removePieces";
 import { WORKSTREAM_STARTS } from "./workstreamRecipes";
+import { Crossfade } from "./buildMotion";
 
 export const WORKSTREAM_HEAD_COPY = {
   namePlaceholder: "Add a name",
@@ -292,7 +293,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
           <span style={{ flex: "1 1 0", minWidth: 0 }} />
         )}
         <span data-testid="workstream-count" style={quiet}>
-          {WORKSTREAM_HEAD_COPY.count(part.sessions)}
+          <Crossfade value={part.sessions}>{WORKSTREAM_HEAD_COPY.count(part.sessions)}</Crossfade>
         </span>
         {/* CA-19 P5: a part in a named group says so, just before its menu. */}
         <MemberLabel to={refTo({ kind: "workstream", id: part.key })} />

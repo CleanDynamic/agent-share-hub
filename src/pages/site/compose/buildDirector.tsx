@@ -20,7 +20,8 @@
 import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { DROP, LIFT, SLIDE, STAGGER, STAGGER_CAP } from "@/lib/build/buildMotion";
-import { FADE_AFTER_MS, SKELETON_IN, SKELETON_OUT } from "@/lib/build/buildMotion";
+import { FADE_AFTER_MS, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SKELETON_IN, SKELETON_OUT } from "@/lib/build/buildMotion";
+import type { Step } from "@/lib/build/graph";
 import { peekIntent, spendIntent, type MotionIntent } from "@/lib/build/motionIntent";
 import type { Skeleton } from "@/lib/build/sortLayout";
 import { prefersReducedMotion } from "@/lib/theme/motion";
@@ -28,7 +29,7 @@ import { prefersReducedMotion } from "@/lib/theme/motion";
 import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
 import { runsOf, withEmptySessions } from "./buildRuns";
-import { dropIn, finishRunning, liftOut, liftSpan, openClip, slideOut, staggerDelay, useFlip, type MotionRun } from "./buildMotion";
+import { dropIn, finishRunning, liftOut, liftSpan, openClip, outlineOnce, slideOut, staggerDelay, useFlip, type MotionRun } from "./buildMotion";
 import { finishSlides, type Box } from "./flip";
 
 /* ── what is on the page ── */
@@ -39,6 +40,8 @@ export interface Layout {
   /** Session key → its part's key ("" when there are no parts). */
   sessions: Map<string, string>;
   parts: Set<string>;
+  /** The order inside each container: a session's tile ids, a part's session keys, and ("") the parts. */
+  order: Map<string, string[]>;
 }
 
 export function layoutOf(view: BuildListProps): Layout {
@@ -48,12 +51,22 @@ export function layoutOf(view: BuildListProps): Layout {
   const partOf = new Map<string, string>();
   const parts = view.parts && view.parts.parts.length >= 2 ? view.parts : null;
   if (parts) for (const part of parts.parts) for (const key of part.sessions) partOf.set(key, part.view.key);
+  const order = new Map<string, string[]>();
+  const push = (container: string, id: string) => order.set(container, [...(order.get(container) ?? []), id]);
   for (const run of runs) {
     const key = run.head?.key ?? "";
-    if (run.head) sessions.set(key, partOf.get(key) ?? (parts ? parts.parts[0].view.key : ""));
-    for (const step of run.steps) tiles.set(step.id, key);
+    if (run.head) {
+      const part = partOf.get(key) ?? (parts ? parts.parts[0].view.key : "");
+      sessions.set(key, part);
+      push(`part:${part}`, key);
+    }
+    for (const step of run.steps) {
+      tiles.set(step.id, key);
+      push(`session:${key}`, step.id);
+    }
   }
-  return { tiles, sessions, parts: new Set(parts ? parts.parts.map((part) => part.view.key) : []) };
+  for (const part of parts?.parts ?? []) push("parts", part.view.key);
+  return { tiles, sessions, parts: new Set(parts ? parts.parts.map((part) => part.view.key) : []), order };
 }
 
 export interface Change {
@@ -63,11 +76,44 @@ export interface Change {
   addedSessions: string[];
   removedParts: string[];
   addedParts: string[];
+  /** Tiles that stand in another session now, or in another place in theirs. */
+  movedTiles: string[];
+  /** Sessions that stand in another part now, or in another place in theirs. */
+  movedSessions: string[];
+  movedParts: string[];
 }
 
 const missing = <K,>(from: Iterable<K>, within: { has: (key: K) => boolean }): K[] => [...from].filter((key) => !within.has(key));
 
+/**
+ * What moved inside one container, from the order before and after (both cut to what is in both). One thing moved when taking it
+ * out of both leaves the same order; with no such thing, nothing is named (a shuffle has no one thing to outline).
+ */
+export function movedWithin(before: readonly string[], after: readonly string[]): string[] {
+  const kept = new Set(after);
+  const a = before.filter((id) => kept.has(id));
+  const inBefore = new Set(a);
+  const b = after.filter((id) => inBefore.has(id));
+  if (a.length === b.length && a.every((id, at) => id === b[at])) return [];
+  return a.filter((id) => {
+    const left = a.filter((other) => other !== id);
+    const right = b.filter((other) => other !== id);
+    return left.every((other, at) => other === right[at]);
+  });
+}
+
 export function diffLayout(before: Layout, after: Layout): Change {
+  const movedParts: string[] = [];
+  const movedTiles = [...after.tiles].filter(([id, session]) => before.tiles.has(id) && before.tiles.get(id) !== session).map(([id]) => id);
+  const movedSessions = [...after.sessions].filter(([key, part]) => before.sessions.has(key) && before.sessions.get(key) !== part).map(([key]) => key);
+  for (const [container, ids] of after.order) {
+    const was = before.order.get(container);
+    if (!was) continue;
+    const moved = movedWithin(was, ids);
+    if (container === "parts") movedParts.push(...moved);
+    else if (container.startsWith("part:")) movedSessions.push(...moved.filter((key) => !movedSessions.includes(key)));
+    else movedTiles.push(...moved.filter((id) => !movedTiles.includes(id)));
+  }
   return {
     removedTiles: missing(before.tiles.keys(), after.tiles),
     addedTiles: missing(after.tiles.keys(), before.tiles),
@@ -75,11 +121,15 @@ export function diffLayout(before: Layout, after: Layout): Change {
     addedSessions: missing(after.sessions.keys(), before.sessions),
     removedParts: missing(before.parts, after.parts),
     addedParts: missing(after.parts, before.parts),
+    movedTiles,
+    movedSessions,
+    movedParts,
   };
 }
 
 export const hasRemoved = (change: Change): boolean => change.removedTiles.length + change.removedSessions.length + change.removedParts.length > 0;
 export const hasAdded = (change: Change): boolean => change.addedTiles.length + change.addedSessions.length + change.addedParts.length > 0;
+export const hasMoved = (change: Change): boolean => change.movedTiles.length + change.movedSessions.length + change.movedParts.length > 0;
 
 /**
  * Whether a removal is worth holding the old view for. Steps that say what they remove (a remove, a clear, a merge, an undo)
@@ -91,6 +141,13 @@ export function liftsFor(kind: MotionIntent["kind"], change: Change, before: Lay
   if (["remove", "clear", "merge", "undo", "redo", "restore"].includes(kind)) return true;
   if (kind !== "change") return false;
   return change.removedTiles.length > 0 || change.removedParts.length > 0 || change.removedSessions.some((key) => [...before.tiles.values()].includes(key));
+}
+
+/** The tiles whose words or settings differ between two views (their number does not count: it follows from the others). */
+export function changedTiles(before: BuildListProps, after: BuildListProps): string[] {
+  const digest = (step: Step) => JSON.stringify(step, (key, value) => (key === "number" ? undefined : value));
+  const was = new Map(before.steps.map((step) => [step.id, digest(step)]));
+  return after.steps.filter((step) => was.has(step.id) && was.get(step.id) !== digest(step)).map((step) => step.id);
 }
 
 /* ── finding things on the page ── */
@@ -241,12 +298,13 @@ interface Frozen {
   started: boolean;
 }
 
-export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLElement | null): Director {
+export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLElement | null, getBusy: () => boolean = () => false): Director {
   const shownView = useRef(incoming);
   const shownLayout = useRef<Layout | null>(null);
   if (shownLayout.current === null) shownLayout.current = layoutOf(incoming);
   const frozen = useRef<Frozen | null>(null);
   const arrive = useRef<{ change: Change; intent: MotionIntent; after: Layout; before: Layout } | null>(null);
+  const settle = useRef<{ change: Change; intent: MotionIntent; after: Layout; before: Layout; changed: string[] } | null>(null);
   const released = useRef(false);
   const remeasure = useRef<Set<string> | null | undefined>(undefined);
   const timers = useRef<number[]>([]);
@@ -302,6 +360,15 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
       frozen.current = { held: shownView.current, layout: before, target: incoming, targetLayout: layout, change, intent, started: false };
       view = shownView.current;
     } else {
+      // (A drag, and the write after it, is CA-21's: its own skeleton, its own slide and settle.)
+      if (intent && !reduced && mine && root && !hasAdded(change) && !hasRemoved(change) && !getBusy()) {
+        // Something moved (or only its words changed): it slides, and is outlined once where it lands.
+        if (hasMoved(change)) settle.current = { change, intent, after: layout, before, changed: [] };
+        else if (intent.kind === "undo" || intent.kind === "redo") {
+          const changed = changedTiles(shownView.current, incoming);
+          if (changed.length > 0) settle.current = { change, intent, after: layout, before, changed };
+        }
+      }
       if (intent && !reduced && mine && root && hasAdded(change)) arrive.current = { change, intent, after: layout, before };
       else if (intent && skipFreeze === false && (hasRemoved(change) || hasAdded(change))) spendIntent(intent);
       shownView.current = incoming;
@@ -343,6 +410,46 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
         setSkeleton(null);
         const spent = active.current;
         if (spent) spendIntent(spent);
+      });
+    }
+
+    // Moved, or only its words changed: the skeleton of the containers involved shows while it slides, and it is outlined once.
+    const landed = settle.current;
+    if (landed) {
+      settle.current = null;
+      active.current = landed.intent;
+      const scope = new Set<string>();
+      const things: (HTMLElement | null)[] = [];
+      for (const id of [...landed.change.movedTiles, ...landed.changed]) {
+        scope.add(landed.after.tiles.get(id) ?? "");
+        scope.add(landed.before.tiles.get(id) ?? "");
+        things.push(tileEl(element, id));
+      }
+      for (const key of landed.change.movedSessions) {
+        scope.add(key);
+        things.push(sessionEl(element, key));
+      }
+      for (const key of landed.change.movedParts) things.push(partEl(element, key));
+      const targets = present(things);
+      if (targets.length === 0) {
+        spendIntent(landed.intent);
+        return;
+      }
+      const slides = landed.changed.length === 0;
+      if (slides) {
+        setSkeleton(measureStill(element, scope));
+        setShown(true);
+      }
+      const ring = () => {
+        for (const target of targets) runs.current.push(outlineOnce(target));
+      };
+      if (slides) later(SLIDE, ring);
+      else ring();
+      const end = (slides ? SLIDE : 0) + OUTLINE_IN + OUTLINE_HOLD + OUTLINE_OUT;
+      later(slides ? SLIDE + FADE_AFTER_MS : 0, () => setShown(false));
+      later(end, () => {
+        setSkeleton(null);
+        spendIntent(landed.intent);
       });
     }
 
