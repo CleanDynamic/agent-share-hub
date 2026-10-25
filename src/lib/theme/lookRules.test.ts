@@ -708,6 +708,17 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca23.p3.page.test.tsx",
   "src/pages/site/compose/ca23.p3.test.tsx",
   "src/pages/site/compose/saveWindows.tsx",
+  // CA-26 P5
+  "e2e/audit/composer-ca26-touch.spec.ts",
+  "e2e/audit/support/harness.ts",
+  "src/pages/dev/KitPages.tsx",
+  "src/pages/dev/MotionDemo.tsx",
+  "src/pages/site/compose/BuildTitleActions.tsx",
+  "src/pages/site/compose/ComposeMenu.tsx",
+  "src/pages/site/compose/ca26.p5.test.tsx",
+  "src/pages/site/compose/listNest.tsx",
+  "src/pages/site/compose/modalRecipes.tsx",
+  "src/pages/site/compose/tileRecipes.tsx",
   // CA-26 P4
   "src/pages/site/compose/AgentSetupFields.tsx",
   "src/pages/site/compose/BuildAnnouncer.tsx",

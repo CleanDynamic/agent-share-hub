@@ -1134,6 +1134,7 @@ function SandboxBody(props: SandboxViewProps) {
   const buildPanel = (
     <section
       ref={buildRef}
+      id="build"
       aria-label="Build"
       tabIndex={-1}
       style={{

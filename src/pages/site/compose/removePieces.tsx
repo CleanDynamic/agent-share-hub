@@ -195,6 +195,7 @@ function BarButton({ children, onClick, danger = false, disabled = false, testId
     <button
       type="button"
       data-testid={testId}
+      data-hit=""
       disabled={disabled}
       onClick={onClick}
       {...rest}

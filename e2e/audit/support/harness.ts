@@ -827,6 +827,36 @@ export const ROUTES: AuditRoute[] = [
     { id: `references-composer-${room}`, path: `/dev/kit/pages/sandbox?build=references&fit=content&select=rf-c4&theme=${room}` },
     { id: `references-map-${room}`, path: `/dev/kit/pages/sandbox?build=references&fit=content&lens=map&theme=${room}` },
   ]),
+  /* CA-26 P5: the composer screens of CA-19 to CA-25 and their windows, in both rooms: the List with a tile selected, the
+     selection bar, the saving and two-tab states and their windows, the loading and failed states, the Publish checklist and
+     Confirm, and the tile windows. Dev pages pick their room from the address, so each room is its own entry. */
+  ...(["noon", "dusk"] as const).flatMap((room) => {
+    const sandbox = (build: string, rest = "") => `/dev/kit/pages/sandbox?build=${build}${rest}&fit=content&theme=${room}`;
+    const press = (name: string) => async (page: Page) => {
+      await page.getByRole("button", { name, exact: true }).first().click();
+      await page.waitForTimeout(700);
+    };
+    return [
+      { id: `ca22-list-${room}`, path: sandbox("ca22", "&bar=hide&history=1&select=c22-p2") },
+      {
+        id: `ca22-selection-${room}`,
+        path: sandbox("ca22", "&bar=hide&history=1"),
+        after: async (page: Page) => {
+          await page.evaluate(() => (document.querySelector('[data-testid="act-pick-two"]') as HTMLElement).click());
+          await page.waitForTimeout(700);
+        },
+      },
+      { id: `ca23-strips-${room}`, path: sandbox("ca23", "&show=both-strips") },
+      { id: `ca23-saved-${room}`, path: sandbox("ca23", "&show=status-error") },
+      { id: `ca23-clash-${room}`, path: sandbox("ca23", "&show=clash-fields") },
+      { id: `ca23-leave-${room}`, path: sandbox("ca23", "&show=leave") },
+      { id: `ca24-empty-${room}`, path: sandbox("ca24", "&show=empty") },
+      { id: `ca24-failed-${room}`, path: sandbox("ca24", "&show=details-failed") },
+      { id: `ca25-checklist-${room}`, path: sandbox("ca25", "&show=checklist-full"), after: press("Publish") },
+      { id: `ca25-confirm-${room}`, path: sandbox("ca25", "&show=confirm"), after: press("Publish") },
+      ...["agent", "decision", "tool", "code", "repo", "tiles"].map((modal) => ({ id: `ca15-${modal}-${room}`, path: `/dev/kit/pages/modals?modal=${modal}&fit=content&theme=${room}` })),
+    ];
+  }),
   { id: "home", path: "/" },
   { id: "gallery", path: "/gallery" },
   { id: "build", path: `/b2/${BUILD_SLUG}` },

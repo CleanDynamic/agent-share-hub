@@ -6,7 +6,7 @@
 //   to the item now standing in its place in the build, and failing that to the build list.
 // - Focus a caller or an action moved on its own while the window closed is left where it is.
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { buildPanel, itemAt, placeOf, type Place } from "./buildItems";
 
@@ -35,13 +35,23 @@ export interface Opener {
   place: Place | null;
 }
 
+/** The button whose menu or popover is open now: a pointer press on a menu button does not focus it, so focus alone cannot say. */
+const openTrigger = (inside: Element | null): HTMLElement | null => {
+  const id = inside?.closest<HTMLElement>(TRANSIENT)?.id;
+  const byId = id ? document.querySelector<HTMLElement>(`[aria-controls="${CSS.escape(id)}"]`) : null;
+  if (byId) return byId;
+  const open = [...document.querySelectorAll<HTMLElement>('[aria-haspopup][aria-expanded="true"]')];
+  return open.at(-1) ?? null;
+};
+
 export const captureOpener = (): Opener => {
   const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  const el = active && active !== document.body && !active.closest(TRANSIENT) ? active : lastFocused && lastFocused.isConnected ? lastFocused : null;
+  const within = active && active !== document.body && active.closest(TRANSIENT) ? active : null;
+  const el = active && active !== document.body && !within ? active : (openTrigger(within) ?? (lastFocused && lastFocused.isConnected ? lastFocused : null));
   return { el, place: placeOf(el) };
 };
 
-const usable = (el: HTMLElement | null): el is HTMLElement => Boolean(el && el.isConnected && !el.closest('[hidden], [aria-hidden="true"]') && el.style.visibility !== "hidden");
+const usable = (el: HTMLElement | null): el is HTMLElement => Boolean(el && el.isConnected && !el.closest("[hidden]") && el.style.visibility !== "hidden");
 
 /** Give focus back: the opener if it is there, else the build item standing in its place, else the build list. */
 export function returnFocus(opener: Opener, leaving?: Element | null): void {
@@ -99,4 +109,28 @@ export function useWindowFocus(open: boolean, onClose?: (event: Event) => void, 
   }, []);
 
   return { onOpenAutoFocus, onCloseAutoFocus };
+}
+
+/**
+ * A menu's handler for `onCloseAutoFocus`. The menu gives focus back to its button on its own; this only answers for a button
+ * that is gone by then (a menu whose item removed the thing the button belongs to): focus goes to the item now in its place in
+ * the build, or the build list. `onClose` runs first and may keep the event.
+ */
+export function useMenuFocus(onClose?: (event: Event) => void): (event: Event) => void {
+  const opener = useRef<Opener | null>(null);
+  if (opener.current === null) opener.current = captureOpener();
+  useEffect(() => {
+    // The menu is open now, and its button says so (a pointer press does not focus it, so the capture above may have missed it).
+    const trigger = openTrigger(null);
+    if (trigger) opener.current = { el: trigger, place: placeOf(trigger) };
+  }, []);
+  const latest = useRef(onClose);
+  latest.current = onClose;
+  return useCallback((event: Event) => {
+    latest.current?.(event);
+    const held = opener.current as Opener;
+    if (event.defaultPrevented || usable(held.el)) return;
+    event.preventDefault();
+    returnFocus(held);
+  }, []);
 }

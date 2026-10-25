@@ -16,7 +16,8 @@ export const itemKey = (item: HTMLElement): string => {
   return "";
 };
 
-export const shown = (el: HTMLElement): boolean => !el.closest('[hidden], [aria-hidden="true"]') && el.style.visibility !== "hidden";
+/** Not `aria-hidden`: a menu or a window that is open hides the page behind it from assistive technology, and the page's items are still where they were. */
+export const shown = (el: HTMLElement): boolean => !el.closest("[hidden]") && el.style.visibility !== "hidden";
 
 export const itemsOf = (root: ParentNode): HTMLElement[] => [...root.querySelectorAll<HTMLElement>(ROVING_ITEM)].filter(shown);
 

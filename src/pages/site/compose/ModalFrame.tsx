@@ -205,6 +205,7 @@ export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }:
     <button
       type="button"
       aria-label={label}
+      data-hit=""
       onClick={onClick}
       {...handlers}
       style={{

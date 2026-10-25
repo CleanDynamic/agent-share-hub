@@ -247,3 +247,67 @@ describe("a window opened from a menu returns to the menu's button", () => {
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 });
+
+describe("a menu", () => {
+  it("whose item removes its own button hands focus to the item now in that place", async () => {
+    const { RowMenus } = await import("./ca26.menuHost");
+    render(<RowMenus />);
+    const trigger = screen.getByRole("button", { name: "Row b options" });
+    act(() => trigger.focus());
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove row" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Row b options" })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("Prompt c")));
+  });
+
+  it("opened by a pointer press, which does not focus the button, a window it opens still closes onto that button", async () => {
+    const { default: Menus } = await import("./ca26.menuHost");
+    render(
+      <>
+        <button type="button">Decoy</button>
+        <Menus />
+      </>,
+    );
+    act(() => screen.getByRole("button", { name: "Decoy" }).focus());
+    const trigger = screen.getByRole("button", { name: "Menu" });
+    // Opened with the focus elsewhere, as a pointer press leaves it (Radix keeps the press from focusing the button).
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(document.activeElement).not.toBe(trigger);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    await waitFor(() => expect(dialog()).not.toBeNull());
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" });
+    await waitFor(() => expect(dialog()).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("closes onto its own button when that button is still there", async () => {
+    const { default: Menus } = await import("./ca26.menuHost");
+    render(<Menus />);
+    const trigger = screen.getByRole("button", { name: "Menu" });
+    act(() => trigger.focus());
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    await screen.findByRole("menuitem", { name: "Remove" });
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "Remove" })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("opened in a window: Escape closes the menu and leaves the window; the next Escape closes the window", async () => {
+    const { MenuInWindow } = await import("./ca26.menuHost");
+    const close = vi.fn();
+    render(<MenuInWindow onClose={close} />);
+    const pick = await screen.findByRole("button", { name: "Pick" });
+    act(() => pick.focus());
+    fireEvent.pointerDown(pick, { button: 0, ctrlKey: false });
+    fireEvent.keyDown(pick, { key: "Enter" });
+    await screen.findByRole("menuitem", { name: "One" });
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "One" })).toBeNull());
+    expect(close).not.toHaveBeenCalled();
+    expect(screen.getByTestId("inside")).toBeTruthy();
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" });
+    await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+  });
+});
