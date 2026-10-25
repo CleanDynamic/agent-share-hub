@@ -42,8 +42,8 @@ real composer needs a signed-in session; its parts are the same components, and 
 
 | | Before | After |
 |---|---|---|
-| Tab stops on the page | 95 | 43 |
-| of them in the Build column | 58 | 6 (the list, Add, and the controls that are not items) |
+| Tab stops on the page | 95 | 42 |
+| of them in the Build column | 58 | 5 (the list, Add, the dev page's own `+ Add Tile` buttons, and the Add a prompt box) |
 | first stop | Skip to content | Skip to build |
 | order | header, Sources, Build, Details | header, Sources, post, Build, Details |
 
@@ -86,3 +86,23 @@ duplicated what the announcer now says, and is removed; the others describe stat
 axe-core 4.10.2 (a copy on the side; the repository does not depend on it), the build page, Dusk and Noon, 1440 and 390: **0
 violations before, 0 after** (45 rules passed). It found, once, a real one along the way: the skip link's target did not exist
 (`skip-link`, `region`), fixed by giving the Build panel the id the link points at.
+
+## 5. Contrast
+
+`npm run audit:contrast`, extended with the composer screens of CA-19 to CA-25 and their windows (the List with a tile selected,
+the selection bar, the saving, offline and two-tab states and their windows, empty and failed, the Publish checklist and Confirm,
+and six tile windows), Dusk and Noon: 32 new routes, 64 page visits. The 24 routes that were there give the same failures as at
+`d291360` (62 before, 60 after; nothing new). On the new routes there are three distinct findings, none from CA-26:
+
+| Finding | Where | Reading |
+|---|---|---|
+| ring and ground read as the same colour (1:1) on a focused search field and on the code well | every route, at `d291360` too | the probe's reading of the ring; the ring on screen is `--focus-ring` (see the shots) |
+| Noon: `--hairline` border-top of the Segmented control, 1.41:1 against a floor of 3 | Add Agent window (CA-03 P2's control) | a token choice for the control; not changed here, it would move the window at rest. Asked in the report |
+
+Small text on the new routes: no failure at 4.5.
+
+## 6. After
+
+Hit areas (`composer-ca26-touch`): the grip, the ⋯ buttons, the fold arrows, Undo, Redo, the selection bar's buttons and the window
+close buttons are 44 by 44 or more on a phone and on a 1024 tablet (coarse pointer, wider than the phone chrome), Dusk and Noon.
+At rest (`composer-ca26-shots`): 8 of 8 shots byte for byte the shots from `d291360`. axe: 0 left.

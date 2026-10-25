@@ -32,6 +32,7 @@ import { MenuContent } from "./ComposeMenu";
 import { GROUP_TITLE, IconSquare, LABEL, RecipeButton, footerStyle, frameStyle } from "./modalRecipes";
 import { DANGER, ELLIPSIS, GAP, PAD, words } from "./referencePieces";
 import { menuItem, menuSurface } from "./refinedStyles";
+import { focusBuild } from "./buildFocus";
 
 /* ── P1: the reason a greyed item gives ── */
 
@@ -329,7 +330,11 @@ export function SelectionBar({ leaving = false, phone, count, moveTo, holds, onM
         {SELECTION_COPY.remove}
       </BarButton>
       <span style={{ flexGrow: 1, minWidth: 4 }} />
-      <IconSquare glyph="x" label={SELECTION_COPY.clear} phone={false} onClick={onClear} />
+      <IconSquare glyph="x" label={SELECTION_COPY.clear} phone={false} onClick={() => {
+        onClear();
+        // The bar falls away with this button on it: focus goes to the build's current item.
+        focusBuild();
+      }} />
     </div>
   );
 }

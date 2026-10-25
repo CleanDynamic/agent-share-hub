@@ -837,12 +837,16 @@ export const ROUTES: AuditRoute[] = [
       await page.waitForTimeout(700);
     };
     return [
-      { id: `ca22-list-${room}`, path: sandbox("ca22", "&bar=hide&history=1&select=c22-p2") },
+      { id: `ca22-list-${room}`, path: sandbox("ca22", "&bar=0&history=1&select=c22-p2") },
       {
         id: `ca22-selection-${room}`,
         path: sandbox("ca22", "&bar=hide&history=1"),
         after: async (page: Page) => {
-          await page.evaluate(() => (document.querySelector('[data-testid="act-pick-two"]') as HTMLElement).click());
+          // The dev page's own bar of buttons presses the pick, then comes off the page: it is not the page.
+          await page.evaluate(() => {
+            (document.querySelector('[data-testid="act-pick-two"]') as HTMLElement).click();
+            document.querySelector('[data-testid="motion-bar"]')?.remove();
+          });
           await page.waitForTimeout(700);
         },
       },

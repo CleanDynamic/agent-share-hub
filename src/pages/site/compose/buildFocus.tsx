@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent } from "react";
 
 import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
-import { ROVING_ITEM, itemKey, itemsOf, shown } from "@/lib/focus/buildItems";
+import { ROVING_ITEM, itemAt, itemKey, itemsOf, shown } from "@/lib/focus/buildItems";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { text } from "./refinedStyles";
@@ -38,6 +38,7 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
   const last = useRef<{ key: string; index: number } | null>(null);
   const select = useRef(onSelect);
   select.current = onSelect;
+  const lastEl = useRef<HTMLElement | null>(null);
   const bound = useRef<HTMLElement | null>(null);
   const cleanup = useRef<(() => void) | null>(null);
 
@@ -49,6 +50,12 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
     if (!root) return;
 
     const apply = () => {
+      // The item that had focus was taken out of the page (Delete, a removal in a menu): focus goes to the item now in its place.
+      if (lastEl.current && !lastEl.current.isConnected && (!document.activeElement || document.activeElement === document.body)) {
+        const stand = itemAt(last.current);
+        lastEl.current = null;
+        stand?.focus();
+      }
       const items = itemsOf(root);
       const at = last.current ? items.findIndex((item) => itemKey(item) === last.current?.key) : -1;
       const current = items[at >= 0 ? at : Math.min(last.current?.index ?? 0, Math.max(items.length - 1, 0))];
@@ -67,6 +74,7 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
       if (!item) return;
       const items = itemsOf(root);
       last.current = { key: itemKey(item), index: Math.max(items.indexOf(item), 0) };
+      lastEl.current = item;
       apply();
       item.scrollIntoView?.({ block: "nearest" });
     };
@@ -96,6 +104,8 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
           first.focus();
         } else return;
         event.preventDefault();
+        // Not the item's own (a menu button opens on ArrowDown) and not the page's (the shortcuts move the selection by it).
+        event.stopPropagation();
         return;
       }
       if (takesKeys(target) || (event.key !== "ArrowRight" && event.key !== "ArrowLeft")) return;

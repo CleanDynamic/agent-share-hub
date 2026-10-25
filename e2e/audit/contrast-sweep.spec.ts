@@ -73,7 +73,8 @@ test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({
   const accepted: string[] = [];
   const coverage: Array<{ route: string; theme: string; pairs: number; nodes: number }> = [];
 
-  for (const route of ROUTES) {
+  // `SWEEP_ONLY=ca` runs the routes whose id starts with it (a quick look at a few screens); unset, every route.
+  for (const route of ROUTES.filter((each) => !process.env.SWEEP_ONLY || each.id.startsWith(process.env.SWEEP_ONLY))) {
     for (const theme of THEMES) {
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const page = await context.newPage();
