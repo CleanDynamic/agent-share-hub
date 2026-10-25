@@ -1,4 +1,4 @@
-/* SV-02 — the boards' tabs (series README, Visual grammar 10): text buttons 36 high, 20 apart, 500 weight, `--text2`;
+/* SV-02: the boards' tabs (series README, Visual grammar 10): text buttons 36 high, 20 apart, 500 weight, `--text2`;
    the selected one `--text` with a 1px `--text` underline that sits on the row's hairline.
 
    The prompt calls this `UnderlineTabs`; that name is `components/brand/UnderlineTabs.tsx` (40 high, 24 apart, 2px edge),

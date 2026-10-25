@@ -1,4 +1,4 @@
-/* SV-02 — a row of plain values (series README, Visual grammar 5).
+/* SV-02: a row of plain values (series README, Visual grammar 5).
 
    Label left, value right, a `--hairline` under every row but the last. Heights are the boards': 40, 44, 48, 52 or 56.
    Numbers are right-aligned and tabular. The last row is the caller's to say (`last`), so a list reads the same

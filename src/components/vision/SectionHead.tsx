@@ -1,4 +1,4 @@
-/* SV-02 — a section's head, as the vision boards draw it (series README, Visual grammar 3).
+/* SV-02: a section's head, as the vision boards draw it (series README, Visual grammar 3).
 
    Title 14/500 at line-height 1.3, the meta line 12/400 in `--label` two below it, and, when the section has a page of
    its own, a 28px chevron at the top right: `--control` with a 1px `--control-border`, radius 6, a 12px chevron in

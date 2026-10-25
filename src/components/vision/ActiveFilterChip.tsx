@@ -1,4 +1,4 @@
-/* SV-02 — an active filter: `key value ×` (series README, Visual grammar 6).
+/* SV-02: an active filter: `key value ×` (series README, Visual grammar 6).
 
    The prompt calls this `FilterChip`; that name is the toggle in `components/brand/FilterChip.tsx`, which other pages
    use, so this one is `ActiveFilterChip`. The control recipe at height 26, radius 6, 12px: the key in `--label`, the

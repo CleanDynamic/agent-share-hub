@@ -1,4 +1,4 @@
-/* SV-02 — a page's leading number and the line under it (series README, Visual grammar 4).
+/* SV-02: a page's leading number and the line under it (series README, Visual grammar 4).
 
    The number is 20/500, -0.015em, line-height 1.2; `size="room"` (Home) is 32/500, -0.02em, 1.1. The meta line is 13 in
    `--text2`, built from parts: each plain, or toned by meaning, `evidence` for worked or growth, `breakage` for failed,

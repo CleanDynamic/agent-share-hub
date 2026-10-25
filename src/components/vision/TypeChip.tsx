@@ -1,4 +1,4 @@
-/* SV-02 — the grey mono type chip (`STEP`, `PROMPT`): the only chip that sits in a row (series README, Visual grammar 6).
+/* SV-02: the grey mono type chip (`STEP`, `PROMPT`): the only chip that sits in a row (series README, Visual grammar 6).
 
    Geist Mono 10.5, line-height 18, padding `0 6px`, radius 4, `--control` fill, `--text2` text, upper case. A tone
    changes the text colour only. Plain text, so a screen reader reads the word as it is written. */

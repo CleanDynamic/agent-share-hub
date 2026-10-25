@@ -1,4 +1,4 @@
-// SV-02 P4 — the shared pieces of the vision boards: each one's accessible name, its keys and its tokens.
+// SV-02 P4: the shared pieces of the vision boards: each one's accessible name, its keys and its tokens.
 //
 // Styles are asserted through SSR markup, because jsdom's cssstyle drops every `var()` value (see controls.test.tsx).
 

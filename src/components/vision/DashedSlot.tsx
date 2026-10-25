@@ -1,4 +1,4 @@
-/* SV-02 — an open slot (series README, Visual grammar): transparent, a 1px dashed `--label` edge, radius 6, or 8 for a
+/* SV-02: an open slot (series README, Visual grammar): transparent, a 1px dashed `--label` edge, radius 6, or 8 for a
    slot as wide as the page (`wide`). It holds a line or an action, never a decoration. */
 
 import type { CSSProperties, ElementType, ReactNode } from "react";

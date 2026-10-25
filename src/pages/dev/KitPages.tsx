@@ -76,7 +76,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   "post-thread": lazy(() => import("./PostThreadDemo")),
   /* UI-P36 — Sign in (and, with `?mode=`, Join, reset and verify). */
   signin: lazy(() => import("./SignInDemo")),
-  /* SV-02 — the vision boards (`design/reference/vision/index.json`). Each says "Not built yet" until its page prompt
+  /* SV-02: the vision boards (`design/reference/vision/index.json`). Each says "Not built yet" until its page prompt
      replaces the entry: SV-10 home, SV-14 openbuilds, SV-11 builds-table, SV-12 builds-maps, SV-13
      builds-classification, SV-09 library, SV-18 composer-add-from-library, SV-08 drafts. */
   "vision-home": lazy(() => import("./VisionNotBuilt")),

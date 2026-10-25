@@ -1,4 +1,4 @@
-/* SV-02 — the one boxed tile a page may have (series README, Visual grammar 2): `--module`, 1px `--module-border`,
+/* SV-02: the one boxed tile a page may have (series README, Visual grammar 2): `--module`, 1px `--module-border`,
    radius 8, padding `14px 16px`. Flat paint: no glass, no blur, no shadow. */
 
 import type { CSSProperties, ElementType, ReactNode } from "react";
