@@ -9,7 +9,13 @@
 import { z } from "zod";
 import { isAllowedReturnUrl } from "./origins.ts";
 
-export type Body<T> = { ok: true; data: T } | { ok: false; error: string };
+// Not a discriminated union: the app's tsconfig is not strict, and a union on `ok` does not narrow without it.
+// `error` is set when `ok` is false; `data` when it is true.
+export interface Body<T> {
+  ok: boolean;
+  data: T;
+  error: string;
+}
 
 /** Where Stripe may send a buyer back to: an address on an allowed origin. */
 export const returnUrl = z
@@ -22,11 +28,11 @@ export async function readBody<S extends z.ZodTypeAny>(req: Request, schema: S):
   try {
     raw = await req.json();
   } catch {
-    return { ok: false, error: "The body must be JSON" };
+    return { ok: false, data: undefined as never, error: "The body must be JSON" };
   }
   const parsed = schema.safeParse(raw);
-  if (parsed.success) return { ok: true, data: parsed.data };
+  if (parsed.success) return { ok: true, data: parsed.data, error: "" };
   const issue = parsed.error.issues[0];
   const field = issue.path.join(".");
-  return { ok: false, error: field ? `${field}: ${issue.message}` : issue.message };
+  return { ok: false, data: undefined as never, error: field ? `${field}: ${issue.message}` : issue.message };
 }

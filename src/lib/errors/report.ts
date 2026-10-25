@@ -93,7 +93,6 @@ function load(dsn: string): Promise<SentryModule> {
   sentry ??= import("@sentry/react").then((S) => {
     S.init({
       dsn,
-      sendDefaultPii: false,
       tracesSampleRate: 0,
       // Console lines and clicks can carry text; the report has what it needs.
       beforeBreadcrumb: () => null,

@@ -635,12 +635,9 @@ export const PromptViewer = ({ block }: { block: BlockRow }) => {
   // A prompt is the maker's own words, so it is drawn as text: split on the
   // variable pattern, and only the variables are given an element.
   const highlightVars = (text: string): React.ReactNode[] =>
-    text.split(/(\{\{\w+\}\})/).flatMap((part, i) => {
-      if (part === '') return [];
-      return /^\{\{\w+\}\}$/.test(part)
-        ? [<mark key={i} style={VARIABLE_MARK}>{part}</mark>]
-        : [part];
-    });
+    text.split(/(\{\{\w+\}\})/).map((part, i) =>
+      /^\{\{\w+\}\}$/.test(part) ? <mark key={i} style={VARIABLE_MARK}>{part}</mark> : part,
+    );
 
   return (
     <div>

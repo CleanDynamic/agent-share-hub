@@ -46,17 +46,18 @@ describe("SV-01 P5: input checks", () => {
   const post = (raw: string) => new Request("https://fn.test/x", { method: "POST", body: raw });
 
   it("names the missing field", async () => {
-    expect(await readBody(post("{}"), schema)).toEqual({ ok: false, error: "content_id: Required" });
+    expect(await readBody(post("{}"), schema)).toMatchObject({ ok: false, error: "content_id: Required" });
   });
   it("names a wrong field", async () => {
-    expect(await readBody(post('{"content_id":"x"}'), schema)).toEqual({ ok: false, error: "content_id: Invalid uuid" });
+    expect(await readBody(post('{"content_id":"x"}'), schema)).toMatchObject({ ok: false, error: "content_id: Invalid uuid" });
   });
   it("refuses a body that is not JSON", async () => {
-    expect(await readBody(post("nope"), schema)).toEqual({ ok: false, error: "The body must be JSON" });
+    expect(await readBody(post("nope"), schema)).toMatchObject({ ok: false, error: "The body must be JSON" });
   });
   it("drops fields the schema does not know", async () => {
     const r = await readBody(post(JSON.stringify({ content_id: "7b2f1c1e-3b6a-4f77-9d52-0f2c8b1b9a11", price_amount: 1 })), schema);
-    expect(r).toEqual({ ok: true, data: { content_id: "7b2f1c1e-3b6a-4f77-9d52-0f2c8b1b9a11" } });
+    expect(r).toMatchObject({ ok: true, data: { content_id: "7b2f1c1e-3b6a-4f77-9d52-0f2c8b1b9a11" } });
+    expect(Object.keys(r.data)).toEqual(["content_id"]);
   });
 });
 
