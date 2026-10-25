@@ -37,6 +37,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
+import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
@@ -1175,9 +1176,21 @@ function SandboxBody(props: SandboxViewProps) {
         gap: 12,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+      <div
+        data-testid="sandbox-build-head-row"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          /* With Find open the row is one line: the field gives way (300 down to 200) and then the counts, so View and Add stay where they are. */
+          flexWrap: props.find?.open && !phone ? "nowrap" : "wrap",
+          minWidth: 0,
+          /* CA-27 P1: with Find open the row stays under the header, so the count and the buttons are in view while the page moves from match to match. */
+          ...(props.find?.open ? { position: "sticky", top: HEADER_HEIGHT, zIndex: 6, background: t.surface, padding: "6px 0", margin: "-6px 0" } : null),
+        }}
+      >
         <PanelTitle>Build</PanelTitle>
-        <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0 }}>
+        <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
           {countsLine(props.counts)}
         </span>
         {phone ? (

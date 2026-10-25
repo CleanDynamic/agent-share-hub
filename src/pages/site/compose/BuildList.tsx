@@ -2323,7 +2323,7 @@ export function BuildList(raw: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} style={headed ? RUN : undefined}>
+              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} skip={steps.length >= WINDOW_FROM} style={headed ? RUN : undefined}>
                 {shut ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />

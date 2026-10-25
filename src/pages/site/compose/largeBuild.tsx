@@ -145,11 +145,13 @@ export interface SessionTilesProps {
   /** The session's key, for its measured height. */
   sessionKey: string;
   hidden?: boolean;
+  /** The build is a large one (`WINDOW_FROM` tiles or more): only then is a list skipped. A smaller build is drawn exactly as it always was. */
+  skip: boolean;
   style?: CSSProperties;
   children: ReactNode;
 }
 
-export function SessionTiles({ id, sessionKey, hidden = false, style, children }: SessionTilesProps) {
+export function SessionTiles({ id, sessionKey, hidden = false, skip, style, children }: SessionTilesProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | null>(MEASURED.get(sessionKey) ?? null);
 
@@ -171,7 +173,7 @@ export function SessionTiles({ id, sessionKey, hidden = false, style, children }
 
   useEffect(() => () => void MEASURED.delete(sessionKey), [sessionKey]);
 
-  const skipping: CSSProperties | null = height !== null && !hidden ? { contentVisibility: "auto", containIntrinsicSize: `auto ${height}px`, overflowClipMargin: CLIP_MARGIN } : null;
+  const skipping: CSSProperties | null = skip && height !== null && !hidden ? { contentVisibility: "auto", containIntrinsicSize: `auto ${height}px`, overflowClipMargin: CLIP_MARGIN } : null;
   return (
     <div id={id} ref={ref} data-testid="session-tiles" hidden={hidden} style={{ ...style, ...skipping }}>
       {children}

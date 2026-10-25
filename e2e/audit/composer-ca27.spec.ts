@@ -169,14 +169,16 @@ const drawn = (page: Page) => page.evaluate(() => [...document.querySelectorAll<
 const boxes = (page: Page) => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].map((el) => ({ id: el.dataset.skelId, h: Math.round(el.getBoundingClientRect().height), drawn: el.dataset.drawn })));
 
 test.describe("P3 large builds", () => {
-  test("skipping a session's list off screen changes nothing to look at", async ({ page }) => {
-    // 40 tiles stay under the windowing; the only difference between the two shots is `content-visibility`.
-    await open(page, 1440, "&select=c27-2", 40);
+  test("a small build is not skipped, and a large one is, with nothing to look at changed", async ({ page }) => {
+    await open(page, 1440, "", 40);
+    expect(await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-testid="session-tiles"]')].filter((el) => getComputedStyle(el).contentVisibility === "auto").length)).toBe(0);
+    // 300 tiles: the only difference between the two shots is `content-visibility`.
+    await open(page, 1440, "&select=c27-2");
     const shoot = async () => {
       const out: Buffer[] = [];
-      for (const y of [0, 1100, 2300]) {
+      for (const y of [0, 2400, 6000]) {
         await page.evaluate((y) => window.scrollTo(0, y), y);
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(900);
         out.push(await page.screenshot());
       }
       return out;
@@ -185,7 +187,7 @@ test.describe("P3 large builds", () => {
     expect(lists.filter((value) => value === "auto").length).toBeGreaterThan(10);
     const withSkipping = await shoot();
     await page.addStyleTag({ content: '[data-testid="session-tiles"] { content-visibility: visible !important; }' });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     const without = await shoot();
     // Text sits on a sixty-fourth of a pixel here or there once a skipped list takes its measured height: no more than half of one per cent of the pixels may differ, and none by a line.
     for (let at = 0; at < withSkipping.length; at += 1) {
@@ -251,6 +253,10 @@ test.describe("P3 large builds", () => {
     await page.waitForTimeout(800);
     const r = await card.evaluate((el) => ({ top: el.getBoundingClientRect().top, bottom: el.getBoundingClientRect().bottom, ring: (el as HTMLElement).style.boxShadow, vh: innerHeight }));
     expect(r.ring).toContain("--selected-edge");
+    // The field stays in view under the header while the page moves from match to match.
+    const field = (await page.getByTestId("find-field").boundingBox())!;
+    expect(field.y).toBeGreaterThanOrEqual(44);
+    expect(field.y).toBeLessThan(120);
     expect(r.top).toBeGreaterThan(0);
     expect(r.bottom).toBeLessThan(r.vh);
     expect(Math.abs((r.top + r.bottom) / 2 - r.vh / 2)).toBeLessThan(r.vh * 0.2);
@@ -479,3 +485,81 @@ for (const width of TABLETS) {
     });
   });
 }
+
+/* ── P1 find ── */
+
+for (const width of [768, 1024, 1440]) {
+  test(`P1 find · ${width}: the field opens in the head row, 300 wide down to 200, with View and Add where they were`, async ({ page }) => {
+    await open(page, width, "", 40);
+    const place = () =>
+      page.evaluate(() => {
+        const r = (testid: string) => {
+          const b = document.querySelector(`[data-testid="${testid}"]`)?.getBoundingClientRect();
+          return b ? { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) } : null;
+        };
+        const add = [...document.querySelectorAll<HTMLElement>('section[aria-label="Build"] button')].find((el) => /^Add\b/.test(el.textContent ?? ""))?.getBoundingClientRect();
+        return { view: r("sandbox-view"), find: r("find-field"), button: r("find-button"), add: add ? { x: Math.round(add.left), y: Math.round(add.top) } : null, counts: r("sandbox-counts") };
+      });
+    const before = await place();
+    expect(before.button!.w).toBe(28);
+    expect(before.button!.h).toBe(28);
+    await page.getByRole("button", { name: "Find in build" }).click();
+    await page.getByTestId("find-field").waitFor();
+    const after = await place();
+    expect(after.find!.h).toBe(34);
+    expect(after.find!.w).toBeGreaterThanOrEqual(200);
+    expect(after.find!.w).toBeLessThanOrEqual(300);
+    // One line: View, Add and the field are level; none of them has moved.
+    expect(Math.abs(after.find!.y + 17 - (after.view!.y + after.view!.h / 2))).toBeLessThanOrEqual(6);
+    expect(after.view!.x).toBe(before.view!.x);
+    expect(after.add!.x).toBe(before.add!.x);
+    expect(after.view!.y).toBe(before.view!.y);
+    expect(after.find!.x).toBeGreaterThan(after.counts!.x);
+    expect(after.find!.x + after.find!.w).toBeLessThan(after.button!.x + 1);
+    const style = await page.getByTestId("find-field").evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { radius: s.borderTopLeftRadius, padding: s.paddingLeft, gap: s.columnGap, border: s.borderTopWidth };
+    });
+    expect([style.radius, parseInt(style.padding, 10), style.gap, style.border]).toEqual(["8px", 10, "8px", "1px"]);
+  });
+}
+
+/* ── hit areas: every new control answers a 44 by 44 touch on a tablet (CA-26's rule) ── */
+
+test.describe("P4 touch targets · 1024", () => {
+  test.use({ viewport: { width: 1024, height: 900 }, hasTouch: true });
+  test("Find in build, Previous match, Next match, Close find, Build actions and Close details are 44 by 44 or more", async ({ page }) => {
+    await open(page, 1024, "", 40);
+    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
+    await page.getByRole("button", { name: "Find in build" }).tap();
+    await page.getByTestId("find-field").waitFor();
+    await page.locator('[data-node-id="c27-5"] p').first().tap();
+    await page.getByTestId("details-overlay").waitFor();
+    await page.waitForTimeout(400);
+    const hits = await page.evaluate((names) =>
+      names.map((name) => {
+        const el = document.querySelector<HTMLElement>(`button[aria-label="${name}"]`)!;
+        const box = el.getBoundingClientRect();
+        const after = getComputedStyle(el, "::after");
+        const drawn = after.content !== "none" && after.content !== "normal" && after.position === "absolute";
+        return { name, w: Math.max(box.width, drawn ? parseFloat(after.width) : 0), h: Math.max(box.height, drawn ? parseFloat(after.height) : 0) };
+      }),
+      ["Find in build", "Previous match", "Next match", "Close find", "Build actions", "Close details"],
+    );
+    expect(hits.filter((hit) => hit.w < 43.5 || hit.h < 43.5).map((hit) => `${hit.name} ${hit.w}x${hit.h}`)).toEqual([]);
+  });
+});
+
+test("P3: the Session list jumps to a session of a windowed build and keeps it at the top while the tiles above are drawn", async ({ page }) => {
+  await open(page, 1440);
+  expect(await drawn(page)).not.toContain("c27-280");
+  await page.getByRole("button", { name: /^20\b/ }).click();
+  await page.waitForTimeout(2600);
+  const head = page.locator('[data-session-key] [data-testid="session-head"]').nth(19);
+  const top = await head.evaluate((el) => el.getBoundingClientRect().top);
+  expect(top).toBeGreaterThanOrEqual(-2);
+  expect(top).toBeLessThanOrEqual(120);
+  expect(await head.evaluate((el) => el === document.activeElement || el.contains(document.activeElement))).toBe(true);
+  // Its tiles are drawn.
+  expect((await drawn(page)).some((id) => Number((id as string).slice(4)) > 285)).toBe(true);
+});

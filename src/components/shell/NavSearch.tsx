@@ -104,6 +104,8 @@ export function NavSearch({
     if (!shortcut) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
+      // A page that has taken the key already (the build page's Find in build) keeps it.
+      if (event.defaultPrevented) return;
       if (isTypingTarget(event.target)) return;
       event.preventDefault();
       field.current?.focus();

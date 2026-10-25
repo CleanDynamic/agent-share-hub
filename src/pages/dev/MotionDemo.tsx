@@ -28,6 +28,7 @@ import { listPartsOf } from "@/pages/site/compose/partsModel";
 import { ReferenceNotice } from "@/pages/site/compose/referencePieces";
 import { SelectionBar } from "@/pages/site/compose/removePieces";
 import { BuildAnnouncer } from "@/pages/site/compose/BuildAnnouncer";
+import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { findTargetsOf } from "@/pages/site/compose/findIndex";
 import { tileElement } from "@/pages/site/compose/largeBuild";
 import { shortcutOf } from "@/lib/build/shortcuts";
@@ -122,6 +123,10 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
   const { counts } = sessionFacts(build.tree);
   const heads = useMemo(() => dividers(steps, groups, counts, {}), [steps, groups, counts]);
   const sessionKeys = sessionOrderOf(build.making);
+  /* CA-27 P3: the Session list (View), on the ca27 build: a chip for each session, jumping to its head. */
+  const jumpItems = useMemo(() => sessionKeys.map((key, at) => ({ key, number: at + 1, label: build.making.sessions_meta?.[key]?.title ?? "Session" })), [sessionKeys, build.making]);
+  const headOf = useCallback((key: string) => document.querySelector<HTMLElement>(`[data-session-key="${key}"] [data-testid="session-head"]`), []);
+  const inView = useCurrentSession(useMemo(() => jumpItems.map((item) => item.key), [jumpItems]), headOf, params.get("build") === "ca27");
   /* CA-27 P1: Find in build, as the page holds it. */
   const findTargets = useMemo(() => findTargetsOf({ steps, dividers: heads, parts: partsModel ? { parts: partsModel.list } : undefined }), [steps, heads, partsModel]);
   const isFolded = useCallback((key: string) => collapsed.has(key) || Boolean(partsModel?.list.find((part) => part.view.key === key)?.view.collapsed), [collapsed, partsModel]);
@@ -307,6 +312,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
         lens={lens}
         onLens={setLens}
         mapAvailable
+        sessionList={params.get("build") === "ca27" && jumpItems.length >= 2 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : undefined}
         selectedKey={selectedId}
         onEditSelected={selectedId ? () => note("Opened the tile's window") : undefined}
         find={phone ? undefined : find}

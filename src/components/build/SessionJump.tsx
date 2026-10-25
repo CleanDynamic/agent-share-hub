@@ -6,6 +6,7 @@
 // focuses it. The composer shows it when the maker turns it on; the build page shows it to readers once a build has three
 // sessions. Nothing here writes.
 
+import { settle } from "@/pages/site/compose/largeBuild";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Fragment, useEffect, useState } from "react";
 
@@ -89,6 +90,20 @@ export function jumpTo(head: HTMLElement | null): void {
   if (!head) return;
   head.scrollIntoView?.({ block: "start", behavior: scrollBehavior() });
   head.focus({ preventScroll: true });
+  /* CA-27 P3: in a large build the tiles above the session were guessed at and shift as the jump passes them: once it has arrived the
+     head is kept at the top of the page for a moment. In a smaller build it is there already and nothing moves. */
+  window.setTimeout(
+    () =>
+      settle(
+        () => {
+          const top = head.getBoundingClientRect().top;
+          return !head.isConnected || (top >= -2 && top <= 120);
+        },
+        () => head.scrollIntoView?.({ block: "start" }),
+        1400,
+      ),
+    500,
+  );
 }
 
 function Chip({ item, current, onJump }: { item: SessionJumpItem; current: boolean; onJump: () => void }) {

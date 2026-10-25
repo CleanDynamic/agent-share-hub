@@ -27,6 +27,8 @@ const FIELD: CSSProperties = {
   flex: "0 1 300px",
   minWidth: 200,
   height: 34,
+  /* The row it opens in is 28 high: the field stands 3 over its top and its foot (its margin box is 26), so nothing under the row moves. */
+  margin: "-4px 0",
   boxSizing: "border-box",
   display: "flex",
   alignItems: "center",
