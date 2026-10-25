@@ -66,6 +66,8 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   }
 
   return (
+    // SV-01: raw HTML on purpose. This builds CSS from the chart's own config
+    // (colours the code that draws the chart passes in), never from user text.
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
