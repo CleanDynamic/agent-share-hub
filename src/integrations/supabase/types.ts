@@ -899,6 +899,7 @@ export type Database = {
       builds: {
         Row: {
           ai_turn_count: number
+          classification: Json
           completeness: number | null
           cost_monthly: number | null
           cost_setup: number | null
@@ -908,6 +909,7 @@ export type Database = {
           creator_id: string
           currency: string | null
           donation_enabled: boolean | null
+          facets: string[]
           forked_from_event_id: string | null
           hero_node_id: string | null
           id: string
@@ -945,6 +947,7 @@ export type Database = {
         }
         Insert: {
           ai_turn_count?: number
+          classification?: Json
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
@@ -954,6 +957,7 @@ export type Database = {
           creator_id: string
           currency?: string | null
           donation_enabled?: boolean | null
+          facets?: string[]
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
@@ -991,6 +995,7 @@ export type Database = {
         }
         Update: {
           ai_turn_count?: number
+          classification?: Json
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
@@ -1000,6 +1005,7 @@ export type Database = {
           creator_id?: string
           currency?: string | null
           donation_enabled?: boolean | null
+          facets?: string[]
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
@@ -5596,6 +5602,14 @@ export type Database = {
       }
     }
     Views: {
+      classification_custom_entries: {
+        Row: {
+          count: number | null
+          facet: string | null
+          text: string | null
+        }
+        Relationships: []
+      }
       profile_stats: {
         Row: {
           avg_reading_minutes: number | null
@@ -5635,6 +5649,7 @@ export type Database = {
         Returns: boolean
       }
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
+      classification_facets: { Args: { thresholds?: Json }; Returns: Json }
       expire_import_sessions: { Args: never; Returns: number }
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       gallery_facets_base: { Args: { thresholds?: Json }; Returns: Json }
