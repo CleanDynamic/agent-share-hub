@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AddDatasetDialog, DATASET_DIALOG_COPY } from "./AddDatasetDialog";
 import { AddRepoDialog, REPO_DIALOG_COPY } from "./AddRepoDialog";
 import { AddSystemPromptDialog, SYSTEM_PROMPT_DIALOG_COPY } from "./AddSystemPromptDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -20,12 +21,9 @@ afterEach(() => {
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const status = () => screen.getByTestId("modal-status").textContent;
 const type = (label: string, value: string) => fireEvent.change(screen.getAllByLabelText(label).at(-1) as HTMLElement, { target: { value } });
-const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
-const openRow = (name: string) => {
-  const head = row(name).querySelector("button") as HTMLButtonElement;
-  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
-};
-const rowNames = () => screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent);
+const row = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
+const rowNames = () => fieldNames();
 
 describe("Add › System prompt", () => {
   const prompts = [
@@ -54,8 +52,8 @@ describe("Add › System prompt", () => {
 
   it("lists Model, Version and Variables closed in Optional, with placeholders that are the example alone", () => {
     open();
-    expect(rowNames()).toEqual(["Model", "Version", "Variables"]);
     expect(screen.queryByLabelText("Version")).toBeNull();
+    expect(rowNames()).toEqual(["Model", "Version", "Variables"]);
     expect((screen.getByLabelText("Name") as HTMLInputElement).placeholder).not.toMatch(/^e\.g\./);
     expect((screen.getByLabelText("Text") as HTMLTextAreaElement).placeholder).not.toMatch(/^e\.g\./);
   });

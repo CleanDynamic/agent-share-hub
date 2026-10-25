@@ -837,6 +837,16 @@ export const OPTIONAL = {
   value: { ...COUNT, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis" } as CSSProperties,
   chevron: (open: boolean): CSSProperties => ({ display: "inline-flex", flexShrink: 0, color: t.label, transform: open ? "rotate(180deg)" : "none" }),
   body: (inset: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap: 8, padding: `2px ${inset}px 14px`, minWidth: 0 }),
+  /** CA-28: the toggle row's right side: the count, then the chevron. */
+  tail: { display: "inline-flex", alignItems: "center", gap: 8 } as CSSProperties,
+  /** CA-28: a field shown directly in the section: its label and hint, then its input, as the required fields are. */
+  fieldHead: { display: "flex", flexDirection: "column", gap: 2, minWidth: 0 } as CSSProperties,
+  fieldLabelLine: { display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 } as CSSProperties,
+  fieldBody: { display: "flex", flexDirection: "column", minWidth: 0, gap: 8 } as CSSProperties,
+  /** CA-28: the region the fields are drawn in. */
+  region: { display: "flex", flexDirection: "column", minWidth: 0 } as CSSProperties,
+  /** CA-28: the toggle's own fill, width and box; it takes the summary's, the header's and the focus ring. */
+  toggle: (inset: number, hovered: boolean, phone: boolean, focusVisible: boolean): CSSProperties => ({ ...OPTIONAL.summary(inset, hovered, phone), ...OPTIONAL.header(inset), width: "100%", boxSizing: "border-box", ...OPTIONAL.focus(focusVisible) }),
 } as const;
 
 /* ── panels ── */
@@ -885,6 +895,12 @@ export function QuestionRow({ label, id, group = false, top = false, first = fal
 
 /** An option row: a 16 grip, a 120 key, the description, a 28 remove; gap 8. */
 export const optionRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "44px minmax(0, 1fr) minmax(0, 1fr) 44px" : "16px 120px minmax(0, 1fr) 28px", gap: 8, alignItems: "center", minWidth: 0 });
+
+/** CA-28: an option row once its description has moved into Optional: a 16 grip, the key across the rest, a 28 remove; gap 8. */
+/** CA-28: one option's description in the Option descriptions field: its key at the left (120), the description across the rest. */
+export const optionDescribeRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "120px minmax(0, 1fr)", gap: 8, alignItems: "center", minWidth: 0 });
+
+export const optionKeyRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "44px minmax(0, 1fr) 44px" : "16px minmax(0, 1fr) 28px", gap: 8, alignItems: "center", minWidth: 0 });
 
 /** The grip that drags an option, 16 wide. */
 export const GRIP: CSSProperties = { appearance: "none", background: "none", border: 0, padding: 0, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label, cursor: "grab" };

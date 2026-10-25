@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddToolDialog, CONNECTION_CHOICES, TOOL_DIALOG_COPY, type AddToolDialogProps } from "./AddToolDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -23,8 +24,8 @@ const toolButton = () => screen.getByRole("button", { name: "App" });
 const find = () => screen.getByRole("combobox", { name: "Find an app" });
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const control = (name: string) => screen.getAllByLabelText(name).at(-1) as HTMLElement;
-const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => within(el).queryByText(name)) as HTMLElement;
-const openRow = (name: string) => fireEvent.click(within(row(name)).getByRole("button"));
+const row = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 
 function pickGitHub() {
   fireEvent.click(toolButton());
@@ -41,8 +42,10 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     expect(screen.getByTestId("modal-status").textContent).toBe("Required: App");
     expect(add().disabled).toBe(true);
     expect(screen.getByTestId("optional-count").textContent).toBe("6 fields");
-    expect(screen.getAllByTestId("optional-field").map((el) => within(el).getAllByRole("button")[0].getAttribute("aria-expanded"))).toEqual(Array(6).fill("false"));
-    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual(["Connection method", "Actions performed", "Permissions", "Required plan", "Setup steps", "Alternatives"]);
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryAllByTestId("optional-field")).toHaveLength(0);
+    expect(fieldNames()).toEqual(["Connection method", "Actions performed", "Permissions", "Required plan", "Setup steps", "Alternatives"]);
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
     expect(document.body.textContent).not.toMatch(/How was it connected|What did it do|Pick an app/);
   });
 
@@ -112,12 +115,12 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("shows what a row holds in place of its description once it is filled and closed", () => {
+  it("says in the toggle row how many fields hold something", () => {
     open();
     openRow("Actions performed");
+    expect(screen.getByTestId("optional-count").textContent).toBe("6 fields");
     fireEvent.change(control("Actions performed"), { target: { value: "read issues" } });
-    openRow("Actions performed");
-    expect(within(row("Actions performed")).getByTestId("optional-value").textContent).toBe("read issues");
+    expect(row("Actions performed").textContent).toContain("Actions performed");
   });
 
   it("with API key chosen, Setup steps says to name the key and never paste its value", () => {
@@ -126,8 +129,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     openRow("Connection method");
     fireEvent.click(screen.getByRole("button", { name: "API key" }));
     // CA-15b: the row's grey line is the board's; the key's warning is said inside the row.
-    expect(within(row("Setup steps")).getByTestId("optional-line").textContent).toBe("");
-    openRow("Setup steps");
+    expect(within(row("Setup steps")).queryByTestId("optional-line")).toBeNull();
     expect(screen.getByTestId("setup-key-hint").textContent).toBe("Key names only, like GITHUB_TOKEN");
   });
 
@@ -135,7 +137,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     const props = open();
     pickGitHub();
     openRow("Alternatives");
-    const picker = within(screen.getByRole("region", { name: /Alternatives/ })).getByRole("button", { name: "Alternatives" });
+    const picker = within(row("Alternatives")).getByRole("button", { name: "Alternatives" });
     for (const name of ["gitlab", "gitlab", "github"]) {
       fireEvent.click(picker);
       fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: name } });

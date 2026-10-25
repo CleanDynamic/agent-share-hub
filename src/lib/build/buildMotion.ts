@@ -87,6 +87,14 @@ export const BAR_RISE = 16;
 /** Selection rings fade in and out. */
 export const RING_IN = 100;
 export const RING_OUT = 150;
+/* ── CA-28: a window's Optional fields, on demand ──
+   Opening: the frame grows over `BASE` about its fixed centre; `OPTIONAL_DROP_AFTER` after the press each field falls `DROP_FALL` and
+   fades in over `DROP`, `STAGGER` apart, the 12th and the rest together. Closing: the fields lift (`LIFT_RISE`, `OPTIONAL_LIFT`),
+   last first, `OPTIONAL_LIFT_STAGGER` apart; then the frame closes over `BASE`. */
+export const OPTIONAL_LIFT = 160;
+export const OPTIONAL_LIFT_STAGGER = 40;
+/** The first field starts to fall this long after the press, while the frame is still opening. */
+export const OPTIONAL_DROP_AFTER = 100;
 /** The notice rises this far and fades in. */
 export const NOTICE_RISE = 8;
 /** Scrolling to something off screen. Longer than the ceiling: it carries the eye to a new place. */

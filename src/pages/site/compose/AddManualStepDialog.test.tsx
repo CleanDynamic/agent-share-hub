@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddManualStepDialog, MANUAL_DIALOG_COPY, type AddManualStepDialogProps } from "./AddManualStepDialog";
+import { openOptional } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -29,6 +30,7 @@ const where = (name: string) => fireEvent.click(screen.getByRole("button", { nam
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const line = (n = 1) => screen.getByLabelText(`Line ${n}`) as HTMLInputElement;
 const picture = (type: string, size = 100, name = "hero.png") => {
+  openOptional();
   const file = new File(["x"], name, { type });
   Object.defineProperty(file, "size", { value: size });
   fireEvent.change(screen.getByTestId("manual-picture"), { target: { files: [file] } });

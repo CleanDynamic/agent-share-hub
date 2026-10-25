@@ -29,7 +29,6 @@ import { FLOATING_Z } from "./ToolPicker";
 import { MenuContent } from "./ComposeMenu";
 
 export const EXTRAS_COPY = {
-  optional: "Optional",
   cost: "What it cost",
   costHint: "3.40",
   costPound: "£",
@@ -40,6 +39,11 @@ export const EXTRAS_COPY = {
   how: "Method",
   watching: "Supervised",
   background: "Background",
+  time: "How long it ran",
+  timeHint: "Minutes",
+  tokens: "Tokens used",
+  trace: "Trace link",
+  traceHint: "https only",
   startedWith: "Started with",
   startedWithHint: "claude --model opus --permission-mode plan",
   together: "Ran alongside",
@@ -76,107 +80,133 @@ export function ExtrasInput({ label, value, placeholder, max, phone, inputMode, 
   );
 }
 
-/** P2: What it cost, Show readers, and How did you work?. */
-export function SessionFactsFields({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+/* CA-28 P4: the session's optional facts are the fields of the window's Optional section, which draws each label and hint. What is
+   left here is the control of each: a well you type in or a choice row, writing when it is left. Each says what it holds
+   (`…Held`) so the section can count the fields that hold something. */
+
+type Save = (change: Partial<SessionExtras>) => void;
+
+/** What it cost, as the section counts it. */
+export const costHeld = (extras: SessionExtras): string | null => (extras.cost !== undefined ? `${extras.currency === "USD" ? EXTRAS_COPY.costDollar : EXTRAS_COPY.costPound}${extras.cost.toFixed(2)}` : null);
+
+/** What it cost, and Show readers. */
+export function CostControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
   const [wrong, setWrong] = useState(false);
   const symbol = extras.currency === "USD" ? EXTRAS_COPY.costDollar : EXTRAS_COPY.costPound;
   /** The whole entry again with one key changed; a key set to undefined goes. */
-  const save = (change: Partial<SessionExtras>) => onChange({ ...extras, ...change });
+  const save: Save = (change) => onChange({ ...extras, ...change });
   return (
     <>
-      <Field id={`${id}-cost`} label={EXTRAS_COPY.cost} hint={EXTRAS_COPY.optional}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span aria-hidden="true" style={text(13, 400, t.text2)}>{symbol}</span>
-          <div style={{ width: 120 }}>
-            <ExtrasInput
-              key={`${id}:cost:${extras.cost ?? ""}`}
-              label={EXTRAS_COPY.cost}
-              value={extras.cost !== undefined ? extras.cost.toFixed(2) : ""}
-              placeholder={EXTRAS_COPY.costHint}
-              max={10}
-              phone={phone}
-              inputMode="decimal"
-              onCommit={(value) => {
-                const cost = costField(value);
-                setWrong(cost === null);
-                if (cost === null) return;
-                // A typed cost is in pounds; one read from a result file stays in the file's dollars until it is retyped.
-                save(cost === undefined ? { cost: undefined, currency: undefined } : { cost, currency: extras.currency ?? "GBP" });
-              }}
-            />
-          </div>
-        </div>
-        {wrong ? <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.costBad}</span> : null}
-        <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
-          <Checkbox checked={extras.showCost === true} onChange={(event) => save({ showCost: event.target.checked ? true : undefined })} />
-          <span style={text(13, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
-        </label>
-        <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.showReadersLine}</span>
-      </Field>
-      <Field id={`${id}-time`} label="How long it ran" hint="Minutes">
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span aria-hidden="true" style={text(13, 400, t.text2)}>{symbol}</span>
         <div style={{ width: 120 }}>
           <ExtrasInput
-            key={`${id}:ms:${extras.ms ?? ""}`}
-            label="How long it ran"
-            value={extras.ms !== undefined ? String(Math.round((extras.ms / 60_000) * 10) / 10) : ""}
-            placeholder="45"
-            max={8}
+            key={`${id}:cost:${extras.cost ?? ""}`}
+            label={EXTRAS_COPY.cost}
+            value={extras.cost !== undefined ? extras.cost.toFixed(2) : ""}
+            placeholder={EXTRAS_COPY.costHint}
+            max={10}
             phone={phone}
             inputMode="decimal"
             onCommit={(value) => {
-              const minutes = Number(value.trim());
-              save({ ms: value.trim() && Number.isFinite(minutes) && minutes >= 0 ? Math.round(minutes * 60_000) : undefined });
+              const cost = costField(value);
+              setWrong(cost === null);
+              if (cost === null) return;
+              // A typed cost is in pounds; one read from a result file stays in the file's dollars until it is retyped.
+              save(cost === undefined ? { cost: undefined, currency: undefined } : { cost, currency: extras.currency ?? "GBP" });
             }}
           />
         </div>
-      </Field>
-      <Field id={`${id}-tokens`} label="Tokens used" hint="Optional">
-        <div style={{ width: 160 }}>
-          <ExtrasInput
-            key={`${id}:tokens:${extras.tokens ?? ""}`}
-            label="Tokens used"
-            value={extras.tokens !== undefined ? String(extras.tokens) : ""}
-            placeholder="1200000"
-            max={14}
-            phone={phone}
-            inputMode="numeric"
-            onCommit={(value) => {
-              const n = Number(value.trim().replace(/,/g, ""));
-              save({ tokens: value.trim() && Number.isInteger(n) && n > 0 ? n : undefined });
-            }}
-          />
-        </div>
-      </Field>
-      <Field id={`${id}-trace`} label="Trace link" hint="https only">
-        <ExtrasInput
-          key={`${id}:trace:${extras.traceUrl ?? ""}`}
-          label="Trace link"
-          value={extras.traceUrl ?? ""}
-          placeholder="https://smith.langchain.com/…"
-          max={2000}
-          phone={phone}
-          onCommit={(value) => save({ traceUrl: traceUrlOf(value) ?? undefined })}
-        />
-      </Field>
-      <Field id={`${id}-how`} label={EXTRAS_COPY.how} hint={EXTRAS_COPY.optional} group>
-        <ChoiceRows<"watching" | "background">
-          label={EXTRAS_COPY.how}
-          name={`how-${id}`}
-          phone={phone}
-          value={extras.background ? "background" : "watching"}
-          onChange={(how) => save({ background: how === "background" ? true : undefined })}
-          rows={[
-            { value: "watching", label: EXTRAS_COPY.watching },
-            { value: "background", label: EXTRAS_COPY.background },
-          ]}
-        />
-      </Field>
+      </div>
+      {wrong ? <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.costBad}</span> : null}
+      <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
+        <Checkbox checked={extras.showCost === true} onChange={(event) => save({ showCost: event.target.checked ? true : undefined })} />
+        <span style={text(13, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
+      </label>
+      <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.showReadersLine}</span>
     </>
   );
 }
 
+/** How long it ran, in minutes. */
+export const timeHeld = (extras: SessionExtras): string | null => (extras.ms !== undefined ? String(Math.round((extras.ms / 60_000) * 10) / 10) : null);
+export function TimeControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <div style={{ width: 120 }}>
+      <ExtrasInput
+        key={`${id}:ms:${extras.ms ?? ""}`}
+        label={EXTRAS_COPY.time}
+        value={timeHeld(extras) ?? ""}
+        placeholder="45"
+        max={8}
+        phone={phone}
+        inputMode="decimal"
+        onCommit={(value) => {
+          const minutes = Number(value.trim());
+          onChange({ ...extras, ms: value.trim() && Number.isFinite(minutes) && minutes >= 0 ? Math.round(minutes * 60_000) : undefined });
+        }}
+      />
+    </div>
+  );
+}
+
+/** Tokens used. */
+export const tokensHeld = (extras: SessionExtras): string | null => (extras.tokens !== undefined ? String(extras.tokens) : null);
+export function TokensControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <div style={{ width: 160 }}>
+      <ExtrasInput
+        key={`${id}:tokens:${extras.tokens ?? ""}`}
+        label={EXTRAS_COPY.tokens}
+        value={tokensHeld(extras) ?? ""}
+        placeholder="1200000"
+        max={14}
+        phone={phone}
+        inputMode="numeric"
+        onCommit={(value) => {
+          const n = Number(value.trim().replace(/,/g, ""));
+          onChange({ ...extras, tokens: value.trim() && Number.isInteger(n) && n > 0 ? n : undefined });
+        }}
+      />
+    </div>
+  );
+}
+
+/** The trace link (https only). */
+export function TraceControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <ExtrasInput
+      key={`${id}:trace:${extras.traceUrl ?? ""}`}
+      label={EXTRAS_COPY.trace}
+      value={extras.traceUrl ?? ""}
+      placeholder="https://smith.langchain.com/…"
+      max={2000}
+      phone={phone}
+      onCommit={(value) => onChange({ ...extras, traceUrl: traceUrlOf(value) ?? undefined })}
+    />
+  );
+}
+
+/** Method: supervised or in the background. Held only when it is the background, the one that is stored. */
+export const methodHeld = (extras: SessionExtras): string | null => (extras.background ? EXTRAS_COPY.background : null);
+export function MethodControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <ChoiceRows<"watching" | "background">
+      label={EXTRAS_COPY.how}
+      name={`how-${id}`}
+      phone={phone}
+      value={extras.background ? "background" : "watching"}
+      onChange={(how) => onChange({ ...extras, background: how === "background" ? true : undefined })}
+      rows={[
+        { value: "watching", label: EXTRAS_COPY.watching },
+        { value: "background", label: EXTRAS_COPY.background },
+      ]}
+    />
+  );
+}
+
 /** P3: Started with: the command that opened the session in a code well, and the settings it names in plain words. */
-export function StartedWithField({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+export function StartedWithControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
   const command = extras.startedWith ?? "";
   const [draft, setDraft] = useState(command);
   const { state, handlers } = useInteractive<HTMLTextAreaElement>({
@@ -190,7 +220,7 @@ export function StartedWithField({ id, extras, phone, onChange }: { id: string; 
   });
   const lines = settingLines(draft.trim());
   return (
-    <Field id={`${id}-started`} label={EXTRAS_COPY.startedWith} hint={EXTRAS_COPY.optional}>
+    <>
       <textarea
         id={`${id}-started`}
         aria-label={EXTRAS_COPY.startedWith}
@@ -212,7 +242,7 @@ export function StartedWithField({ id, extras, phone, onChange }: { id: string; 
           ))}
         </ul>
       ) : null}
-    </Field>
+    </>
   );
 }
 
@@ -222,57 +252,58 @@ export interface OtherSession {
   label: string;
 }
 
-/** P5: Ran at the same time as (a menu, more than one allowed), and Own copy of the code (a branch or folder name). */
-export function TogetherFields({ id, extras, others, phone, onTogether, onChange, part = "both" }: { id: string; extras: SessionExtras; others: readonly OtherSession[]; phone: boolean; onTogether?: (keys: string[]) => void; onChange: (change: SessionExtras) => void; /** CA-18: the session's window draws the two apart. */ part?: "both" | "together" | "copy" }) {
-  const [open, setOpen] = useState(false);
+/** Own copy of the code (a branch or folder name). */
+export function OwnCopyControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <ExtrasInput
+      key={`${id}:copy:${extras.ownCopy ?? ""}`}
+      label={EXTRAS_COPY.ownCopy}
+      value={extras.ownCopy ?? ""}
+      placeholder={EXTRAS_COPY.ownCopyHint}
+      max={OWN_COPY_MAX}
+      phone={phone}
+      onCommit={(value) => onChange({ ...extras, ownCopy: value.trim() || undefined })}
+    />
+  );
+}
+
+/** P5: Ran alongside: the other sessions of the build, a menu that allows more than one. */
+export const togetherHeld = (extras: SessionExtras, others: readonly OtherSession[]): string | null => {
   const chosen = new Set(extras.parallelWith ?? []);
   const shown = others.filter((other) => chosen.has(other.key)).map((other) => other.label.split(" · ")[0]);
+  return shown.length > 0 ? shown.join(", ") : null;
+};
+export function TogetherControl({ extras, others, phone, onTogether }: { extras: SessionExtras; others: readonly OtherSession[]; phone: boolean; onTogether: (keys: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const chosen = new Set(extras.parallelWith ?? []);
+  const shown = togetherHeld(extras, others) ?? "";
   return (
-    <>
-      {part !== "copy" && others.length > 0 && onTogether ? (
-        <Field id={`${id}-together`} label={EXTRAS_COPY.together} hint={EXTRAS_COPY.optional} group>
-          <Menu.Root open={open} onOpenChange={setOpen}>
-            <Menu.Trigger asChild>
-              <MenuButton aria-label={EXTRAS_COPY.together} label={shown.length > 0 ? "" : EXTRAS_COPY.togetherNone} value={shown.join(", ")} open={open} style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }} />
-            </Menu.Trigger>
-            <Menu.Portal>
-              <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
-                {others.map((other) => (
-                  <Menu.CheckboxItem
-                    key={other.key}
-                    checked={chosen.has(other.key)}
-                    // The menu stays open, so more than one can be ticked.
-                    onSelect={(event) => event.preventDefault()}
-                    onCheckedChange={(on) => onTogether(on ? [...chosen, other.key] : [...chosen].filter((key) => key !== other.key))}
-                    style={{ ...menuItem(true, phone), gap: 6 }}
-                  >
-                    <span style={{ width: 14, display: "inline-flex" }}>
-                      <Menu.ItemIndicator>
-                        <Glyph name="check" size={14} />
-                      </Menu.ItemIndicator>
-                    </span>
-                    {other.label}
-                  </Menu.CheckboxItem>
-                ))}
-              </MenuContent>
-            </Menu.Portal>
-          </Menu.Root>
-        </Field>
-      ) : null}
-      {part === "together" ? null : (
-        <Field id={`${id}-copy`} label={EXTRAS_COPY.ownCopy} hint={EXTRAS_COPY.optional}>
-          <ExtrasInput
-            key={`${id}:copy:${extras.ownCopy ?? ""}`}
-            label={EXTRAS_COPY.ownCopy}
-            value={extras.ownCopy ?? ""}
-            placeholder={EXTRAS_COPY.ownCopyHint}
-            max={OWN_COPY_MAX}
-            phone={phone}
-            onCommit={(value) => onChange({ ...extras, ownCopy: value.trim() || undefined })}
-          />
-        </Field>
-      )}
-    </>
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger asChild>
+        <MenuButton aria-label={EXTRAS_COPY.together} label={shown ? "" : EXTRAS_COPY.togetherNone} value={shown} open={open} style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }} />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
+          {others.map((other) => (
+            <Menu.CheckboxItem
+              key={other.key}
+              checked={chosen.has(other.key)}
+              // The menu stays open, so more than one can be ticked.
+              onSelect={(event) => event.preventDefault()}
+              onCheckedChange={(on) => onTogether(on ? [...chosen, other.key] : [...chosen].filter((key) => key !== other.key))}
+              style={{ ...menuItem(true, phone), gap: 6 }}
+            >
+              <span style={{ width: 14, display: "inline-flex" }}>
+                <Menu.ItemIndicator>
+                  <Glyph name="check" size={14} />
+                </Menu.ItemIndicator>
+              </span>
+              {other.label}
+            </Menu.CheckboxItem>
+          ))}
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 

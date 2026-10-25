@@ -30,6 +30,7 @@ import { MEDIA_MAX_BYTES, mediaKindFor } from "@/lib/build/media";
 
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, GROW, Inline, LabelText, MODAL_WIDTH, OptionGrid, PANEL_LIST, TextLink } from "./modalRecipes";
+import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
 
 export const MANUAL_DIALOG_COPY = {
@@ -172,17 +173,18 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
         </TextLink>
       </Block>
 
-      <Block label={MANUAL_DIALOG_COPY.picture}>
-        <BlockHead label={MANUAL_DIALOG_COPY.picture} />
-        <Inline>
-          <FileButton phone={phone} accept="image/*" onFiles={choose} testId="manual-picture" inputLabel={MANUAL_DIALOG_COPY.addPicture}>
-            {file ? MANUAL_DIALOG_COPY.anotherPicture : MANUAL_DIALOG_COPY.addPicture}
-          </FileButton>
-        </Inline>
-        {file ? <FileLine name={file.name} removeLabel="Remove" onRemove={() => setFile(null)} phone={phone} /> : null}
-        {!file && kept ? <FileLine name={kept} removeLabel="Remove the picture" onRemove={() => setKept(null)} phone={phone} /> : null}
-        {fileError ? <Alert>{fileError}</Alert> : null}
-      </Block>
+      <OptionalSection>
+        <OptionalField name={MANUAL_DIALOG_COPY.picture} summary={summaryOf(file?.name, file ? null : kept)} phone={phone}>
+          <Inline>
+            <FileButton phone={phone} accept="image/*" onFiles={choose} testId="manual-picture" inputLabel={MANUAL_DIALOG_COPY.addPicture}>
+              {file ? MANUAL_DIALOG_COPY.anotherPicture : MANUAL_DIALOG_COPY.addPicture}
+            </FileButton>
+          </Inline>
+          {file ? <FileLine name={file.name} removeLabel="Remove" onRemove={() => setFile(null)} phone={phone} /> : null}
+          {!file && kept ? <FileLine name={kept} removeLabel="Remove the picture" onRemove={() => setKept(null)} phone={phone} /> : null}
+          {fileError ? <Alert>{fileError}</Alert> : null}
+        </OptionalField>
+      </OptionalSection>
       {edit?.after ? edit.after(input()) : null}
     </ModalForm>
   );

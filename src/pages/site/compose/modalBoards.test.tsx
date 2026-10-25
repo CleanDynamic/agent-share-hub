@@ -17,6 +17,7 @@ import { AddDecisionDialog } from "./AddDecisionDialog";
 import { AddRepoDialog } from "./AddRepoDialog";
 import { AddResultDialog } from "./AddResultDialog";
 import { AddToolDialog } from "./AddToolDialog";
+import { openOptional } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: /min-width/.test(query), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -29,8 +30,10 @@ afterEach(() => {
 const mount = (element: ReactElement) => render(<MemoryRouter>{element}</MemoryRouter>);
 
 /** The Optional rows, each as [title, hint]. */
-const optionalRows = () =>
-  screen.getAllByTestId("optional-field").map((row) => [within(row).getByTestId("optional-title").textContent, within(row).getByTestId("optional-line").textContent]);
+const optionalRows = () => {
+  openOptional();
+  return screen.getAllByTestId("optional-field").map((row) => [within(row).getByTestId("optional-title").textContent, within(row).queryByTestId("optional-line")?.textContent ?? ""]);
+};
 
 /** True when each word appears in the text after the one before it. */
 function inOrder(text: string, words: readonly string[]): string[] {
@@ -139,9 +142,10 @@ describe("each modal as its board (CA-15b P2)", () => {
     mount(<AddDecisionDialog open onOpenChange={() => {}} onAdd={() => {}} codeTiles={[]} stepChoices={[]} />);
     header("Add a decision", "Structured answer from a model");
     expect(
-      inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Model", "Model or service", "Version", "Invocation", "Direct", "Through an adapter", "Questions", "1 question", "Question 1", "Key", "Type", "Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction", "Instructions", "Options", "Add an option", "Add a question", "Optional", "7 fields"]),
+      inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Model", "Model or service", "Version", "Invocation", "Direct", "Through an adapter", "Questions", "1 question", "Question 1", "Key", "Type", "Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction", "Instructions", "Options", "Add an option", "Add a question", "Optional", "8 fields"]),
     ).toEqual([]);
     expect(optionalRows()).toEqual([
+      ["Option descriptions", ""],
       ["Import request and response", "From JSON, curl or Python"],
       ["Calling code", "Code tile that sends the request"],
       ["Input", "Another tile's output, or sample text"],
@@ -201,10 +205,8 @@ describe("each modal as its board (CA-15b P2)", () => {
       ["Model settings", ""],
       ["Variables", "Format: {company name}"],
     ]);
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[0]).getByRole("button"));
     expect(within(screen.getByRole("radiogroup", { name: "Reasoning effort" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Default", "Low", "High"]);
     expect((screen.getByLabelText("Custom instructions or project knowledge that applied") as HTMLTextAreaElement).placeholder).toBe("Custom instructions or project knowledge that applied");
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[1]).getByRole("button"));
     expect(screen.getByText("No variables yet")).toBeTruthy();
   });
 });

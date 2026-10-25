@@ -6,6 +6,7 @@ import { ResultTileBody } from "@/components/build/tileBodies";
 import { resultFactsOf, resultHolds, resultHoldsWord, resultLinkOf, resultRefusal, resultSummaryOf, resultTypeLabel } from "@/lib/build/graph";
 
 import { AddResultDialog, RESULT_CHOICES, RESULT_DIALOG_COPY } from "./AddResultDialog";
+import { fieldNames, openOptional } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -151,10 +152,8 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
     type_("Value", "42");
     expect(status()).toBe("Required: Label");
     type_("Label", "Orders per week");
-    expect(screen.getAllByTestId("optional-field").map((row) => within(row).getAllByRole("button")[0].textContent)).toEqual(["Unit", "Value before", "Caption" + "One line"]);
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[0]).getByRole("button"));
+    expect(fieldNames()).toEqual(["Unit", "Value before", "Caption"]);
     type_("Unit", "orders");
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[1]).getByRole("button"));
     type_("Value before", "31");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "metric", value: "42", label: "Orders per week", unit: "orders", before: "31", caption: "" });
@@ -165,7 +164,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
     type("Offline outcome");
     expect(status()).toBe("Required: Description");
     type_("Description", "Delivered the loaves by hand");
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[0]).getByRole("button"));
+    openOptional();
     const photo = new File(["x"], "stall.jpg", { type: "image/jpeg" });
     fireEvent.change(screen.getByTestId("result-photo"), { target: { files: [photo] } });
     fireEvent.click(add());
@@ -174,10 +173,9 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
 
   it("every type has a one-line caption in Optional, closed to begin with, and hands it back trimmed", () => {
     const onAdd = open();
-    const row = screen.getByTestId("optional-field");
-    expect(within(row).getByRole("button").getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     type_("URL", "plumandrye.example");
-    fireEvent.click(within(row).getByRole("button"));
+    openOptional();
     type_("Caption", "  The launch page  ");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "link", url: "plumandrye.example", caption: "The launch page" });

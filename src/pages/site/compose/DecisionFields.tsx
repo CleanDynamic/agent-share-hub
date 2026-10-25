@@ -24,9 +24,12 @@ import { firstLineOf } from "@/lib/build/graph";
 
 import { ChoiceGrid } from "./ChoiceGrid";
 import {
+  BODY_TEXT,
   Block,
   BlockHead,
   Count,
+  DATA_FACE,
+  ELLIPSIS,
   FieldArea,
   FieldInput,
   GRIP,
@@ -47,7 +50,8 @@ import {
   Spread,
   StatusLine,
   TextLink,
-  optionRowStyle,
+  optionKeyRowStyle, optionDescribeRowStyle,
+  LabelText,
 } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { PickMenu } from "./PickMenu";
@@ -101,6 +105,8 @@ export const DECISION_COPY = {
   escalate: "Escalate to a person",
   thresholdPlaceholder: "0.6",
   optionDescription: "Description",
+  optionDescriptions: "Option descriptions",
+  noOptionsYet: "No options yet",
   fieldType: "Field type",
   questionsCount: (n: number) => `${n} ${n === 1 ? "question" : "questions"}`,
   question: (n: number) => `Question ${n}`,
@@ -129,7 +135,7 @@ export interface DecisionFieldsProps {
   open?: Partial<Record<"import" | "calling" | "input" | "answer" | "install" | "examples" | "low", boolean>>;
 }
 
-/** One option: a drag handle, its key, its description and its remove button. The handle drags; the arrow keys move it too. */
+/** One option: a drag handle, its key and its remove button (its description is a field of the Optional section). The handle drags; the arrow keys move it too. */
 function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, label }: { index: number; count: number; option: { key: string; line: string }; onChange: (next: { key: string; line: string }) => void; onRemove: () => void; onMove: (from: number, to: number) => void; phone: boolean; label: string }) {
   const onKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowUp" && index > 0) {
@@ -149,7 +155,7 @@ function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, la
         const from = Number(event.dataTransfer.getData("text/plain"));
         if (Number.isInteger(from) && from !== index) onMove(from, index);
       }}
-      style={optionRowStyle(phone)}
+      style={optionKeyRowStyle(phone)}
     >
       <button
         type="button"
@@ -162,7 +168,6 @@ function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, la
         <Glyph name="grip" size={14} />
       </button>
       <FieldInput phone={phone} mono aria-label={`${label} ${index + 1}`} value={option.key} maxLength={80} placeholder="billing" onChange={(e) => onChange({ ...option, key: e.target.value })} />
-      <FieldInput phone={phone} aria-label={`Description of ${label.toLowerCase()} ${index + 1}`} value={option.line} maxLength={200} placeholder={DECISION_COPY.optionDescription} onChange={(e) => onChange({ ...option, line: e.target.value })} />
       {count > 2 ? <IconSquare glyph="x" phone={phone} label={`Remove ${label.toLowerCase()} ${index + 1}`} onClick={onRemove} /> : <span />}
     </div>
   );
@@ -300,6 +305,11 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
   const called = draft.calledFrom.map((id) => codeTiles.find((tile) => tile.id === id)?.label).filter((label): label is string => Boolean(label));
   const low = draft.lowConfidence;
   const examples = draft.examples;
+  /** Each question that takes options, with the options that have a key: the descriptions are filled in under Optional. */
+  const optioned = draft.questions.map((q, at) => ({ q, at })).filter(({ q }) => takesOptions(q.type) && q.options.some((option) => option.key.trim()));
+  const described = draft.questions.flatMap((q) => (takesOptions(q.type) ? q.options.filter((option) => option.line.trim()).map((option) => `${option.key.trim()}: ${option.line.trim()}`) : []));
+  const setOptionLine = (question: number, option: number, line: string) =>
+    set({ questions: draft.questions.map((q, i) => (i === question ? { ...q, options: q.options.map((o, j) => (j === option ? { ...o, line } : o)) } : q)) });
   const setExample = (at: number, patch: Partial<{ input: string; output: string }>) => set({ examples: examples.map((example, i) => (i === at ? { ...example, ...patch } : example)) });
 
   return (
@@ -337,6 +347,22 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
       </Block>
 
       <OptionalSection>
+        <OptionalField name={DECISION_COPY.optionDescriptions} summary={summaryOf(described)} phone={phone}>
+          {optioned.length === 0 ? <Hint>{DECISION_COPY.noOptionsYet}</Hint> : null}
+          {optioned.map(({ q, at }) => (
+            <div key={at} role="group" aria-label={`Option descriptions of question ${at + 1}`} style={PANEL_LIST}>
+              <LabelText>{q.id.trim() || DECISION_COPY.question(at + 1)}</LabelText>
+              {q.options.map((option, i) =>
+                option.key.trim() ? (
+                  <div key={i} style={optionDescribeRowStyle(phone)}>
+                    <span style={{ ...BODY_TEXT, ...DATA_FACE, ...ELLIPSIS }}>{option.key.trim()}</span>
+                    <FieldInput phone={phone} aria-label={`Description of ${q.type === "rank" ? "ranked option" : "option"} ${i + 1}`} value={option.line} maxLength={200} placeholder={DECISION_COPY.optionDescription} onChange={(e) => setOptionLine(at, i, e.target.value)} />
+                  </div>
+                ) : null,
+              )}
+            </div>
+          ))}
+        </OptionalField>
         <OptionalField name={DECISION_COPY.paste} description={DECISION_COPY.pasteLine} forceOpen={open.import} phone={phone}>
           <FieldArea phone={phone} rows={3} mono aria-label={DECISION_COPY.paste} value={pasted} placeholder={DECISION_COPY.pastePlaceholder} onChange={(e) => setPasted(e.target.value)} />
           {codeTiles.length > 0 ? (

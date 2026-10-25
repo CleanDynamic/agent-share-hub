@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddCheckDialog, CHECK_DIALOG_COPY } from "./AddCheckDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -21,8 +22,8 @@ function open() {
 
 const type = (label: string, value: string) => fireEvent.change(screen.getAllByLabelText(label).at(-1) as HTMLElement, { target: { value } });
 const add = () => screen.getByRole("button", { name: CHECK_DIALOG_COPY.add }) as HTMLButtonElement;
-const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
-const openRow = (name: string) => fireEvent.click(within(row(name)).getByRole("button"));
+const row = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 const status = () => screen.getByTestId("modal-status").textContent;
 
 function fill() {
@@ -42,7 +43,7 @@ describe("Add › Check", () => {
     expect((screen.getByLabelText("Pass criteria") as HTMLTextAreaElement).rows).toBe(2);
     expect(within(dialog).getByText("passed out of")).toBeTruthy();
     expect(screen.getByTestId("optional-count").textContent).toBe("8 fields");
-    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual([
+    expect(fieldNames()).toEqual([
       "Test cases",
       "Failure notes",
       "Last run date",
@@ -52,7 +53,6 @@ describe("Add › Check", () => {
       "Model tested",
       "Evidence",
     ]);
-    expect(screen.getAllByTestId("optional-field").every((el) => el.querySelector("button")?.getAttribute("aria-expanded") === "false")).toBe(true);
     // Add is the one primary.
     expect(dialog.querySelectorAll('[data-variant="primary"]')).toHaveLength(1);
     expect(document.body.textContent).not.toMatch(/What it tested|What counts as passing|When it failed|passed of\b/);

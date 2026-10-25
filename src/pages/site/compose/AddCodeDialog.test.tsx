@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddCodeDialog, CODE_DIALOG_COPY, type AddCodeDialogProps } from "./AddCodeDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -27,11 +28,8 @@ const pickLanguage = (name: string) => {
   fireEvent.keyDown(language(), { key: "Enter" });
   fireEvent.click(screen.getByRole("menuitemradio", { name }));
 };
-const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
-const openRow = (name: string) => {
-  const head = row(name).querySelector("button") as HTMLButtonElement;
-  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
-};
+const row = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 /** File path lives in the Optional section: opening its row is part of reaching it. */
 const filename = () => {
   openRow("File path");
@@ -64,8 +62,8 @@ describe("Add › Code (CA-02 P7)", () => {
     for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(body.contains(order[3])).toBe(true);
     expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
-    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual(["File path", "Generated with"]);
     expect(screen.queryByLabelText("File path")).toBeNull();
+    expect(fieldNames()).toEqual(["File path", "Generated with"]);
     expect(screen.getByText("Each file becomes its own tile")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/File name|Written with|optional/);
   });

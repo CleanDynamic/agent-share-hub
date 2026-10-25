@@ -28,7 +28,23 @@ import { bufferedHandlers } from "./editHandlers";
 import { useBuildHistoryContext } from "./useBuildHistory";
 import { MODAL_COPY, ModalForm, ModalShell } from "./ModalFrame";
 import { BODY_TEXT, Block, BlockHead, FieldArea, FieldInput, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, PANEL_LIST, RecipeButton, Row, SegmentedField, TextLink } from "./modalRecipes";
-import { SessionFactsFields, StartedWithField, TogetherFields } from "./SessionExtrasFields";
+import { OptionalField, OptionalSection } from "./OptionalSection";
+import {
+  CostControl,
+  EXTRAS_COPY,
+  MethodControl,
+  OwnCopyControl,
+  StartedWithControl,
+  TimeControl,
+  TogetherControl,
+  TokensControl,
+  TraceControl,
+  costHeld,
+  methodHeld,
+  timeHeld,
+  togetherHeld,
+  tokensHeld,
+} from "./SessionExtrasFields";
 import { ToolPicker } from "./ToolPicker";
 
 export const SESSION_DIALOG_COPY = {
@@ -213,29 +229,42 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
         ) : null}
 
         {h.onSessionExtras ? (
-          <>
-            <Block label={SESSION_DIALOG_COPY.costAndTokens} testId="session-extras">
-              <BlockHead label={SESSION_DIALOG_COPY.costAndTokens} />
-              <SessionFactsFields id={key} extras={extras} phone={phone} onChange={saveExtras} />
-              <StartedWithField key={`${key}:started`} id={key} extras={extras} phone={phone} onChange={saveExtras} />
-              <TogetherFields id={key} extras={extras} others={[]} phone={phone} part="copy" onChange={saveExtras} />
-            </Block>
-            <Block label={SESSION_DIALOG_COPY.together} testId="session-together">
-              <BlockHead label={SESSION_DIALOG_COPY.together} />
-              <TogetherFields
-                id={key}
-                extras={extras}
-                others={view.others ?? []}
-                phone={phone}
-                part="together"
-                onTogether={h.onSessionTogether ? (keys) => {
-                  setExtras((now) => ({ ...now, parallelWith: keys.length > 0 ? keys : undefined }));
-                  h.onSessionTogether?.(key, keys);
-                } : undefined}
-                onChange={saveExtras}
-              />
-            </Block>
-          </>
+          <OptionalSection>
+            <OptionalField name={EXTRAS_COPY.cost} summary={costHeld(extras)} phone={phone}>
+              <CostControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.time} description={EXTRAS_COPY.timeHint} summary={timeHeld(extras)} phone={phone}>
+              <TimeControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.tokens} summary={tokensHeld(extras)} phone={phone}>
+              <TokensControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.trace} description={EXTRAS_COPY.traceHint} summary={extras.traceUrl ?? null} phone={phone}>
+              <TraceControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.how} summary={methodHeld(extras)} phone={phone}>
+              <MethodControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.startedWith} summary={extras.startedWith?.trim() || null} phone={phone}>
+              <StartedWithControl key={`${key}:started`} id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.ownCopy} summary={extras.ownCopy ?? null} phone={phone}>
+              <OwnCopyControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            {(view.others ?? []).length > 0 && h.onSessionTogether ? (
+              <OptionalField name={EXTRAS_COPY.together} summary={togetherHeld(extras, view.others ?? [])} phone={phone}>
+                <TogetherControl
+                  extras={extras}
+                  others={view.others ?? []}
+                  phone={phone}
+                  onTogether={(keys) => {
+                    setExtras((now) => ({ ...now, parallelWith: keys.length > 0 ? keys : undefined }));
+                    h.onSessionTogether?.(key, keys);
+                  }}
+                />
+              </OptionalField>
+            ) : null}
+          </OptionalSection>
         ) : null}
 
         {(view.setup ?? []).length > 0 || h.onAddToSetup ? (

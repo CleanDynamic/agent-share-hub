@@ -51,6 +51,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { ModelPicker } from "@/pages/site/compose/ModelPicker";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
+import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
 import {
   Block,
@@ -422,9 +423,9 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
   if (!maker) {
     if (!settingsHeld && variables.length === 0) return null;
     return (
-      <OptionalSection>
+      <OptionalRows>
         {settingsHeld ? (
-          <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
+          <OptionalRow name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
             {shownModel ? (
               <ReadLine label={FULL_PROMPT_COPY.model}>
                 <ModelTag tool={tool} model={model}>
@@ -434,18 +435,18 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
             ) : null}
             {effortHeld ? <ReadLine label={FULL_PROMPT_COPY.effort}>{EFFORT_LABEL[settings.effort]}</ReadLine> : null}
             {settings.instructions ? <ReadLine label={FULL_PROMPT_COPY.instructions}>{settings.instructions}</ReadLine> : null}
-          </OptionalField>
+          </OptionalRow>
         ) : null}
         {variables.length > 0 ? (
-          <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
+          <OptionalRow name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
             {variables.map((variable) => (
               <ReadLine key={variable.name} label={`{${variable.name}}`}>
                 {variable.description || "No description"}
               </ReadLine>
             ))}
-          </OptionalField>
+          </OptionalRow>
         ) : null}
-      </OptionalSection>
+      </OptionalRows>
     );
   }
 
@@ -538,7 +539,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
     /* The global field rule makes a field inherit its size on a computer, so the window sets the fields' 13 here. */
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13, ...(phone ? { minHeight: "100%" } : null) }}>
       <LiveRegion message={said} />
-      <div style={phone ? { ...HEADER, padding: "4px 0 16px" } : HEADER}>
+      <div data-testid="modal-header" style={phone ? { ...HEADER, padding: "4px 0 16px" } : HEADER}>
         <div style={HEADER_TEXT}>
           {maker && onTitle ? (
             <>
@@ -566,7 +567,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
       </div>
 
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
-        <div style={bodyStyle(phone)}>
+        <div data-testid="modal-body" style={bodyStyle(phone)}>
           <Block noRule>
             <BlockHead label={FULL_PROMPT_COPY.prompt} id={`prompt-label-${step.id}`} count={`${step.words} words`}>
               {markable ? (
@@ -639,7 +640,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           {!isInstructions(step) && step.kind === "prompt" ? <PromptOptional key={`optional-${step.id}`} props={props} step={step} tool={tool} model={model} phone={phone} picked={picked} onMarked={() => setPicked(null)} /> : null}
         </div>
       </ModalInset.Provider>
-      <div style={{ ...footerStyle(phone), ...(phone ? { paddingBottom: "calc(12px + env(safe-area-inset-bottom))", marginTop: "auto" } : null) }}>
+      <div data-testid="modal-footer" style={{ ...footerStyle(phone), ...(phone ? { paddingBottom: "calc(12px + env(safe-area-inset-bottom))", marginTop: "auto" } : null) }}>
         {props.fromPost && props.onBackToPost ? <FromPostNote onBack={props.onBackToPost} phone={phone} /> : null}
         <span style={FOOT_NOTE}>{phone ? null : FULL_PROMPT_COPY.hint}</span>
         <RecipeButton variant="primary" phone={phone} onClick={onClose}>

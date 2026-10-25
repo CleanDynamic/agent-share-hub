@@ -40,7 +40,7 @@ import { applyDraft, draftOf, type ClassificationCardData, type ClassificationDr
 import { DESCRIPTION_MAX } from "./composeModel";
 import { MadeWithLine } from "./MadeWithLine";
 import { ModalShell } from "./ModalFrame";
-import { OptionalField, OptionalSection } from "./OptionalSection";
+import { OptionalRow, OptionalRows } from "./OptionalRows";
 import { ChosenValue } from "./classificationPieces";
 import { BlockHead, Block, FOOT_NOTE, FieldArea, FieldInput, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
 import { ReadFromBuild } from "./ReadFromBuild";
@@ -144,24 +144,24 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
   const money = (value: string) => (value.trim() ? `£${value}` : "");
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <OptionalField phone={phone} filledText name="Known issue" description="What broke and how it was fixed" summary={details.symptom}>
+      <OptionalRow phone={phone} filledText name="Known issue" description="What broke and how it was fixed" summary={details.symptom}>
         <RefinedField id="card-problem" label="Problem">
           <FieldArea id="card-problem" phone={phone} rows={2} value={details.symptom} placeholder="exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} />
         </RefinedField>
         <RefinedField id="card-fix" label="Fix">
           <FieldArea id="card-fix" phone={phone} rows={2} value={details.resolution} placeholder="Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} />
         </RefinedField>
-      </OptionalField>
-      <OptionalField phone={phone} filledText name="Build cost (£)" description="What it cost to make" summary={money(details.costSetup)}>
+      </OptionalRow>
+      <OptionalRow phone={phone} filledText name="Build cost (£)" description="What it cost to make" summary={money(details.costSetup)}>
         <NumberInput id="card-build-cost-input" label="Build cost (£)" value={details.costSetup} phone={phone} onChange={(value) => onChange("costSetup", value)} />
-      </OptionalField>
-      <OptionalField phone={phone} filledText name="Running cost per month (£)" description="What it costs to keep running" summary={money(details.costMonthly)}>
+      </OptionalRow>
+      <OptionalRow phone={phone} filledText name="Running cost per month (£)" description="What it costs to keep running" summary={money(details.costMonthly)}>
         <NumberInput id="card-running-cost-input" label="Running cost per month (£)" value={details.costMonthly} phone={phone} onChange={(value) => onChange("costMonthly", value)} />
-      </OptionalField>
-      <OptionalField phone={phone} filledText name="Time to first result (minutes)" description="How soon someone sees it work" summary={details.firstResult.trim() ? `${details.firstResult} min` : ""}>
+      </OptionalRow>
+      <OptionalRow phone={phone} filledText name="Time to first result (minutes)" description="How soon someone sees it work" summary={details.firstResult.trim() ? `${details.firstResult} min` : ""}>
         <NumberInput id="card-first-result-input" label="Time to first result (minutes)" value={details.firstResult} whole phone={phone} onChange={(value) => onChange("firstResult", value)} />
-      </OptionalField>
-      <OptionalField phone={phone} filledText name="Open a bounty" description="Leave one part open for someone else to solve" summary={details.gapOn ? (details.gapProblem.trim() ? details.gapProblem : "On") : ""}>
+      </OptionalRow>
+      <OptionalRow phone={phone} filledText name="Open a bounty" description="Leave one part open for someone else to solve" summary={details.gapOn ? (details.gapProblem.trim() ? details.gapProblem : "On") : ""}>
         <BountySwitch on={details.gapOn} onChange={onGap} phone={phone} />
         {details.gapOn ? (
           <>
@@ -171,7 +171,7 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
             <p style={{ margin: 0, ...text(12, 400, t.text2) }}>Readers will see it as one part left open. You can add a reward on Bounties after publishing.</p>
           </>
         ) : null}
-      </OptionalField>
+      </OptionalRow>
     </div>
   );
 }
@@ -257,9 +257,9 @@ function CardBody(props: SandboxCardProps) {
   }, []);
 
   const row = (name: string, description: string, summaryText: string, count: string | undefined, body: ReactNode, extra: { forceOpen?: boolean } = {}) => (
-    <OptionalField key={name} name={name} description={description} summary={summaryText} count={count} phone={phone} filledText forceOpen={extra.forceOpen}>
+    <OptionalRow key={name} name={name} description={description} summary={summaryText} count={count} phone={phone} filledText forceOpen={extra.forceOpen}>
       {body}
-    </OptionalField>
+    </OptionalRow>
   );
 
   return (
@@ -281,7 +281,7 @@ function CardBody(props: SandboxCardProps) {
         </Block>
 
         <div style={{ padding: `0 ${pad}px`, borderTop: `1px solid ${t.hairlineModule}` }}>
-          <OptionalSection hint="Suggestions from the build" bleed={pad}>
+          <OptionalRows hint="Suggestions from the build" bleed={pad}>
             {row(
               "Summary",
               "One sentence on what the build does",
@@ -376,7 +376,7 @@ function CardBody(props: SandboxCardProps) {
               undefined,
               <BuildDetails phone={phone} details={details} onChange={(key, value) => setDetails((current) => ({ ...current, [key]: value }))} onGap={(on) => setDetails((current) => ({ ...current, gapOn: on }))} />,
             )}
-          </OptionalSection>
+          </OptionalRows>
         </div>
       </div>
 

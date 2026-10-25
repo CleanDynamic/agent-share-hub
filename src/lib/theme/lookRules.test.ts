@@ -884,6 +884,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/codeModel.ts",
   "src/pages/site/compose/useBuildSorting.ts",
   "src/pages/site/compose/useComposePrompts.agents.test.tsx",
+
+  // CA-28 P4
+  "src/lib/build/buildMotion.ts",
+  "src/pages/site/compose/OptionalRows.tsx",
+  "src/pages/site/compose/OptionalSection.motion.test.tsx",
+  "src/pages/site/compose/optionalKit.ts",
 ];
 
 /**

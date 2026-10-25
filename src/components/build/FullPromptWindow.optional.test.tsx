@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildSteps } from "@/lib/build/graph";
 import type { NodeTree } from "@/lib/build/types";
 
+import { fieldNamed, openOptional } from "@/pages/site/compose/optionalKit";
+
 import { FullPromptWindow, type FullPromptWindowProps } from "./FullPromptWindow";
 
 beforeEach(() => {
@@ -31,8 +33,8 @@ function open(payload: Record<string, unknown>, over: Partial<FullPromptWindowPr
   return props;
 }
 
-const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => within(el).queryByText(name)) as HTMLElement;
-const head = (name: string) => within(row(name)).getByRole("button", { name: new RegExp(name) });
+const readerRow = (name: string) => screen.getAllByTestId("optional-field").find((el) => within(el).queryByText(name)) as HTMLElement;
+const head = (name: string) => within(readerRow(name)).getByRole("button", { name: new RegExp(name) });
 
 function select(word: string) {
   const box = screen.getByTestId("full-prompt-text");
@@ -53,36 +55,43 @@ function select(word: string) {
 }
 
 describe("the prompt window's Optional section (maker)", () => {
-  it("has Model settings and Variables, both closed", () => {
-    open({});
+  it("has Model settings and Variables; closed until something in it is held, and the prompt's variables hold something", () => {
+    open({ text: "Write a welcome email." });
     expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
-    expect(head("Model settings").getAttribute("aria-expanded")).toBe("false");
-    expect(head("Variables").getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByRole("radiogroup", { name: "Reasoning effort" })).toBeNull();
+    openOptional();
+    expect(["Model settings", "Variables"].map((name) => fieldNamed(name).textContent?.includes(name))).toEqual([true, true]);
+    cleanup();
+    open({});
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields · 1 filled");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
   });
 
   it("saves the reasoning effort in payload.settings, leaving payload.model alone", () => {
     const props = open({ model: "Fable 5.1" });
-    fireEvent.click(head("Model settings"));
+    openOptional();
     const group = screen.getByRole("radiogroup", { name: "Reasoning effort" });
     fireEvent.click(within(group).getByRole("radio", { name: "Low" }));
     expect(props.onExtras).toHaveBeenCalledWith("p1", { settings: { model: "", effort: "low", instructions: "" } });
   });
 
   it("falls back to payload.model while settings.model is empty, and prefers settings.model when it is given", () => {
-    open({ model: "Fable 5.1", settings: { model: "", effort: "default", instructions: "" } });
-    expect(within(row("Model settings")).getByTestId("optional-value").textContent).toMatch(/Fable/);
+    // The model alone makes the field count as filled, which opens the section; with no model and no variable it stays shut.
+    open({ text: "Write a welcome email.", model: "Fable 5.1", settings: { model: "", effort: "default", instructions: "" } });
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields · 1 filled");
     cleanup();
-    open({ model: "Fable 5.1", settings: { model: "Opus 5.5", effort: "high", instructions: "" } });
-    const line = within(row("Model settings")).getByTestId("optional-value").textContent ?? "";
-    expect(line).toMatch(/Opus/);
-    expect(line).toMatch(/High effort/);
-    expect(line).not.toMatch(/Fable/);
+    open({ text: "Write a welcome email." });
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
+    cleanup();
+    open({ text: "Write a welcome email.", model: "Fable 5.1", settings: { model: "Opus 5.5", effort: "high", instructions: "" } });
+    const area = fieldNamed("Model settings");
+    expect(within(area).getByRole("radio", { name: "High" }).getAttribute("aria-checked")).toBe("true");
   });
 
   it("saves the custom instructions when the box is left", () => {
     const props = open({});
-    fireEvent.click(head("Model settings"));
+    openOptional();
     const box = screen.getByLabelText("Custom instructions or project knowledge that applied");
     fireEvent.change(box, { target: { value: "  Always British spelling  " } });
     fireEvent.blur(box);
@@ -91,8 +100,8 @@ describe("the prompt window's Optional section (maker)", () => {
 
   it("lists the variables written in the prompt, and saves a description for one", () => {
     const props = open({});
-    expect(within(row("Variables")).getByTestId("optional-value").textContent).toBe("{customer}, {shop}");
-    fireEvent.click(head("Variables"));
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields · 1 filled");
+    openOptional();
     const field = screen.getByLabelText("{customer}");
     fireEvent.change(field, { target: { value: " The customer's first name " } });
     fireEvent.blur(field);
@@ -106,7 +115,7 @@ describe("the prompt window's Optional section (maker)", () => {
 
   it("wraps the selected text in braces with Mark selection as a variable", () => {
     const props = open({ text: "Write a welcome email for Ada at the bakery." });
-    fireEvent.click(head("Variables"));
+    openOptional();
     const mark = screen.getByRole("button", { name: "Mark selection as a variable" }) as HTMLButtonElement;
     expect(mark.disabled).toBe(true);
     select("Ada");

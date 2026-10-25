@@ -7,6 +7,7 @@ import { tileView } from "@/dev/fixtures/detailsKinds";
 
 import type { DetailsHandlers, SessionView } from "./DetailsPanel";
 import { SessionDialog } from "./SessionDialog";
+import { openOptional } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -40,8 +41,9 @@ describe("the Session modal", () => {
     open();
     expect(screen.getByTestId("modal-eyebrow").textContent).toBe("Edit");
     expect(screen.getByRole("dialog", { name: "Session 2 · Claude Code" })).toBeTruthy();
+    openOptional();
     const text = dialog().textContent ?? "";
-    const order = ["App and model", "Date", "Worked until", "Cost and tokens", "Started with", "Own copy of the code", "At the same time as", "Setup", "Prompts shared"].map((label) => text.indexOf(label));
+    const order = ["App and model", "Date", "Worked until", "What it cost", "Started with", "Own copy of the code", "Ran alongside", "Setup", "Prompts shared"].map((label) => text.indexOf(label));
     expect(order.every((at) => at >= 0)).toBe(true);
     expect([...order]).toEqual([...order].sort((a, b) => a - b));
   });

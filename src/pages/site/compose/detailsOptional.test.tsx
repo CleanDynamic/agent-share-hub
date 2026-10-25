@@ -12,6 +12,7 @@ import type { DetailsHandlers } from "./DetailsPanel";
 import { agentRows, checkRows, codeRows, datasetRows, promptRows, repoRows, resultRows, systemPromptRows, toolRows } from "./detailsOptional";
 import { resolveView } from "./detailsView";
 import { TileEditDialog } from "./TileEditDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -37,13 +38,9 @@ function windowFor(tree: NodeTree[], selectedId: string) {
 }
 const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
-const rowNames = () => screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent);
-const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
-const openRow = (name: string) => {
-  const head = row(name).querySelector("button") as HTMLButtonElement;
-  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
-};
-const summaryOfRow = (name: string) => row(name).querySelector("button")?.textContent ?? "";
+const rowNames = () => fieldNames();
+const row = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 
 describe("the row builders say what each tile holds, with the modals' words (CA-15 P11)", () => {
   it("a prompt: Model settings and Variables", () => {
@@ -114,12 +111,13 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
 describe("the Optional section in a tile's window (CA-15 P11, CA-18 P2)", () => {
   const checkTree = () => [node("ck", "eval_run", { tested: "Places an order", passing: "Total shows £9", method: "automated", scoring: { how: "metric", target: "95%" } })];
 
-  it("draws closed rows, each saying what it holds, after the required fields", () => {
+  it("draws its fields after the required ones, open because some hold a value, and shows what each holds", () => {
     windowFor(checkTree(), "ck");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
     expect(rowNames()).toEqual(expect.arrayContaining(["Test method", "Reviewer", "Scoring method", "Model tested", "Evidence"]));
-    expect(summaryOfRow("Test method")).toContain("Automated");
-    expect(summaryOfRow("Scoring method")).toContain("Metric against a target · 95%");
-    expect(row("Reviewer").getAttribute("data-open")).toBeNull();
+    expect(within(row("Test method")).getByRole("radio", { name: "Automated" }).getAttribute("aria-checked")).toBe("true");
+    expect(within(row("Scoring method")).getByRole("radio", { name: "Metric against a target" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByDisplayValue("95%")).toBeTruthy();
   });
 
   it("saves a choice on Save, and only the keys it owns", () => {
@@ -228,7 +226,7 @@ describe("a system prompt, a dataset and a GitHub repository in their windows (C
     expect((screen.getByLabelText(/^Description/) as HTMLTextAreaElement).value).toBe("Tickets");
     expect(screen.getByRole("button", { name: "Evaluation" }).getAttribute("aria-pressed")).toBe("true");
     expect(rowNames()).toEqual(["Format", "Record count", "Columns", "Source", "Sample records", "Licence"]);
-    expect(summaryOfRow("Format")).toContain("CSV");
+    expect(within(row("Format")).getByDisplayValue("CSV")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Retrieval" }));
     save();
     expect(props.onExtras).toHaveBeenCalledWith("ds", { use: "retrieval" });

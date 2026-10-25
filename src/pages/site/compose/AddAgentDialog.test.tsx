@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddAgentDialog, AGENT_DIALOG_COPY, DEFAULT_AGENT_MODEL, START_CHOICES, type AddAgentDialogProps } from "./AddAgentDialog";
 import { withHarness } from "./AgentSetupFields";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -25,13 +26,9 @@ function open(over: Partial<AddAgentDialogProps> = {}) {
   return props;
 }
 
-const rowOf = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("[data-testid=optional-title]")?.textContent === name) as HTMLElement;
-/** The Optional rows are closed when the window opens; a press on the row opens it (and leaves it open). */
-const openRow = (name: string) => {
-  const head = rowOf(name).querySelector("button") as HTMLButtonElement;
-  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
-};
-const names = () => screen.getAllByTestId("optional-field").map((el) => el.querySelector("[data-testid=optional-title]")?.textContent);
+const rowOf = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
+const names = () => fieldNames();
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const status = () => screen.getByTestId("modal-status").textContent;
 
@@ -65,10 +62,10 @@ describe("the Add dialog", () => {
     open();
     expect(screen.getByLabelText("Name")).toBeTruthy();
     expect(screen.getByRole("group", { name: "Models" })).toBeTruthy();
-    expect(names()).toEqual(["System instructions", "Available tools", "Trigger", "Host platform", "Memory", "Helpers", "Limits", "Output and destination", "Sample run"]);
     expect(screen.getByTestId("optional-count").textContent).toBe("9 fields");
-    expect(screen.getAllByTestId("optional-field").every((el) => el.querySelector("button")?.getAttribute("aria-expanded") === "false")).toBe(true);
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByLabelText("System instructions")).toBeNull();
+    expect(names()).toEqual(["System instructions", "Available tools", "Trigger", "Host platform", "Memory", "Helpers", "Limits", "Output and destination", "Sample run"]);
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }));
     expect(names().at(-1)).toBe("Orchestration pattern");
     expect(screen.getByTestId("optional-count").textContent).toBe("10 fields");
@@ -247,8 +244,9 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
 
   it("opens with Add as an agent's tool and text, the instructions held in their Optional row", () => {
     const props = open({ seed: { harness: "hermes-agent", instructions: "Triage my inbox" } });
-    expect(within(rowOf("Host platform")).getByTestId("optional-value").textContent).toBe("Hermes Agent");
-    expect(within(rowOf("System instructions")).getByTestId("optional-value").textContent).toBe("Triage my inbox");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
+    expect(rowOf("Host platform").textContent).toContain("Hermes Agent");
+    expect((within(rowOf("System instructions")).getByRole("textbox") as HTMLTextAreaElement).value).toBe("Triage my inbox");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL, harness: "hermes-agent", tools: [], instructions: "Triage my inbox" });
   });
@@ -377,8 +375,7 @@ describe("limits, output, sample run and orchestration pattern (CA-15 P7)", () =
     const grid = screen.getByRole("group", { name: "Orchestration pattern" });
     expect(within(grid).getAllByRole("button").map((button) => button.textContent)).toEqual(["Sequential", "Lead with delegates", "Parallel then merged", "Writer and reviewer"]);
     fireEvent.click(within(grid).getByRole("button", { name: "Parallel then merged" }));
-    fireEvent.click(rowOf("Orchestration pattern").querySelector("button") as HTMLButtonElement);
-    expect(within(rowOf("Orchestration pattern")).queryByTestId("optional-value")?.textContent).toBe("Parallel then merged");
+    expect(within(grid).getByRole("button", { name: "Parallel then merged" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.one) }));
     fireEvent.click(add());
     expect(vi.mocked(props.onAdd).mock.calls[0][0]).not.toHaveProperty("pattern");

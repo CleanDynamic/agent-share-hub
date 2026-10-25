@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { questionTypeLabel } from "@/lib/build/decision";
 
 import { AddDecisionDialog, DECISION_DIALOG_COPY, type AddDecisionDialogProps } from "./AddDecisionDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -31,12 +32,8 @@ const request = {
 };
 const response = { answers: { team: { answer: "billing", probabilities: { billing: 0.92, support: 0.05, kitchen: 0.03 } }, escalation: { answer: 0.18 } } };
 
-const rowOf = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
-/** The Optional rows are closed when the window opens; a press on the row opens it (and leaves it open). */
-const openRow = (name: string) => {
-  const head = rowOf(name).querySelector("button") as HTMLButtonElement;
-  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
-};
+const rowOf = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const status = () => screen.getByTestId("modal-status").textContent;
 const type = (name: string) => fireEvent.click(within(screen.getByRole("radiogroup", { name: "Type of question 1" })).getByRole("radio", { name }));
@@ -49,15 +46,17 @@ function fillChoice(option = "Option") {
 }
 
 describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
-  it("is the shared frame: a Model block, the Questions block, then seven optional rows, all closed", () => {
+  it("is the shared frame: a Model block, the Questions block, then eight optional fields, closed", () => {
     open();
     expect(screen.getByRole("dialog", { name: DECISION_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("Structured answer from a model");
     expect(screen.getByRole("heading", { name: "Model" })).toBeTruthy();
     for (const name of ["Model or service", "Version", "Invocation", "Questions"]) expect(screen.getAllByText(name).length, name).toBeGreaterThan(0);
     expect(within(screen.getByRole("radiogroup", { name: "Invocation" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Direct", "Through an adapter"]);
-    expect(screen.getByTestId("optional-count").textContent).toBe("7 fields");
-    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual([
+    expect(screen.getByTestId("optional-count").textContent).toBe("8 fields");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
+    expect(fieldNames()).toEqual([
+      "Option descriptions",
       "Import request and response",
       "Calling code",
       "Input",
@@ -66,7 +65,6 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
       "Examples",
       "Low-confidence handling",
     ]);
-    expect(screen.getAllByTestId("optional-field").every((el) => el.querySelector("button")?.getAttribute("aria-expanded") === "false")).toBe(true);
     // The old words are gone.
     expect(document.body.textContent).not.toMatch(/Called directly|Called from|What it reads|How to install|Paste a logged|Read it\b|Pick a/);
   });
@@ -126,6 +124,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
   it("an option's description reads 'Description', and an option can be dragged above another", () => {
     const props = open();
     fillChoice();
+    openRow("Option descriptions");
     expect((screen.getByLabelText("Description of option 1") as HTMLInputElement).placeholder).toBe("Description");
     const rows = screen.getAllByTestId("option-row");
     const data: Record<string, string> = {};
@@ -255,11 +254,10 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     fillChoice();
     openRow("Recorded answer");
     fireEvent.change(screen.getByLabelText("Answer to team"), { target: { value: "billing, kitchen" } });
-    fireEvent.click(rowOf("Recorded answer").querySelector("button") as HTMLButtonElement);
     fireEvent.click(add());
     expect(screen.getByRole("alert").textContent).toBe("'team' was answered with something that is not made of its options.");
     expect(props.onAdd).not.toHaveBeenCalled();
-    expect(rowOf("Recorded answer").querySelector("button")?.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
     fireEvent.change(screen.getByLabelText("Answer to team"), { target: { value: "billing, support" } });
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].answer.team).toEqual({ value: "billing, support" });
