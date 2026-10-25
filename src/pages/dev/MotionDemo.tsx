@@ -29,6 +29,7 @@ import { ReferenceNotice } from "@/pages/site/compose/referencePieces";
 import { SelectionBar } from "@/pages/site/compose/removePieces";
 import { BuildAnnouncer } from "@/pages/site/compose/BuildAnnouncer";
 import { findTargetsOf } from "@/pages/site/compose/findIndex";
+import { tileElement } from "@/pages/site/compose/largeBuild";
 import { shortcutOf } from "@/lib/build/shortcuts";
 import { BuildHistoryContext, type BuildHistoryApi } from "@/pages/site/compose/useBuildHistory";
 import { useBuildFind } from "@/pages/site/compose/useBuildFind";
@@ -272,6 +273,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
     ["unnest-p2n", () => void onNest("c22-p2n", null, 99)],
     ["note", () => note("Something happened")],
     ["go-to-p3", () => { const el = document.querySelector<HTMLElement>('[data-skel-id="c22-p3"]'); if (el) goToIt(el, "#7FA7D9"); }],
+    ["go-to-far", () => { setSelectedId("c27-244"); window.requestAnimationFrame(() => window.requestAnimationFrame(() => { const el = tileElement("c27-244"); if (el) goToIt(el, "#7FA7D9"); })); }],
     ["lens-map", () => document.querySelector<HTMLElement>('[data-testid="sandbox-tab-map"]')?.click()],
     ["lens-list", () => document.querySelector<HTMLElement>('[data-testid="sandbox-tab-list"]')?.click()],
   ];

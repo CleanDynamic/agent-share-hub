@@ -56,6 +56,7 @@ import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTil
 import { GlyphButton } from "./ModalFrame";
 import { useAnnounce } from "./BuildAnnouncer";
 import { PREVIEW } from "@/lib/theme/truncate";
+import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
 import { FOUND_RING, FindHit, FindProvider, NO_FIND, type FindView } from "@/components/build/FindHit";
 import { useItemRing, useRovingList } from "./buildFocus";
 import { CodeLines } from "@/components/code/CodeLines";
@@ -2244,18 +2245,28 @@ export function BuildList(raw: BuildListProps) {
     ) : (
       <ContainerCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     );
+  /* CA-27 P3: a build of WINDOW_FROM tiles or more draws only the tiles near the view; the ones the page needs stay drawn. */
+  const windowed = nestOn && steps.length >= WINDOW_FROM;
+  const forcedTop = new Set<string>();
+  if (windowed) {
+    for (const id of [props.selectedId, props.ringedId, props.find?.view.current, sorting.hidden, props.reveal?.id]) {
+      const top = id ? topOf(id) : undefined;
+      if (top) forcedTop.add(top.id);
+    }
+  }
   /* Each top-level tile stands in a wrapper the page can find (to measure, to slide and to hide while it is held). */
   const placed = (step: Step) => {
     if (!nestOn) return card(step);
+    const box = {
+      "data-skel-kind": "tile",
+      "data-skel-id": step.id,
+      "data-skel-container": containerOfTile.get(step.id) ?? "",
+      [SLIDE_ATTR]: `tile:${step.id}`,
+      style: { position: "relative", display: "flex", flexDirection: "column", minWidth: 0, ...(sorting.hidden === step.id ? { visibility: "hidden" } : null) } as CSSProperties,
+    };
+    if (windowed) return <WindowedTile key={step.id} id={step.id} kind={step.kind} index={steps.indexOf(step)} forced={forcedTop.has(step.id)} box={box} render={() => card(step)} />;
     return (
-      <div
-        key={step.id}
-        data-skel-kind="tile"
-        data-skel-id={step.id}
-        data-skel-container={containerOfTile.get(step.id) ?? ""}
-        {...{ [SLIDE_ATTR]: `tile:${step.id}` }}
-        style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0, ...(sorting.hidden === step.id ? { visibility: "hidden" } : null) }}
-      >
+      <div key={step.id} {...box}>
         {card(step)}
       </div>
     );
@@ -2312,7 +2323,7 @@ export function BuildList(raw: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <div id={tilesId} data-testid="session-tiles" hidden={shut} style={headed ? RUN : undefined}>
+              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} style={headed ? RUN : undefined}>
                 {shut ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
@@ -2335,7 +2346,7 @@ export function BuildList(raw: BuildListProps) {
                     {editable && props.addToSession ? props.addToSession(run.head.key) : null}
                   </>
                 )}
-              </div>
+              </SessionTiles>
             ) : (
               drawBranches(run.steps, (step) => step, steps, placed)
             )}

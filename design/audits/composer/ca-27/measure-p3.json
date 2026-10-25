@@ -1,0 +1,246 @@
+{
+  "note": "scripts/ca27-measure.mjs at 1440, the ca27 fixture (300 tiles, 20 sessions, 3 parts); a production build of the page (minified React) with the dev pages kept, Chromium headless with software rendering in a container, so the numbers say whether the work is light, not what a laptop does. Targets: first render < 300 ms, 60 fps, pick-up < 16 ms, find < 50 ms.",
+  "before (P2, nothing done)": {
+    "label": "before-prod",
+    "tiles": 300,
+    "loadToCardsMs": 1346,
+    "firstRenderMs": 874.9000000003725,
+    "chrome": {
+      "scriptMs": 497,
+      "layoutMs": 54,
+      "styleMs": 207,
+      "layouts": 4
+    },
+    "scroll": {
+      "frames": 165,
+      "fps": 54.7,
+      "over20ms": 4,
+      "p95Ms": 16.8,
+      "worstMs": 133,
+      "scrolledTo": 6600
+    },
+    "pickUpMs": [
+      550.3,
+      525.5,
+      422.6
+    ],
+    "findMs": [
+      {
+        "word": "sourdough",
+        "count": "1 of 5",
+        "resultsMs": 340.9
+      },
+      {
+        "word": "weekend rota",
+        "count": "1 of 102",
+        "resultsMs": 289.2
+      },
+      {
+        "word": "cinnamon",
+        "count": "1 of 2",
+        "resultsMs": 283.4
+      },
+      {
+        "word": "qq",
+        "count": "No matches",
+        "resultsMs": 206.7
+      }
+    ]
+  },
+  "after step 1 (content-visibility: auto)": {
+    "label": "cv-prod",
+    "tiles": 300,
+    "loadToCardsMs": 1301,
+    "firstRenderMs": 645.5,
+    "chrome": {
+      "scriptMs": 437,
+      "layoutMs": 54,
+      "styleMs": 132,
+      "layouts": 4
+    },
+    "scroll": {
+      "frames": 176,
+      "fps": 58.5,
+      "over20ms": 1,
+      "p95Ms": 16.8,
+      "worstMs": 117,
+      "scrolledTo": 7040
+    },
+    "pickUpMs": [
+      692.6,
+      533.2,
+      463.2
+    ],
+    "findMs": [
+      {
+        "word": "sourdough",
+        "count": "1 of 5",
+        "resultsMs": 347.2
+      },
+      {
+        "word": "weekend rota",
+        "count": "1 of 102",
+        "resultsMs": 292.9
+      },
+      {
+        "word": "cinnamon",
+        "count": "1 of 2",
+        "resultsMs": 358
+      },
+      {
+        "word": "qq",
+        "count": "No matches",
+        "resultsMs": 231.6
+      }
+    ]
+  },
+  "after step 4 (windowing), run 1": {
+    "label": "after-prod-1",
+    "tiles": 300,
+    "loadToCardsMs": 805,
+    "firstRenderMs": 253,
+    "chrome": {
+      "scriptMs": 159,
+      "layoutMs": 16,
+      "styleMs": 67,
+      "layouts": 4
+    },
+    "scroll": {
+      "frames": 181,
+      "fps": 60.3,
+      "over20ms": 0,
+      "p95Ms": 16.7,
+      "worstMs": 17,
+      "scrolledTo": 7240
+    },
+    "pickUpMs": [
+      143.3,
+      145.4,
+      133.5
+    ],
+    "findMs": [
+      {
+        "word": "sourdough",
+        "count": "1 of 5",
+        "resultsMs": 67.1,
+        "paintedMs": 68.2
+      },
+      {
+        "word": "weekend rota",
+        "count": "1 of 102",
+        "resultsMs": 47.2,
+        "paintedMs": 48.2
+      },
+      {
+        "word": "cinnamon",
+        "count": "1 of 2",
+        "resultsMs": 41,
+        "paintedMs": 41.9
+      },
+      {
+        "word": "qq",
+        "count": "No matches",
+        "resultsMs": 43.2,
+        "paintedMs": 43.8
+      }
+    ]
+  },
+  "after step 4 (windowing), run 2": {
+    "label": "after-prod-2",
+    "tiles": 300,
+    "loadToCardsMs": 755,
+    "firstRenderMs": 209.5,
+    "chrome": {
+      "scriptMs": 131,
+      "layoutMs": 11,
+      "styleMs": 51,
+      "layouts": 4
+    },
+    "scroll": {
+      "frames": 178,
+      "fps": 59.2,
+      "over20ms": 2,
+      "p95Ms": 16.8,
+      "worstMs": 50,
+      "scrolledTo": 7120
+    },
+    "pickUpMs": [
+      138.4,
+      145.4,
+      126
+    ],
+    "findMs": [
+      {
+        "word": "sourdough",
+        "count": "1 of 5",
+        "resultsMs": 42.8,
+        "paintedMs": 43.7
+      },
+      {
+        "word": "weekend rota",
+        "count": "1 of 102",
+        "resultsMs": 39.7,
+        "paintedMs": 40.6
+      },
+      {
+        "word": "cinnamon",
+        "count": "1 of 2",
+        "resultsMs": 40.2,
+        "paintedMs": 41
+      },
+      {
+        "word": "qq",
+        "count": "No matches",
+        "resultsMs": 40.7,
+        "paintedMs": 41.4
+      }
+    ]
+  },
+  "development server (vite dev, React development build), before": {
+    "label": "before",
+    "tiles": 300,
+    "loadToCardsMs": 4326,
+    "firstRenderMs": 2634,
+    "chrome": {
+      "scriptMs": 2061,
+      "layoutMs": 61,
+      "styleMs": 201,
+      "layouts": 4
+    },
+    "scroll": {
+      "frames": 147,
+      "fps": 48.8,
+      "over20ms": 3,
+      "p95Ms": 16.8,
+      "worstMs": 433,
+      "scrolledTo": 5880
+    },
+    "pickUpMs": [
+      3723.9,
+      2965.2,
+      3723.9
+    ],
+    "findMs": [
+      {
+        "word": "sourdough",
+        "count": "1 of 5",
+        "resultsMs": 1065.3
+      },
+      {
+        "word": "weekend rota",
+        "count": "1 of 102",
+        "resultsMs": 1183.1
+      },
+      {
+        "word": "cinnamon",
+        "count": "1 of 2",
+        "resultsMs": 1012.9
+      },
+      {
+        "word": "qq",
+        "count": "No matches",
+        "resultsMs": 879.2
+      }
+    ]
+  }
+}

@@ -12,14 +12,15 @@ import { FIND_DELAY, countWords, findMatches, normaliseFind, stepMatch, type Fin
 
 import { useAnnounce } from "./BuildAnnouncer";
 import { scrollToMiddle } from "./buildMotion";
+import { settle, tileElement } from "./largeBuild";
 import { NO_FIND, type FindView } from "@/components/build/FindHit";
 import { overlayOpen } from "./useBuildSelection";
 
 /** The element a match is drawn as. */
 export function elementOf(target: FindTarget): HTMLElement | null {
+  if (target.kind === "tile") return tileElement(target.id);
   const id = CSS.escape(target.id);
-  const selector = target.kind === "tile" ? `[data-node-id="${id}"]` : target.kind === "session" ? `[data-session-key="${id}"]` : `[data-workstream-group="${id}"]`;
-  return document.querySelector<HTMLElement>(selector);
+  return document.querySelector<HTMLElement>(target.kind === "session" ? `[data-session-key="${id}"]` : `[data-workstream-group="${id}"]`);
 }
 
 export interface BuildFindInput {
@@ -95,11 +96,25 @@ export function useBuildFind({ targets, isFolded, enabled = true }: BuildFindInp
   useEffect(() => setReleased(new Set()), [currentId]);
   useEffect(() => {
     if (!current) return;
+    let stop = () => undefined as void;
     const frame = window.requestAnimationFrame(() => {
       const element = elementOf(current);
-      if (element) scrollToMiddle(element);
+      if (!element) return;
+      void scrollToMiddle(element).finished.then(() => {
+        /* In a large build the tiles above were guessed at: keep this one in the middle while they are drawn. */
+        stop = settle(
+          () => {
+            const box = (elementOf(current) ?? element).getBoundingClientRect();
+            return Math.abs((box.top + box.bottom) / 2 - window.innerHeight / 2) < 24 || box.height > window.innerHeight;
+          },
+          () => void scrollToMiddle(elementOf(current) ?? element, 0),
+        );
+      });
     });
-    return () => window.cancelAnimationFrame(frame);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      stop();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId, forced.size]);
 

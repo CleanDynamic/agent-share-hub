@@ -51,11 +51,12 @@ export function findRanges(text: string, query: string): [number, number][] {
 /** Whether a string holds the words. */
 export const holds = (text: string | null | undefined, query: string): boolean => Boolean(text) && findRanges(text as string, query).length > 0;
 
-/** The targets that hold the query, in the order they stand on the page. */
+/** The targets that hold the query, in the order they stand on the page. One pattern serves every field. */
 export function findMatches(targets: readonly FindTarget[], query: string): FindTarget[] {
   const needle = normaliseFind(query);
   if (!needle) return [];
-  return targets.filter((target) => target.fields.some((field) => holds(field.text, needle)));
+  const pattern = new RegExp(escape(needle), "i");
+  return targets.filter((target) => target.fields.some((field) => pattern.test(field.text)));
 }
 
 /** "2 of 5", or "No matches" when nothing matches. `at` is the 0-based position of the current match. */

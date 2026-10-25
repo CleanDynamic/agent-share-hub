@@ -828,6 +828,11 @@ export const CA03_FILES: readonly string[] = [
   "e2e/audit/composer-ca27.spec.ts",
   "src/lib/theme/truncate.ts",
   "src/pages/site/compose/ca27.p2.test.tsx",
+
+  // CA-27 P3
+  "src/pages/site/compose/buildMotion.tsx",
+  "src/pages/site/compose/ca27.p3.test.tsx",
+  "src/pages/site/compose/largeBuild.tsx",
 ];
 
 /**
@@ -1326,6 +1331,31 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no fade-in on scroll",
     text: "const observer = new IntersectionObserver((entries) => {",
     why: "CA-10: polling only while a panel is on screen (useOnScreen). It reads whether an element shows; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "let observer: IntersectionObserver | null = null;",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "function sharedObserver(): IntersectionObserver | null {",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "if (typeof IntersectionObserver === \"undefined\") return null;",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "observer = new IntersectionObserver(",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "vi.stubGlobal(\"IntersectionObserver\", FakeObserver);",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
   },
   {
     rule: "no untouched shadcn",

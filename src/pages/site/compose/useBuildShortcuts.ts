@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 
 import { shortcutOf, SHORTCUT_COPY } from "@/lib/build/shortcuts";
 
+import { settle, tileElement } from "./largeBuild";
 import type { BuildActions } from "./useBuildActions";
 import type { BuildHistoryApi } from "./useBuildHistory";
 import { overlayOpen, takesKeys, type BuildSelection } from "./useBuildSelection";
@@ -44,7 +45,17 @@ export function useBuildShortcuts(input: BuildShortcutsInput): void {
       const go = (id: string | undefined) => {
         if (!id) return;
         now.onSelect(id);
-        document.querySelector(`[data-node-id="${id}"]`)?.scrollIntoView?.({ block: "nearest" });
+        /* A tile far from the view in a large build is not drawn until it is selected: its box is scrolled to now, its card once it is there. */
+        const reveal = () => tileElement(id)?.scrollIntoView?.({ block: "nearest" });
+        reveal();
+        window.requestAnimationFrame(reveal);
+        settle(
+          () => {
+            const box = tileElement(id)?.getBoundingClientRect();
+            return !box || box.height === 0 || (box.top >= 0 && box.bottom <= window.innerHeight) || box.height > window.innerHeight;
+          },
+          reveal,
+        );
       };
       const at = now.selectedId ? now.tiles.indexOf(now.selectedId) : -1;
       switch (which) {
