@@ -5,11 +5,12 @@
    build); `&bar=0` hides it for the at-rest screens. `&tiles=300` adds a long session for the smoothness measures; `&select=<id>`
    selects a tile. DEV ONLY. */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { CA22_A, CA22_B, CA22_S, ca22Build, node } from "@/dev/fixtures/ca22";
+import { ca27Build } from "@/dev/fixtures/ca27";
 import { sandboxSourcesProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeSource } from "@/dev/fixtures/shapes";
 import { useDesignTheme } from "@/dev/useDesignTheme";
@@ -26,7 +27,12 @@ import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
 import { listPartsOf } from "@/pages/site/compose/partsModel";
 import { ReferenceNotice } from "@/pages/site/compose/referencePieces";
 import { SelectionBar } from "@/pages/site/compose/removePieces";
+import { BuildAnnouncer } from "@/pages/site/compose/BuildAnnouncer";
+import { findTargetsOf } from "@/pages/site/compose/findIndex";
+import { shortcutOf } from "@/lib/build/shortcuts";
 import { BuildHistoryContext, type BuildHistoryApi } from "@/pages/site/compose/useBuildHistory";
+import { useBuildFind } from "@/pages/site/compose/useBuildFind";
+import { takesKeys } from "@/pages/site/compose/useBuildSelection";
 import { SandboxView, type SandboxLens } from "@/pages/site/compose/SandboxView";
 import { SourcesPanel } from "@/pages/site/compose/SourcesPanel";
 import { BASE } from "@/lib/theme/motion";
@@ -45,14 +51,23 @@ interface Entry {
   sentence: string;
 }
 
-export default function MotionDemo({ fit = "board", state = "populated" }: DesignPageProps) {
+/** The page's announcer stands above the demo, as it does above the composer's page. */
+export default function MotionDemo(props: DesignPageProps) {
+  return (
+    <BuildAnnouncer>
+      <MotionDemoPage {...props} />
+    </BuildAnnouncer>
+  );
+}
+
+function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
   const phone = useIsPhone();
   const fine = useFinePointer();
   const theme = useDesignTheme();
   const extra = Number(params.get("tiles") ?? 0) || 0;
   const [build, setBuild] = useState<MemoryBuild>(() => {
-    const { tree, making } = ca22Build(extra);
+    const { tree, making } = params.get("build") === "ca27" ? ca27Build(Number(params.get("tiles")) || undefined) : ca22Build(extra);
     return { tree, making };
   });
   const [past, setPast] = useState<Entry[]>([]);
@@ -106,6 +121,21 @@ export default function MotionDemo({ fit = "board", state = "populated" }: Desig
   const { counts } = sessionFacts(build.tree);
   const heads = useMemo(() => dividers(steps, groups, counts, {}), [steps, groups, counts]);
   const sessionKeys = sessionOrderOf(build.making);
+  /* CA-27 P1: Find in build, as the page holds it. */
+  const findTargets = useMemo(() => findTargetsOf({ steps, dividers: heads, parts: partsModel ? { parts: partsModel.list } : undefined }), [steps, heads, partsModel]);
+  const isFolded = useCallback((key: string) => collapsed.has(key) || Boolean(partsModel?.list.find((part) => part.view.key === key)?.view.collapsed), [collapsed, partsModel]);
+  const find = useBuildFind({ targets: findTargets, isFolded, enabled: !phone });
+  const openFind = find.show;
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!event.defaultPrevented && !takesKeys(event.target) && shortcutOf(event) === "find") {
+        event.preventDefault();
+        openFind();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [openFind]);
   const nameOfTile = (id: string) => `Prompt ${steps.find((candidate) => candidate.id === id)?.number ?? ""}`.trim();
 
   /* ── the changes ── */
@@ -275,6 +305,8 @@ export default function MotionDemo({ fit = "board", state = "populated" }: Desig
         lens={lens}
         onLens={setLens}
         mapAvailable
+        find={phone ? undefined : find}
+        viewOptions={params.get("build") === "ca27" ? { sessionList: false, sessionCount: sessionKeys.length, onChange: () => undefined } : undefined}
         list={
           <BuildList
             {...list}
@@ -289,6 +321,7 @@ export default function MotionDemo({ fit = "board", state = "populated" }: Desig
             said={said.current}
             collapsed={collapsed}
             onToggleCollapsed={toggle}
+            find={find.open ? { view: find.view, forced: find.forced, release: find.release } : undefined}
             parts={
               partsModel
                 ? {

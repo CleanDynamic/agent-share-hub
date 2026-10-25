@@ -22,6 +22,8 @@ export interface BuildShortcutsInput {
   onSelect: (id: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
   openHelp: () => void;
+  /** CA-27 P1: `/` opens Find in build. Absent: the key does nothing. */
+  openFind?: () => void;
 }
 
 export function useBuildShortcuts(input: BuildShortcutsInput): void {
@@ -48,6 +50,10 @@ export function useBuildShortcuts(input: BuildShortcutsInput): void {
       switch (which) {
         case "help":
           now.openHelp();
+          break;
+        case "find":
+          if (!now.openFind) return;
+          now.openFind();
           break;
         case "undo":
           if (now.history.canUndo) void now.history.undo();

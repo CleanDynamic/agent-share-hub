@@ -8,10 +8,12 @@ import type { CSSProperties } from "react";
 import { segmentsOf, type ChangeRange } from "@/lib/build/changes";
 import { t } from "@/lib/theme/tokens";
 
+import { FindHit } from "./FindHit";
+
 const CHANGED_WORDS: CSSProperties = { boxShadow: `inset 0 0 0 1px ${t.line}`, borderRadius: 4 };
 
 export function ChangedText({ text, changes }: { text: string; changes?: readonly ChangeRange[] }) {
-  if (!changes || changes.length === 0) return <>{text}</>;
+  if (!changes || changes.length === 0) return <FindHit text={text} />;
   return (
     <>
       {segmentsOf(text, changes).map((segment, index) =>

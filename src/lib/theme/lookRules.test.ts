@@ -813,6 +813,16 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/referencePieces.tsx",
   "src/pages/site/compose/removePieces.tsx",
   "src/pages/site/compose/saveWindows.tsx",
+
+  // CA-27 P1
+  "src/components/build/FindHit.tsx",
+  "src/dev/fixtures/ca27.ts",
+  "src/lib/build/findInBuild.ts",
+  "src/pages/site/compose/FindField.tsx",
+  "src/pages/site/compose/ca27.p1.page.test.tsx",
+  "src/pages/site/compose/ca27.p1.test.tsx",
+  "src/pages/site/compose/findIndex.ts",
+  "src/pages/site/compose/useBuildFind.ts",
 ];
 
 /**

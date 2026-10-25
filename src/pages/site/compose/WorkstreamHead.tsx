@@ -7,6 +7,7 @@
    In code a part is a "workstream", because "part" already means a tile or a session here. The head writes nothing: its
    callbacks (`ops`) are the maker's, and a reader's head is drawn without them. */
 
+import { FindHit } from "@/components/build/FindHit";
 import { useItemRing } from "./buildFocus";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
@@ -296,7 +297,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
           <NameField part={part} phone={phone} onSave={(name) => ops?.onName(part.key, name)} />
         ) : part.name ? (
           <span data-testid="workstream-name-text" style={{ ...text(14, 500, part.nameColour), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
-            {part.name}
+            <FindHit text={part.name} />
           </span>
         ) : (
           <span style={{ flex: "1 1 0", minWidth: 0 }} />

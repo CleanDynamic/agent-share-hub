@@ -22,6 +22,7 @@ import { t } from "@/lib/theme/tokens";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { ManualThumb } from "@/pages/site/compose/ManualThumb";
 import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
+import { FindHit } from "./FindHit";
 import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { DM_MONO } from "@/lib/theme/type";
 import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
@@ -493,7 +494,7 @@ export function PromptName({ place, title, size = 14 }: { place: string; title: 
       </span>
       {title ? (
         <span data-testid="prompt-own-title" style={{ color: t.text, minWidth: 0, ...ellipsis }}>
-          {title}
+          <FindHit text={title} />
         </span>
       ) : null}
     </span>

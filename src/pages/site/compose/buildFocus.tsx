@@ -10,6 +10,7 @@ import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
 import { ROVING_ITEM, itemKey, itemsOf, shown } from "@/lib/focus/buildItems";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
+import { useFoundRing } from "@/components/build/FindHit";
 import { text } from "./refinedStyles";
 
 import { takesKeys } from "./useBuildSelection";
@@ -121,10 +122,11 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
 }
 
 /** The ring for an element that holds focus itself: only when the focus came from a keyboard. */
-export function useItemRing(): { ring: CSSProperties; bind: { onFocus: (event: FocusEvent<HTMLElement>) => void; onBlur: (event: FocusEvent<HTMLElement>) => void } } {
+export function useItemRing(id?: string | null): { ring: CSSProperties; bind: { onFocus: (event: FocusEvent<HTMLElement>) => void; onBlur: (event: FocusEvent<HTMLElement>) => void } } {
   const [on, setOn] = useState(false);
+  const found = useFoundRing(id);
   return {
-    ring: ring(on),
+    ring: { ...ring(on), ...found },
     bind: {
       onFocus: (event) => {
         if (event.target !== event.currentTarget) return;

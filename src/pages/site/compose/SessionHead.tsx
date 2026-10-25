@@ -7,6 +7,7 @@
 
    The head writes nothing. Its callbacks (`ops`) are the maker's; a reader's build page draws its own head. */
 
+import { FindHit } from "@/components/build/FindHit";
 import { useAnnounce } from "./BuildAnnouncer";
 import { useItemRing } from "./buildFocus";
 import * as Menu from "@radix-ui/react-dropdown-menu";
@@ -231,7 +232,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
       {session.tool === NO_APP && onPickApp && maker ? (
         <ToolPicker quiet label={`Pick an app for session ${session.number}`} placeholder={NO_APP} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
       ) : (
-        <span style={{ whiteSpace: "nowrap", ...(session.tool === NO_APP ? { color: t.text2 } : null) }}>{session.tool}</span>
+        <span style={{ whiteSpace: "nowrap", ...(session.tool === NO_APP ? { color: t.text2 } : null) }}><FindHit text={session.tool} /></span>
       )}
     </span>
   );
@@ -243,7 +244,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           <TitleField session={session} phone={phone} onSave={(title) => ops?.onTitle(session.key, title)} />
         ) : session.title ? (
           <span data-testid="session-title-text" style={{ ...text(13, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
-            {session.title}
+            <FindHit text={session.title} />
           </span>
         ) : (
           <span style={{ flex: "1 1 0", minWidth: 0 }} />

@@ -287,6 +287,9 @@
   /* CA-21 */
   --skeleton-edge: #C2C2C2;
   --skeleton-target: #878787;
+  /* CA-27 */
+  --find-fill: rgba(0,0,0,.08);
+  --panel-shadow: -12px 0 32px rgba(0,0,0,.14);
 
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
@@ -524,6 +527,9 @@
   /* CA-21 */
   --skeleton-edge: #36363C;
   --skeleton-target: #6A6A72;
+  /* CA-27 */
+  --find-fill: rgba(237,237,239,.14);
+  --panel-shadow: -12px 0 32px rgba(0,0,0,.4);
 
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is

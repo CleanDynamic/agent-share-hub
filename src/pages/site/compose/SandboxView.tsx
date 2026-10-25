@@ -43,7 +43,9 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
+import { FindButton, FindField } from "./FindField";
 import { SaveLine } from "./SaveLine";
+import type { BuildFind } from "./useBuildFind";
 import { isUntitled, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
@@ -157,6 +159,8 @@ export interface SandboxViewProps extends CardProps {
   addTargets?: AddTargets;
   /** CA-14 P6: the View menu's two switches. Absent: no View menu. */
   viewOptions?: ViewMenuProps;
+  /** CA-27 P1: Find in build. Absent: no button and no field. */
+  find?: BuildFind;
   /** CA-24 P3: each panel's own failure and how to ask again; a panel that throws while drawing is caught by its own boundary whatever is passed. */
   panels?: Partial<Record<PanelName, PanelState>>;
   /** CA-24 P2: the build has no sessions and no tiles: "Add your first session" stands in the Build column in place of the list and its add rows. */
@@ -1164,6 +1168,8 @@ function SandboxBody(props: SandboxViewProps) {
             {addMenu}
           </span>
         ) : null}
+        {phone || !props.find?.open ? null : <FindField find={props.find} />}
+        {phone || !props.find ? null : <FindButton find={props.find} />}
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
         {phone ? null : addMenu}
       </div>
