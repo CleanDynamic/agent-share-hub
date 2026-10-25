@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/errors/report";
 
 interface State {
   hasError: boolean;
@@ -13,6 +14,10 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
 
   static getDerivedStateFromError(): State {
     return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    reportError(error, { source: "app-boundary", route: window.location.pathname });
   }
 
   render() {

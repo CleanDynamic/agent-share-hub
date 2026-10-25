@@ -454,7 +454,6 @@ export default function MyUploads() {
           contentId={updateTarget.id}
           contentTitle={updateTarget.title}
           currentVersion={updateTarget.version}
-          creatorId={profile.id}
         />
       )}
     </div>

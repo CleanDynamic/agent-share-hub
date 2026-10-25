@@ -14,6 +14,7 @@ import { ArrowLeft, Pencil, Eye, User, Calendar, Download, X, Loader2 } from "lu
 import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { formatDistanceToNow } from "date-fns";
+import { reportError } from "@/lib/errors/report";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -210,17 +211,19 @@ export default function ContentEditPage() {
 
       // Apply content_items updates if any
       if (Object.keys(updatePayload).length > 0) {
-        await supabase.from("content_items").update(updatePayload as any).eq("id", id!);
+        const { error: updateError } = await supabase.from("content_items").update(updatePayload as any).eq("id", id!);
+        if (updateError) throw updateError;
       }
 
       // 2. Insert changelog entry
-      await supabase.from("content_changelogs").insert({
+      const { error: changelogError } = await supabase.from("content_changelogs").insert({
         content_id: id!,
         change_note: changeNote.trim().slice(0, 140),
         version_label: versionLabel.trim() || null,
         created_by: user.id,
         fields_changed_count: changedSections.size,
       } as any);
+      if (changelogError) throw changelogError;
 
       // 3. Fire notification edge function
       supabase.functions.invoke("notify-version-update", {
@@ -229,15 +232,17 @@ export default function ContentEditPage() {
           version_number: versionLabel.trim() || item.current_version,
           changelog: changeNote.trim().slice(0, 140),
           content_title: editTitle || item.title,
-          creator_id: user.id,
         },
+      }).then(({ error: notifyError }) => {
+        if (notifyError) reportError(notifyError, { source: "notify-version-update", context: "content-edit", route: window.location.pathname });
       });
 
       // 4. Mark library updates
-      await supabase
+      const { error: libraryError } = await supabase
         .from("user_library" as any)
         .update({ has_update: true } as any)
         .eq("content_id", id!);
+      if (libraryError) throw libraryError;
 
       // 5. Invalidate queries and navigate
       queryClient.invalidateQueries({ queryKey: ["content_detail", id] });
@@ -245,7 +250,8 @@ export default function ContentEditPage() {
       
       toast({ title: "Update posted ✓", description: "Library followers have been notified." });
       navigate(`/content/${id}`);
-    } catch {
+    } catch (err) {
+      reportError(err, { source: "content-edit", route: window.location.pathname });
       toast({ title: "Failed to post update", variant: "destructive" });
     }
     setSubmitting(false);

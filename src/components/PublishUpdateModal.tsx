@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Loader2, Upload } from "lucide-react";
+import { reportError } from "@/lib/errors/report";
 
 function suggestNext(current: string): string {
   const parts = current.split(".");
@@ -32,7 +33,6 @@ interface PublishUpdateModalProps {
   contentId: string;
   contentTitle: string;
   currentVersion: string;
-  creatorId: string;
 }
 
 export function PublishUpdateModal({
@@ -41,7 +41,6 @@ export function PublishUpdateModal({
   contentId,
   contentTitle,
   currentVersion,
-  creatorId,
 }: PublishUpdateModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -98,34 +97,39 @@ export function PublishUpdateModal({
       if (updateError) throw updateError;
 
       // Insert version record
-      await supabase.from("content_versions").insert({
+      const { error: versionError } = await supabase.from("content_versions").insert({
         content_id: contentId,
         version_number: version.trim(),
         changelog: changelog.trim(),
         created_by: user.id,
         blocks_snapshot: null,
       });
+      if (versionError) throw versionError;
 
-      // Notify bookmarkers/downloaders
-      await supabase.functions.invoke("notify-version-update", {
+      // Notify bookmarkers/downloaders. The server takes the creator from the
+      // sign-in and checks the item is theirs, so no creator id is sent.
+      const { error: notifyError } = await supabase.functions.invoke("notify-version-update", {
         body: {
           content_id: contentId,
           version_number: version.trim(),
           changelog: changelog.trim(),
           content_title: contentTitle,
-          creator_id: creatorId,
         },
       });
+      if (notifyError) reportError(notifyError, { source: "notify-version-update", context: "publish-update", route: window.location.pathname });
 
       queryClient.invalidateQueries({ queryKey: ["my_uploads"] });
 
       toast({
         title: replaceFile
           ? `Version ${version} submitted for review. The updated file will go live after admin approval.`
-          : `Version ${version} published. Followers have been notified.`,
+          : notifyError
+            ? `Version ${version} published. Followers not notified.`
+            : `Version ${version} published. Followers have been notified.`,
       });
       handleOpenChange(false);
     } catch (err: any) {
+      reportError(err, { source: "publish-update", route: window.location.pathname });
       toast({ title: "Update failed", description: err.message || "Something went wrong.", variant: "destructive" });
     }
     setSubmitting(false);
