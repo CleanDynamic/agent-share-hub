@@ -8,7 +8,7 @@
    THE BUILD. A toolbar (List / Map, the counts, the hint), then the session groups: each led by a head (the tool's
    real mark at 20 where the current look has a dot, the "New chat in …" heading 13/500, its meta 12 `--label` and a
    hairline filling the rest) and its step modules. A step is a module: the number in a 24 control tile (Geist Mono
-   11), the title 14/500, Copy (secondary 26, no icon); the text 13.5/22 indented 36, four lines then "Read all of it";
+   11), the title 14/500, Copy (secondary 26, no icon); the text 13.5/22 indented 36, four lines then "Read all";
    the paste-ins as a tile indented 36. The result is a module under its own head.
 
    WHAT YOU NEED. No module: the column on the surface. Sections are an eyebrow over a hairline and rows 48 high; a
@@ -375,8 +375,8 @@ function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone
   );
 }
 
-/** An underlined text button: "Read all of it", "See the team in Map". */
-function ReadAll({ onRead, label = "Read all of it", expanded }: { onRead: () => void; label?: string; expanded?: boolean }) {
+/** An underlined text button: "Read all", "See the team in Map". */
+function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void; label?: string; expanded?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -400,7 +400,7 @@ function ReadAll({ onRead, label = "Read all of it", expanded }: { onRead: () =>
   );
 }
 
-/** The text at 13.5/22 indented 36: four lines, then "Read all of it" and the word count. */
+/** The text at 13.5/22 indented 36: four lines, then "Read all" and the word count. */
 function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step; onRead: () => void; alone?: boolean; indent?: number }) {
   const long = isLong(step);
   if (!step.text) return null;

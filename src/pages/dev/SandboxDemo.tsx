@@ -115,7 +115,7 @@ export default function SandboxDemo(props: DesignPageProps) {
   if (params.get("build") === "links" || params.get("build") === "parts") return <LinksDemo {...props} />;
   if (params.get("build") === "references") return <ReferencesDemo {...props} />;
   if (params.get("build") === "ca21") return <MovingDemo {...props} />;
-  if (params.get("build") === "ca22") return <MotionDemo {...props} />;
+  if (params.get("build") === "ca22" || params.get("build") === "ca27") return <MotionDemo {...props} />;
   if (params.get("build") === "ca23") return <SavingDemo {...props} />;
   if (params.get("build") === "ca24") return <Ca24Demo {...props} />;
   if (params.get("build") === "ca25") return <Ca25Demo {...props} />;

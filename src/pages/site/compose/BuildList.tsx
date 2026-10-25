@@ -55,6 +55,9 @@ import { definesOf } from "@/lib/build/agentCode";
 import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { GlyphButton } from "./ModalFrame";
 import { useAnnounce } from "./BuildAnnouncer";
+import { PREVIEW } from "@/lib/theme/truncate";
+import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
+import { FOUND_RING, FindHit, FindProvider, NO_FIND, type FindView } from "@/components/build/FindHit";
 import { useItemRing, useRovingList } from "./buildFocus";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
@@ -150,7 +153,7 @@ import { useBuildSelectionContext } from "./useBuildSelection";
 export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
-  hint: "Click a tile to see its details · double-click to read all of it",
+  hint: "Click a tile to see its details · double-click to read all",
   /** CA-10 (CA-09 F12): a phone has no double-click (the card's onDoubleClick is off there) and taps, not clicks. */
   hintPhone: "Tap a tile to see its details",
   placeholder: "Paste or type a prompt…",
@@ -183,7 +186,7 @@ export interface BuildListProps {
   results: readonly ListResult[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  /** UI-P67's full prompt window. Absent: nothing opens and "Read all of it" is disabled. */
+  /** UI-P67's full prompt window. Absent: nothing opens and "Read all" is disabled. */
   onOpenPrompt?: (id: string) => void;
   /** CA-18: a double click on any other tile opens its own window, to change it. Absent: nothing opens. A phone has no double click. */
   onEditTile?: (id: string) => void;
@@ -233,6 +236,8 @@ export interface BuildListProps {
   collapsed?: ReadonlySet<string>;
   /** CA-14 P3: folding or opening a session. Resolves once it is kept. */
   onToggleCollapsed?: (sessionKey: string, collapsed: boolean) => void;
+  /** CA-27 P1: Find in build: the words and the match for the List to draw, the sessions and parts it holds open, and the maker taking one over. */
+  find?: { view: FindView; forced: ReadonlySet<string>; release: (key: string) => void };
   /** CA-14 P2: what the maker can do to a session's head. Absent: heads show no maker controls. */
   sessionOps?: SessionOps;
   /** CA-14 P4: a session's head dropped on another's. */
@@ -328,7 +333,7 @@ export function useClamped<T extends HTMLElement>(text: string) {
 }
 
 export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
-export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+export const clamp2: CSSProperties = PREVIEW;
 
 /** CA-20 P3: the tile is chosen with others, and is drawn as selected is. */
 const usePicked = (id: string): boolean => Boolean(useBuildSelectionContext()?.tiles.has(id));
@@ -636,7 +641,7 @@ const gripName = (step: Step) => {
 
 /** A tile inside another: its eyebrow says what it is sent with; it has no number. It can hold more tiles. */
 function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
-  const focus = useItemRing();
+  const focus = useItemRing(step.id);
   const nest = useNestTile(step.id);
   const hidden = useContext(ListRefsContext).hidden === step.id;
   const cardRef = useCardRef(step.id, nest.setRef);
@@ -1044,7 +1049,7 @@ function TileTitle({ step, rename, noun, phone }: { step: Step; rename: ReturnTy
     <RenameField label={`Title of ${noun.toLowerCase()} ${step.number}`} draft={rename.draft} placeholder={step.defaultTitle} phone={phone} onDraft={rename.setDraft} onFinish={rename.finish} />
   ) : (
     <h3 data-default-title={isDefault ? "true" : undefined} title={stepTitle(step)} style={{ ...TILE_TITLE, ...(isDefault ? { color: t.text2 } : null) }}>
-      {step.kind === "tool" || step.kind === "repo" ? <MarkedName name={step.kind === "tool" ? (step.tool ?? stepTitle(step)) : "github"}>{stepTitle(step)}</MarkedName> : stepTitle(step)}
+      {step.kind === "tool" || step.kind === "repo" ? <MarkedName name={step.kind === "tool" ? (step.tool ?? stepTitle(step)) : "github"}><FindHit text={stepTitle(step)} /></MarkedName> : <FindHit text={stepTitle(step)} />}
     </h3>
   );
 }
@@ -1103,7 +1108,7 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
 /* ── a prompt's card ── */
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  const focus = useItemRing();
+  const focus = useItemRing(step.id);
   const { phone, selectedId } = props;
   const can = useCanMove(step.id, index, last);
   const picked = usePicked(step.id);
@@ -1237,7 +1242,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <ConvertRows step={step} phone={phone} />
-                <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all of it</MenuRow>
+                <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
@@ -1418,7 +1423,7 @@ function TeamAgents({ team }: { team: Step }) {
 }
 
 function ContainerCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  const focus = useItemRing();
+  const focus = useItemRing(step.id);
   const isTeam = step.kind === "team";
   const noun = isTeam ? "Team" : "Agent";
   const picked = usePicked(step.id);
@@ -1580,7 +1585,7 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
  * manual step, a tool, a file. The body is the shared one (`tileBodies`), so the maker sees what readers see.
  */
 function PlainCard({ step, index, last, props, noun, body, after, link, typeLine }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; body: (indent: number) => ReactNode; after?: ReactNode; link?: ReactNode; typeLine?: ReactNode }) {
-  const focus = useItemRing();
+  const focus = useItemRing(step.id);
   const { phone } = props;
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
@@ -1686,7 +1691,7 @@ function FileCard({ step, index, last, props }: { step: Step; index: number; las
 
 /** CA-02 P7: lines of code, as a module like a manual step's: its type line (language and length), then its first 3 lines in a mono well. */
 function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  const focus = useItemRing();
+  const focus = useItemRing(step.id);
   const { phone } = props;
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
@@ -1752,7 +1757,7 @@ export const CODE_TILE_LINES = 3;
 
 /** CA-03 P5: how the build checked its work: its pass criteria, and one status line with a 7px dot. */
 function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  const focus = useItemRing();
+  const focus = useItemRing(step.id);
   const { phone } = props;
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
@@ -1838,7 +1843,7 @@ function PendingAddCard({ kind }: { kind: PendingAdd }) {
 }
 
 function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { result: ListResult; selected: boolean; ringed?: boolean; onSelect: (id: string) => void; onEdit?: (id: string) => void }) {
-  const focus = useItemRing();
+  const focus = useItemRing(result.id);
   return (
     <div
       data-testid="result-card"
@@ -2063,7 +2068,7 @@ const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
 };
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
-function SessionRun({ head, phone: _phone, first, lit = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
+function SessionRun({ head, phone: _phone, first, lit = false, found = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; found?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
   const colour = head?.colour;
@@ -2074,14 +2079,26 @@ function SessionRun({ head, phone: _phone, first, lit = false, part: partKey = "
       {...(head ? { "data-skel-kind": "session", "data-skel-id": head.key, "data-skel-container": partKey, [SLIDE_ATTR]: `session:${head.key}` } : null)}
       data-lit={lit || undefined}
       data-session-colour={colour}
-      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(head && !first ? { marginTop: 16 } : null), ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null), ...(hidden ? { visibility: "hidden" } : null) }}
+      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(head && !first ? { marginTop: 16 } : null), ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null), ...(found ? FOUND_RING : null), ...(hidden ? { visibility: "hidden" } : null) }}
     >
       {children}
     </div>
   );
 }
 
-export function BuildList(incoming: BuildListProps) {
+/** CA-27 P1: what a find holds open is drawn open, and a fold the maker makes is theirs, not the find's. */
+function withFindOpen(props: BuildListProps): BuildListProps {
+  const find = props.find;
+  if (!find) return props;
+  const { forced, release } = find;
+  const keep = <A extends unknown[]>(run: ((key: string, closed: boolean, ...rest: A) => void) | undefined) => (run ? (key: string, closed: boolean, ...rest: A) => (release(key), run(key, closed, ...rest)) : undefined);
+  const parts = props.parts && forced.size > 0 ? { ...props.parts, parts: props.parts.parts.map((part) => (forced.has(part.view.key) && part.view.collapsed ? { ...part, view: { ...part.view, collapsed: false } } : part)), onToggle: keep(props.parts.onToggle) } : props.parts ? { ...props.parts, onToggle: keep(props.parts.onToggle) } : props.parts;
+  const collapsed = props.collapsed && forced.size > 0 ? new Set([...props.collapsed].filter((key) => !forced.has(key))) : props.collapsed;
+  return { ...props, collapsed, parts, onToggleCollapsed: keep(props.onToggleCollapsed) };
+}
+
+export function BuildList(raw: BuildListProps) {
+  const incoming = withFindOpen(raw);
   /* CA-22 P2, P3: what leaves is held on screen while it lifts out, then the new view is drawn and the rest slides; what arrives drops in. */
   const rootHolder = useRef<RefObject<HTMLDivElement | null> | null>(null);
   const busyHolder = useRef(false);
@@ -2228,18 +2245,28 @@ export function BuildList(incoming: BuildListProps) {
     ) : (
       <ContainerCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     );
+  /* CA-27 P3: a build of WINDOW_FROM tiles or more draws only the tiles near the view; the ones the page needs stay drawn. */
+  const windowed = nestOn && steps.length >= WINDOW_FROM;
+  const forcedTop = new Set<string>();
+  if (windowed) {
+    for (const id of [props.selectedId, props.ringedId, props.find?.view.current, sorting.hidden, props.reveal?.id]) {
+      const top = id ? topOf(id) : undefined;
+      if (top) forcedTop.add(top.id);
+    }
+  }
   /* Each top-level tile stands in a wrapper the page can find (to measure, to slide and to hide while it is held). */
   const placed = (step: Step) => {
     if (!nestOn) return card(step);
+    const box = {
+      "data-skel-kind": "tile",
+      "data-skel-id": step.id,
+      "data-skel-container": containerOfTile.get(step.id) ?? "",
+      [SLIDE_ATTR]: `tile:${step.id}`,
+      style: { position: "relative", display: "flex", flexDirection: "column", minWidth: 0, ...(sorting.hidden === step.id ? { visibility: "hidden" } : null) } as CSSProperties,
+    };
+    if (windowed) return <WindowedTile key={step.id} id={step.id} kind={step.kind} index={steps.indexOf(step)} forced={forcedTop.has(step.id)} box={box} render={() => card(step)} />;
     return (
-      <div
-        key={step.id}
-        data-skel-kind="tile"
-        data-skel-id={step.id}
-        data-skel-container={containerOfTile.get(step.id) ?? ""}
-        {...{ [SLIDE_ATTR]: `tile:${step.id}` }}
-        style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0, ...(sorting.hidden === step.id ? { visibility: "hidden" } : null) }}
-      >
+      <div key={step.id} {...box}>
         {card(step)}
       </div>
     );
@@ -2273,7 +2300,7 @@ export function BuildList(incoming: BuildListProps) {
         const promptHere = headed && (props.promptIn === key || emptyDraft);
         const sameStageAs = parts && inPart && key && here > 0 && parts.withAbove?.has(key) ? `Session ${numberByKey.get(inPart.sessions[here - 1]) ?? ""}`.trim() : undefined;
         return (
-          <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0 || inPart !== null} lit={Boolean(key && props.ringedSession?.key === key)} part={inPart?.view.key} hidden={Boolean(key && sorting.hidden === key)}>
+          <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0 || inPart !== null} lit={Boolean(key && props.ringedSession?.key === key)} found={Boolean(key && props.find?.view.current === key)} part={inPart?.view.key} hidden={Boolean(key && sorting.hidden === key)}>
             {run.head ? (
               <SessionHead
                 session={run.head}
@@ -2296,7 +2323,7 @@ export function BuildList(incoming: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <div id={tilesId} data-testid="session-tiles" hidden={shut} style={headed ? RUN : undefined}>
+              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} skip={steps.length >= WINDOW_FROM} style={headed ? RUN : undefined}>
                 {shut ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
@@ -2319,7 +2346,7 @@ export function BuildList(incoming: BuildListProps) {
                     {editable && props.addToSession ? props.addToSession(run.head.key) : null}
                   </>
                 )}
-              </div>
+              </SessionTiles>
             ) : (
               drawBranches(run.steps, (step) => step, steps, placed)
             )}
@@ -2333,7 +2360,7 @@ export function BuildList(incoming: BuildListProps) {
     const neighbour = parts?.parts[at - 1] ?? parts?.parts[at + 1];
     const count = parts?.parts.length ?? 0;
     return (
-      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={sorting.hidden === view.key ? { ...WORKSTREAM_GROUP, visibility: "hidden" } : WORKSTREAM_GROUP}>
+      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={{ ...WORKSTREAM_GROUP, ...(sorting.hidden === view.key ? { visibility: "hidden" } : null), ...(props.find?.view.current === view.key ? FOUND_RING : null) }}>
         <WorkstreamHead
           part={view}
           phone={props.phone}
@@ -2421,7 +2448,7 @@ export function BuildList(incoming: BuildListProps) {
       {props.onAddPart ? <AddPartRow phone={props.phone} adding={props.addSession?.adding ?? false} onAdd={props.onAddPart} /> : null}
     </div>
   );
-  const body = list;
+  const body = <FindProvider value={props.find?.view ?? NO_FIND}>{list}</FindProvider>;
   const sessionOf = new Map<string, string>();
   const sessionNumbers = new Map<string, number>();
   const firstOf = new Set<string>();

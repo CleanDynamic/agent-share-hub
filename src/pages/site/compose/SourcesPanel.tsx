@@ -39,6 +39,7 @@ import { useFlip, useLeaving } from "./buildMotion";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
+import { fullText } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
@@ -231,12 +232,12 @@ function SessionRow({
         <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? 44 : 40} style={{ alignItems: "flex-start", padding: "6px" }}>
           <ToolMark tool={session.tool} size={20} />
           <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-            <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>
+            <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(13, 500, t.text), ...ellipsis }}>
               {/* CA-06 P4: a coloured session's 7px dot before its name. */}
               {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: 6, verticalAlign: "middle" }} /> : null}
               Session {session.number} · {session.tool}
             </span>
-            <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
+            <span {...fullText(session.detail)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
           </span>
         </SelectButton>
       </div>
@@ -245,7 +246,7 @@ function SessionRow({
           {session.prompts.map((prompt) => (
             <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 30}>
               <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum }}>{prompt.number}</span>
-              <span style={{ ...text(12.5, prompt.isDefault ? 400 : 500, prompt.isDefault ? t.text2 : t.text), ...ellipsis }}>{prompt.title}</span>
+              <span {...fullText(prompt.title)} style={{ ...text(12.5, prompt.isDefault ? 400 : 500, prompt.isDefault ? t.text2 : t.text), ...ellipsis }}>{prompt.title}</span>
             </SelectButton>
           ))}
         </div>
@@ -261,8 +262,8 @@ function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile;
         <Glyph name="file" size={16} />
       </span>
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-        <span style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
-        <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
+        <span {...fullText(file.name)} style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
+        <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
       </span>
       {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. */}
       {onRemove ? (
@@ -285,7 +286,7 @@ function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile;
 function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; phone: boolean; onPick: () => void }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
-      <span style={{ ...text(12.5, 400, t.text2), minWidth: 0, flexGrow: 1, overflowWrap: "anywhere" }}>{reminder.line}</span>
+      <span {...fullText(reminder.line)} style={{ ...text(12.5, 400, t.text2), flexGrow: 1, ...ellipsis }}>{reminder.line}</span>
       <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={text(12.5, 500, t.text)}>
         Add it
       </TextButton>
@@ -320,9 +321,9 @@ function LibraryRow({ item, phone, onAdd, parts }: { item: SourceLibraryItem; ph
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
       <ToolMark tool={item.label} size={20} />
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-        <span style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
-        <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
-        {item.alsoIn ? <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
+        <span {...fullText(item.label)} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
+        <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
+        {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
       </span>
       {item.inThisDraft ? (
         <span style={{ ...text(11.5, 400, t.label), flexShrink: 0 }}>{SOURCES_COPY.inThisDraft}</span>

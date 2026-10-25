@@ -6,6 +6,8 @@
 // focuses it. The composer shows it when the maker turns it on; the build page shows it to readers once a build has three
 // sessions. Nothing here writes.
 
+import { clipTo } from "@/lib/theme/truncate";
+import { settle } from "@/pages/site/compose/largeBuild";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Fragment, useEffect, useState } from "react";
 
@@ -89,6 +91,20 @@ export function jumpTo(head: HTMLElement | null): void {
   if (!head) return;
   head.scrollIntoView?.({ block: "start", behavior: scrollBehavior() });
   head.focus({ preventScroll: true });
+  /* CA-27 P3: in a large build the tiles above the session were guessed at and shift as the jump passes them: once it has arrived the
+     head is kept at the top of the page for a moment. In a smaller build it is there already and nothing moves. */
+  window.setTimeout(
+    () =>
+      settle(
+        () => {
+          const top = head.getBoundingClientRect().top;
+          return !head.isConnected || (top >= -2 && top <= 120);
+        },
+        () => head.scrollIntoView?.({ block: "start" }),
+        1400,
+      ),
+    500,
+  );
 }
 
 function Chip({ item, current, onJump }: { item: SessionJumpItem; current: boolean; onJump: () => void }) {
@@ -122,6 +138,9 @@ function Chip({ item, current, onJump }: { item: SessionJumpItem; current: boole
   );
 }
 
+/** The phone's menu button says "Session 2 of 20 · Title": a long title is cut here, and all of it is in the tooltip. */
+const SESSION_LINE_MAX = 44;
+
 export function SessionJump({ items, current, phone, onJump }: { items: readonly SessionJumpItem[]; current: string | null; phone: boolean; onJump: (key: string) => void }) {
   const [open, setOpen] = useState(false);
   if (items.length < 2) return null;
@@ -129,7 +148,7 @@ export function SessionJump({ items, current, phone, onJump }: { items: readonly
     return (
       <Menu.Root open={open} onOpenChange={setOpen}>
         <Menu.Trigger asChild>
-          <MenuButton data-testid="session-list" aria-label="Sessions" label="" value={jumpLine(items, current)} open={open} style={{ height: 44, maxWidth: "100%" }} />
+          <MenuButton data-testid="session-list" aria-label="Sessions" title={jumpLine(items, current)} label="" value={clipTo(jumpLine(items, current), SESSION_LINE_MAX)} open={open} style={{ height: 44, maxWidth: "100%" }} />
         </Menu.Trigger>
         <Menu.Portal>
           <MenuContent align="start" sideOffset={4} style={menuSurface()}>

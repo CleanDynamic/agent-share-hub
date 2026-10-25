@@ -813,6 +813,35 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/referencePieces.tsx",
   "src/pages/site/compose/removePieces.tsx",
   "src/pages/site/compose/saveWindows.tsx",
+
+  // CA-27 P1
+  "src/components/build/FindHit.tsx",
+  "src/dev/fixtures/ca27.ts",
+  "src/lib/build/findInBuild.ts",
+  "src/pages/site/compose/FindField.tsx",
+  "src/pages/site/compose/ca27.p1.page.test.tsx",
+  "src/pages/site/compose/ca27.p1.test.tsx",
+  "src/pages/site/compose/findIndex.ts",
+  "src/pages/site/compose/useBuildFind.ts",
+
+  // CA-27 P2
+  "e2e/audit/composer-ca27.spec.ts",
+  "src/lib/theme/truncate.ts",
+  "src/pages/site/compose/ca27.p2.test.tsx",
+
+  // CA-27 P3
+  "src/pages/site/compose/buildMotion.tsx",
+  "src/pages/site/compose/ca27.p3.test.tsx",
+  "src/pages/site/compose/largeBuild.tsx",
+
+  // CA-27 P4
+  "src/pages/site/compose/ca27.p4.test.tsx",
+
+  // CA-27 P5 (HeaderSearch.tsx is not listed: its look, a 5 of padding and a lucide Search, is from before CA-27, which adds one line of behaviour to it)
+  "e2e/audit/composer-ca27-shots.spec.ts",
+  "src/components/shell/NavSearch.tsx",
+  "src/components/shell/headerSearch.slash.test.tsx",
+
 ];
 
 /**
@@ -1311,6 +1340,31 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no fade-in on scroll",
     text: "const observer = new IntersectionObserver((entries) => {",
     why: "CA-10: polling only while a panel is on screen (useOnScreen). It reads whether an element shows; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "let observer: IntersectionObserver | null = null;",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "function sharedObserver(): IntersectionObserver | null {",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "if (typeof IntersectionObserver === \"undefined\") return null;",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "observer = new IntersectionObserver(",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "vi.stubGlobal(\"IntersectionObserver\", FakeObserver);",
+    why: "CA-27 P3: a build of hundreds of tiles draws only the tiles near the view. It reads whether a tile's box is near, to draw its card or not; it fades nothing in.",
   },
   {
     rule: "no untouched shadcn",

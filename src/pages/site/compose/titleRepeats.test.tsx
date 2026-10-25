@@ -57,7 +57,7 @@ describe("the List", () => {
 
 describe("the hint", () => {
   it("says tile, on a computer and on a phone, and never click on a phone", () => {
-    expect(LIST_COPY.hint).toBe("Click a tile to see its details · double-click to read all of it");
+    expect(LIST_COPY.hint).toBe("Click a tile to see its details · double-click to read all");
     expect(LIST_COPY.hintPhone).toBe("Tap a tile to see its details");
     expect(LIST_HINT).toBe(LIST_COPY.hint);
     expect(LIST_HINT_PHONE).toBe(LIST_COPY.hintPhone);

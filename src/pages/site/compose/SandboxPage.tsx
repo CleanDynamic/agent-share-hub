@@ -127,6 +127,8 @@ import { computeFacets, hasClassification, shapeFromBuilt, shownValues } from "@
 import { ReferenceBridgeContext, useReferenceBridge } from "./useReferenceBridge";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 import { BuildActionsContext, tileName, useBuildActions } from "./useBuildActions";
+import { findTargetsOf } from "./findIndex";
+import { useBuildFind } from "./useBuildFind";
 import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar, type SelectionBarProps } from "./removePieces";
@@ -2066,6 +2068,11 @@ function SandboxPageBody() {
     setup: asStep("Added setup files", addSetup),
   };
 
+  /* CA-27 P1: Find in build: what it reads is what the List is drawn from. */
+  const findTargets = useMemo(() => findTargetsOf({ steps, dividers: dividerRows, emptySessions, parts: partsModel ? { parts: partsModel.list } : undefined }), [steps, dividerRows, emptySessions, partsModel]);
+  const isFolded = useCallback((key: string) => collapsedKeys.has(key) || Boolean(partsModel?.list.find((part) => part.view.key === key)?.view.collapsed), [collapsedKeys, partsModel]);
+  const find = useBuildFind({ targets: findTargets, isFolded, enabled: !phone && lens === "list" });
+
   /* CA-20 P8: the build page's keys. */
   useBuildShortcuts({
     phone,
@@ -2077,6 +2084,7 @@ function SandboxPageBody() {
     onSelect: setSelectedId,
     onMove: stepOf.move,
     openHelp: actions.shortcuts.open,
+    openFind: find.show,
   });
 
   /* CA-22 P6: the selection bar is held while it falls away (on Esc or Clear selection), with the words it last had. */
@@ -2195,6 +2203,7 @@ function SandboxPageBody() {
         threadNote={thread.hold}
         {...addHandlers}
         addTargets={addTargets}
+        find={phone ? undefined : find}
         viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true), fold: foldAll }}
         sessionList={sessionList}
         selectionBar={heldBar.value ? <SelectionBar {...heldBar.value} leaving={heldBar.leaving} /> : null}
@@ -2283,6 +2292,7 @@ function SandboxPageBody() {
             addSession={addSessionProps}
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
+            find={find.open ? { view: find.view, forced: find.forced, release: find.release } : undefined}
             ringedSession={ringedSession}
             arriving={arriving}
             onArrived={(key, status) => {

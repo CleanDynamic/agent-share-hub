@@ -79,7 +79,9 @@ function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
  * `DragOverlay`) and the context the tiles and heads read.
  */
 export function NestList({ phone, sorting, children }: { phone: boolean; sorting: Sorting; children: ReactNode }) {
-  const press = phone ? { delay: 250, tolerance: 6 } : { distance: 4 };
+  /* CA-27 P4: a touch screen of any width (a tablet's too) picks a tile up by a press of 250 ms on its grip, so one finger anywhere else scrolls. */
+  const coarse = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+  const press = phone || coarse ? { delay: 250, tolerance: 6 } : { distance: 4 };
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: press }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),

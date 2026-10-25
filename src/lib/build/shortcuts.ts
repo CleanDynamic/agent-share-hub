@@ -13,10 +13,11 @@ export interface Shortcut {
   other: string;
 }
 
-export type ShortcutId = "help" | "undo" | "redo" | "save" | "escape" | "selectAll" | "up" | "down" | "first" | "last" | "remove" | "duplicate" | "group" | "ungroup" | "moveUp" | "moveDown" | "foldAll";
+export type ShortcutId = "help" | "find" | "undo" | "redo" | "save" | "escape" | "selectAll" | "up" | "down" | "first" | "last" | "remove" | "duplicate" | "group" | "ungroup" | "moveUp" | "moveDown" | "foldAll";
 
 export const SHORTCUTS: readonly Shortcut[] = [
   { id: "help", group: "Build", label: "Keyboard shortcuts", mac: "?", other: "?" },
+  { id: "find", group: "Build", label: "Find in build", mac: "/", other: "/" },
   { id: "undo", group: "Build", label: "Undo", mac: "⌘Z", other: "Ctrl+Z" },
   { id: "redo", group: "Build", label: "Redo", mac: "⇧⌘Z", other: "Ctrl+Y" },
   { id: "save", group: "Build", label: "Save", mac: "⌘S", other: "Ctrl+S" },
@@ -51,6 +52,7 @@ export function shortcutOf(event: { key: string; metaKey: boolean; ctrlKey: bool
   const mod = mac ? event.metaKey : event.ctrlKey;
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   if (event.key === "?" && !event.metaKey && !event.ctrlKey && !event.altKey) return "help";
+  if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) return "find";
   if (mod && !event.altKey) {
     if (key === "z") return event.shiftKey ? "redo" : "undo";
     if (key === "y" && !mac && !event.shiftKey) return "redo";

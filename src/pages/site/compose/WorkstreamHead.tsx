@@ -7,6 +7,8 @@
    In code a part is a "workstream", because "part" already means a tile or a session here. The head writes nothing: its
    callbacks (`ops`) are the maker's, and a reader's head is drawn without them. */
 
+import { FindHit } from "@/components/build/FindHit";
+import { NO_SHRINK, TITLE_LINE, fullText } from "@/lib/theme/truncate";
 import { useItemRing } from "./buildFocus";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
@@ -132,6 +134,7 @@ function NameField({ part, phone, onSave }: { part: WorkstreamHeadView; phone: b
       aria-label={`Name of ${part.label}`}
       placeholder={WORKSTREAM_HEAD_COPY.namePlaceholder}
       value={draft}
+      title={draft || undefined}
       maxLength={WORKSTREAM_NAME_MAX}
       autoComplete="off"
       onFocus={() => setEditing(true)}
@@ -149,6 +152,7 @@ function NameField({ part, phone, onSave }: { part: WorkstreamHeadView; phone: b
         borderRadius: 6,
         padding: "0 6px",
         margin: "0 -6px",
+        textOverflow: "ellipsis",
         ...text(14, 500, part.nameColour),
         ...(phone ? { fontSize: 16 } : null),
       }}
@@ -288,15 +292,15 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
             <DragHandle label={`Move ${part.label}`} nest={drag} testId="workstream-drag-handle" />
           </span>
         ) : null}
-        <span data-testid="workstream-label" style={{ ...text(14, 500, part.nameColour), whiteSpace: "nowrap" }}>
+        <span data-testid="workstream-label" style={{ ...text(14, 500, part.nameColour), whiteSpace: "nowrap", ...NO_SHRINK }}>
           {part.label}
           {part.name || maker ? " ·" : ""}
         </span>
         {maker ? (
           <NameField part={part} phone={phone} onSave={(name) => ops?.onName(part.key, name)} />
         ) : part.name ? (
-          <span data-testid="workstream-name-text" style={{ ...text(14, 500, part.nameColour), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
-            {part.name}
+          <span data-testid="workstream-name-text" {...fullText(part.name)} style={{ ...text(14, 500, part.nameColour), ...TITLE_LINE, flex: "1 1 120px" }}>
+            <FindHit text={part.name} />
           </span>
         ) : (
           <span style={{ flex: "1 1 0", minWidth: 0 }} />

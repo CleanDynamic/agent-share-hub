@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
+import { TITLE_LINE } from "@/lib/theme/truncate";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 const type = (size: number, weight: 400 | 500, color: string, line: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: `${line}px`, color });
@@ -30,7 +31,7 @@ export const COLUMN: CSSProperties = { display: "flex", flexDirection: "column",
 export const HEAD_ROW: CSSProperties = { display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 };
 export const HEAD_MARK: CSSProperties = { marginTop: 1, flexShrink: 0 };
 export const HEAD_TEXT: CSSProperties = { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 };
-export const HEAD_TITLE: CSSProperties = { ...type(15, 500, t.text, 22), margin: 0, overflowWrap: "anywhere" };
+export const HEAD_TITLE: CSSProperties = { ...type(15, 500, t.text, 22), margin: 0, ...TITLE_LINE };
 export const HEAD_LINE: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: 0, display: "flex", alignItems: "center", gap: 8, overflowWrap: "anywhere" };
 /** Edit: secondary, 28 tall, padding 0 10 (the `Button` draws the rest: 12.5/500, radius 6). */
 export const EDIT_BUTTON: CSSProperties = { padding: "0 10px", flexShrink: 0 };
@@ -81,7 +82,12 @@ export const COMPOSER_PAD = 34;
 export const HEAD_GAP = 18;
 
 /* CA-18 P5: the overlay panel of a smaller window, and the foot that says a click edits. */
-export const OVERLAY_WIDTH = 360;
+/** CA-27 P4: the panel is 300 wide on a tablet. */
+export const OVERLAY_WIDTH = 300;
+/** Where a window stops being a tablet's: the panel says "Tap to edit" up to here (and on any touch screen). */
+export const TABLET_MAX = 1152;
+/** CA-27 P4: the panel's padding. */
+export const OVERLAY_PANEL_PAD = 14;
 export const OVERLAY_EDGE = 8;
 export const OVERLAY_PAD = 20;
 export const OVERLAY_FOOT_PAD = "14px 20px";

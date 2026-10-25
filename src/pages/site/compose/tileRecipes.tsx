@@ -10,13 +10,13 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, SELECTED, controlPaint } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { PREVIEW, TITLE_LINE } from "@/lib/theme/truncate";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { useCrossfade } from "./buildMotion";
 
 const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: px, fontWeight: weight, lineHeight: line ? `${line}px` : "normal", color });
-const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
-const clamp = (lines: number): CSSProperties => ({ display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" });
+const ellipsis = TITLE_LINE;
 
 /** How far a tile's body and foot sit in: under the title, past the 22 badge and its 12 gap. */
 export const TILE_INDENT = 34;
@@ -113,7 +113,7 @@ export const FOOT_LINK: CSSProperties = { ...type(12, 500, t.text2), textDecorat
 
 /* ── what a tile holds ── */
 
-export const PROMPT_TEXT: CSSProperties = { ...type(13.5, 400, t.text, 21), margin: 0, overflowWrap: "anywhere", ...clamp(2) };
+export const PROMPT_TEXT: CSSProperties = { ...type(13.5, 400, t.text, 21), margin: 0, ...PREVIEW };
 export const BODY_LINE: CSSProperties = { ...type(13, 400, t.text, 20), margin: 0, overflowWrap: "anywhere" };
 export const QUIET_LINE: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: 0, overflowWrap: "anywhere" };
 

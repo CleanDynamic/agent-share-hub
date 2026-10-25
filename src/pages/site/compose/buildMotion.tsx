@@ -13,6 +13,7 @@
    animated; never a layout property, never `box-shadow`. Under reduced motion nothing moves or fades: every change arrives at once,
    in the same end state (the helpers return an already-finished run). */
 
+import { settle } from "./largeBuild";
 import { cloneElement, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode, type RefObject } from "react";
 
 import {
@@ -427,7 +428,7 @@ const px = (value: string): number => {
  * a separate element, 4 outside, its radius the component's plus 3; only its OPACITY ever changes, and it removes itself.
  * Under reduced motion it shows for the hold and goes, with no fade: the answer to "which one" is kept, the fade is dropped.
  */
-export function outlineOnce(element: HTMLElement, colour: string = t.selectedEdge, { inMs = OUTLINE_IN, hold = OUTLINE_HOLD, out = OUTLINE_OUT, width = 1.5, offset = 4 }: OutlineOptions = {}): MotionRun {
+export function outlineOnce(element: HTMLElement, ringColour: string = t.selectedEdge, { inMs = OUTLINE_IN, hold = OUTLINE_HOLD, out = OUTLINE_OUT, width = 1.5, offset = 4 }: OutlineOptions = {}): MotionRun {
   const ring = element.ownerDocument.createElement("div");
   ring.setAttribute("data-testid", "outline-once");
   ring.setAttribute("aria-hidden", "true");
@@ -443,7 +444,7 @@ export function outlineOnce(element: HTMLElement, colour: string = t.selectedEdg
     bottom: `${-offset}px`,
     borderWidth: `${width}px`,
     borderStyle: "solid",
-    borderColor: colour,
+    borderColor: ringColour,
     borderRadius: `${radius + 3}px`,
     pointerEvents: "none",
     boxSizing: "border-box",
@@ -537,6 +538,14 @@ export function goToIt(element: HTMLElement, colour?: string | null): MotionRun 
       const scroll = scrollToMiddle(element);
       scrolling = scroll;
       await scroll.finished;
+      /* CA-27 P3: in a large build the tiles above were guessed at, and shift as they are drawn: it is kept in the middle for a moment. */
+      settle(
+        () => {
+          const box = element.getBoundingClientRect();
+          return !element.isConnected || Math.abs((box.top + box.bottom) / 2 - window.innerHeight / 2) < 24 || box.height > window.innerHeight;
+        },
+        () => void scrollToMiddle(element, 0),
+      );
     }
     draw();
     await ring?.finished;

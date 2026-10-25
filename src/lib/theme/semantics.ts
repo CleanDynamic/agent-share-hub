@@ -169,6 +169,9 @@ export const TOKEN_NAMES = [
   // CA-21: the skeleton layer behind the build while something is held.
   "skeleton-edge",
   "skeleton-target",
+  // CA-27: the fill behind a found word, and the side panel's shadow on a tablet.
+  "find-fill",
+  "panel-shadow",
 ] as const;
 
 export type TokenName = (typeof TOKEN_NAMES)[number];
@@ -307,6 +310,9 @@ export const noon: Record<TokenName, string> = {
   // CA-21
   "skeleton-edge": "#C2C2C2",
   "skeleton-target": "#878787",
+  // CA-27
+  "find-fill": "rgba(0,0,0,.08)",
+  "panel-shadow": "-12px 0 32px rgba(0,0,0,.14)",
 };
 
 /** Dusk, dark. */
@@ -442,6 +448,9 @@ export const dusk: Record<TokenName, string> = {
   // CA-21
   "skeleton-edge": "#36363C",
   "skeleton-target": "#6A6A72",
+  // CA-27
+  "find-fill": "rgba(237,237,239,.14)",
+  "panel-shadow": "-12px 0 32px rgba(0,0,0,.4)",
 };
 export const themes: Record<ThemeName, Record<TokenName, string>> = {
   noon,

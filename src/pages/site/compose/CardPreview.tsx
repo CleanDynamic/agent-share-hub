@@ -6,6 +6,7 @@ import { ClassificationLines, RegulatedTag } from "@/components/classify/Classif
 import { classificationLines } from "@/lib/classify/lines";
 import type { Classification } from "@/lib/classify/types";
 import { t } from "@/lib/theme/tokens";
+import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { text } from "./refinedStyles";
@@ -42,7 +43,7 @@ export function CardPreview({ title, classification, maker }: { title: string; c
           <span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 11.5, color: t.label }}>Preview</span>
         </div>
         <div style={{ marginTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 6, rowGap: 4, minWidth: 0 }}>
-          <span style={{ ...text(15, 500, title.trim() ? t.text : t.label), overflowWrap: "anywhere", lineHeight: "20px" }}>{title.trim() || "Name your build"}</span>
+          <span {...fullText(title.trim())} style={{ ...text(15, 500, title.trim() ? t.text : t.label), ...TITLE_LINE, flex: "0 1 auto", lineHeight: "20px" }}>{title.trim() || "Name your build"}</span>
           {lines.regulated ? <RegulatedTag /> : null}
         </div>
         {lines.line1.length > 0 || lines.line2.length > 0 ? (

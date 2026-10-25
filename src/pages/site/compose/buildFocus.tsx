@@ -10,6 +10,8 @@ import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
 import { ROVING_ITEM, itemKey, itemsOf, shown } from "@/lib/focus/buildItems";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
+import { useFoundRing } from "@/components/build/FindHit";
+import { jumpToEdge } from "./largeBuild";
 import { text } from "./refinedStyles";
 
 import { takesKeys } from "./useBuildSelection";
@@ -88,8 +90,11 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
         const at = items.indexOf(item);
         if (event.key === "ArrowDown") move(items, items[Math.min(at + 1, items.length - 1)]);
         else if (event.key === "ArrowUp") move(items, items[Math.max(at - 1, 0)]);
-        else if (event.key === "Home") move(items, items[0]);
-        else if (event.key === "End") move(items, items.at(-1));
+        else if (event.key === "Home" || event.key === "End") {
+          // In a windowed build the first or last tile may not be drawn: it is chosen, drawn and gone to.
+          const end = event.key === "End";
+          if (!jumpToEdge(root, end, (id) => select.current?.(id))) move(items, end ? items.at(-1) : items[0]);
+        }
         else if (event.key === "ArrowRight") {
           const first = innerOf(item)[0];
           if (!first) return;
@@ -121,10 +126,11 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
 }
 
 /** The ring for an element that holds focus itself: only when the focus came from a keyboard. */
-export function useItemRing(): { ring: CSSProperties; bind: { onFocus: (event: FocusEvent<HTMLElement>) => void; onBlur: (event: FocusEvent<HTMLElement>) => void } } {
+export function useItemRing(id?: string | null): { ring: CSSProperties; bind: { onFocus: (event: FocusEvent<HTMLElement>) => void; onBlur: (event: FocusEvent<HTMLElement>) => void } } {
   const [on, setOn] = useState(false);
+  const found = useFoundRing(id);
   return {
-    ring: ring(on),
+    ring: { ...ring(on), ...found },
     bind: {
       onFocus: (event) => {
         if (event.target !== event.currentTarget) return;
