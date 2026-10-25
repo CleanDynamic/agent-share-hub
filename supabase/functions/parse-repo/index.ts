@@ -28,35 +28,21 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { Body } from "./schema.ts";
+import { corsHeaders, preflight } from "../_shared/cors.ts";
+import { fieldError, jsonResponse } from "../_shared/http.ts";
 import { FetchBudget, parseRepoUrl, RepoReadError, readRepoSnapshot } from "./github.ts";
 import { parseRepo } from "./parse.ts";
 import type { RegistryTool } from "./snapshot.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_SOURCE_HINT_CHARS = 120;
-const MAX_URL_CHARS = 500;
-
-function respond(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-function fail(message: string, status: number): Response {
-  return respond({ error: message }, status);
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return preflight(req);
   }
+  const respond = (body: unknown, status: number): Response => jsonResponse(body, status, corsHeaders(req));
+  const fail = (message: string, status: number): Response => respond({ error: message }, status);
 
   if (req.method !== "POST") {
     return fail("parse-repo accepts POST only.", 405);
@@ -85,34 +71,9 @@ serve(async (req) => {
       return fail("Authentication failed: that access token is not valid.", 401);
     }
 
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return fail("Request body must be JSON: { repo_url, build_id, source_hint? }.", 400);
-    }
-    if (!body || typeof body !== "object") {
-      return fail("Request body must be JSON: { repo_url, build_id, source_hint? }.", 400);
-    }
-
-    const { repo_url, build_id, source_hint } = body as {
-      repo_url?: unknown;
-      build_id?: unknown;
-      source_hint?: unknown;
-    };
-
-    if (typeof repo_url !== "string" || repo_url.trim() === "") {
-      return fail("repo_url is required and must be a string.", 400);
-    }
-    if (repo_url.length > MAX_URL_CHARS) {
-      return fail("repo_url is too long to be a repository URL.", 400);
-    }
-    if (typeof build_id !== "string" || !UUID.test(build_id)) {
-      return fail("build_id is required and must be a uuid.", 400);
-    }
-    if (source_hint !== undefined && source_hint !== null && typeof source_hint !== "string") {
-      return fail("source_hint must be a string when present.", 400);
-    }
+    const parsed = Body.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) return fail(fieldError(parsed.error), 400);
+    const { repo_url, build_id, source_hint } = parsed.data;
     const hint = typeof source_hint === "string" ? source_hint.trim().slice(0, MAX_SOURCE_HINT_CHARS) : null;
 
     const coordinates = parseRepoUrl(repo_url);
@@ -134,7 +95,8 @@ serve(async (req) => {
       .maybeSingle();
 
     if (buildError) {
-      return fail(`Could not read that build: ${buildError.message}`, 500);
+      console.error("parse-repo: could not read the build:", buildError);
+      return fail("Could not read that build.", 500);
     }
     if (!build || build.creator_id !== user.id) {
       return fail("That build does not exist or is not yours to draft against.", 403);
@@ -178,6 +140,7 @@ serve(async (req) => {
     if (error instanceof RepoReadError) {
       return fail(error.message, error.status);
     }
-    return fail((error as Error).message ?? "parse-repo failed.", 500);
+    console.error("parse-repo failed:", error);
+    return fail("parse-repo failed.", 500);
   }
 });

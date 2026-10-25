@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders as corsFor, preflight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "content-type",
-};
+// A public read: every origin may call it.
+const cors = { open: true };
 
 // Simple in-memory rate limiter
 const ipCounts = new Map<string, { count: number; resetAt: number }>();
@@ -22,8 +21,10 @@ function rateLimit(ip: string, max = 60): boolean {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return preflight(req, cors);
   }
+  const corsHeaders = corsFor(req, cors);
+  const json = (data: any, status = 200) => jsonWith(corsHeaders, data, status);
 
   const ip = req.headers.get("x-forwarded-for") || "unknown";
   if (!rateLimit(ip)) {
@@ -106,13 +107,14 @@ serve(async (req) => {
 
     return json({ error: "Not found", endpoints: ["/blueprints", "/blueprints/:id", "/tools"] }, 404);
   } catch (err) {
-    return json({ error: (err as Error).message }, 500);
+    console.error("public-api error:", err);
+    return json({ error: "Could not read that" }, 500);
   }
 });
 
-function json(data: any, status = 200) {
+function jsonWith(headers: Record<string, string>, data: any, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...headers, "Content-Type": "application/json" },
     status,
   });
 }
