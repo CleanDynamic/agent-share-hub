@@ -709,6 +709,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca23.p3.test.tsx",
   "src/pages/site/compose/saveWindows.tsx",
   // CA-26 P5
+  "e2e/audit/composer-ca26-shots.spec.ts",
+  "src/pages/site/compose/removePieces.tsx",
   "e2e/audit/composer-ca26-touch.spec.ts",
   "e2e/audit/support/harness.ts",
   "src/pages/dev/KitPages.tsx",

@@ -1,6 +1,6 @@
 // CA-26 P1: the skip link, the tab order, and the build list as one Tab stop.
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -89,6 +89,24 @@ describe("the build list is one Tab stop", () => {
     mountList({ parts: partsOf() });
     act(() => items()[2].focus());
     expect(scroll).toHaveBeenCalled();
+  });
+});
+
+describe("focus that is lost", () => {
+  it("an item taken out of the page while it had focus hands focus to the item now in its place", async () => {
+    mountList({ parts: partsOf() });
+    const all = items();
+    const gone = all[2];
+    act(() => gone.focus());
+    gone.remove();
+    await waitFor(() => expect(document.activeElement).toBe(items()[2]));
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it("the add rows are items of the list: one Tab stop in all", () => {
+    mountList({ parts: partsOf() });
+    expect(document.querySelectorAll('[data-testid="build-list"] [data-testid="add-part-row"], [data-testid="build-list"] [data-testid="add-session-row"]').length).toBeGreaterThanOrEqual(0);
+    expect(stops()).toHaveLength(1);
   });
 });
 

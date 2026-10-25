@@ -4,7 +4,7 @@
 // another once the list redraws, and where focus lands when the element that had it is gone.
 
 /** Everything in the build list that holds a place in the arrow order. */
-export const ROVING_ITEM = '[data-testid="step-card"], [data-testid="sent-with-tile"], [data-testid="result-card"], [data-testid="session-head"], [data-testid="workstream-head"]';
+export const ROVING_ITEM = '[data-testid="step-card"], [data-testid="sent-with-tile"], [data-testid="result-card"], [data-testid="session-head"], [data-testid="workstream-head"], [data-testid="add-to-session"], [data-testid="add-part-row"], [data-testid="add-session-row"]';
 
 /** An item's name that survives a redraw: its node, its session, or its part. */
 export const itemKey = (item: HTMLElement): string => {
@@ -13,6 +13,9 @@ export const itemKey = (item: HTMLElement): string => {
   const session = item.closest<HTMLElement>("[data-session-key]")?.dataset.sessionKey;
   if (item.dataset.testid === "session-head" && session) return `s:${session}`;
   if (item.dataset.workstreamKey) return `w:${item.dataset.workstreamKey}`;
+  // An add row: named by the row and by the session or part it stands in.
+  const scope = item.closest<HTMLElement>("[data-session-key]")?.dataset.sessionKey ?? "";
+  if (item.dataset.testid?.startsWith("add-")) return `a:${item.dataset.testid}:${scope}`;
   return "";
 };
 
