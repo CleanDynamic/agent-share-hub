@@ -24,10 +24,12 @@ Checked on the `ca27` fixture (300 tiles, 20 sessions, 3 parts; `/dev/kit/pages/
 
 | | before | content-visibility | windowing (final) | target |
 |---|---|---|---|---|
-| first render (ms) | 875 | 645 | 210 to 253 | 300 |
-| scroll (frames a second) | 54.7 | 58.5 | 59.2 to 60.6 | 60 |
-| pick-up (ms) | 420 to 550 | 460 to 690 | 126 to 145 | 16 |
-| Find's results (ms) | 207 to 341 | 231 to 358 | 40 to 67 | 50 |
+| first render (ms) | 875 | 645 | 207 to 227 | 300 |
+| scroll (frames a second) | 54.7 | 58.5 | 60.2 to 60.6 | 60 |
+| pick-up (ms) | 420 to 550 | 460 to 690 | 120 to 176 | 16 |
+| Find's results (ms) | 207 to 341 | 231 to 358 | 41 to 62 (most under 50) | 50 |
+
+The content-visibility column was measured when the skipping applied to every build; it now applies to builds of 60 tiles or more only, so a smaller build is drawn exactly as before (the at-rest shots above). Where it applies, every session's list starts where it did, to the hundredth of a pixel, and the page is as tall; a tile's edge or a line of text can land half a pixel apart, because a skipped list keeps its own paint, which is laid on the pixel grid by itself.
 
 Pick-up is JavaScript for about 35 ms of the 130 and native layout and paint for the rest; it still misses its target here.
 

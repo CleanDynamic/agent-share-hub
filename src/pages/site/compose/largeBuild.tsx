@@ -124,7 +124,7 @@ export function WindowedTile({ id, kind, index, forced, box, render }: WindowedT
 
   useEffect(() => () => void HEIGHTS.delete(id), [id]);
 
-  const style: CSSProperties = { ...(box.style as CSSProperties | undefined), ...(drawn ? null : { height: Math.round(HEIGHTS.get(id) ?? guess(kind)) }) };
+  const style: CSSProperties = { ...(box.style as CSSProperties | undefined), ...(drawn ? null : { height: HEIGHTS.get(id) ?? guess(kind) }) };
   return (
     <div {...box} ref={ref} style={style} data-drawn={drawn ? "true" : "false"}>
       {drawn ? render() : null}

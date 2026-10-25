@@ -23,3 +23,6 @@ export const NO_SHRINK: CSSProperties = { flex: "none" };
 
 /** The full text for the tooltip: `<h3 {...fullText(title)}>`. Empty text sets nothing. */
 export const fullText = (text: string | null | undefined): { title?: string } => (text ? { title: text } : {});
+
+/** A title cut to `max` characters and an ellipsis, for a place that takes a string and not an element (a menu button's value). The full text goes in the tooltip. */
+export const clipTo = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
