@@ -157,8 +157,8 @@ describe("GalleryPage — the feed", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Gallery" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId("feed-count")).toHaveTextContent("3 builds, newest first"));
     expect(screen.getAllByTestId("feed-build-title").map((el) => el.textContent)).toEqual(["Build a", "Build b", "Build c"]);
-    expect(listGalleryFeed).toHaveBeenCalledTimes(1);
-    expect(listGalleryFeed).toHaveBeenCalledWith({ model: undefined, audience: undefined, sort: "newest", q: undefined, page: 0 });
+    // SV-03 P4: the feed starts without waiting for the facets; their "not live" answer asks it again in its old order.
+    expect(listGalleryFeed).toHaveBeenLastCalledWith({ model: undefined, audience: undefined, sort: "newest", q: undefined, page: 0 });
     expect(countGalleryLenses).not.toHaveBeenCalled();
     expect(getGalleryStats).not.toHaveBeenCalled();
     // The author row: the maker's profile, and the tools as marks with their names.
@@ -266,8 +266,9 @@ describe("GalleryPage — the feed", () => {
     renderAt("/builds");
     expect(await screen.findByText("That didn't load.")).toBeInTheDocument();
     expect(screen.queryByText("boom")).not.toBeInTheDocument();
+    const before = listGalleryFeed.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: /try again|retry/i }));
-    await waitFor(() => expect(listGalleryFeed).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(listGalleryFeed.mock.calls.length).toBeGreaterThan(before));
   });
 });
 

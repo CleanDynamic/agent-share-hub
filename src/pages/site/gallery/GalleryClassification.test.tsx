@@ -147,7 +147,8 @@ describe("Gallery filters: before the columns are live", () => {
     expect(screen.queryByRole("complementary", { name: "Filters" })).toBeNull();
     expect(screen.queryByTestId("quick-chips")).toBeNull();
     expect(listGalleryFeed).toHaveBeenLastCalledWith(expect.not.objectContaining({ facets: expect.anything() }));
-    expect(listGalleryFeed.mock.calls.every(([params]) => !("classified" in (params as object)) || (params as { classified?: boolean }).classified === undefined)).toBe(true);
+    // SV-03 P4: the feed starts without waiting for the facets, as live; the "not live" answer then asks it again as it was.
+    expect((listGalleryFeed.mock.lastCall?.[0] as { classified?: boolean }).classified).toBeUndefined();
     expect(getBuildClassifications).not.toHaveBeenCalled();
   });
 });
@@ -300,7 +301,8 @@ describe("Gallery board: the items", () => {
   };
 
   it("reads author, title with the Regulated area tag, summary, the two lines and the proof line, with no cover", async () => {
-    getBuildClassifications.mockResolvedValue({ a: classified });
+    // SV-03 P4: the classification comes with the feed's rows, not from a read after them.
+    listGalleryFeed.mockResolvedValue({ ...page(["a", "b"]), rows: ["a", "b"].map((id) => ({ ...row(id), ...(id === "a" ? { classifiedAs: classified } : null) })) });
     getBuildTries.mockResolvedValue({ a: { tried: 4, worked: 3 }, b: { tried: 2, worked: 1 } });
     renderAt("/builds");
     const items = await screen.findAllByTestId("board-item");

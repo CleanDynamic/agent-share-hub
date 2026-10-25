@@ -486,6 +486,11 @@ export interface GalleryBuild
    * on a card assembled from a feed row that did not carry it.
    */
   post_doc?: ThreadDoc | null;
+  /**
+   * SV-03 P4: the classification, when the read carried the column (the feed and the gallery list do), so a card needs no
+   * read of its own after the list. Absent when the read did not ask; empty entries are left out, as getBuildClassifications does.
+   */
+  classifiedAs?: Classification;
   nodes: GalleryNode[];
   media: GalleryMedia[];
   /**
@@ -632,7 +637,7 @@ export async function listGallery(
 
   let query = supabase
     .from("builds")
-    .select(gallerySelect(openBounties), { count: "exact" })
+    .select(`${gallerySelect(openBounties)}, classification`, { count: "exact" })
     // Never drafts. The RLS policy would hand a creator their own back.
     .in("status", ["published", "gallery"]);
 
@@ -718,8 +723,12 @@ export interface GalleryRow
 
 export function toGalleryBuild(row: GalleryRow): GalleryBuild {
   const { build_nodes, build_media, bounties, ...header } = row;
+  const asked = "classification" in header;
+  const read = asked ? readClassification((header as { classification?: unknown }).classification) : null;
+  delete (header as { classification?: unknown }).classification;
   return {
     ...header,
+    ...(read && hasClassification(read) ? { classifiedAs: read } : null),
     nodes: build_nodes ?? [],
     media: build_media ?? [],
     // Always an array here, never absent: this query asked. See GalleryBuild.
@@ -1468,7 +1477,7 @@ async function feedRows(
   if (ids.length === 0) return [];
 
   const query = withFeedEmbeds(
-    feedTable("builds").select(`${gallerySelect(false)}, models_used, like_count, comment_count`).in("id", ids)
+    feedTable("builds").select(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`).in("id", ids)
   ).limit(ids.length);
   const { data, error } = await query;
   if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1580,7 +1589,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   if (version === null) {
     const query = withFeedEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern, facets), params.sort)
+      feedOrder(feedBase(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern, facets), params.sort)
     ).range(start, end);
     const { data, error, count } = await query;
     if (error) throw buildLayerError("listGalleryFeed", error);
