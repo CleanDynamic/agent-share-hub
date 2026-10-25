@@ -35,7 +35,9 @@ import { Navigate, useLocation, useParams } from "react-router-dom";
 
 import { SiteFrame } from "@/components/shell/SiteFrame";
 import { useAuth } from "@/contexts/AuthContext";
-import { getBuildParent } from "@/lib/build/builds";
+import { composeBuildQueryKey } from "@/hooks/composeBuildQueryKey";
+import { fetchNodeTypes } from "@/hooks/useNodeType";
+import { getBuild, getBuildParent } from "@/lib/build/builds";
 import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 
 import { ComposeSkeleton } from "./ComposeSkeleton";
@@ -85,6 +87,19 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     retry: 1,
   });
 
+  /* THE PAGE MOUNTS WHEN ITS RECORD IS IN. The composer is a heavy first render; mounted while the record is still being read it
+     holds the main thread, and the reads that follow the record's header (nodes, tray, events) wait behind it. So the route
+     stands the skeleton in its place until the record has arrived (the page's own query is this one: same key, same function). */
+  const record = useQuery({
+    queryKey: composeBuildQueryKey(buildId),
+    queryFn: () => getBuild(buildId as string, { nodeTypes: () => fetchNodeTypes(queryClient) }),
+    enabled: reads,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+  const waitingForRecord = reads && record.isPending && record.fetchStatus !== "idle";
+
   if (loading) return FALLBACK;
   if (!isLoggedIn) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`} replace />;
@@ -101,7 +116,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
           /compose/new with /compose/{id}, which would remount the page under the
           creator's cursor. */}
       <Suspense fallback={SANDBOX_COMPOSER_ENABLED ? <ComposeSkeleton /> : <div style={{ minHeight: "60vh" }} />}>
-        {SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />}
+        {waitingForRecord ? <ComposeSkeleton /> : SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />}
       </Suspense>
     </SiteFrame>
   );

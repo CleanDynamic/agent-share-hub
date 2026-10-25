@@ -25,6 +25,9 @@ import { KeepSearchRedirect } from "@/components/routing/KeepSearchRedirect";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import { lazyPage } from "@/components/routing/lazyPage";
+import { RoutePlaceholder } from "@/lib/routing/RoutePlaceholder";
+import { RouteWarmup } from "@/lib/routing/RouteWarmup";
+import { ROUTE_TABLE } from "@/lib/routing/routeTable";
 import { FrameRoute } from "./components/shell/FrameRoute";
 import { SiteFrame } from "./components/shell/SiteFrame";
 import { ComposeRoute } from "./pages/site/compose/ComposeRoute";
@@ -49,7 +52,7 @@ const Onboarding = lazyPage(() => import("./pages/Onboarding"));
 const OnboardingProfile = lazyPage(() => import("./pages/OnboardingProfile"));
 
 
-const LibraryPage = lazyPage(() => import("./pages/Library"));
+const LibraryPage = lazyPage(ROUTE_TABLE.library.load as () => Promise<{ default: React.ComponentType }>);
 const CollectionDetailRoute = lazyPage(() => import("./pages/CollectionDetail"));
 const NotFound = lazyPage(() => import("./pages/NotFound"));
 
@@ -60,7 +63,7 @@ const ApiDocs = lazyPage(() => import("./pages/ApiDocs"));
 
 // UI-P46 — /drafts is the new page (builds and sessions); the old one, which reads
 // content_items and content_blocks, is routed at /drafts/posts unchanged.
-const DraftsPage = lazyPage(() => import("./pages/site/drafts/DraftsPage"));
+const DraftsPage = lazyPage(ROUTE_TABLE.drafts.load as () => Promise<{ default: React.ComponentType }>);
 const LegacyDraftsPage = lazyPage(() => import("./pages/Drafts"));
 const PostPreviewPage = lazyPage(() => import("./pages/PostPreview"));
 const PublishMetadata = lazyPage(() => import("./pages/PublishMetadata"));
@@ -73,7 +76,7 @@ const BountyUpload = lazyPage(() => import("@/pages/BountyUpload"));
 
 // RC-P05 — the Bounties board. Its own chunk, like every route the RC series
 // adds (CONTRACT §2.6).
-const Bounties = lazy(() => import("./pages/Bounties"));
+const Bounties = lazy(ROUTE_TABLE.bounties.load as () => Promise<{ default: React.ComponentType }>);
 // RC-P13 — the solvers board, under the bounties board. Its own chunk.
 const Solvers = lazy(() => import("./pages/Solvers"));
 // Solve route for a specific bounty.
@@ -94,18 +97,18 @@ function OldLineageRedirect() {
   const { slug } = useParams();
   return <Navigate to={`/b2/${slug}/lineage`} replace />;
 }
-const HomePage = lazy(() => import("./pages/site/home/HomePage"));
+const HomePage = lazy(ROUTE_TABLE.home.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P28 — the Gallery in the site frame; its own chunk, picked by `FrameRoute`.
-const GalleryPage = lazy(() => import("./pages/site/gallery/GalleryPage"));
+const GalleryPage = lazy(ROUTE_TABLE.gallery.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P29 — the Build page in the site frame; its own chunk, picked by `FrameRoute`.
-const BuildSitePage = lazy(() => import("./pages/site/build/BuildPage"));
+const BuildSitePage = lazy(ROUTE_TABLE.build.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P31 — Rebuild and lineage in the site frame; their own chunks, picked by `FrameRoute`.
 const RebuildSitePage = lazy(() => import("./pages/site/rebuild/RebuildPage"));
 const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
 // CA-13 P9 — two builds of the same thing, side by side.
 const CompareSitePage = lazy(() => import("./pages/site/compare/ComparePage"));
 // UI-P34 — the Profile in the site frame; its own chunk, picked by `FrameRoute`.
-const ProfileSitePage = lazy(() => import("./pages/site/profile/ProfilePage"));
+const ProfileSitePage = lazy(ROUTE_TABLE.profile.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P35 — Activity in the site frame; its own chunk (it draws a chart), picked by `FrameRoute`.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
 // UI-P36 — Sign in, Join, reset and verify in the entrance's frame; each its own chunk, picked by `FrameRoute`.
@@ -225,6 +228,7 @@ const App = () => (
             {/* RC-P18 — the one "Add to a collection" dialog, opened from the
                 Save toast; addToCollection.ts says why it lives here. */}
             <AddToCollectionHost />
+            <RouteWarmup />
             <Routes>
               <Route element={<Layout />}>
                 <Route
@@ -233,14 +237,14 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <HomePage />
                           </Suspense>
                         </RouteBoundary>
                       }
                       legacy={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <HomePage />
                           </Suspense>
                         </RouteBoundary>
@@ -321,7 +325,7 @@ const App = () => (
                       <FrameRoute
                         site={
                           <RouteBoundary>
-                            <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <Suspense fallback={<RoutePlaceholder />}>
                               <ProfileSitePage />
                             </Suspense>
                           </RouteBoundary>
@@ -337,7 +341,7 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <ProfileSitePage />
                           </Suspense>
                         </RouteBoundary>
@@ -366,7 +370,7 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <ConnectSitePage />
                           </Suspense>
                         </RouteBoundary>
@@ -381,7 +385,7 @@ const App = () => (
                       <FrameRoute
                         site={
                           <RouteBoundary>
-                            <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <Suspense fallback={<RoutePlaceholder />}>
                               <ActivitySitePage />
                             </Suspense>
                           </RouteBoundary>
@@ -393,7 +397,7 @@ const App = () => (
                 />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-                <Route path="/analytics" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense></RouteBoundary>} />
+                <Route path="/analytics" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense></RouteBoundary>} />
                 {/* NS-P54. The standalone bounty form, retired the same way
                     the previous publishing tool was: the route stays
                     registered so a bookmark is not a 404, the notice above it
@@ -452,12 +456,12 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <BuildSitePage />
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildSitePage /></Suspense>}
+                      legacy={<Suspense fallback={<RoutePlaceholder />}><BuildSitePage /></Suspense>}
                     />
                   }
                 />
@@ -468,12 +472,12 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <CompareSitePage />
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><CompareSitePage /></Suspense></RouteBoundary>}
+                      legacy={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><CompareSitePage /></Suspense></RouteBoundary>}
                     />
                   }
                 />
@@ -487,12 +491,12 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <LineageSitePage />
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><LineageSitePage /></Suspense></RouteBoundary>}
+                      legacy={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><LineageSitePage /></Suspense></RouteBoundary>}
                     />
                   }
                 />
@@ -504,12 +508,12 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <GalleryPage />
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><GalleryPage /></Suspense>}
+                      legacy={<Suspense fallback={<RoutePlaceholder />}><GalleryPage /></Suspense>}
                     />
                   }
                 />
@@ -518,15 +522,15 @@ const App = () => (
                     Gallery's fallback, inside its own RouteBoundary
                     (CONTRACT §2.6). */}
                 <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds" />} />
-                <Route path="/openbuilds" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Bounties /></Suspense></RouteBoundary>} />
+                <Route path="/openbuilds" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><Bounties /></Suspense></RouteBoundary>} />
                 {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
                     like the board it sits under (CONTRACT §2.6). */}
-                <Route path="/bounties/solvers" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Solvers /></Suspense></RouteBoundary>} />
+                <Route path="/bounties/solvers" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><Solvers /></Suspense></RouteBoundary>} />
                 {/* Solve route for a specific bounty, inside its own RouteBoundary. */}
-                <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
-                <Route path="/openbuilds/solvers" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Solvers /></Suspense></RouteBoundary>} />
-                <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
-                <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ImportPage /></Suspense>} />
+                <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
+                <Route path="/openbuilds/solvers" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><Solvers /></Suspense></RouteBoundary>} />
+                <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
+                <Route path="/import" element={<Suspense fallback={<RoutePlaceholder />}><ImportPage /></Suspense>} />
               </Route>
               {/* ── BG-P16 — the four authoring routes.
 
@@ -573,7 +577,7 @@ const App = () => (
                     site={
                       <SiteFrame>
                         <RouteBoundary>
-                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                          <Suspense fallback={<RoutePlaceholder />}>
                             <RebuildSitePage />
                           </Suspense>
                         </RouteBoundary>

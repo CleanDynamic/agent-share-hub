@@ -9,11 +9,13 @@
 
 import { Suspense, lazy, type ComponentProps, type ComponentType } from "react";
 
+import { RoutePlaceholder } from "@/lib/routing/RoutePlaceholder";
+
 export function lazyPage<T extends ComponentType<any>>(load: () => Promise<{ default: T }>) {
   const Page = lazy(load);
   function LazyPage(props: ComponentProps<T>) {
     return (
-      <Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}>
+      <Suspense fallback={<RoutePlaceholder />}>
         <Page {...props} />
       </Suspense>
     );

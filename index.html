@@ -11,6 +11,8 @@
          and declared by the @font-face rules in src/index.css. Geist is preloaded so the first heading does not wait
          on the stylesheet. UI-P99 retired Figtree, Sentient and DM Mono, and with them the request to Google Fonts.
          The faces are read through src/lib/theme/type.ts. -->
+    <!-- SV-03: the first database request would pay for DNS and TLS; this pays for them while the bundle loads. The address is the client's own, filled in by Vite at build time. -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/Geist-Variable.woff2" crossorigin />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody

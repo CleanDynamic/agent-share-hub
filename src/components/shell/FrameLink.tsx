@@ -6,7 +6,8 @@
 // the same on the header, the footer, the breadcrumb and the dock.
 
 import type { ComponentProps } from "react";
-import { Link } from "react-router-dom";
+import type { Link } from "react-router-dom";
+import { IntentLink } from "@/lib/routing/IntentLink";
 
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -38,7 +39,7 @@ export function FrameLink({
     onPointerCancel,
   });
   return (
-    <Link
+    <IntentLink
       {...rest}
       {...handlers}
       style={{ textDecoration: "none", ...style, ...(state.hovered ? hoverStyle : null), ...ring(state.focusVisible) }}

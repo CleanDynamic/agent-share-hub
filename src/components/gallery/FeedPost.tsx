@@ -22,7 +22,7 @@
 // CoverFallback, so no item is empty.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { IntentLink as Link } from "@/lib/routing/IntentLink";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { CoverFallback } from "@/components/brand/CoverFallback";

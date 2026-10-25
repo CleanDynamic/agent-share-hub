@@ -30,6 +30,8 @@ import { useState, type CSSProperties, type DragEvent, type ReactNode, type Ref 
 import { ChevronRight, GripVertical, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { IntentLink } from "@/lib/routing/IntentLink";
+
 import { Button } from "@/components/brand/Button";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -222,7 +224,7 @@ function DraftRow({
   const untitled = isUntitled(draft.title);
   return (
     <li style={{ listStyle: "none" }}>
-      <Link
+      <IntentLink
         to={`/compose/${draft.id}`}
         data-testid="draft-row"
         data-over={over ? "true" : undefined}
@@ -262,7 +264,7 @@ function DraftRow({
           </span>
         </span>
         <ChevronRight size={16} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" style={{ flexShrink: 0 }} />
-      </Link>
+      </IntentLink>
     </li>
   );
 }

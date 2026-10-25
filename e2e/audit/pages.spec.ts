@@ -186,7 +186,7 @@ async function sampleOnce(browser: Browser, target: PageTarget, mode: Mode): Pro
       const [from, fromMark] = target.key === "home" ? ["/library", "library"] : ["/", "home"];
       await page.goto(from, { waitUntil: "commit" });
       await ready(page, fromMark);
-      await page.waitForTimeout(1_500);
+      await page.waitForTimeout(4_000); // the idle loader has time to bring the next pages' code
       const start = await goInApp(url);
       await ready(page, target.readyMark);
       const mark = await readMark(page, target.readyMark);

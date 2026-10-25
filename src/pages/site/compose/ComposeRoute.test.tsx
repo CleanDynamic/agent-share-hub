@@ -23,6 +23,7 @@ vi.mock("@/lib/build/builds", () => ({
 }));
 vi.mock("@/components/shell/SiteFrame", () => ({ SiteFrame: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock("./composerOpen", () => ({ startComposerReads: vi.fn() }));
+vi.mock("@/hooks/useNodeType", () => ({ fetchNodeTypes: vi.fn(async () => []) }));
 vi.mock("./SandboxPage", () => {
   order.push("composer chunk imported");
   return { default: () => <p>the composer</p> };
@@ -69,6 +70,18 @@ describe("ComposeRoute · opening a draft", () => {
     open();
     await waitFor(() => expect(getBuildParent).toHaveBeenCalled());
     resolveParent({ id: "b1", parent_build_id: null });
+    expect(await screen.findByText("the composer")).toBeInTheDocument();
+  });
+
+  it("keeps the skeleton in the page's place until the record has arrived, then mounts the page", async () => {
+    let resolveRecord: (value: unknown) => void = () => {};
+    getBuild.mockImplementationOnce(() => new Promise((resolve) => (resolveRecord = resolve)) as never);
+    open();
+    await waitFor(() => expect(getBuildParent).toHaveBeenCalled());
+    resolveParent({ id: "b1", parent_build_id: null });
+    await waitFor(() => expect(getBuild).toHaveBeenCalled());
+    expect(screen.queryByText("the composer")).toBeNull();
+    resolveRecord({ build: { id: "b1" }, nodeTypes: [] });
     expect(await screen.findByText("the composer")).toBeInTheDocument();
   });
 
