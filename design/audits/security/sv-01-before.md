@@ -30,7 +30,12 @@ Each fact in "What is wrong now", and what was found on disk.
 
 ## Baseline numbers
 
-BASELINE_PLACEHOLDER
+Measured on a clean checkout of main at `eff1bce`, in a separate worktree.
+
+- `npm test`: 507 test files, 8,671 tests. **18 files and 65 tests already fail** before this prompt (AppShell, BountySection, flat-shell.wide, noRail, siteFrame, onePrompt.composer.snapshot, retiredSurfaces, theme compliance, motion, ns-classes, rcStates, BuildPage, SandboxCard, SandboxPage.sessionEdits, ca21.p6, ca26.p3, ca27.p3, referenceActions.ui). SV-01 must not add to them.
+- `npx tsc --noEmit -p tsconfig.app.json`: clean.
+- `npm run lint`: 2,451 problems (1,964 errors, 487 warnings), nearly all `no-explicit-any`. SV-01 adds none in the files it writes.
+- `vite build`: first download `index-*.js` 598.07 kB, 187.66 kB gzip.
 
 ## The table
 

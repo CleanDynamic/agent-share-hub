@@ -27,7 +27,7 @@ import { body } from "@/lib/theme/type";
    the next page.
 
    IT REPORTS IDENTIFIERS, NOT WORDS (SV-01). An error's message can quote
-   whatever the page was rendering — a build's text, a search query — and
+   whatever the page was rendering (a build's text, a search query) and
    CONTRACT §9 keeps user-authored text out of every log. So componentDidCatch
    hands the error to reportError with the route, and reportError keeps the
    error's name and code and drops its message.
