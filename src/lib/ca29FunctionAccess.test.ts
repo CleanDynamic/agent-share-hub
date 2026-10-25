@@ -69,8 +69,8 @@ describe("CA-29 P6: function access migration", () => {
     for (const grant of statements.match(/\bGRANT\b[^;]*;/g) ?? []) {
       expect(grant.slice(grant.search(/\bTO\b/))).toMatch(/^TO authenticated\b/);
     }
-    // Already closed by RC-P25 and the RC notification and badge migrations.
-    expect(statements).not.toMatch(/award_xp|rc_grant_xp|rc_award_badge|rc_notify\b/);
+    // The XP and notification writers were closed by their own migrations (RC-P25 and the RC series); this one leaves them alone.
+    for (const closed of ["award", "rc_grant", "rc_award", "rc_notify"]) expect(statements, closed).not.toMatch(new RegExp(`${closed}[a-z_]*\\(`));
   });
 
   it("stops and rolls back when a role can still execute what it closed", () => {
