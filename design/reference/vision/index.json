@@ -1,0 +1,98 @@
+[
+  {
+    "file": "reference/vision/dusk/home.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "home",
+    "width": 1440,
+    "height": 2340,
+    "title": "Home \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-home",
+    "source": "reference/vision/source/Main.dc.html",
+    "screen": "screens/vision/home.png"
+  },
+  {
+    "file": "reference/vision/dusk/openbuilds.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "openbuilds",
+    "width": 1440,
+    "height": 1699,
+    "title": "OpenBuilds \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-openbuilds",
+    "source": "reference/vision/source/OpenWork.dc.html",
+    "screen": "screens/vision/openbuilds.png"
+  },
+  {
+    "file": "reference/vision/dusk/builds-table.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "builds-table",
+    "width": 1440,
+    "height": 2144,
+    "title": "Builds \u00b7 Table \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-builds-table",
+    "source": "reference/vision/source/Builds.dc.html",
+    "screen": "screens/vision/builds-table.png"
+  },
+  {
+    "file": "reference/vision/dusk/builds-maps.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "builds-maps",
+    "width": 1440,
+    "height": 995,
+    "title": "Builds \u00b7 Maps \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-builds-maps",
+    "source": "reference/vision/source/BuildsMaps.dc.html",
+    "screen": "screens/vision/builds-maps.png"
+  },
+  {
+    "file": "reference/vision/dusk/builds-classification.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "builds-classification",
+    "width": 1440,
+    "height": 1451,
+    "title": "Builds \u00b7 Classification \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-builds-classification",
+    "source": "reference/vision/source/BuildsClassification.dc.html",
+    "screen": "screens/vision/builds-classification.png"
+  },
+  {
+    "file": "reference/vision/dusk/library.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "library",
+    "width": 1440,
+    "height": 1119,
+    "title": "Library \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-library",
+    "source": "reference/vision/source/Library.dc.html",
+    "screen": "screens/vision/library.png"
+  },
+  {
+    "file": "reference/vision/dusk/composer-add-from-library.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "composer-add-from-library",
+    "width": 1440,
+    "height": 900,
+    "title": "Composer \u00b7 Add from Library \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-composer-add-from-library",
+    "source": "reference/vision/source/LibraryInsert.dc.html",
+    "screen": "screens/vision/composer-add-from-library.png"
+  },
+  {
+    "file": "reference/vision/dusk/drafts.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "drafts",
+    "width": 1440,
+    "height": 1179,
+    "title": "Drafts \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-drafts",
+    "source": "reference/vision/source/Drafts.dc.html",
+    "screen": "screens/vision/drafts.png"
+  }
+]

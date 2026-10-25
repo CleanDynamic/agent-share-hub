@@ -1,6 +1,6 @@
 // The site header (UI-P17): the sticky glass bar of the site frame, desktop only.
 //
-// Lockup · Home / Gallery / Bounties / Library with the lamp under the current
+// Lockup · Home / Builds / OpenBuilds / Library with the lamp under the current
 // one · search · New build · Activity · theme · account. It is the one
 // full-width blurred surface on desktop, so nothing inside it blurs.
 //
@@ -51,7 +51,7 @@ import { HEADER_HEIGHT } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
-import { isActivityPath, PRIMARY_LINKS, SITE_NAV, sectionForPath, type PrimarySection } from "./siteNav";
+import { isActivityPath, isBuildsPath, PRIMARY_LINKS, SITE_NAV, sectionForPath, type PrimarySection } from "./siteNav";
 import { useMinWidth } from "./useMinWidth";
 
 export interface SiteHeaderViewProps {
@@ -415,7 +415,7 @@ function SiteHeaderContainer() {
       onNewBuild={() => navigate(SITE_NAV.create)}
       newBuildSecondary={pathname.startsWith("/compose/")}
       onSearch={search}
-      searchInitial={pathname === "/gallery" ? (params.get("q") ?? "") : ""}
+      searchInitial={isBuildsPath(pathname) ? (params.get("q") ?? "") : ""}
     />
   );
 }

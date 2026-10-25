@@ -892,6 +892,19 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/OptionalRows.tsx",
   "src/pages/site/compose/OptionalSection.motion.test.tsx",
   "src/pages/site/compose/optionalKit.ts",
+
+  // SV-02 P2 to P4
+  "src/components/routing/KeepSearchRedirect.tsx",
+  "src/components/vision/ActiveFilterChip.tsx",
+  "src/components/vision/DashedSlot.tsx",
+  "src/components/vision/InnerTile.tsx",
+  "src/components/vision/PageFigure.tsx",
+  "src/components/vision/PlainRow.tsx",
+  "src/components/vision/SectionHead.tsx",
+  "src/components/vision/TextTabs.tsx",
+  "src/components/vision/TypeChip.tsx",
+  "src/components/vision/vision.test.tsx",
+  "src/pages/dev/VisionNotBuilt.tsx",
 ];
 
 /**
@@ -1165,6 +1178,21 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "the data face with upper case",
     text: `export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: 11,`,
     why: "CA-19's boards (\"References: from the post\", \"References: groups and the Colours window\") label the link panel's and the hover card's sections in the data face 11, in capitals, .04em apart. Only SECTION_LABEL spends it.",
+  },
+  {
+    rule: "upper case outside the Details eyebrow",
+    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "18px", textTransform: "uppercase",`,
+    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
+  },
+  {
+    rule: "the data face with upper case",
+    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "18px", textTransform: "uppercase",`,
+    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `padding: "14px 16px",`,
+    why: "SV-02: the boards' one boxed tile (InnerTile) is padded 14px 16px.",
   },
   {
     rule: "spacing 9 is not in SPACE_REFINED",

@@ -5,7 +5,7 @@
 // the two blurred surfaces on a phone, with the header. Tiles are 62×44 links
 // (62×54 inside 7px before the UI-P55 density pass; 44 is the table's and the
 // touch floor's, and the dock is 5px around them):
-// Home, Gallery, New (always `--action`), Bounties, Activity. The current tile is
+// Home, Builds, New (always `--action`), OpenBuilds, Activity. The current tile is
 // `--text` with `--on-text` and carries a lamp above it (`--lit`, with
 // `--nav-lamp-glow`); amber is light, never text. Activity shows a badge when
 // something is unread, and its accessible name says how many.
@@ -32,9 +32,9 @@ export type DockTileName = "home" | "gallery" | "new" | "bounties" | "activity";
 
 const TILES: readonly { name: DockTileName; label: string; href: string; icon: LucideIcon }[] = [
   { name: "home", label: "Home", href: SITE_NAV.home, icon: Home },
-  { name: "gallery", label: "Gallery", href: SITE_NAV.gallery, icon: ImageIcon },
+  { name: "gallery", label: "Builds", href: SITE_NAV.gallery, icon: ImageIcon },
   { name: "new", label: "New", href: SITE_NAV.create, icon: Plus },
-  { name: "bounties", label: "Bounties", href: SITE_NAV.bounties, icon: Target },
+  { name: "bounties", label: "OpenBuilds", href: SITE_NAV.bounties, icon: Target },
   { name: "activity", label: "Activity", href: SITE_NAV.activity, icon: Bell },
 ];
 

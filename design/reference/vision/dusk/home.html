@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>buildgallery Home</title>
+<style>
+@font-face{font-family:"Geist";src:url("../../fonts/Geist-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+@font-face{font-family:"Geist Mono";src:url("../../fonts/GeistMono-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+</style>
+<style>
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}a:hover{color:#A0A0A6}
+.cols{display:grid;grid-template-columns:280px minmax(0,628px) 300px;justify-content:center}
+.nav-links{display:flex}
+@media (max-width:1100px){.cols{grid-template-columns:minmax(0,628px) 300px}.studio{display:none !important}}
+@media (max-width:760px){.cols{grid-template-columns:minmax(0,1fr)}.room{display:none !important}.feed{border-left:none !important;border-right:none !important}.nav-links{display:none}.search{display:none !important}}
+</style>
+</head>
+<body>
+<div style="min-height: 100vh; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  <!-- header on the frame -->
+  <header style="max-width: 1428px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 20px; box-sizing: border-box">
+    <a href="#" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="3" y="5" width="12" height="11" rx="2" stroke="#EDEDEF" stroke-width="1.4"></rect><rect x="6" y="8" width="6" height="5" rx="1" fill="#EDEDEF"></rect><rect x="7" y="1.5" width="4" height="2" rx="1" fill="#F5CB4C"></rect></svg>
+      buildgallery
+    </a>
+    <span style="width: 1px; height: 18px; background: #34343A"></span>
+    <nav class="nav-links" aria-label="Main" style="gap: 4px; align-items: stretch; height: 56px">
+      <a href="#" aria-current="page" style="position: relative; display: flex; align-items: center; padding: 0 10px; font-weight: 500; color: #EDEDEF">Home<span style="position: absolute; left: 10px; right: 10px; bottom: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></a>
+      <a href="Builds.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Builds</a>
+      <a href="OpenWork.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">OpenBuilds</a>
+      <a href="Library.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Library</a>
+      <a href="Drafts.dc.html" style="display: flex; align-items: center; gap: 6px; padding: 0 10px; color: #A0A0A6">Drafts <span style="font-size: 11.5px; color: #8E8E94">28</span></a>
+    </nav>
+    <div style="flex: 1"></div>
+    <label class="search" style="display: flex; align-items: center; gap: 8px; width: 240px; height: 32px; padding: 0 8px 0 10px; box-sizing: border-box; background: #141416; border: 1px solid #27272B; border-radius: 6px; color: #8E8E94">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.8" stroke="currentColor" stroke-width="1.3"></circle><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="square"></path></svg>
+      <input aria-label="Search builds, makers, tools" placeholder="Search builds, makers, tools" style="flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #EDEDEF; font: inherit; font-size: 12.5px">
+      <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; border: 1px solid #323237; border-radius: 4px; padding: 0 5px; line-height: 16px">/</span>
+    </label>
+    <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">New build</a>
+    <button aria-label="Notifications" style="width: 32px; height: 32px; display: grid; place-items: center; background: transparent; border: none; color: #A0A0A6; cursor: pointer">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 11V7a4 4 0 018 0v4l1 1.5H3L4 11z" stroke="currentColor" stroke-width="1.3"></path><path d="M6.5 14h3" stroke="currentColor" stroke-width="1.3"></path></svg>
+    </button>
+    <button aria-label="Switch to Noon" style="width: 32px; height: 32px; display: grid; place-items: center; background: transparent; border: none; color: #A0A0A6; cursor: pointer">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 9.5A5.5 5.5 0 016.5 3a5.5 5.5 0 106.5 6.5z" stroke="currentColor" stroke-width="1.3"></path></svg>
+    </button>
+    <a href="#" aria-label="Your profile" style="width: 28px; height: 28px; border-radius: 14px; background: #27272B; border: 1px solid #323237; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; color: #A0A0A6">ST</a>
+  </header>
+
+  <!-- the surface -->
+  <main style="width: calc(100% - 12px); max-width: 1428px; margin: 0 auto 6px; background: #19191B; border: 1px solid #232326; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); box-sizing: border-box; padding: 24px clamp(16px, 2.2vw, 32px) 0">
+
+    <!-- key to the marks -->
+    
+
+    <div class="cols">
+
+      <!-- ═════════ LEFT · YOUR STUDIO ═════════ -->
+      <aside class="studio" aria-label="Your studio" style="padding: 8px 28px 48px 4px; display: flex; flex-direction: column; gap: 32px">
+
+        <!-- since you were last here (NEW) -->
+        <section>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px">
+            <div>
+              <h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Since you were last here</h2>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">2 days ago · what others did with your builds</p>
+            </div>
+          </div>
+          
+          <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+            <li style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; padding-bottom: 14px; position: relative">
+              <span style="position: absolute; left: 7px; top: 14px; bottom: 0; width: 1px; background: #26262A"></span>
+              <span style="margin-top: 5px; width: 9px; height: 9px; border-radius: 5px; background: #86D193; box-shadow: 0 0 0 3px #19191B; position: relative"></span>
+              <div>
+                <div style="font-weight: 500">@kit ran Call notes</div>
+                <div style="font-size: 12px; color: #8E8E94">It worked on opus-5.5</div>
+              </div>
+              <span style="font-size: 11.5px; color: #8E8E94">34m</span>
+            </li>
+            <li style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; padding-bottom: 14px; position: relative">
+              <span style="position: absolute; left: 7px; top: 14px; bottom: 0; width: 1px; background: #26262A"></span>
+              <span style="margin-top: 5px; width: 9px; height: 9px; border-radius: 5px; background: #A0A0A6; box-shadow: 0 0 0 3px #19191B; position: relative"></span>
+              <div>
+                <div style="font-weight: 500">@dax rebuilt Call notes</div>
+                <div style="font-size: 12px; color: #8E8E94">"Session 2 on a local model"</div>
+              </div>
+              <span style="font-size: 11.5px; color: #8E8E94">3h</span>
+            </li>
+            <li style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; padding-bottom: 14px; position: relative">
+              <span style="position: absolute; left: 7px; top: 14px; bottom: 0; width: 1px; background: #26262A"></span>
+              <span style="margin-top: 5px; width: 9px; height: 9px; border-radius: 5px; background: #E5807F; box-shadow: 0 0 0 3px #19191B; position: relative"></span>
+              <div>
+                <div style="font-weight: 500">@jay ran Call notes</div>
+                <div style="font-size: 12px; color: #8E8E94">It didn't work on gpt-5</div>
+              </div>
+              <span style="font-size: 11.5px; color: #8E8E94">5h</span>
+            </li>
+            <li style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px">
+              <span style="margin-top: 5px; width: 9px; height: 9px; border-radius: 5px; background: #EDEDEF"></span>
+              <div>
+                <div style="font-weight: 500">An answer to your step request</div>
+                <div style="font-size: 12px; color: #8E8E94">@mira · Handle paywalled sources</div>
+              </div>
+              <span style="font-size: 11.5px; color: #8E8E94">1d</span>
+            </li>
+          </ol>
+        </section>
+
+        <div style="height: 1px; background: #26262A"></div>
+
+        <!-- continue editing (exists: Drafts) -->
+        <section>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px">
+            <div>
+              <h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Continue editing</h2>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">28 drafts · latest first</p>
+            </div>
+            <a href="#" aria-label="Open drafts" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+          </div>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 48px; border-bottom: 1px solid #26262A">
+            <span><span style="display: block; font-weight: 500">Invoice chaser</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 16px; color: #8E8E94">4 sessions · edited 1h ago</span></span>
+          </a>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 48px; border-bottom: 1px solid #26262A">
+            <span><span style="display: block; font-weight: 500; color: #A0A0A6">Untitled build</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 16px; color: #8E8E94">2 sessions · edited 2h ago</span></span>
+          </a>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 48px">
+            <span><span style="display: block; font-weight: 500">dddd</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 16px; color: #8E8E94">1 session · edited 3d ago</span></span>
+          </a>
+        </section>
+
+        <div style="height: 1px; background: #26262A"></div>
+
+        <!-- your sessions (exists: Drafts' Sessions list) -->
+        <section>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px">
+            <div>
+              <h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Your sessions</h2>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">8 imported · newest first</p>
+            </div>
+            <a href="#" aria-label="Open sessions" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+          </div>
+          <div style="display: grid; grid-template-columns: 20px 1fr 28px; column-gap: 10px; align-items: center; min-height: 52px; border-bottom: 1px solid #26262A">
+            <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 4px; background: #232327; border: 1px solid #2E2E33; display: grid; place-items: center; font-size: 10px; color: #E39A78; font-weight: 600">C</span>
+            <span style="min-width: 0"><span style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">This session is being continued from…</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 16px; color: #8E8E94">Haiku 4.5 · 10 Oct · In 3 drafts</span></span>
+            <button aria-label="Add to a new build" style="width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; cursor: pointer"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+          </div>
+          <div style="display: grid; grid-template-columns: 20px 1fr 28px; column-gap: 10px; align-items: center; min-height: 52px">
+            <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 4px; background: #232327; border: 1px solid #2E2E33; display: grid; place-items: center; font-size: 10px; color: #E39A78; font-weight: 600">C</span>
+            <span style="min-width: 0"><span style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">This is my site https://agent-share-hub…</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 16px; color: #8E8E94">Claude Code · 8 Oct · In 4 drafts</span></span>
+            <button aria-label="Add to a new build" style="width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; cursor: pointer"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+          </div>
+        </section>
+
+        <div style="height: 1px; background: #26262A"></div>
+
+        <!-- your week (exists: weeklyProgress, getStreakDays) -->
+        <section>
+          <div style="margin-bottom: 14px">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Your week</h2>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">3 day streak · resets Monday 00:00 UTC</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 16px">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 100%; height: 6px; border-radius: 2px; background: #EDEDEF"></span><span style="font-size: 10.5px; color: #8E8E94">M</span></div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 100%; height: 6px; border-radius: 2px; background: #EDEDEF"></span><span style="font-size: 10.5px; color: #8E8E94">T</span></div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 100%; height: 6px; border-radius: 2px; background: #EDEDEF"></span><span style="font-size: 10.5px; color: #8E8E94">W</span></div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 100%; height: 6px; border-radius: 2px; background: #141416; border: 1px dashed #34343A; box-sizing: border-box"></span><span style="font-size: 10.5px; color: #EDEDEF; font-weight: 500">T</span></div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 100%; height: 6px; border-radius: 2px; background: #27272B"></span><span style="font-size: 10.5px; color: #8E8E94">F</span></div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 100%; height: 6px; border-radius: 2px; background: #27272B"></span><span style="font-size: 10.5px; color: #8E8E94">S</span></div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 100%; height: 6px; border-radius: 2px; background: #27272B"></span><span style="font-size: 10.5px; color: #8E8E94">S</span></div>
+          </div>
+          <div style="padding: 10px 0; border-top: 1px solid #26262A">
+            <span style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 500"><span>Run three builds you haven't run before</span><span style="color: #8E8E94; font-weight: 400">2 / 3</span></span>
+            <span style="display: block; margin-top: 8px; height: 4px; border-radius: 2px; background: #27272B"><span style="display: block; width: 66%; height: 4px; border-radius: 2px; background: #86D193"></span></span>
+          </div>
+          <div style="padding: 10px 0; border-top: 1px solid #26262A">
+            <span style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 500"><span>Solve a gap</span><span style="color: #8E8E94; font-weight: 400">0 / 1</span></span>
+            <span style="display: block; margin-top: 8px; height: 4px; border-radius: 2px; background: #27272B"></span>
+          </div>
+          <div style="padding: 10px 0 0; border-top: 1px solid #26262A">
+            <span style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 500"><span>Re-confirm one of your stale builds</span><span style="color: #8E8E94; font-weight: 400">1 / 1</span></span>
+            <span style="display: block; margin-top: 8px; height: 4px; border-radius: 2px; background: #27272B"><span style="display: block; width: 100%; height: 4px; border-radius: 2px; background: #EDEDEF"></span></span>
+          </div>
+        </section>
+      </aside>
+
+      <!-- ═════════ CENTRE · THE FEED ═════════ -->
+      <section class="feed" aria-label="Feed" style="border-left: 1px solid #26262A; border-right: 1px solid #26262A; min-width: 0; padding: 0 0 48px">
+
+        <!-- tabs (exists: scope + kind filter) -->
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #26262A">
+          <div role="tablist" aria-label="Feed scope" style="display: flex; gap: 24px">
+            <button role="tab" aria-selected="false" style="height: 40px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Following</button>
+            <button role="tab" aria-selected="true" style="height: 40px; background: none; border: none; border-bottom: 1px solid #EDEDEF; margin-bottom: -1px; padding: 0; color: #EDEDEF; font: inherit; font-weight: 500; cursor: pointer">Everyone</button>
+          </div>
+          <div role="group" aria-label="Kind" style="display: flex; gap: 2px; margin-bottom: 6px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+            <button aria-pressed="true" style="height: 24px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 4px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">All</button>
+            <button style="height: 24px; padding: 0 8px; background: transparent; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Builds</button>
+            <button style="height: 24px; padding: 0 8px; background: transparent; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Rebuilds</button>
+            <button style="height: 24px; padding: 0 8px; background: transparent; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Notes</button>
+            <button style="height: 24px; padding: 0 8px; background: transparent; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Asks</button>
+          </div>
+        </div>
+
+        <!-- new items pill (NEW) -->
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 20px 0">
+          <button style="height: 28px; padding: 0 12px; background: #1E1E21; border: 1px solid #29292D; border-radius: 14px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">3 new since you looked</button>
+          
+        </div>
+
+        <!-- POST 1 · build, exactly FeedPost -->
+        <article aria-label="Call notes that write themselves" style="display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; padding: 20px 20px 16px; border-bottom: 1px solid #26262A">
+          <div style="grid-column: 1; grid-row: 1 / 3; position: relative; width: 40px">
+            <span aria-hidden="true" style="display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: #82A9E8; font-size: 13px; font-weight: 600; color: #121214">MK</span>
+          </div>
+          <!-- author row -->
+          <div style="grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 6px; min-height: 24px; margin-bottom: 4px; white-space: nowrap; min-width: 0">
+            <a href="#" style="font-size: 15px; font-weight: 600; line-height: 1.4">Maya Kent</a>
+            <span style="font-size: 14px; line-height: 1.4; color: #8E8E94">@maya · 1h</span>
+            <span style="display: inline-flex; gap: 4px; margin-left: 2px"><span aria-label="Claude" role="img" style="width: 16px; height: 16px; border-radius: 4px; background: #232327; border: 1px solid #2E2E33; display: inline-grid; place-items: center; font-size: 9px; color: #E39A78; font-weight: 600">C</span><span aria-label="Notion" role="img" style="width: 16px; height: 16px; border-radius: 4px; background: #232327; border: 1px solid #2E2E33; display: inline-grid; place-items: center; font-size: 9px; color: #EDEDEF; font-weight: 600">N</span></span>
+          </div>
+          <!-- the post -->
+          <div style="grid-column: 2; grid-row: 2; min-width: 0; position: relative">
+            <span style="position: absolute; top: 4px; right: 0; font-family: 'Geist Mono', monospace; font-size: 11px; line-height: 1; color: #8E8E94">1 / 4</span>
+            <h2 style="margin: 0; padding-right: 48px; font-size: 28px; font-weight: 500; line-height: 1.1; letter-spacing: -0.03em">Call notes that write themselves</h2>
+            <p style="margin: 10px 0 0; font-size: 16px; line-height: 1.55">Every sales call now ends with a summary in Notion before I've closed Zoom. The trick was splitting the <a href="#" style="background: #232327; border-radius: 4px; padding: 1px 4px; -webkit-box-decoration-break: clone; box-decoration-break: clone">transcript clean-up into its own agent <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #A0A0A6">S2</span></a> and keeping the <a href="#" style="background: #232327; border-radius: 4px; padding: 1px 4px">summary on one prompt <span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #A0A0A6">7</span></a>.</p>
+            
+            <!-- picture grid -->
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 12px">
+              <div style="height: 240px; background: #141416; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px; border: 1px solid #27272B; border-radius: 6px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+                <div style="width: 45%; height: 8px; border-radius: 2px; background: #34343A"></div>
+                <div style="background: #1E1E21; border: 1px solid #29292D; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 6px">
+                  <div style="width: 70%; height: 6px; border-radius: 2px; background: #A0A0A6"></div>
+                  <div style="width: 90%; height: 5px; border-radius: 2px; background: #34343A"></div>
+                  <div style="width: 80%; height: 5px; border-radius: 2px; background: #34343A"></div>
+                </div>
+                <div style="background: #1E1E21; border: 1px solid #29292D; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 6px">
+                  <div style="width: 50%; height: 6px; border-radius: 2px; background: #86D193"></div>
+                  <div style="width: 85%; height: 5px; border-radius: 2px; background: #34343A"></div>
+                </div>
+              </div>
+              <div style="height: 240px; background: #141416; border: 1px solid #27272B; border-radius: 6px; padding: 18px; box-sizing: border-box; display: flex; align-items: flex-end; gap: 6px">
+                <span style="flex: 1; height: 30%; background: #2E2E33; border-radius: 2px"></span>
+                <span style="flex: 1; height: 45%; background: #2E2E33; border-radius: 2px"></span>
+                <span style="flex: 1; height: 40%; background: #2E2E33; border-radius: 2px"></span>
+                <span style="flex: 1; height: 62%; background: #2E2E33; border-radius: 2px"></span>
+                <span style="flex: 1; height: 75%; background: #A0A0A6; border-radius: 2px"></span>
+                <span style="flex: 1; height: 92%; background: #EDEDEF; border-radius: 2px"></span>
+              </div>
+            </div>
+            <!-- show more -->
+            <button style="display: flex; align-items: baseline; gap: 8px; margin-top: 12px; padding: 0; background: none; border: none; font: inherit; cursor: pointer">
+              <span style="font-size: 14px; font-weight: 500; color: #EDEDEF">Show more</span>
+              <span style="font-size: 13px; color: #A0A0A6">3 more posts</span>
+            </button>
+          </div>
+          <!-- build line, classification, engagement -->
+          <div style="grid-column: 2; grid-row: 3; margin-top: 12px; min-width: 0">
+            <div style="display: flex; align-items: center; flex-wrap: wrap; column-gap: 12px; row-gap: 6px">
+              <a href="#" style="font-size: 13px; font-weight: 500; line-height: 1.4">Call notes that write themselves</a>
+              <span style="display: flex; align-items: center; gap: 8px">
+                <span style="font-size: 12px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: rgba(134,209,147,.12); color: #86D193">6 reproduced</span>
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #A0A0A6"><span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span>4d ago on opus-5.5</span>
+              </span>
+              <span style="font-size: 11.5px; line-height: 1.4; color: #8E8E94">Structured output</span>
+            </div>
+            <div style="margin-top: 6px; font-size: 11.5px; line-height: 17px; color: #8E8E94">
+              <div>Claude + Notion · Built solo · Automation</div>
+              <div>Sales · Summarise calls</div>
+            </div>
+            <div style="display: flex; justify-content: space-between; max-width: 520px; margin: 12px 0 0 -6px">
+              <button aria-label="Comment, 5" style="display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 4h12v8H8l-3 3v-3H3V4z" stroke="currentColor" stroke-width="1.3"></path></svg><span style="font-family: 'Geist Mono', monospace; font-size: 12px">5</span></button>
+              <button aria-label="Rebuild, 2" style="display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M14 7a5 5 0 00-9-2M4 11a5 5 0 009 2" stroke="currentColor" stroke-width="1.3"></path><path d="M5 2v3h3M13 16v-3h-3" stroke="currentColor" stroke-width="1.3"></path></svg><span style="font-family: 'Geist Mono', monospace; font-size: 12px">2</span></button>
+              <button aria-label="Like, 24" style="display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 15S3 11 3 7a3 3 0 016-1 3 3 0 016 1c0 4-6 8-6 8z" stroke="currentColor" stroke-width="1.3"></path></svg><span style="font-family: 'Geist Mono', monospace; font-size: 12px">24</span></button>
+              <button aria-label="Save" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3V3z" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Share" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3v9M5.5 6.5L9 3l3.5 3.5M4 11v4h10v-4" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+            </div>
+          </div>
+        </article>
+
+        <!-- REPRO NOTE · worked (exists: feed kind repro_note) -->
+        <div style="display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; column-gap: 12px; align-items: start; padding: 14px 20px; border-bottom: 1px solid #26262A">
+          <span aria-hidden="true" style="justify-self: center; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 14px; background: #A996E8; font-size: 10.5px; font-weight: 600; color: #121214">KT</span>
+          <div style="min-width: 0; font-size: 13px">
+            <div><span style="font-weight: 500">@kit</span> <span style="color: #A0A0A6">ran</span> <a href="#" style="font-weight: 500">Inbox triage in one prompt</a><span style="color: #A0A0A6">, and it worked on opus-5.5</span></div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; color: #A0A0A6"><span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7)"></span>"Worked first time. Changed the label list to mine."</div>
+          </div>
+          <span style="font-size: 11.5px; color: #8E8E94">2m</span>
+        </div>
+
+        <!-- POST 2 · rebuild (data exists; quote layout is new look only) -->
+        <article style="display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; padding: 20px 20px 16px; border-bottom: 1px solid #26262A">
+          <span aria-hidden="true" style="display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: #86D193; font-size: 13px; font-weight: 600; color: #121214">DX</span>
+          <div style="min-width: 0">
+            <div style="display: flex; align-items: center; gap: 6px; min-height: 24px; margin-bottom: 4px; white-space: nowrap">
+              <span style="font-size: 15px; font-weight: 600; line-height: 1.4">Dax</span>
+              <span style="font-size: 14px; line-height: 1.4; color: #8E8E94">@dax rebuilt · 3h</span>
+            </div>
+            <p style="margin: 0; font-size: 16px; line-height: 1.55">Same pipeline, but Session 2 runs on a local model. Slower on long calls, free on everything else.</p>
+            <a href="#" style="display: grid; grid-template-columns: 88px minmax(0, 1fr); column-gap: 12px; margin-top: 12px; padding: 10px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+              <span style="height: 58px; border-radius: 6px; background: #141416; border: 1px solid #27272B; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px"></span>
+              <span style="min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px">
+                <span style="font-size: 11.5px; color: #8E8E94">Rebuilt from</span>
+                <span style="font-weight: 500">Call notes that write themselves</span>
+                <span style="font-size: 12px; color: #8E8E94">@maya</span>
+              </span>
+            </a>
+            
+            <div style="display: flex; align-items: center; flex-wrap: wrap; column-gap: 12px; margin-top: 12px">
+              <a href="#" style="font-size: 13px; font-weight: 500; line-height: 1.4">Call notes, local model</a>
+              <span style="font-size: 12px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #232327; color: #A0A0A6">not yet reproduced</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; max-width: 520px; margin: 12px 0 0 -6px">
+              <button aria-label="Comment" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 4h12v8H8l-3 3v-3H3V4z" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Rebuild" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M14 7a5 5 0 00-9-2M4 11a5 5 0 009 2" stroke="currentColor" stroke-width="1.3"></path><path d="M5 2v3h3M13 16v-3h-3" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Like, 8" style="display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 15S3 11 3 7a3 3 0 016-1 3 3 0 016 1c0 4-6 8-6 8z" stroke="currentColor" stroke-width="1.3"></path></svg><span style="font-family: 'Geist Mono', monospace; font-size: 12px">8</span></button>
+              <button aria-label="Save" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3V3z" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Share" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3v9M5.5 6.5L9 3l3.5 3.5M4 11v4h10v-4" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+            </div>
+          </div>
+        </article>
+
+        <!-- REPRO NOTE · didn't work (exists: repro_worked, repro_model, repro_note) -->
+        <div style="display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; column-gap: 12px; align-items: start; padding: 14px 20px; border-bottom: 1px solid #26262A">
+          <span aria-hidden="true" style="justify-self: center; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 14px; background: #E08FB4; font-size: 10.5px; font-weight: 600; color: #121214">JY</span>
+          <div style="min-width: 0; font-size: 13px">
+            <div><span style="font-weight: 500">@jay</span> <span style="color: #A0A0A6">ran</span> <a href="#" style="font-weight: 500">Research brief agent</a><span style="color: #E5807F">, and it didn't work</span><span style="color: #A0A0A6"> on gpt-5</span></div>
+            <div style="margin-top: 4px; font-size: 12px; color: #A0A0A6">"Stops on any paywalled source. Same with Opus."</div>
+          </div>
+          <span style="font-size: 11.5px; color: #8E8E94">5h</span>
+        </div>
+
+        <!-- ASK (exists: bounty row, meToo, closes_at, countSolutionsByBounty) -->
+        <article style="display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; padding: 20px 20px 16px; border-bottom: 1px solid #26262A">
+          <span aria-hidden="true" style="display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: #E39A78; font-size: 13px; font-weight: 600; color: #121214">MR</span>
+          <div style="min-width: 0">
+            <div style="display: flex; align-items: center; gap: 6px; min-height: 24px; margin-bottom: 4px; white-space: nowrap">
+              <span style="font-size: 15px; font-weight: 600; line-height: 1.4">Mira</span>
+              <span style="font-size: 14px; line-height: 1.4; color: #8E8E94">@mira opened a step request · 6h</span>
+            </div>
+            <div style="padding: 14px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+                <span style="font-size: 14px; font-weight: 500">Handle paywalled sources</span>
+                <span style="font-size: 20px; font-weight: 500; letter-spacing: -0.015em">£40</span>
+              </div>
+              <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">on <a href="#" style="color: #A0A0A6">Research brief agent</a> · 1 solution · closes in 5 days</div>
+              <div style="display: flex; gap: 6px; margin-top: 12px">
+                <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #EDEDEF; border-radius: 6px; color: #121214; font-weight: 500; font-size: 12.5px">Solve it</a>
+                <button style="height: 32px; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; cursor: pointer">Me too · 4</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- POST 3 · build with no thread, as FeedPost draws one -->
+        <article style="display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; padding: 20px 20px 16px; border-bottom: 1px solid #26262A">
+          <span aria-hidden="true" style="display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: #27272B; border: 1px solid #323237; box-sizing: border-box; font-size: 12px; font-weight: 500; color: #A0A0A6">ST</span>
+          <div style="min-width: 0">
+            <div style="display: flex; align-items: center; gap: 6px; min-height: 24px; margin-bottom: 4px; white-space: nowrap">
+              <span style="font-size: 15px; font-weight: 600; line-height: 1.4">suntzu</span>
+              <span style="font-size: 14px; line-height: 1.4; color: #8E8E94">@suntzu · 1d</span>
+              <span aria-label="Claude Code" role="img" style="margin-left: 2px; width: 16px; height: 16px; border-radius: 4px; background: #232327; border: 1px solid #2E2E33; display: inline-grid; place-items: center; font-size: 9px; color: #E39A78; font-weight: 600">C</span>
+            </div>
+            <h2 style="margin: 0; font-size: 28px; font-weight: 500; line-height: 1.1; letter-spacing: -0.03em">gbngd</h2>
+            <div style="margin-top: 12px; aspect-ratio: 3 / 2; border-radius: 6px; overflow: hidden; background: #141416; border: 1px solid #27272B; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px"></div>
+            <div style="display: flex; align-items: center; flex-wrap: wrap; column-gap: 12px; margin-top: 12px">
+              <a href="#" style="font-size: 13px; font-weight: 500; line-height: 1.4">gbngd</a>
+              <span style="font-size: 12px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #232327; color: #A0A0A6">not yet reproduced</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; max-width: 520px; margin: 12px 0 0 -6px">
+              <button aria-label="Comment" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 4h12v8H8l-3 3v-3H3V4z" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Rebuild" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M14 7a5 5 0 00-9-2M4 11a5 5 0 009 2" stroke="currentColor" stroke-width="1.3"></path><path d="M5 2v3h3M13 16v-3h-3" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Like" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 15S3 11 3 7a3 3 0 016-1 3 3 0 016 1c0 4-6 8-6 8z" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Save" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3V3z" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+              <button aria-label="Share" style="display: flex; align-items: center; height: 36px; padding: 0 6px; background: none; border: none; color: #A0A0A6; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3v9M5.5 6.5L9 3l3.5 3.5M4 11v4h10v-4" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+            </div>
+          </div>
+        </article>
+
+        <!-- end of feed (exists: listGallery) -->
+        <div style="padding: 28px 20px 8px; text-align: center">
+          <div style="font-weight: 500">You're up to date</div>
+          <div style="font-size: 12px; color: #8E8E94">More builds</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 12px 20px 0">
+          <a href="#" style="display: block; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 10px">
+            <span style="display: block; height: 110px; border-radius: 6px; background: #141416; border: 1px solid #27272B; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px"></span>
+            <span style="display: block; margin-top: 10px; font-weight: 500">Inbox triage in one prompt</span>
+            <span style="display: flex; align-items: center; gap: 8px; margin-top: 4px"><span style="font-size: 12px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: rgba(134,209,147,.12); color: #86D193">31 reproduced</span><span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7)"></span></span>
+          </a>
+          <a href="#" style="display: block; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 10px">
+            <span style="display: block; height: 110px; border-radius: 6px; background: #141416; border: 1px solid #27272B; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px"></span>
+            <span style="display: block; margin-top: 10px; font-weight: 500">Untitled build</span>
+            <span style="display: flex; margin-top: 4px"><span style="font-size: 12px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #232327; color: #A0A0A6">not yet reproduced</span></span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ═════════ RIGHT · THE ROOM ═════════ -->
+      <aside class="room" aria-label="The room" style="padding: 8px 4px 48px 28px; display: flex; flex-direction: column; gap: 32px">
+
+        <!-- today (exists: countReproducedToday, countLitToday, countRunsThisWeek) -->
+        <section>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+            <div>
+              <div style="font-size: 32px; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em">14 runs</div>
+              <p style="margin: 6px 0 0; font-size: 12px; color: #8E8E94">Reproduced today</p>
+            </div>
+            <a href="#" aria-label="Open activity" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px">
+            <div style="padding: 12px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em"><span style="width: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span>3</div>
+              <div style="margin-top: 4px; font-size: 12px; color: #8E8E94">builds lit today</div>
+            </div>
+            <div style="padding: 12px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+              <div style="font-size: 24px; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em">62</div>
+              <div style="margin-top: 4px; font-size: 12px; color: #8E8E94">runs this week</div>
+            </div>
+          </div>
+          <!-- latest runs: the feed's notes -->
+          <div style="margin-top: 14px">
+            <div style="display: grid; grid-template-columns: auto 1fr auto; column-gap: 10px; align-items: center; min-height: 36px; border-top: 1px solid #26262A">
+              <span style="font-size: 11.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: rgba(134,209,147,.12); color: #86D193">Worked</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px"><span style="font-weight: 500">Inbox triage</span> <span style="color: #8E8E94">· @kit</span></span>
+              <span style="font-size: 11.5px; color: #8E8E94">2m</span>
+            </div>
+            <div style="display: grid; grid-template-columns: auto 1fr auto; column-gap: 10px; align-items: center; min-height: 36px; border-top: 1px solid #26262A">
+              <span style="font-size: 11.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: rgba(229,128,127,.12); color: #E5807F">Didn't</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px"><span style="font-weight: 500">Research brief</span> <span style="color: #8E8E94">· @jay</span></span>
+              <span style="font-size: 11.5px; color: #8E8E94">5h</span>
+            </div>
+            <div style="display: grid; grid-template-columns: auto 1fr auto; column-gap: 10px; align-items: center; min-height: 36px; border-top: 1px solid #26262A">
+              <span style="font-size: 11.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: rgba(134,209,147,.12); color: #86D193">Worked</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px"><span style="font-weight: 500">Call notes</span> <span style="color: #8E8E94">· @kit</span></span>
+              <span style="font-size: 11.5px; color: #8E8E94">34m</span>
+            </div>
+          </div>
+        </section>
+
+        <div style="height: 1px; background: #26262A"></div>
+
+        <!-- open asks (exists: listOpenBounties) -->
+        <section>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px">
+            <div>
+              <h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Open requests</h2>
+              <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">Most needed first</p>
+            </div>
+            <a href="OpenWork.dc.html" aria-label="OpenBuilds" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+          </div>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-weight: 500">Handle paywalled sources</span><span style="font-size: 12px; color: #8E8E94">Research brief · 5 days left</span></span>
+            <span style="font-weight: 500">£40</span>
+          </a>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-weight: 500">Speaker names from audio</span><span style="font-size: 12px; color: #8E8E94">Call notes · 9 days left</span></span>
+            <span style="font-weight: 500">£35</span>
+          </a>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px">
+            <span style="min-width: 0"><span style="display: block; font-weight: 500">Export to Keynote</span><span style="font-size: 12px; color: #8E8E94">Pitch deck · 2 weeks left</span></span>
+            <span style="font-weight: 500">£25</span>
+          </a>
+        </section>
+
+        <div style="height: 1px; background: #26262A"></div>
+
+        <!-- most run this week (NEW) -->
+        <section>
+          <div style="margin-bottom: 8px">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Most run this week</h2>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">By people who reproduced them</p>
+          </div>
+          
+          <a href="#" style="display: grid; grid-template-columns: 16px 28px 1fr auto; column-gap: 10px; align-items: center; min-height: 48px; border-bottom: 1px solid #26262A">
+            <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; color: #8E8E94">1</span>
+            <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 14px; background: #A996E8; display: grid; place-items: center; font-size: 10.5px; font-weight: 600; color: #121214">KT</span>
+            <span style="min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Inbox triage in one prompt</span><span style="font-size: 12px; color: #8E8E94">@kit</span></span>
+            <span style="font-weight: 500">31</span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 16px 28px 1fr auto; column-gap: 10px; align-items: center; min-height: 48px; border-bottom: 1px solid #26262A">
+            <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; color: #8E8E94">2</span>
+            <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 14px; background: #82A9E8; display: grid; place-items: center; font-size: 10.5px; font-weight: 600; color: #121214">MK</span>
+            <span style="min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Call notes that write themselves</span><span style="font-size: 12px; color: #8E8E94">@maya</span></span>
+            <span style="font-weight: 500">6</span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 16px 28px 1fr auto; column-gap: 10px; align-items: center; min-height: 48px">
+            <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; color: #8E8E94">3</span>
+            <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 14px; background: #E39A78; display: grid; place-items: center; font-size: 10.5px; font-weight: 600; color: #121214">LK</span>
+            <span style="min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Weekly report from Linear</span><span style="font-size: 12px; color: #8E8E94">@luke</span></span>
+            <span style="font-weight: 500">4</span>
+          </a>
+        </section>
+
+        <div style="height: 1px; background: #26262A"></div>
+
+        <!-- where next (exists: getWhereNextForViewer) -->
+        <section>
+          <div style="margin-bottom: 8px">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Where next</h2>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">From what you ran this week</p>
+          </div>
+          <a href="#" style="display: grid; grid-template-columns: 56px 1fr; column-gap: 10px; align-items: center; min-height: 56px; border-bottom: 1px solid #26262A">
+            <span style="height: 40px; border-radius: 6px; background: #141416; border: 1px solid #27272B; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px"></span>
+            <span style="min-width: 0"><span style="display: block; font-weight: 500">Meeting to Linear tickets</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 16px; color: #8E8E94">SAME TOOL · OPUS-5.5</span></span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 56px 1fr; column-gap: 10px; align-items: center; min-height: 56px">
+            <span style="height: 40px; border-radius: 6px; background: #141416; border: 1px solid #27272B; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px"></span>
+            <span style="min-width: 0"><span style="display: block; font-weight: 500">Call notes, local model</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 16px; color: #8E8E94">REBUILT FROM ONE YOU RAN</span></span>
+          </a>
+        </section>
+      </aside>
+    </div>
+
+    <!-- footer inside the surface -->
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-top: 24px; padding: 20px 4px 24px; border-top: 1px solid #26262A; font-size: 12.5px; color: #A0A0A6">
+      <span style="font-weight: 600; color: #EDEDEF">buildgallery</span>
+      <a href="#" style="color: #A0A0A6">About</a>
+      <a href="#" style="color: #A0A0A6">API docs</a>
+      <a href="#" style="color: #A0A0A6">Solvers</a>
+      <a href="#" style="color: #A0A0A6">Connect a tool</a>
+      <a href="#" style="color: #A0A0A6">Sign out</a>
+      <span style="flex: 1"></span>
+      <div role="group" aria-label="Theme" style="display: flex; gap: 2px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+        <button style="height: 26px; padding: 0 10px; background: transparent; border: none; border-radius: 4px; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Noon</button>
+        <button aria-pressed="true" style="height: 26px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 4px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">Dusk</button>
+        <button style="height: 26px; padding: 0 10px; background: transparent; border: none; border-radius: 4px; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">System</button>
+      </div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

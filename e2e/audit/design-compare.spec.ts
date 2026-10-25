@@ -2,7 +2,8 @@
  *
  * "Does the app look exactly like the mockup?" is only answerable by looking
  * at both at the same size. For every board in `design/reference/index.json`
- * (the refined boards: 1440 wide, no browser strip, no mobile) this opens the
+ * (the refined boards: 1440 wide, no browser strip, no mobile) and in
+ * `design/reference/vision/index.json` (SV-02: the vision boards, Dusk) this opens the
  * reference HTML straight off disk, opens the matching dev page, screenshots
  * both at the same size and diffs them. Playwright's report then shows expected
  * (the reference), actual (the app) and the difference.
@@ -11,7 +12,12 @@
  *   npm run audit:design -- --grep "refined/noon/home"    one board
  *   DESIGN_MAX_DIFF=0.02 npm run audit:design             tighter than 0.04
  *
- * TEST TITLES ARE `<kind>/<theme>/<page>` so `--grep` selects a board.
+ * TEST TITLES ARE `<kind>/<theme>/<page>` so `--grep` selects a board
+ * (`refined/dusk/home`, `vision/dusk/home`).
+ *
+ * THE HEADER IS HIDDEN IN EVERY VISION COMPARISON, in the board and in the app. The live header is `SiteHeader`, not
+ * the one a board draws (series README, "The boards"), so its ink is taken out of both images and what is compared is
+ * the page under it. It is hidden, not removed, so the boxes keep their size and nothing below moves.
  *
  * THE REFERENCE IS THE EXPECTED IMAGE, AND IT IS WRITTEN FRESH EVERY RUN. There
  * is no committed baseline to drift: the reference screenshot is written to
@@ -37,7 +43,7 @@ import { REPO_ROOT } from "./support/harness";
 
 interface Board {
   file: string;
-  kind: "refined";
+  kind: "refined" | "vision";
   theme: "noon" | "dusk";
   page: string;
   width: number;
@@ -50,7 +56,7 @@ interface Board {
 const DESIGN_DIR = path.join(REPO_ROOT, "design");
 const readIndex = (...parts: string[]): Board[] => JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, ...parts), "utf8"));
 /* 24 boards, 1440 wide, no browser strip, no mobile. */
-const BOARDS: Board[] = readIndex("reference", "index.json");
+const BOARDS: Board[] = [...readIndex("reference", "index.json"), ...readIndex("reference", "vision", "index.json")];
 
 /** What a refined board needs done to the dev page to show the same state. The dev pages already take `?lens`, `?build` and `?open`; the rest is clicked after load, so no source outside the dev pages changes. */
 interface RefinedState {
@@ -86,6 +92,9 @@ const REFINED_STATE: Record<string, RefinedState> = {
     },
   },
 };
+
+/** The header, by what each side calls it: the board's `<header>` and the app's `SiteHeader`. */
+const HIDE_HEADER = "header, [data-ui='site-header'] { visibility: hidden !important; }";
 
 /** Share of pixels allowed to differ. */
 const MAX_DIFF = (() => {
@@ -138,6 +147,7 @@ for (const board of BOARDS) {
         console.log(`  skipped ${title}: no view yet`);
         test.skip(true, `${title}: no view yet (${appUrl} reports data-design-ready="${ready}")`);
       }
+      if (board.kind === "vision") await appPage.addStyleTag({ content: HIDE_HEADER });
       await state.actions?.(appPage);
       appShot = await appPage.screenshot({ fullPage: true, clip: area });
     } finally {
@@ -153,6 +163,7 @@ for (const board of BOARDS) {
     let refShot: Buffer;
     try {
       await openReference(refPage, board);
+      if (board.kind === "vision") await refPage.addStyleTag({ content: HIDE_HEADER });
       refShot = await refPage.screenshot({ clip: area });
     } finally {
       await refContext.close();

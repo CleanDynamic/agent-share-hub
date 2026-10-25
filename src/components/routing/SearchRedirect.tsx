@@ -21,8 +21,8 @@ export function SearchRedirect() {
   const [params] = useSearchParams();
   const query = (params.get("q") ?? "").trim().replace(/\s+/g, " ");
 
-  if (query.length < MIN_QUERY) return <Navigate to="/gallery" replace />;
-  return <Navigate to={`/gallery?q=${encodeURIComponent(query.slice(0, MAX_QUERY))}`} replace />;
+  if (query.length < MIN_QUERY) return <Navigate to="/builds" replace />;
+  return <Navigate to={`/builds?q=${encodeURIComponent(query.slice(0, MAX_QUERY))}`} replace />;
 }
 
 export default SearchRedirect;

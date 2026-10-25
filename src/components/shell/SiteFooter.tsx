@@ -58,7 +58,7 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }:
       <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px" }}>
         <FrameLink to="/about" style={refinedLink} hoverStyle={{ color: t.text }}>About</FrameLink>
         <FrameLink to="/api-docs" style={refinedLink} hoverStyle={{ color: t.text }}>API docs</FrameLink>
-        <FrameLink to="/bounties/solvers" style={refinedLink} hoverStyle={{ color: t.text }}>Solvers</FrameLink>
+        <FrameLink to="/openbuilds/solvers" style={refinedLink} hoverStyle={{ color: t.text }}>Solvers</FrameLink>
         <button type="button" onClick={onConnect} style={refinedButtonLink}>
           Connect a tool
         </button>

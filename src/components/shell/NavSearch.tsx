@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type MutableRefObject } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
+import { isBuildsPath } from "./siteNav";
+
 import { SEARCH_MAX, normaliseQuery } from "@/lib/build/search";
 import { fieldStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -95,7 +97,7 @@ export function NavSearch({
   const field = useRef<HTMLInputElement | null>(null);
   const { state, handlers } = useInteractive<HTMLInputElement>();
 
-  const galleryQuery = pathname === "/gallery" ? params.get("q") ?? "" : null;
+  const galleryQuery = isBuildsPath(pathname) ? params.get("q") ?? "" : null;
   useEffect(() => {
     if (galleryQuery !== null) setValue(galleryQuery);
   }, [galleryQuery]);
@@ -124,7 +126,7 @@ export function NavSearch({
       return;
     }
     if (query === null) return;
-    navigate(`/gallery?q=${encodeURIComponent(query)}`);
+    navigate(`/builds?q=${encodeURIComponent(query)}`);
   };
 
   return (

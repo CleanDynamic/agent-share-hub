@@ -75,13 +75,13 @@ beforeEach(() => {
 describe("navigation budgets (hicks-law › Budgets)", () => {
   it("a signed-in reader's header has 5 links and the New build button", () => {
     header(true);
-    expect(primaryLinks()).toEqual(["Home", "Gallery", "Bounties", "Library", "Drafts"]);
+    expect(primaryLinks()).toEqual(["Home", "Builds", "OpenBuilds", "Library", "Drafts"]);
     expect(screen.getAllByRole("button", { name: "New build" })).toHaveLength(1);
   });
 
-  it("a signed-out visitor's header has Home, Gallery and Bounties", () => {
+  it("a signed-out visitor's header has Home, Builds and OpenBuilds", () => {
     header(false);
-    expect(primaryLinks()).toEqual(["Home", "Gallery", "Bounties"]);
+    expect(primaryLinks()).toEqual(["Home", "Builds", "OpenBuilds"]);
     expect(screen.getAllByRole("button", { name: "New build" })).toHaveLength(1);
   });
 
@@ -93,9 +93,9 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     );
     expect(screen.getAllByRole("link").map((a) => a.getAttribute("aria-label"))).toEqual([
       "Home",
-      "Gallery",
+      "Builds",
       "New",
-      "Bounties",
+      "OpenBuilds",
       "Activity",
     ]);
   });
