@@ -2,8 +2,7 @@
 // what the item costs: the price is content_items.price_gbp. A browser that
 // still sends `price_amount` is ignored.
 
-import { z } from "zod";
-import { readBody, returnUrl } from "../_shared/body.ts";
+import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { paidPence, type PaymentDeps } from "../_shared/payments.ts";
 

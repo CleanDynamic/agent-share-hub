@@ -2,8 +2,7 @@
 // must exist, and the name Stripe shows is the creator's own, from their
 // profile, not whatever the body says.
 
-import { z } from "zod";
-import { readBody, returnUrl } from "../_shared/body.ts";
+import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { MIN_PENCE, PWYW_CEILING_PENCE } from "../_shared/payments.ts";
 

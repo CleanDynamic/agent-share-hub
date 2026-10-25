@@ -1,8 +1,7 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { z } from "zod";
 import { getCaller } from "../_shared/caller.ts";
-import { readBody, returnUrl } from "../_shared/body.ts";
+import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { isAllowedOrigin } from "../_shared/origins.ts";
 

@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { z } from "zod";
-import { readBody } from "../_shared/body.ts";
+import { z, readBody } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { githubApiUrl, parseGithubUrl } from "./github.ts";
 

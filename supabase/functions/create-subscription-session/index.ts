@@ -1,7 +1,6 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { z } from "zod";
 import { getCaller } from "../_shared/caller.ts";
-import { readBody, returnUrl } from "../_shared/body.ts";
+import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 
 // Nothing in src calls this function. It is still reachable, so it checks its

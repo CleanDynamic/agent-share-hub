@@ -4,13 +4,16 @@
 // nothing runs. Extra fields are dropped, so a browser that still sends a field
 // the server no longer trusts (checkout's price_amount) is not an error.
 //
-// `zod` comes from each function's deno.json, the way mcp/deno.json does it.
+// zod is imported by an npm: specifier, because _shared/ is bundled into functions that have no import map
+// (src/test/edgeBundles.test.ts). Every function takes `z` from here, so there is one import to keep.
 
-import { z } from "zod";
+import { z } from "npm:zod@3.25.76";
 import { isAllowedReturnUrl } from "./origins.ts";
 
 // Not a discriminated union: the app's tsconfig is not strict, and a union on `ok` does not narrow without it.
 // `error` is set when `ok` is false; `data` when it is true.
+export { z };
+
 export interface Body<T> {
   ok: boolean;
   data: T;

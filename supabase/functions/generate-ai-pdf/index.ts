@@ -3,8 +3,7 @@
 // Edge runtime, and a text-PDF is actually superior for chatbot OCR/parsing.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { z } from "zod";
-import { readBody } from "../_shared/body.ts";
+import { z, readBody } from "../_shared/body.ts";
 import { getCaller } from "../_shared/caller.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { mayExport } from "./access.ts";

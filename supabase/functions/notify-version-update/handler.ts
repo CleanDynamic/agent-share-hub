@@ -6,8 +6,7 @@
 // `creator_id` in the body is ignored, so nobody can send notifications as
 // someone else, or about an item that is not theirs.
 
-import { z } from "zod";
-import { readBody } from "../_shared/body.ts";
+import { z, readBody } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 
 const Body = z.object({

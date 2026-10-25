@@ -7,8 +7,7 @@
 // pay-what-you-want payment (there is no Stripe webhook, and verify-project-package
 // is for project packages), so the two figures stay as they are until one does.
 
-import { z } from "zod";
-import { readBody, returnUrl } from "../_shared/body.ts";
+import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { MIN_PENCE, PWYW_CEILING_PENCE, toPence, type PaymentDeps } from "../_shared/payments.ts";
 

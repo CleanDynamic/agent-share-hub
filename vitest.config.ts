@@ -11,6 +11,10 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    // The edge functions import zod as npm:zod@..., which Deno reads and Node does not (SV-01).
+    alias: [
+      { find: /^npm:zod@[\d.]+$/, replacement: "zod" },
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+    ],
   },
 });

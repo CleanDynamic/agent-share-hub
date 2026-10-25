@@ -20,6 +20,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "npm:zod@3.25.76": [
+        "./node_modules/zod"
       ]
     },
     "skipLibCheck": true,
