@@ -51,7 +51,7 @@ export const SESSION_DIALOG_COPY = {
   reached: "Outcome",
   tookTurns: "Reached in",
   removeGoal: "Remove goal",
-  badTurns: `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`,
+  badTurns: `Turns: whole number, ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}`,
   costAndTokens: "Cost and tokens",
   together: "At the same time as",
   setup: "Setup",

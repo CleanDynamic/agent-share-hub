@@ -265,13 +265,13 @@ describe("CA-18: the fields that were shown and locked are editable", () => {
     const { h } = open(tileView("check", "full"));
     fireEvent.change(field("Test description"), { target: { value: "  " } });
     save();
-    expect(within(dialog()).getByRole("alert").textContent).toContain("test description");
+    expect(within(dialog()).getByRole("alert").textContent).toContain("Test description");
     expect(callsOf(h)).toEqual([]);
     fireEvent.change(field("Test description"), { target: { value: "Places a test order" } });
     openRow("Last run date");
     fireEvent.change(field("Last run date"), { target: { value: "2026-13-45" } });
     save();
-    expect(within(dialog()).getByRole("alert").textContent).toContain("last run date");
+    expect(within(dialog()).getByRole("alert").textContent).toContain("Format: 2026-10-12");
     expect(callsOf(h)).toEqual([]);
   });
 

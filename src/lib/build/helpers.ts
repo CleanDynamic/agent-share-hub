@@ -104,7 +104,7 @@ export function helpersOf(raw: unknown): Helper[] {
 
 /** Why these helpers cannot be saved, or null. Fixed words only. */
 export function helpersRefusal(helpers: readonly Helper[]): string | null {
-  if (helpers.length > HELPERS_MAX) return `An agent has ${HELPERS_MAX} helpers at most`;
+  if (helpers.length > HELPERS_MAX) return `Helpers: ${HELPERS_MAX} max`;
   for (const helper of helpers) {
     if (!HELPER_JOBS.includes(helper.job)) return "A helper needs its job";
     if (!helper.provider.trim()) return `The ${HELPER_JOB_LABEL[helper.job].toLowerCase()} helper needs its provider`;

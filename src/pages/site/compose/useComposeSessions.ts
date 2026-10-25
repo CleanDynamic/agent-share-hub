@@ -215,7 +215,7 @@ export function useComposeSessions({
       return { id, state, value: undefined };
     }).catch((cause) => {
       console.error("[Compose] Made with not changed", cause);
-      sayFailed(cause, "Couldn't change Made with. Try again.");
+      sayFailed(cause, "Made with not changed", () => toggleMadeWith(chip, on));
       void settleMadeWith(id);
     });
   };
@@ -227,7 +227,7 @@ export function useComposeSessions({
       return { id, state, value: undefined };
     }).catch((cause) => {
       console.error("[Compose] Made with entry not added", cause);
-      sayFailed(cause, "Couldn't add that to Made with. Try again.");
+      sayFailed(cause, "Made with not added", () => addMadeWith(name));
     });
   };
 
@@ -279,7 +279,7 @@ export function useComposeSessions({
     })
       .catch((cause) => {
         console.error("[Compose] setSessionModel failed", cause);
-        sayFailed(cause, "Couldn't save that model. Try again.");
+        sayFailed(cause, "Model not saved", () => void setModel(sessionId, model));
         return false;
       })
       .finally(() => {
@@ -297,7 +297,7 @@ export function useComposeSessions({
     })
       .catch((cause) => {
         console.error("[Compose] setSessionTool failed", cause);
-        sayFailed(cause, "Couldn't save that tool. Try again.");
+        sayFailed(cause, "Tool not saved", () => void setTool(sessionId, tool));
         return false;
       })
       .finally(() => {

@@ -359,7 +359,7 @@ export async function setSessionModel(importId: string, raw: string): Promise<vo
   if (text.length > MODEL_MAX) {
     throw buildLayerError(
       "setSessionModel",
-      new Error(`The model name can be at most ${MODEL_MAX} characters.`),
+      new Error(`Model name: ${MODEL_MAX} characters max`),
     );
   }
 

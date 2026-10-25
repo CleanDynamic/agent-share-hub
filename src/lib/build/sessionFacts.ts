@@ -104,8 +104,8 @@ export function costField(value: string): number | undefined | null {
 /** Why extras cannot be saved, or null. */
 export function extrasRefusal(extras: SessionExtras): string | null {
   if (extras.cost !== undefined && (!Number.isFinite(extras.cost) || extras.cost < 0 || extras.cost > COST_MAX)) return `What it cost is a number from 0 to ${COST_MAX.toLocaleString("en-GB")}.`;
-  if (extras.startedWith !== undefined && extras.startedWith.length > STARTED_WITH_MAX) return `The command is at most ${STARTED_WITH_MAX} characters.`;
-  if (extras.ownCopy !== undefined && extras.ownCopy.length > OWN_COPY_MAX) return `The name is at most ${OWN_COPY_MAX} characters.`;
+  if (extras.startedWith !== undefined && extras.startedWith.length > STARTED_WITH_MAX) return `Command: ${STARTED_WITH_MAX} characters max`;
+  if (extras.ownCopy !== undefined && extras.ownCopy.length > OWN_COPY_MAX) return `Name: ${OWN_COPY_MAX} characters max`;
   if (extras.parallelWith && extras.parallelWith.length > PARALLEL_MAX) return `At most ${PARALLEL_MAX} sessions ran at the same time.`;
   return null;
 }

@@ -181,7 +181,7 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
       return true;
     }
     if (!test(file)) {
-      setWrong(`${file.name} is not ${kindWord}.`);
+      setWrong(`${file.name}: ${kindWord}`);
       return true;
     }
     return false;
@@ -192,9 +192,9 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
     if (given.length === 0) return;
     const bad = given.some((file) =>
       kind === "pictures"
-        ? refuse(file, "an image or a video", (f) => ["image", "video"].includes(mediaKindFor(f.type) ?? ""))
+        ? refuse(file, "image or video only", (f) => ["image", "video"].includes(mediaKindFor(f.type) ?? ""))
         : kind === "audio"
-          ? refuse(file, "an audio file", (f) => mediaKindFor(f.type) === "audio")
+          ? refuse(file, "audio file only", (f) => mediaKindFor(f.type) === "audio")
           : refuse(file, "a file", () => true),
     );
     if (bad) return;
@@ -206,7 +206,7 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
   const choosePhoto = (list: FileList | null) => {
     const file = list?.[0];
     if (!file) return;
-    if (refuse(file, "an image", (f) => mediaKindFor(f.type) === "image")) return;
+    if (refuse(file, "image only", (f) => mediaKindFor(f.type) === "image")) return;
     setWrong(null);
     setPhoto(file);
   };

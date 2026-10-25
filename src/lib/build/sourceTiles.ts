@@ -300,8 +300,8 @@ export const forgetRetrieved = (): void => retrieved.clear();
 /** One value per line, or an array of lines; refuses more than `limit` lines or a line over `max`. */
 function linesValue(value: unknown, limit: number, max: number, what: string): string[] {
   const lines = Array.isArray(value) ? cleanList(value, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) : typeof value === "string" ? linesOf(value) : [];
-  if (lines.length > limit) throw new Error(`${what} is at most ${limit}, one per line.`);
-  if (lines.some((line) => line.length > max)) throw new Error(`A line of ${what.toLowerCase()} is at most ${max} characters.`);
+  if (lines.length > limit) throw new Error(`${what}: ${limit} max, one per line`);
+  if (lines.some((line) => line.length > max)) throw new Error(`${what}: ${max} characters max per line`);
   return lines;
 }
 
@@ -310,7 +310,7 @@ const lineValue =
   (what: string, max: number) =>
   (value: unknown): Json | null => {
     const said = clean(value);
-    if (said.length > max) throw new Error(`${what} is at most ${max} characters.`);
+    if (said.length > max) throw new Error(`${what}: ${max} characters max`);
     return said || null;
   };
 
@@ -328,14 +328,14 @@ registerCleaners("system_prompt", {
   text: (value) => {
     const said = clean(value);
     if (!said) throw new Error("A system prompt needs its text.");
-    if (said.length > SYSTEM_PROMPT_TEXT_MAX) throw new Error(`A system prompt is at most ${SYSTEM_PROMPT_TEXT_MAX.toLocaleString("en-GB")} characters.`);
+    if (said.length > SYSTEM_PROMPT_TEXT_MAX) throw new Error(`System prompt: ${SYSTEM_PROMPT_TEXT_MAX.toLocaleString("en-GB")} characters max`);
     return said;
   },
   model: lineValue("The model", SYSTEM_PROMPT_MODEL_MAX),
   version: lineValue("The version", SYSTEM_PROMPT_VERSION_MAX),
   scope: (value) => {
     const scope = typeof value === "string" ? scopeOf(value) : isRecord(value) ? (value as unknown as SystemPromptScope) : { kind: "all" as const };
-    if (scope.kind === "prompts" && scope.ids.length === 0) throw new Error("Choose at least one prompt for it to apply to.");
+    if (scope.kind === "prompts" && scope.ids.length === 0) throw new Error("Applies to: 1 prompt min");
     return scopeValue(scope);
   },
   variables: (value) => cleanVariablesValue(value),
@@ -345,7 +345,7 @@ registerCleaners("dataset", {
   description: (value) => {
     const said = clean(value);
     if (!said) throw new Error("A dataset needs its description.");
-    if (said.length > DATASET_DESCRIPTION_MAX) throw new Error(`The description is at most ${DATASET_DESCRIPTION_MAX} characters.`);
+    if (said.length > DATASET_DESCRIPTION_MAX) throw new Error(`Description: ${DATASET_DESCRIPTION_MAX} characters max`);
     return said;
   },
   use: (value) => (DATASET_USES.includes(value as DatasetUse) ? (value as DatasetUse) : null),
@@ -391,7 +391,7 @@ registerCleaners("repo", {
   pin: (value) => {
     if (!isRecord(value) || !REPO_PIN_KINDS.includes(value.kind as RepoPinKind)) return null;
     const pinned = clean(value.value);
-    if (pinned.length > REPO_PIN_VALUE_MAX) throw new Error(`The pinned version is at most ${REPO_PIN_VALUE_MAX} characters.`);
+    if (pinned.length > REPO_PIN_VALUE_MAX) throw new Error(`Pinned version: ${REPO_PIN_VALUE_MAX} characters max`);
     return pinned ? { kind: value.kind as RepoPinKind, value: pinned } : null;
   },
   path: lineValue("The path", REPO_PATH_MAX),

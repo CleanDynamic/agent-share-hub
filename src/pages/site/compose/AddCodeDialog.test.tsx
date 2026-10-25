@@ -141,9 +141,9 @@ describe("Add › Code (CA-02 P7)", () => {
     await waitFor(() => expect(screen.getByRole("list", { name: "Upload files" })).toBeTruthy());
     expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["schema.sql · SQL · 1 lineRemove", "app.ts · TypeScript · 1 lineRemove"]);
     const alert = screen.getByRole("alert");
-    expect(alert.textContent).toContain("blob.ts: That file isn't text.");
-    expect(alert.textContent).toContain("photo.png: That file isn't text.");
-    expect(alert.textContent).toContain("huge.js: Code is at most 100,000 characters. Upload it as a file instead.");
+    expect(alert.textContent).toContain("blob.ts: Not text");
+    expect(alert.textContent).toContain("photo.png: Not text");
+    expect(alert.textContent).toContain("huge.js: Code: 100,000 characters max");
     fireEvent.click(screen.getByRole("button", { name: "Remove app.ts" }));
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ steps: [{ source: "select 1;\n", language: "sql", filename: "schema.sql" }], tool: null, model: null });
@@ -152,7 +152,7 @@ describe("Add › Code (CA-02 P7)", () => {
   it("refuses typed code over 100,000 characters", () => {
     open();
     fireEvent.change(well(), { target: { value: "x".repeat(100_001) } });
-    expect(screen.getByRole("alert").textContent).toBe("Code is at most 100,000 characters. Upload it as a file instead.");
+    expect(screen.getByRole("alert").textContent).toBe("Code: 100,000 characters max");
     expect(add().disabled).toBe(true);
   });
 

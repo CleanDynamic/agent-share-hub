@@ -79,8 +79,8 @@ describe("what is stored", () => {
     expect(referenceGroupsRefusal([login, plum])).toBeNull();
     expect(referenceGroupsRefusal([{ ...plum, members: ["node:t1"] }])).toBe("2 components min");
     expect(referenceGroupsRefusal([{ ...plum, name: "x".repeat(41) }])).toBe("A group name is 1 to 40 characters.");
-    expect(referenceGroupsRefusal([{ ...plum, notes: "x".repeat(2001) }])).toBe("Notes are at most 2,000 characters.");
-    expect(referenceGroupsRefusal([login, { ...plum, members: ["node:t1", "node:c4"] }])).toBe("A component is in one group at most.");
+    expect(referenceGroupsRefusal([{ ...plum, notes: "x".repeat(2001) }])).toBe("Notes: 2,000 characters max");
+    expect(referenceGroupsRefusal([login, { ...plum, members: ["node:t1", "node:c4"] }])).toBe("Component: one group max");
   });
 });
 

@@ -123,7 +123,7 @@ describe("checkThread", () => {
     const problems = checkThread(doc(...blocks));
     expect(problems.map((problem) => problem.code)).toEqual(["too_many_posts"]);
     expect(problems[0].post).toBe(MAX_THREAD_POSTS);
-    expect(problems[0].message).toMatch(/at most 10/);
+    expect(problems[0].message).toMatch(/Posts: 10 max/);
   });
 
   it("refuses more than four pictures in one post, counting rows", () => {
@@ -179,7 +179,7 @@ describe("checkThread", () => {
   it("writes each message as a sentence naming the post", () => {
     const [problem] = checkThread(doc(p("a"), br, pic("m1", { caption: "c".repeat(CAPTION_MAX + 1) })));
     expect(problem.post).toBe(1);
-    expect(problem.message).toMatch(/^Post 2 .*\.$/);
+    expect(problem.message).toMatch(/^Post 2 caption: 200 characters max$/);
   });
 });
 

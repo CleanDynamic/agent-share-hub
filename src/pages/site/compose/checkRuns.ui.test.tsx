@@ -79,7 +79,7 @@ describe("writing runs", () => {
     expect(saved.passed).toBe(40);
   });
   it("refuses what cannot be kept", async () => {
-    await expect(setCheckRuns(row({}), [{ at: "2026-10-10", passed: 5, total: 4 }])).rejects.toThrow(/more than the total/);
+    await expect(setCheckRuns(row({}), [{ at: "2026-10-10", passed: 5, total: 4 }])).rejects.toThrow(/no more than total/);
     await expect(setCheckRuns(row({}), [{ at: "someday", passed: 1, total: 4 }])).rejects.toThrow(/2026-10-12/);
     expect(upsertNode).not.toHaveBeenCalled();
   });
@@ -181,6 +181,6 @@ describe("Check window › Runs (CA-18: written there, held until Save)", () => 
     const many = Array.from({ length: 20 }, (_, i) => ({ at: `2026-09-${String(i + 1).padStart(2, "0")}`, passed: 1, total: 1 }));
     mount(view(many));
     expect(screen.queryByRole("button", { name: "Add a run" })).toBeNull();
-    expect(screen.getByText(/20 runs at most/)).toBeTruthy();
+    expect(screen.getByText(/20 max/)).toBeTruthy();
   });
 });

@@ -447,7 +447,7 @@ export const DETAILS_COPY = {
   edit: "Edit",
   copy: "Copy",
   copied: "Copied",
-  copyFailed: "Couldn't copy that. Select the text and copy it by hand.",
+  copyFailed: "Text not copied",
   readAll: "Read all",
 } as const;
 

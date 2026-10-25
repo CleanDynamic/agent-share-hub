@@ -76,7 +76,7 @@ export function costRefusal(figures: Partial<CostFigures>): string | null {
     const value = figures[key];
     if (value !== undefined && (!Number.isInteger(value) || value < 0 || value > COST_LIMITS.tokens)) return "Tokens are whole numbers.";
   }
-  if (figures.cost !== undefined && (!Number.isFinite(figures.cost) || figures.cost < 0 || figures.cost > COST_LIMITS.cost)) return `Cost is a number from 0 to ${COST_LIMITS.cost.toLocaleString("en-GB")}.`;
+  if (figures.cost !== undefined && (!Number.isFinite(figures.cost) || figures.cost < 0 || figures.cost > COST_LIMITS.cost)) return `Cost: 0 to ${COST_LIMITS.cost.toLocaleString("en-GB")}`;
   return null;
 }
 

@@ -72,7 +72,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
     const onAdd = open();
     type("Image or video");
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [new File(["x"], "spec.pdf", { type: "application/pdf" })] } });
-    expect(screen.getByRole("alert").textContent).toBe("spec.pdf is not an image or a video.");
+    expect(screen.getByRole("alert").textContent).toBe("spec.pdf: image or video only");
     const png = new File(["x"], "hero.png", { type: "image/png" });
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [png] } });
     fireEvent.click(add());
@@ -102,7 +102,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
     type("Audio");
     expect(status()).toBe("Required: Audio file");
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [new File(["x"], "memo.png", { type: "image/png" })] } });
-    expect(screen.getByRole("alert").textContent).toBe("memo.png is not an audio file.");
+    expect(screen.getByRole("alert").textContent).toBe("memo.png: audio file only");
     const wav = new File(["x"], "memo.wav", { type: "audio/wav" });
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [wav] } });
     fireEvent.click(add());
@@ -249,7 +249,7 @@ describe("what a result holds (CA-12 P9, CA-15 P3)", () => {
     expect(resultRefusal({ kind: "message", channel: "email", message: "" })).toBe("Add the message.");
     expect(resultRefusal({ kind: "metric", value: "4", label: "" })).toBe("Add the label.");
     expect(resultRefusal({ kind: "table", csv: "" })).toMatch(/CSV/);
-    expect(resultRefusal({ kind: "text", text: "x", caption: "y".repeat(141) })).toMatch(/caption/);
+    expect(resultRefusal({ kind: "text", text: "x", caption: "y".repeat(141) })).toMatch(/Caption/);
   });
 });
 

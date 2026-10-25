@@ -135,7 +135,7 @@ describe("writing by hand", () => {
   it("keeps a tool of 40 characters and refuses 41", async () => {
     await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "x".repeat(40) });
     expect(upsertNode.mock.calls[0][0].payload.tool).toBe("x".repeat(40));
-    await expect(addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "x".repeat(41) })).rejects.toThrow("A tool is at most 40 characters.");
+    await expect(addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "x".repeat(41) })).rejects.toThrow("Tool: 40 characters max");
     expect(upsertNode).toHaveBeenCalledTimes(1);
   });
 

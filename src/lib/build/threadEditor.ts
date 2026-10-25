@@ -167,7 +167,7 @@ export function canStartPost(doc: ThreadDoc): boolean {
 }
 
 /** The sentence an 11th post is refused with. */
-export const POST_LIMIT_SENTENCE = `A thread holds at most ${MAX_THREAD_POSTS} posts. Join two of them before starting another.`;
+export const POST_LIMIT_SENTENCE = `Posts: ${MAX_THREAD_POSTS} max`;
 
 /** The thread with the post at `from` moved to place `to`, its whole run of blocks with it. */
 export function movePost(doc: ThreadDoc, from: number, to: number): ThreadDoc {

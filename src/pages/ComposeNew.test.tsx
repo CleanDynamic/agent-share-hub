@@ -651,7 +651,7 @@ describe("a repository URL (NS-P21)", () => {
     typeUrl("https://gitlab.com/acme/widget");
     fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/only github/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/github only/i);
     // No draft for a URL that was never going to be read.
     expect(createBuild).not.toHaveBeenCalled();
     expect(requestRepoProposal).not.toHaveBeenCalled();
@@ -662,7 +662,7 @@ describe("a repository URL (NS-P21)", () => {
     typeUrl("https://github.com/features/actions");
     fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/not a repository one/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Format: github.com\/owner\/name/i);
     expect(createBuild).not.toHaveBeenCalled();
   });
 

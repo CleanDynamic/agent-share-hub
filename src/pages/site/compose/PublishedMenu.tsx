@@ -25,7 +25,7 @@ export const PUBLISHED_COPY = {
   viewLive: "View live",
   copyLink: "Copy link",
   copied: "Link copied",
-  copyFailed: "Couldn't copy the link",
+  copyFailed: "Link not copied",
   unpublish: "Unpublish…",
   unpublishTitle: (title: string): string => `Unpublish ${title}?`,
   unpublishBody: "The link stops working. The draft stays.",

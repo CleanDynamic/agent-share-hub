@@ -39,8 +39,8 @@ export function outputShapeOf(raw: unknown): OutputShape | null {
 /** Why a shape cannot be saved, or null. Fixed words only. */
 export function shapeRefusal(shape: OutputShape): string | null {
   if (!SHAPE_HOWS.includes(shape.how)) return "Say how the answer was shaped.";
-  if ((shape.schema ?? "").length > SHAPE_TEXT_MAX || (shape.sample ?? "").length > SHAPE_TEXT_MAX) return `The schema and the sample are at most ${SHAPE_TEXT_MAX.toLocaleString("en-GB")} characters each.`;
-  if ((shape.where ?? "").length > SHAPE_WHERE_MAX) return `Where is at most ${SHAPE_WHERE_MAX} characters.`;
+  if ((shape.schema ?? "").length > SHAPE_TEXT_MAX || (shape.sample ?? "").length > SHAPE_TEXT_MAX) return `Schema and sample: ${SHAPE_TEXT_MAX.toLocaleString("en-GB")} characters max each`;
+  if ((shape.where ?? "").length > SHAPE_WHERE_MAX) return `Where: ${SHAPE_WHERE_MAX} characters max`;
   if ((shape.how === "json-schema" || shape.how === "strict-tools") && !(shape.schema ?? "").trim()) return "This answer shape needs its schema.";
   return null;
 }

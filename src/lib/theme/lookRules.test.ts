@@ -863,6 +863,27 @@ export const CA03_FILES: readonly string[] = [
 
   // CA-28 P2
   "src/pages/site/compose/ca28.p2.test.tsx",
+
+  // CA-28 P3
+  "src/lib/build/answerShape.ts",
+  "src/lib/build/composePrompts.test.ts",
+  "src/lib/build/cost.test.ts",
+  "src/lib/build/cost.ts",
+  "src/lib/build/decision.ts",
+  "src/lib/build/helpers.ts",
+  "src/lib/build/repo.test.ts",
+  "src/lib/build/repo.ts",
+  "src/lib/build/sessions.ts",
+  "src/lib/build/threadEditor.test.ts",
+  "src/lib/build/tileExtras.test.ts",
+  "src/pages/site/compose/ca21.p3.test.tsx",
+  "src/pages/site/compose/ca21.p6.test.tsx",
+  "src/pages/site/compose/ca28.p3.page.test.tsx",
+  "src/pages/site/compose/ca28.p3.test.tsx",
+  "src/pages/site/compose/codeModel.test.ts",
+  "src/pages/site/compose/codeModel.ts",
+  "src/pages/site/compose/useBuildSorting.ts",
+  "src/pages/site/compose/useComposePrompts.agents.test.tsx",
 ];
 
 /**

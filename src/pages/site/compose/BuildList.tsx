@@ -2138,7 +2138,7 @@ export function BuildList(raw: BuildListProps) {
     onOpen: (key) => base.onToggleCollapsed?.(key, false),
     commit: (commit: Commit) => {
       const write = commit.write;
-      if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Couldn't move that. Try again." });
+      if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Tile not moved" });
       if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) return base.onNest?.(write.id, write.parent, write.index);
       if (write.kind === "session") {
         if (write.toPart) return write.before ? base.onDropSession?.(write.id, write.before) : base.onDropOnWorkstream?.(write.id, write.toPart);

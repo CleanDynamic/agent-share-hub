@@ -211,17 +211,17 @@ export function lowConfidenceOf(raw: unknown): LowConfidence | null {
 export function questionsRefusal(questions: readonly DecisionQuestion[], name?: string): string | null {
   const said = name ? `Decision '${name}'` : "A decision";
   if (questions.length < QUESTIONS_MIN) return `${said} has no questions`;
-  if (questions.length > QUESTIONS_MAX) return `${said} asks ${QUESTIONS_MAX} questions at most`;
+  if (questions.length > QUESTIONS_MAX) return `Questions: ${QUESTIONS_MAX} max`;
   const seen = new Set<string>();
   for (const q of questions) {
     if (!q.id.trim()) return `${said} has a question with no name`;
     if (seen.has(q.id)) return `${said} asks '${q.id}' twice`;
     seen.add(q.id);
     if (takesOptions(q.type) && (q.options?.length ?? 0) < OPTIONS_MIN) return `${said} has no options`;
-    if (takesOptions(q.type) && (q.options?.length ?? 0) > OPTIONS_MAX) return `A ${q.type === "rank" ? "ranking" : "choice"} has ${OPTIONS_MAX} options at most`;
+    if (takesOptions(q.type) && (q.options?.length ?? 0) > OPTIONS_MAX) return `Options: ${OPTIONS_MAX} max`;
     if (takesOptions(q.type) && new Set(q.options?.map((o) => o.key)).size !== q.options?.length) return `'${q.id}' has two options with the same name`;
     if (q.type === "score" && (q.levels?.length ?? 0) < LEVELS_MIN) return `${said} has no levels`;
-    if (q.type === "score" && (q.levels?.length ?? 0) > LEVELS_MAX) return `A score has ${LEVELS_MAX} levels at most`;
+    if (q.type === "score" && (q.levels?.length ?? 0) > LEVELS_MAX) return `Levels: ${LEVELS_MAX} max`;
     if (q.type === "extract" && !EXTRACT_FIELDS.includes(q.field as ExtractField)) return `'${q.id}' has no field type`;
   }
   return null;

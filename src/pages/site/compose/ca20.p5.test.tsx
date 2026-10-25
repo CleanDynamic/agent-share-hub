@@ -235,7 +235,7 @@ describe("a step whose undo fails", () => {
     await waitFor(() => expect(positions().map((row) => row.id)).not.toContain(IDS.p2), { timeout: 15_000 });
     await waitFor(() => expect((screen.getByTestId("title-undo") as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByTestId("title-undo"));
-    expect(await screen.findByText("Couldn't undo that. Try again.", undefined, { timeout: 15_000 })).toBeTruthy();
+    expect(await screen.findByText("Change not undone", undefined, { timeout: 15_000 })).toBeTruthy();
     // It is still there to undo, and nothing was put back.
     expect(positions().map((row) => row.id)).not.toContain(IDS.p2);
     expect((screen.getByTestId("title-undo") as HTMLButtonElement).disabled).toBe(false);

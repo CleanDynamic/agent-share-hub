@@ -176,12 +176,12 @@ describe("Add › Check", () => {
     fill();
     type("Passed", "15");
     fireEvent.click(add());
-    expect(screen.getByRole("alert").textContent).toBe("Passed can't be more than the total.");
+    expect(screen.getByRole("alert").textContent).toBe("Passed: no more than total");
     type("Passed", "14");
     openRow("Last run date");
     type("Last run date", "2026-13-01");
     fireEvent.click(add());
-    expect(screen.getByRole("alert").textContent).toBe("The last run date is written as 2026-10-12.");
+    expect(screen.getByRole("alert").textContent).toBe("Format: 2026-10-12");
     type("Last run date", "");
     openRow("Evidence");
     type("Evidence URL", "not a url");

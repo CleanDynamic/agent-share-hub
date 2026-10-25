@@ -357,7 +357,7 @@ function ShapeRead({ shape }: { shape: OutputShape }) {
       {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
       {fragment.text ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Couldn't copy. Select the text and copy it."))}>
+          <Button variant="secondary" size={28} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Text not copied"))}>
             Copy the setting
           </Button>
           <span aria-live="polite" style={geist(12, 400, t.label)}>{said}</span>
@@ -527,7 +527,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
   }, []);
 
   const copy = async () => {
-    say((await copyText(bracketed(step.text, step.changes))) ? FULL_PROMPT_COPY.copied : "Couldn't copy. Select the text and copy it.");
+    say((await copyText(bracketed(step.text, step.changes))) ? FULL_PROMPT_COPY.copied : "Text not copied");
   };
 
   const quiet = geist(11.5, 400, t.label);

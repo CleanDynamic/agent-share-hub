@@ -692,7 +692,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     if (current.send) {
       const target = current.send;
       setSaid(o.sentLine(current.held.id, target));
-      hold(withoutTile(current.start, current.held.id), current.held, current.start, o.send(current.held.id, target), "Couldn't move that. Try again.");
+      hold(withoutTile(current.start, current.held.id), current.held, current.start, o.send(current.held.id, target), "Tile not moved");
       return;
     }
     const write = writeOf(current.start, current.live, current.held.id);
@@ -707,7 +707,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const line = movedLine(move, o.names);
     setSaid(line);
     const run = o.commit({ held: current.held, write, move, start: current.start, end: current.live, sentence: line.replace(/\.$/, ""), line });
-    hold(current.live, current.held, current.start, run, "Couldn't move that. Try again.");
+    hold(current.live, current.held, current.start, run, "Tile not moved");
   };
 
   const show = (model: MoveModel, line: string, run: Promise<unknown> | void) => {
@@ -715,7 +715,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const start = optionsRef.current.model;
     if (line) setSaid(line);
     setTick((value) => value + 1);
-    hold(model, null, start, run, "Couldn't move that. Try again.");
+    hold(model, null, start, run, "Tile not moved");
   };
 
   // Focus stays on the moved thing after a drag by the keys, with the existing focus ring, scrolled into view.

@@ -40,7 +40,6 @@ import {
   addAgent,
   addAgentPrompt,
   addDecision,
-  DECISION_TYPE_MISSING,
   setDecision,
   setRunsWhen,
   setRuntimeFields,
@@ -141,10 +140,19 @@ const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
   return null;
 };
 
-/** Log a failed write with its cause, and say so in one line. */
-const failed = (line: string) => (cause: unknown) => {
+/** A refusal the data layer wrote as `{Field}: {rule}` ("Target: 80 characters max"), without its "addCheck failed: " lead; undefined for any other failure. */
+const refusalIn = (message: string): string | undefined => {
+  const said = /^\w+ failed: (.*)$/s.exec(message)?.[1] ?? message;
+  return /^[A-Z][^:\n]{0,40}: \S.*$/s.test(said) ? said : undefined;
+};
+
+/** "tool" is "Tool", for "Tool not added". */
+const capital = (word: string): string => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`;
+
+/** Log a failed write with its cause, and say so in one line; `retry`, when there is one, is the toast's Retry. */
+const failed = (line: string, retry?: () => void) => (cause: unknown) => {
   console.error("[Compose] prompt write failed", cause);
-  sayFailed(cause, line);
+  sayFailed(cause, line, retry);
 };
 
 /** A code for the log, and only a code. */
@@ -400,15 +408,23 @@ export function useComposePrompts({
     [run, current, record],
   );
 
+  /** Save a typed prompt; when it fails, "Prompt not saved" says so with Retry, which saves it again. */
+  const saveAgain = useCallback(
+    function again(key: string): void {
+      save(key).catch(failed("Prompt not saved", () => again(key)));
+    },
+    [save],
+  );
+
   const flushKey = useCallback(
     (key: string) => {
       const timer = timers.current.get(key);
       if (timer === undefined) return;
       window.clearTimeout(timer);
       timers.current.delete(key);
-      save(key).catch(failed("Couldn't save that prompt. Try again."));
+      saveAgain(key);
     },
-    [save],
+    [saveAgain],
   );
 
   const flush = useCallback(() => {
@@ -441,7 +457,7 @@ export function useComposePrompts({
       key,
       window.setTimeout(() => {
         timers.current.delete(key);
-        save(key).catch(failed("Couldn't save that prompt. Try again."));
+        saveAgain(key);
       }, SAVE_DEBOUNCE_MS),
     );
   };
@@ -451,17 +467,15 @@ export function useComposePrompts({
     if (!id) return;
     // Every pending text first: a reorder rewrites the rows it reads.
     for (const pending of [...timers.current.keys()]) flushKey(pending);
-    nodes
-      .run(async () => {
-        const build = latest.current.buildId;
-        if (!build) return;
-        // CA-21 P1: every kind of tile swaps with the step next to it, whatever either is.
-        for (const step of await moveStep(build, nodes.current(), id, direction)) {
-          const node = findTop(nodes.current(), step.id);
-          if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
-        }
-      })
-      .catch(failed("Couldn't move that. Try again."));
+    void attempt("Tile not moved", async () => {
+      const build = latest.current.buildId;
+      if (!build) return;
+      // CA-21 P1: every kind of tile swaps with the step next to it, whatever either is.
+      for (const step of await moveStep(build, nodes.current(), id, direction)) {
+        const node = findTop(nodes.current(), step.id);
+        if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
+      }
+    }, undefined);
   };
 
   /** A file goes: it comes out of every step's uses first, so no step is left naming a file that is gone. */
@@ -516,7 +530,7 @@ export function useComposePrompts({
             next.delete(key);
             return next;
           });
-          failed("Couldn't remove that prompt. Try again.")(cause);
+          failed("Prompt not removed", () => remove(key))(cause);
         },
       );
   };
@@ -553,7 +567,7 @@ export function useComposePrompts({
         toast(addedToast(n));
         onSessionUsed?.(sessionId);
       })
-      .catch(failed("Couldn't add that prompt. Try again."))
+      .catch(failed("Prompt not added", () => add(sessionId, ordinal)))
       .finally(() => {
         const next = new Set(addingRef.current);
         next.delete(tag);
@@ -572,164 +586,140 @@ export function useComposePrompts({
       (node) => promptOrigin(node)?.importSessionId === sessionId && promptModel(node) !== model,
     );
     for (const { id } of affected) {
-      nodes
-        .run(async () => {
-          const node = findTop(nodes.current(), id);
-          if (node) nodes.record(node.id, await setPromptModel(rowOf(node), model));
-        })
-        .catch(failed("Couldn't name the model on its prompts. Try again."));
+      void attempt("Model not named", async () => {
+        const node = findTop(nodes.current(), id);
+        if (node) nodes.record(node.id, await setPromptModel(rowOf(node), model));
+      }, undefined);
     }
   };
 
   const addNow = ({ text, tool, model, session }: { text: string; tool: string | null; model: string | null; session?: string | null }) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model, session });
-        nodes.record(created.id, created);
-        noteTool(build, tool);
-        return true;
-      })
-      .catch((cause) => {
-        failed("Couldn't add that prompt. Try again.")(cause);
-        return false;
-      });
+    attempt("Prompt not added", async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model, session });
+      nodes.record(created.id, created);
+      noteTool(build, tool);
+      return true;
+    }, false);
+
+  /**
+   * One write in the node queue. When it fails the maker is told in one line ("Prompt not added") with Retry, which runs the same
+   * write again, and what the write would have made comes back as `fallback`.
+   */
+  const attempt = <T,>(line: string | ((cause: unknown) => string), task: () => Promise<T>, fallback: T): Promise<T> =>
+    nodes.run(task).catch((cause) => {
+      failed(typeof line === "function" ? line(cause) : line, () => void attempt(line, task, fallback))(cause);
+      return fallback;
+    });
 
   /** A write to one node: read it as the queue left it, write, keep the result. */
-  const writeStep = (id: string, line: string, change: (node: BuildNode) => Promise<BuildNode>) =>
-    nodes
-      .run(async () => {
+  const writeStep = (id: string, line: string, change: (node: BuildNode) => Promise<BuildNode>): Promise<void> =>
+    attempt(
+      line,
+      async () => {
         const node = findNode(nodes.current(), id);
         if (node) nodes.record(node.id, await change(rowOf(node)));
-      })
-      .catch(failed(line));
+      },
+      undefined,
+    );
 
-  const rename = (id: string, title: string) => void writeStep(id, "Couldn't rename that. Try again.", (node) => setStepTitle(node, title));
+  const rename = (id: string, title: string) => void writeStep(id, "Tile not renamed", (node) => setStepTitle(node, title));
   const setChanges = (id: string, ranges: readonly ChangeRange[]) =>
-    void writeStep(id, "Couldn't save those words. Try again.", (node) => setPromptChanges(node, ranges));
+    void writeStep(id, "Words not saved", (node) => setPromptChanges(node, ranges));
   const setReply = (id: string, reply: string) =>
-    void writeStep(id, "Couldn't save that. Try again.", (node) => setPromptReply(node, reply.trim() || null));
+    void writeStep(id, "Response not saved", (node) => setPromptReply(node, reply.trim() || null));
   const setExtrasOf = (id: string, patch: Record<string, unknown>) =>
-    void writeStep(id, "Couldn't save that. Try again.", (node) => setExtras(node, patch));
+    void writeStep(id, "Optional fields not saved", (node) => setExtras(node, patch));
   const setTextOf = (id: string, text: string) =>
-    void writeStep(id, "Couldn't save that prompt. Try again.", (node) => savePromptText(node, text));
+    void writeStep(id, "Prompt not saved", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
-    void writeStep(id, "Couldn't save those cases. Try again.", (node) => setCheckCases(node, keptCases(cases)));
+    void writeStep(id, "Test cases not saved", (node) => setCheckCases(node, keptCases(cases)));
   const setCheckTextOf = (id: string, patch: CheckTextPatch) =>
-    void writeStep(id, "Couldn't save that check. Try again.", (node) => setCheckText(node, patch));
+    void writeStep(id, "Check not saved", (node) => setCheckText(node, patch));
   const setCodeSourceOf = (id: string, patch: { source?: string; language?: string }) =>
-    void writeStep(id, "Couldn't save that code. Try again.", (node) => setCodeSource(node, patch));
+    void writeStep(id, "Code not saved", (node) => setCodeSource(node, patch));
   const setAgentNotesOf = (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) =>
-    void writeStep(id, "Couldn't save that. Try again.", (node) => setAgentNotes(node, notes));
+    void writeStep(id, "Notes not saved", (node) => setAgentNotes(node, notes));
   const setModelRunOf = (id: string, run: ModelRun | null) =>
-    void writeStep(id, "Couldn't save that. Try again.", (node) => setModelRun(node, run));
+    void writeStep(id, "Model run not saved", (node) => setModelRun(node, run));
   const setCheckRunsOf = (id: string, runs: readonly CheckRun[]) =>
-    void writeStep(id, "Couldn't save those runs. Try again.", (node) => setCheckRuns(node, runs));
+    void writeStep(id, "Runs not saved", (node) => setCheckRuns(node, runs));
   const accept = (id: string, use: Use, steps: readonly Step[]) =>
-    void writeStep(id, "Couldn't add that input. Try again.", (node) => addUse(node, use, steps, madeFilesOf(nodes.current()), madeFileNamesOf(nodes.current())));
+    void writeStep(id, "Input not added", (node) => addUse(node, use, steps, madeFilesOf(nodes.current()), madeFileNamesOf(nodes.current())));
   const dismiss = (id: string, key: string) =>
-    void writeStep(id, "Couldn't dismiss that. Try again.", (node) => dismissSuggestion(node, key));
+    void writeStep(id, "Suggestion not dismissed", (node) => dismissSuggestion(node, key));
 
   const removeUseFrom = (id: string, use: Use) =>
-    void writeStep(id, "Couldn't remove that input. Try again.", (node) => removeUse(node, use));
+    void writeStep(id, "Input not removed", (node) => removeUse(node, use));
   const setRunsOf = (id: string, runs: Runs | null) =>
-    void writeStep(id, "Couldn't change how that runs. Try again.", (node) => setRuns(node, runs));
+    void writeStep(id, "Run method not changed", (node) => setRuns(node, runs));
   const setModelOf = (id: string, model: string | null) =>
-    void writeStep(id, "Couldn't change the model. Try again.", (node) => setPromptModel(node, model));
+    void writeStep(id, "Model not changed", (node) => setPromptModel(node, model));
   const setFields = (id: string, fields: Record<string, string | null>) =>
-    void writeStep(id, "Couldn't save that. Try again.", (node) => setNodeFields(node, fields));
-  const setColour = (id: string, colour: string | null) => void writeStep(id, "Couldn't save that colour. Try again.", (node) => setNodeColour(node, colour));
+    void writeStep(id, "Fields not saved", (node) => setNodeFields(node, fields));
+  const setColour = (id: string, colour: string | null) => void writeStep(id, "Colour not saved", (node) => setNodeColour(node, colour));
 
   const removeInside = (id: string) => {
-    nodes
-      .run(async () => {
-        await dropMadeFiles(id);
-        await deleteNode(id);
-        nodes.record(id, null);
-      })
-      .catch(failed("Couldn't remove that. Try again."));
+    void attempt("Tile not removed", async () => {
+      await dropMadeFiles(id);
+      await deleteNode(id);
+      nodes.record(id, null);
+    }, undefined);
   };
 
   /** TF-08: name a file `stepId` makes. Resolves the new file's id, or null if it failed. */
   const addMadeFile = (stepId: string, name: string) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const created = await writeMadeFile(build, nodes.current(), { stepId, name });
-        nodes.record(created.id, created);
-        return created.id;
-      })
-      .catch((cause) => {
-        failed("Couldn't add that file. Try again.")(cause);
-        return null;
-      });
+    attempt("File not added", async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await writeMadeFile(build, nodes.current(), { stepId, name });
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
 
   /** TF-08: take a made file out of the build, and out of the steps that use it. Anything that is not a made file is left alone. */
   const removeMadeFile = (fileId: string) =>
-    void nodes
-      .run(async () => {
-        if (madeFilesOf(nodes.current()).has(fileId)) await dropFile(fileId);
-      })
-      .catch(failed("Couldn't remove that file. Try again."));
+    void attempt("File not removed", async () => {
+      if (madeFilesOf(nodes.current()).has(fileId)) await dropFile(fileId);
+    }, undefined);
 
   const addPiece = (kind: "tool" | "result", name?: string) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const created =
-          kind === "tool"
-            ? await addTool(build, nodes.current(), { service: name?.trim() || "Untitled tool" })
-            : await addResult(build, nodes.current(), { summary: "Untitled result" });
-        nodes.record(created.id, created);
-        return created.id;
-      })
-      .catch((cause) => {
-        failed(`Couldn't add that ${kind}. Try again.`)(cause);
-        return null;
-      });
+    attempt(`${capital(kind)} not added`, async () => {
+      const build = await latest.current.ensureBuild();
+      const created =
+        kind === "tool"
+          ? await addTool(build, nodes.current(), { service: name?.trim() || "Untitled tool" })
+          : await addResult(build, nodes.current(), { summary: "Untitled result" });
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
 
   const addResultOf = (input: ResultInput) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const created = await addResultTile(build, nodes.current(), input);
-        nodes.record(created.id, created);
-        return created.id;
-      })
-      .catch((cause) => {
-        failed("Couldn't add that result. Try again.")(cause);
-        return null;
-      });
+    attempt("Result not added", async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await addResultTile(build, nodes.current(), input);
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
 
   /** CA-15 P9: one queued write for a tile whose writer is `write`; the id of what it made, or null with the reason said. */
   const addSourceTile = <Input,>(write: (build: string, tree: readonly NodeTree[], input: Input) => Promise<BuildNode>, failure: string) => (input: Input) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const created = await write(build, nodes.current(), input);
-        nodes.record(created.id, created);
-        return created.id;
-      })
-      .catch((cause) => {
-        failed(failure)(cause);
-        return null;
-      });
-  const addSystemPromptTile = addSourceTile(addSystemPromptStep, "Couldn't add that system prompt. Try again.");
-  const addDatasetTile = addSourceTile(addDatasetStep, "Couldn't add that dataset. Try again.");
-  const addRepoTile = addSourceTile(addRepoStep, "Couldn't add that repository. Try again.");
+    attempt(failure, async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await write(build, nodes.current(), input);
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
+  const addSystemPromptTile = addSourceTile(addSystemPromptStep, "System prompt not added");
+  const addDatasetTile = addSourceTile(addDatasetStep, "Dataset not added");
+  const addRepoTile = addSourceTile(addRepoStep, "Repository not added");
 
   const addToolTile = (input: ToolTileInput) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const created = await addToolStep(build, nodes.current(), input);
-        nodes.record(created.id, created);
-        return created.id;
-      })
-      .catch((cause) => {
-        failed("Couldn't add that tool. Try again.")(cause);
-        return null;
-      });
+    attempt("Tool not added", async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await addToolStep(build, nodes.current(), input);
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
 
   /** The build's integration node for each tool, made when there is none yet (CA-02 P5). Runs inside the queue. */
   const toolRefsFor = async (build: string, tools: readonly string[]): Promise<string[]> => {
@@ -748,185 +738,154 @@ export function useComposePrompts({
   };
 
   const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const toolRefs = await toolRefsFor(build, tools ?? []);
-        // Only the keys given: an agent made without them is written exactly as before.
-        const setup = {
-          ...(instructions ? { instructions } : null),
-          ...(harness ? { harness } : null),
-          ...(models && models.length > 1 ? { models } : null),
-          ...(toolRefs.length ? { toolRefs } : null),
-          ...(memory?.trim() ? { memory } : null),
-          ...(runs ? { runs } : null),
-          ...(session ? { session } : null),
-        };
-        /** CA-13 P6, CA-15 P7: what the agent says beyond its setup, written to the agent itself (the one that leads a team). */
-        const dressed = async (agent: BuildNode): Promise<BuildNode> => {
-          let made = agent;
-          if (helpers?.length || traceUrl) made = await setRuntimeFields(made, { ...(helpers?.length ? { helpers } : null), ...(traceUrl ? { traceUrl } : null) });
-          const extras = { ...(limits?.length ? { limits } : null), ...(output?.trim() ? { output } : null), ...(sample?.trim() ? { sample } : null) };
-          return Object.keys(extras).length > 0 ? setExtras(made, extras) : made;
-        };
-        if (kind === "agent") {
-          const created = await dressed(await addAgent(build, nodes.current(), { name, model, ...setup }));
-          nodes.record(created.id, created);
-          noteTool(build, harness);
-          return created.id;
-        }
-        const { team, agent } = await addTeam(build, nodes.current(), { name, model, ...setup });
-        await dressed(agent);
-        const made = pattern ? await setExtras(team, { pattern }) : team;
+    attempt(`${capital(kind)} not added`, async () => {
+      const build = await latest.current.ensureBuild();
+      const toolRefs = await toolRefsFor(build, tools ?? []);
+      // Only the keys given: an agent made without them is written exactly as before.
+      const setup = {
+        ...(instructions ? { instructions } : null),
+        ...(harness ? { harness } : null),
+        ...(models && models.length > 1 ? { models } : null),
+        ...(toolRefs.length ? { toolRefs } : null),
+        ...(memory?.trim() ? { memory } : null),
+        ...(runs ? { runs } : null),
+        ...(session ? { session } : null),
+      };
+      /** CA-13 P6, CA-15 P7: what the agent says beyond its setup, written to the agent itself (the one that leads a team). */
+      const dressed = async (agent: BuildNode): Promise<BuildNode> => {
+        let made = agent;
+        if (helpers?.length || traceUrl) made = await setRuntimeFields(made, { ...(helpers?.length ? { helpers } : null), ...(traceUrl ? { traceUrl } : null) });
+        const extras = { ...(limits?.length ? { limits } : null), ...(output?.trim() ? { output } : null), ...(sample?.trim() ? { sample } : null) };
+        return Object.keys(extras).length > 0 ? setExtras(made, extras) : made;
+      };
+      if (kind === "agent") {
+        const created = await dressed(await addAgent(build, nodes.current(), { name, model, ...setup }));
+        nodes.record(created.id, created);
         noteTool(build, harness);
-        nodes.record(made.id, made);
-        return made.id;
-      })
-      .catch((cause) => {
-        failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Teams need the Deploy queue item from UI-P61." : `Couldn't add that ${kind}. Try again.`)(cause);
-        return null;
-      });
+        return created.id;
+      }
+      const { team, agent } = await addTeam(build, nodes.current(), { name, model, ...setup });
+      await dressed(agent);
+      const made = pattern ? await setExtras(team, { pattern }) : team;
+      noteTool(build, harness);
+      nodes.record(made.id, made);
+      return made.id;
+    }, null);
 
   /** CA-13 P2: Add › Decision. */
   const addDecisionTile = (input: DecisionInput) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const created = await addDecision(build, nodes.current(), input);
-        nodes.record(created.id, created);
-        return created.id;
-      })
-      .catch((cause) => {
-        failed(cause instanceof Error && /CA-13/.test(cause.message) ? DECISION_TYPE_MISSING : "Couldn't add that decision. Try again.")(cause);
-        return null;
-      });
+    attempt("Decision not added", async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await addDecision(build, nodes.current(), input);
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
 
-  const setDecisionOf = (id: string, input: DecisionInput) => void writeStep(id, "Couldn't save that decision. Try again.", (node) => setDecision(node, input));
+  const setDecisionOf = (id: string, input: DecisionInput) => void writeStep(id, "Decision not saved", (node) => setDecision(node, input));
   const setRunsWhenOf = (id: string, steps: readonly Step[], runsWhen: RunsWhen | null) =>
-    void writeStep(id, "Couldn't change when that runs. Try again.", (node) => setRunsWhen(node, steps, runsWhen));
+    void writeStep(id, "Trigger not changed", (node) => setRunsWhen(node, steps, runsWhen));
 
-  const setRuntimeOf = (id: string, patch: RuntimePatch) => void writeStep(id, "Couldn't save that. Try again.", (node) => setRuntimeFields(node, patch));
+  const setRuntimeOf = (id: string, patch: RuntimePatch) => void writeStep(id, "Runtime not saved", (node) => setRuntimeFields(node, patch));
 
   const addAgentTo = (teamId: string, model: string) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        return (await addAgent(build, nodes.current(), { model, parentId: teamId })).id;
-      })
-      .catch((cause) => {
-        failed("Couldn't add that agent. Try again.")(cause);
-        return null;
-      });
+    attempt("Agent not added", async () => {
+      const build = await latest.current.ensureBuild();
+      return (await addAgent(build, nodes.current(), { model, parentId: teamId })).id;
+    }, null);
 
   const addPromptTo = (agentId: string, text: string) =>
-    nodes
-      .run(async () => {
-        const agent = findNode(nodes.current(), agentId);
-        if (!agent) return false;
-        await addAgentPrompt(rowOf(agent), nodes.current(), text);
-        return true;
-      })
-      .catch((cause) => {
-        failed("Couldn't add that prompt. Try again.")(cause);
-        return false;
-      });
+    attempt("Prompt not added", async () => {
+      const agent = findNode(nodes.current(), agentId);
+      if (!agent) return false;
+      await addAgentPrompt(rowOf(agent), nodes.current(), text);
+      return true;
+    }, false);
 
   const setAgent = (id: string, { model, harness, models, tools, memory }: AgentSetupInput) =>
-    void nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const toolRefs = await toolRefsFor(build, tools ?? []);
-        const node = findNode(nodes.current(), id);
-        if (!node) return;
-        nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs, ...(memory !== undefined ? { memory } : null) }));
-        noteTool(build, harness);
-      })
-      .catch(failed("Couldn't save that agent. Try again."));
+    void attempt("Agent not saved", async () => {
+      const build = await latest.current.ensureBuild();
+      const toolRefs = await toolRefsFor(build, tools ?? []);
+      const node = findNode(nodes.current(), id);
+      if (!node) return;
+      nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs, ...(memory !== undefined ? { memory } : null) }));
+      noteTool(build, harness);
+    }, undefined);
 
   const setInstructionsOf = (agentId: string, text: string) =>
-    void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
+    void writeStep(agentId, "Instructions not saved", (node) => setInstructions(node, text));
 
   const addManual = ({ tool, text, where, lines, file, afterId, session }: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null }) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        let mediaId: string | undefined;
-        if (file) mediaId = (await uploadMedia({ buildId: build, file })).id;
-        // `addManualStep` places it last; then it moves straight after the selected step.
-        const created = await addManualStep(build, nodes.current(), { tool, text, where, lines, media_id: mediaId, session });
-        nodes.record(created.id, created);
-        if (where?.kind === "app" && where.name) noteTool(build, where.name);
-        else if (tool) noteTool(build, tool);
-        if (afterId) {
-          for (const step of await placeStepAfter(build, nodes.current(), created.id, afterId)) {
-            const node = findTop(nodes.current(), step.id);
-            if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
-          }
+    attempt("Manual step not added", async () => {
+      const build = await latest.current.ensureBuild();
+      let mediaId: string | undefined;
+      if (file) mediaId = (await uploadMedia({ buildId: build, file })).id;
+      // `addManualStep` places it last; then it moves straight after the selected step.
+      const created = await addManualStep(build, nodes.current(), { tool, text, where, lines, media_id: mediaId, session });
+      nodes.record(created.id, created);
+      if (where?.kind === "app" && where.name) noteTool(build, where.name);
+      else if (tool) noteTool(build, tool);
+      if (afterId) {
+        for (const step of await placeStepAfter(build, nodes.current(), created.id, afterId)) {
+          const node = findTop(nodes.current(), step.id);
+          if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
         }
-        return created.id;
-      })
-      .catch((cause) => {
-        failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Manual steps need the Deploy queue item from UI-P61." : "Couldn't add that manual step. Try again.")(cause);
-        return null;
-      });
+      }
+      return created.id;
+    }, null);
 
   const addCodeSteps = ({ steps, tool, model, session }: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null; session?: string | null }) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        let first: string | null = null;
-        for (const step of steps) {
-          const created = await addCode(build, nodes.current(), { ...step, tool, model, session });
-          nodes.record(created.id, created);
-          first ??= created.id;
-        }
-        if (first) noteTool(build, tool);
-        return first;
-      })
-      .catch((cause) => {
-        failed(cause instanceof Error && /100,000/.test(cause.message) ? "Code is at most 100,000 characters. Upload it as a file instead." : "Couldn't add that code. Try again.")(cause);
-        return null;
-      });
+    attempt((cause) => (cause instanceof Error && /100,000/.test(cause.message) ? "Code: 100,000 characters max" : "Code not added"), async () => {
+      const build = await latest.current.ensureBuild();
+      let first: string | null = null;
+      for (const step of steps) {
+        const created = await addCode(build, nodes.current(), { ...step, tool, model, session });
+        nodes.record(created.id, created);
+        first ??= created.id;
+      }
+      if (first) noteTool(build, tool);
+      return first;
+    }, null);
 
   const addCheckStep = (input: CheckInput) =>
-    nodes
-      .run(async () => {
+    attempt(
+      (cause) => {
+        // A refusal is said in its own plain words; anything else, once.
+        const said = cause instanceof Error ? refusalIn(cause.message) : undefined;
+        return said ?? "Check not added";
+      },
+      async () => {
         const build = await latest.current.ensureBuild();
         const created = await addCheck(build, nodes.current(), input);
         nodes.record(created.id, created);
         return created.id;
-      })
-      .catch((cause) => {
-        // A refusal is said in its own plain words; anything else, once.
-        const said = cause instanceof Error ? /(Say what|at most|whole numbers|can't be more|is a date)[^.]*\./.exec(cause.message)?.[0] : undefined;
-        failed(said ?? "Couldn't add that check. Try again.")(cause);
-        return null;
-      });
+      },
+      null,
+    );
 
   const claimSession = (stepIds: readonly string[], meta: SessionMeta) =>
-    nodes
-      .run(async () => {
-        const build = await latest.current.ensureBuild();
-        const key = newSessionKey();
-        await setSessionMeta(build, key, meta);
-        for (const id of stepIds) {
-          const node = findTop(nodes.current(), id);
-          if (node) nodes.record(node.id, await setStepSession(rowOf(node), key));
-        }
-        await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build) });
-        return key;
-      })
-      .catch((cause) => {
-        failed("Couldn't save that session. Try again.")(cause);
-        return null;
-      });
+    attempt("Session not saved", async () => {
+      const build = await latest.current.ensureBuild();
+      const key = newSessionKey();
+      await setSessionMeta(build, key, meta);
+      for (const id of stepIds) {
+        const node = findTop(nodes.current(), id);
+        if (node) nodes.record(node.id, await setStepSession(rowOf(node), key));
+      }
+      await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build) });
+      return key;
+    }, null);
 
   const setSessionOf = (id: string, session: string | null) =>
-    void writeStep(id, "Couldn't move that to the session. Try again.", (node) => setStepSession(node, session));
+    void writeStep(id, "Tile not moved", (node) => setStepSession(node, session));
 
   const nest = (id: string, parentId: string | null, index: number) =>
-    nodes
-      .run(async () => {
+    attempt(
+      (cause) => {
+        // A refusal is one of the guards' own sentences; anything else is said once.
+        const said = cause instanceof Error ? Object.values(NEST_COPY).find((line) => cause.message.includes(line)) : undefined;
+        return said ?? "Tile not moved";
+      },
+      async () => {
         const build = latest.current.buildId;
         if (!build) return false;
         for (const move of await nestStep(build, nodes.current(), id, parentId, index)) {
@@ -934,49 +893,38 @@ export function useComposePrompts({
           if (node) nodes.record(node.id, { ...rowOf(node), parent_id: move.parent_id, position: move.position });
         }
         return true;
-      })
-      .catch((cause) => {
-        // A refusal is one of the guards' own sentences; anything else is said once.
-        const said = cause instanceof Error ? Object.values(NEST_COPY).find((line) => cause.message.includes(line)) : undefined;
-        failed(said ?? "Couldn't move that. Try again.")(cause);
-        return false;
-      });
+      },
+      false,
+    );
 
   const keepSentWith = ({ stepId, source, language, filename }: CodeSuggestion) =>
-    void nodes
-      .run(async () => {
-        const build = latest.current.buildId;
-        if (!build) return;
-        const created = await addCode(build, nodes.current(), { source, language, filename, parentId: stepId });
-        nodes.record(created.id, created);
-      })
-      .catch(failed("Couldn't keep that inside. Try again."));
-  const ignoreSentWith = (stepId: string, key: string) => void writeStep(stepId, "Couldn't ignore that. Try again.", (node) => dismissSentWith(node, key));
+    void attempt("Tile not kept inside", async () => {
+      const build = latest.current.buildId;
+      if (!build) return;
+      const created = await addCode(build, nodes.current(), { source, language, filename, parentId: stepId });
+      nodes.record(created.id, created);
+    }, undefined);
+  const ignoreSentWith = (stepId: string, key: string) => void writeStep(stepId, "Suggestion not ignored", (node) => dismissSentWith(node, key));
 
   const setConnection = (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) =>
-    void writeStep(id, "Couldn't save how it was connected. Try again.", (node) => setToolConnection(node, connection, runsAt));
+    void writeStep(id, "Connection not saved", (node) => setToolConnection(node, connection, runsAt));
 
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) =>
-    void writeStep(id, "Couldn't save that. Try again.", async (node) => {
+    void writeStep(id, "Manual step not saved", async (node) => {
       const saved = await setManualFields(node, fields);
       noteTool(latest.current.buildId, fields.tool);
       return saved;
     });
 
   const setManualPicture = (id: string, file: File) =>
-    nodes
-      .run(async () => {
-        if (mediaKindFor(file.type) !== "image" || file.size > MEDIA_MAX_BYTES) throw new Error("not a picture that can be added");
-        const build = await latest.current.ensureBuild();
-        const media = await uploadMedia({ buildId: build, file });
-        const node = findNode(nodes.current(), id);
-        if (node) nodes.record(node.id, await setManualFields(rowOf(node), { media_id: media.id }));
-        return true;
-      })
-      .catch((cause) => {
-        failed(`Couldn't add ${file.name}. Try again.`)(cause);
-        return false;
-      });
+    attempt(`${file.name} not added`, async () => {
+      if (mediaKindFor(file.type) !== "image" || file.size > MEDIA_MAX_BYTES) throw new Error("not a picture that can be added");
+      const build = await latest.current.ensureBuild();
+      const media = await uploadMedia({ buildId: build, file });
+      const node = findNode(nodes.current(), id);
+      if (node) nodes.record(node.id, await setManualFields(rowOf(node), { media_id: media.id }));
+      return true;
+    }, false);
 
   const rows = useMemo<ComposePromptRow[]>(() => {
     const saved = promptNodes(nodes.tree)

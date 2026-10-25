@@ -128,7 +128,7 @@ describe("when it cannot be added", () => {
     mount(`/compose/${DRAFT}`, { faults: [{ path: /^\/rest\/v1\/build_nodes/, method: "POST", answer: PG.rlsInsert("build_nodes") }] });
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
-    await waitFor(() => expect(line()).toBe("Couldn't add that session. Try again."), { timeout: 15_000 });
+    await waitFor(() => expect(line()).toBe("Session not added"), { timeout: 15_000 });
     await waitFor(() => expect(screen.queryByTestId("arriving-session")).toBeNull());
     expect(screen.queryByTestId("skeleton-layer")).toBeNull();
   });

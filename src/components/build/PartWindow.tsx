@@ -219,7 +219,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={(id) => props.onGo(refTo({ kind: "node", id }))} />
           <CodeLines text={step.text} testId="part-text" label="Code" empty={PART_WINDOW_COPY.nothing} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button variant="secondary" size={28} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the code and copy it."))}>
+            <Button variant="secondary" size={28} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Code not copied"))}>
               {PART_WINDOW_COPY.copyCode}
             </Button>
           </div>
@@ -331,7 +331,7 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
     return found ? stepTitle(found) : undefined;
   };
   const copy = helpers.length || tiles.length || step.harness ? agentCopy(agentSpecOf(step, names), tiles, decisionName) : null;
-  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the text and copy it."));
+  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Text not copied"));
   const shape = step.outputShape;
   const fragment = shape ? shapeFragment(shape) : null;
   return (
@@ -428,7 +428,7 @@ function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps
   const tiles = calledFromTiles(step, parts);
   const read = facts.stateFrom ? parts.find((part) => part.id === facts.stateFrom) : undefined;
   const answered = facts.answer ?? null;
-  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Couldn't copy. Select the text and copy it."));
+  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Text not copied"));
   return (
     <>
       <Facts facts={[decisionHeadline(facts), facts.via === "adapter" ? "Through an adapter" : null].filter((fact): fact is string => Boolean(fact))} />

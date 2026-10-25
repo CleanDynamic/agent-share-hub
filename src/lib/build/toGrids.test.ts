@@ -111,7 +111,7 @@ describe("checkThread and the grid", () => {
   it("takes alt text up to 1,000 characters", () => {
     expect(ALT_MAX).toBe(1000);
     expect(checkThread(doc(p("x"), grid(null, pic("a", { alt: "a".repeat(1000) }))))).toEqual([]);
-    expect(codes(doc(p("x"), grid(null, pic("a", { alt: "a".repeat(1001) }))))).toEqual(["Post 1 has a picture description of 1001 characters. Descriptions are at most 1,000; shorten it."]);
+    expect(codes(doc(p("x"), grid(null, pic("a", { alt: "a".repeat(1001) }))))).toEqual(["Post 1 picture description: 1,000 characters max"]);
   });
 
   it("refuses something other than a picture in a grid", () => {

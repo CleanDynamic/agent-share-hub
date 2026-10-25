@@ -247,7 +247,7 @@ export const lineCleaner =
   (what: string, max: number): Cleaner =>
   (value) => {
     const said = clean(value);
-    if (said.length > max) throw new Error(`${what} is at most ${max} characters.`);
+    if (said.length > max) throw new Error(`${what}: ${max} characters max`);
     return said || null;
   };
 
@@ -256,18 +256,18 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
   agent_config: {
     limits: (value) => {
       const lines = Array.isArray(value) ? cleanList(value, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) : typeof value === "string" ? linesOf(value) : [];
-      if (lines.length > LIMITS_MAX) throw new Error(`Limits are at most ${LIMITS_MAX}, one per line.`);
-      if (lines.some((line) => line.length > LIMIT_LINE_MAX)) throw new Error(`A limit is at most ${LIMIT_LINE_MAX} characters.`);
+      if (lines.length > LIMITS_MAX) throw new Error(`Limits: ${LIMITS_MAX} max, one per line`);
+      if (lines.some((line) => line.length > LIMIT_LINE_MAX)) throw new Error(`Each limit: ${LIMIT_LINE_MAX} characters max`);
       return lines.length > 0 ? lines : null;
     },
     output: (value) => {
       const said = clean(value);
-      if (said.length > OUTPUT_MAX) throw new Error(`Output and destination is at most ${OUTPUT_MAX} characters.`);
+      if (said.length > OUTPUT_MAX) throw new Error(`Output and destination: ${OUTPUT_MAX} characters max`);
       return said || null;
     },
     sample: (value) => {
       const said = clean(value);
-      if (said.length > SAMPLE_MAX) throw new Error(`The sample transcript is at most ${SAMPLE_MAX.toLocaleString("en-GB")} characters.`);
+      if (said.length > SAMPLE_MAX) throw new Error(`Sample transcript: ${SAMPLE_MAX.toLocaleString("en-GB")} characters max`);
       return said || null;
     },
   },
@@ -280,15 +280,15 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     scoring: (value) => {
       if (!isRecord(value) || !SCORING_HOWS.includes(value.how as ScoringHow)) return null;
       const target = value.how === "metric" ? clean(value.target) : "";
-      if (target.length > SCORING_TARGET_MAX) throw new Error(`The target is at most ${SCORING_TARGET_MAX} characters.`);
+      if (target.length > SCORING_TARGET_MAX) throw new Error(`Target: ${SCORING_TARGET_MAX} characters max`);
       return { how: value.how as ScoringHow, ...(target ? { target } : null) };
     },
     model_tested: (value) => {
       if (!isRecord(value)) return null;
       const model = clean(value.model);
       const version = clean(value.version);
-      if (model.length > MODEL_TESTED_MAX) throw new Error(`The model tested is at most ${MODEL_TESTED_MAX} characters.`);
-      if (version.length > MODEL_VERSION_MAX) throw new Error(`The version is at most ${MODEL_VERSION_MAX} characters.`);
+      if (model.length > MODEL_TESTED_MAX) throw new Error(`Model tested: ${MODEL_TESTED_MAX} characters max`);
+      if (version.length > MODEL_VERSION_MAX) throw new Error(`Version: ${MODEL_VERSION_MAX} characters max`);
       return model || version ? { ...(model ? { model } : null), ...(version ? { version } : null) } : null;
     },
     evidence: (value) => {
@@ -305,13 +305,13 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     permissions: (value) => (TOOL_PERMISSIONS.includes(value as ToolPermission) ? (value as ToolPermission) : null),
     plan: (value) => {
       const plan = clean(value);
-      if (plan.length > TOOL_PLAN_MAX) throw new Error(`The required plan is at most ${TOOL_PLAN_MAX} characters.`);
+      if (plan.length > TOOL_PLAN_MAX) throw new Error(`Required plan: ${TOOL_PLAN_MAX} characters max`);
       return plan || null;
     },
     setup: (value) => {
       const lines = Array.isArray(value) ? cleanList(value, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) : typeof value === "string" ? linesOf(value) : [];
-      if (lines.length > TOOL_SETUP_MAX) throw new Error(`Setup steps are at most ${TOOL_SETUP_MAX}.`);
-      if (lines.some((line) => line.length > TOOL_SETUP_LINE_MAX)) throw new Error(`A setup step is at most ${TOOL_SETUP_LINE_MAX} characters.`);
+      if (lines.length > TOOL_SETUP_MAX) throw new Error(`Setup steps: ${TOOL_SETUP_MAX} max`);
+      if (lines.some((line) => line.length > TOOL_SETUP_LINE_MAX)) throw new Error(`Setup step: ${TOOL_SETUP_LINE_MAX} characters max`);
       return lines.length > 0 ? lines : null;
     },
     alternatives: (value) => {
@@ -330,7 +330,7 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
   prompt: {
     settings: (value) => {
       const raw = isRecord(value) ? value : {};
-      if (clean(raw.instructions).length > SETTINGS_INSTRUCTIONS_MAX) throw new Error(`The custom instructions are at most ${SETTINGS_INSTRUCTIONS_MAX} characters.`);
+      if (clean(raw.instructions).length > SETTINGS_INSTRUCTIONS_MAX) throw new Error(`Custom instructions: ${SETTINGS_INSTRUCTIONS_MAX} characters max`);
       const settings = settingsOf(raw);
       return settings ? { model: settings.model, effort: settings.effort, instructions: settings.instructions } : null;
     },

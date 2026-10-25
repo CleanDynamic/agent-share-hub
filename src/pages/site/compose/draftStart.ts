@@ -31,7 +31,9 @@ export function alreadyTold(cause: unknown): boolean {
   return false;
 }
 
-/** The caller's own failure line, unless the maker has been told already. */
-export function sayFailed(cause: unknown, line: string) {
-  if (!alreadyTold(cause)) toast.error(line);
+/** The caller's own failure line, unless the maker has been told already. `retry` puts Retry on the toast: it runs the same operation again. */
+export function sayFailed(cause: unknown, line: string, retry?: () => void) {
+  if (alreadyTold(cause)) return;
+  if (retry) toast.error(line, { action: { label: "Retry", onClick: retry } });
+  else toast.error(line);
 }

@@ -115,7 +115,7 @@ describe("the Add manual step dialog (CA-12 P10)", () => {
     const props = open();
     where("Phone");
     picture("application/pdf", 100, "spec.pdf");
-    expect(screen.getByRole("alert").textContent).toBe("spec.pdf is not a picture.");
+    expect(screen.getByRole("alert").textContent).toBe("spec.pdf: image only");
     const file = picture("image/png");
     expect(screen.queryByRole("alert")).toBeNull();
     fireEvent.change(line(), { target: { value: "Laid out the hero" } });

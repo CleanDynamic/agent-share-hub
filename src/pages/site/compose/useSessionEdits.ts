@@ -146,13 +146,14 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** An old build's run of typed prompts is saved as a session made here first; the key it has after. */
   const stable = useCallback(async (key: string): Promise<string | null> => (isLegacySession(key) ? latest.current.claim(key) : key), []);
 
+  /** A session edit: when it fails the maker is told ("Session not moved") with Retry, which runs the same edit again. */
   const guard = useCallback(
-    async (line: string, task: () => Promise<unknown>) => {
+    async function again(line: string, task: () => Promise<unknown>): Promise<void> {
       try {
         await task();
       } catch (cause) {
         console.error("[Sessions]", line, cause);
-        sayFailed(cause, line);
+        sayFailed(cause, line, () => void again(line, task));
       }
     },
     [],
@@ -161,7 +162,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** A session's title: trimmed, 1 to 80 characters, or none. */
   const onTitle = useCallback(
     (key: string, title: string) =>
-      void guard("Couldn't save that title. Try again.", () => track(`Changed the title of Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(), async () => {
+      void guard("Title not saved", () => track(`Changed the title of Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(), async () => {
         const real = await stable(key);
         const { buildId, made, groups } = latest.current;
         if (!real || !buildId) return;
@@ -182,7 +183,7 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   const move = useCallback(
     (key: string, next: string[], from: number, to: number) =>
-      guard("Couldn't move that session. Try again.", () =>
+      guard("Session not moved", () =>
         track(`Moved Session ${from}${to < from ? " up" : " down"}`, async () => {
           await applyLayout({ order: next });
           sayMoved(from, to);
@@ -280,7 +281,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Add a part". Resolves the new part's key. */
   const onAddPart = useCallback(async (): Promise<string | null> => {
     let key: string | null = null;
-    await guard("Couldn't add a part. Try again.", () =>
+    await guard("Part not added", () =>
       track("Added a part", async () => {
         const change = await applyParts((making) => addWorkstream(making, editableKeys()));
         key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
@@ -290,12 +291,12 @@ export function useSessionEdits(input: SessionEditsInput) {
     return key;
   }, [applyParts, editableKeys, guard, track]);
 
-  const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Couldn't save that name. Try again.", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
-  const onPartFold = useCallback((key: string, collapsed: boolean) => void editPart("Couldn't save that. Try again.", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
-  const onPartColour = useCallback((key: string, colour: string | null) => editPart("Couldn't save that colour. Try again.", (stored) => withWorkstream(stored, key, { colour: colour ?? undefined })), [editPart]);
+  const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Name not saved", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
+  const onPartFold = useCallback((key: string, collapsed: boolean) => void editPart("Fold not saved", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
+  const onPartColour = useCallback((key: string, colour: string | null) => editPart("Colour not saved", (stored) => withWorkstream(stored, key, { colour: colour ?? undefined })), [editPart]);
   const onPartStartsAfter = useCallback(
     (key: string, session: string | null) =>
-      void track(`Changed when ${titleOf(key)} starts`, () => editPart("Couldn't save that. Try again.", (stored) => {
+      void track(`Changed when ${titleOf(key)} starts`, () => editPart("Start not saved", (stored) => {
         const { made, groups } = latest.current;
         const parts = workstreamsOf(made, orderKeys(groups));
         if (session && !startsAfterChoices(key, parts).includes(session)) return stored;
@@ -308,7 +309,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** Move up and Move down on a part's head. */
   const onPartMove = useCallback(
     (key: string, by: -1 | 1) =>
-      guard("Couldn't move that part. Try again.", () =>
+      guard("Part not moved", () =>
         track(`Moved ${titleOf(key)} ${by === -1 ? "up" : "down"}`, async () => {
           const done = await applyParts((making) => moveWorkstream(making, editableKeys(), key, by));
           if (done) latest.current.say(`${titleOf(key)} moved ${by === -1 ? "up" : "down"}.`);
@@ -320,7 +321,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** A part's head dropped on another's. */
   const onDropPart = useCallback(
     (key: string, over: string) =>
-      guard("Couldn't move that part. Try again.", () =>
+      guard("Part not moved", () =>
         track(`Moved ${titleOf(key)}`, async () => {
           const done = await applyParts((making) => droppedWorkstream(making, editableKeys(), key, over));
           if (done) latest.current.say(`${titleOf(key)} moved.`);
@@ -334,7 +335,7 @@ export function useSessionEdits(input: SessionEditsInput) {
     (key: string) => {
       const sessionsIn = [...(latest.current.parts?.partOf ?? new Map<string, string>())].filter(([, part]) => part === key).length;
       const removedMeta: RemovedMeta = { kind: "part", badge: /^Part (\S+)/.exec(titleOf(key))?.[1] ?? "P", name: titleOf(key).split(" · ")[0], ...(sessionsIn > 0 ? { detail: `${sessionsIn} ${sessionsIn === 1 ? "session" : "sessions"}` } : null) };
-      void guard("Couldn't remove that part. Try again.", () =>
+      void guard("Part not removed", () =>
         track(
           (said: string | null) => said ?? "",
           async () => {
@@ -367,7 +368,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Move to part…", or a session's head dropped on a part: to the end of that part, or before `before`. */
   const moveToPart = useCallback(
     (key: string, to: string, before?: string) =>
-      guard("Couldn't move that session. Try again.", async () => {
+      guard("Session not moved", async () => {
         if (isLegacySession(key)) return;
         await track(
           (said: string | null) => said ?? "",
@@ -390,7 +391,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Same stage as the session above" in a session's menu. */
   const onWithAbove = useCallback(
     (key: string, on: boolean) =>
-      void guard("Couldn't save that. Try again.", () =>
+      void guard("Stage not saved", () =>
         track(`${on ? "Put" : "Took"} Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""} ${on ? "at the same stage as" : "off the stage of"} the session above`, async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId || isLegacySession(key)) return;
@@ -408,7 +409,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** CA-17 P4, P6: Create a map, Remove map, the direction and Show on build page. */
   const onMapSettings = useCallback(
     (next: MapSettings) =>
-      void guard("Couldn't save that. Try again.", () =>
+      void guard("Map settings not saved", () =>
         track(next.on ? "Changed the map" : "Removed the map", async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId) return;
@@ -422,7 +423,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Label parts": 1, 2, 3 or A, B, C for the whole build. */
   const onLabels = useCallback(
     (labels: PartLabels) =>
-      void guard("Couldn't save that. Try again.", () =>
+      void guard("Labels not saved", () =>
         track(`Labelled the parts ${labels === "letters" ? "A, B, C" : "1, 2, 3"}`, async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId) return;
@@ -442,7 +443,7 @@ export function useSessionEdits(input: SessionEditsInput) {
    */
   const onRemoveSessions = useCallback(
     (keys: readonly string[], mode: "keep" | "all", alsoTiles: readonly string[] = []): Promise<void> =>
-      guard("Couldn't remove that session. Try again.", async () => {
+      guard("Session not removed", async () => {
         const removedMeta: RemovedMeta = { kind: "session", badge: "S", name: "Session" };
         await track(
           (said: string | null) => said ?? "",
@@ -515,7 +516,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Merge with the session above": this session's tiles go to the end of the one above, and this one is gone. */
   const onMergeUp = useCallback(
     (key: string) =>
-      void guard("Couldn't merge those sessions. Try again.", () =>
+      void guard("Sessions not merged", () =>
         track(
           (said: string | null) => said ?? "",
           async () => {
@@ -549,7 +550,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Split session here": this tile and every tile after it start a new session right after this one. */
   const onSplitHere = useCallback(
     (stepId: string) =>
-      void guard("Couldn't split that session. Try again.", () =>
+      void guard("Session not split", () =>
         track(
           (said: string | null) => said ?? "",
           async () => {
@@ -584,7 +585,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   const onMoveTile = useCallback(
     async (id: string, key: string, options: { order?: readonly string[]; sentence?: string; said?: string; notice?: boolean; failed?: string } = {}): Promise<boolean> => {
       let ok = false;
-      await guard(options.failed ?? "Couldn't move that tile. Try again.", async () => {
+      await guard(options.failed ?? "Tile not moved", async () => {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
@@ -604,7 +605,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** CA-20 P3: "Move to…" on the selection bar: several tiles to the end of one session, as one step. */
   const onMoveTiles = useCallback(
     async (ids: readonly string[], key: string): Promise<void> => {
-      await guard("Couldn't move those tiles. Try again.", async () => {
+      await guard("Tiles not moved", async () => {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
@@ -622,7 +623,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** CA-20 P3: "Move to…" with sessions chosen: each to the end of a part, as one step. */
   const onMoveSessionsToPart = useCallback(
     (keys: readonly string[], to: string): Promise<void> =>
-      guard("Couldn't move those sessions. Try again.", async () => {
+      guard("Sessions not moved", async () => {
         const moving = keys.filter((key) => !isLegacySession(key));
         if (moving.length === 0) return;
         await track(`Moved ${moving.length === 1 ? "a session" : `${moving.length} sessions`} to ${titleOf(to)}`, async () => {

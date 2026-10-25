@@ -118,7 +118,7 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
   const choose = (list: FileList | null) => {
     const picked = list?.[0];
     if (!picked) return;
-    if (mediaKindFor(picked.type) !== "image") setFileError(`${picked.name} is not a picture.`);
+    if (mediaKindFor(picked.type) !== "image") setFileError(`${picked.name}: image only`);
     else if (picked.size > MEDIA_MAX_BYTES) setFileError(`${picked.name}: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
     else {
       setFileError(null);

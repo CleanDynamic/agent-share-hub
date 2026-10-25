@@ -134,11 +134,11 @@ export function referenceGroupsRefusal(groups: readonly ReferenceGroup[]): strin
     ids.add(group.id);
     if (normaliseHex(group.colour) !== group.colour) return "A colour is written like #7FA7D9.";
     if (group.name !== undefined && (group.name.trim() !== group.name || !group.name || group.name.length > GROUP_NAME_MAX)) return `A group name is 1 to ${GROUP_NAME_MAX} characters.`;
-    if (group.notes !== undefined && group.notes.length > GROUP_NOTES_MAX) return `Notes are at most ${GROUP_NOTES_MAX.toLocaleString("en-US")} characters.`;
+    if (group.notes !== undefined && group.notes.length > GROUP_NOTES_MAX) return `Notes: ${GROUP_NOTES_MAX.toLocaleString("en-US")} characters max`;
     if (group.members.length < GROUP_MIN_MEMBERS) return "2 components min";
     for (const member of group.members) {
       if (!isMemberRef(member)) return "A group holds parts, sessions and tiles only.";
-      if (taken.has(member)) return "A component is in one group at most.";
+      if (taken.has(member)) return "Component: one group max";
       taken.add(member);
     }
   }

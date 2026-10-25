@@ -142,7 +142,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         .catch((cause: unknown) => {
           creating.current = null;
           console.error(errorLine("[Compose] createBuild failed", cause));
-          toast.error("Couldn't start your draft. Try again.");
+          toast.error("Draft not started");
           // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
           throw new DraftNotStartedError(cause);
         });
@@ -226,7 +226,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
     } catch (cause) {
       console.error("[Compose] cover failed", cause);
-      setMediaError("That didn't add. Try again.");
+      setMediaError("Cover not added");
     } finally {
       setAdding(null);
     }
@@ -240,7 +240,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) });
     } catch (cause) {
       console.error("[Compose] cover removal failed", cause);
-      setMediaError("That didn't remove. Try again.");
+      setMediaError("Cover not removed");
     }
   };
 
@@ -295,7 +295,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
   }, [nodes.tree]);
   const missing = useMemo(() => missingForPublish({ title, completeness: compose.completeness, hasPrompt }), [title, compose.completeness, hasPrompt]);
 
-  const onPublish = async () => {
+  const onPublish = async (): Promise<void> => {
     // What is still waiting to be written goes first, and is counted.
     await Promise.all([prompts.flush(), details.flush()]);
     const counted = compose.build ? computeCompleteness(compose.build, nodes.current(), compose.nodeTypes) : null;
@@ -312,7 +312,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(row.id) });
     } catch (cause) {
       console.error("[Compose] publish failed", cause);
-      toast.error("Couldn't publish. Try again.");
+      toast.error("Build not published", { action: { label: "Retry", onClick: () => void onPublish() } });
     }
   };
 

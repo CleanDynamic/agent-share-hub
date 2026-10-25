@@ -192,8 +192,8 @@ export function draftToInput(draft: DecisionDraft): { input: DecisionInput } | {
   }
   const examples = draft.examples.map((example) => ({ input: example.input.trim(), output: example.output.trim() })).filter((example) => example.input || example.output);
   if (examples.some((example) => !example.input || !example.output)) return { error: "Each example needs an input and an expected output." };
-  if (examples.length > EXAMPLES_MAX) return { error: `A decision keeps ${EXAMPLES_MAX} examples at most.` };
-  if (examples.some((example) => example.input.length > EXAMPLE_TEXT_MAX || example.output.length > EXAMPLE_TEXT_MAX)) return { error: `An example is at most ${EXAMPLE_TEXT_MAX} characters on each side.` };
+  if (examples.length > EXAMPLES_MAX) return { error: `Examples: ${EXAMPLES_MAX} max` };
+  if (examples.some((example) => example.input.length > EXAMPLE_TEXT_MAX || example.output.length > EXAMPLE_TEXT_MAX)) return { error: `Each example: ${EXAMPLE_TEXT_MAX} characters max` };
   let lowConfidence: LowConfidence | null = null;
   if (draft.lowConfidence.mode === "escalate") lowConfidence = { escalate: true };
   else if (draft.lowConfidence.mode === "threshold") {

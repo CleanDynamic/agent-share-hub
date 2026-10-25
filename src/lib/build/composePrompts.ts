@@ -151,7 +151,7 @@ export async function addWrittenPrompt({
   const payload: Record<string, string> = { text };
   const named = tool?.trim();
   if (named) {
-    if (named.length > PROMPT_TOOL_MAX) throw buildLayerError("addWrittenPrompt", new Error(`A tool is at most ${PROMPT_TOOL_MAX} characters.`));
+    if (named.length > PROMPT_TOOL_MAX) throw buildLayerError("addWrittenPrompt", new Error(`Tool: ${PROMPT_TOOL_MAX} characters max`));
     payload.tool = toolFor(named)?.id ?? named;
   }
   if (model?.trim()) payload.model = model.trim();
@@ -196,7 +196,7 @@ export const REPLY_MAX = 4000;
 export async function setPromptReply(node: BuildNode, reply: string | null): Promise<BuildNode> {
   if (node.type !== PROMPT_TYPE) throw buildLayerError("setPromptReply", new Error("Only a prompt has something that came back."));
   const said = (reply ?? "").trim();
-  if (said.length > REPLY_MAX) throw buildLayerError("setPromptReply", new Error(`What came back is at most ${REPLY_MAX} characters.`));
+  if (said.length > REPLY_MAX) throw buildLayerError("setPromptReply", new Error(`What came back: ${REPLY_MAX} characters max`));
   const payload = { ...payloadOf(node) };
   if (said) payload.reply = said;
   else delete payload.reply;

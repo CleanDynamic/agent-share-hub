@@ -70,7 +70,7 @@ describe("Session window › What it cost, Show readers and How did you work?", 
     fireEvent.blur(field);
     save();
     expect(onSessionExtras).not.toHaveBeenCalled();
-    expect(screen.getByText(/Cost is a number/)).toBeTruthy();
+    expect(screen.getByText(/Cost: 0 to/)).toBeTruthy();
   });
 
   it("has Show readers off by default, and turns it on", () => {

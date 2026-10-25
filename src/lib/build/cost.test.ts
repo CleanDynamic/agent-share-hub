@@ -20,7 +20,7 @@ describe("figures and wording (CA-13 P8)", () => {
     expect(buildCostOf("x")).toBeNull();
     expect(runCostOf({ ms: 120, cost: 0.0001 })).toBeNull();
     expect(runCostOf({ per: "call", ms: 120, cost: 0.0001 })).toMatchObject({ per: "call", ms: 120, cost: 0.0001, source: "maker" });
-    expect(costRefusal({ cost: -3 })).toMatch(/Cost is a number/);
+    expect(costRefusal({ cost: -3 })).toMatch(/Cost: 0 to/);
     expect(costRefusal({ ms: 1.5 })).toMatch(/milliseconds/);
     expect(costRefusal({ ms: 100, tokensIn: 5, cost: 2 })).toBeNull();
   });

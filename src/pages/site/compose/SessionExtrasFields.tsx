@@ -34,7 +34,7 @@ export const EXTRAS_COPY = {
   costHint: "3.40",
   costPound: "£",
   costDollar: "$",
-  costBad: `Cost is a number from 0 to ${COST_MAX.toLocaleString("en-GB")}.`,
+  costBad: `Cost: 0 to ${COST_MAX.toLocaleString("en-GB")}`,
   showReaders: "Show readers",
   showReadersLine: "Off: cost hidden from readers",
   how: "Method",
@@ -287,7 +287,7 @@ export const RUNS_FIELD_COPY = {
   total: "Out of",
   of: "of",
   remove: (n: number) => `Remove run ${n}`,
-  more: (n: number) => `Showing the newest ${n}. A check keeps 20 runs at most.`,
+  more: (n: number) => `Newest ${n} · 20 max`,
   bad: "Each run: date as 2026-10-12, whole numbers, passed no more than total",
 } as const;
 

@@ -1225,7 +1225,7 @@ const withPayload = (node: BuildNode, payload: Payload): BuildNodeInsert => ({
 /** Name a step. Trimmed, at most 80 characters; an empty title saves as null. */
 export async function setStepTitle(node: BuildNode, title: string): Promise<BuildNode> {
   const trimmed = title.trim();
-  if (trimmed.length > TITLE_MAX) throw refuse("setStepTitle", `A title is at most ${TITLE_MAX} characters.`);
+  if (trimmed.length > TITLE_MAX) throw refuse("setStepTitle", `Title: ${TITLE_MAX} characters max`);
   return upsertNode({ ...nodeRow(node), title: trimmed || null });
 }
 
@@ -1370,7 +1370,7 @@ function runsPayload(operation: string, runs: Runs | null | undefined): Json | n
   } else {
     const detail = (runs.detail ?? "").trim();
     const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : WHEN_DETAIL_MAX;
-    if (detail.length > max) throw refuse(operation, `That line is at most ${max} characters.`);
+    if (detail.length > max) throw refuse(operation, `Line: ${max} characters max`);
     if (detail) next.detail = detail;
   }
   return next as unknown as Json;
@@ -1410,11 +1410,11 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   const out: Payload = { model: main };
   const named = harness?.trim();
   if (named) {
-    if (named.length > HARNESS_MAX) throw refuse(operation, `A harness is at most ${HARNESS_MAX} characters.`);
+    if (named.length > HARNESS_MAX) throw refuse(operation, `Harness: ${HARNESS_MAX} characters max`);
     out.harness = toolFor(named)?.id ?? named;
   }
   if (models && models.length > 0) {
-    if (models.length > AGENT_MODELS_MAX) throw refuse(operation, `An agent names ${AGENT_MODELS_MAX} models at most.`);
+    if (models.length > AGENT_MODELS_MAX) throw refuse(operation, `Models: ${AGENT_MODELS_MAX} max`);
     const rows = models.map((row, index) => {
       const name = row.model.trim();
       if (!name) throw refuse(operation, "Each model needs its name.");
@@ -1429,17 +1429,17 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   if (refs.length) out.tools = refs.map((ref) => ({ tool_ref: ref })) as unknown as Json;
   const remembers = memory?.trim();
   if (remembers) {
-    if (remembers.length > MEMORY_MAX) throw refuse(operation, `What it remembers is at most ${MEMORY_MAX} characters.`);
+    if (remembers.length > MEMORY_MAX) throw refuse(operation, `What it remembers: ${MEMORY_MAX} characters max`);
     out.memory = remembers;
   }
   const tidy = memoryTidy?.trim();
   if (tidy) {
-    if (tidy.length > MEMORY_TIDY_MAX) throw refuse(operation, `How it tidies its notes is at most ${MEMORY_TIDY_MAX} characters.`);
+    if (tidy.length > MEMORY_TIDY_MAX) throw refuse(operation, `How it tidies its notes: ${MEMORY_TIDY_MAX} characters max`);
     out.memory_tidy = tidy;
   }
   const changes = changesEachRound?.trim();
   if (changes) {
-    if (changes.length > CHANGES_EACH_ROUND_MAX) throw refuse(operation, `What it changes each round is at most ${CHANGES_EACH_ROUND_MAX} characters.`);
+    if (changes.length > CHANGES_EACH_ROUND_MAX) throw refuse(operation, `What it changes each round: ${CHANGES_EACH_ROUND_MAX} characters max`);
     out.changes_each_round = changes;
   }
   return out;
@@ -1457,7 +1457,7 @@ export async function addAgent(
 ): Promise<BuildNode> {
   const keys = setupPayload("addAgent", model, setup);
   const title = titleOrNull(name);
-  if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
+  if (title && title.length > TITLE_MAX) throw refuse("addAgent", `Title: ${TITLE_MAX} characters max`);
   const start = runsPayload("addAgent", runs);
   const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys, ...(start ? { runs: start } : null), ...(session && !parentId ? { session } : null) } as Json };
   return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
@@ -1471,7 +1471,7 @@ export async function addTeam(
 ): Promise<{ team: BuildNode; agent: BuildNode }> {
   await requireLiveType("addTeam", TEAM_TYPE);
   const title = titleOrNull(name);
-  if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
+  if (title && title.length > TITLE_MAX) throw refuse("addTeam", `Title: ${TITLE_MAX} characters max`);
   const keys = setupPayload("addTeam", model, setup);
   const start = runsPayload("addTeam", runs);
   const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: { ...(session ? { session } : null), ...(start ? { runs: start } : null) } as Json });
@@ -1511,7 +1511,7 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
   if (!provider) throw refuse(operation, "A decision needs a model or service.");
   const why = questionsRefusal(input.questions, input.name?.trim() || undefined);
   if (why) throw refuse(operation, why);
-  if ((input.stateSample ?? "").length > STATE_SAMPLE_MAX) throw refuse(operation, `The state is at most ${STATE_SAMPLE_MAX.toLocaleString("en-GB")} characters.`);
+  if ((input.stateSample ?? "").length > STATE_SAMPLE_MAX) throw refuse(operation, `State: ${STATE_SAMPLE_MAX.toLocaleString("en-GB")} characters max`);
   const out: Payload = {
     provider: toolFor(provider)?.id ?? provider,
     model: input.model.trim(),
@@ -1544,7 +1544,7 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
 export async function addDecision(buildId: string, tree: readonly NodeTree[], input: DecisionInput): Promise<BuildNode> {
   await requireLiveType("addDecision", DECISION_TYPE, DECISION_TYPE_MISSING);
   const title = titleOrNull(input.name);
-  if (title && title.length > TITLE_MAX) throw refuse("addDecision", `A title is at most ${TITLE_MAX} characters.`);
+  if (title && title.length > TITLE_MAX) throw refuse("addDecision", `Title: ${TITLE_MAX} characters max`);
   const keys = decisionPayload("addDecision", input);
   const uses = input.stateFrom ? [{ kind: "output", node_id: input.stateFrom }] : [];
   return placeTopNode(buildId, tree, { type: DECISION_TYPE, title, payload: { ...keys, ...(uses.length ? { uses } : null), ...(input.session ? { session: input.session } : null) } as Json });
@@ -1564,7 +1564,7 @@ export async function setDecision(node: BuildNode, input: DecisionInput): Promis
   if (kept.length) payload.uses = kept as unknown as Json;
   else delete payload.uses;
   const title = titleOrNull(input.name);
-  if (title && title.length > TITLE_MAX) throw refuse("setDecision", `A title is at most ${TITLE_MAX} characters.`);
+  if (title && title.length > TITLE_MAX) throw refuse("setDecision", `Title: ${TITLE_MAX} characters max`);
   return upsertNode({ ...withPayload(node, payload), title });
 }
 
@@ -1614,7 +1614,7 @@ export async function setRuntimeFields(node: BuildNode, patch: RuntimePatch): Pr
   if ("install" in patch) {
     if (!agent && node.type !== DECISION_TYPE) throw refuse("setRuntimeFields", "Only an agent or a decision has an install line.");
     const line = patch.install?.trim() ?? "";
-    if (line.length > 400) throw refuse("setRuntimeFields", "An install line is at most 400 characters.");
+    if (line.length > 400) throw refuse("setRuntimeFields", "Install line: 400 characters max");
     set("install", line || null);
   }
   if ("outputShape" in patch) {
@@ -1730,7 +1730,7 @@ export async function setAgentNotes(node: BuildNode, notes: { memoryTidy?: strin
   const apply = (key: "memory_tidy" | "changes_each_round", value: string | null | undefined, max: number, label: string) => {
     if (value === undefined) return;
     const said = (value ?? "").trim();
-    if (said.length > max) throw refuse("setAgentNotes", `${label} is at most ${max} characters.`);
+    if (said.length > max) throw refuse("setAgentNotes", `${label}: ${max} characters max`);
     if (said) payload[key] = said;
     else delete payload[key];
   };
@@ -1774,8 +1774,8 @@ export async function addAgentPrompt(agent: BuildNode, tree: readonly NodeTree[]
 function manualKeys(operation: string, input: { tool?: string; text?: string; lines?: readonly string[]; where?: ManualWhere | null }): { tool: string; text: string; where: ManualWhere | null } {
   const lines = (input.lines ?? manualLinesOf(input.text ?? "")).map((line) => line.trim()).filter(Boolean);
   if (lines.length === 0) throw refuse(operation, `A manual step is 1 to ${MANUAL_LINES_MAX} lines of up to ${MANUAL_TEXT_MAX} characters.`);
-  if (lines.length > MANUAL_LINES_MAX) throw refuse(operation, `A manual step is at most ${MANUAL_LINES_MAX} lines.`);
-  if (lines.some((line) => line.length > MANUAL_TEXT_MAX)) throw refuse(operation, `Each line is at most ${MANUAL_TEXT_MAX} characters.`);
+  if (lines.length > MANUAL_LINES_MAX) throw refuse(operation, `Lines: ${MANUAL_LINES_MAX} max`);
+  if (lines.some((line) => line.length > MANUAL_TEXT_MAX)) throw refuse(operation, `Each line: ${MANUAL_TEXT_MAX} characters max`);
   let where: ManualWhere | null = null;
   if (input.where) {
     const name = input.where.name?.trim() || null;
@@ -1860,17 +1860,17 @@ export async function addCode(
   }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean; session?: string | null; parentId?: string | null },
 ): Promise<BuildNode> {
   if (!source.trim()) throw refuse("addCode", "Code needs its lines.");
-  if (source.length > CODE_MAX) throw refuse("addCode", "Code is at most 100,000 characters. Upload it as a file instead.");
+  if (source.length > CODE_MAX) throw refuse("addCode", "Code: 100,000 characters max");
   if (!(CODE_LANGUAGES as readonly string[]).includes(language)) throw refuse("addCode", "That is not a language the build knows.");
   const payload: Record<string, string | boolean> = { source, language };
   const name = filename?.trim();
   if (name) {
-    if (name.length > CODE_FILENAME_MAX) throw refuse("addCode", `A file name is at most ${CODE_FILENAME_MAX} characters.`);
+    if (name.length > CODE_FILENAME_MAX) throw refuse("addCode", `File name: ${CODE_FILENAME_MAX} characters max`);
     payload.filename = name;
   }
   const named = tool?.trim();
   if (named) {
-    if (named.length > CODE_TOOL_MAX) throw refuse("addCode", `A tool is at most ${CODE_TOOL_MAX} characters.`);
+    if (named.length > CODE_TOOL_MAX) throw refuse("addCode", `Tool: ${CODE_TOOL_MAX} characters max`);
     payload.tool = toolFor(named)?.id ?? named;
   }
   if (model?.trim()) payload.model = model.trim();
@@ -1956,10 +1956,10 @@ export async function addCheck(buildId: string, tree: readonly NodeTree[], input
 /** CA-12 P12: why a check's cases cannot be saved, or null. A case says what went in or what was expected. */
 export function casesRefusal(cases: readonly CheckCase[] | undefined): string | null {
   if (!cases || cases.length === 0) return null;
-  if (cases.length > CASES_MAX) return `A check has at most ${CASES_MAX} cases.`;
+  if (cases.length > CASES_MAX) return `Test cases: ${CASES_MAX} max`;
   for (const c of cases) {
     if (!c.input.trim() && !c.expected.trim()) return "Each case says what went in or what was expected.";
-    for (const value of [c.input, c.expected, c.actual]) if (value.trim().length > CASE_TEXT_MAX) return `A case's text is at most ${CASE_TEXT_MAX} characters.`;
+    for (const value of [c.input, c.expected, c.actual]) if (value.trim().length > CASE_TEXT_MAX) return `Case text: ${CASE_TEXT_MAX} characters max`;
   }
   return null;
 }
@@ -1967,31 +1967,31 @@ export function casesRefusal(cases: readonly CheckCase[] | undefined): string | 
 export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | null {
   const tested = input.tested.trim();
   const passing = input.passing.trim();
-  if (!tested) return "Add the test description.";
-  if (tested.length > CHECK_TEXT_MAX) return `The test description is at most ${CHECK_TEXT_MAX} characters.`;
-  if (!passing) return "Add the pass criteria.";
-  if (passing.length > CHECK_TEXT_MAX) return `The pass criteria are at most ${CHECK_TEXT_MAX} characters.`;
-  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `The failure notes are at most ${CHECK_FAIL_MAX} characters.`;
+  if (!tested) return "Test description: required";
+  if (tested.length > CHECK_TEXT_MAX) return `Test description: ${CHECK_TEXT_MAX} characters max`;
+  if (!passing) return "Pass criteria: required";
+  if (passing.length > CHECK_TEXT_MAX) return `Pass criteria: ${CHECK_TEXT_MAX} characters max`;
+  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `Failure notes: ${CHECK_FAIL_MAX} characters max`;
   const why = casesRefusal(input.cases);
   if (why) return why;
   for (const n of input.cases?.length ? [] : [input.passed, input.total]) {
-    if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs are whole numbers from 0 to 10,000.";
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs: whole numbers, 0 to 10,000";
   }
-  if (!input.cases?.length && input.passed > input.total) return "Passed can't be more than the total.";
+  if (!input.cases?.length && input.passed > input.total) return "Passed: no more than total";
   const day = (input.runAt ?? "").trim();
-  if (day && !isIsoDay(day)) return "The last run date is written as 2026-10-12.";
+  if (day && !isIsoDay(day)) return "Format: 2026-10-12";
   return null;
 }
 
 /** Why a check's runs cannot be kept, or null. Pure, so the composer can say it before anything is written. */
 export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
-  if (runs.length > CHECK_RUNS_KEPT) return `A check keeps ${CHECK_RUNS_KEPT} runs at most.`;
+  if (runs.length > CHECK_RUNS_KEPT) return `Runs: ${CHECK_RUNS_KEPT} max`;
   for (const run of runs) {
-    if (!isIsoDay(run.at)) return "A run's date is written as 2026-10-12.";
+    if (!isIsoDay(run.at)) return "Format: 2026-10-12";
     for (const n of [run.passed, run.total]) {
-      if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs are whole numbers from 0 to 10,000.";
+      if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs: whole numbers, 0 to 10,000";
     }
-    if (run.passed > run.total) return "Passed can't be more than the total.";
+    if (run.passed > run.total) return "Passed: no more than total";
   }
   return null;
 }
@@ -2045,7 +2045,7 @@ export async function setCodeSource(node: BuildNode, patch: { source?: string; l
   const payload = { ...payloadOf(node) };
   if (patch.source !== undefined) {
     if (!patch.source.trim()) throw refuse("setCodeSource", "Code needs its lines.");
-    if (patch.source.length > CODE_MAX) throw refuse("setCodeSource", "Code is at most 100,000 characters. Upload it as a file instead.");
+    if (patch.source.length > CODE_MAX) throw refuse("setCodeSource", "Code: 100,000 characters max");
     payload.source = patch.source;
   }
   if (patch.language !== undefined) {
@@ -2222,7 +2222,7 @@ export const NEST_COPY = {
   file: "Nothing goes inside a file.",
   agent: "An agent holds its own prompts only.",
   team: "A team holds its own agents only.",
-  depth: `Tiles go ${NEST_DEPTH_MAX} deep at most. Make one of them its own step first.`,
+  depth: `Nesting: ${NEST_DEPTH_MAX} deep max`,
 } as const;
 
 /**
@@ -2417,7 +2417,7 @@ export async function addToolTile(buildId: string, tree: readonly NodeTree[], { 
   if (!name) throw refuse("addToolTile", "A tool needs its application.");
   if (connection && !TOOL_CONNECTIONS.includes(connection)) throw refuse("addToolTile", "That is not a way to connect a tool.");
   const did = (scopes ?? "").trim();
-  if (did.length > TOOL_SCOPES_MAX) throw refuse("addToolTile", `Actions performed is at most ${TOOL_SCOPES_MAX} characters.`);
+  if (did.length > TOOL_SCOPES_MAX) throw refuse("addToolTile", `Actions performed: ${TOOL_SCOPES_MAX} characters max`);
   const payload: Payload = { service: name, step: true };
   if (connection) payload.connection = connection;
   if (did) payload.scopes = did;
@@ -2466,7 +2466,7 @@ export async function addSystemPromptTile(buildId: string, tree: readonly NodeTr
   await requireLiveType("addSystemPromptTile", SYSTEM_PROMPT_TYPE, sourceTypeMissing("System prompts"));
   const name = input.name.trim();
   if (!name) throw refuse("addSystemPromptTile", "A system prompt needs its name.");
-  if (name.length > TITLE_MAX) throw refuse("addSystemPromptTile", `A name is at most ${TITLE_MAX} characters.`);
+  if (name.length > TITLE_MAX) throw refuse("addSystemPromptTile", `Name: ${TITLE_MAX} characters max`);
   if (input.scope.kind === "prompts") {
     const known = new Set(flattenSteps(buildSteps(tree)).filter((step) => step.kind === "prompt").map((step) => step.id));
     if (input.scope.ids.length === 0 || input.scope.ids.some((id) => !known.has(id))) throw refuse("addSystemPromptTile", "Choose prompts that are in this build.");
@@ -2498,7 +2498,7 @@ export async function addDatasetTile(buildId: string, tree: readonly NodeTree[],
   await requireLiveType("addDatasetTile", DATASET_TYPE, sourceTypeMissing("Datasets"));
   const name = input.name.trim();
   if (!name) throw refuse("addDatasetTile", "A dataset needs its name.");
-  if (name.length > TITLE_MAX) throw refuse("addDatasetTile", `A name is at most ${TITLE_MAX} characters.`);
+  if (name.length > TITLE_MAX) throw refuse("addDatasetTile", `Name: ${TITLE_MAX} characters max`);
   const retrieval = input.use === "retrieval";
   const payload = sourcePayload(
     "addDatasetTile",
@@ -2774,29 +2774,29 @@ export function resultSummaryOf(input: ResultInput): string {
 
 /** Why a result cannot be added, or null. */
 export function resultRefusal(input: ResultInput): string | null {
-  if ((input.caption ?? "").trim().length > RESULT_CAPTION_MAX) return `A caption is at most ${RESULT_CAPTION_MAX} characters.`;
+  if ((input.caption ?? "").trim().length > RESULT_CAPTION_MAX) return `Caption: ${RESULT_CAPTION_MAX} characters max`;
   if (input.kind === "link") return resultLinkOf(input.url) ? null : "Add a URL, like example.com/page.";
-  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add an image or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `A result holds at most ${RESULT_MEDIA_MAX} images or videos.` : null;
+  if (input.kind === "media") return input.mediaIds.length === 0 ? "Add an image or a video." : input.mediaIds.length > RESULT_MEDIA_MAX ? `Images and videos: ${RESULT_MEDIA_MAX} max` : null;
   if (input.kind === "file") return input.name.trim() && input.mediaId ? null : "Add a file.";
-  if (input.kind === "text") return !input.text.trim() ? "Add the text." : input.text.length > RESULT_TEXT_MAX ? `The text is at most ${RESULT_TEXT_MAX} characters.` : null;
+  if (input.kind === "text") return !input.text.trim() ? "Add the text." : input.text.length > RESULT_TEXT_MAX ? `Text: ${RESULT_TEXT_MAX} characters max` : null;
   if (input.kind === "audio") return input.name.trim() && input.mediaId ? null : "Add an audio file.";
   if (input.kind === "deployed") return resultLinkOf(input.url) ? null : "Add the URL of the deployed app or website.";
   if (input.kind === "table") {
-    if ((input.csv ?? "").length > RESULT_CSV_MAX) return `Pasted CSV is at most ${RESULT_CSV_MAX.toLocaleString("en-GB")} characters. Upload it as a file instead.`;
+    if ((input.csv ?? "").length > RESULT_CSV_MAX) return `Pasted CSV: ${RESULT_CSV_MAX.toLocaleString("en-GB")} characters max`;
     return (input.mediaId && input.name?.trim()) || (input.csv ?? "").trim() ? null : "Add a CSV file or paste the CSV.";
   }
-  if (input.kind === "message") return !MESSAGE_CHANNELS.includes(input.channel) ? "Choose the channel." : !input.message.trim() ? "Add the message." : input.message.length > RESULT_TEXT_MAX ? `The message is at most ${RESULT_TEXT_MAX} characters.` : null;
-  if (input.kind === "external_change") return !input.application.trim() ? "Say which application." : !input.change.trim() ? "Say what changed." : input.change.length > RESULT_LINE_MAX ? `What changed is at most ${RESULT_LINE_MAX} characters.` : null;
+  if (input.kind === "message") return !MESSAGE_CHANNELS.includes(input.channel) ? "Choose the channel." : !input.message.trim() ? "Add the message." : input.message.length > RESULT_TEXT_MAX ? `Message: ${RESULT_TEXT_MAX} characters max` : null;
+  if (input.kind === "external_change") return !input.application.trim() ? "Say which application." : !input.change.trim() ? "Say what changed." : input.change.length > RESULT_LINE_MAX ? `What changed: ${RESULT_LINE_MAX} characters max` : null;
   if (input.kind === "metric") {
     if (!input.value.trim()) return "Add the value.";
     if (!input.label.trim()) return "Add the label.";
-    if (input.value.trim().length > METRIC_VALUE_MAX || (input.before ?? "").trim().length > METRIC_VALUE_MAX) return `A value is at most ${METRIC_VALUE_MAX} characters.`;
-    if (input.label.trim().length > METRIC_LABEL_MAX) return `The label is at most ${METRIC_LABEL_MAX} characters.`;
-    return (input.unit ?? "").trim().length > METRIC_UNIT_MAX ? `The unit is at most ${METRIC_UNIT_MAX} characters.` : null;
+    if (input.value.trim().length > METRIC_VALUE_MAX || (input.before ?? "").trim().length > METRIC_VALUE_MAX) return `Value: ${METRIC_VALUE_MAX} characters max`;
+    if (input.label.trim().length > METRIC_LABEL_MAX) return `Label: ${METRIC_LABEL_MAX} characters max`;
+    return (input.unit ?? "").trim().length > METRIC_UNIT_MAX ? `Unit: ${METRIC_UNIT_MAX} characters max` : null;
   }
-  if (input.kind === "offline") return !input.description.trim() ? "Add a description." : input.description.length > RESULT_TEXT_MAX ? `The description is at most ${RESULT_TEXT_MAX} characters.` : null;
-  if (input.baseModel.trim().length > BASE_MODEL_MAX) return `The base model is at most ${BASE_MODEL_MAX} characters.`;
-  if (input.method.trim().length > TRAINED_METHOD_MAX) return `The training method is at most ${TRAINED_METHOD_MAX} characters.`;
+  if (input.kind === "offline") return !input.description.trim() ? "Add a description." : input.description.length > RESULT_TEXT_MAX ? `Description: ${RESULT_TEXT_MAX} characters max` : null;
+  if (input.baseModel.trim().length > BASE_MODEL_MAX) return `Base model: ${BASE_MODEL_MAX} characters max`;
+  if (input.method.trim().length > TRAINED_METHOD_MAX) return `Training method: ${TRAINED_METHOD_MAX} characters max`;
   return input.baseModel.trim() || input.method.trim() ? null : "Say what it is based on, or how it was trained.";
 }
 
@@ -2992,7 +2992,7 @@ export async function setNodeFields(node: BuildNode, fields: Record<string, stri
     } else {
       if (node.type === RESULT_TYPE && key === "kind" && trimmed !== TRAINED_MODEL) throw refuse("setNodeFields", "That is not a kind of result.");
       const limit = node.type === RESULT_TYPE ? RESULT_LIMITS[key] : undefined;
-      if (limit && trimmed.length > limit) throw refuse("setNodeFields", `That field is at most ${limit} characters.`);
+      if (limit && trimmed.length > limit) throw refuse("setNodeFields", `That field: ${limit} characters max`);
       if (node.type === RESULT_TYPE && key === "method" && /\n/.test(trimmed)) throw refuse("setNodeFields", "How it was trained is one line.");
       payload[key] = trimmed;
     }

@@ -25,6 +25,8 @@ const graph = vi.hoisted(() => ({
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
 const toast = vi.hoisted(() => ({ error: vi.fn(), default: vi.fn() }));
+/** A failed write says its line, with Retry (CA-28 P3). */
+const withRetry = () => expect.objectContaining({ action: expect.objectContaining({ label: "Retry", onClick: expect.any(Function) }) });
 
 vi.mock("@/lib/build/graph", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/graph")>()), ...graph }));
 vi.mock("@/lib/build/media", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/media")>()), uploadMedia: media.uploadMedia }));
@@ -135,7 +137,7 @@ describe("adding an agent or a team (UI-P69)", () => {
       id = await result.current.addAgentOrTeam({ kind: "team", name: null, model: "Opus 5.5" });
     });
     expect(id).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Teams need the Deploy queue item from UI-P61.");
+    expect(toast.error).toHaveBeenCalledWith("Team not added", withRetry());
   });
 
   it("adds an agent inside a team", async () => {
@@ -242,7 +244,7 @@ describe("prompts and instructions of an agent (UI-P69)", () => {
       saved = await result.current.addPromptTo("ag1", "  ");
     });
     expect(saved).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith("Couldn't add that prompt. Try again.");
+    expect(toast.error).toHaveBeenCalledWith("Prompt not added", withRetry());
   });
 
   it("writes the instructions of an agent that sits inside a team", async () => {
@@ -299,7 +301,7 @@ describe("a manual step (UI-P70)", () => {
       id = await result.current.addManual({ tool: "Figma", text: "x", file: null, afterId: null });
     });
     expect(id).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Manual steps need the Deploy queue item from UI-P61.");
+    expect(toast.error).toHaveBeenCalledWith("Manual step not added", withRetry());
   });
 
   it("moves a manual step past whatever step is next to it, not only prompts", async () => {
@@ -327,7 +329,7 @@ describe("a manual step (UI-P70)", () => {
       saved = await result.current.setManualPicture("m", new File(["x"], "spec.pdf", { type: "application/pdf" }));
     });
     expect(saved).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith("Couldn't add spec.pdf. Try again.");
+    expect(toast.error).toHaveBeenCalledWith("spec.pdf not added", withRetry());
   });
 });
 
@@ -466,7 +468,7 @@ describe("naming and removing a file a step makes (TF-08)", () => {
     });
     expect(id).toBeNull();
     expect(record).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith("Couldn't add that file. Try again.");
+    expect(toast.error).toHaveBeenCalledWith("File not added", withRetry());
   });
 
   it("takes a made file out of the steps that use it, then deletes it", async () => {
@@ -521,13 +523,13 @@ describe("code steps (CA-02 P7)", () => {
   });
 
   it("says why code over the limit was refused, and resolves null", async () => {
-    graph.addCode.mockRejectedValue(new Error("Code is at most 100,000 characters. Upload it as a file instead."));
+    graph.addCode.mockRejectedValue(new Error("Code: 100,000 characters max"));
     const { result } = hook();
     let first: string | null = "x";
     await act(async () => {
       first = await result.current.addCodeSteps({ steps: [{ source: "x", language: "ts", filename: null }], tool: null, model: null });
     });
     expect(first).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Code is at most 100,000 characters. Upload it as a file instead.");
+    expect(toast.error).toHaveBeenCalledWith("Code: 100,000 characters max", withRetry());
   });
 });
