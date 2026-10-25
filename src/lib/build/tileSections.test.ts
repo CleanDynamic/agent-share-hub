@@ -30,7 +30,7 @@ describe("the list", () => {
       expect(new Set(sections.map((section) => section.key)).size, kind).toBe(sections.length);
       for (const section of sections) {
         expect(section.label.trim(), `${kind}.${section.key}`).not.toBe("");
-        expect(section.hint.trim(), `${kind}.${section.key}`).not.toBe("");
+        expect(typeof section.hint, `${kind}.${section.key}`).toBe("string");
       }
     }
   });
@@ -56,11 +56,11 @@ describe("the list", () => {
     for (const label of [FULL_PROMPT_COPY.prompt, FULL_PROMPT_COPY.response, FULL_PROMPT_COPY.modelSettings, FULL_PROMPT_COPY.variables]) has("prompt", label);
   });
 
-  it("keeps the modals' hints for the Optional rows", () => {
+  it("keeps the modals' hints for the Optional rows, and none where a window has none", () => {
     const hint = (kind: TileKind, label: string) => sectionsOf(kind).find((section) => section.label === label)?.hint;
     expect(hint("tool", "Permissions")).toBe(TOOL_DIALOG_COPY.permissionsLine);
     expect(hint("check", "Evidence")).toBe(CHECK_DIALOG_COPY.evidenceLine);
-    expect(hint("dataset", "Licence")).toBe(DATASET_DIALOG_COPY.licenceLine);
+    expect(hint("dataset", "Sample records")).toBe(DATASET_DIALOG_COPY.sampleLine);
     expect(hint("repo", "Run instructions")).toBe(REPO_DIALOG_COPY.runLine);
     expect(hint("prompt", "Variables")).toBe(FULL_PROMPT_COPY.variablesLine);
     expect(hint("agent", "Limits")).toBe(AGENT_DIALOG_COPY.limitsLine);

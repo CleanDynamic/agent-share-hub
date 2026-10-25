@@ -47,7 +47,7 @@ export function modelRunOf(value: unknown): ModelRun | null {
 
 /** Why a run cannot be kept, or null. */
 export function modelRunRefusal(run: ModelRun): string | null {
-  if (run.precision !== undefined && (!run.precision.trim() || run.precision.trim().length > PRECISION_OTHER_MAX)) return `The size is at most ${PRECISION_OTHER_MAX} characters.`;
+  if (run.precision !== undefined && (!run.precision.trim() || run.precision.trim().length > PRECISION_OTHER_MAX)) return `Size: ${PRECISION_OTHER_MAX} characters max`;
   if (run.where !== undefined && !PLACES.includes(run.where)) return "That is not a place a model runs.";
   return null;
 }

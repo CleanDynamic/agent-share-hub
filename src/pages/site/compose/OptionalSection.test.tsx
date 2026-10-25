@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ModalForm, ModalShell, firstMissing, requiredLine } from "./ModalFrame";
+import { ModalForm, ModalShell, missingLabels, requiredLine } from "./ModalFrame";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 let phone = false;
@@ -14,7 +14,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const rows = () => screen.getAllByTestId("optional-field");
+const rows = () => screen.queryAllByTestId("optional-field");
+const toggle = () => screen.getByTestId("optional-toggle");
 
 function section(over: { notesSummary?: string | null; forceOpen?: boolean } = {}) {
   return render(
@@ -22,7 +23,7 @@ function section(over: { notesSummary?: string | null; forceOpen?: boolean } = {
       <OptionalField name="Failure notes" description="What went wrong, and what changed before it ran again" summary={over.notesSummary} forceOpen={over.forceOpen}>
         <textarea aria-label="Failure notes field" />
       </OptionalField>
-      <OptionalField name="Reviewer" description="Who judged it">
+      <OptionalField name="Reviewer">
         <input aria-label="Reviewer field" />
       </OptionalField>
       {false}
@@ -31,57 +32,112 @@ function section(over: { notesSummary?: string | null; forceOpen?: boolean } = {
   );
 }
 
-describe("OptionalSection (CA-15 P1)", () => {
-  it("starts with every row closed, counts its fields in mono, and announces closed", () => {
+describe("OptionalSection (CA-28 P4)", () => {
+  it("opens closed: one toggle row with the count, a chevron, and no field drawn", () => {
     section();
-    expect(screen.getByRole("heading", { name: "Optional" })).toBeTruthy();
+    const row = toggle();
+    expect(row.tagName).toBe("BUTTON");
+    expect(row.getAttribute("aria-expanded")).toBe("false");
+    expect(row.getAttribute("aria-controls")).toBe(screen.getByTestId("optional-region").id);
     expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
-    for (const row of rows()) {
-      expect(within(row).getByRole("button").getAttribute("aria-expanded")).toBe("false");
-    }
+    expect(row.textContent).toContain("Optional");
+    expect(rows()).toHaveLength(0);
     expect(screen.queryByLabelText("Failure notes field")).toBeNull();
-    expect(screen.getByText("Who judged it")).toBeTruthy();
+    expect(screen.getByTestId("optional-region").hidden).toBe(true);
   });
 
-  it("opens a row from the keyboard, announces open, and moves focus into its field", () => {
-    section();
-    const head = within(rows()[0]).getByRole("button");
-    // A keyboard press arrives as a click with no pointer (detail 0).
-    fireEvent.click(head, { detail: 0 });
-    expect(head.getAttribute("aria-expanded")).toBe("true");
-    const field = screen.getByLabelText("Failure notes field");
-    expect(document.activeElement).toBe(field);
-    expect(within(rows()[0]).getByRole("region")).toBeTruthy();
-    // The other row stays closed; several can be open at once.
-    fireEvent.click(within(rows()[1]).getByRole("button"), { detail: 1 });
-    expect(head.getAttribute("aria-expanded")).toBe("true");
-    expect(within(rows()[1]).getByRole("button").getAttribute("aria-expanded")).toBe("true");
-    // A pointer opening does not pull focus.
-    expect(document.activeElement).toBe(field);
-  });
-
-  it("closes again on a second press", () => {
-    section();
-    const head = within(rows()[0]).getByRole("button");
-    fireEvent.click(head);
-    fireEvent.click(head);
-    expect(head.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByLabelText("Failure notes field")).toBeNull();
-  });
-
-  it("shows a filled row's value at the right, and keeps its description (CA-15b)", () => {
+  it("counts the fields that hold something: 'Optional · 2 fields · 1 filled'", () => {
     section({ notesSummary: "The total showed 0.00" });
-    const first = rows()[0];
-    expect(within(first).getByTestId("optional-value").textContent).toBe("The total showed 0.00");
-    expect(within(first).getByTestId("optional-line").textContent).toMatch(/What went wrong/);
-    // An empty row still says what goes there.
-    expect(within(rows()[1]).getByTestId("optional-line").textContent).toBe("Who judged it");
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields · 1 filled");
   });
 
-  it("opens on its own when told to", () => {
-    section({ forceOpen: true });
-    expect(within(rows()[0]).getByRole("button").getAttribute("aria-expanded")).toBe("true");
+  it("opens on a press and shows the fields directly: label, then the hint when there is one, then the input; no per-field row", () => {
+    section();
+    fireEvent.click(toggle(), { detail: 1 });
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(rows()).toHaveLength(2);
+    expect(within(rows()[0]).getByTestId("optional-title").textContent).toBe("Failure notes");
+    expect(within(rows()[0]).getByTestId("optional-line").textContent).toMatch(/What went wrong/);
+    expect(within(rows()[1]).queryByTestId("optional-line")).toBeNull();
     expect(screen.getByLabelText("Failure notes field")).toBeTruthy();
+    // Nothing in a field is a button that opens it.
+    expect(within(rows()[0]).queryByRole("button")).toBeNull();
+    expect(screen.getByTestId("optional-region").hidden).toBe(false);
+    // A pointer press does not pull focus into the fields.
+    expect(document.activeElement).not.toBe(screen.getByLabelText("Failure notes field"));
+  });
+
+  it("opened from the keyboard it moves focus to the first field; closing leaves it on the toggle", () => {
+    section();
+    toggle().focus();
+    fireEvent.click(toggle(), { detail: 0 });
+    expect(document.activeElement).toBe(screen.getByLabelText("Failure notes field"));
+    fireEvent.click(toggle(), { detail: 0 });
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(toggle());
+    expect(rows()).toHaveLength(0);
+  });
+
+  it("closes on a second press", () => {
+    section();
+    fireEvent.click(toggle(), { detail: 1 });
+    fireEvent.click(toggle(), { detail: 1 });
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByLabelText("Failure notes field")).toBeNull();
+  });
+
+  it("opens by itself when a field holds a value", () => {
+    section({ notesSummary: "The total showed 0.00" });
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(rows()).toHaveLength(2);
+  });
+
+  it("opens by itself when a field starts to hold a value while it is shut (an import filled it)", () => {
+    const { rerender } = section();
+    expect(toggle().getAttribute("aria-expanded")).toBe("false");
+    rerender(
+      <OptionalSection>
+        <OptionalField name="Failure notes" summary="Filled by an import">
+          <textarea aria-label="Failure notes field" />
+        </OptionalField>
+        <OptionalField name="Reviewer">
+          <input aria-label="Reviewer field" />
+        </OptionalField>
+      </OptionalSection>,
+    );
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("when an error points into a field it opens, and the field takes focus", () => {
+    section({ forceOpen: true });
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByLabelText("Failure notes field"));
+  });
+
+  it("an error that arrives later opens a shut section, scrolls to the field and focuses it", () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const { rerender } = section();
+    rerender(
+      <OptionalSection>
+        <OptionalField name="Failure notes" forceOpen>
+          <textarea aria-label="Failure notes field" />
+        </OptionalField>
+        <OptionalField name="Reviewer">
+          <input aria-label="Reviewer field" />
+        </OptionalField>
+      </OptionalSection>,
+    );
+    expect(toggle().getAttribute("aria-expanded")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByLabelText("Failure notes field"));
+    expect(scroll).toHaveBeenCalled();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("is at least 44 tall on a phone", () => {
+    phone = true;
+    section();
+    expect(parseInt(toggle().style.minHeight, 10)).toBeGreaterThanOrEqual(44);
   });
 
   it("draws nothing when it has no field", () => {
@@ -100,9 +156,9 @@ describe("OptionalSection (CA-15 P1)", () => {
 describe("the modal frame (CA-15 P1)", () => {
   it("says the first thing missing, or that all is complete", () => {
     expect(requiredLine("a URL")).toBe("Required: a URL");
-    expect(requiredLine(null)).toBe("All required fields complete");
-    expect(firstMissing([[true, "a name"], [false, "a URL"], [false, "a file"]])).toBe("a URL");
-    expect(firstMissing([[true, "a name"]])).toBeNull();
+    expect(requiredLine(null)).toBe("Required fields complete");
+    expect(missingLabels([[true, "Name"], [false, "URL"], [false, "File"]])).toBe("URL, File");
+    expect(missingLabels([[true, "Name"]])).toBeNull();
   });
 
   function shell(over: { missing: string | null; onSubmit?: () => void; onOpenChange?: (open: boolean) => void }) {
@@ -137,7 +193,7 @@ describe("the modal frame (CA-15 P1)", () => {
 
   it("adds when complete, and Cancel and the close button close it", () => {
     const { onSubmit, onOpenChange } = shell({ missing: null });
-    expect(screen.getByTestId("modal-status").textContent).toBe("All required fields complete");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required fields complete");
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));

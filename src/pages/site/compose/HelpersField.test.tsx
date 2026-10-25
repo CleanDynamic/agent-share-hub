@@ -18,10 +18,10 @@ const open = (over: Partial<Parameters<typeof HelpersField>[0]> = {}) => {
 describe("Supporting models (CA-13 P6, CA-15 P7)", () => {
   it("adds a summarize helper from its few fields and shows it as a chip", () => {
     const onChange = open();
-    fireEvent.click(screen.getByRole("button", { name: "Add a supporting model" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a helper" }));
     fireEvent.change(screen.getByLabelText("When the history reaches"), { target: { value: "80" } });
     fireEvent.change(screen.getByLabelText("Keep the newest"), { target: { value: "10" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add this supporting model" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add helper" }));
     expect(onChange).toHaveBeenCalledWith([{ provider: "scaledown", job: "summarize", trigger: { at: 0.8, keep: 0.1 } }]);
   });
 
@@ -30,16 +30,16 @@ describe("Supporting models (CA-13 P6, CA-15 P7)", () => {
     const onChange = open({ helpers });
     expect(screen.getByText("Compress fetch_docs")).toBeTruthy();
     expect(screen.getByText("83% smaller")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Remove supporting model 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove helper 1" }));
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
   it("will not add an extract helper with no fields, and says so", () => {
     const onChange = open();
-    fireEvent.click(screen.getByRole("button", { name: "Add a supporting model" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a helper" }));
     fireEvent.keyDown(screen.getByRole("button", { name: "Job of the helper" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Extract" }));
-    fireEvent.click(screen.getByRole("button", { name: "Add this supporting model" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add helper" }));
     expect(screen.getByRole("alert").textContent).toBe("The extract helper needs the fields to pull out.");
     expect(onChange).not.toHaveBeenCalled();
   });

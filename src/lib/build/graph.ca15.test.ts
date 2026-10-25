@@ -121,8 +121,8 @@ describe("a tool tile (CA-15 P4)", () => {
   it("refuses an application that is missing, a connection that is not one, and actions that are too long", async () => {
     await expect(addToolTile(BUILD, [], { service: " " })).rejects.toThrow("A tool needs its application.");
     await expect(addToolTile(BUILD, [], { service: "X", connection: "telepathy" as never })).rejects.toThrow("That is not a way to connect a tool.");
-    await expect(addToolTile(BUILD, [], { service: "X", scopes: "x".repeat(201) })).rejects.toThrow(/at most 200/);
-    await expect(addToolTile(BUILD, [], { service: "X", plan: "x".repeat(81) })).rejects.toThrow(/at most 80/);
+    await expect(addToolTile(BUILD, [], { service: "X", scopes: "x".repeat(201) })).rejects.toThrow(/200 characters max/);
+    await expect(addToolTile(BUILD, [], { service: "X", plan: "x".repeat(81) })).rejects.toThrow(/80 characters max/);
     expect(upsertNode).not.toHaveBeenCalled();
   });
 
@@ -181,8 +181,8 @@ describe("a check's extras (CA-15 P5)", () => {
   });
 
   it("refuses evidence that is not a URL, and an over-long target, saying so", async () => {
-    await expect(addCheck(BUILD, [], { ...base, evidence: { url: "not a url" } })).rejects.toThrow("Evidence is a URL, like example.com/results.");
-    await expect(addCheck(BUILD, [], { ...base, scoring: { how: "metric", target: "x".repeat(81) } })).rejects.toThrow(/at most 80/);
+    await expect(addCheck(BUILD, [], { ...base, evidence: { url: "not a url" } })).rejects.toThrow("Format: example.com/results");
+    await expect(addCheck(BUILD, [], { ...base, scoring: { how: "metric", target: "x".repeat(81) } })).rejects.toThrow(/80 characters max/);
     expect(upsertNode).not.toHaveBeenCalled();
   });
 
@@ -301,7 +301,7 @@ describe("the three source tiles (CA-15 P9)", () => {
 
   it("a repository is refused for a URL that is not GitHub's, and for a run instruction that holds a key's value, which is never stored", async () => {
     await expect(addRepoTile(BUILD, [], { url: "gitlab.com/acme/shop", ownership: "owned" })).rejects.toThrow("A repository URL looks like github.com/owner/name.");
-    await expect(addRepoTile(BUILD, [], { url: "github.com/acme/shop", ownership: "owned", run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] })).rejects.toThrow(/looks as if it holds a key's value/);
+    await expect(addRepoTile(BUILD, [], { url: "github.com/acme/shop", ownership: "owned", run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] })).rejects.toThrow(/Contains a key value/);
     expect(upsertNode).not.toHaveBeenCalled();
   });
 
@@ -336,9 +336,9 @@ describe("CA-18: a check's text and a piece of code's lines, updated in place", 
   });
 
   it("holds a check to the rules Add › Check does", async () => {
-    await expect(setCheckText(check(), { tested: " " })).rejects.toThrow("Add the test description.");
-    await expect(setCheckText(check(), { passing: "x".repeat(281) })).rejects.toThrow("at most 280");
-    await expect(setCheckText(check(), { onFail: "x".repeat(601) })).rejects.toThrow("at most 600");
+    await expect(setCheckText(check(), { tested: " " })).rejects.toThrow("Test description: required");
+    await expect(setCheckText(check(), { passing: "x".repeat(281) })).rejects.toThrow("280 characters max");
+    await expect(setCheckText(check(), { onFail: "x".repeat(601) })).rejects.toThrow("600 characters max");
     await expect(setCheckText(check(), { runAt: "12 Oct" })).rejects.toThrow("2026-10-12");
     await expect(setCheckText(code(), { tested: "x" })).rejects.toThrow("Only a check");
     expect(upsertNode).not.toHaveBeenCalled();
@@ -348,7 +348,7 @@ describe("CA-18: a check's text and a piece of code's lines, updated in place", 
     await setCodeSource(code(), { source: "b = 1", language: "python" });
     expect(written()).toEqual({ source: "b = 1", language: "python", filename: "a.ts" });
     await expect(setCodeSource(code(), { source: "  " })).rejects.toThrow("Code needs its lines.");
-    await expect(setCodeSource(code(), { source: "x".repeat(100_001) })).rejects.toThrow("at most 100,000");
+    await expect(setCodeSource(code(), { source: "x".repeat(100_001) })).rejects.toThrow("100,000 characters max");
     await expect(setCodeSource(code(), { language: "cobol" })).rejects.toThrow("not a language");
     await expect(setCodeSource(check(), { source: "x" })).rejects.toThrow("Only code");
   });

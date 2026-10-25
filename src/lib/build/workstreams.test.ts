@@ -59,7 +59,7 @@ describe("add a part", () => {
     const parts = Array.from({ length: WORKSTREAM_MAX }, (_, at) => ({ key: `ws-${at}` }));
     expect(addWorkstream({ workstreams: parts }, order)).toBeNull();
     expect(storedWorkstreamsOf({ workstreams: [...parts, { key: "ws-extra" }] })).toHaveLength(WORKSTREAM_MAX);
-    expect(workstreamsRefusal([...parts, { key: "ws-extra" }])).toMatch(/at most 26/);
+    expect(workstreamsRefusal([...parts, { key: "ws-extra" }])).toMatch(/Parts: 26 max/);
   });
 });
 

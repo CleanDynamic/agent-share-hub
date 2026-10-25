@@ -6,6 +6,7 @@ import { ResultTileBody } from "@/components/build/tileBodies";
 import { resultFactsOf, resultHolds, resultHoldsWord, resultLinkOf, resultRefusal, resultSummaryOf, resultTypeLabel } from "@/lib/build/graph";
 
 import { AddResultDialog, RESULT_CHOICES, RESULT_DIALOG_COPY } from "./AddResultDialog";
+import { fieldNames, openOptional } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -22,13 +23,13 @@ const open = () => {
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const type = (name: string) => fireEvent.click(within(screen.getByRole("group", { name: "Output type" })).getByRole("button", { name }));
 const status = () => screen.getByTestId("modal-status").textContent;
-const type_ = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
+const type_ = (label: string, value: string) => fireEvent.change(screen.getAllByLabelText(label).at(-1) as HTMLElement, { target: { value } });
 
 describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("is the shared frame, with its subtitle and twelve output types, link first", () => {
     open();
     expect(screen.getByRole("dialog", { name: RESULT_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("The output this prompt produced");
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Output of this prompt");
     const grid = within(screen.getByRole("group", { name: "Output type" }));
     expect(grid.getAllByRole("button").map((button) => button.textContent)).toEqual([
       "Link",
@@ -52,9 +53,9 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("asks a link for its URL, and says what is missing until it has it", () => {
     const onAdd = open();
     expect(add().disabled).toBe(true);
-    expect(status()).toBe("Required: a URL");
+    expect(status()).toBe("Required: URL");
     type_("URL", "plumandrye.example/shop?x=1");
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "link", url: "plumandrye.example/shop?x=1", caption: "" });
   });
@@ -62,7 +63,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("a model asks for a base model or a training method", () => {
     const onAdd = open();
     type("Model");
-    expect(status()).toBe("Required: a base model or a training method");
+    expect(status()).toBe("Required: Base model, Training method");
     type_("Base model", "Muse Spark Open");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "model", baseModel: "Muse Spark Open", method: "", caption: "" });
@@ -72,7 +73,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
     const onAdd = open();
     type("Image or video");
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [new File(["x"], "spec.pdf", { type: "application/pdf" })] } });
-    expect(screen.getByRole("alert").textContent).toBe("spec.pdf is not an image or a video.");
+    expect(screen.getByRole("alert").textContent).toBe("spec.pdf: image or video only");
     const png = new File(["x"], "hero.png", { type: "image/png" });
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [png] } });
     fireEvent.click(add());
@@ -91,7 +92,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("text needs the text", () => {
     const onAdd = open();
     type("Text");
-    expect(status()).toBe("Required: the text");
+    expect(status()).toBe("Required: Text");
     type_("Text", " Hello there ");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "text", text: "Hello there", caption: "" });
@@ -100,9 +101,9 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("audio takes one audio file and refuses anything else", () => {
     const onAdd = open();
     type("Audio");
-    expect(status()).toBe("Required: an audio file");
+    expect(status()).toBe("Required: Audio file");
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [new File(["x"], "memo.png", { type: "image/png" })] } });
-    expect(screen.getByRole("alert").textContent).toBe("memo.png is not an audio file.");
+    expect(screen.getByRole("alert").textContent).toBe("memo.png: audio file only");
     const wav = new File(["x"], "memo.wav", { type: "audio/wav" });
     fireEvent.change(screen.getByTestId("result-files"), { target: { files: [wav] } });
     fireEvent.click(add());
@@ -120,7 +121,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("a data table takes a CSV file, or pasted CSV with its columns counted", () => {
     const onAdd = open();
     type("Data table");
-    expect(status()).toBe("Required: a CSV file or pasted CSV");
+    expect(status()).toBe("Required: CSV file, Pasted CSV");
     type_("Pasted CSV", "name,price,stock\nsourdough,4.5,12");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "table", file: null, csv: "name,price,stock\nsourdough,4.5,12", columns: 3, caption: "" });
@@ -129,9 +130,9 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("a sent message needs a channel and the message", () => {
     const onAdd = open();
     type("Sent message");
-    expect(status()).toBe("Required: a channel");
+    expect(status()).toBe("Required: Channel, Message");
     fireEvent.click(within(screen.getByRole("radiogroup", { name: "Channel" })).getByRole("radio", { name: "Slack" }));
-    expect(status()).toBe("Required: the message");
+    expect(status()).toBe("Required: Message");
     type_("Message", "Your loaves are ready");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "message", channel: "slack", message: "Your loaves are ready", caption: "" });
@@ -140,21 +141,19 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("a change in an external app needs the application and what changed", () => {
     open();
     type("Change in an external app");
-    expect(status()).toBe("Required: an application");
-    expect(screen.getByText("Select an application")).toBeTruthy();
+    expect(status()).toBe("Required: App, What changed");
+    expect(screen.getByText("Select an app")).toBeTruthy();
   });
 
   it("a metric needs a value and a label, and keeps its unit and value before in Optional", () => {
     const onAdd = open();
     type("Metric");
-    expect(status()).toBe("Required: a value");
+    expect(status()).toBe("Required: Value, Label");
     type_("Value", "42");
-    expect(status()).toBe("Required: a label");
+    expect(status()).toBe("Required: Label");
     type_("Label", "Orders per week");
-    expect(screen.getAllByTestId("optional-field").map((row) => within(row).getAllByRole("button")[0].textContent)).toEqual(["Unit" + "What the value is counted in", "Value before" + "The figure before the change", "Caption" + "One line describing what the output shows"]);
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[0]).getByRole("button"));
+    expect(fieldNames()).toEqual(["Unit", "Value before", "Caption"]);
     type_("Unit", "orders");
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[1]).getByRole("button"));
     type_("Value before", "31");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "metric", value: "42", label: "Orders per week", unit: "orders", before: "31", caption: "" });
@@ -163,9 +162,9 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
   it("an offline outcome needs a description, and takes one photo in Optional", () => {
     const onAdd = open();
     type("Offline outcome");
-    expect(status()).toBe("Required: a description");
+    expect(status()).toBe("Required: Description");
     type_("Description", "Delivered the loaves by hand");
-    fireEvent.click(within(screen.getAllByTestId("optional-field")[0]).getByRole("button"));
+    openOptional();
     const photo = new File(["x"], "stall.jpg", { type: "image/jpeg" });
     fireEvent.change(screen.getByTestId("result-photo"), { target: { files: [photo] } });
     fireEvent.click(add());
@@ -174,10 +173,9 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
 
   it("every type has a one-line caption in Optional, closed to begin with, and hands it back trimmed", () => {
     const onAdd = open();
-    const row = screen.getByTestId("optional-field");
-    expect(within(row).getByRole("button").getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     type_("URL", "plumandrye.example");
-    fireEvent.click(within(row).getByRole("button"));
+    openOptional();
     type_("Caption", "  The launch page  ");
     fireEvent.click(add());
     expect(onAdd).toHaveBeenCalledWith({ kind: "link", url: "plumandrye.example", caption: "The launch page" });
@@ -187,7 +185,7 @@ describe("Add › Result (CA-12 P9, CA-15 P3)", () => {
     phone = true;
     open();
     expect(screen.getByTestId("bottom-sheet")).toBeTruthy();
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("The output this prompt produced");
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Output of this prompt");
   });
 });
 
@@ -249,7 +247,7 @@ describe("what a result holds (CA-12 P9, CA-15 P3)", () => {
     expect(resultRefusal({ kind: "message", channel: "email", message: "" })).toBe("Add the message.");
     expect(resultRefusal({ kind: "metric", value: "4", label: "" })).toBe("Add the label.");
     expect(resultRefusal({ kind: "table", csv: "" })).toMatch(/CSV/);
-    expect(resultRefusal({ kind: "text", text: "x", caption: "y".repeat(141) })).toMatch(/caption/);
+    expect(resultRefusal({ kind: "text", text: "x", caption: "y".repeat(141) })).toMatch(/Caption/);
   });
 });
 

@@ -229,7 +229,7 @@ function SandboxPageBody() {
     } catch (cause) {
       console.error("[Sandbox] unpublish failed", cause);
       const failure = unpublishFailure(cause);
-      toast.error(failure === "failed" ? "Couldn't unpublish. Try again." : `Couldn't unpublish: ${shortReason(cause)}.`);
+      toast.error(failure === "failed" ? "Build not unpublished" : `Build not unpublished: ${shortReason(cause)}`);
       return failure;
     }
   }, [compose]);
@@ -739,7 +739,7 @@ function SandboxPageBody() {
    * where a session made here is kept (`sessions_meta`, `build_sessions` when the table is there, `session_order`), so it
    * works before the CA-12 table is live.
    */
-  const onStartSession = useCallback(async (workstream?: string) => {
+  const onStartSession = useCallback(async function again(workstream?: string) {
     setStartingSession(true);
     try {
       const fresh = !buildId;
@@ -769,7 +769,7 @@ function SandboxPageBody() {
     } catch (cause) {
       setArriving((current) => (current ? { ...current, status: "failed" } : current));
       console.error("[Sandbox] session not made", cause);
-      sayFailed(cause, "Couldn't make that session. Try again.");
+      sayFailed(cause, "Session not made", () => void again(workstream));
     } finally {
       setStartingSession(false);
     }
@@ -786,7 +786,7 @@ function SandboxPageBody() {
     return out;
   }, [made, sessions.rows, sourceSessionRows, collapseOverride]);
   const onToggleCollapsed = useCallback(
-    (key: string, closed: boolean) => {
+    function again(key: string, closed: boolean) {
       setCollapseOverride((previous) => ({ ...previous, [key]: closed }));
       if (!buildId) return;
       void setCollapsed(buildId, key, closed, made)
@@ -794,7 +794,7 @@ function SandboxPageBody() {
         .catch((cause) => {
           console.error("[Sandbox] collapse not saved", cause);
           setCollapseOverride((previous) => ({ ...previous, [key]: !closed }));
-          sayFailed(cause, "Couldn't save that. Try again.");
+          sayFailed(cause, "Fold not saved", () => again(key, closed));
         });
     },
     [buildId, queryClient, made],
@@ -818,7 +818,7 @@ function SandboxPageBody() {
   }, [groups, made, collapsedKeys, onToggleCollapsed, edits]);
 
   const onSessionMeta = useCallback(
-    async (key: string, change: { tool?: string | null; date?: string }) => {
+    async function again(key: string, change: { tool?: string | null; date?: string }): Promise<void> {
       try {
         if (isLegacySession(key)) {
           await claim(key, change);
@@ -831,7 +831,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session not saved", cause);
-        sayFailed(cause, "Couldn't save that session. Try again.");
+        sayFailed(cause, "Session not saved", () => void again(key, change));
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -839,7 +839,7 @@ function SandboxPageBody() {
 
   /** CA-04 P6: what a session worked until; an old build's run of typed prompts is saved as a session first. */
   const onSessionGoal = useCallback(
-    async (key: string, goal: SessionGoal | null) => {
+    async function again(key: string, goal: SessionGoal | null): Promise<void> {
       if (goal) {
         const why = goalRefusal(goal);
         if (why) {
@@ -860,7 +860,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] goal not saved", cause);
-        sayFailed(cause, "Couldn't save the goal. Try again.");
+        sayFailed(cause, "Goal not saved", () => void again(key, goal));
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -868,7 +868,7 @@ function SandboxPageBody() {
 
   /** CA-05: what a session carries beyond its steps (cost, background, ...), written whole; an old build's run of typed prompts is saved as a session first. */
   const onSessionExtras = useCallback(
-    async (key: string, extras: SessionExtras) => {
+    async function again(key: string, extras: SessionExtras): Promise<void> {
       const why = extrasRefusal(extras);
       if (why) {
         toast.error(why);
@@ -886,7 +886,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session facts not saved", cause);
-        sayFailed(cause, "Couldn't save that. Try again.");
+        sayFailed(cause, "Session details not saved", () => void again(key, extras));
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -894,7 +894,7 @@ function SandboxPageBody() {
 
   /** CA-05 P5: the sessions one ran at the same time as. The pairing is written on both sides, so the Map and the List agree. */
   const onSessionTogether = useCallback(
-    async (key: string, next: string[]) => {
+    async function again(key: string, next: string[]): Promise<void> {
       try {
         const self = isLegacySession(key) ? await claim(key) : key;
         if (!self) return;
@@ -909,7 +909,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] sessions at the same time not saved", cause);
-        sayFailed(cause, "Couldn't save that. Try again.");
+        sayFailed(cause, "Ran alongside not saved", () => void again(key, next));
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -917,7 +917,7 @@ function SandboxPageBody() {
 
   /** CA-06 P4: a session's colour, or none; an old build's run of typed prompts has no colour button, so is never here. */
   const onSessionColour = useCallback(
-    async (key: string, colour: string | null) => {
+    async function again(key: string, colour: string | null): Promise<void> {
       try {
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
@@ -928,7 +928,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session colour not saved", cause);
-        sayFailed(cause, "Couldn't save that colour. Try again.");
+        sayFailed(cause, "Colour not saved", () => void again(key, colour));
       }
     },
     [ensureBuild, groups, made, refreshRecord, nodes],
@@ -936,7 +936,7 @@ function SandboxPageBody() {
 
   /** CA-12 P3: "Pick an app" on a session made here. On a post with no draft yet, the draft and its Session 1 are made first. */
   const onPickApp = useCallback(
-    async (key: string, tool: string | null) => {
+    async function again(key: string, tool: string | null): Promise<void> {
       try {
         const id = await ensureBuild();
         const real = key === FIRST_SESSION_KEY ? firstSession.current : key;
@@ -946,7 +946,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] app not saved", cause);
-        sayFailed(cause, "Couldn't save that app. Try again.");
+        sayFailed(cause, "App not saved", () => void again(key, tool));
       }
     },
     [ensureBuild, firstSession, made, refreshRecord],
@@ -1073,7 +1073,7 @@ function SandboxPageBody() {
     [onSessionColour, prompts, afterWrite, edits],
   );
   writeRef.current = writeColour;
-  saveGroupsRef.current = async (list: ReferenceGroup[], order?: string[]) => {
+  saveGroupsRef.current = async function again(list: ReferenceGroup[], order?: string[]): Promise<void> {
     try {
       await nodes.run(async () => {
         const id = await ensureBuild();
@@ -1082,7 +1082,7 @@ function SandboxPageBody() {
       });
     } catch (cause) {
       console.error("[Sandbox] reference groups not saved", cause);
-      sayFailed(cause, "Couldn't save those colours. Try again.");
+      sayFailed(cause, "Colours not saved", () => void again(list, order));
     }
   };
   /* CA-06 P5: the picker the colour buttons open. */
@@ -1235,7 +1235,7 @@ function SandboxPageBody() {
         afterWrite();
       } catch (cause) {
         console.error("[Sandbox] check not added", cause);
-        sayFailed(cause, "Couldn't add that check. Try again.");
+        sayFailed(cause, "Check not added");
       }
     },
     [ensureBuild, nodes, prompts, steps, afterStep, afterWrite, sessionToWrite],
@@ -1289,7 +1289,7 @@ function SandboxPageBody() {
   const [addResultOpen, setAddResultOpen] = useState(false);
   /** CA-12 P9: Add › Result asks what the result is first; the files it holds are stored, then the tile stands at the end of the List. */
   const onAddResultInput = useCallback(
-    async (input: AddResultInput) => {
+    async function again(input: AddResultInput): Promise<void> {
       showPending("result");
       try {
         const caption = input.caption.trim() || undefined;
@@ -1329,7 +1329,7 @@ function SandboxPageBody() {
         }
       } catch (cause) {
         console.error("[Sandbox] result not added", cause);
-        sayFailed(cause, "Couldn't add that result. Try again.");
+        sayFailed(cause, "Result not added", () => void again(input));
       } finally {
         setPendingAdd(null);
       }
@@ -1362,7 +1362,7 @@ function SandboxPageBody() {
           queryClient.setQueryData<StoredClassification>(classificationKey(id), { live: true, classification: value, facets: computeFacets(value) });
           await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
         };
-        buildHistory.record({ sentence: "Saved the Classification Card", undo: put(before), redo: put(after) });
+        buildHistory.record({ sentence: "Saved the Classification", undo: put(before), redo: put(after) });
       }
       return result;
     },
@@ -1447,7 +1447,7 @@ function SandboxPageBody() {
   );
 
   const download = useCallback(
-    async (nodeId: string) => {
+    async function again(nodeId: string): Promise<void> {
       const node = tree.find((candidate) => candidate.id === nodeId);
       const payload = (node?.payload ?? {}) as { media_id?: unknown; url?: unknown };
       try {
@@ -1460,16 +1460,16 @@ function SandboxPageBody() {
         }
       } catch (cause) {
         console.error("[Sandbox] download failed", cause);
-        sayFailed(cause, "Couldn't download that. Try again.");
+        sayFailed(cause, "File not downloaded", () => void again(nodeId));
       }
     },
     [tree],
   );
 
   const addPicture = useCallback(
-    async (resultId: string, file: File) => {
+    async function again(resultId: string, file: File): Promise<void> {
       if (!mediaKindFor(file.type) || file.size > MEDIA_MAX_BYTES) {
-        toast.error(`${file.name} can't be added as a picture.`);
+        toast.error(`${file.name}: image only`);
         return;
       }
       try {
@@ -1478,14 +1478,14 @@ function SandboxPageBody() {
         prompts.setFields(resultId, { media_id: media.id });
       } catch (cause) {
         console.error("[Sandbox] picture not added", cause);
-        sayFailed(cause, `Couldn't add ${file.name}. Try again.`);
+        sayFailed(cause, `${file.name} not added`, () => void again(resultId, file));
       }
     },
     [ensureBuild, nodes, prompts],
   );
 
   const setAsCover = useCallback(
-    async (mediaId: string) => {
+    async function again(mediaId: string): Promise<void> {
       try {
         const media = await getMediaById(mediaId);
         if (!media) throw new Error("media missing");
@@ -1494,7 +1494,7 @@ function SandboxPageBody() {
         viewProps.onFiles([new File([blob], media.filename ?? "cover", { type: media.mime ?? blob.type })]);
       } catch (cause) {
         console.error("[Sandbox] cover not set", cause);
-        sayFailed(cause, "Couldn't use that as the cover. Try again.");
+        sayFailed(cause, "Cover not set", () => void again(mediaId));
       }
     },
     [viewProps],
@@ -1506,7 +1506,7 @@ function SandboxPageBody() {
    * is scrolled to and outlined once.
    */
   const onAddSession = useCallback(
-    async (importId: string, workstream?: string) => {
+    async function again(importId: string, workstream?: string): Promise<void> {
       setAdding((previous) => new Set(previous).add(importId));
       // CA-21 P7: the lane opens as soon as it is pressed; the count is all it needs of the chat to make a place for each prompt.
       const item = libraryRows.find((row) => row.id === importId);
@@ -1530,7 +1530,7 @@ function SandboxPageBody() {
       } catch (cause) {
         setArriving((current) => (current && current.key === importId ? { ...current, status: "failed" } : current));
         console.error("[Sandbox] session not added", cause);
-        sayFailed(cause, "Couldn't add that session. Try again.");
+        sayFailed(cause, "Session not added", () => void again(importId, workstream));
       } finally {
         setAdding((previous) => {
           const next = new Set(previous);
@@ -1544,14 +1544,14 @@ function SandboxPageBody() {
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
   const addOneFile = useCallback(
-    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null, tile = false): Promise<BuildNode | null> => {
+    async function again(file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null, tile = false): Promise<BuildNode | null> {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
         return null;
       }
       if (file.size > MEDIA_MAX_BYTES) {
-        toast.error(`${file.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+        toast.error(`${file.name}: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
         return null;
       }
       try {
@@ -1568,7 +1568,7 @@ function SandboxPageBody() {
         return added.node;
       } catch (cause) {
         console.error("[Sandbox] file not added", cause);
-        sayFailed(cause, `Couldn't ${verb} ${file.name}. Try again.`);
+        sayFailed(cause, `${file.name} not ${verb === "attach" ? "attached" : "added"}`, () => void again(file, verb, parentId, rows, tile));
         return null;
       }
     },
@@ -1644,7 +1644,7 @@ function SandboxPageBody() {
       return null;
     }
     if (file.size > MEDIA_MAX_BYTES) {
-      toast.error(`${file.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+      toast.error(`${file.name}: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
       return null;
     }
     return (await uploadMedia({ buildId, file })).id;
@@ -1715,7 +1715,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] setup not added", cause);
-        sayFailed(cause, "Couldn't add that to the setup. Try again.");
+        sayFailed(cause, "Setup item not added");
       }
       return left;
     },
@@ -1731,7 +1731,7 @@ function SandboxPageBody() {
   }, []);
 
   const onNotShared = useCallback(
-    (id: string) =>
+    function again(id: string): void {
       void nodes
         .run(async () => {
           const node = tree.find((candidate) => candidate.id === id);
@@ -1741,8 +1741,9 @@ function SandboxPageBody() {
         })
         .catch((cause) => {
           console.error("[Sandbox] not marked", cause);
-          sayFailed(cause, "Couldn't change that. Try again.");
-        }),
+          sayFailed(cause, "Item not kept private", () => again(id));
+        });
+    },
     [nodes, tree],
   );
 
@@ -1987,6 +1988,7 @@ function SandboxPageBody() {
         if (real) prompts.add(real.id, row.ordinal);
       } else if (row.stepId) actions.removeTile(row.stepId);
     },
+    onRetrySessionPrompts: (key) => sessions.retryPrompts(key),
     onSessionTool: (sessionId, tool) => void sessions.setTool(sessionId, tool),
     onSessionMeta: (key, change) => void onSessionMeta(key, change),
     onSessionGoal: (key, goal) => void onSessionGoal(key, goal),
@@ -2037,7 +2039,7 @@ function SandboxPageBody() {
     };
     const sentence = movedStep(whatIs(id), by);
     const said = movedLine(result.move, names);
-    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Couldn't move that. Try again." });
+    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Tile not moved" });
     if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) {
       const parent = write.parent;
       const index = write.index;
@@ -2298,7 +2300,7 @@ function SandboxPageBody() {
             onArrived={(key, status) => {
               setArriving((current) => (current && current.key === key ? null : current));
               if (status === "written" && arriving && arriving.key === key) setSessionSaid(arriving.count > 0 ? `Added Session ${arriving.head.number} with ${arriving.count} ${arriving.count === 1 ? "prompt" : "prompts"}.` : `Added Session ${arriving.head.number}.`);
-              if (status === "failed") setSessionSaid(arriving?.kind === "empty" ? "Couldn't make that session. Try again." : "Couldn't add that session. Try again.");
+              if (status === "failed") setSessionSaid(arriving?.kind === "empty" ? "Session not made" : "Session not added");
             }}
           />
         }

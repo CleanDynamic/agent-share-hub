@@ -57,14 +57,17 @@ export const MODAL_COPY = {
   /** CA-18: a window that changes a tile that is there. */
   save: "Save",
   edit: "Edit",
-  allComplete: "All required fields complete",
+  allComplete: "Required fields complete",
 } as const;
 
-/** The footer's status line: the first thing still missing, or that nothing is. */
+/** The footer's status line: the labels of what is still missing, or that nothing is. */
 export const requiredLine = (missing: string | null | undefined): string => (missing ? `Required: ${missing}` : MODAL_COPY.allComplete);
 
-/** The first of the required fields that is not complete, in the order the body shows them; null when all are. */
-export const firstMissing = (checks: readonly (readonly [boolean, string])[]): string | null => checks.find(([done]) => !done)?.[1] ?? null;
+/** The required fields that are not complete, by their labels exactly, in the order the body shows them, as one list; null when all are. */
+export const missingLabels = (checks: readonly (readonly [boolean, string])[]): string | null => {
+  const missing = checks.filter(([done]) => !done).map(([, label]) => label);
+  return missing.length > 0 ? missing.join(", ") : null;
+};
 
 /* ── edit mode (CA-18 P2) ── */
 
@@ -152,7 +155,7 @@ export interface ModalFormProps {
   phone: boolean;
   onSubmit: () => void;
   onCancel: () => void;
-  /** The first required field not yet complete; null when all are. */
+  /** The labels of the required fields not yet complete, as one line; null when all are. */
   missing: string | null;
   /** Adds to what `missing` decides (a field that refuses, such as code over its limit). */
   blocked?: boolean;

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddManualStepDialog, MANUAL_DIALOG_COPY, type AddManualStepDialogProps } from "./AddManualStepDialog";
+import { openOptional } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -19,7 +20,7 @@ function open(over: Partial<AddManualStepDialogProps> = {}) {
   return props;
 }
 
-const toolButton = () => screen.getByRole("button", { name: "Tool" });
+const toolButton = () => screen.getByRole("button", { name: "App" });
 const pickApp = (name: string) => {
   fireEvent.click(toolButton());
   fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: name } });
@@ -29,6 +30,7 @@ const where = (name: string) => fireEvent.click(screen.getByRole("button", { nam
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const line = (n = 1) => screen.getByLabelText(`Line ${n}`) as HTMLInputElement;
 const picture = (type: string, size = 100, name = "hero.png") => {
+  openOptional();
   const file = new File(["x"], name, { type });
   Object.defineProperty(file, "size", { value: size });
   fireEvent.change(screen.getByTestId("manual-picture"), { target: { files: [file] } });
@@ -36,18 +38,18 @@ const picture = (type: string, size = 100, name = "hero.png") => {
 };
 
 describe("the Add manual step dialog (CA-12 P10)", () => {
-  it("is a 560-wide dialog saying where the step will go, and asks 'Where was it done?'", () => {
+  it("is a 560-wide dialog saying where the step will go, and asks 'Where'", () => {
     open();
     expect(screen.getByRole("dialog", { name: MANUAL_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("add-manual-dialog").style.width).toBe("560px");
     expect(screen.getByText("Goes after 3 · Fix the mobile layout")).toBeTruthy();
-    expect(screen.getAllByText("Where was it done?").length).toBeGreaterThan(0);
-    for (const name of ["An app or website", "A terminal", "On a phone", "Offline, in person", "Another website"]) expect(screen.getByRole("button", { name })).toBeTruthy();
+    expect(screen.getAllByText("Where").length).toBeGreaterThan(0);
+    for (const name of ["App or website", "Terminal", "Phone", "In person", "Other website"]) expect(screen.getByRole("button", { name })).toBeTruthy();
   });
 
   it("an app comes from the apps list, with no AI tool in it, and no default", () => {
     open({ inBuild: ["GitHub"] });
-    expect(toolButton().textContent).toBe("Select an application");
+    expect(toolButton().textContent).toBe("Select an app");
     expect(add().disabled).toBe(true);
     fireEvent.click(toolButton());
     fireEvent.click(screen.getByRole("option", { name: /^Show all/ }));
@@ -68,7 +70,7 @@ describe("the Add manual step dialog (CA-12 P10)", () => {
   });
 
   it("a terminal, a phone and offline need no app", () => {
-    for (const [name, kind] of [["A terminal", "terminal"], ["On a phone", "phone"], ["Offline, in person", "offline"]] as const) {
+    for (const [name, kind] of [["Terminal", "terminal"], ["Phone", "phone"], ["In person", "offline"]] as const) {
       const props = open();
       where(name);
       expect(screen.queryByRole("button", { name: "Tool" })).toBeNull();
@@ -81,17 +83,17 @@ describe("the Add manual step dialog (CA-12 P10)", () => {
 
   it("another website asks for a link", () => {
     const props = open();
-    where("Another website");
+    where("Other website");
     fireEvent.change(line(), { target: { value: "Signed up" } });
     expect(add().disabled).toBe(true);
-    fireEvent.change(screen.getByLabelText("Link to the website"), { target: { value: "https://example.org/x" } });
+    fireEvent.change(screen.getByLabelText("Website link"), { target: { value: "https://example.org/x" } });
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ where: { kind: "site", name: null, url: "https://example.org/x" }, lines: ["Signed up"], file: null });
   });
 
   it("What was done is numbered lines: Enter adds the next, up to 12, each up to 140, empty ones dropped", () => {
     const props = open();
-    where("A terminal");
+    where("Terminal");
     fireEvent.change(line(1), { target: { value: "cd app" } });
     fireEvent.keyDown(line(1), { key: "Enter" });
     fireEvent.change(line(2), { target: { value: "npm test" } });
@@ -113,9 +115,9 @@ describe("the Add manual step dialog (CA-12 P10)", () => {
 
   it("takes one picture, refuses what is not a picture, and lets it go again", () => {
     const props = open();
-    where("On a phone");
+    where("Phone");
     picture("application/pdf", 100, "spec.pdf");
-    expect(screen.getByRole("alert").textContent).toBe("spec.pdf is not a picture.");
+    expect(screen.getByRole("alert").textContent).toBe("spec.pdf: image only");
     const file = picture("image/png");
     expect(screen.queryByRole("alert")).toBeNull();
     fireEvent.change(line(), { target: { value: "Laid out the hero" } });
@@ -126,7 +128,7 @@ describe("the Add manual step dialog (CA-12 P10)", () => {
   it("refuses a picture over the size limit and removes a chosen one", () => {
     open();
     picture("image/png", 26 * 1024 * 1024);
-    expect(screen.getByRole("alert").textContent).toMatch(/too big/);
+    expect(screen.getByRole("alert").textContent).toMatch(/25 MB max/);
     picture("image/png");
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(screen.queryByText("hero.png")).toBeNull();
@@ -134,7 +136,7 @@ describe("the Add manual step dialog (CA-12 P10)", () => {
 
   it("is disabled, with its reason, while the node type is not live", () => {
     open({ available: false });
-    where("A terminal");
+    where("Terminal");
     fireEvent.change(line(), { target: { value: "Did it" } });
     expect(add().disabled).toBe(true);
     expect(screen.getByText(MANUAL_DIALOG_COPY.missing)).toBeTruthy();

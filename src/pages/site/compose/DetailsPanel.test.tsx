@@ -113,7 +113,7 @@ describe("the sections", () => {
   it("are the tile's, in the window's order, each a label with its count under it", () => {
     panel();
     const sections = screen.getAllByTestId("details-section");
-    expect(sections.map((section) => section.querySelector("h4")?.textContent)).toEqual(["Prompt", "Response", "Model", "Uses", "Makes", "Goes into", "Model settings", "Variables"]);
+    expect(sections.map((section) => section.querySelector("h4")?.textContent)).toEqual(["Prompt", "Response", "Model", "Uses", "Makes", "Used by", "Model settings", "Variables"]);
     expect(within(sections[0]).getByTestId("details-count").textContent).toBe("19 words");
     expect(within(sections[3]).getByTestId("details-count").textContent).toBe("2 tiles");
     expect(within(sections[7]).getByTestId("details-count").textContent).toBe("1 word a copier replaces");
@@ -183,7 +183,7 @@ describe("what it keeps: it reads or moves, it does not change", () => {
 
   it("a row with no tile behind it (Result) is plain", () => {
     panel();
-    const goes = screen.getByRole("region", { name: "Goes into" });
+    const goes = screen.getByRole("region", { name: "Used by" });
     expect(within(goes).getAllByRole("listitem")).toHaveLength(2);
     expect(within(goes).getAllByTestId("details-link")).toHaveLength(1);
   });

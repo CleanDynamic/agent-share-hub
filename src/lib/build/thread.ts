@@ -613,7 +613,7 @@ function mediaProblems(node: Record<string, unknown>, post: number | null, out: 
     out.push({
       code: "caption_too_long",
       post,
-      message: `${postLabel(post)} has a caption of ${characters(caption)} characters. Captions are at most ${CAPTION_MAX}; shorten it.`,
+      message: `${postLabel(post)} caption: ${CAPTION_MAX} characters max`,
     });
   }
   if (attrs.warn !== undefined && (!Array.isArray(attrs.warn) || attrs.warn.some((value) => !MEDIA_WARNINGS.includes(value as MediaWarning)))) {
@@ -627,7 +627,7 @@ function mediaProblems(node: Record<string, unknown>, post: number | null, out: 
     out.push({
       code: "alt_too_long",
       post,
-      message: `${postLabel(post)} has a picture description of ${characters(alt)} characters. Descriptions are at most ${ALT_MAX.toLocaleString("en-US")}; shorten it.`,
+      message: `${postLabel(post)} picture description: ${ALT_MAX.toLocaleString("en-US")} characters max`,
     });
   }
 }
@@ -649,7 +649,7 @@ export function checkThread(doc: unknown): ThreadProblem[] {
     problems.push({
       code: "too_many_posts",
       post: MAX_THREAD_POSTS,
-      message: `This thread has ${posts.length} posts. A thread holds at most ${MAX_THREAD_POSTS}; merge or delete ${posts.length - MAX_THREAD_POSTS}.`,
+      message: `Posts: ${MAX_THREAD_POSTS} max`,
     });
   }
 
@@ -661,7 +661,7 @@ export function checkThread(doc: unknown): ThreadProblem[] {
       problems.push({
         code: "too_many_post_pictures",
         post: index,
-        message: `${postLabel(index)} has ${pictures} pictures. A post shows at most ${MAX_POST_PICTURES}; move some to another post.`,
+        message: `${postLabel(index)} pictures: ${MAX_POST_PICTURES} max`,
       });
     }
 
@@ -670,7 +670,7 @@ export function checkThread(doc: unknown): ThreadProblem[] {
       problems.push({
         code: "post_too_long",
         post: index,
-        message: `${postLabel(index)} has ${length} characters. A post holds at most ${POST_BODY_MAX}; shorten it or split it into two posts.`,
+        message: `${postLabel(index)}: ${POST_BODY_MAX} characters max`,
       });
     }
   });
@@ -680,7 +680,7 @@ export function checkThread(doc: unknown): ThreadProblem[] {
     problems.push({
       code: "too_many_thread_pictures",
       post: null,
-      message: `This thread has ${total} pictures. A thread shows at most ${MAX_THREAD_MEDIA}; remove ${total - MAX_THREAD_MEDIA}.`,
+      message: `Pictures: ${MAX_THREAD_MEDIA} max`,
     });
   }
 

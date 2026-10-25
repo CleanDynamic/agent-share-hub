@@ -42,8 +42,8 @@ import { KeepLinkDialog, type KeepChoice } from "./referencePieces";
 import type { References } from "./useReferences";
 
 export const ACTIONS_COPY = {
-  keepTitle: (group: string) => `Which linked text should ${group} keep?`,
-  keepBody: "The other becomes plain words.",
+  keepTitle: "Linked text to keep",
+  keepBody: "The other becomes plain text",
   keep: "Keep",
 } as const;
 
@@ -106,7 +106,7 @@ export function useReferenceActions({ references, lookup, nameOf, dropPreview }:
       const theirs = group ? linkedOf(groupTo(group.id)) : null;
       if (mine && theirs && group) {
         setKeep({
-          title: ACTIONS_COPY.keepTitle(groupName(group)),
+          title: ACTIONS_COPY.keepTitle,
           choices: [
             { key: "group", owner: groupName(group), words: theirs.text, post: theirs.post },
             { key: "member", owner: nameOf(member), words: mine.text, post: mine.post },

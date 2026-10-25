@@ -1,6 +1,6 @@
-/* CA-13 P6, CA-15 P7: "Supporting models", on an agent: in Details and in the Add agent dialog.
+/* CA-13 P6, CA-15 P7: "Helpers", on an agent: in Details and in the Add agent dialog.
 
-   The list of supporting models as chips with a Remove each, then "Add a supporting model": the job first, then the provider (ScaleDown,
+   The list of supporting models as chips with a Remove each, then "Add a helper": the job first, then the provider (ScaleDown,
    TypeSafe or typed), then that job's few fields in sentence case, and under all of them an optional "What it did on the
    run". The percentage a helper made smaller is never typed: it is worked out from the before and after. */
 
@@ -132,10 +132,10 @@ export interface HelpersFieldProps {
 }
 
 export const HELPERS_COPY = {
-  title: "Supporting models",
-  add: "Add a supporting model",
-  addThis: "Add this supporting model",
-  remove: (n: number) => `Remove supporting model ${n}`,
+  title: "Helpers",
+  add: "Add a helper",
+  addThis: "Add helper",
+  remove: (n: number) => `Remove helper ${n}`,
 } as const;
 
 export function HelpersField({ helpers, toolNames, decisions, phone, onChange, bare = false }: HelpersFieldProps) {
@@ -179,9 +179,9 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
           {d.provider === "typed" ? <input aria-label="Provider name" type="text" value={d.typedProvider} maxLength={40} onChange={(e) => set({ typedProvider: e.target.value })} style={typedField(phone)} /> : null}
           {d.job === "summarize" ? (
             <>
-              <Field id="helper-model" label="Model" hint="As you gave it"><input id="helper-model" type="text" value={d.model} maxLength={80} placeholder="e.g. openai:gpt-6-sol" onChange={(e) => set({ model: e.target.value })} style={typedField(phone)} /></Field>
-              <Field id="helper-at" label="When the history reaches" hint="Percent of the context"><input id="helper-at" type="text" inputMode="numeric" value={d.at} placeholder="e.g. 80" onChange={(e) => set({ at: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
-              <Field id="helper-keep" label="Keep the newest" hint="Percent"><input id="helper-keep" type="text" inputMode="numeric" value={d.keep} placeholder="e.g. 10" onChange={(e) => set({ keep: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
+              <Field id="helper-model" label="Model" hint="As written"><input id="helper-model" type="text" value={d.model} maxLength={80} placeholder="openai:gpt-6-sol" onChange={(e) => set({ model: e.target.value })} style={typedField(phone)} /></Field>
+              <Field id="helper-at" label="When the history reaches" hint="Percent of the context"><input id="helper-at" type="text" inputMode="numeric" value={d.at} placeholder="80" onChange={(e) => set({ at: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
+              <Field id="helper-keep" label="Keep the newest" hint="Percent"><input id="helper-keep" type="text" inputMode="numeric" value={d.keep} placeholder="10" onChange={(e) => set({ keep: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
             </>
           ) : null}
           {d.job === "compress" ? (
@@ -194,7 +194,7 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
                   </label>
                 ))
               ) : (
-                <span style={text(12, 400, t.label)}>This agent has no tools yet. Leave it blank to compress every tool's results.</span>
+                <span style={text(12, 400, t.label)}>No tools on this agent. Blank: all tool results</span>
               )}
             </Field>
           ) : null}
@@ -202,19 +202,19 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
           {d.job === "classify" ? (
             <>
               <ChipsInput label="Labels" items={d.labels} input={d.labelInput} onInput={(labelInput) => set({ labelInput })} onItems={(labels) => set({ labels })} phone={phone} />
-              <Field id="helper-stop" label="Stop the run when" hint="A label scores at or above, in percent">
-                <input id="helper-stop" type="text" inputMode="numeric" value={d.stopAt} placeholder="e.g. 80" onChange={(e) => set({ stopAt: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} />
+              <Field id="helper-stop" label="Stop the run when" hint="Label score, percent">
+                <input id="helper-stop" type="text" inputMode="numeric" value={d.stopAt} placeholder="80" onChange={(e) => set({ stopAt: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} />
               </Field>
             </>
           ) : null}
           {d.job === "decide" ? (
             <Field id="helper-decision" label="Decision" group>
-              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Select a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(12, 400, t.label)}>Add a Decision tile first.</span>}
+              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Select a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(12, 400, t.label)}>Needs a Decision tile</span>}
             </Field>
           ) : null}
           <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 24 }}>
             <Checkbox checked={d.did} onChange={(e) => set({ did: e.target.checked })} />
-            <span style={text(13, 400, t.text)}>What it did on the run</span>
+            <span style={text(13, 400, t.text)}>On the run</span>
           </label>
           {d.did ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

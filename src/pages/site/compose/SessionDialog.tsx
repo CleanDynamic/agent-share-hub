@@ -28,12 +28,28 @@ import { bufferedHandlers } from "./editHandlers";
 import { useBuildHistoryContext } from "./useBuildHistory";
 import { MODAL_COPY, ModalForm, ModalShell } from "./ModalFrame";
 import { BODY_TEXT, Block, BlockHead, FieldArea, FieldInput, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, PANEL_LIST, RecipeButton, Row, SegmentedField, TextLink } from "./modalRecipes";
-import { SessionFactsFields, StartedWithField, TogetherFields } from "./SessionExtrasFields";
+import { OptionalField, OptionalSection } from "./OptionalSection";
+import {
+  CostControl,
+  EXTRAS_COPY,
+  MethodControl,
+  OwnCopyControl,
+  StartedWithControl,
+  TimeControl,
+  TogetherControl,
+  TokensControl,
+  TraceControl,
+  costHeld,
+  methodHeld,
+  timeHeld,
+  togetherHeld,
+  tokensHeld,
+} from "./SessionExtrasFields";
 import { ToolPicker } from "./ToolPicker";
 
 export const SESSION_DIALOG_COPY = {
   title: (n: number, tool: string) => `Session ${n}${tool ? ` · ${tool}` : ""}`,
-  subtitle: "The app, the day, what it cost and what it started with",
+  subtitle: "App, date, cost and setup",
   appAndModel: "App and model",
   app: "App",
   noApp: "No app chosen",
@@ -41,23 +57,23 @@ export const SESSION_DIALOG_COPY = {
   notNamed: "Not named",
   date: "Date",
   dateHint: "2026-10-12",
-  badDate: "Write the day as 2026-10-12.",
+  badDate: "Format: 2026-10-12",
   notDated: "Not dated",
   goal: "Worked until",
   condition: "The condition",
   conditionHint: "the tests pass and the page loads",
   atMost: "At most",
   turns: "turns",
-  reached: "Was it reached?",
+  reached: "Outcome",
   tookTurns: "Reached in",
-  removeGoal: "Take the goal off",
-  badTurns: `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`,
+  removeGoal: "Remove goal",
+  badTurns: `Turns: whole number, ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}`,
   costAndTokens: "Cost and tokens",
   together: "At the same time as",
   setup: "Setup",
   addToSetup: "Add to setup",
   notShared: "Not shared",
-  keepToMyself: "Don't share it",
+  keepToMyself: "Keep private",
   prompts: "Prompts shared",
   promptsIn: (inBuild: number, total: number | null) => (total === null ? `${inBuild}` : `${inBuild} of ${total}`),
 } as const;
@@ -65,7 +81,7 @@ export const SESSION_DIALOG_COPY = {
 const REACHED = [
   { value: "reached", label: "Reached" },
   { value: "limit", label: "Stopped at the limit" },
-  { value: "me", label: "Stopped by me" },
+  { value: "me", label: "Stopped by the maker" },
 ] as const;
 
 /** A whole number of turns, 1 to 500, undefined for blank, null for anything else. */
@@ -213,29 +229,42 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
         ) : null}
 
         {h.onSessionExtras ? (
-          <>
-            <Block label={SESSION_DIALOG_COPY.costAndTokens} testId="session-extras">
-              <BlockHead label={SESSION_DIALOG_COPY.costAndTokens} />
-              <SessionFactsFields id={key} extras={extras} phone={phone} onChange={saveExtras} />
-              <StartedWithField key={`${key}:started`} id={key} extras={extras} phone={phone} onChange={saveExtras} />
-              <TogetherFields id={key} extras={extras} others={[]} phone={phone} part="copy" onChange={saveExtras} />
-            </Block>
-            <Block label={SESSION_DIALOG_COPY.together} testId="session-together">
-              <BlockHead label={SESSION_DIALOG_COPY.together} />
-              <TogetherFields
-                id={key}
-                extras={extras}
-                others={view.others ?? []}
-                phone={phone}
-                part="together"
-                onTogether={h.onSessionTogether ? (keys) => {
-                  setExtras((now) => ({ ...now, parallelWith: keys.length > 0 ? keys : undefined }));
-                  h.onSessionTogether?.(key, keys);
-                } : undefined}
-                onChange={saveExtras}
-              />
-            </Block>
-          </>
+          <OptionalSection>
+            <OptionalField name={EXTRAS_COPY.cost} summary={costHeld(extras)} phone={phone}>
+              <CostControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.time} description={EXTRAS_COPY.timeHint} summary={timeHeld(extras)} phone={phone}>
+              <TimeControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.tokens} summary={tokensHeld(extras)} phone={phone}>
+              <TokensControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.trace} description={EXTRAS_COPY.traceHint} summary={extras.traceUrl ?? null} phone={phone}>
+              <TraceControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.how} summary={methodHeld(extras)} phone={phone}>
+              <MethodControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.startedWith} summary={extras.startedWith?.trim() || null} phone={phone}>
+              <StartedWithControl key={`${key}:started`} id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.ownCopy} summary={extras.ownCopy ?? null} phone={phone}>
+              <OwnCopyControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            {(view.others ?? []).length > 0 && h.onSessionTogether ? (
+              <OptionalField name={EXTRAS_COPY.together} summary={togetherHeld(extras, view.others ?? [])} phone={phone}>
+                <TogetherControl
+                  extras={extras}
+                  others={view.others ?? []}
+                  phone={phone}
+                  onTogether={(keys) => {
+                    setExtras((now) => ({ ...now, parallelWith: keys.length > 0 ? keys : undefined }));
+                    h.onSessionTogether?.(key, keys);
+                  }}
+                />
+              </OptionalField>
+            ) : null}
+          </OptionalSection>
         ) : null}
 
         {(view.setup ?? []).length > 0 || h.onAddToSetup ? (
@@ -276,11 +305,20 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
         <Block label={SESSION_DIALOG_COPY.prompts} testId="session-prompts">
           <BlockHead label={SESSION_DIALOG_COPY.prompts} count={SESSION_DIALOG_COPY.promptsIn(Object.values(shared).filter(Boolean).length, view.total)} />
           {view.status === "loading" ? (
-            <LoadingRegion what="this session's prompts" data-testid="session-prompts-loading">
+            <LoadingRegion what="prompts" data-testid="session-prompts-loading">
               <LoadingBlocks kind="box" rows={SESSION_PROMPT_ROWS} width="fill" />
             </LoadingRegion>
           ) : null}
-          {view.status === "error" ? <Hint>This session&apos;s prompts did not load.</Hint> : null}
+          {view.status === "error" ? (
+            <Inline>
+              <Hint>Prompts didn&apos;t load</Hint>
+              {h.onRetrySessionPrompts ? (
+                <TextLink onClick={() => h.onRetrySessionPrompts?.(view.key)} phone={phone}>
+                  Retry
+                </TextLink>
+              ) : null}
+            </Inline>
+          ) : null}
           <div role="group" aria-label="Prompts in this session" style={PANEL_LIST}>
             {view.checklist.map((row) => (
               <label key={row.ordinal} style={BODY_TEXT}>

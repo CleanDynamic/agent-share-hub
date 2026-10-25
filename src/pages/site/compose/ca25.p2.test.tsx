@@ -41,7 +41,7 @@ describe("confirmRows", () => {
       ["Post", "240 words, 3 links"],
       ["Build", "2 parts, 4 sessions, 18 tiles"],
       ["Files", "menu.pdf, logo.png, homepage.html"],
-      ["Classification Card", "Website, Content"],
+      ["Classification", "Website, Content"],
     ]);
   });
 

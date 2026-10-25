@@ -109,8 +109,8 @@ describe("a published build's title row", () => {
     const names = within(row)
       .getAllByRole("button")
       .map((button) => button.getAttribute("aria-label") ?? button.textContent);
-    expect(names.indexOf("Classification Card")).toBeGreaterThan(-1);
-    expect(names.indexOf("Classification Card")).toBeLessThan(names.indexOf("Published build options"));
+    expect(names.indexOf("Classification")).toBeGreaterThan(-1);
+    expect(names.indexOf("Classification")).toBeLessThan(names.indexOf("Published build options"));
     const live = within(row).getByRole("link", { name: "View live" });
     expect(live.getAttribute("href")).toBe("/b2/bakery-homepage-p2m8z4");
     expect(within(row).queryByRole("link", { name: "Preview" })).toBeNull();

@@ -101,10 +101,10 @@ describe("recognising a repository URL", () => {
   });
 
   it("says something different for each way a URL can be wrong", () => {
-    expect(repoUrlComplaint("")).toMatch(/Paste a repository URL/);
-    expect(repoUrlComplaint("https://gitlab.com/acme/widget")).toMatch(/Only GitHub/);
-    expect(repoUrlComplaint("https://github.com/features/actions")).toMatch(/not a repository one/);
-    expect(repoUrlComplaint("banana")).toMatch(/not a GitHub repository URL/);
+    expect(repoUrlComplaint("")).toMatch(/Repository URL required/);
+    expect(repoUrlComplaint("https://gitlab.com/acme/widget")).toMatch(/GitHub only/);
+    expect(repoUrlComplaint("https://github.com/features/actions")).toMatch(/Format: github.com\/owner\/name/);
+    expect(repoUrlComplaint("banana")).toMatch(/Format: github.com\/owner\/name/);
   });
 });
 

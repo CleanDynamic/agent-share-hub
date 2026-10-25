@@ -84,7 +84,7 @@ describe("the limit", () => {
     expect(postRuns(ten)).toHaveLength(10);
     expect(canStartPost(ten)).toBe(false);
     expect(canStartPost(doc(p("a"), brk, p("b")))).toBe(true);
-    expect(POST_LIMIT_SENTENCE).toMatch(/at most 10 posts/);
+    expect(POST_LIMIT_SENTENCE).toMatch(/Posts: 10 max/);
   });
 });
 

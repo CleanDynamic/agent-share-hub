@@ -53,9 +53,9 @@ describe("an agent's limits, output and sample, and a team's pattern (CA-15 P7)"
 
   it("cleans limits from lines, refuses too many or too long, and takes empty ones off", () => {
     expect(cleanExtras("agent_config", { limits: "one\n\n two ", output: " Slack ", sample: "" })).toEqual({ limits: ["one", "two"], output: "Slack", sample: null });
-    expect(() => cleanExtras("agent_config", { limits: Array.from({ length: 13 }, (_, i) => `l${i}`) })).toThrow(/at most 12/);
-    expect(() => cleanExtras("agent_config", { limits: ["x".repeat(201)] })).toThrow(/at most 200/);
-    expect(() => cleanExtras("agent_config", { output: "x".repeat(281) })).toThrow(/at most 280/);
+    expect(() => cleanExtras("agent_config", { limits: Array.from({ length: 13 }, (_, i) => `l${i}`) })).toThrow(/Limits: 12 max/);
+    expect(() => cleanExtras("agent_config", { limits: ["x".repeat(201)] })).toThrow(/Each limit: 200 characters max/);
+    expect(() => cleanExtras("agent_config", { output: "x".repeat(281) })).toThrow(/280 characters max/);
     expect(cleanExtras("team", { pattern: "lead" })).toEqual({ pattern: "lead" });
     expect(cleanExtras("team", { pattern: "swarm" })).toEqual({ pattern: null });
   });

@@ -134,17 +134,17 @@ export function questionsOfDraft(draft: DecisionDraft): DecisionQuestion[] {
   }));
 }
 
-/** CA-15 P8: the first required thing a draft still lacks, in words that finish "Required: ..."; null when the model or service and the questions are complete. */
+/** CA-15 P8: the label of the first required field a draft still lacks, as "Required: ..." says it; null when the model or service and the questions are complete. */
 export function decisionMissing(draft: DecisionDraft): string | null {
-  if (!draft.provider.trim()) return "a model or service";
+  if (!draft.provider.trim()) return "Model or service";
   const keys = draft.questions.map((q) => q.id.trim());
-  if (draft.questions.length === 0 || keys.some((key) => !key)) return "a key for every question";
-  if (new Set(keys).size !== keys.length) return "a different key for each question";
+  if (draft.questions.length === 0 || keys.some((key) => !key)) return "Key";
+  if (new Set(keys).size !== keys.length) return "Key";
   for (const q of draft.questions) {
     const filled = q.options.filter((o) => o.key.trim());
-    if (takesOptions(q.type) && filled.length < 2) return `at least two options for ${q.id.trim()}`;
-    if (takesOptions(q.type) && new Set(filled.map((o) => o.key.trim())).size !== filled.length) return `different option names for ${q.id.trim()}`;
-    if (q.type === "score" && q.levels.filter((level) => level.trim()).length < 2) return `at least two levels for ${q.id.trim()}`;
+    if (takesOptions(q.type) && filled.length < 2) return "Options";
+    if (takesOptions(q.type) && new Set(filled.map((o) => o.key.trim())).size !== filled.length) return "Options";
+    if (q.type === "score" && q.levels.filter((level) => level.trim()).length < 2) return "Levels";
   }
   return null;
 }
@@ -192,8 +192,8 @@ export function draftToInput(draft: DecisionDraft): { input: DecisionInput } | {
   }
   const examples = draft.examples.map((example) => ({ input: example.input.trim(), output: example.output.trim() })).filter((example) => example.input || example.output);
   if (examples.some((example) => !example.input || !example.output)) return { error: "Each example needs an input and an expected output." };
-  if (examples.length > EXAMPLES_MAX) return { error: `A decision keeps ${EXAMPLES_MAX} examples at most.` };
-  if (examples.some((example) => example.input.length > EXAMPLE_TEXT_MAX || example.output.length > EXAMPLE_TEXT_MAX)) return { error: `An example is at most ${EXAMPLE_TEXT_MAX} characters on each side.` };
+  if (examples.length > EXAMPLES_MAX) return { error: `Examples: ${EXAMPLES_MAX} max` };
+  if (examples.some((example) => example.input.length > EXAMPLE_TEXT_MAX || example.output.length > EXAMPLE_TEXT_MAX)) return { error: `Each example: ${EXAMPLE_TEXT_MAX} characters max` };
   let lowConfidence: LowConfidence | null = null;
   if (draft.lowConfidence.mode === "escalate") lowConfidence = { escalate: true };
   else if (draft.lowConfidence.mode === "threshold") {

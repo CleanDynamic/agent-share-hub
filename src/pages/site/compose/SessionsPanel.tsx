@@ -191,7 +191,6 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
                 ref={otherRef}
                 type="text"
                 aria-label="Model name"
-                placeholder="The model's name"
                 value={other}
                 maxLength={MADE_WITH_ENTRY_MAX}
                 autoComplete="off"
@@ -360,9 +359,9 @@ function SessionSection({
         <div id={listId} style={{ paddingTop: 2 }}>
           {session.promptsError ? (
             <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 6px 7px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
-              <span>These prompts didn&apos;t load.</span>
+              <span>Prompts didn&apos;t load</span>
               <button type="button" onClick={() => onRetryPrompts(session.id)} style={{ ...textLink, fontSize: 12 }}>
-                Try again
+                Retry
               </button>
             </div>
           ) : session.prompts === null ? (

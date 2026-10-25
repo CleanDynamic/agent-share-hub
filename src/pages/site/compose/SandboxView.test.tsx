@@ -98,7 +98,7 @@ describe("SandboxView frame", () => {
     expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent", "Decision", "System prompt", "File", "Dataset", "Tool", "GitHub repository", "Manual step", "Code", "Check", "Result"]);
     expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "agent", "decision", "file", "tool", "manual", "code", "check", "result"]);
     expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Source code written or run");
-    expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "A test that verifies part of the build", ready: true });
+    expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "Test of part of the build", ready: true });
   });
 
   it("turns System prompt, Dataset and GitHub repository on when their node type is live and a handler is given (CA-15 P9)", () => {
@@ -106,7 +106,7 @@ describe("SandboxView frame", () => {
     expect(off.find((item) => item.key === "system_prompt")?.enabled).toBe(false);
     const on = addEntries({ onAddSystemPrompt: vi.fn(), onAddDataset: vi.fn(), onAddRepo: vi.fn(), systemPromptAvailable: true, datasetAvailable: true, repoAvailable: true });
     expect(on.filter((item) => ["system_prompt", "dataset", "repo"].includes(item.key)).map((item) => item.enabled)).toEqual([true, true, true]);
-    expect(on.find((item) => item.key === "repo")?.line).toBe("A repository used in this build");
+    expect(on.find((item) => item.key === "repo")?.line).toBe("Repository used in this build");
   });
 
   it("lists Check but disables it until the build has an agent, a team or code (CA-03 P5)", () => {
@@ -114,15 +114,15 @@ describe("SandboxView frame", () => {
     const off = addEntries({ onAddCheck, checkable: false }).find((item) => item.key === "check");
     expect(off).toMatchObject({ name: "Check", line: "Add an agent or code first", enabled: false });
     const on = addEntries({ onAddCheck, checkable: true }).find((item) => item.key === "check");
-    expect(on).toMatchObject({ name: "Check", line: "A test that verifies part of the build", enabled: true });
+    expect(on).toMatchObject({ name: "Check", line: "Test of part of the build", enabled: true });
     on?.onSelect?.();
     expect(onAddCheck).toHaveBeenCalledTimes(1);
     expect(addEntries({ checkable: true }).find((item) => item.key === "check")?.enabled).toBe(false);
   });
 
-  it("opens the Classification Card from its button with the title, the preview and the Optional rows closed", () => {
+  it("opens the Classification from its button with the title, the preview and the Optional rows closed", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(within(card).getByLabelText("Title")).toBeTruthy();
     expect(within(card).getByTestId("card-preview")).toBeTruthy();
@@ -186,7 +186,7 @@ describe("the Add menu holds exactly 12 items, all enabled (UI-P70, CA-02 P7, CA
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
     expect(items).toHaveLength(12);
-    expect(items[0].textContent).toBe("PromptA message sent to a model");
+    expect(items[0].textContent).toBe("PromptMessage sent to a model");
     expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(12).fill(null));
     expect(items.map((item) => item.textContent).join(" ")).not.toMatch(/session/i);
   });
@@ -236,9 +236,9 @@ describe("the refined look (UI-P93)", () => {
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
     expect(publish.getAttribute("style")).toMatch(/height:\s*28px/);
-    const card = screen.getByRole("button", { name: "Classification Card" });
+    const card = screen.getByRole("button", { name: "Classification" });
     expect(card.getAttribute("data-variant")).toBe("secondary");
-    expect(card.textContent).toBe("Card");
+    expect(card.textContent).toBe("Classification");
     expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*28px/);
     // The three sit 8 apart.
     expect(within(row).getByRole("link", { name: "Preview" }).parentElement?.getAttribute("style")).toContain("gap: 8px");
@@ -333,7 +333,7 @@ describe("the refined Map and Card (UI-P94)", () => {
 
   it("opens the Card as the modal window", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(card.style.width).toBe("560px");
   });
@@ -406,7 +406,7 @@ describe("the Card and the post", () => {
 
   it("carries no cover line and no Edit the post: the cover is edited in the post", () => {
     viewAt("/compose/x");
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(within(card).queryByText("The cover is the first picture in your post.")).toBeNull();
     expect(within(card).queryByRole("button", { name: "Edit the post" })).toBeNull();
@@ -414,7 +414,7 @@ describe("the Card and the post", () => {
 
   it("keeps the Title, the Summary, Tools and stack with Made with, and Build details", () => {
     viewAt("/compose/x");
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(within(card).getByLabelText("Title")).toBeTruthy();
     for (const name of ["Summary", "Build details"]) expect(within(card).getByRole("button", { name: new RegExp(`^${name}`) })).toBeTruthy();
@@ -583,10 +583,10 @@ describe("CA-13 P1 · Add › Decision", () => {
   it("is disabled, with the database line, until the decision type is live", () => {
     const off = addEntries({ onAddDecision: vi.fn(), decisionAvailable: false }).find((item) => item.key === "decision");
     expect(off?.enabled).toBe(false);
-    expect(off?.line).toBe("Decisions need the CA-13 database change. Ask Lovable to apply it.");
+    expect(off?.line).toBe("Not available yet");
     const on = addEntries({ onAddDecision: vi.fn(), decisionAvailable: true }).find((item) => item.key === "decision");
     expect(on?.enabled).toBe(true);
-    expect(on?.line).toBe("A structured classification your application requests from a model");
+    expect(on?.line).toBe("Structured answer from a model");
   });
 });
 

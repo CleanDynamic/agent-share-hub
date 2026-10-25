@@ -75,8 +75,8 @@ describe("uploads", () => {
 
   it("refuses a file with a NUL byte in its first 8 KB, one that is not text, and one over the limit, by name", async () => {
     expect(await readCodeFile(file(new Uint8Array([104, 0, 105]), "bin.ts", "video/mp2t"))).toEqual({ ok: false, filename: "bin.ts", reason: CODE_COPY.notText });
-    expect(await readCodeFile(file("x", "photo.png", "image/png"))).toEqual({ ok: false, filename: "photo.png", reason: "That file isn't text." });
-    expect(await readCodeFile(file("x".repeat(100_001), "big.js", "text/javascript"))).toEqual({ ok: false, filename: "big.js", reason: "Code is at most 100,000 characters. Upload it as a file instead." });
+    expect(await readCodeFile(file("x", "photo.png", "image/png"))).toEqual({ ok: false, filename: "photo.png", reason: "Not text" });
+    expect(await readCodeFile(file("x".repeat(100_001), "big.js", "text/javascript"))).toEqual({ ok: false, filename: "big.js", reason: "Code: 100,000 characters max" });
   });
 });
 

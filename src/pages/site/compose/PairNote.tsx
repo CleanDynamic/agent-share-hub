@@ -11,7 +11,7 @@ import { TextButton } from "./composeControls";
 import { text } from "./refinedStyles";
 
 export const PAIR_COPY = {
-  notOffered: (tool: string, model: string) => `${tool} doesn't offer ${model}.`,
+  notOffered: (tool: string, model: string) => `${model} not on ${tool}.`,
   runsNoModel: (tool: string) => `${tool} doesn't run a model.`,
   hidesModel: (tool: string) => `${tool} doesn't show which model it used.`,
   change: "Change the model",

@@ -50,7 +50,7 @@ function mount(view: SessionView) {
 describe("Session window › Ran at the same time as, Own copy of the code", () => {
   it("lists the other sessions and allows more than one", () => {
     const { onSessionTogether } = mount(session({ others: OTHERS, extras: { parallelWith: ["typed-c"] } }));
-    fireEvent.keyDown(screen.getByRole("button", { name: "Ran at the same time as" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Ran alongside" }), { key: "Enter" });
     const items = screen.getAllByRole("menuitemcheckbox");
     expect(items.map((item) => item.textContent)).toEqual(["Session 1 · Claude Code", "Session 3 · Claude Code"]);
     expect(items[1].getAttribute("aria-checked")).toBe("true");
@@ -61,7 +61,7 @@ describe("Session window › Ran at the same time as, Own copy of the code", () 
 
   it("has no menu when the build has no other session", () => {
     mount(session());
-    expect(screen.queryByRole("button", { name: "Ran at the same time as" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ran alongside" })).toBeNull();
   });
 
   it("saves the name of the copy and keeps the rest of the entry", () => {

@@ -126,7 +126,7 @@ export function useComposeDetails({
   );
 
   const writers = { breakage: writeBreakage, gap: writeGap } as const;
-  const lines = { breakage: "Couldn't save where it broke. Try again.", gap: "Couldn't save the part left open. Try again." } as const;
+  const lines = { breakage: "Breakage not saved", gap: "Open part not saved" } as const;
 
   const schedule = (which: "breakage" | "gap", wait = SAVE_DEBOUNCE_MS) => {
     const timer = timers.current.get(which);

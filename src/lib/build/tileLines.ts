@@ -97,7 +97,7 @@ export function footerFactsOf(step: Step, numberOf?: (id: string) => number | st
       facts.push(counted(step.check?.caseList?.length ?? step.check?.cases ?? 0, "test case"), lastRun(step.check?.runAt));
       break;
     case "agent":
-      facts.push(counted(step.children.filter((child) => child.kind === "prompt").length, "prompt"), counted(step.helpers?.length ?? 0, "supporting model"));
+      facts.push(counted(step.children.filter((child) => child.kind === "prompt").length, "prompt"), counted(step.helpers?.length ?? 0, "helper"));
       break;
     case "team": {
       const how = step.runs?.how === "event" ? "Event trigger" : step.runs?.how === "schedule" ? "Scheduled trigger" : null;

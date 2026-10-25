@@ -87,15 +87,15 @@ export function isRepoUrl(raw: string): boolean {
  */
 export function repoUrlComplaint(raw: string): string {
   const trimmed = raw.trim();
-  if (!trimmed) return "Paste a repository URL first.";
+  if (!trimmed) return "Repository URL required";
 
   if (/^(?:https?:\/\/)?(?:www\.)?(gitlab\.com|bitbucket\.org|codeberg\.org)/i.test(trimmed)) {
-    return "Only GitHub repositories are read for now. Paste a github.com URL, or bring the chat instead.";
+    return "GitHub only";
   }
   if (/github\.com/i.test(trimmed)) {
-    return "That is a github.com URL, but not a repository one. It should look like https://github.com/owner/repository.";
+    return "Format: github.com/owner/name";
   }
-  return "That is not a GitHub repository URL. It should look like https://github.com/owner/repository.";
+  return "Format: github.com/owner/name";
 }
 
 // -----------------------------------------------------------------------------

@@ -28,33 +28,33 @@ import { MANUAL_LINES_MAX, MANUAL_TEXT_MAX, MANUAL_TOOL_MAX, type ManualWhere, t
 import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor } from "@/lib/build/media";
 
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, GROW, Inline, LabelText, MODAL_WIDTH, OptionGrid, PANEL_LIST, TextLink } from "./modalRecipes";
+import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
 
 export const MANUAL_DIALOG_COPY = {
   title: "Add a manual step",
-  placeholder: "What you did",
-  missing: "Manual steps need the Deploy queue item from UI-P61.",
-  where: "Where was it done?",
+  missing: "Not available yet",
+  where: "Where",
   whatWasDone: "What was done",
   addLine: "Add a line",
-  siteLink: "Link to the website",
-  subtitle: "Work done outside AI, put between two prompts",
+  siteLink: "Website link",
+  subtitle: "Work done outside AI",
   after: (step: string) => `Goes after ${step}`,
-  picture: "Picture, optional",
+  picture: "Picture",
   addPicture: "Add a picture",
-  anotherPicture: "Choose another",
+  anotherPicture: "Replace",
   lines: (n: number) => `${n} / ${MANUAL_LINES_MAX} lines`,
 } as const;
 
 /** CA-12 P10: where a manual step can have been done. "App or website" takes an app from the apps list. */
 export const WHERE_CHOICES: readonly { value: WhereKind; label: string }[] = [
-  { value: "app", label: "An app or website" },
-  { value: "terminal", label: "A terminal" },
-  { value: "phone", label: "On a phone" },
-  { value: "offline", label: "Offline, in person" },
-  { value: "site", label: "Another website" },
+  { value: "app", label: "App or website" },
+  { value: "terminal", label: "Terminal" },
+  { value: "phone", label: "Phone" },
+  { value: "offline", label: "In person" },
+  { value: "site", label: "Other website" },
 ];
 
 export interface AddManualStepInput {
@@ -102,9 +102,9 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
   const appName = picked ? (toolName(picked) ?? picked.trim()) : "";
   const done = lines.map((line) => line.trim()).filter(Boolean);
   const placeOk = kind === "app" ? appName.length > 0 && appName.length <= MANUAL_TOOL_MAX : kind === "site" ? site.trim().length > 0 : true;
-  const missing = firstMissing([
-    [placeOk, kind === "site" ? "a link to the website" : "an application"],
-    [done.length > 0, "what was done"],
+  const missing = missingLabels([
+    [placeOk, kind === "site" ? MANUAL_DIALOG_COPY.siteLink : "App"],
+    [done.length > 0, MANUAL_DIALOG_COPY.whatWasDone],
   ]);
   const where = (): ManualWhere => ({ kind, name: kind === "app" ? appName : null, url: kind === "site" ? site.trim() : null });
   const input = (): AddManualStepInput => ({ where: where(), lines: done, file, ...(seed?.picture && kept === null && !file ? { pictureRemoved: true } : null) });
@@ -119,8 +119,8 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
   const choose = (list: FileList | null) => {
     const picked = list?.[0];
     if (!picked) return;
-    if (mediaKindFor(picked.type) !== "image") setFileError(`${picked.name} is not a picture.`);
-    else if (picked.size > MEDIA_MAX_BYTES) setFileError(`${picked.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+    if (mediaKindFor(picked.type) !== "image") setFileError(`${picked.name}: image only`);
+    else if (picked.size > MEDIA_MAX_BYTES) setFileError(`${picked.name}: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
     else {
       setFileError(null);
       setFile(picked);
@@ -133,7 +133,7 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
       <Block label={MANUAL_DIALOG_COPY.where} noRule>
         <BlockHead label={MANUAL_DIALOG_COPY.where} />
         <OptionGrid<WhereKind> label={MANUAL_DIALOG_COPY.where} bare phone={phone} items={WHERE_CHOICES} chosen={[kind]} onPick={setKind} />
-        {kind === "app" ? <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Select an application" field /> : null}
+        {kind === "app" ? <ToolPicker label="App" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" list="app" placeholder="Select an app" field /> : null}
         {kind === "site" ? <FieldInput phone={phone} mono inputMode="url" aria-label={MANUAL_DIALOG_COPY.siteLink} placeholder="https://" value={site} onChange={(event) => setSite(event.target.value)} /> : null}
       </Block>
 
@@ -153,7 +153,7 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
                     aria-label={`Line ${at + 1}`}
                     value={line}
                     maxLength={MANUAL_TEXT_MAX}
-                    placeholder={at === 0 ? MANUAL_DIALOG_COPY.placeholder : ""}
+                    
                     onChange={(event) => setLine(at, event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.nativeEvent.isComposing) {
@@ -173,17 +173,18 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
         </TextLink>
       </Block>
 
-      <Block label={MANUAL_DIALOG_COPY.picture}>
-        <BlockHead label={MANUAL_DIALOG_COPY.picture} />
-        <Inline>
-          <FileButton phone={phone} accept="image/*" onFiles={choose} testId="manual-picture" inputLabel={MANUAL_DIALOG_COPY.addPicture}>
-            {file ? MANUAL_DIALOG_COPY.anotherPicture : MANUAL_DIALOG_COPY.addPicture}
-          </FileButton>
-        </Inline>
-        {file ? <FileLine name={file.name} removeLabel="Remove" onRemove={() => setFile(null)} phone={phone} /> : null}
-        {!file && kept ? <FileLine name={kept} removeLabel="Remove the picture" onRemove={() => setKept(null)} phone={phone} /> : null}
-        {fileError ? <Alert>{fileError}</Alert> : null}
-      </Block>
+      <OptionalSection>
+        <OptionalField name={MANUAL_DIALOG_COPY.picture} summary={summaryOf(file?.name, file ? null : kept)} phone={phone}>
+          <Inline>
+            <FileButton phone={phone} accept="image/*" onFiles={choose} testId="manual-picture" inputLabel={MANUAL_DIALOG_COPY.addPicture}>
+              {file ? MANUAL_DIALOG_COPY.anotherPicture : MANUAL_DIALOG_COPY.addPicture}
+            </FileButton>
+          </Inline>
+          {file ? <FileLine name={file.name} removeLabel="Remove" onRemove={() => setFile(null)} phone={phone} /> : null}
+          {!file && kept ? <FileLine name={kept} removeLabel="Remove the picture" onRemove={() => setKept(null)} phone={phone} /> : null}
+          {fileError ? <Alert>{fileError}</Alert> : null}
+        </OptionalField>
+      </OptionalSection>
       {edit?.after ? edit.after(input()) : null}
     </ModalForm>
   );

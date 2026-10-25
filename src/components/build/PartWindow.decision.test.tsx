@@ -56,7 +56,7 @@ describe("a Decision's window (CA-13 P2)", () => {
     expect(screen.getByTestId("certainty-words").textContent).toBe("92% confidence");
     expect(screen.getByText("From the run")).toBeTruthy();
     expect(screen.getByText("escalation")).toBeTruthy();
-    expect(screen.getByText("Yes or no · Noul")).toBeTruthy();
+    expect(screen.getByText("Yes or no")).toBeTruthy();
     expect(screen.getByTestId("decision-state").textContent).toContain("I was charged twice.");
   });
 

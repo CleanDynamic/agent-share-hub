@@ -120,7 +120,7 @@ describe("the build page, every kind with its optional details given (CA-15 P12)
   it("tells a reader a team's pattern, a check's method, reviewer, scoring, model and evidence", () => {
     page(full());
     expect(facts(byKind("team"))).toEqual([["Orchestration pattern", "Parallel then merged"]]);
-    expect(facts(byKind("check"))).toEqual([["Test method", "Automated"], ["Reviewer", "A client"], ["Scoring method", "Metric against a target · 95%"], ["Model tested", "Opus 5.5 · v1"], ["Evidence", "https://example.com/results"]]);
+    expect(facts(byKind("check"))).toEqual([["Test method", "Automated"], ["Reviewer", "Client"], ["Scoring method", "Metric against a target · 95%"], ["Model tested", "Opus 5.5 · v1"], ["Evidence", "https://example.com/results"]]);
   });
 
   it("tells a reader a tool's permissions, plan, setup and alternatives, and code's path and what generated it", () => {

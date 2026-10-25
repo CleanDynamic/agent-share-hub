@@ -42,8 +42,8 @@ function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: Outp
       </TextButton>
       {open ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Field id={`${uid}-how`} label="How it was constrained" group>
-            <PickMenu<ShapeHow> label="How the answer was shaped" phone={phone} value={d.how} options={SHAPE_HOWS.map((how) => ({ value: how, label: SHAPE_HOW_LABEL[how] }))} onChange={(how) => set({ how })} />
+          <Field id={`${uid}-how`} label="Constraint" group>
+            <PickMenu<ShapeHow> label="Answer shape" phone={phone} value={d.how} options={SHAPE_HOWS.map((how) => ({ value: how, label: SHAPE_HOW_LABEL[how] }))} onChange={(how) => set({ how })} />
           </Field>
           <Field id={`${uid}-where`} label="Where" hint="Claude API, OpenAI, Gemini, llama.cpp, Outlines, vLLM, or typed">
             <input id={`${uid}-where`} type="text" value={d.where ?? ""} maxLength={40} onChange={(e) => set({ where: e.target.value })} style={typedField(phone)} />
@@ -55,7 +55,7 @@ function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: Outp
           </Field>
           <Field id={`${uid}-schema`} label="Schema" hint={`Up to ${SHAPE_TEXT_MAX.toLocaleString("en-GB")} characters`}>
             <textarea id={`${uid}-schema`} rows={5} value={d.schema ?? ""} maxLength={SHAPE_TEXT_MAX} onChange={(e) => set({ schema: e.target.value })} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
-            {schemaFiles.length ? <span style={text(12, 400, t.label)}>A schema file is in this build: {schemaFiles.join(", ")}. Paste its contents here.</span> : null}
+            {schemaFiles.length ? <span style={text(12, 400, t.label)}>Schema file in this build: {schemaFiles.join(", ")}</span> : null}
           </Field>
           <Field id={`${uid}-sample`} label="Sample answer" hint="Optional">
             <textarea id={`${uid}-sample`} rows={3} value={d.sample ?? ""} maxLength={SHAPE_TEXT_MAX} onChange={(e) => set({ sample: e.target.value })} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
@@ -63,7 +63,7 @@ function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: Outp
           {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
             <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={save}>Save the answer shape</Button>
-            {shape ? <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => { onChange(null); setD({ how: "json-schema" }); }}>Remove it</Button> : null}
+            {shape ? <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => { onChange(null); setD({ how: "json-schema" }); }}>Remove</Button> : null}
           </div>
         </div>
       ) : null}
@@ -78,7 +78,7 @@ function ReadFromCode({ codeTiles, definedIn, phone, onRead }: { codeTiles: read
   const run = (source: string) => {
     const read = readHelpersFromCode(source);
     if (!read.found) {
-      setSaid("No create_deep_agent(...) call was found in that.");
+      setSaid("No create_deep_agent(...) call found");
       return;
     }
     onRead(read);
@@ -96,11 +96,11 @@ function ReadFromCode({ codeTiles, definedIn, phone, onRead }: { codeTiles: read
           <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => run(tile.source)}>Read from {tile.label}</Button>
         </div>
       ))}
-      <Field id={`${uid}-paste`} label="Or paste the create_deep_agent(...) call">
+      <Field id={`${uid}-paste`} label="create_deep_agent(...) call">
         <textarea id={`${uid}-paste`} rows={3} value={pasted} onChange={(e) => setPasted(e.target.value)} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
       </Field>
       <div>
-        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={!pasted.trim()} onClick={() => run(pasted)}>Read it</Button>
+        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={!pasted.trim()} onClick={() => run(pasted)}>Read</Button>
       </div>
       {said ? <span role="status" style={text(12, 400, t.text2)}>{said}</span> : null}
     </section>
@@ -127,7 +127,7 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
       {agent ? (
         <>
           <HelpersField key={`${id}:helpers:${agent.helpers.length}`} helpers={agent.helpers} toolNames={agent.toolNames} decisions={agent.decisions} phone={phone} onChange={(helpers) => onRuntime(id, { helpers })} />
-          <Field id={`${uid}-defined`} label="Defined in" group hint="The Code tiles that define it">
+          <Field id={`${uid}-defined`} label="Defined in" group>
             {agent.codeTiles.length ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {agent.codeTiles.map((tile) => (
@@ -138,11 +138,11 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
                 ))}
               </div>
             ) : (
-              <span style={text(12, 400, t.label)}>Add the code that defines it as a Code tile, so people copying this get the real thing.</span>
+              <span style={text(12, 400, t.label)}>No Code tile linked</span>
             )}
           </Field>
           {onReadHelpers ? <ReadFromCode codeTiles={agent.codeTiles} definedIn={agent.definedIn} phone={phone} onRead={(read) => onReadHelpers(id, read)} /> : null}
-          <Field id={`${uid}-trace`} label="Trace link" hint="https only, optional">
+          <Field id={`${uid}-trace`} label="Trace link" hint="https only">
             <input
               id={`${uid}-trace`}
               type="url"
@@ -162,7 +162,7 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
         </>
       ) : null}
       {agent || runtime.install !== undefined ? (
-        <Field id={`${uid}-install`} label="How to install" hint="Optional, exactly as you would type it">
+        <Field id={`${uid}-install`} label="How to install" hint="As typed">
           <input id={`${uid}-install`} type="text" value={install} maxLength={400} onChange={(e) => setInstall(e.target.value)} onBlur={() => onRuntime(id, { install: install.trim() || null })} style={typedField(phone)} />
         </Field>
       ) : null}

@@ -13,6 +13,7 @@ import { TileEditDialog } from "./TileEditDialog";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
 import type { PromptView } from "./DetailsPanel";
+import { openOptional } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -43,6 +44,9 @@ function positions(root: HTMLElement, labels: readonly string[]): (number | null
 /** The labels Details draws, from the DOM. */
 const detailsLabels = (): string[] => screen.getAllByTestId("details-section").map((section) => section.querySelector("h4")?.textContent ?? "");
 
+/** Details' section, and the window field that holds it. */
+const SESSION_EXTRAS_AS: Record<string, string> = { "Cost and tokens": "What it cost", "At the same time as": "Ran alongside" };
+
 const WINDOW_KINDS: readonly TileKind[] = TILE_KINDS.filter((kind) => !["prompt", "file"].includes(kind));
 
 describe("a tile's window and its Details share their sections (CA-18)", () => {
@@ -53,7 +57,10 @@ describe("a tile's window and its Details share their sections (CA-18)", () => {
     expect(drawn.length, `${kind} draws sections`).toBeGreaterThan(0);
     cleanup();
     render(<TileEditDialog view={view} handlers={handlers()} inBuild={[]} onClose={vi.fn()} />);
-    const at = positions(screen.getByRole("dialog"), drawn);
+    openOptional();
+    // CA-28: a session's extras are the window's own Optional fields, one each, in the window's words.
+    const inWindow = drawn.map((label) => SESSION_EXTRAS_AS[label] ?? label);
+    const at = positions(screen.getByRole("dialog"), inWindow);
     const missing = drawn.filter((_, i) => at[i] === null);
     expect(missing, `${kind}: in Details but not in its window`).toEqual([]);
     const found = at.filter((position): position is number => position !== null);
@@ -67,7 +74,9 @@ describe("a tile's window and its Details share their sections (CA-18)", () => {
     cleanup();
     const base = sandboxListProps("bakery");
     render(<FullPromptWindow steps={base.steps} openId="p3" mode="maker" onClose={vi.fn()} onTitle={vi.fn()} onReply={vi.fn()} onExtras={vi.fn()} onText={vi.fn()} details={() => ({ ...view, id: "p3" })} handlers={handlers() as never} />);
-    const at = positions(screen.getByRole("dialog"), drawn);
+    // CA-28: a session's extras are the window's own Optional fields, one each, in the window's words.
+    const inWindow = drawn.map((label) => SESSION_EXTRAS_AS[label] ?? label);
+    const at = positions(screen.getByRole("dialog"), inWindow);
     expect(drawn.filter((_, i) => at[i] === null)).toEqual([]);
     const found = at.filter((position): position is number => position !== null);
     expect(found).toEqual([...found].sort((a, b) => a - b));

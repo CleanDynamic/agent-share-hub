@@ -1,5 +1,5 @@
-// CA-16 P5, the Classification Card: the same dialog, ids, focus and phone behaviour as the Card it replaces, now with
-// a preview, the Optional rows (every one closed), the classification pickers, "Read from your build" with disputes
+// CA-16 P5, the Classification: the same dialog, ids, focus and phone behaviour as the Card it replaces, now with
+// a preview, the Optional rows (every one closed), the classification pickers, "From the build" with disputes
 // and questions, and Save. The acceptance tests run the real data hook and the real storage layer over a mocked
 // database, so what they check is what would be written.
 
@@ -88,11 +88,11 @@ const live = () => maybeSingle.mockResolvedValue({ data: { classification: {}, f
 const card = () => screen.getByTestId("sandbox-card");
 const row = (name: string) => within(card()).getByRole("button", { name: new RegExp(`^${name.replace(/[()£]/g, "\\$&")}`) });
 
-describe("Classification Card: the sheet", () => {
-  it("is a dialog named Classification Card, with its subtitle, a preview and the title", async () => {
+describe("Classification: the sheet", () => {
+  it("is a dialog named Classification, with its subtitle, a preview and the title", async () => {
     live();
     mount();
-    const dialog = await screen.findByRole("dialog", { name: "Classification Card" });
+    const dialog = await screen.findByRole("dialog", { name: "Classification" });
     expect(within(dialog).getByText(CARD_SUBTITLE)).toBeTruthy();
     expect(within(dialog).getByTestId("card-preview")).toBeTruthy();
     expect((within(dialog).getByLabelText("Title") as HTMLInputElement).value).toBe("Policy search");
@@ -108,7 +108,7 @@ describe("Classification Card: the sheet", () => {
     expect(sheet.style.width).toBe("560px");
     expect(sheet.style.borderRadius).toBe("12px");
     expect(sheet.style.boxShadow).toBe("var(--window-shadow)");
-    const title = screen.getByRole("heading", { name: "Classification Card" });
+    const title = screen.getByRole("heading", { name: "Classification" });
     expect(title.style.fontSize).toBe("15px");
     expect(title.style.fontWeight).toBe("500");
   });
@@ -122,7 +122,7 @@ describe("Classification Card: the sheet", () => {
     expect(screen.getByLabelText("Title").compareDocumentPosition(screen.getByTestId("optional-section")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId("optional-section").compareDocumentPosition(order[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText("Required")).toBeTruthy();
-    expect(screen.getByTestId("optional-count").textContent).toBe("Suggestions come from your build");
+    expect(screen.getByTestId("optional-count").textContent).toBe("Suggestions from the build");
     expect(screen.getByTestId("card-preview").textContent).toContain("Preview");
     expect(screen.getByTestId("card-preview").textContent).toContain("Policy search");
   });
@@ -132,7 +132,7 @@ describe("Classification Card: the sheet", () => {
     mount();
     await screen.findByTestId("sandbox-card");
     const rows = within(card()).getAllByRole("button").filter((button) => button.hasAttribute("aria-expanded")).map((button) => button.textContent ?? "");
-    const names = ["Summary", "Field", "Task", "Setting", "Tools and stack", "Data handled", "Age suitability", "Read from your build", "Build details"];
+    const names = ["Summary", "Field", "Task", "Setting", "Tools and stack", "Data handled", "Age suitability", "From the build", "Build details"];
     names.forEach((name, index) => expect(rows[index].startsWith(name), `${name} is row ${index + 1}`).toBe(true));
     expect(rows[0]).toContain("Finds the right policy.");
     expect(rows[1]).toMatch(/Not set\d suggestions?$/);
@@ -185,7 +185,7 @@ describe("Classification Card: the sheet", () => {
     live();
     const { onTitle } = mount();
     await screen.findByTestId("sandbox-card");
-    expect(screen.getByTestId("card-required").textContent).toBe("All required fields complete");
+    expect(screen.getByTestId("card-required").textContent).toBe("Required fields complete");
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "  " } });
     expect(screen.getByTestId("card-required").textContent).toBe("Required: a title");
     expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
@@ -209,7 +209,7 @@ describe("Classification Card: the sheet", () => {
   });
 });
 
-describe("Classification Card: Build details", () => {
+describe("Classification: Build details", () => {
   it("renames the fields and keeps them where they were stored", async () => {
     live();
     const onDetail = vi.fn();
@@ -241,7 +241,7 @@ describe("Classification Card: Build details", () => {
   });
 });
 
-describe("Classification Card: acceptance", () => {
+describe("Classification: acceptance", () => {
   it("opens with every row closed, adds a Field from a suggestion, adds a custom Task, disputes Skill needed, saves, and writes classification and facets", async () => {
     live();
     updateBuild.mockResolvedValue({});
@@ -266,10 +266,10 @@ describe("Classification Card: acceptance", () => {
     const task = screen.getByRole("combobox", { name: "Task" });
     fireEvent.focus(task);
     fireEvent.change(task, { target: { value: "Sorting socks" } });
-    fireEvent.click(screen.getByRole("option", { name: /Add \u201CSorting socks\u201D as your own entry/ }));
+    fireEvent.click(screen.getByRole("option", { name: /Add \u201CSorting socks\u201D/ }));
 
     // dispute Skill needed
-    fireEvent.click(row("Read from your build"));
+    fireEvent.click(row("From the build"));
     fireEvent.click(screen.getByRole("button", { name: "Dispute Skill needed" }));
     fireEvent.keyDown(screen.getByRole("button", { name: "Corrected value for Skill needed" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Writing code" }));
@@ -309,7 +309,7 @@ describe("Classification Card: acceptance", () => {
     live();
     mount({}, TREE);
     await screen.findByTestId("sandbox-card");
-    fireEvent.click(row("Read from your build"));
+    fireEvent.click(row("From the build"));
     const questions = screen.getByRole("region", { name: "Questions" });
     expect(within(questions).getByText(/deployed, but it shows no code/)).toBeTruthy();
     expect(within(questions).getAllByRole("button", { name: "Add code" }).length).toBeGreaterThan(0);
@@ -319,7 +319,7 @@ describe("Classification Card: acceptance", () => {
   });
 });
 
-describe("Classification Card: before the database update is applied", () => {
+describe("Classification: before the database update is applied", () => {
   it("shows the one line, still saves the title, and never throws", async () => {
     maybeSingle.mockResolvedValue({ data: null, error: { code: "42703", message: "column builds.classification does not exist" } });
     updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {
@@ -345,6 +345,6 @@ describe("Classification Card: before the database update is applied", () => {
     mount({}, []);
     await screen.findByTestId("sandbox-card");
     expect(buildSteps([])).toEqual([]);
-    expect(row("Read from your build").getAttribute("aria-expanded")).toBe("false");
+    expect(row("From the build").getAttribute("aria-expanded")).toBe("false");
   });
 });

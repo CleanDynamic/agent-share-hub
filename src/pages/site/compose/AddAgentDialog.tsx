@@ -30,7 +30,7 @@ import { toolName } from "@/lib/tools/registry";
 import { savedModels, setupReady, useAgentSetupFields, type AgentSetupValue } from "./AgentSetupFields";
 import { ChoiceGrid } from "./ChoiceGrid";
 import { HelpersField } from "./HelpersField";
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { Block, FieldArea, FieldInput, Hint, MODAL_WIDTH, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
@@ -38,45 +38,39 @@ export const AGENT_DIALOG_COPY = {
   title: "Add an agent",
   /** CA-02 P5: a team is led by its first agent, which this dialog describes. */
   leadTitle: "The agent that leads the team",
-  subtitle: "A model that runs on its own, with instructions and tools",
+  subtitle: "Autonomous model with instructions and tools",
   one: "Single agent",
-  oneLine: "A model that runs on its own, with instructions and tools",
+  oneLine: "Autonomous model with instructions and tools",
   team: "Multi-agent team",
-  teamLine: "Several agents working together",
-  teamsMissing: "Teams need the Deploy queue item from UI-P61.",
+  teamsMissing: "Not available yet",
   add: "Add",
   cancel: "Cancel",
   name: "Name",
   /** CA-12 P11. */
   instructions: "System instructions",
-  instructionsLine: "What the agent is told to do",
-  instructionsPlaceholder: "e.g. Every Monday, write this week's menu from what is in stock",
+  instructionsPlaceholder: "Every Monday, write this week's menu from what is in stock",
   starts: "Trigger",
-  startsLine: "Manual, scheduled, or started by an event",
   schedule: "Schedule",
-  schedulePlaceholder: "e.g. Weekdays 07:30",
+  schedulePlaceholder: "Weekdays 07:30",
   event: "Triggering event",
-  eventPlaceholder: "e.g. A new email arrives",
+  eventPlaceholder: "A new email arrives",
   limits: "Limits",
-  limitsLine: "Maximum steps, budget or run time, approvals and prohibited actions",
-  limitsPlaceholder: "One limit per line",
+  limitsLine: "Steps, budget, run time, approvals, prohibited actions",
+  limitsPlaceholder: "One per line",
   output: "Output and destination",
-  outputLine: "A file, a message or a pull request, and where it is delivered",
-  outputPlaceholder: "e.g. A menu document saved to the shared drive",
+  outputLine: "Format and destination",
+  outputPlaceholder: "Menu document in the shared drive",
   sample: "Sample run",
-  sampleLine: "A transcript or trace of one real run",
+  sampleLine: "Transcript or trace of one run",
   trace: "Trace link",
-  tracePlaceholder: "Link to a transcript or trace",
   transcript: "Sample transcript",
-  transcriptPlaceholder: "e.g. User: Summarise today's orders\nAgent: Three orders came in ...",
+  transcriptPlaceholder: "User: Summarise today's orders\nAgent: Three orders came in ...",
   pattern: "Orchestration pattern",
-  patternLine: "Sequential, lead with delegates, parallel then merged, or writer and reviewer",
+  patternLine: "Sequential, lead and delegates, parallel then merge, writer and reviewer",
   patternCount: "Multi-agent only",
-  patternShown: "Shown when Multi-agent team is selected.",
-  memoryLine: "What the agent keeps between runs, and where",
-  toolsLine: "Applications the agent can call",
-  hostLine: "Where the agent runs",
-  helpersLine: "Models that summarise history or extract fields for the agent",
+  memoryLine: "Stored between runs, and where",
+  toolsLine: "Apps the agent can call",
+  helpersLine: "Models that summarise history or extract fields",
 } as const;
 
 /** CA-12 P11, CA-15 P7: how an agent starts, in the words the dialog asks it. "ask" is stored as no `runs` at all. */
@@ -194,7 +188,7 @@ function Form({
   const ready = setupReady(setup);
   const parts = useAgentSetupFields({ value: setup, onChange: setSetup, phone, inBuild, dialog: true, bare: true });
   const limitLines = linesOf(limits);
-  const why = traceRefusal(trace) ?? (limitLines.length > LIMITS_MAX ? `Limits are at most ${LIMITS_MAX}, one per line.` : limitLines.some((line) => line.length > LIMIT_LINE_MAX) ? `A limit is at most ${LIMIT_LINE_MAX} characters.` : null);
+  const why = traceRefusal(trace) ?? (limitLines.length > LIMITS_MAX ? `Limits: ${LIMITS_MAX} max, one per line` : limitLines.some((line) => line.length > LIMIT_LINE_MAX) ? `Each limit: ${LIMIT_LINE_MAX} characters max` : null);
   const toolNames = setup.tools.map((tool) => toolName(tool) ?? tool);
 
   const choose = (next: "agent" | "team") => {
@@ -225,12 +219,12 @@ function Form({
   };
 
   return (
-    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={firstMissing([[ready || team, "a model"]])} addLabel={edit ? MODAL_COPY.save : undefined} alert={tried ? why : null}>
+    <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missingLabels([[ready || team, "Models"]])} addLabel={edit ? MODAL_COPY.save : undefined} alert={tried ? why : null}>
       {edit?.before ? edit.before(draftInput) : null}
       {edit ? null : (
       <Block noRule>
         <SegmentedField<"agent" | "team">
-          label="What to add"
+          label="Type"
           phone={phone}
           value={kind}
           onChange={choose}
@@ -251,7 +245,7 @@ function Form({
 
       <OptionalSection>
         {team ? null : (
-        <OptionalField name={AGENT_DIALOG_COPY.instructions} description={AGENT_DIALOG_COPY.instructionsLine} summary={summaryOf(firstLineOf(instructions, 120))} phone={phone}>
+        <OptionalField name={AGENT_DIALOG_COPY.instructions} summary={summaryOf(firstLineOf(instructions, 120))} phone={phone}>
           <FieldArea phone={phone} rows={4} aria-label={AGENT_DIALOG_COPY.instructions} value={instructions} placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder} onChange={(event) => setInstructions(event.target.value)} />
         </OptionalField>
         )}
@@ -262,7 +256,7 @@ function Form({
         </OptionalField>
         )}
 
-        <OptionalField name={AGENT_DIALOG_COPY.starts} description={AGENT_DIALOG_COPY.startsLine} summary={edit ? (edit.slots?.startsSummary as string | null) ?? null : start === "ask" ? null : summaryOf(START_CHOICES.find((choice) => choice.value === start)?.label, startDetail)} phone={phone}>
+        <OptionalField name={AGENT_DIALOG_COPY.starts} summary={edit ? (edit.slots?.startsSummary as string | null) ?? null : start === "ask" ? null : summaryOf(START_CHOICES.find((choice) => choice.value === start)?.label, startDetail)} phone={phone}>
           {edit?.slots?.starts ? edit.slots.starts : <SegmentedField label={AGENT_DIALOG_COPY.starts} phone={phone} value={start} onChange={(next) => setStart(next)} items={START_CHOICES} />}
           {!edit && start !== "ask" ? (
             <FieldInput
@@ -277,7 +271,7 @@ function Form({
         </OptionalField>
 
         {team ? null : (
-        <OptionalField name="Host platform" description={AGENT_DIALOG_COPY.hostLine} summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
+        <OptionalField name="Host platform" summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
           {parts.host}
         </OptionalField>
         )}
@@ -290,7 +284,7 @@ function Form({
         )}
 
         {team || edit ? null : (
-        <OptionalField name="Supporting models" description={AGENT_DIALOG_COPY.helpersLine} summary={helpers.length ? `${helpers.length} ${helpers.length === 1 ? "supporting model" : "supporting models"}` : null} phone={phone}>
+        <OptionalField name="Helpers" description={AGENT_DIALOG_COPY.helpersLine} summary={helpers.length ? `${helpers.length} ${helpers.length === 1 ? "helper" : "helpers"}` : null} phone={phone}>
           <HelpersField helpers={helpers} toolNames={toolNames} decisions={[]} phone={phone} onChange={setHelpers} bare />
         </OptionalField>
         )}
@@ -309,9 +303,9 @@ function Form({
 
         {team ? null : (
         <OptionalField name={AGENT_DIALOG_COPY.sample} description={AGENT_DIALOG_COPY.sampleLine} summary={summaryOf(trace, transcript ? firstLineOf(transcript, 80) : null)} phone={phone}>
-          {edit ? null : <FieldInput phone={phone} aria-label={AGENT_DIALOG_COPY.trace} inputMode="url" value={trace} placeholder={AGENT_DIALOG_COPY.tracePlaceholder} onChange={(event) => setTrace(event.target.value)} />}
+          {edit ? null : <FieldInput phone={phone} aria-label={AGENT_DIALOG_COPY.trace} inputMode="url" value={trace} onChange={(event) => setTrace(event.target.value)} />}
           <FieldArea phone={phone} rows={4} mono aria-label={AGENT_DIALOG_COPY.transcript} maxLength={SAMPLE_MAX} value={transcript} placeholder={AGENT_DIALOG_COPY.transcriptPlaceholder} onChange={(event) => setTranscript(event.target.value)} />
-          <Hint>Leave out anything secret. Name a key, never paste its value.</Hint>
+          <Hint>Key names only, not values</Hint>
         </OptionalField>
         )}
 

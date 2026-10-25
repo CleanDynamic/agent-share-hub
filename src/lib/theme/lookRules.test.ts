@@ -844,6 +844,54 @@ export const CA03_FILES: readonly string[] = [
   "src/components/shell/NavSearch.tsx",
   "src/components/shell/headerSearch.slash.test.tsx",
 
+  // CA-28 P0
+  "e2e/audit/composer-ca28-shots.spec.ts",
+  "src/pages/dev/Ca28Demo.tsx",
+
+  // CA-28 P1
+  "src/components/build/FullPromptWindow.test.tsx",
+  "src/components/build/PartWindow.decision.test.tsx",
+  "src/lib/build/decisionDraft.ts",
+  "src/lib/build/graph.ca15.test.ts",
+  "src/lib/build/sourceTiles.test.ts",
+  "src/lib/build/sourceTiles.ts",
+  "src/lib/build/tileExtras.ts",
+  "src/pages/site/build/BuildSteps.tiles.test.tsx",
+  "src/pages/site/compose/ClassificationPicker.test.tsx",
+  "src/pages/site/compose/HelpersField.test.tsx",
+  "src/pages/site/compose/ReadFromBuild.test.tsx",
+  "src/pages/site/compose/detailsOptional.tsx",
+  "src/pages/site/compose/readerWords.test.tsx",
+
+  // CA-28 P2
+  "src/pages/site/compose/ca28.p2.test.tsx",
+
+  // CA-28 P3
+  "src/lib/build/answerShape.ts",
+  "src/lib/build/composePrompts.test.ts",
+  "src/lib/build/cost.test.ts",
+  "src/lib/build/cost.ts",
+  "src/lib/build/decision.ts",
+  "src/lib/build/helpers.ts",
+  "src/lib/build/repo.test.ts",
+  "src/lib/build/repo.ts",
+  "src/lib/build/sessions.ts",
+  "src/lib/build/threadEditor.test.ts",
+  "src/lib/build/tileExtras.test.ts",
+  "src/pages/site/compose/ca21.p3.test.tsx",
+  "src/pages/site/compose/ca21.p6.test.tsx",
+  "src/pages/site/compose/ca28.p3.page.test.tsx",
+  "src/pages/site/compose/ca28.p3.test.tsx",
+  "src/pages/site/compose/codeModel.test.ts",
+  "src/pages/site/compose/codeModel.ts",
+  "src/pages/site/compose/useBuildSorting.ts",
+  "src/pages/site/compose/useComposePrompts.agents.test.tsx",
+
+  // CA-28 P4
+  "src/lib/build/buildMotion.ts",
+  "src/pages/site/compose/OptionalRows.tsx",
+  "src/pages/site/compose/OptionalSection.motion.test.tsx",
+  "src/pages/site/compose/optionalKit.ts",
 ];
 
 /**

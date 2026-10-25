@@ -65,13 +65,13 @@ describe("the lists", () => {
   it("opens from View › Colours…, with its head", async () => {
     const win = await openColours();
     expect(within(win).getByText("Colours")).toBeTruthy();
-    expect(within(win).getByText("Every reference group and single colour in this build")).toBeTruthy();
+    expect(within(win).getByText("Reference groups and single colours")).toBeTruthy();
   });
 
   it("lists the groups in the maker's order, then the single colours in the build's", async () => {
     const win = await openColours();
     const groups = within(win).getByTestId("colours-groups");
-    expect(groups.textContent).toContain("2 · drag to set the order");
+    expect(groups.textContent).toContain("Reference groups2");
     expect([...groups.querySelectorAll("[data-colours-group]")].map((row) => row.textContent)).toEqual(["Login flow#7FB88A3 components · linked text", "No name#B79AD62 components"]);
     const singles = within(win).getByTestId("colours-singles");
     expect([...singles.querySelectorAll("[data-colours-single]")].map((row) => row.textContent)).toEqual([
@@ -87,16 +87,16 @@ describe("the lists", () => {
   it("says when two single colours share a code, and makes them a group", async () => {
     const win = await openColours();
     const panel = within(win).getByTestId("colours-shared");
-    expect(panel.textContent).toContain("Data model and Landing page share #7FA7D9 but are separate.");
+    expect(panel.textContent).toContain("Data model and Landing page: same colour, not grouped");
     fireEvent.click(within(panel).getByRole("button", { name: "Make them a group" }));
     expect(notice()).toContain("Made a group of Manual step 2 and Manual step 6");
-    await waitFor(() => expect(within(screen.getByTestId("colours-groups")).getByText("3 · drag to set the order")).toBeTruthy());
+    await waitFor(() => expect(within(screen.getByTestId("colours-groups")).getByText("3")).toBeTruthy());
   });
 
   it("lists your saved colours, and removes one from its menu", async () => {
     const win = await openColours();
     const saved = within(win).getByTestId("colours-saved");
-    expect(saved.textContent).toContain("On every build · right-click one to remove it");
+    expect(saved.textContent).toContain("Shared across builds");
     const before = saved.querySelectorAll("[data-saved-swatch]").length;
     fireEvent.contextMenu(saved.querySelector("[data-saved-swatch]") as HTMLElement);
     fireEvent.click(await screen.findByRole("menuitem", { name: "Remove from saved" }));
@@ -133,7 +133,7 @@ describe("a group's menu", () => {
     expect(within(confirm).getByText("Merge No name into Login flow?")).toBeTruthy();
     act(() => void fireEvent.click(within(confirm).getByRole("button", { name: "Merge" })));
     expect(notice()).toContain("Merged No name into Login flow");
-    await waitFor(() => expect(within(screen.getByTestId("colours-groups")).getByText("1 · drag to set the order")).toBeTruthy());
+    await waitFor(() => expect(within(screen.getByTestId("colours-groups")).getByText("1")).toBeTruthy());
   });
 });
 
@@ -178,7 +178,7 @@ describe("merging two linked groups", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "Login flow" }));
     expect(props.askKeep).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Which linked text should Login flow keep?",
+        title: "Linked text to keep",
         action: "Merge",
         choices: [
           { key: "into", owner: "Login flow", words: "Signing in by email link", post: 2 },
@@ -223,7 +223,7 @@ describe("clearing everything", () => {
     await waitFor(() => expect(within(screen.getByTestId("colours-groups")).getByText(COLOURS_COPY.noGroups)).toBeTruthy());
     expect(document.querySelectorAll("[data-ref]").length).toBe(0);
     fireEvent.click(screen.getByTestId("notice-undo"));
-    await waitFor(() => expect(within(screen.getByTestId("colours-groups")).getByText("2 · drag to set the order")).toBeTruthy());
+    await waitFor(() => expect(within(screen.getByTestId("colours-groups")).getByText("2")).toBeTruthy());
     expect(document.querySelectorAll("span[data-ref]").length).toBeGreaterThan(0);
   });
 

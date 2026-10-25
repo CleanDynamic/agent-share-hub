@@ -86,8 +86,7 @@ describe("ClassificationPicker: combobox", () => {
     const options = screen.getAllByRole("option");
     const last = options[options.length - 1];
     expect(last.textContent).toContain("Add \u201C");
-    expect(last.textContent).toContain("as your own entry");
-    expect(last.textContent).toContain(OWN_ENTRY_NOTE);
+        expect(last.textContent).toContain(OWN_ENTRY_NOTE);
     fireEvent.click(last);
     const stored = (onEntries.mock.calls[0][0] as Entry[])[0] as { custom: string };
     expect(stored.custom.length).toBe(60);
@@ -193,7 +192,7 @@ describe("ClassificationPicker: as the board draws it (CA-16b)", () => {
     type("rerank");
     const options = screen.getAllByRole("option");
     const own = options[options.length - 1] as HTMLElement;
-    expect(own.textContent).toBe("Add “rerank” as your own entryShown on your build, reviewed for the list");
+    expect(own.textContent).toBe("Add “rerank”Shown on the build. Reviewed before listing.");
     expect(own.style.marginTop).toBe("4px");
   });
 

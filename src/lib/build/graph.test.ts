@@ -775,7 +775,7 @@ describe("what an agent ran in, its models and its tools (CA-02 P5)", () => {
     await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: [{ model: "Opus 5.5", role: "main" }, { model: " ", role: "plans" }] })).rejects.toThrow(/needs its name/);
     await expect(addTeam(BUILD, [], { model: "Opus 5.5", models: [{ model: "Opus 5.5", role: "main" }, { model: "", role: "acts" }] })).rejects.toThrow(/needs its name/);
     const five = Array.from({ length: 5 }, (_, i) => ({ model: i === 0 ? "Opus 5.5" : "Haiku 5.5", role: "other" }));
-    await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: five })).rejects.toThrow(/4 models at most/);
+    await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: five })).rejects.toThrow(/Models: 4 max/);
     await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: [{ model: "Sonnet 5.5", role: "main" }, { model: "Opus 5.5", role: "plans" }] })).rejects.toThrow(/main model/);
     await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: [{ model: "Opus 5.5", role: "main" }, { model: "Haiku 5.5", role: " " }] })).rejects.toThrow(/role/);
     expect(upsertNode).not.toHaveBeenCalled();
@@ -857,7 +857,7 @@ describe("code is a step (CA-02 P7)", () => {
 
   it("refuses empty source, source over 100,000 characters, a language outside the schema and a long file name or tool", async () => {
     await expect(addCode(BUILD, [], { source: "  \n ", language: "ts" })).rejects.toThrow(/needs its lines/);
-    await expect(addCode(BUILD, [], { source: "x".repeat(100_001), language: "ts" })).rejects.toThrow("Code is at most 100,000 characters. Upload it as a file instead.");
+    await expect(addCode(BUILD, [], { source: "x".repeat(100_001), language: "ts" })).rejects.toThrow("Code: 100,000 characters max");
     await expect(addCode(BUILD, [], { source: "x", language: "rust" })).rejects.toThrow(/language/);
     await expect(addCode(BUILD, [], { source: "x", language: "ts", filename: "f".repeat(121) })).rejects.toThrow(/120/);
     await expect(addCode(BUILD, [], { source: "x", language: "ts", tool: "t".repeat(41) })).rejects.toThrow(/40/);
@@ -916,16 +916,16 @@ describe("a check is a step (CA-03 P5)", () => {
 
   it("refuses in plain words, before anything is written", async () => {
     const base = { tested: "It loads", passing: "No errors", passed: 1, total: 2 };
-    await expect(addCheck(BUILD, [], { ...base, passed: 3 })).rejects.toThrow("Passed can't be more than the total.");
-    await expect(addCheck(BUILD, [], { ...base, tested: " " })).rejects.toThrow("Add the test description.");
-    await expect(addCheck(BUILD, [], { ...base, passing: "" })).rejects.toThrow("Add the pass criteria.");
-    await expect(addCheck(BUILD, [], { ...base, tested: "x".repeat(281) })).rejects.toThrow("The test description is at most 280 characters.");
-    await expect(addCheck(BUILD, [], { ...base, passing: "x".repeat(281) })).rejects.toThrow("The pass criteria are at most 280 characters.");
-    await expect(addCheck(BUILD, [], { ...base, onFail: "x".repeat(601) })).rejects.toThrow("The failure notes are at most 600 characters.");
-    await expect(addCheck(BUILD, [], { ...base, passed: 1.5 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
-    await expect(addCheck(BUILD, [], { ...base, total: 10_001 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
-    await expect(addCheck(BUILD, [], { ...base, passed: -1 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
-    await expect(addCheck(BUILD, [], { ...base, runAt: "2026-02-30" })).rejects.toThrow("The last run date is written as 2026-10-12.");
+    await expect(addCheck(BUILD, [], { ...base, passed: 3 })).rejects.toThrow("Passed: no more than total");
+    await expect(addCheck(BUILD, [], { ...base, tested: " " })).rejects.toThrow("Test description: required");
+    await expect(addCheck(BUILD, [], { ...base, passing: "" })).rejects.toThrow("Pass criteria: required");
+    await expect(addCheck(BUILD, [], { ...base, tested: "x".repeat(281) })).rejects.toThrow("Test description: 280 characters max");
+    await expect(addCheck(BUILD, [], { ...base, passing: "x".repeat(281) })).rejects.toThrow("Pass criteria: 280 characters max");
+    await expect(addCheck(BUILD, [], { ...base, onFail: "x".repeat(601) })).rejects.toThrow("Failure notes: 600 characters max");
+    await expect(addCheck(BUILD, [], { ...base, passed: 1.5 })).rejects.toThrow("Runs: whole numbers, 0 to 10,000");
+    await expect(addCheck(BUILD, [], { ...base, total: 10_001 })).rejects.toThrow("Runs: whole numbers, 0 to 10,000");
+    await expect(addCheck(BUILD, [], { ...base, passed: -1 })).rejects.toThrow("Runs: whole numbers, 0 to 10,000");
+    await expect(addCheck(BUILD, [], { ...base, runAt: "2026-02-30" })).rejects.toThrow("Format: 2026-10-12");
     await expect(addCheck(BUILD, [work], { ...base, testedStep: "gone" })).rejects.toThrow("That is not a step of this build.");
     expect(upsertNode).not.toHaveBeenCalled();
     await addCheck(BUILD, [], { ...base, tested: "x".repeat(280), passing: "y".repeat(280), onFail: "z".repeat(600), passed: 10_000, total: 10_000 });
@@ -990,7 +990,7 @@ describe("what an agent remembers (CA-03 P6)", () => {
   });
 
   it("refuses more than 200 characters", async () => {
-    await expect(addAgent(BUILD, [], { model: "Opus 5.5", memory: "x".repeat(201) })).rejects.toThrow("What it remembers is at most 200 characters.");
+    await expect(addAgent(BUILD, [], { model: "Opus 5.5", memory: "x".repeat(201) })).rejects.toThrow("What it remembers: 200 characters max");
     expect(upsertNode).not.toHaveBeenCalled();
   });
 
@@ -1066,7 +1066,7 @@ describe("CA-12 P7, P8: tool and file tiles", () => {
     expect(payloadWritten()).toEqual({ tool: "Terminal", text: "cd app\nnpm test", where: { kind: "terminal" } });
     const [step] = buildSteps([node({ id: "m", type: "manual_step", position: 1, payload: { tool: "Figma", text: "Draw it" } })]);
     expect(step).toMatchObject({ lines: ["Draw it"], where: { kind: "app", name: "Figma" } });
-    await expect(addManualStep(BUILD, [], { where: { kind: "offline", name: null, url: null }, lines: Array(13).fill("x") })).rejects.toThrow(/at most 12/);
+    await expect(addManualStep(BUILD, [], { where: { kind: "offline", name: null, url: null }, lines: Array(13).fill("x") })).rejects.toThrow(/Lines: 12 max/);
   });
 
   it("a check's total is worked out from its cases", () => {

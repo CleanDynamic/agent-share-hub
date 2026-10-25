@@ -33,8 +33,8 @@ export const EMPTY_BUILD_HISTORY: BuildHistory = { done: [], undone: [] };
 export const HISTORY_COPY = {
   nothingToUndo: "Nothing to undo",
   nothingToRedo: "Nothing to redo",
-  undoFailed: "Couldn't undo that. Try again.",
-  redoFailed: "Couldn't redo that. Try again.",
+  undoFailed: "Change not undone",
+  redoFailed: "Change not redone",
   undo: "Undo",
   redo: "Redo",
   /** The title row's tooltip: "Undo: Removed Prompt 3". */

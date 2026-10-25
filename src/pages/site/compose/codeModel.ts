@@ -9,8 +9,8 @@ import { detectLanguage, type CodeLanguage as DetectedLanguage } from "@/lib/det
 
 export const CODE_COPY = {
   /** CA-02 P7: the refusals of a file, after its name. */
-  notText: "That file isn't text.",
-  tooLong: "Code is at most 100,000 characters. Upload it as a file instead.",
+  notText: "Not text",
+  tooLong: "Code: 100,000 characters max",
   empty: "Code needs its lines.",
   /** CA-02 P7: the offer under Typed here when the text pasted there reads as code. */
   looksLikeCode: "This looks like code.",

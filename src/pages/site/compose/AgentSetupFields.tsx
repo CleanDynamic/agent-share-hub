@@ -2,7 +2,7 @@
 
    One set of controls, in the Add dialog and in Details:
 
-   - Runs in: the tool picker for an agent, its first row "My own code (API)", which saves no harness.
+   - Runs in: the tool picker for an agent, its first row "Own code (API)", which saves no harness.
    - Models: one row to start, its menu reading the harness (`ModelPicker`); "Add a model" adds a row, four at most.
      Every row after the first has a role, from the harness's own roles, else main, plans, acts, reviews, other. The
      first is always main. A harness that hides its model shows its note and saves its own name; one that names
@@ -48,21 +48,21 @@ import { FieldInput, Hint, IconSquare, PICKER_ROW, RemovableTag, Row, Tag, TagLi
 
 export const AGENT_SETUP_COPY = {
   runsIn: "Host platform",
-  runsInLine: "The tool or framework it ran on",
-  ownCode: "My own code (API)",
+  runsInLine: "Tool or framework",
+  ownCode: "Own code (API)",
   notSure: "Not sure",
   models: "Models",
   addModel: "Add a model",
   tools: "Available tools",
-  toolsLine: "The applications it could call",
+  toolsLine: "Apps it could call",
   /** CA-03: where the first row's role menu would be; "main" is what is stored, "Primary" is what is shown. */
   main: "Primary",
   /** CA-03 P6. */
   memory: "Memory",
-  memoryLine: "What it remembers between runs",
-  memoryPlaceholder: "e.g. Which dishes it featured, in a notes file it keeps",
+  memoryLine: "Stored between runs",
+  memoryPlaceholder: "Which dishes it featured, in a notes file it keeps",
   /** CA-15b: the Add dialog's words. */
-  memoryDialogPlaceholder: "e.g. Dishes already featured, stored in a notes file",
+  memoryDialogPlaceholder: "Dishes already featured, stored in a notes file",
   selectPlatform: "Select a platform",
   selectTools: "Select tools",
   role: (n: number) => `Role of model ${n}`,

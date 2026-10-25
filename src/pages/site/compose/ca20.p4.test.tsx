@@ -32,16 +32,16 @@ describe("the lists of counts", () => {
     expect(clearList({ parts: 2, sessions: 6, tiles: 18, files: 3 })).toBe("2 parts, 6 sessions, 18 tiles and 3 files");
     expect(clearList({ parts: 0, sessions: 1, tiles: 18, files: 0 })).toBe("1 session and 18 tiles");
     expect(clearList({ parts: 0, sessions: 0, tiles: 0, files: 1 })).toBe("1 file");
-    expect(CLEAR_COPY.body({ parts: 0, sessions: 3, tiles: 8, files: 1 })).toBe("Removes 3 sessions, 8 tiles and 1 file, with their colours, groups and links. The title, the post's words and the Classification Card stay.");
+    expect(CLEAR_COPY.body({ parts: 0, sessions: 3, tiles: 8, files: 1 })).toBe("Removes 3 sessions, 8 tiles and 1 file, with their colours, groups and links. The title, the post's words and the Classification stay.");
   });
 });
 
 describe("Undo and Redo", () => {
-  it("sit just left of Classification Card, with Build options, and are greyed with their reason while there is nothing to do", async () => {
+  it("sit just left of Classification, with Build options, and are greyed with their reason while there is nothing to do", async () => {
     await mountCa20(seedCa20);
     const row = screen.getByTestId("sandbox-tabrow");
     const buttons = within(row).getAllByRole("button").map((button) => button.getAttribute("data-testid") || button.getAttribute("aria-label"));
-    expect(buttons.slice(buttons.indexOf("title-undo"), buttons.indexOf("title-undo") + 4)).toEqual(["title-undo", "title-redo", "build-options", "Classification Card"]);
+    expect(buttons.slice(buttons.indexOf("title-undo"), buttons.indexOf("title-undo") + 4)).toEqual(["title-undo", "title-redo", "build-options", "Classification"]);
     expect((undoButton() as HTMLButtonElement).disabled).toBe(true);
     expect(undoButton().getAttribute("title")).toBe("Nothing to undo");
     expect(describedBy(undoButton())).toBe("Nothing to undo");
@@ -107,7 +107,7 @@ describe("Clear the build", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Clear the build…" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Clear the build?")).toBeTruthy();
-    expect(within(dialog).getByText("Removes 3 sessions, 8 tiles and 1 file, with their colours, groups and links. The title, the post's words and the Classification Card stay.")).toBeTruthy();
+    expect(within(dialog).getByText("Removes 3 sessions, 8 tiles and 1 file, with their colours, groups and links. The title, the post's words and the Classification stay.")).toBeTruthy();
     expect(within(dialog).getAllByRole("button").map((button) => button.textContent)).toEqual(["Cancel", "Clear the build"]);
     expect(within(dialog).getByRole("button", { name: "Clear the build" }).getAttribute("data-tone")).toBe("danger");
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));

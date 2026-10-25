@@ -31,7 +31,7 @@ describe("the part window's words", () => {
 
   it("names the helpers Supporting models", () => {
     render(<HelperChips helpers={[{ provider: "scaledown", job: "compress" }]} />);
-    expect(screen.getByRole("list", { name: "Supporting models" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Helpers" })).toBeTruthy();
   });
 });
 

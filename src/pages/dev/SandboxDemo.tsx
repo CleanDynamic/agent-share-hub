@@ -59,6 +59,7 @@ import MotionDemo from "./MotionDemo";
 import SavingDemo from "./SavingDemo";
 import Ca24Demo from "./Ca24Demo";
 import Ca25Demo from "./Ca25Demo";
+import Ca28Demo from "./Ca28Demo";
 import ReferencesDemo from "./ReferencesDemo";
 
 const EMPTY_POST: ThreadDoc = { type: "doc", content: [{ type: "paragraph" }] };
@@ -119,6 +120,7 @@ export default function SandboxDemo(props: DesignPageProps) {
   if (params.get("build") === "ca23") return <SavingDemo {...props} />;
   if (params.get("build") === "ca24") return <Ca24Demo {...props} />;
   if (params.get("build") === "ca25") return <Ca25Demo {...props} />;
+  if (params.get("build") === "ca28") return <Ca28Demo {...props} />;
   return <ShapesDemo {...props} />;
 }
 

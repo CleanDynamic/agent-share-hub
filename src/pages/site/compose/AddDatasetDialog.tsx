@@ -28,44 +28,40 @@ import {
 import { linesOf } from "@/lib/build/tileExtras";
 
 import { ChoiceGrid } from "./ChoiceGrid";
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { Block, BlockHead, FieldArea, FieldInput, Hint, Inline, MODAL_WIDTH, NARROW, Row } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 export const DATASET_DIALOG_COPY = {
   title: "Add a dataset",
-  subtitle: "Data used for training, evaluation or retrieval",
+  subtitle: "Data for training, evaluation or retrieval",
   name: "Name",
-  namePlaceholder: "e.g. Customer support tickets",
+  namePlaceholder: "Customer support tickets",
   description: "Description",
-  descriptionPlaceholder: "e.g. 1,200 anonymised support tickets from 2025, labelled by team",
+  descriptionPlaceholder: "1,200 anonymised support tickets from 2025, labelled by team",
   use: "Use",
   format: "Format",
-  formatLine: "The file or data format",
-  formatPlaceholder: "e.g. CSV",
+  formatPlaceholder: "CSV",
   records: "Record count",
-  recordsLine: "How many records it holds",
-  recordsPlaceholder: "e.g. 1200",
+  recordsPlaceholder: "1200",
   columns: "Columns",
-  columnsLine: "One column name per line",
-  columnsPlaceholder: "e.g. ticket_id\nsubject\nteam",
+  columnsLine: "One per line",
+  columnsPlaceholder: "ticket_id\nsubject\nteam",
   source: "Source",
-  sourceLine: "Where the data came from",
-  sourcePlaceholder: "e.g. Exported from the helpdesk",
+  sourcePlaceholder: "Exported from the helpdesk",
   sample: "Sample records",
-  sampleLine: "Up to five records, one per line",
-  samplePlaceholder: "e.g. 4821, Charged twice, billing",
+  sampleLine: "5 max, one per line",
+  samplePlaceholder: "4821, Charged twice, billing",
   licence: "Licence",
-  licenceLine: "The terms it may be used under",
-  licencePlaceholder: "e.g. CC BY 4.0",
+  licencePlaceholder: "CC BY 4.0",
   chunking: "Chunking",
-  chunkingLine: "How it was split for retrieval, and the embedding model",
+  chunkingLine: "Split method and embedding model",
   strategy: "Chunk strategy",
-  strategyPlaceholder: "e.g. By paragraph",
+  strategyPlaceholder: "By paragraph",
   size: "Chunk size",
   overlap: "Chunk overlap",
   embedding: "Embedding model",
-  embeddingPlaceholder: "e.g. text-embedding-3-small",
+  embeddingPlaceholder: "text-embedding-3-small",
   add: "Add",
   cancel: "Cancel",
 } as const;
@@ -118,10 +114,10 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogPr
   const retrieval = use === "retrieval";
   const columnLines = linesOf(columns);
   const sampleLines = linesOf(sample);
-  const tooMany = sampleLines.length > DATASET_SAMPLE_MAX ? `Sample records are at most ${DATASET_SAMPLE_MAX}, one per line.` : columnLines.length > DATASET_COLUMNS_MAX ? `Columns are at most ${DATASET_COLUMNS_MAX}, one per line.` : null;
-  const missing = firstMissing([
-    [name.trim().length > 0, "a name"],
-    [description.trim().length > 0, "a description"],
+  const tooMany = sampleLines.length > DATASET_SAMPLE_MAX ? `Sample records: ${DATASET_SAMPLE_MAX} max, one per line` : columnLines.length > DATASET_COLUMNS_MAX ? `Columns: ${DATASET_COLUMNS_MAX} max, one per line` : null;
+  const missing = missingLabels([
+    [name.trim().length > 0, "Name"],
+    [description.trim().length > 0, "Description"],
   ]);
 
   const submit = () =>
@@ -158,11 +154,11 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogPr
       </Block>
 
       <OptionalSection>
-        <OptionalField name={DATASET_DIALOG_COPY.format} description={DATASET_DIALOG_COPY.formatLine} summary={summaryOf(format)} phone={phone}>
+        <OptionalField name={DATASET_DIALOG_COPY.format} summary={summaryOf(format)} phone={phone}>
           <FieldInput phone={phone} width={NARROW.version} aria-label={DATASET_DIALOG_COPY.format} maxLength={DATASET_FORMAT_MAX} value={format} placeholder={DATASET_DIALOG_COPY.formatPlaceholder} onChange={(event) => setFormat(event.target.value)} />
         </OptionalField>
 
-        <OptionalField name={DATASET_DIALOG_COPY.records} description={DATASET_DIALOG_COPY.recordsLine} summary={summaryOf(records ? Number(records).toLocaleString("en-GB") : null)} phone={phone}>
+        <OptionalField name={DATASET_DIALOG_COPY.records} summary={summaryOf(records ? Number(records).toLocaleString("en-GB") : null)} phone={phone}>
           <FieldInput phone={phone} mono width={NARROW.value} aria-label={DATASET_DIALOG_COPY.records} inputMode="numeric" maxLength={12} value={records} placeholder={DATASET_DIALOG_COPY.recordsPlaceholder} onChange={(event) => setRecords(digits(event.target.value))} />
         </OptionalField>
 
@@ -170,16 +166,16 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogPr
           <FieldArea phone={phone} rows={4} mono aria-label={DATASET_DIALOG_COPY.columns} value={columns} placeholder={DATASET_DIALOG_COPY.columnsPlaceholder} onChange={(event) => setColumns(event.target.value)} />
         </OptionalField>
 
-        <OptionalField name={DATASET_DIALOG_COPY.source} description={DATASET_DIALOG_COPY.sourceLine} summary={summaryOf(source)} phone={phone}>
+        <OptionalField name={DATASET_DIALOG_COPY.source} summary={summaryOf(source)} phone={phone}>
           <FieldInput phone={phone} aria-label={DATASET_DIALOG_COPY.source} maxLength={DATASET_SOURCE_MAX} value={source} placeholder={DATASET_DIALOG_COPY.sourcePlaceholder} onChange={(event) => setSource(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={DATASET_DIALOG_COPY.sample} description={DATASET_DIALOG_COPY.sampleLine} summary={summaryOf(sampleLines)} phone={phone}>
           <FieldArea phone={phone} rows={5} mono aria-label={DATASET_DIALOG_COPY.sample} value={sample} placeholder={DATASET_DIALOG_COPY.samplePlaceholder} onChange={(event) => setSample(event.target.value)} />
-          <Hint>{`${sampleLines.length} of ${DATASET_SAMPLE_MAX} records. Each is at most ${DATASET_SAMPLE_LINE_MAX} characters.`}</Hint>
+          <Hint>{`Each record: ${DATASET_SAMPLE_LINE_MAX} characters max`}</Hint>
         </OptionalField>
 
-        <OptionalField name={DATASET_DIALOG_COPY.licence} description={DATASET_DIALOG_COPY.licenceLine} summary={summaryOf(licence)} phone={phone}>
+        <OptionalField name={DATASET_DIALOG_COPY.licence} summary={summaryOf(licence)} phone={phone}>
           <FieldInput phone={phone} aria-label={DATASET_DIALOG_COPY.licence} maxLength={DATASET_LICENCE_MAX} value={licence} placeholder={DATASET_DIALOG_COPY.licencePlaceholder} onChange={(event) => setLicence(event.target.value)} />
         </OptionalField>
 
@@ -187,8 +183,8 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogPr
           <OptionalField name={DATASET_DIALOG_COPY.chunking} description={DATASET_DIALOG_COPY.chunkingLine} summary={summaryOf(strategy, size ? `size ${size}` : null, overlap ? `overlap ${overlap}` : null, embedding)} phone={phone}>
             <FieldInput phone={phone} aria-label={DATASET_DIALOG_COPY.strategy} maxLength={DATASET_CHUNK_STRATEGY_MAX} value={strategy} placeholder={DATASET_DIALOG_COPY.strategyPlaceholder} onChange={(event) => setStrategy(event.target.value)} />
             <Inline>
-              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DATASET_DIALOG_COPY.size} inputMode="numeric" maxLength={7} value={size} placeholder="e.g. 512" onChange={(event) => setSize(digits(event.target.value))} />
-              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DATASET_DIALOG_COPY.overlap} inputMode="numeric" maxLength={7} value={overlap} placeholder="e.g. 64" onChange={(event) => setOverlap(digits(event.target.value))} />
+              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DATASET_DIALOG_COPY.size} inputMode="numeric" maxLength={7} value={size} placeholder="512" onChange={(event) => setSize(digits(event.target.value))} />
+              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DATASET_DIALOG_COPY.overlap} inputMode="numeric" maxLength={7} value={overlap} placeholder="64" onChange={(event) => setOverlap(digits(event.target.value))} />
             </Inline>
             <FieldInput phone={phone} aria-label={DATASET_DIALOG_COPY.embedding} maxLength={DATASET_EMBEDDING_MAX} value={embedding} placeholder={DATASET_DIALOG_COPY.embeddingPlaceholder} onChange={(event) => setEmbedding(event.target.value)} />
           </OptionalField>

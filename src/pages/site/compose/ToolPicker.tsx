@@ -73,7 +73,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
     case "showMore":
       return `Show ${row.count} more`;
     case "use":
-      return `Use "${row.name}"`;
+      return `Add "${row.name}"`;
     case "heading":
       return row.label;
     case "note":

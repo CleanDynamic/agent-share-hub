@@ -32,7 +32,7 @@ import {
   STAGGER,
   STAGGER_CAP,
 } from "@/lib/build/buildMotion";
-import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
+import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
 import { finishSlides, play, snapshot, type Box } from "./flip";
@@ -155,6 +155,51 @@ export function openClip(elements: readonly Element[], { delay = 0, ms = LIFT }:
   return runOf(
     elements.map((element) => (canAnimate(element) ? start(element, "clip", [{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: ms, delay, fill: "backwards" }) : null)),
   );
+}
+
+/* ── resizeFrame: a window that grows or closes about its fixed centre ── */
+
+/** The three parts of a modal window that move when its frame changes size. */
+export interface FrameParts {
+  header: HTMLElement | null;
+  body: HTMLElement | null;
+  footer: HTMLElement | null;
+}
+
+/** A window's header, the body that scrolls, and its footer. */
+export function frameParts(frame: HTMLElement): FrameParts {
+  const part = (id: string) => frame.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+  return { header: part("modal-header"), body: part("modal-body"), footer: part("modal-footer") };
+}
+
+/** How far the frame's shadow reaches past its edge: the clip leaves this much room at the sides and, once open, at the ends. */
+const SHADOW_ROOM = 96;
+const FRAME_RADIUS = 12;
+
+/**
+ * A centred window that was `from` tall and is now `to` tall (growing: it is already drawn at `to`; closing: it is still drawn at
+ * `from`, and the caller takes the content away once this has run). Its centre stays where it is: the top edge and the header move
+ * by half the difference one way, the bottom edge and the footer by half the other way. The frame is drawn with `clip-path: inset()`
+ * from the old height to the new, and the header, body and footer move with `translateY`, so no layout property is animated.
+ */
+export function resizeFrame(frame: HTMLElement, parts: FrameParts, from: number, to: number, ms: number = BASE): MotionRun {
+  const change = Math.abs(to - from);
+  if (!canAnimate(frame) || change < 1) return DONE;
+  const half = change / 2;
+  const growing = to > from;
+  const clip = (cut: number) => `inset(${cut}px -${SHADOW_ROOM}px ${cut}px -${SHADOW_ROOM}px round ${FRAME_RADIUS}px)`;
+  const options: KeyframeAnimationOptions = { duration: ms, fill: growing ? "none" : "forwards" };
+  const slide = (element: HTMLElement | null, id: string, by: number) => {
+    if (!element || !canAnimate(element)) return null;
+    const away = `translateY(${by}px)`;
+    return start(element, id, growing ? [{ transform: away }, { transform: "none" }] : [{ transform: "none" }, { transform: away }], options);
+  };
+  return runOf([
+    start(frame, "frame", growing ? [{ clipPath: clip(half) }, { clipPath: clip(-SHADOW_ROOM) }] : [{ clipPath: clip(-SHADOW_ROOM) }, { clipPath: clip(half) }], options),
+    slide(parts.header, "frame-header", half),
+    slide(parts.body, "frame-body", half),
+    slide(parts.footer, "frame-footer", -half),
+  ]);
 }
 
 /* ── slideOut: arriving from under something ── */

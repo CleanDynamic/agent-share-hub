@@ -123,7 +123,7 @@ describe("a run instruction that looks like a secret", () => {
   });
 
   it("is refused by the repo cleaners, without echoing the value", () => {
-    expect(() => cleanExtras("repo", { run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] })).toThrow("A run instruction looks as if it holds a key's value. Name the key instead, for example GITHUB_TOKEN.");
+    expect(() => cleanExtras("repo", { run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] })).toThrow("Contains a key value. Key names only, like GITHUB_TOKEN");
     try {
       cleanExtras("repo", { run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] });
     } catch (cause) {

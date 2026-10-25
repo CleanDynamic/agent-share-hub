@@ -89,7 +89,7 @@ describe("the title", () => {
   it("saves an empty title as the default (an empty string, which the page turns back into the default)", () => {
     const props = open("p3");
     const field = screen.getByLabelText("Title") as HTMLInputElement;
-    expect(field.placeholder).toBe("e.g. Welcome email");
+    expect(field.placeholder).toBe("Welcome email");
     expect(screen.getByTestId("prompt-place").textContent).toMatch(/^Prompt 3/);
     fireEvent.change(field, { target: { value: "" } });
     fireEvent.blur(field);

@@ -44,7 +44,7 @@ export interface RunsChoice {
 
 /** CA-03 P3: the group's title, and the words around its choices. */
 export const RUNS_COPY = {
-  title: "How did it run?",
+  title: "How it ran",
   more: "More ways it ran",
   /** An agent in a team runs when work is sent to it. */
   inTeam: "each time work is sent to it",

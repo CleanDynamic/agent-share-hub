@@ -51,6 +51,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { ModelPicker } from "@/pages/site/compose/ModelPicker";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
+import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
 import {
   Block,
@@ -130,16 +131,14 @@ export const FULL_PROMPT_COPY = {
   keepAsWritten: "Keep as written",
   prompt: "Prompt",
   response: "Response",
-  titlePlaceholder: "e.g. Welcome email",
+  titlePlaceholder: "Welcome email",
   rename: "Rename prompt",
   modelSettings: "Model settings",
-  modelSettingsLine: "Model, reasoning effort, custom instructions and project knowledge",
   model: "Model",
   effort: "Reasoning effort",
   instructions: "Custom instructions or project knowledge that applied",
   variables: "Variables",
-  variablesLine: "Words a copier replaces, such as {company name}",
-  variablesHow: "Select words in the prompt, then mark them as a variable.",
+  variablesLine: "Format: {company name}",
   noVariablesCount: "No variables yet",
   replyCount: (n: number) => `${n.toLocaleString("en-GB")} of ${REPLY_MAX.toLocaleString("en-GB")} characters`,
   markVariable: "Mark selection as a variable",
@@ -359,7 +358,7 @@ function ShapeRead({ shape }: { shape: OutputShape }) {
       {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
       {fragment.text ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Couldn't copy. Select the text and copy it."))}>
+          <Button variant="secondary" size={28} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Text not copied"))}>
             Copy the setting
           </Button>
           <span aria-live="polite" style={geist(12, 400, t.label)}>{said}</span>
@@ -424,9 +423,9 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
   if (!maker) {
     if (!settingsHeld && variables.length === 0) return null;
     return (
-      <OptionalSection>
+      <OptionalRows>
         {settingsHeld ? (
-          <OptionalField name={FULL_PROMPT_COPY.modelSettings} description={FULL_PROMPT_COPY.modelSettingsLine} summary={settingsLine} phone={phone}>
+          <OptionalRow name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
             {shownModel ? (
               <ReadLine label={FULL_PROMPT_COPY.model}>
                 <ModelTag tool={tool} model={model}>
@@ -436,24 +435,24 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
             ) : null}
             {effortHeld ? <ReadLine label={FULL_PROMPT_COPY.effort}>{EFFORT_LABEL[settings.effort]}</ReadLine> : null}
             {settings.instructions ? <ReadLine label={FULL_PROMPT_COPY.instructions}>{settings.instructions}</ReadLine> : null}
-          </OptionalField>
+          </OptionalRow>
         ) : null}
         {variables.length > 0 ? (
-          <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
+          <OptionalRow name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
             {variables.map((variable) => (
               <ReadLine key={variable.name} label={`{${variable.name}}`}>
                 {variable.description || "No description"}
               </ReadLine>
             ))}
-          </OptionalField>
+          </OptionalRow>
         ) : null}
-      </OptionalSection>
+      </OptionalRows>
     );
   }
 
   return (
     <OptionalSection>
-      <OptionalField name={FULL_PROMPT_COPY.modelSettings} description={FULL_PROMPT_COPY.modelSettingsLine} summary={settingsLine} phone={phone}>
+      <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
         <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />
         <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
         <FieldArea
@@ -470,7 +469,6 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
         />
       </OptionalField>
       <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
-        <Hint>{FULL_PROMPT_COPY.variablesHow}</Hint>
         {variables.length === 0 ? <Count>{FULL_PROMPT_COPY.noVariablesCount}</Count> : null}
         {variables.map((variable) => (
           <Row key={variable.name} id={`variable-${step.id}-${variable.name}`} label={`{${variable.name}}`} noRule phone={phone}>
@@ -479,7 +477,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
               id={`variable-${step.id}-${variable.name}`}
               maxLength={VARIABLE_DESCRIPTION_MAX}
               value={described[variable.name] ?? variable.description}
-              placeholder="e.g. The customer's first name"
+              placeholder="The customer's first name"
               onChange={(event) => setDescribed((now) => ({ ...now, [variable.name]: event.target.value }))}
               onBlur={() => saveVariables(described)}
             />
@@ -530,7 +528,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
   }, []);
 
   const copy = async () => {
-    say((await copyText(bracketed(step.text, step.changes))) ? FULL_PROMPT_COPY.copied : "Couldn't copy. Select the text and copy it.");
+    say((await copyText(bracketed(step.text, step.changes))) ? FULL_PROMPT_COPY.copied : "Text not copied");
   };
 
   const quiet = geist(11.5, 400, t.label);
@@ -541,7 +539,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
     /* The global field rule makes a field inherit its size on a computer, so the window sets the fields' 13 here. */
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13, ...(phone ? { minHeight: "100%" } : null) }}>
       <LiveRegion message={said} />
-      <div style={phone ? { ...HEADER, padding: "4px 0 16px" } : HEADER}>
+      <div data-testid="modal-header" style={phone ? { ...HEADER, padding: "4px 0 16px" } : HEADER}>
         <div style={HEADER_TEXT}>
           {maker && onTitle ? (
             <>
@@ -569,7 +567,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
       </div>
 
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
-        <div style={bodyStyle(phone)}>
+        <div data-testid="modal-body" style={bodyStyle(phone)}>
           <Block noRule>
             <BlockHead label={FULL_PROMPT_COPY.prompt} id={`prompt-label-${step.id}`} count={`${step.words} words`}>
               {markable ? (
@@ -618,7 +616,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
                       {use.label}
                     </span>
                   ))}
-                  {goesInto.length > 0 ? <span style={{ ...quiet, marginLeft: uses.length > 0 ? 8 : 0 }}>Goes into</span> : null}
+                  {goesInto.length > 0 ? <span style={{ ...quiet, marginLeft: uses.length > 0 ? 8 : 0 }}>Used by</span> : null}
                   {goesInto.map((to) => (
                     <span key={to.id} style={refChip}>
                       {to.number} · {stepTitle(to)}
@@ -642,7 +640,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           {!isInstructions(step) && step.kind === "prompt" ? <PromptOptional key={`optional-${step.id}`} props={props} step={step} tool={tool} model={model} phone={phone} picked={picked} onMarked={() => setPicked(null)} /> : null}
         </div>
       </ModalInset.Provider>
-      <div style={{ ...footerStyle(phone), ...(phone ? { paddingBottom: "calc(12px + env(safe-area-inset-bottom))", marginTop: "auto" } : null) }}>
+      <div data-testid="modal-footer" style={{ ...footerStyle(phone), ...(phone ? { paddingBottom: "calc(12px + env(safe-area-inset-bottom))", marginTop: "auto" } : null) }}>
         {props.fromPost && props.onBackToPost ? <FromPostNote onBack={props.onBackToPost} phone={phone} /> : null}
         <span style={FOOT_NOTE}>{phone ? null : FULL_PROMPT_COPY.hint}</span>
         <RecipeButton variant="primary" phone={phone} onClick={onClose}>

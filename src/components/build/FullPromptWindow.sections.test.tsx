@@ -47,9 +47,9 @@ describe("the prompt window's own sections (CA-18)", () => {
   it("names a file it makes through onAddMade, and renames one through onFields", () => {
     const h = open("maker");
     const makes = within(screen.getByTestId("edit-makes"));
-    fireEvent.click(makes.getByRole("button", { name: "Name a file it makes" }));
-    fireEvent.change(makes.getByRole("textbox", { name: "Name a file it makes" }), { target: { value: "brand-guide.md" } });
-    fireEvent.keyDown(makes.getByRole("textbox", { name: "Name a file it makes" }), { key: "Enter" });
+    fireEvent.click(makes.getByRole("button", { name: "Add file name" }));
+    fireEvent.change(makes.getByRole("textbox", { name: "Add file name" }), { target: { value: "brand-guide.md" } });
+    fireEvent.keyDown(makes.getByRole("textbox", { name: "Add file name" }), { key: "Enter" });
     expect(h.onAddMade).toHaveBeenCalledWith("p3", "brand-guide.md");
     fireEvent.blur(makes.getByRole("textbox", { name: "Name of menu.css" }), { target: { value: "menu.min.css" } });
     expect(h.onFields).toHaveBeenCalledWith("m1", { title: "menu.min.css" });

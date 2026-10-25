@@ -1008,7 +1008,7 @@ function subSteps(entry: ReaderStep, lines: string[]): void {
     lines.push(`### ${child.step.number} ${child.title}${model}`, "");
     if (child.runs && child.step.runs) lines.push(`${child.runs}.`, "");
     if (child.uses.length > 0) lines.push(`Uses ${join(child.uses)}.`, "");
-    if (child.goesInto.length > 0) lines.push(`Goes into ${child.goesInto.join(", ")}.`, "");
+    if (child.goesInto.length > 0) lines.push(`Used by ${child.goesInto.join(", ")}.`, "");
     if (child.step.text) lines.push(fenced(bracketed(child.step.text, child.step.changes)), "");
     const saves = saveSentences(child);
     if (saves.length > 0) lines.push(...saves, "");

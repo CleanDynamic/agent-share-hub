@@ -344,7 +344,7 @@ describe("the slash menu", () => {
     expect(postRuns(json(editor))).toHaveLength(10);
     typeSlash(editor, "new");
     fireEvent.keyDown(dom, { key: "Enter" });
-    expect(screen.getByTestId("post-tab").querySelector("p[role=status]")?.textContent).toBe("A thread holds at most 10 posts. Join two of them before starting another.");
+    expect(screen.getByTestId("post-tab").querySelector("p[role=status]")?.textContent).toBe("Posts: 10 max");
     expect(postRuns(json(editor))).toHaveLength(10);
   });
 

@@ -363,6 +363,8 @@ export interface DetailsHandlers {
   onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[]; memory?: string }) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
+  /** CA-28 P1: read a session's prompts again after they did not load. Absent: the Session window says so without Retry. */
+  onRetrySessionPrompts?: (sessionKey: string) => void;
   /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
   onSessionTool?: (sessionId: string, tool: string | null) => void;
   /** CA-04 P1: change a session made here: its tool (null: "Typed here") or its day. Absent: they are shown, not edited. */
@@ -445,7 +447,7 @@ export const DETAILS_COPY = {
   edit: "Edit",
   copy: "Copy",
   copied: "Copied",
-  copyFailed: "Couldn't copy that. Select the text and copy it by hand.",
+  copyFailed: "Text not copied",
   readAll: "Read all",
 } as const;
 

@@ -15,6 +15,7 @@ import { BuildList } from "./BuildList";
 import type { DetailsHandlers } from "./DetailsPanel";
 import { TileEditDialog } from "./TileEditDialog";
 import { resolveView } from "./detailsView";
+import { fieldNamed } from "./optionalKit";
 
 beforeEach(() => {
   upsertNode.mockReset();
@@ -87,7 +88,7 @@ describe("The agent's window (CA-18: its notes are written there)", () => {
     render(<TileEditDialog view={view} handlers={handlers} onClose={vi.fn()} />);
     return handlers;
   }
-  const openRow = (name: string) => fireEvent.click(within(screen.getAllByTestId("optional-field").find((el) => within(el).queryByText(name)) as HTMLElement).getAllByRole("button")[0]);
+  const openRow = (name: string) => void fieldNamed(name);
   const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
   it("asks How it tidies its notes under Memory, up to 120 characters", () => {

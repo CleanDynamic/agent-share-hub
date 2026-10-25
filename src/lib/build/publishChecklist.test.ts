@@ -82,7 +82,7 @@ describe("publishChecklist recommended items", () => {
     });
     expect(out.recommended.map((item) => [item.words, item.detail, item.action?.label])).toEqual([
       ["Apps for 2 sessions", "Sessions 2 and 4 have no app", "Show"],
-      ["Classification Card", "Not filled", "Open card"],
+      ["Classification", "Not filled", "Open Classification"],
       ["People copying this will get a request, not your code.", null, "Go to it"],
     ]);
     expect(out.recommended[0].sessions).toEqual(["a", "b"]);

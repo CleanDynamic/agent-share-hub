@@ -36,51 +36,47 @@ import {
 } from "@/lib/build/tileExtras";
 
 import { CheckCasesField, keptCases } from "./CheckCasesField";
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, Count, FieldArea, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, Panel, PanelBody, RateBar, SegmentedField, Spread } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 export const CHECK_DIALOG_COPY = {
   title: "Add a check",
-  subtitle: "A test that verifies this part of the build",
+  subtitle: "Test of part of the build",
   tested: "Test description",
-  testedPlaceholder: "e.g. Places a test order for 2 sourdough loaves",
+  testedPlaceholder: "Places a test order for 2 sourdough loaves",
   passing: "Pass criteria",
-  passingPlaceholder: "e.g. The total shows £9.00",
+  passingPlaceholder: "The total shows £9.00",
   runs: "Runs",
-  runsLine: "Or add test cases below",
   rateLine: (percent: number) => `${percent}% pass rate`,
   passed: "Passed",
   total: "Total",
   passedOf: "passed out of",
   passRate: "Pass rate",
-  fromCases: "Worked out from the test cases",
+  fromCases: "From test cases",
   failed: "Failure notes",
-  failedLine: "What failed, and what was changed before the next run",
-  failedPlaceholder: "e.g. The total showed 0.00 until the basket was refreshed",
+  failedLine: "What failed and what changed",
+  failedPlaceholder: "The total showed 0.00 until the basket was refreshed",
   lastRun: "Last run date",
-  lastRunLine: "When the test last ran",
-  lastRunPlaceholder: "e.g. 2026-10-12",
-  casesLine: "Inputs, expected outputs and actual outputs",
+  lastRunPlaceholder: "2026-10-12",
+  casesLine: "Input, expected output, actual output",
   method: "Test method",
-  methodLine: "Manual, automated, test suite, peer review or comparison",
+  methodLine: "Manual, automated, test suite, peer review, comparison",
   reviewer: "Reviewer",
-  reviewerLine: "You, a user or a client",
+  reviewerLine: "Maker, user or client",
   scoring: "Scoring method",
-  scoringLine: "Pass or fail, a metric against a target, a rating, or an A/B comparison",
+  scoringLine: "Pass or fail, metric vs target, rating, A/B",
   target: "Target",
-  targetPlaceholder: "e.g. 95% of answers correct",
+  targetPlaceholder: "95% of answers correct",
   modelTested: "Model tested",
-  modelTestedLine: "The model and version the test ran against",
   version: "Version",
-  versionPlaceholder: "e.g. 2026-09-30",
+  versionPlaceholder: "2026-09-30",
   evidence: "Evidence",
-  evidenceLine: "A log, a screenshot, or a link to the test run",
+  evidenceLine: "Log, screenshot or link",
   evidenceUrl: "Evidence URL",
-  evidenceUrlPlaceholder: "Link to the test run",
   evidenceFile: "Upload a file",
-  evidenceBad: "Evidence is a URL, like example.com/results.",
+  evidenceBad: "Format: example.com/results",
   remove: "Remove",
   add: "Add",
   cancel: "Cancel",
@@ -151,10 +147,10 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
   const input = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt, ...(fromCases ? { cases: given } : null) };
   // A check that is there keeps its counts as they are, so only its text and date are held to the Add rules.
   const why = (edit ? checkRefusal({ ...input, passed: 0, total: 0, cases: undefined }) : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
-  const missing = firstMissing([
-    [tested.trim().length > 0, "a test description"],
-    [passing.trim().length > 0, "pass criteria"],
-    [fromCases || (passed.trim() !== "" && total.trim() !== ""), "runs or a test case"],
+  const missing = missingLabels([
+    [tested.trim().length > 0, "Test description"],
+    [passing.trim().length > 0, "Pass criteria"],
+    [fromCases || (passed.trim() !== "" && total.trim() !== ""), "Runs"],
   ]);
 
   const rate = (() => {
@@ -171,7 +167,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
     if (!file) return;
     const decided = fileKindFor(file);
     if ("refused" in decided) setFileWrong(decided.refused);
-    else if (file.size > MEDIA_MAX_BYTES) setFileWrong(`${file.name} is too big. The most is 25 MB.`);
+    else if (file.size > MEDIA_MAX_BYTES) setFileWrong(`${file.name}: 25 MB max`);
     else {
       setFileWrong(null);
       setEvidenceFile(file);
@@ -210,7 +206,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
       </Block>
 
       <Block label={CHECK_DIALOG_COPY.runs} testId="check-runs">
-        <BlockHead label={CHECK_DIALOG_COPY.runs} count={CHECK_DIALOG_COPY.runsLine} />
+        <BlockHead label={CHECK_DIALOG_COPY.runs} />
         {edit?.slots?.runs ?? (
         <Panel padding="12px 14px">
           <PanelBody>
@@ -238,7 +234,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
           <FieldArea phone={phone} rows={2} aria-label={CHECK_DIALOG_COPY.failed} maxLength={CHECK_FAIL_MAX} value={failed} placeholder={CHECK_DIALOG_COPY.failedPlaceholder} onChange={(event) => setFailed(event.target.value)} />
         </OptionalField>
 
-        <OptionalField name={CHECK_DIALOG_COPY.lastRun} description={CHECK_DIALOG_COPY.lastRunLine} summary={summaryOf(runAt)} phone={phone}>
+        <OptionalField name={CHECK_DIALOG_COPY.lastRun} summary={summaryOf(runAt)} phone={phone}>
           <FieldInput phone={phone} mono width={NARROW.date} aria-label={CHECK_DIALOG_COPY.lastRun} inputMode="numeric" maxLength={10} value={runAt} placeholder={CHECK_DIALOG_COPY.lastRunPlaceholder} onChange={(event) => setRunAt(event.target.value.replace(/[^0-9-]/g, ""))} />
         </OptionalField>
 
@@ -255,13 +251,13 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
           {scoring === "metric" ? <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.target} maxLength={SCORING_TARGET_MAX} value={target} placeholder={CHECK_DIALOG_COPY.targetPlaceholder} onChange={(event) => setTarget(event.target.value)} /> : null}
         </OptionalField>
 
-        <OptionalField name={CHECK_DIALOG_COPY.modelTested} description={CHECK_DIALOG_COPY.modelTestedLine} summary={summaryOf(model, version)} phone={phone}>
+        <OptionalField name={CHECK_DIALOG_COPY.modelTested} summary={summaryOf(model, version)} phone={phone}>
           <ModelPicker tool={null} anyWithoutTool value={model} onChange={setModel} phone={phone} field />
           <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.version} maxLength={MODEL_VERSION_MAX} value={version} placeholder={CHECK_DIALOG_COPY.versionPlaceholder} onChange={(event) => setVersion(event.target.value)} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.evidence} description={CHECK_DIALOG_COPY.evidenceLine} summary={summaryOf(evidenceFile?.name, evidenceFile ? null : evidenceUrl)} phone={phone}>
-          <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.evidenceUrl} inputMode="url" disabled={Boolean(evidenceFile) || Boolean(seed?.evidenceName)} value={evidenceUrl} placeholder={CHECK_DIALOG_COPY.evidenceUrlPlaceholder} onChange={(event) => setEvidenceUrl(event.target.value)} />
+          <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.evidenceUrl} inputMode="url" disabled={Boolean(evidenceFile) || Boolean(seed?.evidenceName)} value={evidenceUrl} onChange={(event) => setEvidenceUrl(event.target.value)} />
           {edit ? null : (
             <Inline>
               <FileButton phone={phone} onFiles={chooseEvidence} testId="check-evidence-file" inputLabel={CHECK_DIALOG_COPY.evidenceFile} disabled={evidenceUrl.trim().length > 0}>
@@ -269,7 +265,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
               </FileButton>
             </Inline>
           )}
-          {seed?.evidenceName ? <Hint>{`${seed.evidenceName} is kept as the evidence.`}</Hint> : null}
+          {seed?.evidenceName ? <Hint>{`${seed.evidenceName} attached`}</Hint> : null}
           {evidenceFile ? <FileLine name={evidenceFile.name} removeLabel={`${CHECK_DIALOG_COPY.remove} ${evidenceFile.name}`} onRemove={() => setEvidenceFile(null)} phone={phone} /> : null}
           {fileWrong ? <Alert>{fileWrong}</Alert> : null}
         </OptionalField>

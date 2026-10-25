@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddCodeDialog, CODE_DIALOG_COPY, type AddCodeDialogProps } from "./AddCodeDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -27,15 +28,12 @@ const pickLanguage = (name: string) => {
   fireEvent.keyDown(language(), { key: "Enter" });
   fireEvent.click(screen.getByRole("menuitemradio", { name }));
 };
-const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
-const openRow = (name: string) => {
-  const head = row(name).querySelector("button") as HTMLButtonElement;
-  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
-};
+const row = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 /** File path lives in the Optional section: opening its row is part of reaching it. */
 const filename = () => {
   openRow("File path");
-  return screen.getByLabelText("File path") as HTMLInputElement;
+  return screen.getAllByLabelText("File path").at(-1) as HTMLInputElement;
 };
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const upload = (...files: File[]) => fireEvent.change(screen.getByTestId("code-files"), { target: { files } });
@@ -53,8 +51,8 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(well().style.fontFamily).toContain("--font-data");
     expect(well().style.lineHeight).toBe("20px");
     expect(add().disabled).toBe(true);
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Source code produced in this step, as it was used");
-    expect(screen.getByTestId("modal-status").textContent).toBe("Required: code");
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Source code as used");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required: Code");
   });
 
   it("shows the code, Upload files and Language in that order, then File path and Generated with closed in Optional", () => {
@@ -64,16 +62,16 @@ describe("Add › Code (CA-02 P7)", () => {
     for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(body.contains(order[3])).toBe(true);
     expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
-    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual(["File path", "Generated with"]);
     expect(screen.queryByLabelText("File path")).toBeNull();
-    expect(screen.getByText("Or upload text files. Each file is added as a separate step.")).toBeTruthy();
+    expect(fieldNames()).toEqual(["File path", "Generated with"]);
+    expect(screen.getByText("Each file becomes its own tile")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/File name|Written with|optional/);
   });
 
   it("says All required fields complete once there is code", () => {
     open();
     fireEvent.change(well(), { target: { value: "x = 1" } });
-    expect(screen.getByTestId("modal-status").textContent).toBe("All required fields complete");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required fields complete");
   });
 
   it("puts two spaces in for a tab", () => {
@@ -141,9 +139,9 @@ describe("Add › Code (CA-02 P7)", () => {
     await waitFor(() => expect(screen.getByRole("list", { name: "Upload files" })).toBeTruthy());
     expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["schema.sql · SQL · 1 lineRemove", "app.ts · TypeScript · 1 lineRemove"]);
     const alert = screen.getByRole("alert");
-    expect(alert.textContent).toContain("blob.ts: That file isn't text.");
-    expect(alert.textContent).toContain("photo.png: That file isn't text.");
-    expect(alert.textContent).toContain("huge.js: Code is at most 100,000 characters. Upload it as a file instead.");
+    expect(alert.textContent).toContain("blob.ts: Not text");
+    expect(alert.textContent).toContain("photo.png: Not text");
+    expect(alert.textContent).toContain("huge.js: Code: 100,000 characters max");
     fireEvent.click(screen.getByRole("button", { name: "Remove app.ts" }));
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ steps: [{ source: "select 1;\n", language: "sql", filename: "schema.sql" }], tool: null, model: null });
@@ -152,7 +150,7 @@ describe("Add › Code (CA-02 P7)", () => {
   it("refuses typed code over 100,000 characters", () => {
     open();
     fireEvent.change(well(), { target: { value: "x".repeat(100_001) } });
-    expect(screen.getByRole("alert").textContent).toBe("Code is at most 100,000 characters. Upload it as a file instead.");
+    expect(screen.getByRole("alert").textContent).toBe("Code: 100,000 characters max");
     expect(add().disabled).toBe(true);
   });
 

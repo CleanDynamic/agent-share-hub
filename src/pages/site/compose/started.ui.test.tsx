@@ -11,6 +11,7 @@ import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
 import type { SessionView } from "./DetailsPanel";
 import { SessionDialog } from "./SessionDialog";
+import { openOptional } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -33,6 +34,7 @@ function mount(view: SessionView, onSessionExtras = vi.fn()) {
 describe("Session window › Started with", () => {
   it("shows the settings in plain words under the command, and leaves the unknown flag in the command", () => {
     mount(session());
+    openOptional();
     const well = screen.getByRole("textbox", { name: "Started with" });
     fireEvent.change(well, { target: { value: COMMAND } });
     expect(screen.getAllByTestId("started-with-settings")[0].textContent).toBe("Model: opusAllowed to: plan onlyOwn copy of the code: fix-totalsAt most 8 turns");
@@ -41,6 +43,7 @@ describe("Session window › Started with", () => {
 
   it("saves the command as pasted, and the worktree as the session's own copy", () => {
     const onSessionExtras = mount(session());
+    openOptional();
     const well = screen.getByRole("textbox", { name: "Started with" });
     fireEvent.change(well, { target: { value: COMMAND } });
     fireEvent.blur(well);
@@ -50,6 +53,7 @@ describe("Session window › Started with", () => {
 
   it("keeps an own copy the maker already named", () => {
     const onSessionExtras = mount(session({ extras: { ownCopy: "my-branch" } }));
+    openOptional();
     const well = screen.getByRole("textbox", { name: "Started with" });
     fireEvent.change(well, { target: { value: COMMAND } });
     fireEvent.blur(well);

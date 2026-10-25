@@ -128,7 +128,7 @@ describe("nestStep", () => {
     expect(nestRefusal(chain, "pair", `d${NEST_DEPTH_MAX - 1}`)).toBe(NEST_COPY.depth);
     const deeper = [{ ...chain[0] }, ...chain.slice(1)];
     expect(buildSteps(deeper)).toHaveLength(3);
-    expect(NEST_COPY.depth).toBe("Tiles go 50 deep at most. Make one of them its own step first.");
+    expect(NEST_COPY.depth).toBe("Nesting: 50 deep max");
   });
 });
 

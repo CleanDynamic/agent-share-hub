@@ -14,6 +14,7 @@ import { BuildList } from "./BuildList";
 import { dividers } from "./buildListModel";
 import type { SessionView } from "./DetailsPanel";
 import { SessionDialog } from "./SessionDialog";
+import { openOptional } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -56,6 +57,7 @@ const renderPage = (sessionsMeta: Record<string, unknown>) => {
 describe("Session window › What it cost, Show readers and How did you work?", () => {
   it("saves a cost in pounds, labelled with the rest of the entry kept", () => {
     const onSessionExtras = mount(session({ extras: { background: true } }));
+    openOptional();
     const field = screen.getByRole("textbox", { name: "What it cost" });
     fireEvent.change(field, { target: { value: "3.4" } });
     fireEvent.blur(field);
@@ -65,16 +67,18 @@ describe("Session window › What it cost, Show readers and How did you work?", 
 
   it("refuses a cost that is not a number", () => {
     const onSessionExtras = mount(session());
+    openOptional();
     const field = screen.getByRole("textbox", { name: "What it cost" });
     fireEvent.change(field, { target: { value: "lots" } });
     fireEvent.blur(field);
     save();
     expect(onSessionExtras).not.toHaveBeenCalled();
-    expect(screen.getByText(/Cost is a number/)).toBeTruthy();
+    expect(screen.getByText(/Cost: 0 to/)).toBeTruthy();
   });
 
   it("has Show readers off by default, and turns it on", () => {
     const onSessionExtras = mount(session({ extras: { cost: 2, currency: "GBP" } }));
+    openOptional();
     const box = screen.getByRole("checkbox", { name: "Show readers" }) as HTMLInputElement;
     expect(box.checked).toBe(false);
     fireEvent.click(box);
@@ -84,8 +88,9 @@ describe("Session window › What it cost, Show readers and How did you work?", 
 
   it("asks How did you work? and saves In the background", () => {
     const onSessionExtras = mount(session());
-    expect((screen.getByRole("radio", { name: "With me watching" }) as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "In the background" }));
+    openOptional();
+    expect((screen.getByRole("radio", { name: "Supervised" }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "Background" }));
     save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { background: true });
   });

@@ -15,7 +15,7 @@ import { chipStyle, text } from "@/pages/site/compose/refinedStyles";
 export function HelperChips({ helpers, decisionName, indent = 0, style }: { helpers: readonly Helper[]; decisionName?: (id: string) => string | undefined; indent?: number; style?: CSSProperties }) {
   if (helpers.length === 0) return null;
   return (
-    <span data-testid="helper-chips" role="list" aria-label="Supporting models" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 6, paddingLeft: indent, ...style }}>
+    <span data-testid="helper-chips" role="list" aria-label="Helpers" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 6, paddingLeft: indent, ...style }}>
       {helpers.map((helper, index) => {
         const label = helperChip(helper, decisionName);
         const did = helperDidLine(helper);

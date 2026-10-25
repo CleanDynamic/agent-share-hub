@@ -117,9 +117,9 @@ export function goalOf(value: unknown): SessionGoal | null {
 export function goalRefusal(goal: SessionGoal): string | null {
   const condition = goal.condition.trim();
   if (!condition) return "Say what it worked until.";
-  if (condition.length > GOAL_CONDITION_MAX) return `The condition is at most ${GOAL_CONDITION_MAX} characters.`;
+  if (condition.length > GOAL_CONDITION_MAX) return `Condition: ${GOAL_CONDITION_MAX} characters max`;
   for (const n of [goal.atMost, goal.turns]) {
-    if (n !== undefined && turnsOf(n) === undefined) return `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`;
+    if (n !== undefined && turnsOf(n) === undefined) return `Turns: whole number, ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}`;
   }
   return null;
 }
@@ -229,13 +229,13 @@ export function storedWorkstreamsOf(making: unknown): Workstream[] {
 
 /** Why a list of parts cannot be saved, or null. Pure, so the composer can say no first. */
 export function workstreamsRefusal(list: readonly Workstream[]): string | null {
-  if (list.length > WORKSTREAM_MAX) return `A build has at most ${WORKSTREAM_MAX} parts.`;
+  if (list.length > WORKSTREAM_MAX) return `Parts: ${WORKSTREAM_MAX} max`;
   const keys = new Set<string>();
   for (const part of list) {
     if (!part.key) return "That part is not saved yet.";
     if (keys.has(part.key)) return "Two parts have the same key.";
     keys.add(part.key);
-    if (part.name !== undefined && part.name.trim().length > WORKSTREAM_NAME_MAX) return `A part name is at most ${WORKSTREAM_NAME_MAX} characters.`;
+    if (part.name !== undefined && part.name.trim().length > WORKSTREAM_NAME_MAX) return `Part name: ${WORKSTREAM_NAME_MAX} characters max`;
     if (part.colour !== undefined && !normaliseHex(part.colour)) return "A colour is written like #7FA7D9.";
   }
   return null;
@@ -571,7 +571,7 @@ export const SESSION_TOOL_MAX = 40;
 export async function setSessionTool(buildId: string, sessionId: string, tool: string | null): Promise<MadeWithState> {
   const value = tool?.trim() || null;
   if (value && value.length > SESSION_TOOL_MAX) {
-    throw buildLayerError("setSessionTool", new Error(`A tool name is at most ${SESSION_TOOL_MAX} characters.`));
+    throw buildLayerError("setSessionTool", new Error(`Tool name: ${SESSION_TOOL_MAX} characters max`));
   }
   const inBuild = (await listBuildSessions(buildId)).some((session) => session.id === sessionId);
   if (!inBuild) throw buildLayerError("setSessionTool", new Error("That session is not in this build."));
@@ -592,8 +592,8 @@ export function sessionMetaRefusal(key: string, meta: SessionMeta): string | nul
   if (!key || isLegacySession(key)) return "That session is not saved yet.";
   if (isTypedSession(key) && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
   if (meta.date && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
-  if (meta.tool && meta.tool.trim().length > SESSION_TOOL_MAX) return `A tool name is at most ${SESSION_TOOL_MAX} characters.`;
-  if (meta.title !== undefined && meta.title.trim().length > SESSION_TITLE_MAX) return `A session title is at most ${SESSION_TITLE_MAX} characters.`;
+  if (meta.tool && meta.tool.trim().length > SESSION_TOOL_MAX) return `Tool name: ${SESSION_TOOL_MAX} characters max`;
+  if (meta.title !== undefined && meta.title.trim().length > SESSION_TITLE_MAX) return `Session title: ${SESSION_TITLE_MAX} characters max`;
   if (meta.workstream !== undefined && (typeof meta.workstream !== "string" || !meta.workstream.trim())) return "A session's part is a part of this build.";
   if (meta.withAbove !== undefined && typeof meta.withAbove !== "boolean") return "Same stage as the session above is on or off.";
   return extrasRefusal(meta);

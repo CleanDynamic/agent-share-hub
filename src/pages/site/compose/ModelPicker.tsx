@@ -44,11 +44,10 @@ export const MODEL_PICKER_COPY = {
   noModel: "No model",
   other: "Other model…",
   otherField: "Other model",
-  otherPlaceholder: "The model's name",
   save: "Save",
   cancel: "Cancel",
   /** The tool changed and does not offer the model that was chosen. */
-  cleared: (tool: string, model: string) => `${tool} doesn't offer ${model}. Model cleared.`,
+  cleared: (tool: string, model: string) => `${model} not on ${tool}. Cleared.`,
 } as const;
 
 export interface ModelPickerProps {
@@ -157,7 +156,6 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
                 autoFocus
                 type="text"
                 aria-label={MODEL_PICKER_COPY.otherField}
-                placeholder={MODEL_PICKER_COPY.otherPlaceholder}
                 value={draft}
                 maxLength={MODEL_TYPED_MAX}
                 autoComplete="off"

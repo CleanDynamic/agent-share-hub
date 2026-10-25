@@ -291,7 +291,7 @@ describe("readerSteps · B3 the team", () => {
     expect(md).toContain("## Step 3 · Research team\n\nOn a schedule · Mondays 07:00 · made in steps 1 and 2.");
     expect(md).toContain("### 3.3 Writer · Opus 5.5\n\nUses what 3.2 gives it × 3, template.md and what 3.4 sends back.");
     expect(md).toContain("### 3.4 Checker · Haiku 5.5\n\nAgain until every claim has a source.");
-    expect(md).toContain("Goes into 3.3, until every claim has a source, then the result.");
+    expect(md).toContain("Used by 3.3, until every claim has a source, then the result.");
     for (const text of ["Split the topic into three questions.", "Answer with sources.", "Combine the answers.", "Check every claim."]) {
       expect(md).toContain(text);
     }

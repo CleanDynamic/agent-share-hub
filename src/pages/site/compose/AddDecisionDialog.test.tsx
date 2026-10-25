@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { questionTypeLabel } from "@/lib/build/decision";
 
 import { AddDecisionDialog, DECISION_DIALOG_COPY, type AddDecisionDialogProps } from "./AddDecisionDialog";
+import { fieldNames, fieldNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -31,12 +32,8 @@ const request = {
 };
 const response = { answers: { team: { answer: "billing", probabilities: { billing: 0.92, support: 0.05, kitchen: 0.03 } }, escalation: { answer: 0.18 } } };
 
-const rowOf = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
-/** The Optional rows are closed when the window opens; a press on the row opens it (and leaves it open). */
-const openRow = (name: string) => {
-  const head = rowOf(name).querySelector("button") as HTMLButtonElement;
-  if (head.getAttribute("aria-expanded") !== "true") fireEvent.click(head);
-};
+const rowOf = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const status = () => screen.getByTestId("modal-status").textContent;
 const type = (name: string) => fireEvent.click(within(screen.getByRole("radiogroup", { name: "Type of question 1" })).getByRole("radio", { name }));
@@ -49,16 +46,18 @@ function fillChoice(option = "Option") {
 }
 
 describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
-  it("is the shared frame: a Model block, the Questions block, then seven optional rows, all closed", () => {
+  it("is the shared frame: a Model block, the Questions block, then eight optional fields, closed", () => {
     open();
     expect(screen.getByRole("dialog", { name: DECISION_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("A structured classification your application requests from a model");
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Structured answer from a model");
     expect(screen.getByRole("heading", { name: "Model" })).toBeTruthy();
     for (const name of ["Model or service", "Version", "Invocation", "Questions"]) expect(screen.getAllByText(name).length, name).toBeGreaterThan(0);
     expect(within(screen.getByRole("radiogroup", { name: "Invocation" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Direct", "Through an adapter"]);
-    expect(screen.getByTestId("optional-count").textContent).toBe("7 fields");
-    expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual([
-      "Import from a logged request and response",
+    expect(screen.getByTestId("optional-count").textContent).toBe("8 fields");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
+    expect(fieldNames()).toEqual([
+      "Option descriptions",
+      "Import request and response",
       "Calling code",
       "Input",
       "Recorded answer",
@@ -66,7 +65,6 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
       "Examples",
       "Low-confidence handling",
     ]);
-    expect(screen.getAllByTestId("optional-field").every((el) => el.querySelector("button")?.getAttribute("aria-expanded") === "false")).toBe(true);
     // The old words are gone.
     expect(document.body.textContent).not.toMatch(/Called directly|Called from|What it reads|How to install|Paste a logged|Read it\b|Pick a/);
   });
@@ -74,7 +72,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
   it("offers six question types, with the new names, and Yes or no without '(0 to 1)' (TypeSafe's own word, Noul, only for TypeSafe)", () => {
     open();
     const grid = within(screen.getByRole("radiogroup", { name: "Type of question 1" }));
-    expect(grid.getAllByRole("radio").map((button) => button.textContent)).toEqual(["Single choice", "Multiple choice", "Score", "Ranking", "Yes or no (Noul)", "Extraction"]);
+    expect(grid.getAllByRole("radio").map((button) => button.textContent)).toEqual(["Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction"]);
     expect(questionTypeLabel("yesno")).toBe("Yes or no");
     expect(document.body.textContent).not.toMatch(/0 to 1\)/);
   });
@@ -83,13 +81,13 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Model or service" }));
     fireEvent.click(screen.getByRole("option", { name: /Not sure|TypeSafe Jev/ }));
-    expect(status()).toBe("Required: a key for every question");
+    expect(status()).toBe("Required: Key");
     fireEvent.change(screen.getByLabelText("Key"), { target: { value: "team" } });
-    expect(status()).toBe("Required: at least two options for team");
+    expect(status()).toBe("Required: Options");
     expect(add().disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Option 1"), { target: { value: "billing" } });
     fireEvent.change(screen.getByLabelText("Option 2"), { target: { value: "support" } });
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     expect(add().disabled).toBe(false);
   });
 
@@ -99,7 +97,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     fillChoice();
     expect(add().disabled).toBe(false);
     openRow("Calling code");
-    expect(screen.getByText("Add the code that calls it as a Code tile, so people copying this get the real thing")).toBeTruthy();
+    expect(screen.getByText("No Code tile linked")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add code" }));
     expect(onAddCode).toHaveBeenCalled();
   });
@@ -123,10 +121,11 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("an option's description reads 'Description (optional)', and an option can be dragged above another", () => {
+  it("an option's description reads 'Description', and an option can be dragged above another", () => {
     const props = open();
     fillChoice();
-    expect((screen.getByLabelText("Description of option 1") as HTMLInputElement).placeholder).toBe("Description (optional)");
+    openRow("Option descriptions");
+    expect((screen.getByLabelText("Description of option 1") as HTMLInputElement).placeholder).toBe("Description");
     const rows = screen.getAllByTestId("option-row");
     const data: Record<string, string> = {};
     const dataTransfer = { setData: (key: string, value: string) => (data[key] = value), getData: (key: string) => data[key] ?? "" };
@@ -145,7 +144,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     const props = open();
     type("Multiple choice");
     fillChoice();
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].questions[0]).toEqual({ id: "team", type: "multi", instructions: "", options: [{ key: "billing" }, { key: "support" }] });
     cleanup();
@@ -165,7 +164,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     expect(field.getAllByRole("button").map((button) => button.textContent)).toEqual(["Text", "Number", "Date", "Amount"]);
     expect(field.getByRole("button", { name: "Text" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(field.getByRole("button", { name: "Amount" }));
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].questions[0]).toEqual({ id: "amount", type: "extract", instructions: "", field: "amount" });
   });
@@ -215,14 +214,14 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     expect(screen.getByRole("group", { name: "Levels of question 2, lowest to highest" })).toBeTruthy();
   });
 
-  it("fills everything from a pasted request and response, shows 'Yes or no (Noul)' for TypeSafe, and adds with the real answer", () => {
+  it("fills everything from a pasted request and response, shows 'Yes or no' for TypeSafe, and adds with the real answer", () => {
     const props = open();
-    openRow("Import from a logged request and response");
-    fireEvent.change(screen.getByLabelText("Import from a logged request and response"), { target: { value: `${JSON.stringify(request)}\n${JSON.stringify(response)}` } });
+    openRow("Import request and response");
+    fireEvent.change(screen.getByLabelText("Import request and response"), { target: { value: `${JSON.stringify(request)}\n${JSON.stringify(response)}` } });
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
-    expect(within(rowOf("Import from a logged request and response")).getByRole("status").textContent).toMatch(/Read 2 questions and an answer/);
+    expect(within(rowOf("Import request and response")).getByRole("status").textContent).toMatch(/Read 2 questions and an answer/);
     expect((screen.getByLabelText("Version") as HTMLInputElement).value).toBe("jev-1.13.0");
-    expect(screen.getAllByRole("radio", { name: "Yes or no (Noul)" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("radio", { name: "Yes or no" }).length).toBeGreaterThan(0);
     fireEvent.click(add());
     const input = (props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(input.questions.map((q: { id: string }) => q.id)).toEqual(["team", "escalation"]);
@@ -234,19 +233,19 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
 
   it("removes a pasted key and says so", () => {
     open();
-    openRow("Import from a logged request and response");
+    openRow("Import request and response");
     const curl = `curl -H "Authorization: Bearer abcdef123456789" --data '${JSON.stringify(request)}'`;
-    fireEvent.change(screen.getByLabelText("Import from a logged request and response"), { target: { value: curl } });
+    fireEvent.change(screen.getByLabelText("Import request and response"), { target: { value: curl } });
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
-    expect(within(rowOf("Import from a logged request and response")).getByRole("status").textContent).toContain("Your key was removed; it is never stored.");
+    expect(within(rowOf("Import request and response")).getByRole("status").textContent).toContain("Your key was removed; it is never stored.");
   });
 
   it("says plainly when Python is built from variables", () => {
     open({ codeTiles: [{ id: "c1", label: "router.py", source: `questions={"team": Choice(instructions=PROMPT, options=TEAMS)}` }] });
-    openRow("Import from a logged request and response");
-    fireEvent.change(screen.getByLabelText("Import from a logged request and response"), { target: { value: `questions = {"team": Choice(instructions=PROMPT, options=TEAMS)}` } });
+    openRow("Import request and response");
+    fireEvent.change(screen.getByLabelText("Import request and response"), { target: { value: `questions = {"team": Choice(instructions=PROMPT, options=TEAMS)}` } });
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
-    expect(within(rowOf("Import from a logged request and response")).getByRole("status").textContent).toContain("These questions are built in code, so they can't be read safely.");
+    expect(within(rowOf("Import request and response")).getByRole("status").textContent).toContain("These questions are built in code, so they can't be read safely.");
   });
 
   it("a recorded answer to a multiple choice must be made of its options, and the row opens on its own to say so", () => {
@@ -255,11 +254,10 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     fillChoice();
     openRow("Recorded answer");
     fireEvent.change(screen.getByLabelText("Answer to team"), { target: { value: "billing, kitchen" } });
-    fireEvent.click(rowOf("Recorded answer").querySelector("button") as HTMLButtonElement);
     fireEvent.click(add());
     expect(screen.getByRole("alert").textContent).toBe("'team' was answered with something that is not made of its options.");
     expect(props.onAdd).not.toHaveBeenCalled();
-    expect(rowOf("Recorded answer").querySelector("button")?.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
     fireEvent.change(screen.getByLabelText("Answer to team"), { target: { value: "billing, support" } });
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].answer.team).toEqual({ value: "billing, support" });

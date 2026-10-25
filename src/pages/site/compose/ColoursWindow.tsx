@@ -8,7 +8,7 @@
       Merge into… (the other groups), then Delete group… in the danger colour. The row whose menu is open is `--tile`.
    2. Single colours, with their count: the same rows with the component's badge before its name, and "linked text" when it
       has some. When two share a code, an inner panel says so, with Make them a group.
-   3. Your saved colours, "On every build · right-click one to remove it", with the picker's menu.
+   3. Your saved colours, "Shared across builds", with the picker's menu.
 
    The footer: Undo and Redo, "Clear all colours and links…" in the danger colour, and Done. Deleting, merging and clearing
    ask first; everything else happens at once, and Undo is the way back. Readers never get this window. */
@@ -29,16 +29,16 @@ import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, GhostIcon, Inn
 
 export const COLOURS_COPY = {
   title: "Colours",
-  subtitle: "Every reference group and single colour in this build",
+  subtitle: "Reference groups and single colours",
   groups: "Reference groups",
-  order: (n: number) => `${n} · drag to set the order`,
+  order: (n: number) => `${n}`,
   singles: "Single colours",
   singlesCount: (n: number) => `${n}`,
-  saved: "Your saved colours",
-  savedHint: "On every build · right-click one to remove it",
-  noSaved: "No saved colours yet. Save one from any colour picker.",
-  noGroups: "No reference groups yet.",
-  noSingles: "No single colours yet.",
+  saved: "Saved colours",
+  savedHint: "Shared across builds",
+  noSaved: "No saved colours",
+  noGroups: "No reference groups",
+  noSingles: "No single colours",
   noName: "No name",
   components: (n: number) => `${n} ${n === 1 ? "component" : "components"}`,
   linked: "linked text",
@@ -46,7 +46,7 @@ export const COLOURS_COPY = {
   open: "Open",
   mergeInto: "Merge into…",
   delete: "Delete group…",
-  shared: (names: string, hex: string) => `${names} share ${hex} but are separate.`,
+  shared: (names: string) => `${names}: same colour, not grouped`,
   makeThemGroup: "Make them a group",
   clear: "Clear all colours and links…",
   done: "Done",
@@ -55,13 +55,13 @@ export const COLOURS_COPY = {
     `Removes ${groups} ${groups === 1 ? "group" : "groups"}, ${singles} single ${singles === 1 ? "colour" : "colours"} and ${links} ${links === 1 ? "link" : "links"}. The words and components stay.`,
   clearAction: "Clear all",
   deleteTitle: (name: string) => `Delete ${name}?`,
-  deleteBody: (n: number) => `Its ${n} ${n === 1 ? "component loses" : "components lose"} this colour. The linked text becomes plain words. The components stay.`,
+  deleteBody: (n: number) => `${n} ${n === 1 ? "component loses" : "components lose"} this colour. Linked text becomes plain text.`,
   deleteAction: "Delete",
   mergeTitle: (from: string, into: string) => `Merge ${from} into ${into}?`,
-  mergeBody: (into: string) => `Its components join ${into}, which keeps its name and colour.`,
+  mergeBody: (into: string) => `Components join ${into}. ${into} keeps its name and colour.`,
   mergeAction: "Merge",
-  keepTitle: (into: string) => `Which linked text should ${into} keep?`,
-  keepBody: "The other becomes plain words.",
+  keepTitle: "Linked text to keep",
+  keepBody: "The other becomes plain text",
 } as const;
 
 /** "Data model and Landing page", "A, B and C". */
@@ -166,7 +166,7 @@ function ColoursBody(props: ColoursWindowProps) {
     const intoWords = props.linkedWords(`group:${into.id}`);
     if (fromWords && intoWords) {
       props.askKeep({
-        title: COLOURS_COPY.keepTitle(groupName(into)),
+        title: COLOURS_COPY.keepTitle,
         body: COLOURS_COPY.keepBody,
         action: COLOURS_COPY.mergeAction,
         choices: [
@@ -249,7 +249,7 @@ function ColoursBody(props: ColoursWindowProps) {
             />
             {shared.map(([colour, refs]) => (
               <InnerPanel key={colour} testId="colours-shared" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ ...words(12.5, 400, t.text2, 18), flexGrow: 1, minWidth: 0 }}>{COLOURS_COPY.shared(andList(refs.map(nameOf)), colour)}</span>
+                <span style={{ ...words(12.5, 400, t.text2, 18), flexGrow: 1, minWidth: 0 }}>{COLOURS_COPY.shared(andList(refs.map(nameOf)))}</span>
                 <RecipeButton small phone={phone} onClick={() => props.onGroupThese(refs, colour)}>
                   {COLOURS_COPY.makeThemGroup}
                 </RecipeButton>

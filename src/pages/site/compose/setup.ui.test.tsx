@@ -72,7 +72,7 @@ function ctx() {
 }
 
 describe("Session window › Setup", () => {
-  it("lists the setup: kind and name, Not shared marked, Don't share it held until Save, Add to setup at once", () => {
+  it("lists the setup: kind and name, Not shared marked, Keep private held until Save, Add to setup at once", () => {
     const { base } = ctx();
     const view = resolveView({ ...base, selectedId: "typed-b" }) as SessionView;
     const handlers = { onNotShared: vi.fn(), onAddToSetup: vi.fn(), onRename: vi.fn(), onModel: vi.fn(), onAddUse: vi.fn(), onRemoveUse: vi.fn(), onRuns: vi.fn(), onRemoveInside: vi.fn(), onToggleSessionPrompt: vi.fn(), onDownload: vi.fn(), onFields: vi.fn(), onAddPicture: vi.fn(), onUseAsCover: vi.fn() };
@@ -80,9 +80,9 @@ describe("Session window › Setup", () => {
     const section = screen.getByTestId("session-setup");
     const text = section.textContent ?? "";
     for (const word of ["Instructions", "CLAUDE.md", "MCP server", "github", "Rule", "npm test", "Skill", "order-forms"]) expect(text).toContain(word);
-    expect(within(section).getAllByRole("button", { name: /^Don't share it/ })).toHaveLength(3);
+    expect(within(section).getAllByRole("button", { name: /^Keep private/ })).toHaveLength(3);
     expect(text).toContain("Not shared");
-    fireEvent.click(within(section).getByRole("button", { name: "Don't share it: CLAUDE.md" }));
+    fireEvent.click(within(section).getByRole("button", { name: "Keep private: CLAUDE.md" }));
     expect(handlers.onNotShared).not.toHaveBeenCalled();
     fireEvent.click(within(section).getByRole("button", { name: "Add to setup" }));
     expect(handlers.onAddToSetup).toHaveBeenCalledWith("typed-b");

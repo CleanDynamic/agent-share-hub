@@ -2,7 +2,7 @@
 
    Built from `modalRecipes` as the board "Add a result" draws it, 560 wide (a `BottomSheet` below 768). A block asks the
    output type first ("12 types"), an option grid of twelve, then a block or rows with the fields that type requires. Images
-   and videos are dropped on, or chosen from, a drop zone ("Drop images or videos here", "Choose files"):
+   and videos are dropped on, or chosen from, a drop zone ("Drop images or videos", "Select files"):
 
    - Link: a URL. Image or video: one or more files, up to 12. File: one file. Model: a base model or a training method.
    - Text: the text. Audio: one audio file. Deployed app or website: a URL. Data table: a CSV file, or pasted CSV.
@@ -39,63 +39,58 @@ import { csvColumns } from "@/lib/build/tileExtras";
 import { toolName } from "@/lib/tools/registry";
 
 import { ChoiceGrid } from "./ChoiceGrid";
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { Alert, Block, BlockHead, Count, DropZone, FieldArea, FieldInput, FileButton, FileLine, Inline, MODAL_WIDTH, NARROW, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
 
 export const RESULT_DIALOG_COPY = {
   title: "Add a result",
-  subtitle: "The output this prompt produced",
+  subtitle: "Output of this prompt",
   outputType: "Output type",
   types: (n: number) => `${n} types`,
   files: (n: number) => `${n} ${n === 1 ? "file" : "files"}`,
   picturesHead: "Images and videos",
-  dropPictures: "Drop images or videos here",
-  chooseFiles: "Choose files",
+  dropPictures: "Drop images or videos",
+  chooseFiles: "Select files",
   url: "URL",
-  urlPlaceholder: "e.g. example.com/page",
-  choosePictures: "Choose image or video",
-  chooseFile: "Choose a file",
-  chooseAudio: "Choose an audio file",
-  chooseTable: "Choose a CSV file",
-  choosePhoto: "Choose a photo",
+  urlPlaceholder: "example.com/page",
+  choosePictures: "Select image or video",
+  chooseFile: "Select a file",
+  chooseAudio: "Select audio file",
+  chooseTable: "Select CSV file",
+  choosePhoto: "Select photo",
   remove: "Remove",
   baseModel: "Base model",
-  basePlaceholder: "e.g. Muse Spark Open",
+  basePlaceholder: "Muse Spark Open",
   method: "Training method",
-  methodPlaceholder: "e.g. Fine-tuned on 1,200 rated examples",
+  methodPlaceholder: "Fine-tuned on 1,200 rated examples",
   text: "Text",
-  textPlaceholder: "e.g. The text the prompt produced",
   audio: "Audio file",
   table: "Data table",
   tableFile: "CSV file",
   pastedCsv: "Pasted CSV",
-  pastedCsvPlaceholder: "e.g. name,price\nsourdough,4.50",
+  pastedCsvPlaceholder: "name,price\nsourdough,4.50",
   channel: "Channel",
   message: "Message",
-  messagePlaceholder: "e.g. The message as it was sent",
-  application: "Application",
-  selectApplication: "Select an application",
+  application: "App",
+  selectApplication: "Select an app",
   change: "What changed",
-  changePlaceholder: "e.g. Opened a pull request and moved the card to Review",
+  changePlaceholder: "Opened a pull request and moved the card to Review",
   value: "Value",
-  valuePlaceholder: "e.g. 42",
+  valuePlaceholder: "42",
   label: "Label",
-  labelPlaceholder: "e.g. Orders per week",
+  labelPlaceholder: "Orders per week",
   description: "Description",
-  descriptionPlaceholder: "e.g. Delivered the loaves to the market stall by hand",
+  descriptionPlaceholder: "Delivered the loaves to the market stall by hand",
   caption: "Caption",
-  captionLine: "One line describing what the output shows",
-  captionPlaceholder: "e.g. The order screen after the fix",
+  captionLine: "One line",
+  captionPlaceholder: "The order screen after the fix",
   unit: "Unit",
-  unitLine: "What the value is counted in",
-  unitPlaceholder: "e.g. %",
+  unitPlaceholder: "%",
   before: "Value before",
-  beforeLine: "The figure before the change",
-  beforePlaceholder: "e.g. 31",
+  beforePlaceholder: "31",
   photo: "Photo",
-  photoLine: "One photo of the outcome",
   add: "Add",
   cancel: "Cancel",
 } as const;
@@ -182,11 +177,11 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
 
   const refuse = (file: File, kindWord: string, test: (file: File) => boolean): boolean => {
     if (file.size > MEDIA_MAX_BYTES) {
-      setWrong(`${file.name} is too big. The most is 25 MB.`);
+      setWrong(`${file.name}: 25 MB max`);
       return true;
     }
     if (!test(file)) {
-      setWrong(`${file.name} is not ${kindWord}.`);
+      setWrong(`${file.name}: ${kindWord}`);
       return true;
     }
     return false;
@@ -197,9 +192,9 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
     if (given.length === 0) return;
     const bad = given.some((file) =>
       kind === "pictures"
-        ? refuse(file, "an image or a video", (f) => ["image", "video"].includes(mediaKindFor(f.type) ?? ""))
+        ? refuse(file, "image or video only", (f) => ["image", "video"].includes(mediaKindFor(f.type) ?? ""))
         : kind === "audio"
-          ? refuse(file, "an audio file", (f) => mediaKindFor(f.type) === "audio")
+          ? refuse(file, "audio file only", (f) => mediaKindFor(f.type) === "audio")
           : refuse(file, "a file", () => true),
     );
     if (bad) return;
@@ -211,7 +206,7 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
   const choosePhoto = (list: FileList | null) => {
     const file = list?.[0];
     if (!file) return;
-    if (refuse(file, "an image", (f) => mediaKindFor(f.type) === "image")) return;
+    if (refuse(file, "image only", (f) => mediaKindFor(f.type) === "image")) return;
     setWrong(null);
     setPhoto(file);
   };
@@ -224,28 +219,28 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
     setWrong(null);
   };
 
-  const missing = firstMissing(
+  const missing = missingLabels(
     kind === "link" || kind === "deployed"
-      ? [[resultLinkOf(url) !== null || (Boolean(edit) && url.trim() === ""), "a URL"]]
+      ? [[resultLinkOf(url) !== null || (Boolean(edit) && url.trim() === ""), "URL"]]
       : kind === "pictures"
-        ? [[files.length > 0 || Boolean(edit), "at least one image or video"]]
+        ? [[files.length > 0 || Boolean(edit), "Images and videos"]]
         : kind === "file"
-          ? [[files.length > 0 || Boolean(edit), "a file"]]
+          ? [[files.length > 0 || Boolean(edit), "File"]]
           : kind === "model"
-            ? [[base.trim().length > 0 || method.trim().length > 0 || Boolean(edit), "a base model or a training method"]]
+            ? [[base.trim().length > 0 || method.trim().length > 0 || Boolean(edit), "Base model, Training method"]]
             : kind === "text"
-              ? [[body.trim().length > 0, "the text"]]
+              ? [[body.trim().length > 0, "Text"]]
               : kind === "audio"
-                ? [[files.length > 0, "an audio file"]]
+                ? [[files.length > 0, "Audio file"]]
                 : kind === "table"
-                  ? [[files.length > 0 || csv.trim().length > 0, "a CSV file or pasted CSV"]]
+                  ? [[files.length > 0 || csv.trim().length > 0, "CSV file, Pasted CSV"]]
                   : kind === "message"
-                    ? [[channel !== null, "a channel"], [body.trim().length > 0, "the message"]]
+                    ? [[channel !== null, "Channel"], [body.trim().length > 0, "Message"]]
                     : kind === "external_change"
-                      ? [[Boolean(application), "an application"], [change.trim().length > 0, "what changed"]]
+                      ? [[Boolean(application), "App"], [change.trim().length > 0, "What changed"]]
                       : kind === "metric"
-                        ? [[value.trim().length > 0, "a value"], [label.trim().length > 0, "a label"]]
-                        : [[body.trim().length > 0, "a description"]],
+                        ? [[value.trim().length > 0, "Value"], [label.trim().length > 0, "Label"]]
+                        : [[body.trim().length > 0, "Description"]],
   );
 
   const submit = () => {
@@ -281,7 +276,7 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
       {kind === "table" && files.length > 0 && columns ? <Count>{`${columns} columns`}</Count> : null}
     </Block>
   );
-  const areaBlock = (id: string, head: string, value: string, set: (v: string) => void, placeholder: string, max: number, rows: number, mono = false) => (
+  const areaBlock = (id: string, head: string, value: string, set: (v: string) => void, placeholder: string | undefined, max: number, rows: number, mono = false) => (
     <Block>
       <BlockHead label={head} htmlFor={id} count={counter(value.length, max)} />
       <FieldArea phone={phone} id={id} rows={rows} maxLength={max} value={value} placeholder={placeholder} mono={mono} onChange={(event) => set(event.target.value)} />
@@ -348,9 +343,9 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
         </>
       ) : null}
 
-      {kind === "text" ? areaBlock(`${uid}-text`, RESULT_DIALOG_COPY.text, body, setBody, RESULT_DIALOG_COPY.textPlaceholder, RESULT_TEXT_MAX, 6) : null}
+      {kind === "text" ? areaBlock(`${uid}-text`, RESULT_DIALOG_COPY.text, body, setBody, undefined, RESULT_TEXT_MAX, 6) : null}
       {kind === "table" && files.length === 0 ? areaBlock(`${uid}-csv`, RESULT_DIALOG_COPY.pastedCsv, csv, setCsv, RESULT_DIALOG_COPY.pastedCsvPlaceholder, RESULT_CSV_MAX, 5, true) : null}
-      {kind === "message" ? areaBlock(`${uid}-message`, RESULT_DIALOG_COPY.message, body, setBody, RESULT_DIALOG_COPY.messagePlaceholder, RESULT_TEXT_MAX, 5) : null}
+      {kind === "message" ? areaBlock(`${uid}-message`, RESULT_DIALOG_COPY.message, body, setBody, undefined, RESULT_TEXT_MAX, 5) : null}
       {kind === "external_change" ? areaBlock(`${uid}-change`, RESULT_DIALOG_COPY.change, change, setChange, RESULT_DIALOG_COPY.changePlaceholder, RESULT_LINE_MAX, 3) : null}
       {kind === "offline" ? areaBlock(`${uid}-desc`, RESULT_DIALOG_COPY.description, body, setBody, RESULT_DIALOG_COPY.descriptionPlaceholder, RESULT_TEXT_MAX, 4) : null}
 
@@ -362,17 +357,17 @@ function Form({ onAdd: add, onCancel, phone, inBuild = [], current, edit }: Pick
 
       <OptionalSection>
         {kind === "metric" ? (
-          <OptionalField name={RESULT_DIALOG_COPY.unit} description={RESULT_DIALOG_COPY.unitLine} summary={summaryOf(unit)} phone={phone}>
+          <OptionalField name={RESULT_DIALOG_COPY.unit} summary={summaryOf(unit)} phone={phone}>
             <FieldInput phone={phone} aria-label={RESULT_DIALOG_COPY.unit} width={NARROW.value} maxLength={METRIC_UNIT_MAX} value={unit} placeholder={RESULT_DIALOG_COPY.unitPlaceholder} onChange={(event) => setUnit(event.target.value)} />
           </OptionalField>
         ) : null}
         {kind === "metric" ? (
-          <OptionalField name={RESULT_DIALOG_COPY.before} description={RESULT_DIALOG_COPY.beforeLine} summary={summaryOf(before)} phone={phone}>
+          <OptionalField name={RESULT_DIALOG_COPY.before} summary={summaryOf(before)} phone={phone}>
             <FieldInput phone={phone} aria-label={RESULT_DIALOG_COPY.before} mono width={NARROW.value} maxLength={METRIC_VALUE_MAX} value={before} placeholder={RESULT_DIALOG_COPY.beforePlaceholder} onChange={(event) => setBefore(event.target.value)} />
           </OptionalField>
         ) : null}
         {kind === "offline" ? (
-          <OptionalField name={RESULT_DIALOG_COPY.photo} description={RESULT_DIALOG_COPY.photoLine} summary={photo ? photo.name : null} phone={phone}>
+          <OptionalField name={RESULT_DIALOG_COPY.photo} summary={photo ? photo.name : null} phone={phone}>
             <Inline>
               <FileButton phone={phone} accept="image/*" onFiles={choosePhoto} testId="result-photo" inputLabel={RESULT_DIALOG_COPY.choosePhoto}>
                 {RESULT_DIALOG_COPY.choosePhoto}

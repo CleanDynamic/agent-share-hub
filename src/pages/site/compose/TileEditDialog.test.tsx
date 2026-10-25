@@ -7,6 +7,7 @@ import { tileView } from "@/dev/fixtures/detailsKinds";
 
 import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import { TileEditDialog, opensEditDialog } from "./TileEditDialog";
+import { fieldNamed } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -57,8 +58,8 @@ describe("every kind opens in edit mode, filled in", () => {
 
 const dialog = () => screen.getByRole("dialog");
 const save = () => fireEvent.click(within(dialog()).getByRole("button", { name: "Save" }));
-const optional = (name: string) => within(dialog()).getAllByTestId("optional-field").find((el) => within(el).queryByText(name)) as HTMLElement;
-const openRow = (name: string) => fireEvent.click(within(optional(name)).getAllByRole("button")[0]);
+const optional = (name: string) => fieldNamed(name);
+const openRow = (name: string) => void fieldNamed(name);
 const callsOf = (h: ReturnType<typeof handlers>) => HANDLER_NAMES.flatMap((name) => h[name].mock.calls.map((args) => [name, ...args]));
 
 describe("Save writes through the same handlers with the same arguments", () => {
@@ -83,7 +84,7 @@ describe("Save writes through the same handlers with the same arguments", () => 
 
   it("a tool: where an MCP server ran is written with the connection", () => {
     const { h } = open(tileView("tool", "full"));
-    fireEvent.click(within(dialog()).getByRole("radio", { name: "On my computer" }));
+    fireEvent.click(within(dialog()).getByRole("radio", { name: "Local" }));
     save();
     expect(h.onToolConnection).toHaveBeenCalledWith("t1", "mcp", "local");
   });
@@ -213,7 +214,7 @@ describe("Save writes through the same handlers with the same arguments", () => 
     const { h } = open(view);
     fireEvent.click(within(dialog()).getByRole("button", { name: "Remove menu.pdf" }));
     // Put back from the menu of what it may take.
-    fireEvent.keyDown(within(dialog()).getByRole("button", { name: "Add an input" }), { key: "Enter" });
+    fireEvent.keyDown(within(dialog()).getByRole("button", { name: "Add input" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: /menu\.pdf/ }));
     save();
     expect(callsOf(h)).toEqual([]);
@@ -265,13 +266,13 @@ describe("CA-18: the fields that were shown and locked are editable", () => {
     const { h } = open(tileView("check", "full"));
     fireEvent.change(field("Test description"), { target: { value: "  " } });
     save();
-    expect(within(dialog()).getByRole("alert").textContent).toContain("test description");
+    expect(within(dialog()).getByRole("alert").textContent).toContain("Test description");
     expect(callsOf(h)).toEqual([]);
     fireEvent.change(field("Test description"), { target: { value: "Places a test order" } });
     openRow("Last run date");
     fireEvent.change(field("Last run date"), { target: { value: "2026-13-45" } });
     save();
-    expect(within(dialog()).getByRole("alert").textContent).toContain("last run date");
+    expect(within(dialog()).getByRole("alert").textContent).toContain("Format: 2026-10-12");
     expect(callsOf(h)).toEqual([]);
   });
 

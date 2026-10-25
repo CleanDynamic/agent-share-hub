@@ -23,7 +23,7 @@ import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
 
 import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } from "./codeModel";
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, MODAL_WIDTH, Row } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
@@ -32,18 +32,16 @@ import { ToolPicker } from "./ToolPicker";
 
 export const CODE_DIALOG_COPY = {
   title: "Add code",
-  subtitle: "Source code produced in this step, as it was used",
+  subtitle: "Source code as used",
   code: "Code",
-  placeholder: "Paste or type the code",
   language: "Language",
   filename: "File path",
-  filenameLine: "Where the file lives in the project",
-  filenamePlaceholder: "e.g. src/editor/shortcuts.ts",
+  filenamePlaceholder: "src/editor/shortcuts.ts",
   writtenWith: "Generated with",
-  writtenWithLine: "The tool and model that wrote it",
+  writtenWithLine: "Tool and model",
   writtenWithTool: "Generated with",
   upload: "Upload files",
-  uploadLine: "Or upload text files. Each file is added as a separate step.",
+  uploadLine: "Each file becomes its own tile",
   lines: (n: number) => `${n} ${n === 1 ? "line" : "lines"}`,
   selectTool: "Select a tool",
   remove: (name: string) => `Remove ${name}`,
@@ -134,14 +132,14 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, current, edit }: Pic
     else onAdd?.(made);
   };
 
-  const missing = firstMissing([[typed || files.length > 0, "code"]]);
+  const missing = missingLabels([[typed || files.length > 0, "Code"]]);
 
   return (
     <ModalForm phone={phone} missing={missing} blocked={tooLong || filename.length > CODE_FILENAME_MAX} onSubmit={submit} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined}>
       {edit?.before ? edit.before({ steps: [{ source, language, filename: filename.trim() || null }], tool, model }) : null}
       <Block noRule>
         <BlockHead label={CODE_DIALOG_COPY.code} htmlFor={`${uid}-code`} count={typed ? CODE_DIALOG_COPY.lines(lineCount(source)) : null} />
-        <CodeEditorField id={`${uid}-code`} testId={edit ? "edit-code" : "code-well"} value={source} placeholder={CODE_DIALOG_COPY.placeholder} onChange={setSource} />
+        <CodeEditorField id={`${uid}-code`} testId={edit ? "edit-code" : "code-well"} value={source} onChange={setSource} />
         {tooLong ? <Alert>{CODE_COPY.tooLong}</Alert> : null}
         {edit ? null : (
           <Inline>
@@ -178,7 +176,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, current, edit }: Pic
       </Row>
 
       <OptionalSection>
-        <OptionalField name={CODE_DIALOG_COPY.filename} description={CODE_DIALOG_COPY.filenameLine} summary={summaryOf(filename)} phone={phone}>
+        <OptionalField name={CODE_DIALOG_COPY.filename} summary={summaryOf(filename)} phone={phone}>
           <FieldInput phone={phone} mono aria-label={CODE_DIALOG_COPY.filename} value={filename} maxLength={CODE_FILENAME_MAX} placeholder={CODE_DIALOG_COPY.filenamePlaceholder} autoComplete="off" onChange={(event) => setFilename(event.target.value)} />
         </OptionalField>
         <OptionalField name={CODE_DIALOG_COPY.writtenWith} description={CODE_DIALOG_COPY.writtenWithLine} summary={summaryOf(tool ? (toolName(tool) ?? tool) : null, model)} phone={phone}>

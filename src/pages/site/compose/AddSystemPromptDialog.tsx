@@ -17,32 +17,31 @@ import { TITLE_MAX, type SystemPromptInput } from "@/lib/build/graph";
 import { SYSTEM_PROMPT_TEXT_MAX, SYSTEM_PROMPT_VERSION_MAX, type SystemPromptScope } from "@/lib/build/sourceTiles";
 import { VARIABLE_DESCRIPTION_MAX, variablesFor } from "@/lib/build/tileExtras";
 
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Block, BlockHead, FieldArea, FieldInput, Hint, MODAL_WIDTH, NARROW, OptionGrid, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 export const SYSTEM_PROMPT_DIALOG_COPY = {
   title: "Add a system prompt",
-  subtitle: "Instructions that apply across prompts",
+  subtitle: "Instructions for several prompts",
   name: "Name",
-  namePlaceholder: "e.g. Brand voice",
+  namePlaceholder: "Brand voice",
   text: "Text",
-  textPlaceholder: "e.g. You write in plain British English and never use buzzwords.",
+  textPlaceholder: "You write in plain British English and never use buzzwords.",
   appliesTo: "Applies to",
   all: "All prompts",
   session: "This session",
   selected: "Selected prompts",
-  noPrompts: "This build has no prompts yet.",
-  noSession: "There is no current session to apply it to.",
+  noPrompts: "No prompts in this build",
+  noSession: "No current session",
   model: "Model",
-  modelLine: "The model the system prompt was written for",
   version: "Version",
-  versionLine: "A version or date, so a change can be told apart",
-  versionPlaceholder: "e.g. v2",
+  versionLine: "Version or date",
+  versionPlaceholder: "v2",
   variables: "Variables",
-  variablesLine: "The {names} written in the text, each with a line about it",
-  noVariables: "No {variables} written in the text yet.",
+  variablesLine: "{names} in the text, with a description each",
+  noVariables: "No {variables} in the text",
   add: "Add",
   cancel: "Cancel",
 } as const;
@@ -85,11 +84,11 @@ function Form({ onAdd, onCancel, phone, prompts, session, current, edit }: Pick<
   const uid = useId();
   const variables = variablesFor(body, []).map((variable) => ({ name: variable.name, description: (described[variable.name] ?? "").trim() }));
 
-  const missing = firstMissing([
-    [name.trim().length > 0, "a name"],
-    [body.trim().length > 0, "the text"],
-    [applies !== "prompts" || picked.length > 0, "at least one prompt for it to apply to"],
-    [applies !== "session" || session !== null, "a current session to apply it to"],
+  const missing = missingLabels([
+    [name.trim().length > 0, "Name"],
+    [body.trim().length > 0, "Text"],
+    [applies !== "prompts" || picked.length > 0, "A prompt to apply to"],
+    [applies !== "session" || session !== null, "A current session"],
   ]);
 
   const submit = () => {
@@ -144,7 +143,7 @@ function Form({ onAdd, onCancel, phone, prompts, session, current, edit }: Pick<
       </Block>
 
       <OptionalSection>
-        <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.model} description={SYSTEM_PROMPT_DIALOG_COPY.modelLine} summary={summaryOf(model)} phone={phone}>
+        <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.model} summary={summaryOf(model)} phone={phone}>
           <ModelPicker tool={null} anyWithoutTool value={model} onChange={setModel} phone={phone} field />
         </OptionalField>
         <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.version} description={SYSTEM_PROMPT_DIALOG_COPY.versionLine} summary={summaryOf(version)} phone={phone}>
@@ -159,7 +158,7 @@ function Form({ onAdd, onCancel, phone, prompts, session, current, edit }: Pick<
                 id={`${uid}-var-${variable.name}`}
                 maxLength={VARIABLE_DESCRIPTION_MAX}
                 value={described[variable.name] ?? ""}
-                placeholder="e.g. The customer's first name"
+                placeholder="The customer's first name"
                 onChange={(event) => setDescribed((now) => ({ ...now, [variable.name]: event.target.value }))}
               />
             </Row>

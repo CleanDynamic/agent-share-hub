@@ -52,7 +52,7 @@ describe("Session window › Worked until", () => {
     const most = screen.getByRole("textbox", { name: "At most" });
     fireEvent.change(most, { target: { value: "900" } });
     fireEvent.blur(most);
-    expect(screen.getByText("Turns are whole numbers from 1 to 500.")).toBeTruthy();
+    expect(screen.getByText("Turns: whole number, 1 to 500")).toBeTruthy();
     fireEvent.change(most, { target: { value: "40" } });
     fireEvent.blur(most);
     save();
@@ -63,7 +63,7 @@ describe("Session window › Worked until", () => {
 
   it("takes the goal off with null", () => {
     const onSessionGoal = mount(session({ goal: { condition: "x" } }));
-    fireEvent.click(screen.getByRole("button", { name: "Take the goal off" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove goal" }));
     save();
     expect(onSessionGoal).toHaveBeenLastCalledWith("typed-a", null);
   });

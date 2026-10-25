@@ -1002,7 +1002,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         ) : null}
         {entry.goesInto.length > 0 ? (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-            <Eyebrow>Goes into</Eyebrow>
+            <Eyebrow>Used by</Eyebrow>
             {entry.goesInto.map((target) => (
               <Chip key={target}>{target}</Chip>
             ))}
