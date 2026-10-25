@@ -842,6 +842,9 @@ export const CA03_FILES: readonly string[] = [
   "src/components/shell/NavSearch.tsx",
   "src/components/shell/headerSearch.slash.test.tsx",
 
+  // CA-28 P0
+  "e2e/audit/composer-ca28-shots.spec.ts",
+  "src/pages/dev/Ca28Demo.tsx",
 ];
 
 /**
