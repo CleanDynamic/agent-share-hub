@@ -62,6 +62,7 @@ const fits = (box: DOMRect): boolean => box.width > 0 && box.height > 0 && box.l
 /** A copy flying from one place to another: fixed at the first, moved with a transform to the second. */
 function fly(layer: HTMLElement, flight: Flight, to: DOMRect, fade: "out" | "in" | "none"): MotionRun {
   const holder = layer.ownerDocument.createElement("div");
+  // SV-01: raw HTML on purpose. `flight.html` is `copyOf(element).outerHTML` above, the markup React already drew; it is never user text.
   holder.innerHTML = flight.html;
   const node = holder.firstElementChild as HTMLElement | null;
   if (!node) return { finished: Promise.resolve(), finish: () => undefined, cancel: () => undefined };

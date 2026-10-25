@@ -606,7 +606,14 @@ export function RenderBlockContent({
 
 // ─── Prompt viewer ──────────────────────────────────────────
 
-const PromptViewer = ({ block }: { block: BlockRow }) => {
+export const VARIABLE_MARK: React.CSSProperties = {
+  background: 'color-mix(in srgb, var(--evidence) 20%, transparent)',
+  color: 'var(--evidence)',
+  borderRadius: '3px',
+  padding: '1px 4px',
+};
+
+export const PromptViewer = ({ block }: { block: BlockRow }) => {
   const [copied, setCopied] = React.useState(false);
   const [filled, setFilled] = React.useState<Record<string, string>>({});
   const variables = block.prompt_variables ?? [];
@@ -625,12 +632,12 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const highlightVars = (text: string) => {
-    return text.replace(
-      /\{\{(\w+)\}\}/g,
-      '<mark style="background:color-mix(in srgb, var(--evidence) 20%, transparent);color:var(--evidence);border-radius:3px;padding:1px 4px">{{$1}}</mark>'
+  // A prompt is the maker's own words, so it is drawn as text: split on the
+  // variable pattern, and only the variables are given an element.
+  const highlightVars = (text: string): React.ReactNode[] =>
+    text.split(/(\{\{\w+\}\})/).map((part, i) =>
+      /^\{\{\w+\}\}$/.test(part) ? <mark key={i} style={VARIABLE_MARK}>{part}</mark> : part,
     );
-  };
 
   return (
     <div>
@@ -698,7 +705,6 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
 
       <div style={{ position: 'relative' }}>
         <div
-          dangerouslySetInnerHTML={{ __html: highlightVars(getFilledPrompt()) }}
           style={{
             background: 'var(--recess)',
             border: '1px solid var(--line)',
@@ -707,7 +713,9 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
             fontFamily: 'Courier New, monospace',
             lineHeight: 1.7, whiteSpace: 'pre-wrap',
             minHeight: 80,
-          }} />
+          }}>
+          {highlightVars(getFilledPrompt())}
+        </div>
         <button onClick={handleCopy} style={{
           position: 'absolute', top: 10, right: 10,
           padding: '3px 10px', borderRadius: 6, fontSize: 11,

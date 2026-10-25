@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 import { getCanonicalPayload } from "./getCanonicalPayload";
 import type { CanonicalPostPayload, ExportFormat } from "./types";
 
@@ -78,7 +79,12 @@ function payloadToPlain(p: CanonicalPostPayload): string {
     .join("\n");
 }
 
-function payloadToHtml(p: CanonicalPostPayload): string {
+/** A post's words are text. This is HTML written into a window on the site's own origin. */
+function escapeHtml(s: string): string {
+  return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+export function payloadToHtml(p: CanonicalPostPayload): string {
   const md = payloadToMarkdown(p);
   // Minimal MD → HTML (no deps). Good enough for PDF rasterization upstream.
   const html = md
@@ -87,13 +93,13 @@ function payloadToHtml(p: CanonicalPostPayload): string {
       if (/^#{1,6} /.test(line)) {
         const m = line.match(/^(#{1,6})\s+(.*)$/)!;
         const lv = m[1].length;
-        return `<h${lv}>${m[2]}</h${lv}>`;
+        return `<h${lv}>${escapeHtml(m[2])}</h${lv}>`;
       }
       if (line.trim() === "") return "";
-      return `<p>${line}</p>`;
+      return `<p>${escapeHtml(line)}</p>`;
     })
     .join("\n");
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${p.meta.title ?? ""}</title></head><body>${html}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(p.meta.title ?? "")}</title></head><body>${html}</body></html>`;
 }
 
 export async function exportToFormat({
@@ -132,7 +138,7 @@ export async function exportToFormat({
         const { url } = await generateAIPdf(postId);
         result = { url };
       } catch (e) {
-        console.warn("[exportToFormat:ai-pdf] generation failed, falling back to HTML", e);
+        reportError(e, { source: "export", context: "ai-pdf" });
         result = { content: payloadToHtml(payload) };
       }
       break;
@@ -147,7 +153,7 @@ export async function exportToFormat({
       .from("ai_export_log")
       .insert({ post_id: postId, exporter_id: exporterId ?? null, format });
   } catch (e) {
-    console.warn("[exportToFormat] log failed", e);
+    reportError(e, { source: "export", context: "log" });
   }
 
   return { ...result, format };

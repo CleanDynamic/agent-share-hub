@@ -1,46 +1,33 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { z, readBody } from "../_shared/body.ts";
+import { fail, json, preflight } from "../_shared/cors.ts";
+import { githubApiUrl, parseGithubUrl } from "./github.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const Body = z.object({ url: z.string({ required_error: "Required" }).min(1, "Required").max(2048) });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const early = preflight(req);
+  if (early) return early;
+  if (req.method !== "POST") return fail(req, 405, "Method not allowed");
 
   try {
-    const { url } = await req.json();
-    if (!url || typeof url !== "string") {
-      throw new Error("url is required");
-    }
+    const body = await readBody(req, Body);
+    if (!body.ok) return fail(req, 400, body.error);
 
-    // Parse GitHub URL
     // Supports: https://github.com/owner/repo
     //           https://github.com/owner/repo/blob/branch/path/to/file.md
-    const ghMatch = url.match(/github\.com\/([^\/]+)\/([^\/]+)(?:\/blob\/[^\/]+\/(.+))?/);
-    if (!ghMatch) throw new Error("Invalid GitHub URL");
+    // Anything else is refused, and api.github.com is the only host fetched.
+    const target = parseGithubUrl(body.data.url);
+    if (!target) return fail(req, 400, "url: must be a github.com repository or file address");
+    const { owner, repo } = target;
 
-    const [, owner, repo, filePath] = ghMatch;
-    let apiUrl: string;
-
-    if (filePath) {
-      // Specific file
-      apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
-    } else {
-      // Default to README
-      apiUrl = `https://api.github.com/repos/${owner}/${repo}/readme`;
-    }
-
-    const ghRes = await fetch(apiUrl, {
+    const ghRes = await fetch(githubApiUrl(target), {
       headers: { Accept: "application/vnd.github.v3+json", "User-Agent": "NeoScale" },
     });
 
     if (!ghRes.ok) {
-      const body = await ghRes.text();
-      throw new Error(`GitHub API error ${ghRes.status}: ${body}`);
+      console.error("import-github-readme: GitHub answered", ghRes.status);
+      return fail(req, ghRes.status === 404 ? 404 : 502, ghRes.status === 404 ? "GitHub has no such file" : "GitHub could not be read");
     }
 
     const ghData = await ghRes.json();
@@ -66,19 +53,14 @@ serve(async (req) => {
       bodyLines.push(line);
     }
 
-    return new Response(
-      JSON.stringify({
-        title: title || repo,
-        description: description.slice(0, 160),
-        markdown: bodyLines.join("\n").trim(),
-        source: `${owner}/${repo}`,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-    );
+    return json(req, {
+      title: title || repo,
+      description: description.slice(0, 160),
+      markdown: bodyLines.join("\n").trim(),
+      source: `${owner}/${repo}`,
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-    );
+    console.error("import-github-readme:", error);
+    return fail(req, 500, "Could not import the file");
   }
 });

@@ -3,6 +3,10 @@
 // Edge runtime, and a text-PDF is actually superior for chatbot OCR/parsing.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z, readBody } from "../_shared/body.ts";
+import { getCaller } from "../_shared/caller.ts";
+import { fail, json, preflight } from "../_shared/cors.ts";
+import { mayExport } from "./access.ts";
 import {
   PDFDocument,
   StandardFonts,
@@ -11,11 +15,6 @@ import {
   PDFFont,
 } from "https://esm.sh/pdf-lib@1.17.1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 interface Cursor {
   doc: PDFDocument;
@@ -472,32 +471,31 @@ async function buildReblogPdf(reblog: any, original: any, reblogger: any, origin
 }
 
 // ─── Edge function entrypoint ────────────────────────────────
+
+const Body = z
+  .object({
+    kind: z.enum(["post", "reblog"]).default("post"),
+    postId: z.string().uuid().optional(),
+    reblogId: z.string().uuid().optional(),
+  })
+  .superRefine((body, ctx) => {
+    if (body.kind === "post" && !body.postId) ctx.addIssue({ code: "custom", path: ["postId"], message: "Required" });
+    if (body.kind === "reblog" && !body.reblogId) ctx.addIssue({ code: "custom", path: ["reblogId"], message: "Required" });
+  });
+
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  const early = preflight(req);
+  if (early) return early;
+  if (req.method !== "POST") return fail(req, 405, "Method not allowed");
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const kind: "post" | "reblog" = body.kind === "reblog" ? "reblog" : "post";
-    const postId: string | undefined = body.postId;
-    const reblogId: string | undefined = body.reblogId;
-    if (kind === "post" && !postId) {
-      return new Response(JSON.stringify({ error: "Missing postId" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (kind === "reblog" && !reblogId) {
-      return new Response(JSON.stringify({ error: "Missing reblogId" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const body = await readBody(req, Body);
+    if (!body.ok) return fail(req, 400, body.error);
+    const { kind, postId, reblogId } = body.data;
+
+    // Who is asking, from the token. Anyone may export a public, approved post;
+    // anything else only its creator (see access.ts).
+    const callerId = (await getCaller(req))?.id ?? null;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -512,12 +510,7 @@ Deno.serve(async (req) => {
         .is("deleted_at", null)
         .maybeSingle();
       if (rErr) throw rErr;
-      if (!reblog) {
-        return new Response(JSON.stringify({ error: "Reblog not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!reblog) return fail(req, 404, "Reblog not found");
 
       const { data: reblogger } = await supabase
         .from("profiles")
@@ -527,9 +520,13 @@ Deno.serve(async (req) => {
 
       const { data: original } = await supabase
         .from("content_items")
-        .select("id, slug, title, description, post_type, created_at, creator_id")
+        .select("id, slug, title, description, post_type, created_at, creator_id, status, visibility")
         .eq("id", (reblog as any).original_post_id)
         .maybeSingle();
+
+      // A reblog shows the original's title and text, so it is as private as the original.
+      const own = !!callerId && (reblog as any).reblogger_id === callerId;
+      if (!own && !(original && mayExport(original as any, callerId))) return fail(req, 404, "Reblog not found");
 
       let originalAuthor: any = null;
       if (original?.creator_id) {
@@ -552,47 +549,32 @@ Deno.serve(async (req) => {
       const { data: pub } = supabase.storage.from("ai-pdfs").getPublicUrl(fileName);
       const url = pub.publicUrl;
 
-      try {
-        await supabase.from("ai_export_log").insert({ post_id: (reblog as any).original_post_id, format: "ai-pdf-reblog" } as any);
-      } catch (_e) { /* ignore */ }
+      // Best-effort log
+      const { error: logErr } = await supabase.from("ai_export_log").insert({ post_id: (reblog as any).original_post_id, format: "ai-pdf-reblog" } as any);
+      if (logErr) console.error("[generate-ai-pdf] export log:", logErr.message);
 
-      return new Response(JSON.stringify({ url, cached: false }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json(req, { url, cached: false });
     }
 
     // Fetch the post (caching check + payload)
     const { data: post, error: postErr } = await supabase
       .from("content_items")
-      .select("id, slug, status, visibility, updated_at, ai_pdf_url, ai_pdf_generated_at, canonical_export_payload")
+      .select("id, slug, status, visibility, creator_id, updated_at, ai_pdf_url, ai_pdf_generated_at, canonical_export_payload")
       .eq("id", postId)
       .maybeSingle();
     if (postErr) throw postErr;
-    if (!post) {
-      return new Response(JSON.stringify({ error: "Post not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // A post the caller may not export is answered exactly like one that is not there.
+    if (!post || !mayExport(post as any, callerId)) return fail(req, 404, "Post not found");
 
     // Caching: if cached PDF is newer than the post's last update, reuse.
     if (post.ai_pdf_url && post.ai_pdf_generated_at && post.updated_at) {
       if (new Date(post.ai_pdf_generated_at).getTime() >= new Date(post.updated_at).getTime()) {
-        return new Response(JSON.stringify({ url: post.ai_pdf_url, cached: true }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json(req, { url: post.ai_pdf_url, cached: true });
       }
     }
 
-    let payload = post.canonical_export_payload;
-    if (!payload) {
-      return new Response(JSON.stringify({ error: "Canonical payload not yet generated. Open the post once to seed it." }), {
-        status: 409,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const payload = post.canonical_export_payload;
+    if (!payload) return fail(req, 409, "Canonical payload not yet generated. Open the post once to seed it.");
 
     const pdfBytes = await buildPdf(payload);
     const fileName = `${post.id}/${(post.slug ?? post.id).split("/").join("-")}-${Date.now()}.pdf`;
@@ -605,26 +587,19 @@ Deno.serve(async (req) => {
     const { data: pub } = supabase.storage.from("ai-pdfs").getPublicUrl(fileName);
     const url = pub.publicUrl;
 
-    await supabase
+    const { error: saveErr } = await supabase
       .from("content_items")
       .update({ ai_pdf_url: url, ai_pdf_generated_at: new Date().toISOString() } as any)
       .eq("id", post.id);
+    if (saveErr) console.error("[generate-ai-pdf] caching the url:", saveErr.message);
 
     // Best-effort log
-    try {
-      await supabase.from("ai_export_log").insert({ post_id: post.id, format: "ai-pdf" } as any);
-    } catch (_e) { /* ignore */ }
+    const { error: logErr } = await supabase.from("ai_export_log").insert({ post_id: post.id, format: "ai-pdf" } as any);
+    if (logErr) console.error("[generate-ai-pdf] export log:", logErr.message);
 
-    return new Response(JSON.stringify({ url, cached: false }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json(req, { url, cached: false });
   } catch (e) {
-    const msg = (e as Error).message ?? String(e);
-    console.error("[generate-ai-pdf]", msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("[generate-ai-pdf]", (e as Error).message ?? String(e));
+    return fail(req, 500, "Could not make the PDF");
   }
 });

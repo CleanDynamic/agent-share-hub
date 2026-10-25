@@ -2,6 +2,7 @@ import { Component, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/errors/report";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { body } from "@/lib/theme/type";
@@ -25,18 +26,23 @@ import { body } from "@/lib/theme/type";
    failed state, mounts a fresh boundary rather than carrying the failure to
    the next page.
 
-   IT LOGS NOTHING, so it has no componentDidCatch. An error's message can
-   quote whatever the page was rendering — a build's text, a search query —
-   and CONTRACT §9 keeps user-authored text out of every log. No error tracker
-   is installed, so there is nothing to report to either.
+   IT REPORTS IDENTIFIERS, NOT WORDS (SV-01). An error's message can quote
+   whatever the page was rendering (a build's text, a search query) and
+   CONTRACT §9 keeps user-authored text out of every log. So componentDidCatch
+   hands the error to reportError with the route, and reportError keeps the
+   error's name and code and drops its message.
    ──────────────────────────────────────────────────────────────────────────── */
 
 interface BoundaryState {
   failed: boolean;
 }
 
-class RouteErrorBoundary extends Component<{ children: ReactNode }, BoundaryState> {
+class RouteErrorBoundary extends Component<{ children: ReactNode; route: string }, BoundaryState> {
   state: BoundaryState = { failed: false };
+
+  componentDidCatch(error: unknown) {
+    reportError(error, { source: "route-boundary", route: this.props.route });
+  }
 
   static getDerivedStateFromError(): BoundaryState {
     return { failed: true };
@@ -77,7 +83,7 @@ function RouteFailed({ onRetry }: { onRetry: () => void }) {
 /** Wraps one route's element; a render error inside it stays inside it. */
 export function RouteBoundary({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  return <RouteErrorBoundary key={pathname}>{children}</RouteErrorBoundary>;
+  return <RouteErrorBoundary key={pathname} route={pathname}>{children}</RouteErrorBoundary>;
 }
 
 export default RouteBoundary;

@@ -51,6 +51,7 @@ import { Link } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { CLAUDE_CODE_COMMAND, CONNECTOR_URL } from "@/lib/connect/connector";
 import { Button } from "@/components/ui/button";
 import { elevation } from "@/lib/theme/elevation";
 import { focusRing } from "@/lib/theme/focus";
@@ -69,19 +70,7 @@ import {
   measure,
 } from "@/lib/theme/type";
 
-/**
- * The connector's address: the live project's `mcp` edge function.
- *
- * Written out rather than derived from the Supabase client's URL, because this
- * is the string a creator pastes into another product and it has to be the live
- * project's in every build of the site, including a local one pointed elsewhere.
- * `public/ai.txt` carries the same string; the tier-3 spec holds the two
- * together.
- */
-const CONNECTOR_URL = "https://zybdotagjwektucfdkri.supabase.co/functions/v1/mcp";
-
 /** The one line Claude Code needs. Built from the address, never retyped. */
-const CLAUDE_CODE_COMMAND = `claude mcp add --transport http buildgallery ${CONNECTOR_URL}`;
 
 /* Each tool's own help, linked rather than restated. */
 const ANTHROPIC_CONNECTORS_HELP =

@@ -38,6 +38,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withCors } from "../_shared/cors.ts";
 import { buildTree, describeRecord, mintRefs } from "./describe.ts";
 import { hashNodeTree } from "./hash.ts";
 import {
@@ -56,11 +57,8 @@ import type {
   Step,
 } from "./types.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// CORS comes from ../_shared/cors.ts: `withCors` replaces the headers on every answer below.
+const corsHeaders: Record<string, string> = {};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -157,7 +155,9 @@ function decide(
   return { kind: "generate" };
 }
 
-serve(async (req) => {
+serve(async (req) => withCors(req, await handle(req)));
+
+async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -234,7 +234,8 @@ serve(async (req) => {
       .maybeSingle<BuildRow>();
 
     if (buildError) {
-      return fail(`Could not read that build: ${buildError.message}`, 500);
+      console.error("generate-build-layers: Could not read that build", buildError);
+      return fail("Could not read that build.", 500);
     }
     if (!build) {
       return fail("That build does not exist or is not yours to generate for.", 403);
@@ -265,19 +266,20 @@ serve(async (req) => {
     ]);
 
     if (nodesResult.error) {
-      return fail(`Could not read this build's nodes: ${nodesResult.error.message}`, 500);
+      console.error("generate-build-layers: Could not read this build's nodes", nodesResult.error);
+      return fail("Could not read this build's nodes.", 500);
     }
     if (eventsResult.error) {
-      return fail(`Could not read this build's events: ${eventsResult.error.message}`, 500);
+      console.error("generate-build-layers: Could not read this build's events", eventsResult.error);
+      return fail("Could not read this build's events.", 500);
     }
     if (typesResult.error) {
-      return fail(`Could not read the node type registry: ${typesResult.error.message}`, 500);
+      console.error("generate-build-layers: Could not read the node type registry", typesResult.error);
+      return fail("Could not read the node type registry.", 500);
     }
     if (existingResult.error) {
-      return fail(
-        `Could not read this build's existing layers: ${existingResult.error.message}`,
-        500,
-      );
+      console.error("generate-build-layers: Could not read this build's existing layers", existingResult.error);
+      return fail("Could not read this build's existing layers.", 500);
     }
 
     const nodes = (nodesResult.data ?? []) as NodeRow[];
@@ -380,7 +382,8 @@ serve(async (req) => {
           const error = outcome.reason;
           const message = error instanceof ModelError
             ? error.message
-            : `Generating the ${layer} layer failed: ${(error as Error).message}`;
+            : `Generating the ${layer} layer failed.`;
+          if (!(error instanceof ModelError)) console.error("generate-build-layers: layer failed", layer, error);
           failureStatus.set(layer, error instanceof ModelError ? error.status : 502);
           results.set(layer, { layer, status: "failed", row: null, error: message });
           warnings.push({ code: "layer_failed", message });
@@ -394,10 +397,8 @@ serve(async (req) => {
           .select();
 
         if (writeError) {
-          return fail(
-            `The layers were generated but could not be saved: ${writeError.message}`,
-            500,
-          );
+          console.error("generate-build-layers: The layers were generated but could not be saved", writeError);
+          return fail("The layers were generated but could not be saved.", 500);
         }
 
         for (const row of (written ?? []) as LayerRow[]) {
@@ -432,6 +433,7 @@ serve(async (req) => {
     if (error instanceof ModelError) {
       return fail(error.message, error.status);
     }
-    return fail((error as Error).message ?? "generate-build-layers failed.", 500);
+    console.error("generate-build-layers:", error);
+    return fail("generate-build-layers failed.", 500);
   }
-});
+}

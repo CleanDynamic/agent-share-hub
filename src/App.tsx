@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, useParams, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AddToCollectionHost } from "@/components/library/AddToCollectionHost";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isPermissionError } from "@/lib/errors/permission";
+import { connectErrorReporting } from "@/lib/errors/wire";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PresenceProvider } from "@/components/PresenceProvider";
@@ -179,7 +180,13 @@ const WideDemo = import.meta.env.DEV ? lazy(() => import("./pages/dev/WideDemo")
    one retry is about one. A refusal is never retried: asking again changes nothing. */
 /* CA-10 (CA-09 F10): a default staleTime of 30 s, so coming back to the tab re-reads only what is older than that,
    not every query on screen. */
+/* SV-01: every query and mutation that gives up, and every uncaught error and rejection, is told to reportError. */
+const errorReporting = connectErrorReporting();
+if (typeof window !== "undefined") errorReporting.listen(window);
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: errorReporting.queryError }),
+  mutationCache: new MutationCache({ onError: errorReporting.mutationError }),
   defaultOptions: {
     queries: { retry: (count, error) => count < 1 && !isPermissionError(error), staleTime: 30_000 },
   },

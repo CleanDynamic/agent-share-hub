@@ -1,76 +1,24 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createDonationHandler } from "./handler.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// Both clients are built from environment values only.
+// The creator's shown name is public, so the public key is enough.
+const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+const stripe = stripeKey ? new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" }) : null;
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { creator_id, amount_pence, creator_display_name, success_url, cancel_url } = await req.json();
-
-    if (!creator_id || !amount_pence || !success_url || !cancel_url) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (typeof amount_pence !== "number" || amount_pence < 100) {
-      return new Response(
-        JSON.stringify({ error: "amount_pence must be at least 100 (£1.00)" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      return new Response(
-        JSON.stringify({ error: "Stripe is not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    const displayName = creator_display_name || "a creator";
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "gbp",
-            unit_amount: Math.round(amount_pence),
-            product_data: {
-              name: `Tip for ${displayName} on NeoScale AI`,
-              metadata: { creator_id },
-            },
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: { creator_id, type: "donation" },
-      success_url,
-      cancel_url,
-    });
-
-    return new Response(
-      JSON.stringify({ url: session.url }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (err) {
-    console.error("Donation session error:", err);
-    return new Response(
-      JSON.stringify({ error: (err as Error).message || "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+Deno.serve(
+  createDonationHandler({
+    findCreatorName: async (creatorId) => {
+      const { data } = await db.from("profiles").select("display_name, username").eq("id", creatorId).maybeSingle();
+      if (!data) return null;
+      return (data as { display_name: string | null; username: string | null }).display_name ?? (data as { username: string | null }).username ?? "";
+    },
+    createSession: async (params) => {
+      if (!stripe) throw new Error("Stripe is not configured");
+      const session = await stripe.checkout.sessions.create(params as never);
+      return { url: session.url };
+    },
+  }),
+);

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { reportError } from "@/lib/errors/report";
 import { useToast } from "@/hooks/use-toast";
 import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -653,6 +654,7 @@ export default function ContentDetail() {
               // Open print-ready HTML in a new window so the user can save as PDF.
               const w = window.open("", "_blank");
               if (w) {
+                // SV-01: raw HTML on purpose. `res.content` is `payloadToHtml(payload)`, which escapes every word of the post.
                 w.document.write(res.content ?? "");
                 w.document.close();
                 w.focus();
@@ -749,7 +751,7 @@ export default function ContentDetail() {
       // Keep post-level comment count badge in sync.
       if (drawerAnchor.anchorType === "post") setCommentCount(total);
     } catch (e) {
-      console.warn("[drawer] getComments failed", e);
+      reportError(e, { source: "content-detail", context: "drawer-comments", route: window.location.pathname });
     } finally {
       setDrawerLoading(false);
     }
@@ -1935,7 +1937,7 @@ export default function ContentDetail() {
       });
       setLbActivity(acts);
     } catch (e) {
-      console.warn("[leaderboard] refresh failed", e);
+      reportError(e, { source: "content-detail", context: "leaderboard", route: window.location.pathname });
     }
   }, [isBounty, post?.id, lbSort]);
 
@@ -2441,7 +2443,7 @@ function RemixLineageRow({
                 const res = await createRemix({ sourcePostId: postId, remixerId: remixerId! });
                 onRemixed(res.draftId, res.postType);
               } catch (err) {
-                console.error("[Remix] createRemix failed", err);
+                reportError(err, { source: "content-detail", context: "remix", route: window.location.pathname });
               }
             }}
           />

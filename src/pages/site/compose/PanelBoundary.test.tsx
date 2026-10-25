@@ -1,6 +1,7 @@
 // CA-24 P3 - a panel fails alone: its words, its Retry, the others still usable; a query error shows the same fallback; Retry
 // refetches that panel's queries only.
 
+import { clearRecentErrors, recentErrors } from "@/lib/errors/report";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState, type ReactElement } from "react";
@@ -106,16 +107,17 @@ describe("each panel fails alone", () => {
     expect(screen.getByText("Details didn't load")).toBeTruthy();
   });
 
-  it("logs the failure once as a line naming the panel and the kind of error, never the message", () => {
+  it("reports the failure once, naming the panel and the kind of error, never the message (SV-01: through reportError)", () => {
+    clearRecentErrors();
     const armed = { current: true };
     render(
       <PanelBoundary panel="Post">
         <Bomb panel="Post" armed={armed} />
       </PanelBoundary>,
     );
-    const lines = (console.error as ReturnType<typeof vi.fn>).mock.calls.map((call) => String(call[0]));
-    expect(lines.filter((line) => line.includes("Post panel failed while drawing (Error)"))).toHaveLength(1);
-    expect(lines.some((line) => line.includes("secret text"))).toBe(false);
+    expect(recentErrors()).toHaveLength(1);
+    expect(recentErrors()[0]).toMatchObject({ source: "panel-boundary", context: "Post", name: "Error" });
+    expect(JSON.stringify(recentErrors())).not.toContain("secret text");
   });
 });
 
