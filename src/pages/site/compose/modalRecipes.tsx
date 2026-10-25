@@ -160,6 +160,7 @@ export function IconSquare({ glyph, label, phone = false, style, ...rest }: Icon
     <button
       type="button"
       aria-label={label}
+      data-hit=""
       {...rest}
       {...handlers}
       style={{

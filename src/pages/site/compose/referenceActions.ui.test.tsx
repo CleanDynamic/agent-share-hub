@@ -35,18 +35,18 @@ const notice = () => screen.getByTestId("reference-notice").textContent ?? "";
 describe("the picker's actions", () => {
   it("colours a component as one step, and Undo puts it back", async () => {
     mount();
-    fireEvent.click(colourButton(/^Colour for Manual step 2: #7FA7D9/));
+    fireEvent.click(colourButton(/^Manual step 2 colour/));
     fireEvent.click(screen.getByRole("button", { name: "#C9A86B" }));
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    await waitFor(() => expect(colourButton(/^Colour for Manual step 2:/).getAttribute("aria-label")).toBe("Colour for Manual step 2: #C9A86B"));
+    await waitFor(() => expect(colourButton(/^Manual step 2 colour/).getAttribute("aria-label")).toBe("Manual step 2 colour"));
     expect(notice()).toContain("Coloured Manual step 2 #C9A86B");
     fireEvent.click(screen.getByTestId("notice-undo"));
-    await waitFor(() => expect(colourButton(/^Colour for Manual step 2:/).getAttribute("aria-label")).toBe("Colour for Manual step 2: #7FA7D9"));
+    await waitFor(() => expect(colourButton(/^Manual step 2 colour/).getAttribute("aria-label")).toBe("Manual step 2 colour"));
   });
 
   it("makes a group of the two that share a colour, from the Also used by line", async () => {
     mount();
-    fireEvent.click(colourButton(/^Colour for Manual step 6/));
+    fireEvent.click(colourButton(/^Manual step 6 colour/));
     expect(screen.getByTestId("also-used-by").textContent).toContain("Also used by Manual step 2");
     fireEvent.click(within(screen.getByTestId("also-used-by")).getByRole("button", { name: "Make a group" }));
     expect(notice()).toContain("Made a group of Manual step 6 and Manual step 2");
@@ -57,7 +57,7 @@ describe("the picker's actions", () => {
 
   it("links words found in the post to the component", async () => {
     mount();
-    fireEvent.click(colourButton(/^Colour for Manual step 6/));
+    fireEvent.click(colourButton(/^Manual step 6 colour/));
     const panel = screen.getByTestId("picker-linked");
     expect(panel.textContent).toContain("0 of 1");
     fireEvent.change(within(panel).getByRole("textbox", { name: "Find words in the post" }), { target: { value: "screens" } });
@@ -68,7 +68,7 @@ describe("the picker's actions", () => {
 
   it("asks for words in the post with a bar, which Cancel ends", () => {
     mount();
-    fireEvent.click(colourButton(/^Colour for Manual step 6/));
+    fireEvent.click(colourButton(/^Manual step 6 colour/));
     fireEvent.click(screen.getByRole("button", { name: "Select words in the post instead" }));
     expect(screen.queryByTestId("colour-picker")).toBeNull();
     expect(screen.getByTestId("select-words-bar").textContent).toContain("Select words to link to Manual step 6");
@@ -78,11 +78,11 @@ describe("the picker's actions", () => {
 
   it("opens a member in its group state, and Remove from group is one step", async () => {
     mount();
-    fireEvent.click(colourButton(/^Colour for Code 4/));
+    fireEvent.click(colourButton(/^Code 4 colour/));
     expect(screen.getByTestId("picker-in-group").textContent).toBe("Login flow · 3 components");
     act(() => void fireEvent.click(screen.getByRole("button", { name: "Remove from group" })));
     expect(notice()).toContain("Removed Code 4 from Login flow");
     // Uncoloured, its colour button waits for the pointer, as every uncoloured tile's does.
-    await waitFor(() => expect(screen.queryAllByRole("button", { name: /^Colour for Code 4: #/ })).toHaveLength(0));
+    await waitFor(() => expect(screen.queryAllByRole("button", { name: /^Code 4 colour/ })).toHaveLength(0));
   });
 });

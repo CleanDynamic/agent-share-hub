@@ -197,6 +197,7 @@ export function DragHandle({ label, nest, testId = "drag-handle" }: { label: str
       type="button"
       ref={hold}
       data-testid={testId}
+      data-hit=""
       {...attributes}
       {...listeners}
       aria-label={label}

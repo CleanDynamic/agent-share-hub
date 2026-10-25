@@ -74,6 +74,7 @@ import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { useClassificationCard } from "./useClassificationCard";
+import { BuildAnnouncer, noticeWords, useAnnounce } from "./BuildAnnouncer";
 import { AddMenu, SandboxView, type PanelState, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
 import type { PanelName } from "./PanelBoundary";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
@@ -172,7 +173,17 @@ const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
 /** The later of two moments, either of which may be missing. */
 const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
 
+/** The page, with its one announcer around it (CA-26 P4). */
 export function SandboxPage() {
+  return (
+    <BuildAnnouncer>
+      <SandboxPageBody />
+    </BuildAnnouncer>
+  );
+}
+
+function SandboxPageBody() {
+  const announce = useAnnounce();
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
   const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate } = useComposePage({ sessionsActive: sourcesOnScreen });
@@ -180,6 +191,10 @@ export function SandboxPage() {
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
   const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);
   const buildHistory = useBuildHistory({ buildId, nodes, getBridge: () => bridgeHolder.current, peek: () => ({ making: (build as { making?: unknown } | null)?.making, sessions: sessions.rows }) });
+  const notice = buildHistory.notice;
+  useEffect(() => {
+    if (notice) announce(noticeWords(notice));
+  }, [notice, announce]);
   const queryClient = useQueryClient();
   const phone = useIsPhone();
   const fine = useFinePointer();
@@ -621,6 +636,9 @@ export function SandboxPage() {
 
   /** What a screen reader hears when a session moves ("Session 3 moved to 2."). */
   const [sessionSaid, setSessionSaid] = useState("");
+  useEffect(() => {
+    if (sessionSaid) announce(sessionSaid);
+  }, [sessionSaid, announce]);
   /** The session whose prompt box is open. An empty draft has Session 1's open without it. */
   const [promptSession, setPromptSession] = useState<string | null>(null);
   /* CA-17 P2: the build's parts, when it has two or more. */

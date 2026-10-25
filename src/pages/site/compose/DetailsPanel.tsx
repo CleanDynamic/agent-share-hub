@@ -11,6 +11,7 @@
 
    `DetailsHandlers` stays: the handlers are the ones the windows call (CA-18 P2), written here once and typed here. */
 
+import { useAnnounce } from "./BuildAnnouncer";
 import { Copy } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 
@@ -562,6 +563,10 @@ function ValueView({ value, onSelect, clamp, onReadAll }: { value: SectionValue;
 /** Copy: a 26 square control that puts a prose section's text on the clipboard, and says so. */
 function CopyButton({ text: words }: { text: string }) {
   const [said, setSaid] = useState("");
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (said) announce(said);
+  }, [said, announce]);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
   return (
@@ -583,9 +588,6 @@ function CopyButton({ text: words }: { text: string }) {
           })();
         }}
       />
-      <span aria-live="polite" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-        {said}
-      </span>
     </>
   );
 }

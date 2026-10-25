@@ -96,7 +96,7 @@ describe("the List (CA-04 P2)", () => {
 
   it("gives each tile a grip handle at its left, the only drag start", () => {
     list(buildSteps(tree()));
-    expect(screen.getAllByTestId("drag-handle").map((handle) => handle.getAttribute("aria-label"))).toEqual(["Move prompt 1", "Move prompt 2", "Move order-form.tsx", "Move menu.pdf"]);
+    expect(screen.getAllByTestId("drag-handle").map((handle) => handle.getAttribute("aria-label"))).toEqual(["Move Prompt 1", "Move Prompt 2", "Move order-form.tsx", "Move menu.pdf"]);
   });
 
   it("moves without a pointer: Send with the step above, and Make it its own step, then says what happened", async () => {
@@ -109,7 +109,7 @@ describe("the List (CA-04 P2)", () => {
     fireEvent.click(within(code).getAllByRole("button", { name: NEST_LIST_COPY.ownStep }).at(-1) as HTMLElement);
     expect(props.onNest).toHaveBeenLastCalledWith("c1", null, 2);
     await waitFor(() => expect(screen.getByTestId("nest-said").textContent).toBe("order-form.tsx is now its own step."));
-    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBeNull();
     expect(within(screen.getByRole("group", { name: /^Prompt 1/ })).queryByRole("button", { name: NEST_LIST_COPY.sendWithAbove })).toBeNull();
   });
 

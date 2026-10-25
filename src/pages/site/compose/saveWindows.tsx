@@ -4,6 +4,7 @@
    `RecipeWindow` is only the frame; "Changes still saving" is `LeaveWindow` (420) and the clash of Part 4 is in
    `ClashWindow.tsx` (560). Escape and a click outside cancel, as in the other small windows: for the leave window that is Stay. */
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
 
@@ -47,6 +48,7 @@ const focusPrimary = (event: Event) => {
 
 export function RecipeWindow({ open, onClose, title, note, buttons, testId, width, children, small = false }: RecipeWindowProps) {
   const phone = useIsPhone();
+  const focus = useWindowFocus(open, undefined, focusPrimary);
   const noteStyle = small ? { ...NOTE, color: t.text2, margin: 0 } : { ...LABEL, margin: 0 };
   if (phone) {
     return (
@@ -63,7 +65,7 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focusPrimary} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
           <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", minHeight: 0 }}>
             <Dialog.Title style={TITLE}>{title}</Dialog.Title>
             {note ? <p style={noteStyle}>{note}</p> : null}

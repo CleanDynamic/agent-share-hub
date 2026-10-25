@@ -115,7 +115,7 @@ describe("the preview", () => {
       fireEvent.click(within(screen.getByTestId("post-toolbar")).getByRole("button", { name: "Preview" }));
       return within(sheet()).queryByRole("button", { name: /Show more/ });
     };
-    const close = () => fireEvent.click(within(sheet()).getByRole("button", { name: "Close" }));
+    const close = () => fireEvent.click(within(sheet()).getByRole("button", { name: /^Close/ }));
     expect(look()).toBeNull();
     expect(within(sheet()).getByText("Alpha words")).toBeTruthy();
     close();
@@ -232,7 +232,7 @@ describe("the preview sheet", () => {
   it("asks to close from its Close button", () => {
     const onPreviewOpenChange = vi.fn();
     mountPostTab(doc(p("Hello")), { phone: true }, { draft: DRAFT, previewOpen: true, onPreviewOpenChange });
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Preview" })).getByRole("button", { name: "Close" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Preview" })).getByRole("button", { name: /^Close/ }));
     expect(onPreviewOpenChange).toHaveBeenCalledWith(false);
   });
 });

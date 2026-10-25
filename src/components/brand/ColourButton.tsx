@@ -9,7 +9,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { IconButton } from "./IconButton";
 
-export const colourButtonLabel = (what: string, colour: string | null | undefined): string => `Colour for ${what}: ${colour ?? "none"}`;
+export const colourButtonLabel = (what: string, colour: string | null | undefined): string => `${what} colour`;
 
 /** The 12px circle: the colour, or a dashed ring when there is none. */
 export function ColourDot({ colour, size = 12, style }: { colour: string | null | undefined; size?: number; style?: CSSProperties }) {
@@ -38,7 +38,7 @@ export function ColourButton({ what, colour, onPick, size = 22 }: { what: string
       size={size}
       boxed={false}
       label={colourButtonLabel(what, colour)}
-      title={colourButtonLabel(what, colour)}
+      title={`Colour for ${what}: ${colour ?? "none"}`}
       data-testid="colour-button"
       drawn={<ColourDot colour={colour} />}
       onClick={(event: MouseEvent<HTMLButtonElement>) => {

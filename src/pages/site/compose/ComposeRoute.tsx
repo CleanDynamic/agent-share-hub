@@ -24,6 +24,7 @@
 
    SIGNED OUT goes to /login, as the old screens do. */
 
+import { SkipToBuild } from "./buildFocus";
 import { lazy, Suspense, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, useLocation, useParams } from "react-router-dom";
@@ -76,7 +77,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   }
 
   return (
-    <SiteFrame wide={SANDBOX_COMPOSER_ENABLED}>
+    <SiteFrame wide={SANDBOX_COMPOSER_ENABLED} skipLink={SANDBOX_COMPOSER_ENABLED ? <SkipToBuild /> : undefined}>
       {/* No RouteBoundary: it is keyed by pathname, and the first change replaces
           /compose/new with /compose/{id}, which would remount the page under the
           creator's cursor. */}

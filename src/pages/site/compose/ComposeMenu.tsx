@@ -5,11 +5,15 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { forwardRef, type ComponentPropsWithoutRef, type ElementRef } from "react";
 
+import { useMenuFocus } from "@/lib/focus/windowFocus";
+
 import { useMenuCollisionPadding } from "./composeChrome";
 
-export const MenuContent = forwardRef<ElementRef<typeof Menu.Content>, ComponentPropsWithoutRef<typeof Menu.Content>>(function MenuContent(props, ref) {
+export const MenuContent = forwardRef<ElementRef<typeof Menu.Content>, ComponentPropsWithoutRef<typeof Menu.Content>>(function MenuContent({ onCloseAutoFocus, ...props }, ref) {
   const collisionPadding = useMenuCollisionPadding();
-  return <Menu.Content ref={ref} collisionPadding={collisionPadding} {...props} />;
+  /* CA-26 P2: a menu whose item removed its own button leaves focus nowhere; it goes to the item now in that place instead. */
+  const closing = useMenuFocus(onCloseAutoFocus);
+  return <Menu.Content ref={ref} collisionPadding={collisionPadding} onCloseAutoFocus={closing} {...props} />;
 });
 
 export const MenuSubContent = forwardRef<ElementRef<typeof Menu.SubContent>, ComponentPropsWithoutRef<typeof Menu.SubContent>>(function MenuSubContent(props, ref) {

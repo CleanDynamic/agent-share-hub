@@ -141,7 +141,7 @@ describe("the modal frame (CA-15 P1)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Close/ }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(onOpenChange).toHaveBeenCalledTimes(2);
   });

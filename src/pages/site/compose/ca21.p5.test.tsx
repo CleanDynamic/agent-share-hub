@@ -81,12 +81,12 @@ describe("dragging by the keys", () => {
     expect(tile(first).getAttribute("data-skel-container")).toBe(keys()[1]);
   });
 
-  it("tells a screen reader what the key does, and the line it says is polite", async () => {
+  it("tells a screen reader what the key does, and the line is said by the page's one announcer, not by a region of its own", async () => {
     stubLayout();
     mountList();
     const handle = screen.getAllByTestId("drag-handle")[0];
     expect(document.body.textContent).toContain("Press Space to pick up the tile");
     await pickUp(handle);
-    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBeNull();
   });
 });

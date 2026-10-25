@@ -29,6 +29,7 @@
    text link under them; Host platform a picker field ("Select a platform"); Available tools a small "Select tools" button
    with the chosen tools as tags; Memory one field. Details keeps its own look. */
 
+import { useAnnounce } from "./BuildAnnouncer";
 import { X } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
 
@@ -159,6 +160,10 @@ export const memoryRows = (text: string): number => Math.min(3, Math.max(1, text
 export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainModel, dialog = false, bare = false }: Omit<AgentSetupFieldsProps, "between">): AgentSetupParts {
   const [runsChosen, setRunsChosen] = useState(!dialog);
   const [cleared, setCleared] = useState<string | null>(null);
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (cleared) announce(cleared);
+  }, [cleared, announce]);
   const [memory, setMemory] = useState(value.memory ?? "");
   const uid = useId();
   const tool = harnessTool(value.harness);
@@ -372,7 +377,7 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
           {AGENT_SETUP_COPY.addModel}
         </TextLink>
       ) : null}
-      <div aria-live="polite" data-testid="agent-model-cleared">
+      <div data-testid="agent-model-cleared">
         {cleared ? <Hint>{cleared}</Hint> : null}
       </div>
     </Row>
@@ -429,7 +434,7 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
               </TextButton>
             </span>
           ) : null}
-          <div aria-live="polite" data-testid="agent-model-cleared">
+          <div data-testid="agent-model-cleared">
             {cleared ? <span style={text(12, 400, t.text2)}>{cleared}</span> : null}
           </div>
         </div>

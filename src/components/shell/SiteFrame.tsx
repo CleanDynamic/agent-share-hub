@@ -85,6 +85,8 @@ export interface SiteFrameViewProps {
   fit?: PageFit;
   /** CA-18 P4: no 1428 cap, no side padding on `<main>`: the page insets itself by 34. For the composer only. */
   wide?: boolean;
+  /** CA-26 P1: replaces "Skip to content" as the first stop (the composer's "Skip to build"). */
+  skipLink?: ReactNode;
 }
 
 const SKIP_BASE: CSSProperties = {
@@ -151,6 +153,7 @@ export function SiteFrameView({
   dock,
   children,
   wide = false,
+  skipLink,
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
   const win = useWindowSize();
@@ -177,7 +180,7 @@ export function SiteFrameView({
   const refinedRoot: CSSProperties = { ...root, display: "flex", flexDirection: "column", background: t.frame };
   return (
     <div data-testid="site-frame" data-variant="site" data-viewport={phone ? "mobile" : "desktop"} style={refinedRoot}>
-      <SkipLink phone={phone} />
+      {skipLink ?? <SkipLink phone={phone} />}
       <div
         data-slot={phone ? "mobile-header" : "header"}
         style={{ position: "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
@@ -221,10 +224,12 @@ export interface SiteFrameProps {
   children?: ReactNode;
   /** CA-18 P4: see `SiteFrameViewProps.wide`. */
   wide?: boolean;
+  /** CA-26 P1: see `SiteFrameViewProps.skipLink`. */
+  skipLink?: ReactNode;
 }
 
 /** The container: live chrome around the page. UI-P17 to UI-P19 fill the slots. */
-export function SiteFrame({ variant = "site", children, wide }: SiteFrameProps) {
+export function SiteFrame({ variant = "site", children, wide, skipLink }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
       <ConnectorDialogProvider>
@@ -236,6 +241,7 @@ export function SiteFrame({ variant = "site", children, wide }: SiteFrameProps) 
         mobileHeader={<MobileHeader />}
         dock={<Dock />}
         wide={wide}
+        skipLink={skipLink}
       >
         {children}
       </SiteFrameView>

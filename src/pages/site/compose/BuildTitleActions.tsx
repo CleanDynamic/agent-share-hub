@@ -41,6 +41,7 @@ export function TitleIcon({ glyph, label, phone, disabled, style, ...rest }: Tit
     <button
       type="button"
       aria-label={label}
+      data-hit=""
       disabled={disabled}
       {...rest}
       {...handlers}

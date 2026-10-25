@@ -5,6 +5,7 @@
    Its foot reads "Click to edit". On a phone the same content sits in the "Details" sheet with "Tap to edit".
    Where Details fits beside the build none of this is drawn: there is no foot and a click on the content does nothing. */
 
+import { captureOpener, returnFocus, type Opener } from "@/lib/focus/windowFocus";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from "react";
 
@@ -51,7 +52,7 @@ export interface DetailsOverlayProps {
 export function DetailsOverlay({ selectedKey, below, onEdit, children }: DetailsOverlayProps) {
   const [open, setOpen] = useState(false);
   const [top, setTop] = useState(OVERLAY_EDGE);
-  const returnTo = useRef<HTMLElement | null>(null);
+  const returnTo = useRef<Opener>({ el: null, place: null });
   const panel = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -59,8 +60,7 @@ export function DetailsOverlay({ selectedKey, below, onEdit, children }: Details
       setOpen(false);
       return;
     }
-    const active = document.activeElement;
-    returnTo.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    returnTo.current = captureOpener();
     setOpen(true);
   }, [selectedKey]);
 
@@ -84,7 +84,7 @@ export function DetailsOverlay({ selectedKey, below, onEdit, children }: Details
 
   function close() {
     setOpen(false);
-    returnTo.current?.focus?.({ preventScroll: true });
+    returnFocus(returnTo.current, panel.current);
   }
 
   if (!open || !selectedKey) return null;

@@ -26,6 +26,7 @@ import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
 import { listPartsOf } from "@/pages/site/compose/partsModel";
 import { ReferenceNotice } from "@/pages/site/compose/referencePieces";
 import { SelectionBar } from "@/pages/site/compose/removePieces";
+import { BuildHistoryContext, type BuildHistoryApi } from "@/pages/site/compose/useBuildHistory";
 import { SandboxView, type SandboxLens } from "@/pages/site/compose/SandboxView";
 import { SourcesPanel } from "@/pages/site/compose/SourcesPanel";
 import { BASE } from "@/lib/theme/motion";
@@ -245,6 +246,15 @@ export default function MotionDemo({ fit = "board", state = "populated" }: Desig
     ["lens-list", () => document.querySelector<HTMLElement>('[data-testid="sandbox-tab-list"]')?.click()],
   ];
 
+  /* CA-26 P5: `&history=1` gives the title row its Undo and Redo, as the composer has them, for the touch-target measures. Off by default: the boards do not show them. */
+  const history = useMemo<BuildHistoryApi | null>(
+    () =>
+      params.get("history") === "1"
+        ? ({ canUndo: past.length > 0, canRedo: future.length > 0, undoSentence: past.at(-1)?.sentence ?? null, redoSentence: future.at(-1)?.sentence ?? null, undo: async () => undo(), redo: async () => redo() } as unknown as BuildHistoryApi)
+        : null,
+    [params, past, future, undo, redo],
+  );
+
   return (
     <>
       {params.get("bar") === "0" ? null : (
@@ -256,6 +266,7 @@ export default function MotionDemo({ fit = "board", state = "populated" }: Desig
           ))}
         </div>
       )}
+      <BuildHistoryContext.Provider value={history}>
       <SandboxView
         fit={fit}
         {...sandboxViewProps("fox", state)}
@@ -308,6 +319,7 @@ export default function MotionDemo({ fit = "board", state = "populated" }: Desig
         selection={selectedId ? <DetailsPanel {...shapeDetailsProps("one-sitting", selectedId, source)} phone={phone} onSelect={setSelectedId} /> : undefined}
         selectionBar={heldBar.value ? <SelectionBar {...heldBar.value} leaving={heldBar.leaving} /> : null}
       />
+      </BuildHistoryContext.Provider>
       <ReferenceNotice notice={notice} onUndo={undo} onDone={() => setNotice(null)} phone={phone} />
     </>
   );

@@ -15,6 +15,7 @@
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from "react";
 import { useParams } from "react-router-dom";
 import { SiteFrameView } from "@/components/shell/SiteFrame";
+import { SkipToBuild } from "@/pages/site/compose/buildFocus";
 import { useDesignState, useDesignTheme, useDesignViewport, type DesignState, type DesignViewport } from "@/dev/useDesignTheme";
 
 import type { Crumb } from "@/components/shell/breadcrumbTrail";
@@ -146,7 +147,7 @@ export default function KitPages() {
         {UNFRAMED.has(page) || isBare(page, window.location.search) ? (
           <View viewport={viewport} fit="board" state={state} />
         ) : (
-          <SiteFrameView viewport={viewport} fit="board" wide={page === "sandbox"} {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
+          <SiteFrameView viewport={viewport} fit="board" wide={page === "sandbox"} skipLink={page === "sandbox" ? <SkipToBuild /> : undefined} {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
             <View viewport={viewport} fit="board" state={state} />
           </SiteFrameView>
         )}

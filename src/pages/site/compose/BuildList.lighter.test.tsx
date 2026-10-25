@@ -226,7 +226,7 @@ describe("what a tile draws only when it is near (CA-15 P10)", () => {
     show(twoPrompts(), { onNest: vi.fn(() => Promise.resolve(true)), canNest: () => true } as never);
     const tile = screen.getByRole("group", { name: /^Prompt 2/ });
     const handle = within(tile).getByTestId("drag-handle");
-    expect(handle.getAttribute("aria-label")).toBe("Move prompt 2");
+    expect(handle.getAttribute("aria-label")).toBe("Move Prompt 2");
     expect(handle.style.opacity).toBe("0");
     near(tile, "pointerenter");
     expect(handle.style.opacity).toBe("1");

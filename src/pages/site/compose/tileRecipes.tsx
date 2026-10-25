@@ -81,6 +81,7 @@ export function TileOptions({ label, phone = false, style, ...rest }: TileOption
     <button
       type="button"
       aria-label={label}
+      data-hit=""
       {...rest}
       {...handlers}
       style={{

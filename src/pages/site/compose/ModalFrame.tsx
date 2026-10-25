@@ -23,6 +23,7 @@ import { Children, useId, type ReactNode } from "react";
 import { Glyph } from "@/components/brand/Glyph";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
@@ -101,6 +102,7 @@ export interface ModalShellProps {
 /** The window. `children` is the form (`ModalForm`); it is mounted only while the window is open, so each opening starts clean. */
 export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width = MODAL_WIDTH.standard, testId, children }: ModalShellProps) {
   const phone = useIsPhone();
+  const focus = useWindowFocus(open);
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={onOpenChange} title={title}>
@@ -120,7 +122,7 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
-        <Dialog.Content data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...frameStyle(width) }}>
+        <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...frameStyle(width) }}>
           <div data-testid="modal-header" style={HEADER}>
             <div style={HEADER_TEXT}>
               {eyebrow ? (
@@ -134,7 +136,7 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
               </Dialog.Description>
             </div>
             <div style={HEADER_ICONS}>
-              <IconSquare glyph="x" label={MODAL_COPY.close} onClick={() => onOpenChange(false)} />
+              <IconSquare glyph="x" label={`${MODAL_COPY.close} ${title}`} onClick={() => onOpenChange(false)} />
             </div>
           </div>
           {open ? children : null}
@@ -203,6 +205,7 @@ export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }:
     <button
       type="button"
       aria-label={label}
+      data-hit=""
       onClick={onClick}
       {...handlers}
       style={{

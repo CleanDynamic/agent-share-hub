@@ -56,11 +56,11 @@ describe("the List", () => {
     const onColour = vi.fn();
     const sessionOps = { onTitle: vi.fn(), onMove: vi.fn(), onRemove: vi.fn() };
     inRouter(createElement(BuildList, { ...shapeListProps("one-sitting", source), onColour, sessionOps }));
-    expect(screen.getByRole("button", { name: `Colour for Prompt 2: ${LINKS_COLOURS.prompt}` })).toBeTruthy();
-    expect(screen.getByRole("button", { name: `Colour for Session 2: ${LINKS_COLOURS.session}` })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Colour for Prompt 1: none" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Colour for Session 1: none" })).toBeNull();
-    const code = screen.getByRole("button", { name: `Colour for Code order-form.tsx: ${LINKS_COLOURS.code}` });
+    expect(screen.getByRole("button", { name: `Prompt 2 colour` })).toBeTruthy();
+    expect(screen.getByRole("button", { name: `Session 2 colour` })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Prompt 1 colour" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Session 1 colour" })).toBeNull();
+    const code = screen.getByRole("button", { name: `Code order-form.tsx colour` });
     fireEvent.click(code);
     expect(onColour).toHaveBeenCalledWith("node:o-c1", code, "Code order-form.tsx", LINKS_COLOURS.code);
 
@@ -79,7 +79,7 @@ describe("the List", () => {
   it("draws a set colour as a filled circle, and no circle at all for none", () => {
     inRouter(createElement(BuildList, { ...shapeListProps("one-sitting", source), onColour: vi.fn() }));
     expect(document.querySelectorAll('[data-colour-dot="none"]')).toHaveLength(0);
-    const set = screen.getByRole("button", { name: `Colour for Prompt 2: ${LINKS_COLOURS.prompt}` }).querySelector("[data-colour-dot]") as HTMLElement;
+    const set = screen.getByRole("button", { name: `Prompt 2 colour` }).querySelector("[data-colour-dot]") as HTMLElement;
     expect(set.style.background).toBe("rgb(201, 168, 107)");
   });
 
@@ -113,7 +113,7 @@ it("Details puts an 8px dot before its line, and has no colour button (CA-18: th
   render(createElement(DetailsPanel, { ...shapeDetailsProps("one-sitting", "o-p2", source), colour: { what: "Prompt 2", colour: LINKS_COLOURS.prompt, onPick } }));
   const line = screen.getByTestId("details-line");
   expect((line.querySelector("[data-colour-dot]") as HTMLElement).style.width).toBe("8px");
-  expect(screen.queryByRole("button", { name: /^Colour for/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: / colour$/ })).toBeNull();
   expect(onPick).not.toHaveBeenCalled();
 });
 

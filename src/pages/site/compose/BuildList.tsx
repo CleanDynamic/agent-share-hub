@@ -54,6 +54,8 @@ import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
 import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { GlyphButton } from "./ModalFrame";
+import { useAnnounce } from "./BuildAnnouncer";
+import { useItemRing, useRovingList } from "./buildFocus";
 import { CodeLines } from "@/components/code/CodeLines";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
@@ -624,8 +626,17 @@ function CopyTogetherRow({ step, phone }: { step: Step; phone: boolean }) {
 /** A tile's name in the List's lines: its file name, else "prompt 2", else its kind. */
 const tileName = (step: Step) => sentWithLabel(step);
 
+/** CA-26: the name a tile's grip goes by: "Prompt 2", "Agent 5", the file's own name, or for a tile sent with another, whose it is. */
+const gripName = (step: Step) => {
+  const label = sentWithLabel(step);
+  if ((step.kind === "code" || step.kind === "file") && step.filename) return label;
+  if (!step.number && step.inside) return `${REF_KIND[step.kind] ?? "Prompt"} sent with ${step.inside.label}`;
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
 /** A tile inside another: its eyebrow says what it is sent with; it has no number. It can hold more tiles. */
 function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
+  const focus = useItemRing();
   const nest = useNestTile(step.id);
   const hidden = useContext(ListRefsContext).hidden === step.id;
   const cardRef = useCardRef(step.id, nest.setRef);
@@ -646,6 +657,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       {...{ [SLIDE_ATTR]: `nested:${step.id}` }}
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
+      {...focus.bind}
       onClick={(event) => {
         event.stopPropagation();
         props.onSelect(step.id);
@@ -664,6 +676,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         flexDirection: "column",
         gap: 6,
         outline: "none",
+        ...focus.ring,
         cursor: "pointer",
         ...(selected ? { background: t.selectedFill, borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
         ...colourEdge(step.colour),
@@ -672,7 +685,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
+        <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
         <Quiet style={{ ...ellipsis, minWidth: 0, flexGrow: 1 }}>{NEST_LIST_COPY.sentWith(step.inside?.label ?? "the step above")}</Quiet>
         <CardColour step={step} phone={props.phone} />
       </div>
@@ -1010,7 +1023,7 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
 function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode }) {
   return (
     <div style={TILE_HEAD}>
-      <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
+      <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
       <NumberBadge>{step.number}</NumberBadge>
       <div style={TILE_TEXT}>
         <span data-testid={typeTestId} style={TILE_EYEBROW}>
@@ -1090,6 +1103,7 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
 /* ── a prompt's card ── */
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const focus = useItemRing();
   const { phone, selectedId } = props;
   const can = useCanMove(step.id, index, last);
   const picked = usePicked(step.id);
@@ -1139,6 +1153,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       data-kind="prompt"
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
+      {...focus.bind}
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={phone ? undefined : open}
       onKeyDown={onKeyDown}
@@ -1163,7 +1178,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...tileCard(selected || over), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1403,6 +1418,7 @@ function TeamAgents({ team }: { team: Step }) {
 }
 
 function ContainerCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const focus = useItemRing();
   const isTeam = step.kind === "team";
   const noun = isTeam ? "Team" : "Agent";
   const picked = usePicked(step.id);
@@ -1439,9 +1455,10 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       data-testid="step-card"
       data-kind={step.kind}
       tabIndex={0}
+      {...focus.bind}
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
-      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1563,6 +1580,7 @@ function NestFoot({ step, phone }: { step: Step; phone: boolean }) {
  * manual step, a tool, a file. The body is the shared one (`tileBodies`), so the maker sees what readers see.
  */
 function PlainCard({ step, index, last, props, noun, body, after, link, typeLine }: { step: Step; index: number; last: boolean; props: BuildListProps; noun: string; body: (indent: number) => ReactNode; after?: ReactNode; link?: ReactNode; typeLine?: ReactNode }) {
+  const focus = useItemRing();
   const { phone } = props;
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
@@ -1579,6 +1597,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
       data-tile-id={step.id}
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
+      {...focus.bind}
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
@@ -1587,7 +1606,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1667,6 +1686,7 @@ function FileCard({ step, index, last, props }: { step: Step; index: number; las
 
 /** CA-02 P7: lines of code, as a module like a manual step's: its type line (language and length), then its first 3 lines in a mono well. */
 function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const focus = useItemRing();
   const { phone } = props;
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
@@ -1684,6 +1704,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       data-kind="code"
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
+      {...focus.bind}
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
@@ -1692,7 +1713,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1731,6 +1752,7 @@ export const CODE_TILE_LINES = 3;
 
 /** CA-03 P5: how the build checked its work: its pass criteria, and one status line with a 7px dot. */
 function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const focus = useItemRing();
   const { phone } = props;
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
@@ -1749,6 +1771,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
       data-kind="check"
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
+      {...focus.bind}
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
@@ -1757,7 +1780,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
         step={step}
@@ -1815,12 +1838,14 @@ function PendingAddCard({ kind }: { kind: PendingAdd }) {
 }
 
 function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { result: ListResult; selected: boolean; ringed?: boolean; onSelect: (id: string) => void; onEdit?: (id: string) => void }) {
+  const focus = useItemRing();
   return (
     <div
       data-testid="result-card"
       data-tile-id={result.id}
       role="button"
       tabIndex={0}
+      {...focus.bind}
       aria-pressed={selected}
       onClick={() => onSelect(result.id)}
       onDoubleClick={onEdit ? () => onEdit(result.id) : undefined}
@@ -1830,7 +1855,7 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
           onSelect(result.id);
         }
       }}
-      style={{ ...tileCard(selected), flexDirection: "row", alignItems: "flex-start", gap: 12, outline: "none", cursor: "pointer", ...ring(ringed) }}
+      style={{ ...tileCard(selected), flexDirection: "row", alignItems: "flex-start", gap: 12, outline: "none", ...focus.ring, cursor: "pointer", ...ring(ringed) }}
     >
       <span
         aria-hidden="true"
@@ -1894,6 +1919,10 @@ function AddPrompt({
   const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cleared, setCleared] = useState<string | null>(null);
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (cleared) announce(cleared);
+  }, [cleared, announce]);
   const field = useRef<HTMLTextAreaElement | null>(null);
   const setField = useCallback(
     (element: HTMLTextAreaElement | null) => {
@@ -2016,7 +2045,7 @@ function AddPrompt({
           </Button>
         </div>
       ) : null}
-      <div aria-live="polite" data-testid="model-cleared">
+      <div data-testid="model-cleared">
         {cleared ? <Quiet>{cleared}</Quiet> : null}
       </div>
     </div>
@@ -2062,6 +2091,10 @@ export function BuildList(incoming: BuildListProps) {
   const partsFolded = useMemo(() => new Set((base.parts?.parts ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)), [base.parts]);
   const folding = useFoldMotion({ sessions: base.collapsed, parts: partsFolded, getRoot: useCallback(() => rootHolder.current?.current ?? null, []) });
   const [said, setSaid] = useState("");
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (said) announce(said);
+  }, [said, announce]);
   /* CA-21 P3: while something is held, or its write is on its way, the page is drawn from the live order. */
   const baseModel = useMemo(
     () => moveModelOf({ steps: base.steps, heads: base.dividers, empties: base.emptySessions, parts: base.parts?.parts.map((part) => ({ key: part.view.key, sessions: part.sessions })) }),
@@ -2341,6 +2374,7 @@ export function BuildList(incoming: BuildListProps) {
       </div>
     );
   };
+  useRovingList(sorting.rootRef, props.onSelect);
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
@@ -2364,11 +2398,11 @@ export function BuildList(incoming: BuildListProps) {
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
       {nestOn || said ? (
-        <div aria-live="polite" data-testid="nest-said">
+        <div data-testid="nest-said">
           {said ? <Quiet>{said}</Quiet> : null}
         </div>
       ) : null}
-      <div aria-live="polite" data-testid="sessions-said" style={props.said ? undefined : { display: "none" }}>
+      <div data-testid="sessions-said" style={props.said ? undefined : { display: "none" }}>
         {props.said ? <Quiet>{props.said}</Quiet> : null}
       </div>
       {/* CA-14 P5: with session heads the prompt box stands in its session; an old draft with none keeps it at the foot, as it was. */}
