@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en" data-theme="dusk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>buildgallery Library · vision reference</title>
+<style>
+@font-face{font-family:"Geist";src:url("../../fonts/Geist-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+@font-face{font-family:"Geist Mono";src:url("../../fonts/GeistMono-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}a:hover{color:#A0A0A6}
+.l-cols{display:grid;grid-template-columns:208px minmax(0,1fr) 340px;column-gap:48px}
+.nav-links{display:flex}
+@media (max-width:1200px){.l-cols{grid-template-columns:208px minmax(0,1fr)}.l-detail{grid-column:1 / -1}}
+@media (max-width:800px){.l-cols{grid-template-columns:minmax(0,1fr);row-gap:40px}.nav-links{display:none}}
+
+</style>
+</head>
+<body>
+
+
+
+<div style="min-height: 100vh; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  
+
+  <header style="max-width: 1428px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 20px; box-sizing: border-box">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="3" y="5" width="12" height="11" rx="2" stroke="#EDEDEF" stroke-width="1.4"></rect><rect x="6" y="8" width="6" height="5" rx="1" fill="#EDEDEF"></rect><rect x="7" y="1.5" width="4" height="2" rx="1" fill="#F5CB4C"></rect></svg>
+      buildgallery
+    </a>
+    <span style="width: 1px; height: 18px; background: #34343A"></span>
+    <nav class="nav-links" aria-label="Main" style="gap: 4px; align-items: stretch; height: 56px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Home</a>
+      <a href="Builds.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Builds</a>
+      <a href="OpenWork.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">OpenBuilds</a>
+      <a href="Library.dc.html" aria-current="page" style="position: relative; display: flex; align-items: center; padding: 0 10px; font-weight: 500; color: #EDEDEF">Library<span style="position: absolute; left: 10px; right: 10px; bottom: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></a>
+      <a href="Drafts.dc.html" style="display: flex; align-items: center; gap: 6px; padding: 0 10px; color: #A0A0A6">Drafts <span style="font-size: 11.5px; color: #8E8E94">28</span></a>
+    </nav>
+    <div style="flex: 1"></div>
+    <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">New build</a>
+    <a href="#" aria-label="Your profile" style="width: 28px; height: 28px; border-radius: 14px; background: #27272B; border: 1px solid #323237; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; color: #A0A0A6">ST</a>
+  </header><main style="width: calc(100% - 12px); max-width: 1428px; margin: 0 auto 6px; background: #19191B; border: 1px solid #232326; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); box-sizing: border-box; padding: 40px clamp(16px, 5vw, 76px) 0">
+
+    
+
+    <div class="l-cols" style="padding-bottom: 64px">
+
+      <!-- ═════════ LEFT · KINDS AND COLLECTIONS ═════════ -->
+      <aside aria-label="Library sections" style="min-width: 0">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">Library</h1>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #8E8E94">64 saved · 5 collections</p>
+
+        <nav aria-label="Kinds" style="margin-top: 28px">
+          
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; color: #A0A0A6"><span>All saved</span><span style="font-size: 12px; color: #8E8E94">64</span></a>
+          
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; color: #A0A0A6"><span>Builds</span><span style="font-size: 12px; color: #8E8E94">18</span></a>
+          
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; color: #A0A0A6"><span>Parts</span><span style="font-size: 12px; color: #8E8E94">4</span></a>
+          
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; color: #A0A0A6"><span>Sessions</span><span style="font-size: 12px; color: #8E8E94">9</span></a>
+          
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; background: #222226; color: #EDEDEF; font-weight: 500"><span>Steps</span><span style="font-size: 12px; color: #8E8E94">27</span></a>
+          
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; color: #A0A0A6"><span>Requests</span><span style="font-size: 12px; color: #8E8E94">3</span></a>
+          
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; color: #A0A0A6"><span>Filter sets</span><span style="font-size: 12px; color: #8E8E94">3</span></a>
+          
+        </nav>
+        
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 32px; padding-bottom: 8px; border-bottom: 1px solid #26262A">
+          <span style="font-size: 12.5px; font-weight: 500">Collections</span>
+          <button style="background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">New</button>
+        </div>
+        
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Sales prompts</span><span style="font-size: 11.5px; color: #8E8E94">Public</span></span>
+            <span style="font-size: 12px; color: #8E8E94">9</span>
+          </a>
+        
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Agents to try</span><span style="font-size: 11.5px; color: #8E8E94">Private</span></span>
+            <span style="font-size: 12px; color: #8E8E94">6</span>
+          </a>
+        
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Call tooling kit</span><span style="font-size: 11.5px; color: #8E8E94">Private</span></span>
+            <span style="font-size: 12px; color: #8E8E94">5</span>
+          </a>
+        
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Best of Opus 5.5</span><span style="font-size: 11.5px; color: #8E8E94">Public · @kit</span></span>
+            <span style="font-size: 12px; color: #8E8E94">12</span>
+          </a>
+        
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Research briefs</span><span style="font-size: 11.5px; color: #8E8E94">Filter set</span></span>
+            <span style="font-size: 12px; color: #8E8E94">21</span>
+          </a>
+        
+        <p style="margin: 10px 0 0; font-size: 11.5px; color: #8E8E94">Ordered by your last use</p>
+      </aside>
+
+      <!-- ═════════ MAIN · CHANGES (leads) + SAVED ═════════ -->
+      <section aria-label="Saved" style="min-width: 0">
+
+        <!-- changes -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+          <div>
+            <div style="font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">6 changes</div>
+            <p style="margin: 4px 0 0; color: #A0A0A6">Since your last visit · 3 edited · <span style="color: #E5807F">1 removed</span> · <span style="color: #86D193">2 reproduced on Opus 5.5</span></p>
+          </div>
+          <a href="#" aria-label="Open all changes" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+        </div>
+        <div style="margin-top: 16px">
+          
+            <div style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A">
+              <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #27272B; color: #F5CB4C">EDITED</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="font-weight: 500">Summary on one prompt</span><span style="color: #8E8E94"> · 1 line changed</span></span>
+              <span style="font-size: 12px; color: #8E8E94">2d</span>
+            </div>
+          
+            <div style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A">
+              <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #27272B; color: #E5807F">REMOVED</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="font-weight: 500">Tone checker agent</span><span style="color: #8E8E94"> · build unpublished, your snapshot kept</span></span>
+              <span style="font-size: 12px; color: #8E8E94">3d</span>
+            </div>
+          
+            <div style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A">
+              <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #27272B; color: #86D193">RUN</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="font-weight: 500">Account research brief</span><span style="color: #8E8E94"> · worked on Opus 5.5 · @dax</span></span>
+              <span style="font-size: 12px; color: #8E8E94">5h</span>
+            </div>
+          
+            <div style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A">
+              <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #27272B; color: #EDEDEF">ANSWER</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="font-weight: 500">Step 4 · Paywalled sources</span><span style="color: #8E8E94"> · @kit answered your saved request</span></span>
+              <span style="font-size: 12px; color: #8E8E94">1d</span>
+            </div>
+          
+        </div>
+        
+
+        <!-- saved items -->
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 48px; border-bottom: 1px solid #26262A">
+          <div role="tablist" aria-label="State" style="display: flex; gap: 20px">
+            <button role="tab" aria-selected="true" style="height: 36px; background: none; border: none; border-bottom: 1px solid #EDEDEF; margin-bottom: -1px; padding: 0; color: #EDEDEF; font: inherit; font-weight: 500; cursor: pointer">Steps</button>
+            <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Changed</button>
+            <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Removed</button>
+          </div>
+          <div style="display: flex; gap: 6px; margin-bottom: 4px">
+            <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Filters</span> 2</button>
+            <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Sort</span> Last used</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px">
+          <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Step type&nbsp;</span>Prompt, Agent</span>
+          <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Field&nbsp;</span>Sales</span>
+          <span style="font-size: 12px; color: #8E8E94; align-self: center; margin-left: 6px">Same filters as Builds</span>
+        </div>
+
+        <table style="width: 100%; margin-top: 16px; border-collapse: collapse; font-size: 12.5px">
+          <thead>
+            <tr style="text-align: left; font-size: 11.5px; color: #8E8E94">
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Step</th>
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Type</th>
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">State</th>
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A; text-align: right">Used in</th>
+              <th scope="col" aria-sort="descending" style="font-weight: 400; padding: 0 0 10px; border-bottom: 1px solid #26262A; text-align: right; color: #EDEDEF">Last used ↓</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+              <tr style="border-bottom: 1px solid #26262A; background: #222226">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">Summary on one prompt</span><span style="font-size: 11.5px; color: #8E8E94">Step 7 · Call notes · @maya</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">Prompt</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="color: #F5CB4C">Edited</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">4</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">today</td>
+              </tr>
+            
+              <tr style="border-bottom: 1px solid #26262A">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">Clean-up agent</span><span style="font-size: 11.5px; color: #8E8E94">Session 2 · Call notes · @maya</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">Agent</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="color: #A0A0A6">Same</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">3</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">yesterday</td>
+              </tr>
+            
+              <tr style="border-bottom: 1px solid #26262A">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">Search plan</span><span style="font-size: 11.5px; color: #8E8E94">Step 2 · Research brief agent · @mira</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">Prompt</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="color: #A0A0A6">Same</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">7</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">3d ago</td>
+              </tr>
+            
+              <tr style="border-bottom: 1px solid #26262A">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">Tone checker agent</span><span style="font-size: 11.5px; color: #8E8E94">Step 3 · Cold email personaliser · @jay</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">Agent</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="color: #E5807F">Removed</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">2</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">1w ago</td>
+              </tr>
+            
+              <tr style="border-bottom: 1px solid #26262A">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">Label list for triage</span><span style="font-size: 11.5px; color: #8E8E94">Step 1 · Inbox triage · @kit</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">Prompt</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="color: #A0A0A6">Same</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">19</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">1w ago</td>
+              </tr>
+            
+              <tr style="border-bottom: 1px solid #26262A">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">Lead score rubric</span><span style="font-size: 11.5px; color: #8E8E94">Step 4 · Lead scoring · @luke</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">Prompt</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="color: #A0A0A6">Same</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">5</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">2w ago</td>
+              </tr>
+            
+              <tr style="border-bottom: 1px solid #26262A">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">Objection classifier</span><span style="font-size: 11.5px; color: #8E8E94">Step 2 · Objection coach · @ava</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">Prompt</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="color: #A0A0A6; filter: brightness(.8)">Stale</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">1</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">1mo ago</td>
+              </tr>
+            
+          </tbody>
+        </table>
+        
+      </section>
+
+      <!-- ═════════ RIGHT · SELECTED ITEM ═════════ -->
+      <aside class="l-detail" aria-label="Selected step" style="min-width: 0">
+        <div style="padding: 16px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #27272B; color: #A0A0A6">PROMPT</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 12px; color: #F5CB4C">Edited 2d ago</span>
+          </div>
+          <div style="margin-top: 10px; font-size: 14px; font-weight: 500; line-height: 1.3">Summary on one prompt</div>
+          <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">Step 7 · Call notes that write themselves · @maya</div>
+
+          <div role="group" aria-label="Version" style="display: flex; gap: 2px; margin-top: 16px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+            <button aria-pressed="true" style="flex: 1; height: 26px; background: #27272B; border: 1px solid #323237; border-radius: 4px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">Your saved version</button>
+            <button style="flex: 1; height: 26px; background: none; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Current version</button>
+          </div>
+
+          <div style="margin-top: 12px; padding: 12px; background: #141416; border: 1px solid #27272B; border-radius: 6px; font-family: 'Geist Mono', monospace; font-size: 11.5px; line-height: 18px; color: #A0A0A6; white-space: pre-wrap">Summarise the cleaned transcript in five sections: decisions, owners, dates, risks, next call.
+<span style="color: #E5807F; text-decoration: line-through">Keep it under 200 words.</span>
+<span style="color: #86D193">Keep each section under 40 words. Quote the customer once.</span></div>
+          <p style="margin: 8px 0 0; font-size: 11.5px; color: #8E8E94">1 line changed since you saved it on 12 Oct</p>
+
+          <div style="margin-top: 16px">
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">Model</span><span>Opus 5.5</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">Source build</span><span style="display: inline-flex; align-items: center; gap: 8px">6 reproduced<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7)"></span></span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">Used in</span><span>4 builds · 1 yours</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">In collections</span><span>Sales prompts</span></div>
+          </div>
+
+          <label style="display: block; margin-top: 12px; font-size: 12px; color: #8E8E94">Your note
+            <textarea rows="2" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px 10px; background: #141416; border: 1px solid #27272B; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; resize: vertical">Good section split. Try with the call notes build.</textarea>
+          </label>
+
+          <div style="display: flex; gap: 6px; margin-top: 16px">
+            <a href="LibraryInsert.dc.html" style="flex: 1; height: 32px; display: flex; align-items: center; justify-content: center; background: #EDEDEF; border-radius: 6px; color: #121214; font-weight: 500; font-size: 12.5px">Use in a build</a>
+            <button style="height: 32px; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; cursor: pointer">Copy</button>
+            <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12.5px">Open source</a>
+          </div>
+        </div>
+        
+
+        <!-- collection preview -->
+        <div style="margin-top: 32px">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+            <div><h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Sales prompts</h2><p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">Public · 9 items · saved by 14 people</p></div>
+            <a href="#" aria-label="Open Sales prompts" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+          </div>
+          <div style="margin-top: 12px">
+            <div style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A"><span style="font-size: 11.5px; color: #8E8E94">1</span><span>Summary on one prompt</span><span style="font-size: 11.5px; color: #8E8E94">Prompt</span></div>
+            <div style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A"><span style="font-size: 11.5px; color: #8E8E94">2</span><span>Clean-up agent</span><span style="font-size: 11.5px; color: #8E8E94">Agent</span></div>
+            <div style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; align-items: center; min-height: 40px"><span style="font-size: 11.5px; color: #8E8E94">3</span><span>Objection handling</span><span style="font-size: 11.5px; color: #8E8E94">Session</span></div>
+          </div>
+          <button style="width: 100%; height: 32px; margin-top: 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; cursor: pointer">Start a build from this collection</button>
+          
+        </div>
+      </aside>
+    </div>
+
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 20px 0 24px; border-top: 1px solid #26262A; font-size: 12.5px; color: #A0A0A6">
+      <span style="font-weight: 600; color: #EDEDEF">buildgallery</span>
+      <a href="#" style="color: #A0A0A6">About</a>
+      <a href="#" style="color: #A0A0A6">API docs</a>
+      <a href="#" style="color: #A0A0A6">Connect a tool</a>
+      <a href="#" style="color: #A0A0A6">Sign out</a>
+    </footer>
+  </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>buildgallery Builds maps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}a:hover{color:#A0A0A6}
+.m-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.nav-links{display:flex}
+@media (max-width:1100px){.m-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.m-grid{grid-template-columns:minmax(0,1fr)}.nav-links{display:none}}
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  <header style="max-width: 1428px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 20px; box-sizing: border-box">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="3" y="5" width="12" height="11" rx="2" stroke="#EDEDEF" stroke-width="1.4"></rect><rect x="6" y="8" width="6" height="5" rx="1" fill="#EDEDEF"></rect><rect x="7" y="1.5" width="4" height="2" rx="1" fill="#F5CB4C"></rect></svg>
+      buildgallery
+    </a>
+    <span style="width: 1px; height: 18px; background: #34343A"></span>
+    <nav class="nav-links" aria-label="Main" style="gap: 4px; align-items: stretch; height: 56px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Home</a>
+      <a href="Builds.dc.html" aria-current="page" style="position: relative; display: flex; align-items: center; padding: 0 10px; font-weight: 500; color: #EDEDEF">Builds<span style="position: absolute; left: 10px; right: 10px; bottom: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></a>
+      <a href="OpenWork.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">OpenBuilds</a>
+      <a href="Library.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Library</a>
+      <a href="Drafts.dc.html" style="display: flex; align-items: center; gap: 6px; padding: 0 10px; color: #A0A0A6">Drafts <span style="font-size: 11.5px; color: #8E8E94">28</span></a>
+    </nav>
+    <div style="flex: 1"></div>
+    <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">New build</a>
+    <a href="#" aria-label="Your profile" style="width: 28px; height: 28px; border-radius: 14px; background: #27272B; border: 1px solid #323237; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; color: #A0A0A6">ST</a>
+  </header>
+
+  <main style="width: calc(100% - 12px); max-width: 1428px; margin: 0 auto 6px; background: #19191B; border: 1px solid #232326; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); box-sizing: border-box; padding: 40px clamp(16px, 5vw, 76px) 0">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+      <div>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">Builds</h1>
+        <p style="margin: 4px 0 0; color: #A0A0A6">Each build's Map: one box per session, one line where a tile in one session uses something from another.</p>
+      </div>
+      <div role="group" aria-label="View" style="display: flex; gap: 2px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+        <a href="Builds.dc.html" style="height: 28px; display: flex; align-items: center; padding: 0 12px; color: #A0A0A6; font-size: 12.5px">Table</a>
+        <a href="BuildsMaps.dc.html" aria-current="page" style="height: 28px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 4px; font-size: 12.5px; font-weight: 500">Maps</a>
+        <a href="BuildsClassification.dc.html" style="height: 28px; display: flex; align-items: center; padding: 0 12px; color: #A0A0A6; font-size: 12.5px">Classification</a>
+      </div>
+    </div>
+
+    <!-- shared filter state -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px">
+      <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">Filters <span style="color: #8E8E94">6</span></button>
+      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Field&#160;</span>Sales</span>
+      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Tools&#160;</span>Claude Code</span>
+      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Reproductions&#160;</span>3 or more</span>
+      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Works on&#160;</span>Opus 5.5</span>
+      <span style="font-size: 12px; color: #8E8E94">+ 2 more</span>
+      <span style="flex: 1"></span>
+      <div role="group" aria-label="Map direction" style="display: flex; gap: 2px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+        <button aria-pressed="true" style="height: 24px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 4px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">Horizontal</button>
+        <button style="height: 24px; padding: 0 8px; background: none; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Vertical</button>
+      </div>
+      <span style="font-size: 12px; color: #8E8E94"><span style="color: #EDEDEF; font-weight: 500">18</span> builds · 14 with a Map</span>
+    </div>
+    <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top: 16px; font-size: 11.5px; line-height: 16px; color: #82A9E8"><span>NEW · The Map exists in the composer (sessions only, part labels, horizontal or vertical). New: a small read-only Map per build, from the session layout and the session links, read with the page of builds. The filters are the Table's, kept across views.</span></div>
+    </sc-if>
+
+    <div class="m-grid" style="margin-top: 32px; padding-bottom: 64px">
+      <sc-for list="{{cards}}" as="c" hint-placeholder-count="6">
+        <article style="background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 16px">
+          <div style="position: relative; height: 220px; border-radius: 6px; background: #141416; border: 1px solid #27272B; background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px); background-size: 16px 16px; overflow: hidden">
+            <sc-for list="{{c.parts}}" as="p" hint-placeholder-count="2">
+              <span style="{{p.style}}">{{p.label}}</span>
+            </sc-for>
+            <svg width="100%" height="100%" viewBox="0 0 400 220" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0">
+              <sc-for list="{{c.lines}}" as="l" hint-placeholder-count="3"><path d="{{l.d}}" fill="none" stroke="#5A5A60" stroke-width="1.2"></path></sc-for>
+            </svg>
+            <sc-for list="{{c.boxes}}" as="b" hint-placeholder-count="4">
+              <span style="{{b.style}}"><span style="display: block; font-size: 11px; font-weight: 500; line-height: 14px; color: #EDEDEF">{{b.label}}</span><span style="display: block; font-family: 'Geist Mono', monospace; font-size: 10px; line-height: 13px; color: #8E8E94">{{b.meta}}</span></span>
+            </sc-for>
+            <sc-if value="{{c.single}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: 11.5px; color: #8E8E94">One session. A Map needs two.</span>
+            </sc-if>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-top: 10px">
+            <span style="min-width: 0"><a href="#" style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.title}}</a><span style="font-size: 11.5px; color: #8E8E94">@{{c.maker}} · {{c.summary}}</span></span>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex: none"><span style="font-size: 12.5px; color: #A0A0A6">{{c.repro}}</span><span style="{{c.lamp}}"></span></span>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 20px 0 24px; border-top: 1px solid #26262A; font-size: 12.5px; color: #A0A0A6">
+      <span style="font-weight: 600; color: #EDEDEF">buildgallery</span>
+      <a href="#" style="color: #A0A0A6">About</a>
+      <a href="#" style="color: #A0A0A6">API docs</a>
+      <a href="#" style="color: #A0A0A6">Connect a tool</a>
+      <a href="#" style="color: #A0A0A6">Sign out</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"notes":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var W = 400, H = 220, BW = 92, BH = 36;
+    var lit = 'width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)';
+    var dim = 'width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; opacity: .45';
+    function pct(v, of) { return (v / of * 100).toFixed(2) + '%'; }
+    function card(title, maker, repro, lampOn, parts, boxes, links) {
+      var bx = boxes.map(function (b) {
+        return {
+          label: b[2], meta: b[3],
+          style: 'position: absolute; left: ' + pct(b[0], W) + '; top: ' + pct(b[1], H) + '; width: ' + pct(BW, W) + '; height: ' + BH + 'px; box-sizing: border-box; padding: 4px 7px; background: #232327; border: 1px solid #2E2E33; border-radius: 6px; overflow: hidden; white-space: nowrap'
+        };
+      });
+      var ln = links.map(function (k) {
+        var a = boxes[k[0]], b = boxes[k[1]];
+        var x1 = a[0] + BW, y1 = a[1] + BH / 2, x2 = b[0], y2 = b[1] + BH / 2;
+        if (x2 < x1) { x1 = a[0] + BW / 2; y1 = a[1] + BH; x2 = b[0] + BW / 2; y2 = b[1]; return { d: 'M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2 }; }
+        var mx = (x1 + x2) / 2;
+        return { d: 'M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + x2 + ' ' + y2 };
+      });
+      var pt = parts.map(function (p) {
+        return { label: p[2], style: 'position: absolute; left: ' + pct(p[0], W) + '; top: ' + pct(p[1], H) + '; font-family: \'Geist Mono\', monospace; font-size: 10px; letter-spacing: .04em; color: #8E8E94' };
+      });
+      var sessions = boxes.length;
+      return { title: title, maker: maker, repro: repro + ' reproduced', lamp: lampOn ? lit : dim, parts: pt, boxes: bx, lines: ln, single: sessions < 2, summary: (parts.length > 1 ? parts.length + ' parts · ' : '') + sessions + (sessions === 1 ? ' session' : ' sessions') };
+    }
+    var cards = [
+      card('Call notes that write themselves', 'maya', 6, true, [[16, 14, 'PART A']], [[16, 92, 'S1 Transcribe', 'OPUS · 4'], [154, 60, 'S2 Clean-up', 'AGENT · 3'], [292, 120, 'S3 Summary', 'OPUS · 7']], [[0, 1], [1, 2], [0, 2]]),
+      card('Account research brief', 'mira', 4, true, [[16, 14, 'PART A · RESEARCH'], [16, 124, 'PART B · WRITE']], [[16, 40, 'S1 Plan', 'OPUS · 3'], [154, 40, 'S2 Search', 'AGENT · 6'], [292, 40, 'S3 Rank', 'GPT-5 · 4'], [154, 150, 'S4 Draft', 'OPUS · 5'], [292, 150, 'S5 Edit', 'OPUS · 2']], [[0, 1], [1, 2], [2, 3], [3, 4]]),
+      card('Cold email personaliser', 'jay', 7, false, [[16, 14, 'PART A']], [[16, 92, 'S1 Leads', 'OPUS · 2'], [154, 40, 'S2 Research', 'AGENT · 5'], [154, 140, 'S3 Tone', 'OPUS · 3'], [292, 92, 'S4 Send', 'CODE · 4']], [[0, 1], [0, 2], [1, 3], [2, 3]]),
+      card('Weekly pipeline digest', 'dax', 8, true, [[16, 14, 'PART A']], [[16, 92, 'S1 Pull CRM', 'OPUS · 6'], [154, 92, 'S2 Digest', 'OPUS · 5'], [292, 92, 'S3 Schedule', 'CODE · 3']], [[0, 1], [1, 2]]),
+      card('Quote to invoice', 'suntzu', 3, true, [[16, 14, 'PART A · APP'], [16, 124, 'PART B · BILLING']], [[16, 40, 'S1 Scaffold', 'CC · 9'], [154, 40, 'S2 Quotes', 'CC · 7'], [16, 150, 'S3 Stripe', 'CC · 5'], [154, 150, 'S4 Invoices', 'CC · 4']], [[0, 1], [1, 3], [2, 3]]),
+      card('Inbox triage in one prompt', 'kit', 31, true, [], [[154, 92, 'S1 Triage', 'OPUS · 6']], [])
+    ];
+    return { notes: this.props.notes ?? true, cards: cards };
+  }
+}
+</script>
+</body>
+</html>

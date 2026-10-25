@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en" data-theme="dusk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>buildgallery Builds classification · vision reference</title>
+<style>
+@font-face{font-family:"Geist";src:url("../../fonts/Geist-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+@font-face{font-family:"Geist Mono";src:url("../../fonts/GeistMono-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}a:hover{color:#A0A0A6}
+.c-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start}
+.nav-links{display:flex}
+.val:hover{text-decoration:underline;text-decoration-color:#8E8E94;text-underline-offset:3px}
+@media (max-width:1100px){.c-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.c-grid{grid-template-columns:minmax(0,1fr)}.nav-links{display:none}}
+
+</style>
+</head>
+<body>
+
+
+
+<div style="min-height: 100vh; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  <header style="max-width: 1428px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 20px; box-sizing: border-box">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="3" y="5" width="12" height="11" rx="2" stroke="#EDEDEF" stroke-width="1.4"></rect><rect x="6" y="8" width="6" height="5" rx="1" fill="#EDEDEF"></rect><rect x="7" y="1.5" width="4" height="2" rx="1" fill="#F5CB4C"></rect></svg>
+      buildgallery
+    </a>
+    <span style="width: 1px; height: 18px; background: #34343A"></span>
+    <nav class="nav-links" aria-label="Main" style="gap: 4px; align-items: stretch; height: 56px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Home</a>
+      <a href="Builds.dc.html" aria-current="page" style="position: relative; display: flex; align-items: center; padding: 0 10px; font-weight: 500; color: #EDEDEF">Builds<span style="position: absolute; left: 10px; right: 10px; bottom: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></a>
+      <a href="OpenWork.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">OpenBuilds</a>
+      <a href="Library.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Library</a>
+      <a href="Drafts.dc.html" style="display: flex; align-items: center; gap: 6px; padding: 0 10px; color: #A0A0A6">Drafts <span style="font-size: 11.5px; color: #8E8E94">28</span></a>
+    </nav>
+    <div style="flex: 1"></div>
+    <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">New build</a>
+    <a href="#" aria-label="Your profile" style="width: 28px; height: 28px; border-radius: 14px; background: #27272B; border: 1px solid #323237; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; color: #A0A0A6">ST</a>
+  </header>
+
+  <main style="width: calc(100% - 12px); max-width: 1428px; margin: 0 auto 6px; background: #19191B; border: 1px solid #232326; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); box-sizing: border-box; padding: 40px clamp(16px, 5vw, 76px) 0">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px">
+      <div>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">18 builds</h1>
+        <p style="margin: 4px 0 0; color: #A0A0A6">Classification of each build · select a value to filter by it</p>
+      </div>
+      <div role="group" aria-label="View" style="display: flex; gap: 2px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+        <a href="Builds.dc.html" style="height: 28px; display: flex; align-items: center; padding: 0 12px; color: #A0A0A6; font-size: 12.5px">Table</a>
+        <a href="BuildsMaps.dc.html" style="height: 28px; display: flex; align-items: center; padding: 0 12px; color: #A0A0A6; font-size: 12.5px">Maps</a>
+        <a href="BuildsClassification.dc.html" aria-current="page" style="height: 28px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 4px; font-size: 12.5px; font-weight: 500">Classification</a>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 24px">
+      <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Filters</span> 6</button>
+      <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Facets shown</span> 8 of 15</button>
+      <span style="flex: 1"></span>
+      <span style="font-size: 12px; color: #8E8E94">Under each facet: <span style="color: #A0A0A6">from n tiles</span>, <span style="color: #A0A0A6">stated</span> by the maker, or <span style="color: #A0A0A6">corrected</span> by the maker</span>
+    </div>
+    
+
+    <div class="c-grid" style="margin-top: 32px; padding-bottom: 64px">
+      
+        <article style="background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 16px">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+            <div style="min-width: 0">
+              <a href="#" style="display: block; font-size: 14px; font-weight: 500; line-height: 1.3">Call notes that write themselves</a>
+              <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">@maya · Workflow · Regulated area</div>
+            </div>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 12.5px">6<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></span>
+          </div>
+          <dl style="margin: 16px 0 0">
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Field<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Sales</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Task<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Summarise calls</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">What was built<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 3 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Automation workflow</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Techniques<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 4 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Single agent</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Structured output</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Autonomy<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 2 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">AI acts with approval gates</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Tools and stack<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 6 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Claude</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Notion</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Zoom</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Data handled<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Personal data</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Cost to run<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">corrected</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Extra usage under £10 a month</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+          </dl>
+        </article>
+      
+        <article style="background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 16px">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+            <div style="min-width: 0">
+              <a href="#" style="display: block; font-size: 14px; font-weight: 500; line-height: 1.3">Account research brief</a>
+              <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">@mira · Agent</div>
+            </div>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 12.5px">4<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></span>
+          </div>
+          <dl style="margin: 16px 0 0">
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Field<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Sales</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Task<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Research accounts</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">What was built<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 4 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Multi-agent system</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Techniques<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 7 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Multi-agent orchestration</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Browser use</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Tool use</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Autonomy<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 3 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Fully autonomous</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Tools and stack<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 5 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Claude</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">GPT-5</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Exa</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Data handled<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Public data only</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Cost to run<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 3 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Extra usage £10 to £50 a month</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+          </dl>
+        </article>
+      
+        <article style="background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 16px">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+            <div style="min-width: 0">
+              <a href="#" style="display: block; font-size: 14px; font-weight: 500; line-height: 1.3">Inbox triage in one prompt</a>
+              <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">@kit · Prompt</div>
+            </div>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 12.5px">31<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></span>
+          </div>
+          <dl style="margin: 16px 0 0">
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Field<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Sales</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Task<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Sort email</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">What was built<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 1 tile</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Configured assistant</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Techniques<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 1 tile</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">System prompt</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Classification</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Autonomy<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 1 tile</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">AI suggests and you approve</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Tools and stack<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 2 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Claude</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Gmail</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Data handled<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Confidential business data</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Cost to run<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 1 tile</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Free plans are enough</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+          </dl>
+        </article>
+      
+        <article style="background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 16px">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+            <div style="min-width: 0">
+              <a href="#" style="display: block; font-size: 14px; font-weight: 500; line-height: 1.3">Quote to invoice</a>
+              <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">@suntzu · App · Regulated area</div>
+            </div>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 12.5px">3<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></span>
+          </div>
+          <dl style="margin: 16px 0 0">
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Field<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Sales</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Finance</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Task<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Create invoices</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">What was built<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 2 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Web app</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Techniques<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 3 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Code execution</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Autonomy<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 4 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">You do each step</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Tools and stack<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 9 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Claude Code</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Supabase</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Stripe</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Data handled<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Financial data</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Cost to run<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 1 tile</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Needs a paid plan</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+          </dl>
+        </article>
+      
+        <article style="background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 16px">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+            <div style="min-width: 0">
+              <a href="#" style="display: block; font-size: 14px; font-weight: 500; line-height: 1.3">Cold email personaliser</a>
+              <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">@jay · Agent · Regulated area</div>
+            </div>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 12.5px">7<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; opacity: .45"></span></span>
+          </div>
+          <dl style="margin: 16px 0 0">
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Field<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Sales</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Task<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Write outreach</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">What was built<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 2 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Autonomous agent</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Techniques<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 5 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Retrieval (RAG)</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Tool use</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Autonomy<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">corrected</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Fully autonomous</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Tools and stack<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 3 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Claude</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Linear</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Data handled<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Personal data</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Cost to run<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 2 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Extra usage £10 to £50 a month</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+          </dl>
+        </article>
+      
+        <article style="background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; padding: 16px">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+            <div style="min-width: 0">
+              <a href="#" style="display: block; font-size: 14px; font-weight: 500; line-height: 1.3">Weekly pipeline digest</a>
+              <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">@dax · Workflow</div>
+            </div>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 12.5px">8<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></span>
+          </div>
+          <dl style="margin: 16px 0 0">
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Field<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Sales</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Task<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Report on pipeline</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">What was built<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 3 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Automation workflow</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Techniques<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 4 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Prompt chain</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Structured output</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Autonomy<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 1 tile</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Fully autonomous</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Tools and stack<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 5 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Claude</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">Zapier</a><span style="color: #8E8E94">, </span><a class="val" href="Builds.dc.html" style="color: #EDEDEF">HubSpot</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Data handled<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">stated</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Confidential business data</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; padding: 10px 0; border-top: 1px solid #26262A">
+                <dt style="font-size: 12px; line-height: 18px; color: #A0A0A6">Cost to run<span style="display: block; font-size: 11px; line-height: 16px; color: #8E8E94">from 2 tiles</span></dt>
+                <dd style="margin: 0; font-size: 12.5px; line-height: 18px">
+                  <a class="val" href="Builds.dc.html" style="color: #EDEDEF">Extra usage under £10 a month</a><span style="color: #8E8E94"></span>
+                </dd>
+              </div>
+            
+          </dl>
+        </article>
+      
+    </div>
+
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 20px 0 24px; border-top: 1px solid #26262A; font-size: 12.5px; color: #A0A0A6">
+      <span style="font-weight: 600; color: #EDEDEF">buildgallery</span>
+      <a href="#" style="color: #A0A0A6">About</a>
+      <a href="#" style="color: #A0A0A6">API docs</a>
+      <a href="#" style="color: #A0A0A6">Connect a tool</a>
+      <a href="#" style="color: #A0A0A6">Sign out</a>
+    </footer>
+  </main>
+</div>
+
+</body>
+</html>

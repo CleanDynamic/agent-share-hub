@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>buildgallery Builds table</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}a:hover{color:#A0A0A6}
+.b-cols{display:grid;grid-template-columns:256px minmax(0,1fr);column-gap:56px}
+.nav-links{display:flex}
+@media (max-width:1000px){.b-cols{grid-template-columns:minmax(0,1fr);row-gap:40px}}
+@media (max-width:760px){.nav-links{display:none}.search{display:none !important}}
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  <header style="max-width: 1428px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 20px; box-sizing: border-box">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="3" y="5" width="12" height="11" rx="2" stroke="#EDEDEF" stroke-width="1.4"></rect><rect x="6" y="8" width="6" height="5" rx="1" fill="#EDEDEF"></rect><rect x="7" y="1.5" width="4" height="2" rx="1" fill="#F5CB4C"></rect></svg>
+      buildgallery
+    </a>
+    <span style="width: 1px; height: 18px; background: #34343A"></span>
+    <nav class="nav-links" aria-label="Main" style="gap: 4px; align-items: stretch; height: 56px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Home</a>
+      <a href="Builds.dc.html" aria-current="page" style="position: relative; display: flex; align-items: center; padding: 0 10px; font-weight: 500; color: #EDEDEF">Builds<span style="position: absolute; left: 10px; right: 10px; bottom: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></a>
+      <a href="OpenWork.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">OpenBuilds</a>
+      <a href="Library.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Library</a>
+      <a href="Drafts.dc.html" style="display: flex; align-items: center; gap: 6px; padding: 0 10px; color: #A0A0A6">Drafts <span style="font-size: 11.5px; color: #8E8E94">28</span></a>
+    </nav>
+    <div style="flex: 1"></div>
+    <label class="search" style="display: flex; align-items: center; gap: 8px; width: 240px; height: 32px; padding: 0 8px 0 10px; box-sizing: border-box; background: #141416; border: 1px solid #27272B; border-radius: 6px; color: #8E8E94">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.8" stroke="currentColor" stroke-width="1.3"></circle><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="square"></path></svg>
+      <input aria-label="Search builds, makers, tools" placeholder="Search builds, makers, tools" style="flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #EDEDEF; font: inherit; font-size: 12.5px">
+    </label>
+    <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">New build</a>
+    <a href="#" aria-label="Your profile" style="width: 28px; height: 28px; border-radius: 14px; background: #27272B; border: 1px solid #323237; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; color: #A0A0A6">ST</a>
+  </header>
+
+  <main style="width: calc(100% - 12px); max-width: 1428px; margin: 0 auto 6px; background: #19191B; border: 1px solid #232326; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); box-sizing: border-box; padding: 40px clamp(16px, 5vw, 76px) 0">
+
+    <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 32px; font-size: 11.5px; color: #8E8E94">
+        <span style="color: #A0A0A6">Vision board · Builds (replaces Gallery) · Table</span>
+        <span>Untagged: exists on main 6b8fe91</span>
+        <span><span style="color: #82A9E8">NEW</span> · not built, what it needs is beside it</span>
+        <span>Sample content</span>
+      </div>
+    </sc-if>
+
+    <!-- page head -->
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px">
+      <div>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">18 builds</h1>
+        <p style="margin: 4px 0 0; color: #A0A0A6">Of 120 published · <span style="color: #86D193">214 reproductions</span> this week · 78% confirmed in the last 120 days</p>
+      </div>
+      <div role="group" aria-label="View" style="display: flex; gap: 2px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+        <a href="Builds.dc.html" aria-current="page" style="height: 28px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 4px; font-size: 12.5px; font-weight: 500">Table</a>
+        <a href="BuildsMaps.dc.html" style="height: 28px; display: flex; align-items: center; padding: 0 12px; color: #A0A0A6; font-size: 12.5px">Maps</a>
+        <a href="BuildsClassification.dc.html" style="height: 28px; display: flex; align-items: center; padding: 0 12px; color: #A0A0A6; font-size: 12.5px">Classification</a>
+      </div>
+    </div>
+
+    <div class="b-cols" style="margin-top: 40px; padding-bottom: 64px">
+
+      <!-- ═════════ FILTERS (quiet) ═════════ -->
+      <aside aria-label="Filters" style="min-width: 0">
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 20px">
+          <div><h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Filters</h2><p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">6 active · drag to reorder</p></div>
+          <button style="height: 28px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">Add</button>
+        </div>
+
+        <!-- saved filter sets -->
+        <section style="padding: 20px 0; border-top: 1px solid #26262A">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 12.5px; font-weight: 500">Saved filter sets</span><button style="background: none; border: none; padding: 0; color: #8E8E94; font: inherit; font-size: 12px; cursor: pointer">Save current</button></div>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; margin-top: 6px; font-size: 12.5px"><span style="color: #A0A0A6">Sales on Claude Code</span><span style="font-size: 12px; color: #8E8E94">34</span></a>
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; font-size: 12.5px"><span style="color: #A0A0A6">Works on Opus 5.5, no code</span><span style="font-size: 12px; color: #8E8E94">18</span></a>
+          <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 6px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Stored per user. A Group on OpenBuilds is a shared filter set.</p>
+          </sc-if>
+        </section>
+
+        <!-- Field -->
+        <section style="padding: 20px 0; border-top: 1px solid #26262A">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button aria-label="Move Field" style="width: 16px; height: 20px; display: grid; place-items: center; background: none; border: none; color: #5A5A60; cursor: grab; padding: 0"><svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><circle cx="2" cy="2" r="1" fill="currentColor"></circle><circle cx="6" cy="2" r="1" fill="currentColor"></circle><circle cx="2" cy="6" r="1" fill="currentColor"></circle><circle cx="6" cy="6" r="1" fill="currentColor"></circle><circle cx="2" cy="10" r="1" fill="currentColor"></circle><circle cx="6" cy="10" r="1" fill="currentColor"></circle></svg></button>
+            <span style="flex: 1; font-size: 12.5px; font-weight: 500">Field</span>
+            <span style="font-size: 12px"><button aria-pressed="true" style="background: none; border: none; padding: 0; color: #EDEDEF; font: inherit; cursor: pointer">A–Z</button><span style="color: #5A5A60"> · </span><button style="background: none; border: none; padding: 0; color: #8E8E94; font: inherit; cursor: pointer">Count</button></span>
+          </div>
+          <div style="margin-top: 10px">
+            <sc-for list="{{fields}}" as="f" hint-placeholder-count="6">
+              <label style="display: grid; grid-template-columns: 14px 1fr auto; column-gap: 10px; align-items: center; min-height: 30px; font-size: 12.5px; cursor: pointer">
+                <span style="{{f.box}}"></span><span style="{{f.textStyle}}">{{f.label}}</span><span style="font-size: 12px; color: #8E8E94">{{f.count}}</span>
+              </label>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- Reproductions -->
+        <section style="padding: 20px 0; border-top: 1px solid #26262A">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button aria-label="Move Reproductions" style="width: 16px; height: 20px; display: grid; place-items: center; background: none; border: none; color: #5A5A60; cursor: grab; padding: 0"><svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><circle cx="2" cy="2" r="1" fill="currentColor"></circle><circle cx="6" cy="2" r="1" fill="currentColor"></circle><circle cx="2" cy="6" r="1" fill="currentColor"></circle><circle cx="6" cy="6" r="1" fill="currentColor"></circle><circle cx="2" cy="10" r="1" fill="currentColor"></circle><circle cx="6" cy="10" r="1" fill="currentColor"></circle></svg></button>
+            <span style="flex: 1; font-size: 12.5px; font-weight: 500">Reproductions</span>
+            <span style="font-size: 12px; color: #A0A0A6">3 or more</span>
+          </div>
+          <div aria-hidden="true" style="display: flex; align-items: flex-end; gap: 2px; height: 32px; margin-top: 14px">
+            <sc-for list="{{reproHist}}" as="h" hint-placeholder-count="20"><span style="{{h.style}}"></span></sc-for>
+          </div>
+          <div style="position: relative; height: 14px; margin-top: 4px">
+            <span style="position: absolute; left: 0; right: 0; top: 6px; height: 2px; border-radius: 1px; background: #34343A"></span>
+            <span style="position: absolute; left: 10%; right: 0; top: 6px; height: 2px; border-radius: 1px; background: #EDEDEF"></span>
+            <span aria-hidden="true" style="position: absolute; left: calc(10% - 6px); top: 1px; width: 12px; height: 12px; border-radius: 6px; background: #EDEDEF"></span>
+            <span aria-hidden="true" style="position: absolute; right: -6px; top: 1px; width: 12px; height: 12px; border-radius: 6px; background: #EDEDEF"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: #8E8E94"><span>0</span><span>40+</span></div>
+        </section>
+
+        <!-- Works on model -->
+        <section style="padding: 20px 0; border-top: 1px solid #26262A">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button aria-label="Move Works on model" style="width: 16px; height: 20px; display: grid; place-items: center; background: none; border: none; color: #5A5A60; cursor: grab; padding: 0"><svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><circle cx="2" cy="2" r="1" fill="currentColor"></circle><circle cx="6" cy="2" r="1" fill="currentColor"></circle><circle cx="2" cy="6" r="1" fill="currentColor"></circle><circle cx="6" cy="6" r="1" fill="currentColor"></circle><circle cx="2" cy="10" r="1" fill="currentColor"></circle><circle cx="6" cy="10" r="1" fill="currentColor"></circle></svg></button>
+            <span style="flex: 1; font-size: 12.5px; font-weight: 500">Works on model</span>
+            <span style="font-size: 12px"><button style="background: none; border: none; padding: 0; color: #8E8E94; font: inherit; cursor: pointer">A–Z</button><span style="color: #5A5A60"> · </span><button aria-pressed="true" style="background: none; border: none; padding: 0; color: #EDEDEF; font: inherit; cursor: pointer">Count</button></span>
+          </div>
+          <div style="margin-top: 10px">
+            <sc-for list="{{models}}" as="m" hint-placeholder-count="4">
+              <label style="display: grid; grid-template-columns: 14px 1fr auto; column-gap: 10px; align-items: center; min-height: 30px; font-size: 12.5px; cursor: pointer">
+                <span style="{{m.box}}"></span><span style="{{m.textStyle}}">{{m.label}}</span><span style="font-size: 12px; color: #8E8E94">{{m.count}}</span>
+              </label>
+            </sc-for>
+          </div>
+          <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 6px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Builds with a worked run on that model_used, across all builds.</p>
+          </sc-if>
+        </section>
+
+        <!-- Steps -->
+        <section style="padding: 20px 0; border-top: 1px solid #26262A">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button aria-label="Move Steps" style="width: 16px; height: 20px; display: grid; place-items: center; background: none; border: none; color: #5A5A60; cursor: grab; padding: 0"><svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><circle cx="2" cy="2" r="1" fill="currentColor"></circle><circle cx="6" cy="2" r="1" fill="currentColor"></circle><circle cx="2" cy="6" r="1" fill="currentColor"></circle><circle cx="6" cy="6" r="1" fill="currentColor"></circle><circle cx="2" cy="10" r="1" fill="currentColor"></circle><circle cx="6" cy="10" r="1" fill="currentColor"></circle></svg></button>
+            <span style="flex: 1; font-size: 12.5px; font-weight: 500">Steps</span>
+            <span style="font-size: 12px; color: #A0A0A6">5 to 30</span>
+          </div>
+          <div aria-hidden="true" style="display: flex; align-items: flex-end; gap: 2px; height: 28px; margin-top: 14px">
+            <sc-for list="{{stepHist}}" as="h" hint-placeholder-count="20"><span style="{{h.style}}"></span></sc-for>
+          </div>
+          <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 8px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Counts from buildSteps and sessionGroups, written to the build on save like the facets.</p>
+          </sc-if>
+        </section>
+
+        <!-- Autonomy -->
+        <section style="padding: 20px 0; border-top: 1px solid #26262A">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button aria-label="Move Autonomy" style="width: 16px; height: 20px; display: grid; place-items: center; background: none; border: none; color: #5A5A60; cursor: grab; padding: 0"><svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><circle cx="2" cy="2" r="1" fill="currentColor"></circle><circle cx="6" cy="2" r="1" fill="currentColor"></circle><circle cx="2" cy="6" r="1" fill="currentColor"></circle><circle cx="6" cy="6" r="1" fill="currentColor"></circle><circle cx="2" cy="10" r="1" fill="currentColor"></circle><circle cx="6" cy="10" r="1" fill="currentColor"></circle></svg></button>
+            <span style="flex: 1; font-size: 12.5px; font-weight: 500">Autonomy</span>
+            <span style="font-size: 12px; color: #8E8E94">Scale order</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; margin-top: 14px">
+            <span style="height: 6px; border-radius: 2px; background: #34343A"></span><span style="height: 6px; border-radius: 2px; background: #EDEDEF"></span><span style="height: 6px; border-radius: 2px; background: #EDEDEF"></span><span style="height: 6px; border-radius: 2px; background: #34343A"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 11.5px; color: #8E8E94"><span>You do each step</span><span>Fully autonomous</span></div>
+        </section>
+
+        <!-- collapsed -->
+        <section style="border-top: 1px solid #26262A">
+          <sc-for list="{{collapsed}}" as="c" hint-placeholder-count="5">
+            <button style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; background: none; border: none; border-bottom: 1px solid #26262A; padding: 0 0 0 24px; color: #A0A0A6; font: inherit; font-size: 12.5px; cursor: pointer">
+              <span style="flex: 1; text-align: left">{{c.label}}</span><span style="font-size: 12px; color: #8E8E94">{{c.value}}</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 2l3 3-3 3" stroke="#8E8E94" stroke-width="1.2"></path></svg>
+            </button>
+          </sc-for>
+        </section>
+
+        <!-- catalogue: what Add opens -->
+        <section style="margin-top: 24px; padding: 16px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 12.5px; font-weight: 500">Add a filter</span><span style="font-size: 12px; color: #8E8E94">37</span></div>
+          <sc-for list="{{catalogue}}" as="g" hint-placeholder-count="6">
+            <div style="margin-top: 14px">
+              <div style="font-size: 11.5px; color: #8E8E94">{{g.name}}</div>
+              <div style="margin-top: 2px; font-size: 12px; line-height: 20px; color: #A0A0A6">{{g.items}}</div>
+            </div>
+          </sc-for>
+        </section>
+      </aside>
+
+      <!-- ═════════ TABLE (leads) ═════════ -->
+      <section aria-label="Builds" style="min-width: 0">
+
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; border-bottom: 1px solid #26262A">
+          <div role="tablist" aria-label="Lens" style="display: flex; gap: 20px">
+            <button role="tab" aria-selected="true" style="height: 36px; background: none; border: none; border-bottom: 1px solid #EDEDEF; margin-bottom: -1px; padding: 0; color: #EDEDEF; font: inherit; font-weight: 500; cursor: pointer">All</button>
+            <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Reproduced</button>
+            <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Rebuilt</button>
+            <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Open requests</button>
+          </div>
+          <div style="display: flex; gap: 6px; margin-bottom: 4px">
+            <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Sort</span> Reproductions</button>
+            <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Columns</span> 12 of 24</button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px">
+          <sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+            <span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">{{c.k}}</span><span>{{c.v}}</span><button aria-label="Remove filter" style="width: 18px; height: 18px; display: grid; place-items: center; background: none; border: none; color: #8E8E94; cursor: pointer; padding: 0"><svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" stroke-width="1.2"></path></svg></button></span>
+          </sc-for>
+          <button style="height: 26px; padding: 0 8px; background: none; border: none; color: #8E8E94; font: inherit; font-size: 12px; cursor: pointer">Clear all</button>
+        </div>
+
+        <div style="margin-top: 20px; overflow-x: auto">
+          <table style="width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 12.5px">
+            <thead>
+              <tr style="text-align: left; font-size: 11.5px; color: #8E8E94">
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Build</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">What was built</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Field</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Tools</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A; text-align: right">Steps</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A; text-align: right">Sessions</th>
+                <th scope="col" aria-sort="descending" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A; text-align: right; color: #EDEDEF">Reproductions ↓</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Confirmed</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Runs, 12 weeks</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A; text-align: right">Rebuilds</th>
+                <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Open</th>
+                <th scope="col" style="font-weight: 400; padding: 0 0 10px; border-bottom: 1px solid #26262A">Cost to run</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+                <tr style="border-bottom: 1px solid #26262A">
+                  <td style="padding: 0 12px 0 0; height: 48px"><span style="display: block; min-width: 200px"><a href="#" style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px">{{r.title}}</a><span style="font-size: 11.5px; color: #8E8E94">@{{r.maker}}</span></span></td>
+                  <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">{{r.built}}</td>
+                  <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">{{r.field}}</td>
+                  <td style="padding: 0 12px 0 0"><span style="display: inline-flex; gap: 4px"><sc-for list="{{r.tools}}" as="t" hint-placeholder-count="2"><span style="{{t.style}}">{{t.l}}</span></sc-for></span></td>
+                  <td style="padding: 0 12px 0 0; text-align: right">{{r.steps}}</td>
+                  <td style="padding: 0 12px 0 0; text-align: right">{{r.sessions}}</td>
+                  <td style="padding: 0 12px 0 0; text-align: right; white-space: nowrap"><span style="display: inline-flex; align-items: center; gap: 8px">{{r.repro}}<span style="{{r.lampStyle}}"></span></span></td>
+                  <td style="padding: 0 12px 0 0; white-space: nowrap; color: #A0A0A6">{{r.confirmed}}</td>
+                  <td style="padding: 0 12px 0 0"><span aria-hidden="true" style="display: inline-flex; align-items: flex-end; gap: 2px; height: 16px"><sc-for list="{{r.spark}}" as="s" hint-placeholder-count="12"><span style="{{s.style}}"></span></sc-for></span></td>
+                  <td style="padding: 0 12px 0 0; text-align: right">{{r.rebuilds}}</td>
+                  <td style="padding: 0 12px 0 0; white-space: nowrap; color: #A0A0A6">{{r.open}}</td>
+                  <td style="padding: 0; white-space: nowrap; color: #A0A0A6">{{r.cost}}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+            <tfoot>
+              <tr style="font-size: 11.5px; color: #8E8E94">
+                <td style="padding: 12px 12px 0 0">18 builds</td>
+                <td colspan="3" style="padding: 12px 12px 0 0">Most common · Sales, Claude Code</td>
+                <td colspan="2" style="padding: 12px 12px 0 0; text-align: right">Median 11 steps</td>
+                <td style="padding: 12px 12px 0 0; text-align: right">Total 214</td>
+                <td colspan="5" style="padding: 12px 0 0"><button style="background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-size: 11.5px; cursor: pointer">Add a calculation</button></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 24px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Exists: listGallery filters role, tools, shape, lens and query; the feed filters patterns and classification facet keys; sorts newest, reproduced, confirmed, rebuilt; getGalleryStats. New: number ranges, Works on model, step and session counts, runs per week, the column chooser, footer calculations, reordering and resizing filters.</p>
+        </sc-if>
+      </section>
+    </div>
+
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 20px 0 24px; border-top: 1px solid #26262A; font-size: 12.5px; color: #A0A0A6">
+      <span style="font-weight: 600; color: #EDEDEF">buildgallery</span>
+      <a href="#" style="color: #A0A0A6">About</a>
+      <a href="#" style="color: #A0A0A6">API docs</a>
+      <a href="#" style="color: #A0A0A6">Connect a tool</a>
+      <a href="#" style="color: #A0A0A6">Sign out</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"notes":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var boxOn = 'width: 14px; height: 14px; box-sizing: border-box; border-radius: 4px; background: #EDEDEF; border: 1px solid #EDEDEF';
+    var boxOff = 'width: 14px; height: 14px; box-sizing: border-box; border-radius: 4px; border: 1px solid #34343A';
+    function checklist(items) {
+      return items.map(function (x) { return { label: x[0], count: x[1], box: x[2] ? boxOn : boxOff, textStyle: x[2] ? 'color: #EDEDEF' : 'color: #A0A0A6' }; });
+    }
+    var fields = checklist([['AI and machine learning', 14, false], ['Education', 9, false], ['Finance', 11, false], ['Marketing', 18, false], ['Sales', 22, true], ['Software development', 31, false]]);
+    var models = checklist([['Sonnet 4.5', 44, false], ['Opus 5.5', 31, true], ['GPT-5', 27, false], ['Gemini 3.5 Pro', 12, false]]);
+    function hist(values, from, to, max) {
+      return values.map(function (v, i) { return { style: 'flex: 1; height: ' + Math.round(v / max * 100) + '%; border-radius: 1px; background: ' + (i >= from && i <= to ? '#8E8E94' : '#34343A') }; });
+    }
+    var reproHist = hist([22, 18, 14, 12, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2, 2, 2, 1, 1], 2, 19, 22);
+    var stepHist = hist([3, 6, 9, 12, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1, 1], 2, 12, 14);
+    var collapsed = [['Tools and stack', 'Claude Code'], ['Task', 'Any'], ['What was built', 'Any'], ['Techniques', 'Any'], ['Last confirmed', 'Any'], ['Cost to run', 'Any']].map(function (c) { return { label: c[0], value: c[1] }; });
+    var catalogue = [
+      ['Classification · 15', 'Field, Task, Setting, What was built, Role of AI, Techniques, Modality, Build method, Autonomy, Tools and stack, Data handled, Human oversight, Age suitability, Skill needed, Cost to run'],
+      ['Proof · 6', 'Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes'],
+      ['Structure · 8', 'Shape, Steps, Sessions, Parts, Agents, Patterns, Tile categories, Completeness'],
+      ['OpenBuilds · 3', 'Open requests, Request type, Reward'],
+      ['Lineage · 2', 'Rebuilt from, Original build'],
+      ['People · 3', 'Maker, People you follow, Contributors']
+    ].map(function (g) { return { name: g[0], items: g[1] }; });
+    var chips = [['Field', 'Sales'], ['Tools', 'Claude Code'], ['Reproductions', '3 or more'], ['Works on', 'Opus 5.5'], ['Steps', '5 to 30'], ['Autonomy', '2 of 4']].map(function (c) { return { k: c[0], v: c[1] }; });
+    var markBase = 'width: 16px; height: 16px; border-radius: 4px; background: #232327; display: inline-grid; place-items: center; font-size: 9px; font-weight: 600; color: ';
+    var toolColour = { C: '#E39A78', N: '#EDEDEF', S: '#86D193', L: '#A996E8', G: '#82A9E8', Z: '#D9B36C' };
+    var lit = 'width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)';
+    var dim = 'width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; opacity: .45';
+    var data = [
+      ['Inbox triage in one prompt', 'kit', 'Configured assistant', 'Sales', 'CG', 6, 1, 31, 'lit', '2d ago on Opus 5.5', [2,3,3,4,5,4,6,7,6,8,9,8], 4, '1 step', 'Free plans'],
+      ['Lead scoring from CRM notes', 'luke', 'Script or tool', 'Sales', 'CS', 9, 2, 12, 'lit', '1w ago on Opus 5.5', [1,1,2,2,2,3,3,2,3,3,4,4], 1, '', 'Under £10/mo'],
+      ['Proposal writer with pricing', 'mira', 'Document or report', 'Sales', 'C', 11, 2, 9, 'lit', '3d ago on GPT-5', [0,1,1,1,2,2,2,1,3,2,2,3], 3, '1 session', 'Paid plan'],
+      ['Weekly pipeline digest', 'dax', 'Automation workflow', 'Sales', 'CZ', 17, 4, 8, 'lit', '5d ago on Opus 5.5', [1,0,1,2,1,2,2,2,1,2,3,2], 0, '', 'Under £10/mo'],
+      ['Cold email personaliser', 'jay', 'Autonomous agent', 'Sales', 'CL', 22, 5, 7, 'dim', '5mo ago on Opus 5.5', [3,3,2,2,1,1,1,0,0,0,1,1], 2, '1 step · £40', '£10 to £50/mo'],
+      ['Call notes that write themselves', 'maya', 'Automation workflow', 'Sales', 'CN', 14, 3, 6, 'lit', '4d ago on Opus 5.5', [0,0,1,1,2,1,2,3,2,3,4,3], 2, '', 'Under £10/mo'],
+      ['Meeting to Linear tickets', 'kit', 'MCP server', 'Sales', 'CL', 8, 2, 6, 'lit', '1d ago on Opus 5.5', [0,0,0,1,1,1,2,2,2,3,3,4], 1, '', 'Free plans'],
+      ['Objection handling coach', 'ava', 'Chatbot or assistant', 'Sales', 'C', 5, 1, 5, 'lit', '2w ago on Opus 5.5', [1,1,1,1,1,2,1,1,1,1,1,1], 0, '', 'Free plans'],
+      ['Account research brief', 'mira', 'Multi-agent system', 'Sales', 'CG', 26, 6, 4, 'lit', '6d ago on GPT-5', [0,0,0,0,1,1,1,1,2,1,2,2], 1, '1 part', '£10 to £50/mo'],
+      ['Renewal risk alerts', 'noah', 'Automation workflow', 'Sales', 'CS', 12, 3, 4, 'dim', '4mo ago on Opus 5.5', [2,2,1,1,1,0,0,0,0,0,0,1], 0, 'Model test', 'Under £10/mo'],
+      ['Quote to invoice', 'suntzu', 'Web app', 'Sales', 'CS', 19, 4, 3, 'lit', '3w ago on Opus 5.5', [0,0,0,0,0,1,1,1,1,1,1,1], 0, '1 session', 'Paid plan'],
+      ['Discovery call scorer', 'luke', 'Evaluation suite', 'Sales', 'C', 7, 2, 3, 'lit', '1w ago on Opus 5.5', [0,0,0,0,0,0,1,1,1,1,1,2], 0, '', 'Free plans']
+    ];
+    var rows = data.map(function (d) {
+      var max = Math.max.apply(null, d[10].concat([1]));
+      return {
+        title: d[0], maker: d[1], built: d[2], field: d[3],
+        tools: d[4].split('').map(function (l) { return { l: l, style: markBase + (toolColour[l] || '#EDEDEF') }; }),
+        steps: d[5], sessions: d[6], repro: d[7], lampStyle: d[8] === 'lit' ? lit : dim, confirmed: d[9],
+        spark: d[10].map(function (v) { return { style: 'width: 3px; height: ' + Math.max(2, Math.round(v / max * 16)) + 'px; border-radius: 1px; background: ' + (v === 0 ? '#34343A' : '#86D193') }; }),
+        rebuilds: d[11], open: d[12] || '·', cost: d[13]
+      };
+    });
+    return { notes: this.props.notes ?? true, fields: fields, models: models, reproHist: reproHist, stepHist: stepHist, collapsed: collapsed, catalogue: catalogue, chips: chips, rows: rows };
+  }
+}
+</script>
+</body>
+</html>
