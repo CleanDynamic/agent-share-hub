@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>buildgallery Library</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}a:hover{color:#A0A0A6}
+.l-cols{display:grid;grid-template-columns:208px minmax(0,1fr) 340px;column-gap:48px}
+.nav-links{display:flex}
+@media (max-width:1200px){.l-cols{grid-template-columns:208px minmax(0,1fr)}.l-detail{grid-column:1 / -1}}
+@media (max-width:800px){.l-cols{grid-template-columns:minmax(0,1fr);row-gap:40px}.nav-links{display:none}}
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  
+
+  <header style="max-width: 1428px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 20px; box-sizing: border-box">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="3" y="5" width="12" height="11" rx="2" stroke="#EDEDEF" stroke-width="1.4"></rect><rect x="6" y="8" width="6" height="5" rx="1" fill="#EDEDEF"></rect><rect x="7" y="1.5" width="4" height="2" rx="1" fill="#F5CB4C"></rect></svg>
+      buildgallery
+    </a>
+    <span style="width: 1px; height: 18px; background: #34343A"></span>
+    <nav class="nav-links" aria-label="Main" style="gap: 4px; align-items: stretch; height: 56px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Home</a>
+      <a href="Builds.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Builds</a>
+      <a href="OpenWork.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">OpenBuilds</a>
+      <a href="Library.dc.html" aria-current="page" style="position: relative; display: flex; align-items: center; padding: 0 10px; font-weight: 500; color: #EDEDEF">Library<span style="position: absolute; left: 10px; right: 10px; bottom: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></a>
+      <a href="Drafts.dc.html" style="display: flex; align-items: center; gap: 6px; padding: 0 10px; color: #A0A0A6">Drafts <span style="font-size: 11.5px; color: #8E8E94">28</span></a>
+    </nav>
+    <div style="flex: 1"></div>
+    <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">New build</a>
+    <a href="#" aria-label="Your profile" style="width: 28px; height: 28px; border-radius: 14px; background: #27272B; border: 1px solid #323237; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; color: #A0A0A6">ST</a>
+  </header><main style="width: calc(100% - 12px); max-width: 1428px; margin: 0 auto 6px; background: #19191B; border: 1px solid #232326; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); box-sizing: border-box; padding: 40px clamp(16px, 5vw, 76px) 0">
+
+    <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 32px; font-size: 11.5px; color: #8E8E94">
+        <span style="color: #A0A0A6">Vision board · Library</span>
+        <span>Untagged: exists on main 6b8fe91</span>
+        <span><span style="color: #82A9E8">NEW</span> · not built, what it needs is beside it</span>
+        <span>Sample content</span>
+      </div>
+    </sc-if>
+
+    <div class="l-cols" style="padding-bottom: 64px">
+
+      <!-- ═════════ LEFT · KINDS AND COLLECTIONS ═════════ -->
+      <aside aria-label="Library sections" style="min-width: 0">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">Library</h1>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #8E8E94">64 saved · 5 collections</p>
+
+        <nav aria-label="Kinds" style="margin-top: 28px">
+          <sc-for list="{{kinds}}" as="k" hint-placeholder-count="8">
+            <a href="#" style="{{k.style}}"><span>{{k.label}}</span><span style="font-size: 12px; color: #8E8E94">{{k.count}}</span></a>
+          </sc-for>
+        </nav>
+        <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 8px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Builds exist (build_saves). Parts, sessions, steps, requests and filter sets need a saved_items table: kind, build_id, ref, snapshot, source_version, last_used_at.</p>
+        </sc-if>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 32px; padding-bottom: 8px; border-bottom: 1px solid #26262A">
+          <span style="font-size: 12.5px; font-weight: 500">Collections</span>
+          <button style="background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">New</button>
+        </div>
+        <sc-for list="{{collections}}" as="c" hint-placeholder-count="5">
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #26262A">
+            <span style="min-width: 0"><span style="display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.name}}</span><span style="font-size: 11.5px; color: #8E8E94">{{c.meta}}</span></span>
+            <span style="font-size: 12px; color: #8E8E94">{{c.count}}</span>
+          </a>
+        </sc-for>
+        <p style="margin: 10px 0 0; font-size: 11.5px; color: #8E8E94">Ordered by your last use</p>
+      </aside>
+
+      <!-- ═════════ MAIN · CHANGES (leads) + SAVED ═════════ -->
+      <section aria-label="Saved" style="min-width: 0">
+
+        <!-- changes -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+          <div>
+            <div style="font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">6 changes</div>
+            <p style="margin: 4px 0 0; color: #A0A0A6">Since your last visit · 3 edited · <span style="color: #E5807F">1 removed</span> · <span style="color: #86D193">2 reproduced on Opus 5.5</span></p>
+          </div>
+          <a href="#" aria-label="Open all changes" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+        </div>
+        <div style="margin-top: 16px">
+          <sc-for list="{{changes}}" as="c" hint-placeholder-count="4">
+            <div style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A">
+              <span style="{{c.tagStyle}}">{{c.tag}}</span>
+              <span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="font-weight: 500">{{c.item}}</span><span style="color: #8E8E94"> · {{c.detail}}</span></span>
+              <span style="font-size: 12px; color: #8E8E94">{{c.when}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 10px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Edited and removed: the snapshot compared with the source, which needs a version or updated time per node. Reproduced, stale, rebuilt: read from builds and build_reproductions. The same lines feed Home's "Since you were last here".</p>
+        </sc-if>
+
+        <!-- saved items -->
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 48px; border-bottom: 1px solid #26262A">
+          <div role="tablist" aria-label="State" style="display: flex; gap: 20px">
+            <button role="tab" aria-selected="true" style="height: 36px; background: none; border: none; border-bottom: 1px solid #EDEDEF; margin-bottom: -1px; padding: 0; color: #EDEDEF; font: inherit; font-weight: 500; cursor: pointer">Steps</button>
+            <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Changed</button>
+            <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Removed</button>
+          </div>
+          <div style="display: flex; gap: 6px; margin-bottom: 4px">
+            <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Filters</span> 2</button>
+            <button style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer"><span style="color: #8E8E94">Sort</span> Last used</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px">
+          <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Step type&nbsp;</span>Prompt, Agent</span>
+          <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 8px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12px"><span style="color: #8E8E94">Field&nbsp;</span>Sales</span>
+          <span style="font-size: 12px; color: #8E8E94; align-self: center; margin-left: 6px">Same filters as Builds</span>
+        </div>
+
+        <table style="width: 100%; margin-top: 16px; border-collapse: collapse; font-size: 12.5px">
+          <thead>
+            <tr style="text-align: left; font-size: 11.5px; color: #8E8E94">
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Step</th>
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">Type</th>
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A">State</th>
+              <th scope="col" style="font-weight: 400; padding: 0 12px 10px 0; border-bottom: 1px solid #26262A; text-align: right">Used in</th>
+              <th scope="col" aria-sort="descending" style="font-weight: 400; padding: 0 0 10px; border-bottom: 1px solid #26262A; text-align: right; color: #EDEDEF">Last used ↓</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{items}}" as="r" hint-placeholder-count="8">
+              <tr style="{{r.rowStyle}}">
+                <td style="padding: 0 12px 0 0; height: 52px"><span style="display: block; min-width: 0"><span style="display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px">{{r.title}}</span><span style="font-size: 11.5px; color: #8E8E94">{{r.from}}</span></span></td>
+                <td style="padding: 0 12px 0 0; color: #A0A0A6; white-space: nowrap">{{r.type}}</td>
+                <td style="padding: 0 12px 0 0; white-space: nowrap"><span style="{{r.stateStyle}}">{{r.state}}</span></td>
+                <td style="padding: 0 12px 0 0; text-align: right; color: #A0A0A6">{{r.used}}</td>
+                <td style="padding: 0; text-align: right; color: #A0A0A6; white-space: nowrap">{{r.last}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 16px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Used in: tiles whose source_ref points at the source (a count, no new column). Library filters: Kind, Step type, State, plus the Builds filters.</p>
+        </sc-if>
+      </section>
+
+      <!-- ═════════ RIGHT · SELECTED ITEM ═════════ -->
+      <aside class="l-detail" aria-label="Selected step" style="min-width: 0">
+        <div style="padding: 16px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #27272B; color: #A0A0A6">PROMPT</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 12px; color: #F5CB4C">Edited 2d ago</span>
+          </div>
+          <div style="margin-top: 10px; font-size: 14px; font-weight: 500; line-height: 1.3">Summary on one prompt</div>
+          <div style="margin-top: 2px; font-size: 12px; color: #8E8E94">Step 7 · Call notes that write themselves · @maya</div>
+
+          <div role="group" aria-label="Version" style="display: flex; gap: 2px; margin-top: 16px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+            <button aria-pressed="true" style="flex: 1; height: 26px; background: #27272B; border: 1px solid #323237; border-radius: 4px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">Your saved version</button>
+            <button style="flex: 1; height: 26px; background: none; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Current version</button>
+          </div>
+
+          <div style="margin-top: 12px; padding: 12px; background: #141416; border: 1px solid #27272B; border-radius: 6px; font-family: 'Geist Mono', monospace; font-size: 11.5px; line-height: 18px; color: #A0A0A6; white-space: pre-wrap">Summarise the cleaned transcript in five sections: decisions, owners, dates, risks, next call.
+<span style="color: #E5807F; text-decoration: line-through">Keep it under 200 words.</span>
+<span style="color: #86D193">Keep each section under 40 words. Quote the customer once.</span></div>
+          <p style="margin: 8px 0 0; font-size: 11.5px; color: #8E8E94">1 line changed since you saved it on 12 Oct</p>
+
+          <div style="margin-top: 16px">
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">Model</span><span>Opus 5.5</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">Source build</span><span style="display: inline-flex; align-items: center; gap: 8px">6 reproduced<span style="width: 8px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7)"></span></span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">Used in</span><span>4 builds · 1 yours</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-top: 1px solid #26262A"><span style="color: #A0A0A6">In collections</span><span>Sales prompts</span></div>
+          </div>
+
+          <label style="display: block; margin-top: 12px; font-size: 12px; color: #8E8E94">Your note
+            <textarea rows="2" style="display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px 10px; background: #141416; border: 1px solid #27272B; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; resize: vertical">Good section split. Try with the call notes build.</textarea>
+          </label>
+
+          <div style="display: flex; gap: 6px; margin-top: 16px">
+            <a href="LibraryInsert.dc.html" style="flex: 1; height: 32px; display: flex; align-items: center; justify-content: center; background: #EDEDEF; border-radius: 6px; color: #121214; font-weight: 500; font-size: 12.5px">Use in a build</a>
+            <button style="height: 32px; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; cursor: pointer">Copy</button>
+            <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-size: 12.5px">Open source</a>
+          </div>
+        </div>
+        <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 10px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · The snapshot follows forkRules (method kept, evidence removed). If the source is removed the snapshot stays usable, credited to its maker. Notes go on collection_items with a position (migration: item_kind accepts the new kinds).</p>
+        </sc-if>
+
+        <!-- collection preview -->
+        <div style="margin-top: 32px">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+            <div><h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Sales prompts</h2><p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">Public · 9 items · saved by 14 people</p></div>
+            <a href="#" aria-label="Open Sales prompts" style="flex: none; width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#EDEDEF" stroke-width="1.3"></path></svg></a>
+          </div>
+          <div style="margin-top: 12px">
+            <div style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A"><span style="font-size: 11.5px; color: #8E8E94">1</span><span>Summary on one prompt</span><span style="font-size: 11.5px; color: #8E8E94">Prompt</span></div>
+            <div style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; align-items: center; min-height: 40px; border-bottom: 1px solid #26262A"><span style="font-size: 11.5px; color: #8E8E94">2</span><span>Clean-up agent</span><span style="font-size: 11.5px; color: #8E8E94">Agent</span></div>
+            <div style="display: grid; grid-template-columns: 16px 1fr auto; column-gap: 10px; align-items: center; min-height: 40px"><span style="font-size: 11.5px; color: #8E8E94">3</span><span>Objection handling</span><span style="font-size: 11.5px; color: #8E8E94">Session</span></div>
+          </div>
+          <button style="width: 100%; height: 32px; margin-top: 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; cursor: pointer">Start a build from this collection</button>
+          <sc-if value="{{notes}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 10px 0 0; font-size: 11.5px; line-height: 16px; color: #82A9E8">NEW · Saving someone's public collection, and starting a draft from a collection in its order, each item credited. Public collections at /library/:handle exist.</p>
+          </sc-if>
+        </div>
+      </aside>
+    </div>
+
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 20px 0 24px; border-top: 1px solid #26262A; font-size: 12.5px; color: #A0A0A6">
+      <span style="font-weight: 600; color: #EDEDEF">buildgallery</span>
+      <a href="#" style="color: #A0A0A6">About</a>
+      <a href="#" style="color: #A0A0A6">API docs</a>
+      <a href="#" style="color: #A0A0A6">Connect a tool</a>
+      <a href="#" style="color: #A0A0A6">Sign out</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"notes":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var row = 'display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px; margin: 0 -8px; border-radius: 6px; font-size: 12.5px; ';
+    var kinds = [['All saved', 64, 0], ['Builds', 18, 0], ['Parts', 4, 0], ['Sessions', 9, 0], ['Steps', 27, 1], ['Requests', 3, 0], ['Filter sets', 3, 0]].map(function (k) {
+      return { label: k[0], count: k[1], style: row + (k[2] ? 'background: #222226; color: #EDEDEF; font-weight: 500' : 'color: #A0A0A6') };
+    });
+    var collections = [['Sales prompts', 'Public', 9], ['Agents to try', 'Private', 6], ['Call tooling kit', 'Private', 5], ['Best of Opus 5.5', 'Public · @kit', 12], ['Research briefs', 'Filter set', 21]].map(function (c) {
+      return { name: c[0], meta: c[1], count: c[2] };
+    });
+    var tag = 'font-family: \'Geist Mono\', monospace; font-size: 10.5px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #27272B; color: ';
+    var changes = [
+      ['EDITED', '#F5CB4C', 'Summary on one prompt', '1 line changed', '2d'],
+      ['REMOVED', '#E5807F', 'Tone checker agent', 'build unpublished, your snapshot kept', '3d'],
+      ['RUN', '#86D193', 'Account research brief', 'worked on Opus 5.5 · @dax', '5h'],
+      ['ANSWER', '#EDEDEF', 'Step 4 · Paywalled sources', '@kit answered your saved request', '1d']
+    ].map(function (c) { return { tag: c[0], tagStyle: tag + c[1], item: c[2], detail: c[3], when: c[4] }; });
+    var st = { Same: 'color: #A0A0A6', Edited: 'color: #F5CB4C', Removed: 'color: #E5807F', Stale: 'color: #A0A0A6; filter: brightness(.8)' };
+    var data = [
+      ['Summary on one prompt', 'Step 7 · Call notes · @maya', 'Prompt', 'Edited', 4, 'today'],
+      ['Clean-up agent', 'Session 2 · Call notes · @maya', 'Agent', 'Same', 3, 'yesterday'],
+      ['Search plan', 'Step 2 · Research brief agent · @mira', 'Prompt', 'Same', 7, '3d ago'],
+      ['Tone checker agent', 'Step 3 · Cold email personaliser · @jay', 'Agent', 'Removed', 2, '1w ago'],
+      ['Label list for triage', 'Step 1 · Inbox triage · @kit', 'Prompt', 'Same', 19, '1w ago'],
+      ['Lead score rubric', 'Step 4 · Lead scoring · @luke', 'Prompt', 'Same', 5, '2w ago'],
+      ['Objection classifier', 'Step 2 · Objection coach · @ava', 'Prompt', 'Stale', 1, '1mo ago']
+    ];
+    var items = data.map(function (d, i) {
+      return { title: d[0], from: d[1], type: d[2], state: d[3], stateStyle: st[d[3]], used: d[4], last: d[5], rowStyle: i === 0 ? 'border-bottom: 1px solid #26262A; background: #222226' : 'border-bottom: 1px solid #26262A' };
+    });
+    return { notes: this.props.notes ?? true, kinds: kinds, collections: collections, changes: changes, items: items };
+  }
+}
+</script>
+</body>
+</html>

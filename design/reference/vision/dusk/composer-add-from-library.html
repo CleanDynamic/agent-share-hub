@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Composer Add from Library</title>
+<style>
+@font-face{font-family:"Geist";src:url("../../fonts/Geist-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+@font-face{font-family:"Geist Mono";src:url("../../fonts/GeistMono-Variable.woff2") format("woff2");font-weight:100 900;font-display:block}
+</style>
+<style>
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}
+</style>
+</head>
+<body>
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  <!-- the composer behind -->
+  <div aria-hidden="true" style="position: absolute; inset: 0; padding: 0 6px">
+    <div style="height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 20px; font-weight: 600; font-size: 14px">buildgallery <span style="font-weight: 400; color: #8E8E94">/ Drafts / Invoice chaser</span></div>
+    <div style="height: 838px; background: #19191B; border: 1px solid #232326; border-radius: 10px; padding: 32px 76px; box-sizing: border-box">
+      <div style="font-size: 20px; font-weight: 500">Invoice chaser</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 32px">
+        <div style="padding: 16px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; height: 420px; box-sizing: border-box"><div style="font-weight: 500">Session 1</div></div>
+        <div style="padding: 16px; background: #1E1E21; border: 1px solid #8E8E95; border-radius: 8px; height: 420px; box-sizing: border-box"><div style="font-weight: 500">Session 2 · Clean-up agent</div></div>
+        <div style="padding: 16px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px; height: 420px; box-sizing: border-box"><div style="font-weight: 500">Session 3</div></div>
+      </div>
+    </div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(0,0,0,.55)"></div>
+
+  <!-- the window -->
+  <section role="dialog" aria-labelledby="add-from-library" style="position: absolute; left: 50%; top: 80px; transform: translateX(-50%); width: 640px; background: #1E1E21; border: 1px solid #323237; border-radius: 12px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.8)">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 20px 0">
+      <div>
+        <h2 id="add-from-library" style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Add from Library</h2>
+        <p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">Inside Session 2 · Clean-up agent · prompts fit here</p>
+      </div>
+      <button aria-label="Close" style="width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; cursor: pointer"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 0 20px; border-bottom: 1px solid #26262A">
+      <div role="tablist" aria-label="Kind" style="display: flex; gap: 20px">
+        <button role="tab" aria-selected="true" style="height: 36px; background: none; border: none; border-bottom: 1px solid #EDEDEF; margin-bottom: -1px; padding: 0; color: #EDEDEF; font: inherit; font-weight: 500; cursor: pointer">Steps <span style="color: #8E8E94; font-weight: 400">14</span></button>
+        <button role="tab" aria-selected="false" style="height: 36px; background: none; border: none; padding: 0; color: #A0A0A6; font: inherit; font-weight: 500; cursor: pointer">Collections <span style="color: #8E8E94; font-weight: 400">3</span></button>
+      </div>
+      <span style="font-size: 12px; color: #8E8E94; padding-bottom: 8px">Sessions do not fit inside an agent</span>
+    </div>
+
+    <div style="padding: 12px 20px 0">
+      <input aria-label="Find a saved step" placeholder="Find a saved step" style="width: 100%; box-sizing: border-box; height: 32px; padding: 0 10px; background: #141416; border: 1px solid #27272B; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; outline: none">
+    </div>
+
+    <div role="radiogroup" aria-label="Saved prompts" style="padding: 8px 20px 0">
+      <!-- selected -->
+      <div role="radio" aria-checked="true" tabindex="0" style="margin: 0 -12px; padding: 12px; background: #222226; border: 1px solid #8E8E95; border-radius: 8px">
+        <div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-weight: 500">Summary on one prompt</span><span style="font-size: 12px; color: #F5CB4C">Edited since saved</span></div>
+        <div style="font-size: 12px; color: #8E8E94">Step 7 · Call notes that write themselves · @maya · Opus 5.5 · used in 4 builds</div>
+        <div role="group" aria-label="Version to insert" style="display: flex; gap: 2px; margin-top: 12px; padding: 2px; background: #141416; border: 1px solid #27272B; border-radius: 6px">
+          <button aria-pressed="true" style="flex: 1; height: 26px; background: #27272B; border: 1px solid #323237; border-radius: 4px; color: #EDEDEF; font: inherit; font-size: 12px; cursor: pointer">Saved version · 12 Oct</button>
+          <button style="flex: 1; height: 26px; background: none; border: none; color: #A0A0A6; font: inherit; font-size: 12px; cursor: pointer">Current version · 23 Oct</button>
+        </div>
+      </div>
+      <div role="radio" aria-checked="false" tabindex="-1" style="padding: 12px 0; border-bottom: 1px solid #26262A">
+        <div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-weight: 500">Search plan</span><span style="font-size: 12px; color: #8E8E94">Same</span></div>
+        <div style="font-size: 12px; color: #8E8E94">Step 2 · Research brief agent · @mira · Opus 5.5 · used in 7 builds</div>
+      </div>
+      <div role="radio" aria-checked="false" tabindex="-1" style="padding: 12px 0; border-bottom: 1px solid #26262A">
+        <div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-weight: 500">Label list for triage</span><span style="font-size: 12px; color: #8E8E94">Same</span></div>
+        <div style="font-size: 12px; color: #8E8E94">Step 1 · Inbox triage in one prompt · @kit · Sonnet 4.5 · used in 19 builds</div>
+      </div>
+      <div role="radio" aria-checked="false" tabindex="-1" style="padding: 12px 0">
+        <div style="display: flex; justify-content: space-between; gap: 12px"><span style="font-weight: 500">Objection classifier</span><span style="font-size: 12px; color: #8E8E94">Stale</span></div>
+        <div style="font-size: 12px; color: #8E8E94">Step 2 · Objection handling coach · @ava · last confirmed 5 months ago</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 16px 20px; border-top: 1px solid #26262A">
+      <p style="margin: 0; flex: 1; font-size: 12px; line-height: 17px; color: #8E8E94">Copied as a new prompt with its source. @maya is credited on the tile, and her step will show used in 5 builds.</p>
+      <button style="height: 32px; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; cursor: pointer">Cancel</button>
+      <button style="height: 32px; padding: 0 14px; background: #EDEDEF; border: none; border-radius: 6px; color: #121214; font: inherit; font-weight: 500; font-size: 12.5px; cursor: pointer">Insert</button>
+    </div>
+  </section>
+
+  
+</div>
+</body>
+</html>

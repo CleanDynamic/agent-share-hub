@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>buildgallery Drafts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F0F10}
+a{color:#EDEDEF;text-decoration:none}a:hover{color:#A0A0A6}
+.d-cols{display:grid;grid-template-columns:minmax(0,1fr) 400px;column-gap:72px}
+.nav-links{display:flex}
+@media (max-width:1100px){.d-cols{grid-template-columns:minmax(0,1fr);row-gap:48px}}
+@media (max-width:760px){.nav-links{display:none}}
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: #0F0F10; color: #EDEDEF; font-family: Geist, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 20px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums">
+
+  <header style="max-width: 1428px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 20px; box-sizing: border-box">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="3" y="5" width="12" height="11" rx="2" stroke="#EDEDEF" stroke-width="1.4"></rect><rect x="6" y="8" width="6" height="5" rx="1" fill="#EDEDEF"></rect><rect x="7" y="1.5" width="4" height="2" rx="1" fill="#F5CB4C"></rect></svg>
+      buildgallery
+    </a>
+    <span style="width: 1px; height: 18px; background: #34343A"></span>
+    <nav class="nav-links" aria-label="Main" style="gap: 4px; align-items: stretch; height: 56px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Home</a>
+      <a href="Builds.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Builds</a>
+      <a href="OpenWork.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">OpenBuilds</a>
+      <a href="Library.dc.html" style="display: flex; align-items: center; padding: 0 10px; color: #A0A0A6">Library</a>
+      <a href="Drafts.dc.html" aria-current="page" style="position: relative; display: flex; align-items: center; gap: 6px; padding: 0 10px; font-weight: 500; color: #EDEDEF">Drafts <span style="font-size: 11.5px; font-weight: 400; color: #8E8E94">28</span><span style="position: absolute; left: 10px; right: 10px; bottom: 10px; height: 3px; border-radius: 1px; background: #F5CB4C; box-shadow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)"></span></a>
+    </nav>
+    <div style="flex: 1"></div>
+    <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">New build</a>
+    <a href="#" aria-label="Your profile" style="width: 28px; height: 28px; border-radius: 14px; background: #27272B; border: 1px solid #323237; display: grid; place-items: center; font-size: 10.5px; font-weight: 500; color: #A0A0A6">ST</a>
+  </header>
+
+  <main style="width: calc(100% - 12px); max-width: 1428px; margin: 0 auto 6px; background: #19191B; border: 1px solid #232326; border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); box-sizing: border-box; padding: 40px clamp(16px, 5vw, 76px) 0">
+
+    <!-- page head -->
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px">
+      <div>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em">Drafts</h1>
+        <p style="margin: 4px 0 0; color: #A0A0A6">Pick up a build, or start one from a session.</p>
+      </div>
+      <a href="#" style="height: 32px; display: flex; align-items: center; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; font-weight: 500; font-size: 12.5px">Connect a tool</a>
+    </div>
+
+    <div class="d-cols" style="margin-top: 48px; padding-bottom: 64px">
+
+      <!-- ═════════ CONTINUE EDITING ═════════ -->
+      <section aria-label="Continue editing" style="min-width: 0">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+          <div><h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Continue editing</h2><p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">28 drafts · latest first</p></div>
+        </div>
+
+        <!-- start / drop target -->
+        <a href="#" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; margin-top: 16px; padding: 0 16px; border: 1px dashed #8E8E94; border-radius: 8px">
+          <span style="display: flex; align-items: center; gap: 10px; font-weight: 500"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="#EDEDEF" stroke-width="1.3"></path></svg>Start a new build</span>
+          <span style="font-size: 12px; color: #8E8E94">or drop a session here</span>
+        </a>
+
+        <div style="margin-top: 8px">
+          <sc-for list="{{drafts}}" as="d" hint-placeholder-count="12">
+            <a href="#" style="display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; column-gap: 16px; align-items: center; min-height: 56px; border-bottom: 1px solid #26262A">
+              <span style="min-width: 0"><span style="{{d.titleStyle}}">{{d.title}}</span><span style="display: block; font-size: 12px; color: #8E8E94">{{d.sessions}}</span></span>
+              <span style="font-size: 12px; color: #8E8E94; white-space: nowrap">{{d.edited}}</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#8E8E94" stroke-width="1.3"></path></svg>
+            </a>
+          </sc-for>
+        </div>
+        <button style="height: 32px; margin-top: 16px; padding: 0 12px; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; font: inherit; font-size: 12.5px; cursor: pointer">Show 16 more</button>
+      </section>
+
+      <!-- ═════════ SESSIONS ═════════ -->
+      <section aria-label="Sessions" style="min-width: 0">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+          <div><h2 style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.3">Sessions</h2><p style="margin: 2px 0 0; font-size: 12px; color: #8E8E94">8 imported · drag one into a draft</p></div>
+          <a href="#" style="font-size: 12px; color: #A0A0A6; text-decoration: underline; text-decoration-color: #34343A; text-underline-offset: 3px; line-height: 28px">How they get here</a>
+        </div>
+        <div style="margin-top: 16px; border-top: 1px solid #26262A">
+          <sc-for list="{{sessions}}" as="s" hint-placeholder-count="8">
+            <div style="display: grid; grid-template-columns: 12px 18px minmax(0, 1fr) 28px; column-gap: 10px; align-items: center; min-height: 56px; border-bottom: 1px solid #26262A">
+              <button aria-label="Drag session" style="width: 12px; height: 20px; display: grid; place-items: center; background: none; border: none; color: #5A5A60; cursor: grab; padding: 0"><svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true"><circle cx="2" cy="2" r="1" fill="currentColor"></circle><circle cx="6" cy="2" r="1" fill="currentColor"></circle><circle cx="2" cy="6" r="1" fill="currentColor"></circle><circle cx="6" cy="6" r="1" fill="currentColor"></circle><circle cx="2" cy="10" r="1" fill="currentColor"></circle><circle cx="6" cy="10" r="1" fill="currentColor"></circle></svg></button>
+              <span role="img" aria-label="{{s.tool}}" style="width: 18px; height: 18px; border-radius: 4px; background: #232327; display: grid; place-items: center; font-size: 10px; font-weight: 600; color: #E39A78">{{s.mark}}</span>
+              <span style="min-width: 0"><span style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.title}}</span><span style="display: block; font-size: 12px; color: #8E8E94">{{s.meta}}</span></span>
+              <button aria-label="Start a build from this session" style="width: 28px; height: 28px; display: grid; place-items: center; background: #27272B; border: 1px solid #323237; border-radius: 6px; color: #EDEDEF; cursor: pointer"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.3"></path></svg></button>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- inner tile, as the reference's Workspace limit -->
+        <div style="margin-top: 24px; padding: 14px 16px; background: #1E1E21; border: 1px solid #29292D; border-radius: 8px">
+          <div style="display: flex; justify-content: space-between; font-size: 12.5px"><span style="font-weight: 500">Connected tools</span><a href="#" style="color: #A0A0A6">Manage</a></div>
+          <div style="margin-top: 10px">
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 32px"><span style="color: #A0A0A6">Claude</span><span style="font-size: 12px; color: #8E8E94">last import 10 Oct</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; min-height: 32px"><span style="color: #A0A0A6">Claude Code</span><span style="font-size: 12px; color: #8E8E94">last import 8 Oct</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 20px 0 24px; border-top: 1px solid #26262A; font-size: 12.5px; color: #A0A0A6">
+      <span style="font-weight: 600; color: #EDEDEF">buildgallery</span>
+      <a href="#" style="color: #A0A0A6">About</a>
+      <a href="#" style="color: #A0A0A6">API docs</a>
+      <a href="#" style="color: #A0A0A6">Connect a tool</a>
+      <a href="#" style="color: #A0A0A6">Sign out</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var named = 'display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis';
+    var untitled = named + '; color: #A0A0A6';
+    var drafts = [
+      ['Untitled build', '2 sessions', 'edited 1h ago'],
+      ['Untitled build', '4 sessions', 'edited 2h ago'],
+      ['Untitled build', '2 sessions', 'edited 1d ago'],
+      ['Untitled build', 'No sessions', 'edited 1d ago'],
+      ['dddd', '1 session', 'edited 3d ago'],
+      ['Untitled build', 'No sessions', 'edited 3d ago'],
+      ['Untitled build', '2 sessions', 'edited 3d ago'],
+      ['Untitled build', '1 session', 'edited 3d ago'],
+      ['Untitled build', 'No sessions', 'edited 4d ago'],
+      ['This session is being continued from a previous conversation', '1 session', 'edited 2w ago'],
+      ['Untitled build', '2 sessions', 'edited 2w ago'],
+      ['Untitled build', 'No sessions', 'edited 2w ago']
+    ].map(function (d) { return { title: d[0], titleStyle: d[0] === 'Untitled build' ? untitled : named, sessions: d[1], edited: d[2] }; });
+    var sessions = [
+      ['This session is being continued from a previous conversation', 'Haiku 4.5 · 10 Oct · in 3 drafts', 'Claude', 'C'],
+      ['This is my site https://agent-share-hub.lovable.app', 'Claude Code · 8 Oct · in 4 drafts', 'Claude Code', 'C'],
+      ['Create 10 detailed implementation prompts (UI-P42 to UI-P51)', 'Claude · 7 Oct · in 5 drafts', 'Claude', 'C'],
+      ['Wire up keyboard shortcuts for the TipTap editor', 'Claude Code · 3 Oct · in 4 drafts', 'Claude Code', 'C'],
+      ['I have uploaded 4 files: Final_transcript.pdf', 'Claude · 25 Sep · in 1 draft', 'Claude', 'C'],
+      ['[Uploaded files: Final_transcript.pdf, IMG_8650.PNG]', 'Claude · 25 Sep · in 2 drafts', 'Claude', 'C'],
+      ['What is Amazon customer article mobile number', 'Claude · 24 Sep · in 1 draft', 'Claude', 'C'],
+      ['[Attached: buildgallery-brand-handover.md]', 'Claude · 23 Sep · in 1 draft', 'Claude', 'C']
+    ].map(function (s) { return { title: s[0], meta: s[1], tool: s[2], mark: s[3] }; });
+    return { drafts: drafts, sessions: sessions };
+  }
+}
+</script>
+</body>
+</html>
