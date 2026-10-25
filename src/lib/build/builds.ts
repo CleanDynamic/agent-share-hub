@@ -14,6 +14,7 @@ import {
   type BuildPatch,
   type BuildRecord,
   type BuildShape,
+  type NodeType,
 } from "./types";
 
 // post_doc (PT-01) is newer than the generated types, so PostgREST's type-level
@@ -179,10 +180,25 @@ export async function getBuildHeaderBySlug(slug: string): Promise<Build | null> 
  * assemble it themselves — that is the mistake that produced the fifteen-query
  * home feed. The four dependent reads run concurrently.
  */
-export async function getBuild(id: string): Promise<BuildRecord | null> {
+export async function getBuild(id: string, options: ComposeOptions = {}): Promise<BuildRecord | null> {
   const build = await getBuildHeader(id);
   if (!build) return null;
-  return composeRecord(build);
+  return composeRecord(build, options.nodeTypes);
+}
+
+/** How a record reads the node types: the registry's own cache by default, or the caller's (one query key, SV-03 P3). */
+export interface ComposeOptions {
+  nodeTypes?: () => Promise<NodeType[]>;
+}
+
+/**
+ * Only what the composer's route needs to choose a screen: the build's id and the build it was made from. A rebuild opens
+ * the legacy composer, and the check does not need the whole record, the tree or the registry to say so (SV-03 P3).
+ */
+export async function getBuildParent(id: string): Promise<{ id: string; parent_build_id: string | null } | null> {
+  const { data, error } = await supabase.from("builds").select("id, parent_build_id").eq("id", id).maybeSingle();
+  if (error) throw buildLayerError("getBuildParent", error);
+  return (data as { id: string; parent_build_id: string | null } | null) ?? null;
 }
 
 /**
@@ -209,12 +225,12 @@ export async function getBuildBySlug(slug: string): Promise<BuildRecord | null> 
   };
 }
 
-async function composeRecord(build: Build): Promise<BuildRecord> {
+async function composeRecord(build: Build, loadNodeTypes: () => Promise<NodeType[]> = getNodeTypes): Promise<BuildRecord> {
   const [tree, tray, events, nodeTypes] = await Promise.all([
     getNodeTree(build.id),
     getTray(build.id),
     getEvents(build.id),
-    getNodeTypes(),
+    loadNodeTypes(),
   ]);
   return { build, tree, tray, events, nodeTypes };
 }

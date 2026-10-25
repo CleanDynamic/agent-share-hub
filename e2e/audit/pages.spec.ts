@@ -6,14 +6,16 @@
    THE DATABASE IS THE AUDIT HARNESS (support/harness.ts, support/restFilter.ts), signed in as ME, with every request
    answered DB_DELAY_MS late, so a request chain shows as time: five rounds in a row cost five delays.
 
-   FOR EACH PAGE IN support/pageTargets.ts, three ways, each run RUNS times with the median reported:
-     cold    an empty cache: a fresh browser context opens the page.
+   FOR EACH PAGE IN support/pageTargets.ts, four ways, each run RUNS times with the median reported:
+     cold    an empty cache: a fresh browser context opens the page, code and all.
+     first   not visited yet: the app is open on another page (given time to load code at idle), and the page is opened from
+             inside it for the first time, with no hover first.
      warm    visited earlier in the same visit: the page is opened, left for another, and opened again from inside the app.
      reload  the page opened, then reloaded.
    From the navigation (or the click) to the page-ready mark (`usePageReady`) it records the time, the requests, the request
    ROUNDS (the longest chain of requests where each starts after the one before it ended) and the bytes of JSON received.
 
-   WHAT FAILS: a page whose `maxRounds` is missed cold, and a page whose cold request count is more than one over the number
+   WHAT FAILS: a page whose `maxRounds` is missed on its first visit from inside the app, and a page whose cold request count is more than one over the number
    in support/pageBaseline.json (written at the end of SV-03). Times are reported and never fail: a time is read by eye. */
 
 import { expect, test, type Browser, type Page } from "@playwright/test";
@@ -31,12 +33,14 @@ test.describe.configure({ mode: "serial" });
 const RUNS = Number(process.env.PAGES_RUNS ?? 3);
 const ONLY = (process.env.PAGES_ONLY ?? "").split(",").filter(Boolean);
 const TRACE = process.env.PAGES_TRACE === "1";
+/* PAGES_AFTER_MS=1500 adds that long after the ready mark to what is listed, to see what a page asks for next. */
+const AFTER_MS = Number(process.env.PAGES_AFTER_MS ?? 0);
 /* PAGES_REPORT_ONLY=1 writes the report and fails on nothing: the numbers before a change are what is being read. */
 const BASE_URL = process.env.PERF_BASE_URL ?? "";
 const BASELINE_FILE = path.resolve(process.cwd(), "e2e/audit/support/pageBaseline.json");
 
-type Mode = "cold" | "warm" | "reload";
-const MODES: Mode[] = ["cold", "warm", "reload"];
+type Mode = "cold" | "first" | "warm" | "reload";
+const MODES: Mode[] = ["cold", "first", "warm", "reload"];
 
 interface Sample {
   ms: number;
@@ -153,8 +157,8 @@ async function sampleOnce(browser: Browser, target: PageTarget, mode: Mode): Pro
       await page.goto(url, { waitUntil: "commit" });
       await ready(page, target.readyMark);
       const mark = await readMark(page, target.readyMark);
-      await page.waitForTimeout(150);
-      return summarise(spans, from - 1, mark.epoch + 1, mark.startTime);
+      await page.waitForTimeout(150 + AFTER_MS);
+      return summarise(spans, from - 1, mark.epoch + 1 + AFTER_MS, mark.startTime);
     }
 
     if (mode === "reload") {
@@ -169,6 +173,27 @@ async function sampleOnce(browser: Browser, target: PageTarget, mode: Mode): Pro
       return summarise(spans, from - 1, mark.epoch + 1, mark.startTime);
     }
 
+    const goInApp = (to: string) =>
+      page.evaluate((address) => {
+        const at = performance.now();
+        const epoch = Date.now();
+        history.pushState({}, "", address);
+        dispatchEvent(new PopStateEvent("popstate"));
+        return { at, epoch };
+      }, to);
+
+    if (mode === "first") {
+      const [from, fromMark] = target.key === "home" ? ["/library", "library"] : ["/", "home"];
+      await page.goto(from, { waitUntil: "commit" });
+      await ready(page, fromMark);
+      await page.waitForTimeout(1_500);
+      const start = await goInApp(url);
+      await ready(page, target.readyMark);
+      const mark = await readMark(page, target.readyMark);
+      await page.waitForTimeout(150);
+      return summarise(spans, start.epoch - 1, mark.epoch + 1, mark.startTime - start.at);
+    }
+
     // warm: open it, leave for Drafts (or Library), come back from inside the app
     await page.goto(url, { waitUntil: "commit" });
     await ready(page, target.readyMark);
@@ -180,16 +205,7 @@ async function sampleOnce(browser: Browser, target: PageTarget, mode: Mode): Pro
     }, elsewhere);
     await ready(page, elsewhereMark);
     await page.waitForTimeout(400);
-    const start = await page.evaluate(
-      (to) => {
-        const at = performance.now();
-        const epoch = Date.now();
-        history.pushState({}, "", to);
-        dispatchEvent(new PopStateEvent("popstate"));
-        return { at, epoch };
-      },
-      url,
-    );
+    const start = await goInApp(url);
     await ready(page, target.readyMark);
     const mark = await readMark(page, target.readyMark);
     await page.waitForTimeout(150);
@@ -247,7 +263,10 @@ test("pages: report and targets", async () => {
   for (const target of PAGE_TARGETS) {
     const cold = results.find((row) => row.key === target.key && row.mode === "cold");
     if (!cold) continue;
-    if (target.maxRounds !== null && cold.rounds > target.maxRounds) failures.push(`${target.key}: ${cold.rounds} rounds, the target is ${target.maxRounds}`);
+    // Rounds are judged where the page is opened from inside the app: a direct load's code takes long enough to open gaps
+    // between requests that no chain made, and a gap is not a round.
+    const first = results.find((entry) => entry.key === target.key && entry.mode === "first");
+    if (first && target.maxRounds !== null && first.rounds > target.maxRounds) failures.push(`${target.key}: ${first.rounds} rounds, the target is ${target.maxRounds}`);
     const allowed = baseline[target.key];
     if (allowed !== undefined && cold.requests > allowed + 1) failures.push(`${target.key}: ${cold.requests} requests, ${allowed} after SV-03 and one more is allowed`);
   }

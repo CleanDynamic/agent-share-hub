@@ -14,34 +14,40 @@
    never reached from /compose/new, so a visit that began on the new composer
    stays on it.
 
-   THE CHECK READS THE QUERY THE COMPOSER LOADS ANYWAY (`composeBuildQueryKey`),
-   so choosing the screen costs no second request.
+   THE CHECK IS LIGHT (SV-03 P3): `getBuildParent` reads the build's id and its
+   parent and nothing else. The composer's record is not what the route waits for,
+   so the composer's code (`preloadComposer`) and its first-screen reads
+   (`startComposerReads`, on the keys the page's hooks use) start the moment the
+   route matches, at the same time as the check, and the page finds them ready.
 
    ITS IMPORTS STAY NARROW. App.tsx imports this file eagerly, so it names the
-   modules it needs (the key, `getBuild` from builds.ts) rather than
+   modules it needs (`getBuildParent` from builds.ts, the preloader) rather than
    `useComposeBuild` or the `@/lib/build` barrel, either of which put the whole
-   build layer into every visitor's first download.
+   build layer into every visitor's first download. The reads themselves are in
+   composerOpen.ts, imported when they are started.
 
    SIGNED OUT goes to /login, as the old screens do. */
 
 import { SkipToBuild } from "./buildFocus";
-import { lazy, Suspense, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 
 import { SiteFrame } from "@/components/shell/SiteFrame";
 import { useAuth } from "@/contexts/AuthContext";
-import { composeBuildQueryKey } from "@/hooks/composeBuildQueryKey";
-import { getBuild } from "@/lib/build/builds";
+import { getBuildParent } from "@/lib/build/builds";
 import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
-import type { BuildRecord } from "@/lib/build/types";
 
 import { ComposeSkeleton } from "./ComposeSkeleton";
+import { preloadComposer } from "./preload";
 
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));
 /** UI-P63: the new composer, its own chunk, only fetched while the switch is on. */
-const SandboxPage = lazy(() => import("./SandboxPage"));
+const SandboxPage = lazy(() => preloadComposer() as Promise<{ default: React.ComponentType }>);
+
+/** The route's own check, under its own key: it is not the composer's record any more. */
+const composeParentKey = (buildId: string | undefined) => ["build", "getBuildParent", buildId] as const;
 
 const FALLBACK = <div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />;
 
@@ -57,10 +63,23 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const hasFrom = new URLSearchParams(location.search).has("from") || fromIntake;
   const [startedNew] = useState(() => !buildId);
 
-  const check = useQuery<BuildRecord | null>({
-    queryKey: composeBuildQueryKey(buildId),
-    queryFn: () => getBuild(buildId as string),
-    enabled: Boolean(buildId) && isLoggedIn && !hasFrom && !startedNew,
+  const queryClient = useQueryClient();
+  const reads = Boolean(buildId) && isLoggedIn && !hasFrom && !startedNew;
+  /* Its data starts first, once the session says who is asking: the small module that holds the reads is asked for before
+     the composer's page, so the page's download (the heavy one) does not queue in front of it. The keys are the page's. */
+  useEffect(() => {
+    if (!reads || !buildId) return;
+    void import("./composerOpen").then(({ startComposerReads }) => startComposerReads(queryClient, buildId));
+  }, [reads, buildId, queryClient]);
+  /* The composer's code starts now, whoever is signed in: it is the same file for everybody. */
+  useEffect(() => {
+    void preloadComposer();
+  }, []);
+
+  const check = useQuery({
+    queryKey: composeParentKey(buildId),
+    queryFn: () => getBuildParent(buildId as string),
+    enabled: reads,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -73,7 +92,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   if (hasFrom) return <>{legacy}</>;
   if (buildId && !startedNew) {
     if (check.isPending && check.fetchStatus !== "idle") return FALLBACK;
-    if (check.data?.build.parent_build_id) return <>{legacy}</>;
+    if (check.data?.parent_build_id) return <>{legacy}</>;
   }
 
   return (

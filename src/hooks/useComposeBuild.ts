@@ -47,6 +47,7 @@ import { pendingWrites } from "@/lib/build/pendingWrites";
 import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
 import { canSucceedLater, errorCode, errorLine, shortReason } from "@/lib/errors/code";
 import { composeBuildQueryKey } from "./composeBuildQueryKey";
+import { fetchNodeTypes } from "./useNodeType";
 
 /** Quiet enough that a sentence of typing is one write, short enough that the
  *  indicator settles while the creator is still looking at the field. */
@@ -130,7 +131,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
 
   const query = useQuery<BuildRecord | null>({
     queryKey: composeBuildQueryKey(buildId),
-    queryFn: () => getBuild(buildId as string),
+    queryFn: () => getBuild(buildId as string, { nodeTypes: () => fetchNodeTypes(queryClient) }),
     enabled: Boolean(buildId),
     // The editor is the only writer on this record while it is open, so a
     // refetch can only arrive stale and fight the optimistic overlay below.
