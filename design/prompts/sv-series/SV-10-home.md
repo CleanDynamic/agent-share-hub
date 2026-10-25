@@ -1,14 +1,14 @@
-# CA-38 · Home
+# SV-10 · Home
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** After CA-37, before CA-39. Read the series README (`design/prompts/ca-series/README.md`) first: its How to work, Pages, Motion limits, Performance and Database rules, and its Report apply. Pull main first. Lovable commits straight to main. Branch `ca-38-home`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-38 Home` at the end.
+**Order.** After SV-09, before SV-11. Read the series README (`design/prompts/sv-series/README.md`) first: its How to work, Pages, Motion limits, Performance and Database rules, and its Report apply. Pull main first. Lovable commits straight to main. Branch `sv-10-home`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-10 Home` at the end.
 
-The facts here were checked on 25 October 2026, at `6b8fe91`, before CA-29 to CA-37 merged. **The file on disk wins.**
+The facts here were checked on 25 October 2026, at `6b8fe91`, before SV-01 to SV-09 merged. **The file on disk wins.**
 
 ## Intent
 
-Home becomes three columns: the maker's own work on the left, a feed of build posts in the centre, the site's activity on the right. It must match `design/reference/vision/dusk/home.html`. Home now carries the feed; CA-39 retires the Gallery's feed view.
+Home becomes three columns: the maker's own work on the left, a feed of build posts in the centre, the site's activity on the right. It must match `design/reference/vision/dusk/home.html`. Home now carries the feed; SV-11 retires the Gallery's feed view.
 
 ## Source
 
@@ -17,9 +17,9 @@ Home becomes three columns: the maker's own work on the left, a feed of build po
 
 ## What earlier prompts left here
 
-- **CA-31:** `getBuildFeed` returns the classification columns in its one request (Part 4); `BUILD_LIST_COLUMNS` has no `post_doc` or `making`; the route table entry and `usePageReady("home")`; fetching at idle.
-- **CA-32:** the route's `Placeholder` and its match test; `PageLink`.
-- **CA-36:** the drafts list and the Sessions list's source.
+- **SV-03:** `getBuildFeed` returns the classification columns in its one request (Part 4); `BUILD_LIST_COLUMNS` has no `post_doc` or `making`; the route table entry and `usePageReady("home")`; fetching at idle.
+- **SV-04:** the route's `Placeholder` and its match test; `PageLink`.
+- **SV-08:** the drafts list and the Sessions list's source.
 
 ## Layout (exact values are in the board)
 
@@ -57,7 +57,7 @@ The footer carries the Noon, Dusk, System switch.
 
 - **Vercel rules:** `async-parallel`, `async-defer-await`, `rendering-content-visibility`, `rerender-no-inline-components`, `bundle-dynamic-imports`.
 - **Two rounds, no more.** Round 1: every read that doesn't depend on another starts at once with the feed's first page, the left and right columns included. Round 2: only the build posts' `post_doc` for the feed's ids.
-- **`post_doc` only where it's seen.** It is heavy (CA-31 took it out of list reads for that reason). Read it for the posts in the first screen; read the rest as each post comes within one screen of view (`IntersectionObserver`), in one request per batch.
+- **`post_doc` only where it's seen.** It is heavy (SV-03 took it out of list reads for that reason). Read it for the posts in the first screen; read the rest as each post comes within one screen of view (`IntersectionObserver`), in one request per batch.
 - **Images:** the README's image rule; the first post's picture is the one that isn't lazy if it is the largest image in the first screen.
 - **Charts:** Your week's day bars carry a text summary ("Active 5 of 7 days").
 - **The feed's off-screen items** use `content-visibility: auto` with a `contain-intrinsic-size` near their real height.
@@ -69,13 +69,13 @@ The footer carries the Noon, Dusk, System switch.
 
 Read the files above. Map every element in the board to the function that supplies it today, in a table: element → function → exists or not → round 1 or 2. Write `Assumptions` and `Plan`.
 
-Commit: `CA-38 P0: plan`.
+Commit: `SV-10 P0: plan`.
 
 ## Part 1 · The view
 
-`HomeView` takes props for all three columns, each section its own component. Reuse `FeedPost`, `Plaque`, `EngagementRow`, `Avatar`, `MadeWithMarks` and CA-30's pieces. The dev page `vision-home` renders it from `src/dev/fixtures/vision/home.ts`. The route's `Placeholder` becomes this page's loading state.
+`HomeView` takes props for all three columns, each section its own component. Reuse `FeedPost`, `Plaque`, `EngagementRow`, `Avatar`, `MadeWithMarks` and SV-02's pieces. The dev page `vision-home` renders it from `src/dev/fixtures/vision/home.ts`. The route's `Placeholder` becomes this page's loading state.
 
-Commit: `CA-38 P1: Home view`.
+Commit: `SV-10 P1: Home view`.
 
 ## Part 2 · Wire what exists
 
@@ -95,28 +95,28 @@ Commit: `CA-38 P1: Home view`.
 | Most run this week | new `listMostReproduced({ since, limit })` in `src/lib/build/signals.ts`: a count of `build_reproductions` in the window grouped by build. No schema change. The `EXPLAIN` to run goes in the function's comment, and in the report for Miles |
 | Where next | `getWhereNextForViewer` |
 
-**Not live yet:** Since you were last here (CA-43). The view renders it from props; the live page leaves the section out until CA-43.
+**Not live yet:** Since you were last here (SV-15). The view renders it from props; the live page leaves the section out until SV-15.
 
-Commit: `CA-38 P2: Home data`.
+Commit: `SV-10 P2: Home data`.
 
 ## Part 3 · Requests and performance
 
 1. `npm run audit:pages` gains Home with the two-round target, and fails when it is missed. Report the request count and the JSON received.
 2. `npm run audit:perf` before and after: LCP, CLS and the INP proxy must not get worse.
 
-Commit: `CA-38 P3: requests and performance`.
+Commit: `SV-10 P3: requests and performance`.
 
 ## Part 4 · Post links in the feed
 
 The board draws links in a post as `RefLinks` draws them on the build page. The feed has no `PostRefsProvider` today, so links show as plain words. Add the provider only if each build's link targets can be read for the whole page in the round 2 request; otherwise keep plain words and say so in the report.
 
-Commit: `CA-38 P4: post links in the feed` (or no commit, with the reason).
+Commit: `SV-10 P4: post links in the feed` (or no commit, with the reason).
 
 ## Part 5 · Compare
 
 `npm run audit:design -- --grep "vision/dusk/home"` within 4%. List every remaining difference.
 
-Commit: `CA-38 P5: compare and checks`.
+Commit: `SV-10 P5: compare and checks`.
 
 ---
 

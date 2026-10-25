@@ -1,10 +1,10 @@
-# CA-39 · Builds: the page and the Table
+# SV-11 · Builds: the page and the Table
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** After CA-38, before CA-40. Read the series README (`design/prompts/ca-series/README.md`) first: its How to work, Pages, Motion limits, Performance and Database rules, and its Report apply. Pull main first. Lovable commits straight to main. Branch `ca-39-builds-table`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-39 Builds: page and Table` at the end.
+**Order.** After SV-10, before SV-12. Read the series README (`design/prompts/sv-series/README.md`) first: its How to work, Pages, Motion limits, Performance and Database rules, and its Report apply. Pull main first. Lovable commits straight to main. Branch `sv-11-builds-table`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-11 Builds: page and Table` at the end.
 
-The facts here were checked on 25 October 2026, at `6b8fe91`, before CA-29 to CA-38 merged. **The file on disk wins.**
+The facts here were checked on 25 October 2026, at `6b8fe91`, before SV-01 to SV-10 merged. **The file on disk wins.**
 
 ## Intent
 
@@ -17,10 +17,10 @@ The Gallery becomes Builds: one page with three views of the same filtered set (
 
 ## What earlier prompts left here
 
-- **CA-30:** `/builds` is the route (`SITE_NAV.gallery`), and `/gallery` redirects to it.
-- **CA-31 Part 4:** `listGallery` returns the classification columns in its own select, tries come with it where the table allows, and the facets can start alongside it.
-- **CA-31 and CA-32:** the route table entry (keyed `gallery`), `usePageReady`, the `Placeholder` and its match test, `PageLink`, `keepPreviousData` for filters and lenses.
-- **CA-38:** Home carries the feed.
+- **SV-02:** `/builds` is the route (`SITE_NAV.gallery`), and `/gallery` redirects to it.
+- **SV-03 Part 4:** `listGallery` returns the classification columns in its own select, tries come with it where the table allows, and the facets can start alongside it.
+- **SV-03 and SV-04:** the route table entry (keyed `gallery`), `usePageReady`, the `Placeholder` and its match test, `PageLink`, `keepPreviousData` for filters and lenses.
+- **SV-10:** Home carries the feed.
 
 ## Layout (exact values are in the board)
 
@@ -38,7 +38,7 @@ The Gallery becomes Builds: one page with three views of the same filtered set (
 ## Rules for this prompt
 
 - **Vercel rules:** `async-parallel` (list, stats, lens counts and facets start together), `rendering-content-visibility` (table rows past the first screen), `rerender-derived-state-no-effect` (filters, sort, lens and view are read from the address, never copied into state), `rerender-no-inline-components`, `bundle-dynamic-imports` (Maps and Classification are separate chunks, prefetched on hover of their segment).
-- **One round.** List, stats, lens counts and facets start at once; the page's first screen needs nothing after them. Classifications come in the list's own select (CA-31).
+- **One round.** List, stats, lens counts and facets start at once; the page's first screen needs nothing after them. Classifications come in the list's own select (SV-03).
 - **Same page, new parameters:** a filter, a lens, a sort or a view change keeps the old rows until the new arrive, with no fade. The view switch prefetches the other view's chunk on hover.
 - **Counts:** "Of n published" and the facet counts are estimated where the table is large.
 - **Real controls** (the board draws them as styled elements): the checklists are checkboxes with their labels; the number filters are two-handle sliders, each handle keyboard operable with `aria-valuetext` ("3 or more"); the histogram and the Runs 12 weeks bars are hidden from screen readers, with a text summary on the group; each grip is a button named "Move <filter>"; sortable column heads are buttons with `aria-sort` on their header cell.
@@ -52,20 +52,20 @@ The Gallery becomes Builds: one page with three views of the same filtered set (
 2. **The Gallery's views.** List every file only the Gallery's feed and dashboard views use, checked against the route list in `App.tsx`. They are retired in Part 1.
 3. Write `Assumptions` and `Plan`.
 
-Commit: `CA-39 P0: plan`.
+Commit: `SV-11 P0: plan`.
 
 ## Part 1 · The page frame and view switch
 
-1. `BuildsPage` in `src/pages/site/builds/` reads the filters, sort, lens and view from the address, loads once, and passes the same builds to whichever view is chosen. CA-40 and CA-41 add the other two views; until then they render "Not built yet". `/builds` renders `BuildsPage`. The route table entry `gallery` points at it, with its prefetch and `Placeholder`.
+1. `BuildsPage` in `src/pages/site/builds/` reads the filters, sort, lens and view from the address, loads once, and passes the same builds to whichever view is chosen. SV-12 and SV-13 add the other two views; until then they render "Not built yet". `/builds` renders `BuildsPage`. The route table entry `gallery` points at it, with its prefetch and `Placeholder`.
 2. **Retire the Gallery's views.** The files Part 0 listed, which nothing now imports, are deleted with their tests (README: remove what your own change leaves unused). Anything another route still uses stays and goes in `Dead code seen`.
 
-Commit: `CA-39 P1: Builds page, view switch, Gallery views retired`.
+Commit: `SV-11 P1: Builds page, view switch, Gallery views retired`.
 
 ## Part 2 · Filter panel and table views
 
 `BuildsFiltersView` and `BuildsTableView`, pure, with every element of the board, each section its own component. The dev page `vision-builds-table` renders the fixture.
 
-Commit: `CA-39 P2: filter panel and table views`.
+Commit: `SV-11 P2: filter panel and table views`.
 
 ## Part 3 · Wire what exists
 
@@ -81,17 +81,17 @@ Commit: `CA-39 P2: filter panel and table views`.
 | Columns live now | Build, What was built, Field, Tools, Reproductions, Confirmed, Rebuilds, Open, Cost to run (from the list's own row) |
 | Footer | count, most common Field and Tools on the page |
 
-**Not live yet:** Steps and Sessions columns and filters, Runs 12 weeks, Reproductions as a range, Works on model, Last confirmed, Rebuilds and Likes as filters (CA-51); Saved filter sets, dragging and resizing filters, the Columns chooser, Add a calculation (CA-52). On the live page, Add a filter lists only filters that work.
+**Not live yet:** Steps and Sessions columns and filters, Runs 12 weeks, Reproductions as a range, Works on model, Last confirmed, Rebuilds and Likes as filters (SV-23); Saved filter sets, dragging and resizing filters, the Columns chooser, Add a calculation (SV-24). On the live page, Add a filter lists only filters that work.
 
 `npm run audit:pages` gains Builds with a one-round target, and fails when it is missed.
 
-Commit: `CA-39 P3: Builds data`.
+Commit: `SV-11 P3: Builds data`.
 
 ## Part 4 · Compare
 
 `npm run audit:design -- --grep "vision/dusk/builds-table"` within 4%.
 
-Commit: `CA-39 P4: compare and checks`.
+Commit: `SV-11 P4: compare and checks`.
 
 ---
 

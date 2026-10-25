@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write the vision boards into this repository.
 
-This one file carries the eight vision boards the CA-29 to CA-54 series is
+This one file carries the eight vision boards the SV-01 to SV-26 series is
 built against (Home, OpenBuilds, Builds Table, Maps and Classification,
 Library, Composer Add from Library, Drafts): each board's design source, the
 board rendered to standalone HTML, a picture of it, and the index the compare

@@ -1,22 +1,22 @@
-# CA-34 · Motion rework: one animator, smooth and measured
+# SV-06 · Motion rework: one animator, smooth and measured
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** After CA-33, before CA-35. CA-35 and CA-46 (Add from Library) use the animator this prompt builds. This prompt reuses CA-32's frame tools (`e2e/audit/support/frames.ts`) and leaves CA-32's page fade alone: it covers motion inside the build page only. Read the series README (`design/prompts/ca-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `ca-34-motion-rework`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-34 motion rework` at the end.
+**Order.** After SV-05, before SV-07. SV-07 and SV-18 (Add from Library) use the animator this prompt builds. This prompt reuses SV-04's frame tools (`e2e/audit/support/frames.ts`) and leaves SV-04's page fade alone: it covers motion inside the build page only. Read the series README (`design/prompts/sv-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `sv-06-motion-rework`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-06 motion rework` at the end.
 
-The facts here were checked on 25 October 2026, at `6b8fe912`, before CA-28 to CA-33 merged. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report.
+The facts here were checked on 25 October 2026, at `6b8fe912`, before CA-28 to SV-05 merged. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report.
 
 If the session runs short, stop at the end of a finished part with every test green, commit, and report which parts are left.
 
 ## How to work
 
-- **Plan first.** End Part 0 by writing two short lists at the top of `design/audits/composer/ca-34/before.md`:
+- **Plan first.** End Part 0 by writing two short lists at the top of `design/audits/composer/sv-06/before.md`:
   - `Assumptions`: each fact in "Why" that you checked, and what you found;
   - `Plan`: one line per part, `Part n: what changes -> verified by: which test or audit number`.
 - **Reproduce first.** For every cause, write the test or audit moment that shows it, watch it fail, then fix it.
 - **A missing premise is reported, not fixed.** If a cause listed here isn't there on disk, don't build a fix for it. Say so and move on.
 - **Build only what has a caller.** The animator supports the change kinds and plans some action uses today. Nothing is added for a case no code sends.
-- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for CA-54; don't delete it.
+- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for SV-26; don't delete it.
 - **Questions.** Miles isn't watching the session. Where you would ask, take the safer reading, carry on, and put the question in the report.
 - **The domain isn't live yet.** Don't fetch `https://buildgallery.ai`. Use the dev pages.
 
@@ -52,7 +52,7 @@ The motion from CA-21 and CA-22 looks clunky on the site: things snap, stutter, 
   - their timings, except slide duration (Part 5);
   - reduced motion.
 - What changes is how motion is run: from one place, without cancelling itself, on the compositor, measured.
-- CA-32's page change (the view transition fade, the progress line, scroll on Back) is outside this prompt. Leave it as it is.
+- SV-04's page change (the view transition fade, the progress line, scroll on Back) is outside this prompt. Leave it as it is.
 
 ## House rules
 
@@ -81,9 +81,9 @@ The motion from CA-21 and CA-22 looks clunky on the site: things snap, stutter, 
    - `src/lib/build/buildMotion.ts` and `motionIntent.ts`;
    - in `src/pages/site/compose/`: `flip.ts` (its `settle`, which cancels slides), `buildMotion.tsx`, `buildDirector.tsx`, `foldMotion.tsx`, `mapMorph.tsx`, `arrival.tsx`, `editHandlers.ts`, `useBuildSorting.ts`, `listNest.tsx`, `skeleton.tsx`, and `largeBuild.tsx` (windowed tiles, and a second `settle`: a per-frame scroll hold after a jump that already stops when the maker scrolls; not the same function as `flip.ts`'s);
    - where `BuildList.tsx` uses each of these, and the CA-22 dev page `src/pages/dev/MotionDemo.tsx` with its fixture `src/dev/fixtures/ca22.ts`;
-   - CA-33's number crossfade, which this prompt routes through the animator.
+   - SV-05's number crossfade, which this prompt routes through the animator.
    - **Remounts** (`rerender-no-inline-components`): list every component defined inside another component in `BuildList.tsx`, `SandboxPage.tsx` and the files the list draws, and every `key` that changes when it shouldn't. A remounted element loses its running animation, so it snaps whatever the animator does. Add any found to "Why" in the plan. Part 1 moves them out.
-2. **Write a real-browser motion audit:** `e2e/audit/motion.spec.ts` under `playwright.audit.config.ts`, run by a new script `npm run audit:motion`. Build it on CA-32's `e2e/audit/support/frames.ts` (the frame sampler, long tasks, per-frame boxes) and add what is missing there, such as the cancelled-animation counter, so both audits share one set of tools. On the dev pages (MotionDemo, `?build=ca21`, `?build=references`), it plays:
+2. **Write a real-browser motion audit:** `e2e/audit/motion.spec.ts` under `playwright.audit.config.ts`, run by a new script `npm run audit:motion`. Build it on SV-04's `e2e/audit/support/frames.ts` (the frame sampler, long tasks, per-frame boxes) and add what is missing there, such as the cancelled-animation counter, so both audits share one set of tools. On the dev pages (MotionDemo, `?build=ca21`, `?build=references`), it plays:
    - each of CA-22's sixteen moments;
    - a tile drag across two sessions;
    - a session drag into another part;
@@ -99,10 +99,10 @@ The motion from CA-21 and CA-22 looks clunky on the site: things snap, stutter, 
    - **cancelled animations:** wrap `Element.prototype.animate` to count animations cancelled before they finish without being continued from where they were;
    - **the largest one-frame jump:** for every `[data-slide-id]` element, its position each frame; report the largest single-frame move as a share of its whole travel;
    - **click to first frame:** the time from the input event to the first frame where anything changed.
-4. **Run it at 1440 in Dusk** and save the numbers as a table in `design/audits/composer/ca-34/before.md`, under the `Assumptions` and `Plan` lists. Add a column, `what the eye sees`, with one precise line per moment, for example `lane corners stretch mid-slide` or `tiles snap when the import lands`. Save a Playwright video of each moment into `design/audits/composer/ca-34/before/`.
+4. **Run it at 1440 in Dusk** and save the numbers as a table in `design/audits/composer/sv-06/before.md`, under the `Assumptions` and `Plan` lists. Add a column, `what the eye sees`, with one precise line per moment, for example `lane corners stretch mid-slide` or `tiles snap when the import lands`. Save a Playwright video of each moment into `design/audits/composer/sv-06/before/`.
 5. **A motion inventory by usage.** List every `animate()` call and CSS transition in `src/pages/site/compose/` with: what it does (slide, drop, lift, outline, crossfade, fold, open, close, hover), its duration, curve and distance, any delay, and the `buildMotion.ts` timing for that usage. Mark each `matches`, `off the scale for its usage`, or `no timing for this usage`. Judge by what the motion does, never by the nearest number. Change only the `off the scale` ones, in the part that owns them, and report the `no timing` ones. A delay on anything that leaves is `off the scale`.
 
-Commit: `CA-34 P0: motion audit, baseline and plan`.
+Commit: `SV-06 P0: motion audit, baseline and plan`.
 
 ## Part 1 · One list animator
 
@@ -116,20 +116,20 @@ Commit: `CA-34 P0: motion audit, baseline and plan`.
    - **drop:** it is new;
    - **lift:** it is going; the leaving copy is held as `useLeaving` does now;
    - **outline once:** it is the thing that moved, or was found;
-   - **crossfade:** its words changed (including CA-33's number crossfade).
+   - **crossfade:** its words changed (including SV-05's number crossfade).
    The other modules stop playing anything themselves. They tell the animator what kind of change is coming (Part 2) and anything special: fold, a copy coming out from under its original, the map morph.
 5. **Never cancel, always continue.** If an element is already moving when a new plan arrives, its new slide starts from where it is drawn at that moment and goes to its new place. "Where it is drawn" is read in `getSnapshotBeforeUpdate` from the element's running animations (`getAnimations()`) and its computed transform, never from its target box. Remove `settle(root)` from `play()`, and remove every other cancel of another module's animation. `finishSlides` stays only for the animator's own use, and for reduced motion.
-6. **Route every player through it:** `arrival.tsx`, the director, `foldMotion.tsx`, the sorting drag and settle, the "any other change of order" watcher, and CA-33's number crossfade. Afterwards `flip.ts` exports only measuring helpers, and only `listMotion.ts` calls `element.animate` in the list. The map morph's flying copies and the notice stay where they are, outside the list.
+6. **Route every player through it:** `arrival.tsx`, the director, `foldMotion.tsx`, the sorting drag and settle, the "any other change of order" watcher, and SV-05's number crossfade. Afterwards `flip.ts` exports only measuring helpers, and only `listMotion.ts` calls `element.animate` in the list. The map morph's flying copies and the notice stay where they are, outside the list.
 
 **Tests (jsdom, with `animate` stubbed):** two changes in one commit make one plan; a change during a slide continues from the drawn position (the stub reports a running transform, and the new slide starts from it); no module other than `listMotion.ts` calls `animate` on list elements (a static check over the source); `play` no longer cancels; no skipped tile is measured (spy on `getBoundingClientRect` over a windowed build); each remount found in Part 0 no longer happens on the change that caused it.
 
-Commit: `CA-34 P1: one list animator`.
+Commit: `SV-06 P1: one list animator`.
 
 ## Part 2 · Changes carry their own label
 
 1. **Replace the module-level intent** (`motionIntent.ts`, `INTENT_FRESH_MS`) with a label the action hands to the animator:
    - `motion.expect({ kind, keys })`, where `keys` are the tiles, sessions or parts the action touches;
-   - `kind` is one of the kinds some action sends today. `MotionKind` now lists remove, clear, duplicate, convert, merge, split, add, change, move, part, undo, redo and restore. Keep a kind only if a caller sends it; list any you dropped. Keep `duplicate` and `add` whatever the count today: CA-46 (Add from Library) inserts with them, and CA-49 adds sessions and ghost rows with `add`;
+   - `kind` is one of the kinds some action sends today. `MotionKind` now lists remove, clear, duplicate, convert, merge, split, add, change, move, part, undo, redo and restore. Keep a kind only if a caller sends it; list any you dropped. Keep `duplicate` and `add` whatever the count today: SV-18 (Add from Library) inserts with them, and SV-21 adds sessions and ghost rows with `add`;
    - the animator uses the label on the first commit that contains those keys;
    - it is spent when used, never by time.
    - A change with no label still slides plainly. It never snaps.
@@ -138,7 +138,7 @@ Commit: `CA-34 P1: one list animator`.
 
 **Tests:** a labelled remove lifts then slides; an unlabelled change slides; a label waits for a slow write (5 s) and is still used; a label for keys that never arrive is dropped when the next labelled action starts; nothing is read in render (spy on `getBoundingClientRect` during render).
 
-Commit: `CA-34 P2: labels travel with the change`.
+Commit: `SV-06 P2: labels travel with the change`.
 
 ## Part 3 · Sequences follow the animations
 
@@ -150,7 +150,7 @@ Commit: `CA-34 P2: labels travel with the change`.
 
 **Tests:** with the main thread blocked 300 ms mid-sequence, the steps still happen in order; an interrupted sequence ends in the right end state; the skeleton never fades before its slides end.
 
-Commit: `CA-34 P3: sequences follow the animations`.
+Commit: `SV-06 P3: sequences follow the animations`.
 
 ## Part 4 · Only the compositor
 
@@ -163,7 +163,7 @@ Commit: `CA-34 P3: sequences follow the animations`.
 
 **Tests:** a static check that no `animate()` call in `src/pages/site/compose` uses `clipPath`, `strokeDasharray` (other than the map's lines), `height`, `width`, `top`, `left` or `scale` on an element with a border radius; `will-change` is gone at rest.
 
-Commit: `CA-34 P4: compositor only`.
+Commit: `SV-06 P4: compositor only`.
 
 ## Part 5 · Duration by distance, stagger by count
 
@@ -195,7 +195,7 @@ Commit: `CA-34 P4: compositor only`.
 
 **Tests:** 0 px is 150, 200 px is 200, 600 px is 300; one plan, one duration; 2 to 4 prompts keep 110 ms apart; 8 and 18 prompts start within 330 ms of the first; 2 to 6 list items keep 60 ms apart; 12 and 40 items spread over no more than 300 ms; one item has no stagger.
 
-Commit: `CA-34 P5: duration by distance, stagger by count`.
+Commit: `SV-06 P5: duration by distance, stagger by count`.
 
 ## Part 6 · Dragging once per frame
 
@@ -210,11 +210,11 @@ Commit: `CA-34 P5: duration by distance, stagger by count`.
 
 **Tests:** 200 pointer events in one frame run `decide` once; no layout read per move (spy); placement is unchanged from CA-21's tests; drag and scroll listeners are passive unless they call `preventDefault`.
 
-Commit: `CA-34 P6: dragging once per frame`.
+Commit: `SV-06 P6: dragging once per frame`.
 
 ## Part 7 · Scrolling yields to the maker
 
-1. **One scroll helper** for the build page (`scrollToMiddle`, `goToIt`, the arrival scroll and the jump tabs all use it). `largeBuild.tsx`'s `settle` already holds a jump in place frame by frame and stops on the maker's input; the helper reuses it for windowed builds rather than writing a second one. Scroll between pages stays with CA-32 Part 6.
+1. **One scroll helper** for the build page (`scrollToMiddle`, `goToIt`, the arrival scroll and the jump tabs all use it). `largeBuild.tsx`'s `settle` already holds a jump in place frame by frame and stops on the maker's input; the helper reuses it for windowed builds rather than writing a second one. Scroll between pages stays with SV-04 Part 6.
    - it uses the browser's own smooth scroll (`window.scrollTo` with `behavior: "smooth"`; `index.css` keeps `scroll-behavior: auto`);
    - it stops the moment the maker scrolls, touches, presses a key or grabs the scrollbar;
    - it never starts within 300 ms of the maker's own scrolling.
@@ -222,31 +222,31 @@ Commit: `CA-34 P6: dragging once per frame`.
 
 **Tests:** a wheel event during a helper scroll stops it; no helper scroll starts during a user scroll; no scroll when the target is already visible.
 
-Commit: `CA-34 P7: scrolling yields`.
+Commit: `SV-06 P7: scrolling yields`.
 
 ## Part 8 · Screens and checks
 
-1. **Run `npm run audit:motion` again** and save `design/audits/composer/ca-34/after.md`, with the before numbers beside the after ones. Thresholds, every one of which must pass:
+1. **Run `npm run audit:motion` again** and save `design/audits/composer/sv-06/after.md`, with the before numbers beside the after ones. Thresholds, every one of which must pass:
    - no more than 1 frame gap over 25 ms per moment;
    - no long task over 50 ms while something moves;
    - zero animations cancelled without being continued;
    - no element moves more than 35% of its travel in one frame;
    - click to first frame at or under 100 ms.
    Make `npm run audit:motion` fail when a threshold fails.
-   Also run `npm run audit:pages`: CA-31's request rounds and CA-32's page change checks still pass.
-2. **Save a Playwright video of each moment** into `design/audits/composer/ca-34/after/`, the same moments as before, so Miles can watch them side by side. Watch them yourself first (Motion limits, last point), and check each `what the eye sees` line from Part 0 is gone.
+   Also run `npm run audit:pages`: SV-03's request rounds and SV-04's page change checks still pass.
+2. **Save a Playwright video of each moment** into `design/audits/composer/sv-06/after/`, the same moments as before, so Miles can watch them side by side. Watch them yourself first (Motion limits, last point), and check each `what the eye sees` line from Part 0 is gone.
 3. **The stagger total.** Measure the time from click to the last prompt landing for an import of 1, 4, 8 and 18 prompts, before (Part 0) and after Part 5. After, an import of 8 and one of 18 land their last prompt at the same time as an import of 4, within one frame.
-4. **At rest, nothing changed:** run `npm run audit:design -- --grep composer` and compare with CA-33's after shots.
+4. **At rest, nothing changed:** run `npm run audit:design -- --grep composer` and compare with SV-05's after shots.
 5. Run `npm run audit:contrast`. Search the diff for the em dash character.
 
-Commit: `CA-34 P8: screens and checks`.
+Commit: `SV-06 P8: screens and checks`.
 
 ---
 
 ## Report (end the session with exactly this)
 
 ```
-CA-34 · motion rework
+SV-06 · motion rework
 Branch / PR:
 Facts in this prompt that were wrong on disk: (list, or "none")
 Baseline → end: tests N → N · contrast
@@ -272,4 +272,4 @@ Parts not done: (list, or "none")
 Questions for Miles: (list)
 ```
 
-**What Miles needs to do** (say it in the report, plainly): watch the before and after videos in `design/audits/composer/ca-34/`, then merge the pull request and press Publish › Publish changes in Lovable. There are no database changes.
+**What Miles needs to do** (say it in the report, plainly): watch the before and after videos in `design/audits/composer/sv-06/`, then merge the pull request and press Publish › Publish changes in Lovable. There are no database changes.

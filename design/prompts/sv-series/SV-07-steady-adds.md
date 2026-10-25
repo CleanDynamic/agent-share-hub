@@ -1,22 +1,22 @@
-# CA-35 · Steady adds, imports and parts: no flicker, no jumps, no lost changes
+# SV-07 · Steady adds, imports and parts: no flicker, no jumps, no lost changes
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** After CA-34, before CA-36. CA-33 sets how sessions are numbered and counted, and this prompt keeps that. CA-34 builds the one list animator (`listMotion.ts`, `motion.expect`) and the one scroll helper, and this prompt uses both. CA-44 (credit) and CA-49 (session requests) write `making` through the writers Part 1 makes, and CA-46 inserts through the model Part 2 makes. Read the series README (`design/prompts/ca-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `ca-35-steady-adds`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-35 steady adds, imports and parts` at the end.
+**Order.** After SV-06, before SV-08. SV-05 sets how sessions are numbered and counted, and this prompt keeps that. SV-06 builds the one list animator (`listMotion.ts`, `motion.expect`) and the one scroll helper, and this prompt uses both. SV-16 (credit) and SV-21 (session requests) write `making` through the writers Part 1 makes, and SV-18 inserts through the model Part 2 makes. Read the series README (`design/prompts/sv-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `sv-07-steady-adds`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-07 steady adds, imports and parts` at the end.
 
-The facts here were checked on 25 October 2026, at `6b8fe912`, before CA-28 to CA-34 merged. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report. Never invent a table, a column or a policy.
+The facts here were checked on 25 October 2026, at `6b8fe912`, before CA-28 to SV-06 merged. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report. Never invent a table, a column or a policy.
 
 If the session runs short, stop at the end of a finished part with every test green, commit, and report which parts are left.
 
 ## How to work
 
-- **Plan first.** End Part 0 by writing two short lists in `design/audits/composer/ca-35/plan.md`:
+- **Plan first.** End Part 0 by writing two short lists in `design/audits/composer/sv-07/plan.md`:
   - `Assumptions`: each fact in "What a screen recording shows" and "The cause found for 5" that you checked, and what you found;
   - `Plan`: one line per part, `Part n: what changes -> verified by: which test or replay condition`.
 - **Reproduce first.** The Part 0 replay fails before anything is fixed, and passes at the end. Every other fix also starts with a failing test.
 - **Check what exists before adding.** Where a part asks for a guard, first check whether existing code already gives it (the `serial` queue, the `updated_at` stamp check, CA-23's clash window). Add code only where a test shows the gap.
 - **A missing premise is reported, not fixed.** If a cause can't be found, don't guess at a fix. Say so and move on.
-- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for CA-54; don't delete it.
+- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for SV-26; don't delete it.
 - **Questions.** Miles isn't watching the session. Where you would ask, take the safer reading, carry on, and put the question in the report.
 - **The domain isn't live yet.** Don't fetch `https://buildgallery.ai`. Use the dev pages and the harnesses.
 
@@ -45,7 +45,7 @@ If the session runs short, stop at the end of a finished part with every test gr
     - Claude Code's own summary, "This session is being continued from a previous conversation that ran out of context…", came in as Prompt 1 (6,100 words).
     - Two "Claude · 25 Sep · 3 prompts" rows in Your sessions import the same prompts (Prompts 13 to 15 and 16 to 18).
     - The Home page's visitors' book shows "@suntzu hung Untitled build": a build with no title was published.
-    - Library › Saved's error, the first load's two lines in the corner and the 27 empty drafts were dealt with in CA-31 and CA-32. Check they stay fixed.
+    - Library › Saved's error, the first load's two lines in the corner and the 27 empty drafts were dealt with in SV-03 and SV-04. Check they stay fixed.
 
 ## The cause found for 5
 
@@ -59,8 +59,8 @@ If the session runs short, stop at the end of a finished part with every test gr
 - **One path from click to result.** What the maker sees during an add or import is drawn from one model, with one entry per session key. A pending entry and the saved row are the same entry, and it is never drawn twice.
 - **Nothing moves unless the maker moved it.** No save can change another session's part, order or number.
 - **Every click shows a change within 100 ms:** a pressed state, the pending entry, or the menu.
-- **Everything that arrives or moves is animated by CA-34's animator,** labelled with `motion.expect`. Nothing jumps in one frame.
-- **The page never scrolls by itself,** except through CA-34's scroll helper, to bring a just-added item into view when it would be completely off screen. It never scrolls to the top.
+- **Everything that arrives or moves is animated by SV-06's animator,** labelled with `motion.expect`. Nothing jumps in one frame.
+- **The page never scrolls by itself,** except through SV-06's scroll helper, to bring a just-added item into view when it would be completely off screen. It never scrolls to the top.
 
 ## House rules
 
@@ -74,8 +74,8 @@ If the session runs short, stop at the end of a finished part with every test gr
 ## Motion limits
 
 **This prompt adds no motion.**
-- Don't call `element.animate`, add a `transition` or `@keyframes`, or scroll the window yourself. Hand every change to CA-34's animator with `motion.expect({ kind, keys })`, and every scroll to CA-34's scroll helper.
-- If something still snaps after it is labelled, the fix belongs in CA-34's animator. Report it with the moment it happens in; don't patch around it here.
+- Don't call `element.animate`, add a `transition` or `@keyframes`, or scroll the window yourself. Hand every change to SV-06's animator with `motion.expect({ kind, keys })`, and every scroll to SV-06's scroll helper.
+- If something still snaps after it is labelled, the fix belongs in SV-06's animator. Report it with the moment it happens in; don't patch around it here.
 - No new hover, pressed or disabled look, and no scale on press. Pressed and disabled states use the existing styles from `modalRecipes.tsx`.
 - After the replay passes, watch the after recording beside the before one. If a step now draws the eye to itself, say so in the report.
 
@@ -87,7 +87,7 @@ If the session runs short, stop at the end of a finished part with every test gr
 - **The page's state:**
   - `SandboxPage.tsx`: `arriving`, `setArriving`, `pendingAdd`, `emptySessions` and `FIRST_SESSION_KEY`, `sessionSaid`, `onAddSession`, `onStartSession`;
   - the import path near `setSessionSaid(\`Adding …\`)`;
-  - every `scrollIntoView` and scroll call (around lines 462, 731, 1285, 1425 and 1431 at `6b8fe912`; CA-34 may have moved some to its helper);
+  - every `scrollIntoView` and scroll call (around lines 462, 731, 1285, 1425 and 1431 at `6b8fe912`; SV-06 may have moved some to its helper);
   - every refetch after a write (`refreshRecord`, `queryClient` invalidations).
 - **Parts:** `useSessionEdits.ts` (`onAddPart`, Move to part), `partsModel.ts` (`listPartsOf` returns null below two parts), and the Your sessions "Add this session to · Part n" menu.
 - **The list:** `BuildList.tsx` (`sessions-said`, `nest-said`, `Quiet`), `arrival.tsx`, `AddSessionRow.tsx` ("Adding…"), and the jump tabs (`SandboxView.tsx` around lines 1007 and 1034).
@@ -96,7 +96,7 @@ If the session runs short, stop at the end of a finished part with every test gr
 
 ### Reproduce first
 
-Write `src/pages/site/compose/ca35.replay.test.tsx` on the harness, playing the recorded sequence:
+Write `src/pages/site/compose/sv07.replay.test.tsx` on the harness, playing the recorded sequence:
 1. a new draft;
 2. import a one-prompt chat from the empty build panel;
 3. "Add a part" twice;
@@ -115,9 +115,9 @@ It must fail now, on:
 - a session whose part changed with no maker action;
 - a number that changed with no maker action.
 
-Record in the plan which of these it failed on. Keep it: it must pass at the end. Also save a before recording of the same sequence on the dev page with Playwright (`video` on), into `design/audits/composer/ca-35/before/`.
+Record in the plan which of these it failed on. Keep it: it must pass at the end. Also save a before recording of the same sequence on the dev page with Playwright (`video` on), into `design/audits/composer/sv-07/before/`.
 
-Commit: `CA-35 P0: replay, before recording and plan`.
+Commit: `SV-07 P0: replay, before recording and plan`.
 
 ## Part 1 · Saves can't overwrite each other
 
@@ -136,12 +136,12 @@ Commit: `CA-35 P0: replay, before recording and plan`.
 - a write to `session_order` and one to `sessions_meta` started together both survive;
 - the recorded case: Session 5 stays in Part 3 when Session 6 is added to Part 3 straight after.
 
-Commit: `CA-35 P1: saves can't overwrite each other`.
+Commit: `SV-07 P1: saves can't overwrite each other`.
 
 ## Part 2 · One model from click to result
 
-1. **One model per draft:** session entries keyed by session key, each with its part, its place, and a status (`pending`, `importing` or `saved`). The list, Sources, the jump tabs, the counts and the Map all read it. Numbers still come from CA-33's one function, reading this model's order.
-   - **One insert path.** The model has one function that adds tiles or a session at a place (`pending`, then `saved`), used by import, Start a new session and Duplicate. CA-46 (Add from Library) and CA-49 (offered sessions) will call it, so it takes a ready-made copy as well as an import, and returns the new keys for `motion.expect`.
+1. **One model per draft:** session entries keyed by session key, each with its part, its place, and a status (`pending`, `importing` or `saved`). The list, Sources, the jump tabs, the counts and the Map all read it. Numbers still come from SV-05's one function, reading this model's order.
+   - **One insert path.** The model has one function that adds tiles or a session at a place (`pending`, then `saved`), used by import, Start a new session and Duplicate. SV-18 (Add from Library) and SV-21 (offered sessions) will call it, so it takes a ready-made copy as well as an import, and returns the new keys for `motion.expect`.
    - **One store, everything derived.** The list, Sources, the jump tabs, the counts and the Map work out what they show from the model during render. No effect copies the model, or part of it, into another state (`rerender-derived-state-no-effect`). Copies kept in sync by effects are how two views end up drawing the same session differently.
    - No component that draws the model is defined inside another component (`rerender-no-inline-components`), so a pending entry that becomes saved keeps its element.
 2. **A pending entry takes the key the saved row will have,** or is re-keyed in place when the row arrives. It keeps its position, so the saved session replaces it in the same frame. Never remove-then-add.
@@ -151,7 +151,7 @@ Commit: `CA-35 P1: saves can't overwrite each other`.
 
 **Tests:** the Part 0 replay's conditions for keys, the placeholder, A-B-A and numbers all pass; a slow import shows one entry from the first frame to the last; a stale refetch doesn't bring back an old layout; no `useEffect` copies the model into other state (source check).
 
-Commit: `CA-35 P2: one model from click to result`.
+Commit: `SV-07 P2: one model from click to result`.
 
 ## Part 3 · Parts
 
@@ -164,32 +164,32 @@ Commit: `CA-35 P2: one model from click to result`.
 
 **Tests:** one click on "Add a part" makes one part, shown within 100 ms; double-clicking makes one; adding into a closed part opens it; a jump tab opens a closed part and reaches the session.
 
-Commit: `CA-35 P3: parts`.
+Commit: `SV-07 P3: parts`.
 
 ## Part 4 · Wire every change to the animator
 
-1. **Every action in this prompt's paths** calls `motion.expect({ kind, keys })` before it changes the model, using the kinds CA-34 kept:
+1. **Every action in this prompt's paths** calls `motion.expect({ kind, keys })` before it changes the model, using the kinds SV-06 kept:
    - add, import, start a new session;
    - Add a part;
    - Move to part, Move up and down;
    - remove, Undo and Redo.
-   CA-34's animator then plays it from the one commit that shows it.
-2. **Remove every scroll to the top** and every `scrollIntoView` left in these paths. The only scroll is CA-34's helper, used when a just-added or just-moved item would be wholly off screen.
-3. Run `npm run audit:motion` (CA-34) with the Part 0 replay added as a moment. All of CA-34's thresholds must pass for it. Where one fails because of the animator itself, report it (Motion limits).
+   SV-06's animator then plays it from the one commit that shows it.
+2. **Remove every scroll to the top** and every `scrollIntoView` left in these paths. The only scroll is SV-06's helper, used when a just-added or just-moved item would be wholly off screen.
+3. Run `npm run audit:motion` (SV-06) with the Part 0 replay added as a moment. All of SV-06's thresholds must pass for it. Where one fails because of the animator itself, report it (Motion limits).
 
 **Tests:** each action above calls `motion.expect` with its keys; there's no scroll to the top; in the replay, no element moves more than 35% of its travel in one frame.
 
-Commit: `CA-35 P4: changes go through the animator`.
+Commit: `SV-07 P4: changes go through the animator`.
 
 ## Part 5 · What the page says
 
 1. **Remove the visible status lines** (`sessions-said`, `nest-said`, and any other place the list prints "Adding …", "Added …" or "Added a part."). Keep the same words for screen readers through the existing announcer. The visible confirmation is CA-20's notice alone.
 2. **The "Adding…" text** on the add rows goes. The disabled state and the arriving entry show that it is working.
-3. **The notice always sits in one place:** fixed, 24 from the bottom of the window, centred on the build column. It arrives as a drop (`DROP`, 240 ms, `DROP_FALL` 20) and leaves as a lift (`LIFT`, 200 ms) with no delay: leaving is quicker than arriving. One notice at a time; a new one replaces the old in place, with no stack. Both go through CA-34's animator, and neither uses blur or scale. While it shows, the page gets bottom padding equal to its height plus 16, so it never covers the last row of the list.
+3. **The notice always sits in one place:** fixed, 24 from the bottom of the window, centred on the build column. It arrives as a drop (`DROP`, 240 ms, `DROP_FALL` 20) and leaves as a lift (`LIFT`, 200 ms) with no delay: leaving is quicker than arriving. One notice at a time; a new one replaces the old in place, with no stack. Both go through SV-06's animator, and neither uses blur or scale. While it shows, the page gets bottom padding equal to its height plus 16, so it never covers the last row of the list.
 
 **Tests:** no status text in the list; the announcer still speaks each step; the notice sits in the same place for every action; it leaves with no delay and in less time than it arrives; the last row stays clear.
 
-Commit: `CA-35 P5: one notice, no stray text`.
+Commit: `SV-07 P5: one notice, no stray text`.
 
 ## Part 6 · Small fixes seen in the recording
 
@@ -200,7 +200,7 @@ Commit: `CA-35 P5: one notice, no stray text`.
 
 **Tests:** one empty-session look; the import list's width matches the column; the focus ring's box sits within the visible area; a drag across a session head selects nothing.
 
-Commit: `CA-35 P6: small fixes`.
+Commit: `SV-07 P6: small fixes`.
 
 ## Part 7 · Imports
 
@@ -219,7 +219,7 @@ Commit: `CA-35 P6: small fixes`.
 
 **Tests:** the summary turn becomes a Summary tile and isn't counted; Convert makes it a prompt; repeated prompts are marked on the row and on the tiles.
 
-Commit: `CA-35 P7: imports`.
+Commit: `SV-07 P7: imports`.
 
 ## Part 8 · Publishing without a title
 
@@ -229,17 +229,17 @@ Commit: `CA-35 P7: imports`.
 
 **Tests:** every publish path refuses a build with no title.
 
-Commit: `CA-35 P8: publishing without a title`.
+Commit: `SV-07 P8: publishing without a title`.
 
 ## Part 9 · Screens and checks
 
 1. **The Part 0 replay** passes.
-2. **Record the same sequence again with Playwright** into `design/audits/composer/ca-35/after/`. Measure both recordings (before and after) frame by frame, and report for each step:
+2. **Record the same sequence again with Playwright** into `design/audits/composer/sv-07/after/`. Measure both recordings (before and after) frame by frame, and report for each step:
    - the time from click to the first change, in ms;
    - the largest single-frame change, as a share of the list;
    - any scroll the maker didn't make.
    Every click must answer within 100 ms. No step may change more than 25% of the list in one frame outside a slide.
-   Also report the long tasks over 50 ms per step (CA-34's tools). The count at the end must be no higher than at the start.
+   Also report the long tasks over 50 ms per step (SV-06's tools). The count at the end must be no higher than at the start.
 3. **Screenshot at 1440 and 390, in Dusk and Noon:**
    - an import mid-way;
    - a new part;
@@ -249,14 +249,14 @@ Commit: `CA-35 P8: publishing without a title`.
    - a Summary tile.
 4. Run `npm run audit:design -- --grep composer` and `npm run audit:contrast`. Search the diff for the em dash character.
 
-Commit: `CA-35 P9: screens and checks`.
+Commit: `SV-07 P9: screens and checks`.
 
 ---
 
 ## Report (end the session with exactly this)
 
 ```
-CA-35 · steady adds, imports and parts
+SV-07 · steady adds, imports and parts
 Branch / PR:
 Facts in this prompt that were wrong on disk: (list, or "none")
 Baseline → end: tests N → N · contrast
