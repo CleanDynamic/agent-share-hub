@@ -1,20 +1,20 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders as corsFor, preflight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "content-type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-};
+// A public read: every origin may call it, and it reads with the public key so
+// the database's own rules decide which rows come back.
+const cors = { open: true, methods: "GET, OPTIONS" };
 
 const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://neoscaleai.com";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return preflight(req, cors);
+  const corsHeaders = corsFor(req, cors);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
   );
 
   const { data: posts } = await supabase

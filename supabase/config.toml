@@ -1,31 +1,50 @@
 project_id = "zybdotagjwektucfdkri"
 
 [functions.notify-version-update]
-verify_jwt = false
+# CA-29: true. The function now takes the creator from the caller's token and
+# checks that the caller owns the item, so the gateway rejects a call with no
+# key before it runs.
+verify_jwt = true
 
 [functions.check-compatibility-status]
+# Deliberately false: a scheduled job calls it with no user token. CA-29: the
+# function itself answers 401 unless the x-cron-secret header matches the
+# CRON_SECRET secret, and with no CRON_SECRET set nobody can run it.
 verify_jwt = false
 
 [functions.create-split-checkout-session]
-verify_jwt = false
+# CA-29: true. The gateway rejects a call with no key; the price and splits come
+# from the database and the return addresses must be on this site.
+verify_jwt = true
 
 [functions.create-pwyw-checkout-session]
-verify_jwt = false
+# CA-29: true. The gateway rejects a call with no key; the amount is bounded by
+# the item's floor and 1,000 pounds and the return addresses must be on this site.
+verify_jwt = true
 
 [functions.import-github-readme]
-verify_jwt = false
+# CA-29: true. The gateway rejects a call with no key; the function fetches only
+# api.github.com.
+verify_jwt = true
 
 [functions.public-api]
+# Deliberately false: a public read for anyone, with the public key.
 verify_jwt = false
 
 [functions.post-json]
+# Deliberately false: a public read for anyone. CA-29: it reads with the public
+# key, so the database's own rules decide which rows come back.
 verify_jwt = false
 
 [functions.sitemap-xml]
+# Deliberately false: a public read for crawlers. CA-29: it reads with the public
+# key, so the database's own rules decide which rows come back.
 verify_jwt = false
 
 [functions.generate-ai-pdf]
-verify_jwt = false
+# CA-29: true. The gateway rejects a call with no key; the function makes a PDF
+# only of a public approved post, or of the caller's own.
+verify_jwt = true
 
 [functions.generate-build-layers]
 # Deliberately true, for the same reason as the three parsers below: NS-P22
