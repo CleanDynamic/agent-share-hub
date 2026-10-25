@@ -82,7 +82,12 @@ export const COMPOSER_PAD = 34;
 export const HEAD_GAP = 18;
 
 /* CA-18 P5: the overlay panel of a smaller window, and the foot that says a click edits. */
-export const OVERLAY_WIDTH = 360;
+/** CA-27 P4: the panel is 300 wide on a tablet. */
+export const OVERLAY_WIDTH = 300;
+/** Where a window stops being a tablet's: the panel says "Tap to edit" up to here (and on any touch screen). */
+export const TABLET_MAX = 1152;
+/** CA-27 P4: the panel's padding. */
+export const OVERLAY_PANEL_PAD = 14;
 export const OVERLAY_EDGE = 8;
 export const OVERLAY_PAD = 20;
 export const OVERLAY_FOOT_PAD = "14px 20px";

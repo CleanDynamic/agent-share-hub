@@ -833,6 +833,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/buildMotion.tsx",
   "src/pages/site/compose/ca27.p3.test.tsx",
   "src/pages/site/compose/largeBuild.tsx",
+
+  // CA-27 P4
+  "src/pages/site/compose/ca27.p4.test.tsx",
 ];
 
 /**

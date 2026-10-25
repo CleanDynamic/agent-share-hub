@@ -308,6 +308,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
         onLens={setLens}
         mapAvailable
         selectedKey={selectedId}
+        onEditSelected={selectedId ? () => note("Opened the tile's window") : undefined}
         find={phone ? undefined : find}
         viewOptions={params.get("build") === "ca27" ? { sessionList: false, sessionCount: sessionKeys.length, onChange: () => undefined } : undefined}
         list={

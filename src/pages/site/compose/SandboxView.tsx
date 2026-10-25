@@ -25,9 +25,9 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { X } from "lucide-react";
+import { MoreHorizontal, X } from "lucide-react";
 import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -52,10 +52,10 @@ import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
 import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
 import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_HINT, TAB_ROW, tabStyle } from "./tabRowRecipes";
-import { ClickToEdit, DetailsOverlay } from "./DetailsOverlay";
+import { ClickToEdit, DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
-import { COMPOSER_PAD, HEAD_GAP } from "./detailsRecipes";
+import { COMPOSER_PAD, HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
 import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
@@ -772,6 +772,29 @@ function LinkButton({ to, phone, height, children }: { to: string | null; phone:
   );
 }
 
+/** CA-27 P4: where the title row has no room for Card, Preview and Publish beside the title, Preview waits in this menu (28 square, "Build actions"); Publish stays. */
+export const BUILD_ACTIONS = { label: "Build actions", preview: "Preview" } as const;
+
+function BuildActionsMenu({ previewTo }: { previewTo: string | null }) {
+  const navigate = useNavigate();
+  const why = useReason(previewTo ? undefined : REASONS.preview);
+  return (
+    <Menu.Root modal={false}>
+      <Menu.Trigger asChild>
+        <IconButton icon={MoreHorizontal} glyph="more" label={BUILD_ACTIONS.label} size={28} data-testid="build-actions" data-hit="" />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="end" sideOffset={6} style={menuSurface(160)}>
+          <Menu.Item disabled={!previewTo} onSelect={() => previewTo && navigate(previewTo)} data-testid="build-actions-preview" style={menuItem(Boolean(previewTo), false)} {...why.props}>
+            {BUILD_ACTIONS.preview}
+          </Menu.Item>
+          {why.note}
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
 function PanelTitle({ children }: { children: ReactNode }) {
   return <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>{children}</h2>;
 }
@@ -929,6 +952,7 @@ export function SandboxView(props: SandboxViewProps) {
 function SandboxBody(props: SandboxViewProps) {
   const phone = useIsPhone();
   const win = useWindowSize();
+  const touchPanel = useTouchPanel(win.width);
   const { status, published, save } = props;
 
   const [cardOpen, setCardOpen] = useState(false);
@@ -1297,11 +1321,14 @@ function SandboxBody(props: SandboxViewProps) {
     );
   }
 
+  /* CA-27 P4: on a tablet the composer box is 612 to 636 wide: Card, Preview and Publish would take the row from the title, so Preview goes into a menu. */
+  const compactRow = !published && frame.boxRight - frame.boxLeft < 760;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
           and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
-      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
+      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
           {heading}
           {statusLine}
@@ -1321,9 +1348,13 @@ function SandboxBody(props: SandboxViewProps) {
             </>
           ) : (
             <>
-              <LinkButton to={previewTo} phone={false} height={28}>
-                Preview
-              </LinkButton>
+              {compactRow ? (
+                <BuildActionsMenu previewTo={previewTo} />
+              ) : (
+                <LinkButton to={previewTo} phone={false} height={28}>
+                  Preview
+                </LinkButton>
+              )}
               <Button size={28} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
                 {publishLabel}
               </Button>
@@ -1360,17 +1391,18 @@ function SandboxBody(props: SandboxViewProps) {
             </SourcesFrame>
           </div>
           <div style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD }}>{buildColumn}</div>
+          {frame.beside ? null : (
+            /* CA-27 P4: Details where it does not fit beside the build is a panel over the composer box's right edge. */
+            <DetailsOverlay selectedKey={props.selectedKey} left={frame.boxRight - ORIGIN - OVERLAY_WIDTH} touch={touchPanel} onEdit={props.onEditSelected}>
+              {detailsBody}
+            </DetailsOverlay>
+          )}
           {frame.beside ? (
             <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth, display: "flex", alignItems: "stretch" }}>
               <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? guard("Details", props.renderDetails(plan)) : detailsBody)} />
             </div>
           ) : null}
         </div>
-      )}
-      {frame.beside || lens === "map" ? null : (
-        <DetailsOverlay selectedKey={props.selectedKey} below={tabsRef} onEdit={props.onEditSelected}>
-          {detailsBody}
-        </DetailsOverlay>
       )}
       {card}
       {checklistWindow}

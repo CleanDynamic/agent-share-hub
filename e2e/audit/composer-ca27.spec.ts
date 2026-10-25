@@ -10,6 +10,12 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
+declare global {
+  interface Window {
+    __anims: { keyframes: string; duration: number }[];
+  }
+}
+
 const url = (width: number, extra = "", tiles = 300) => `/dev/kit/pages/sandbox?build=ca27&tiles=${tiles}&bar=hide&fit=content&theme=dusk${width <= 390 ? "&viewport=mobile" : "&window=1"}${extra}`;
 
 async function open(page: Page, width: number, extra = "", tiles = 300) {
@@ -313,3 +319,163 @@ test.describe("P3 large builds", () => {
     expect(Math.abs(after.indexOf("c27-3") - after.indexOf("c27-244"))).toBeLessThanOrEqual(2);
   });
 });
+
+/* ── P4 tablets ── */
+
+const TABLETS = [768, 900, 1024, 1152] as const;
+
+/** Where the columns stand: Sources' slot, the Build column, and whether Details is beside it. */
+async function columns(page: Page) {
+  return page.evaluate(() => {
+    const box = (el: Element | null) => {
+      const rect = el?.getBoundingClientRect();
+      return rect ? { left: Math.round(rect.left * 10) / 10, right: Math.round(rect.right * 10) / 10, width: Math.round(rect.width * 10) / 10 } : null;
+    };
+    const build = document.querySelector('section[aria-label="Build"]')?.parentElement ?? null;
+    return {
+      window: document.documentElement.clientWidth,
+      sources: box(document.querySelector('[data-testid="sandbox-sources-slot"]')),
+      railButton: Boolean(document.querySelector('button[aria-label="Open Sources"], [data-testid="sources-rail"]')),
+      build: box(build),
+      detailsBeside: Boolean(document.querySelector('[data-testid="sandbox-details-slot"]')),
+    };
+  });
+}
+
+for (const width of TABLETS) {
+  test.describe(`P4 tablet · ${width}`, () => {
+    test.use({ viewport: { width, height: 900 }, hasTouch: true });
+
+    test("Sources is the rail, Build is centred, Details is not beside the build", async ({ page }) => {
+      await open(page, width, "", 40);
+      const c = await columns(page);
+      // CA-18b's rule: Sources folds to its 52 rail below 1152; from 1152 it is 216 wide.
+      expect(c.sources!.width).toBe(width < 1152 ? 52 : 216);
+      expect(c.detailsBeside).toBe(false);
+      const middle = (c.build!.left + c.build!.right) / 2;
+      expect(Math.abs(middle - c.window / 2)).toBeLessThanOrEqual(2);
+      expect(c.build!.left).toBeGreaterThan(c.sources!.right);
+    });
+
+    test("a tap on a tile opens Details as a 300 panel over the composer box's right edge; Esc and a tap outside close it", async ({ page }) => {
+      await open(page, width, "", 40);
+      await page.evaluate(() => {
+        window.__anims = [];
+        const animate = Element.prototype.animate;
+        Element.prototype.animate = function (keyframes: Keyframe[] | PropertyIndexedKeyframes | null, options?: number | KeyframeAnimationOptions) {
+          window.__anims.push({ keyframes: JSON.stringify(keyframes), duration: typeof options === "number" ? options : (options?.duration as number) });
+          return animate.call(this, keyframes, options);
+        };
+      });
+      const tile = page.locator('[data-node-id="c27-5"]');
+      await tile.locator("p").first().tap();
+      const panel = page.getByTestId("details-overlay");
+      await panel.waitFor();
+      await page.waitForTimeout(400);
+      const r = await panel.evaluate((el) => {
+        const s = getComputedStyle(el);
+        const box = el.getBoundingClientRect();
+        const slot = el.parentElement!.getBoundingClientRect();
+        const foot = el.querySelector<HTMLElement>('[data-testid="details-foot"]')!;
+        const f = getComputedStyle(foot);
+        const footBox = foot.getBoundingClientRect();
+        const columns = document.querySelector('[data-testid="sandbox-columns"]')!.getBoundingClientRect();
+        return { width: box.width, radius: s.borderTopLeftRadius, padding: s.paddingTop + " " + s.paddingLeft, border: s.borderTopWidth, shadow: s.boxShadow, background: s.backgroundColor, position: s.position, foot: foot.textContent, footSize: f.fontSize, footAlign: f.textAlign, footBottomGap: box.bottom - footBox.bottom, footLeft: footBox.left - box.left, slotTop: slot.top - columns.top, slotHeight: slot.height, columnsHeight: columns.height, rightEdge: box.right };
+      });
+      expect(r.width).toBe(300);
+      expect(r.radius).toBe("12px");
+      expect(r.padding).toBe("14px 14px");
+      expect(r.border).toBe("1px");
+      expect(r.shadow).not.toBe("none");
+      expect(r.foot).toBe("Tap to edit");
+      expect(r.footSize).toBe("12px");
+      expect(r.footLeft).toBeLessThanOrEqual(16);
+      expect(r.footBottomGap).toBeLessThanOrEqual(16);
+      // Full height of the columns area: its slot is as tall as the columns, the panel stays in view.
+      expect(Math.abs(r.slotHeight - (r.columnsHeight - r.slotTop))).toBeLessThanOrEqual(2);
+      // Its right edge is the composer box's: the Build column's right edge, where Details is not beside it.
+      const c = await columns(page);
+      expect(Math.abs(r.rightEdge - c.build!.right)).toBeLessThanOrEqual(2);
+      // It entered with a 16 slide and a fade over 200 ms.
+      const anims = await page.evaluate(() => window.__anims);
+      expect(anims.some((a) => a.keyframes.includes("translateX(16px)") && a.keyframes.includes('"opacity":0') && a.duration === 200)).toBe(true);
+      // Esc closes it.
+      await page.keyboard.press("Escape");
+      await expect(panel).toHaveCount(0);
+      // Open again; a tap outside closes it.
+      await page.locator('[data-node-id="c27-7"]').locator("p").first().tap();
+      await panel.waitFor();
+      await page.waitForTimeout(300);
+      const box = (await panel.boundingBox())!;
+      // On the surface's margin, outside the columns: a tap on a tile would select it, and open the panel on that one.
+      await page.touchscreen.tap(6, Math.min(box.y + 200, 880));
+      await expect(panel).toHaveCount(0);
+    });
+
+    test("the title row: Preview waits in a Build actions menu where the box is too narrow for it (under 1152), Publish stays", async ({ page }) => {
+      await open(page, width, "", 40);
+      const row = page.getByTestId("sandbox-tabrow");
+      const actions = page.getByRole("button", { name: "Build actions" });
+      if (width >= 1152) {
+        // From 1152 the box is 816 wide: Card, Preview and Publish sit beside the title.
+        await expect(actions).toHaveCount(0);
+        await expect(row.getByRole("link", { name: "Preview" })).toHaveCount(1);
+        await expect(row.getByRole("button", { name: "Publish" })).toBeVisible();
+        return;
+      }
+      await expect(actions).toHaveCount(1);
+      const size = (await actions.boundingBox())!;
+      expect([Math.round(size.width), Math.round(size.height)]).toEqual([28, 28]);
+      await expect(row.getByRole("link", { name: "Preview" })).toHaveCount(0);
+      await expect(row.getByRole("button", { name: "Publish" })).toBeVisible();
+      // The row is one row: Card, the menu and Publish are level with the tabs.
+      const [tabs, publish] = await Promise.all([page.getByTestId("sandbox-tabs").boundingBox(), row.getByRole("button", { name: "Publish" }).boundingBox()]);
+      expect(Math.abs((tabs!.y + tabs!.height / 2) - (publish!.y + publish!.height / 2))).toBeLessThanOrEqual(30);
+      await actions.click();
+      await expect(page.getByRole("menuitem", { name: "Preview" })).toBeVisible();
+    });
+
+    test("a long press of 250 ms on the grip starts a drag; one finger anywhere else scrolls", async ({ page }) => {
+      await open(page, width, "", 40);
+      const cdp = await page.context().newCDPSession(page);
+      const touch = (type: string, x: number, y: number) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+      const tile = page.locator('[data-skel-kind="tile"][data-skel-id="c27-3"]');
+      await tile.scrollIntoViewIfNeeded();
+      const grip = (await tile.locator('[data-testid="drag-handle"]').first().boundingBox())!;
+      const gx = grip.x + grip.width / 2;
+      const gy = grip.y + grip.height / 2;
+      // Moved before 250 ms: no drag.
+      await touch("touchStart", gx, gy);
+      await page.waitForTimeout(120);
+      await touch("touchMove", gx, gy + 40);
+      await page.waitForTimeout(200);
+      expect(await page.getByTestId("held-copy").count()).toBe(0);
+      await touch("touchEnd", gx, gy + 40);
+      await page.waitForTimeout(300);
+      // Held 250 ms and more: it is picked up.
+      const again = (await tile.locator('[data-testid="drag-handle"]').first().boundingBox())!;
+      const ax = again.x + again.width / 2;
+      const ay = again.y + again.height / 2;
+      await touch("touchStart", ax, ay);
+      await page.waitForTimeout(330);
+      await touch("touchMove", ax + 4, ay + 30);
+      await page.getByTestId("held-copy").waitFor({ timeout: 4000 });
+      await touch("touchEnd", ax + 4, ay + 30);
+      await page.waitForTimeout(800);
+      // One finger on a tile's text scrolls the page and picks nothing up.
+      const before = await page.evaluate(() => scrollY);
+      const text = (await page.locator('[data-node-id="c27-9"] p').first().boundingBox())!;
+      const sx = text.x + 40;
+      const sy = Math.min(text.y + 10, 600);
+      await touch("touchStart", sx, sy);
+      for (let step = 1; step <= 12; step += 1) {
+        await touch("touchMove", sx, sy - (300 * step) / 12);
+        await page.waitForTimeout(16);
+      }
+      await touch("touchEnd", sx, sy - 300);
+      await page.waitForTimeout(600);
+      expect(await page.evaluate(() => scrollY)).toBeGreaterThan(before + 100);
+      expect(await page.getByTestId("held-copy").count()).toBe(0);
+    });
+  });
+}
