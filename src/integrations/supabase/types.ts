@@ -5784,6 +5784,10 @@ export type Database = {
         Args: { _comment_id: string }
         Returns: undefined
       }
+      sv01_lineage_visible: {
+        Args: { _creator: string; _status: string; _visibility: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
