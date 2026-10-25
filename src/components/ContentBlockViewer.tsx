@@ -606,7 +606,7 @@ export function RenderBlockContent({
 
 // ─── Prompt viewer ──────────────────────────────────────────
 
-const PromptViewer = ({ block }: { block: BlockRow }) => {
+export const PromptViewer = ({ block }: { block: BlockRow }) => {
   const [copied, setCopied] = React.useState(false);
   const [filled, setFilled] = React.useState<Record<string, string>>({});
   const variables = block.prompt_variables ?? [];
@@ -625,12 +625,18 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const highlightVars = (text: string) => {
-    return text.replace(
-      /\{\{(\w+)\}\}/g,
-      '<mark style="background:color-mix(in srgb, var(--evidence) 20%, transparent);color:var(--evidence);border-radius:3px;padding:1px 4px">{{$1}}</mark>'
+  // The prompt is text: it is split on the variable pattern and each variable is
+  // drawn as a span. The string is never handed to the browser as markup.
+  const drawVars = (text: string) =>
+    text.split(/(\{\{\w+\}\})/g).map((part, i) =>
+      i % 2 === 1 ? (
+        <span key={i} style={{ background: 'color-mix(in srgb, var(--evidence) 20%, transparent)', color: 'var(--evidence)', borderRadius: 3, padding: '1px 4px' }}>
+          {part}
+        </span>
+      ) : (
+        part
+      ),
     );
-  };
 
   return (
     <div>
@@ -698,7 +704,6 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
 
       <div style={{ position: 'relative' }}>
         <div
-          dangerouslySetInnerHTML={{ __html: highlightVars(getFilledPrompt()) }}
           style={{
             background: 'var(--recess)',
             border: '1px solid var(--line)',
@@ -707,7 +712,9 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
             fontFamily: 'Courier New, monospace',
             lineHeight: 1.7, whiteSpace: 'pre-wrap',
             minHeight: 80,
-          }} />
+          }}>
+          {drawVars(getFilledPrompt())}
+        </div>
         <button onClick={handleCopy} style={{
           position: 'absolute', top: 10, right: 10,
           padding: '3px 10px', borderRadius: 6, fontSize: 11,

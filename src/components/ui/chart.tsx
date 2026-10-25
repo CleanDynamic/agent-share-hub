@@ -66,6 +66,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   }
 
   return (
+    // The CSS is built from the chart's own config (keys and colours) and its generated id, never from user text.
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)

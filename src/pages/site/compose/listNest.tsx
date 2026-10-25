@@ -69,6 +69,7 @@ function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
   return (
     <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: 13.5, cursor: "grabbing", pointerEvents: "none", position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
       {whole ? <span aria-hidden="true" style={{ position: "absolute", inset: -6, borderRadius: 14, boxShadow: `0 0 0 1px ${t.segOnBorder}`, pointerEvents: "none" }} /> : null}
+      {/* overlay.html is `cloneHtml`'s outerHTML of an element React already drew (useBuildSorting.ts); user text in it is already escaped. */}
       <div dangerouslySetInnerHTML={{ __html: overlay.html }} />
     </div>
   );
