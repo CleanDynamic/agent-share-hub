@@ -25,6 +25,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePageReady } from "@/lib/routing/pageReady";
+import { SLOW_STALE_MS } from "@/lib/query/client";
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -53,7 +54,7 @@ import { feedRowView } from "./galleryModel";
 import { GalleryBoardGroups } from "./GalleryBoardGroups";
 
 /** Facets change far more slowly than the builds they describe. */
-const FACETS_STALE_MS = 5 * 60 * 1000;
+const FACETS_STALE_MS = SLOW_STALE_MS;
 
 /** The rows of one list across its loaded pages, first occurrence kept. */
 function collect(pages: readonly GalleryFeed[], pick: (page: GalleryFeed) => GalleryFeedRow[]): GalleryFeedRow[] {

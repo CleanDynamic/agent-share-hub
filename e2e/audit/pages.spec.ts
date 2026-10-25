@@ -164,7 +164,7 @@ async function sampleOnce(browser: Browser, target: PageTarget, mode: Mode): Pro
     if (mode === "reload") {
       await page.goto(url, { waitUntil: "commit" });
       await ready(page, target.readyMark);
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(3_000); // the kept cache is written two seconds after the last change
       const from = Date.now();
       await page.reload({ waitUntil: "commit" });
       await ready(page, target.readyMark);

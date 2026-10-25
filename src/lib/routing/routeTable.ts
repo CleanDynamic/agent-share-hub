@@ -15,6 +15,7 @@ import type { ComponentType } from "react";
 import { matchPath } from "react-router-dom";
 
 import { SITE_NAV } from "@/components/shell/siteNav";
+import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 
 import {
   BuildPlaceholder,
@@ -43,7 +44,6 @@ export interface RouteEntry {
   Placeholder: ComponentType;
 }
 
-const LIST_STALE_MS = 60_000;
 
 export const ROUTE_TABLE: Record<string, RouteEntry> = {
   home: {
@@ -72,8 +72,8 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     prefetch: async (_params, queryClient) => {
       const { getClassificationFacets, getGalleryFacets } = await import("@/lib/build/gallery");
       await Promise.all([
-        queryClient.prefetchQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: 5 * 60_000 }),
-        queryClient.prefetchQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: 5 * 60_000 }),
+        queryClient.prefetchQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: SLOW_STALE_MS }),
       ]);
     },
     Placeholder: BuildsPlaceholder,
@@ -124,7 +124,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       await queryClient.prefetchQuery({
         queryKey: ["build", "listDraftsWithSessions", userId],
         queryFn: () => listDraftsWithSessions(userId),
-        staleTime: 30_000,
+        staleTime: LIST_STALE_MS,
       });
     },
     Placeholder: DraftsPlaceholder,

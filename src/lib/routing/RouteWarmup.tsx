@@ -5,10 +5,11 @@
 // also starts the idle loader, which waits for the first page-ready mark.
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { clearKeptCache, setKeptCacheUser } from "@/lib/query/persist";
 
 import { startIdleLoad } from "./idleLoad";
 import { warmPath } from "./warm";
@@ -27,6 +28,18 @@ export function RouteWarmup() {
     }
     warmPath(pathname, queryClient, userId);
   }, [pathname, loading, userId, queryClient]);
+
+  /* What is kept across a reload belongs to one reader: sign out, or a different reader, forgets it (and what is in memory). */
+  const previous = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    if (previous.current !== null && previous.current !== userId) {
+      void clearKeptCache();
+      queryClient.clear();
+    }
+    previous.current = userId;
+    setKeptCacheUser(userId);
+  }, [loading, userId, queryClient]);
 
   useEffect(() => startIdleLoad(() => Boolean(userId)), [userId]);
 

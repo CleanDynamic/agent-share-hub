@@ -25,6 +25,7 @@
 
 import { useCallback } from "react";
 import { usePageReady } from "@/lib/routing/pageReady";
+import { LIST_STALE_MS } from "@/lib/query/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -40,7 +41,7 @@ import { attachSession } from "@/lib/build/sessions";
 import { DraftsView } from "./DraftsView";
 import { draftTitle } from "./draftsModel";
 
-const STALE_MS = 30_000;
+const STALE_MS = LIST_STALE_MS;
 
 export function DraftsPage() {
   const qc = useQueryClient();

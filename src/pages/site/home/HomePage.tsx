@@ -12,7 +12,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePageReady } from "@/lib/routing/pageReady";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -38,9 +39,9 @@ import {
 } from "./homeModel";
 
 /** Nothing is refetched for half a minute; Home is not a live ticker. */
-const STALE_MS = 30_000;
+const STALE_MS = LIST_STALE_MS;
 /** The headline counts are estimates; a minute is as fresh as they mean to be. */
-const COUNT_STALE_MS = 60_000;
+const COUNT_STALE_MS = SLOW_STALE_MS;
 /** How far back the streak is read: far enough that a long one is counted whole. */
 const STREAK_LOOKBACK_DAYS = 400;
 /** Every thumbnail on Home is signed at the smallest slot width the read path has. */
@@ -91,6 +92,8 @@ export function HomePage() {
     queryFn: ({ pageParam }) => getBuildFeed({ before: pageParam, onlyFollowing: scope === "following" }),
     getNextPageParam: (last) => last.nextBefore ?? undefined,
     staleTime: STALE_MS,
+    // Everyone to Following keeps the first list on screen until the second arrives.
+    placeholderData: keepPreviousData,
   });
 
   const items = useMemo(() => {

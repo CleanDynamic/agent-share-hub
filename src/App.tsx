@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
-import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Navigate, Route, useParams, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -25,6 +26,8 @@ import { KeepSearchRedirect } from "@/components/routing/KeepSearchRedirect";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import { lazyPage } from "@/components/routing/lazyPage";
+import { QUERY_DEFAULTS } from "@/lib/query/client";
+import { CACHE_VERSION, MAX_AGE_MS, createKeptCache, shouldKeep } from "@/lib/query/persist";
 import { RoutePlaceholder } from "@/lib/routing/RoutePlaceholder";
 import { RouteWarmup } from "@/lib/routing/RouteWarmup";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
@@ -192,9 +195,13 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: errorReporting.queryError }),
   mutationCache: new MutationCache({ onError: errorReporting.mutationError }),
   defaultOptions: {
-    queries: { retry: (count, error) => count < 1 && !isPermissionError(error), staleTime: 30_000 },
+    queries: { retry: (count, error) => count < 1 && !isPermissionError(error), ...QUERY_DEFAULTS },
   },
 });
+
+/* SV-03 P7: the first screens are kept across a reload (src/lib/query/persist.ts says what, and for whom). */
+const keptCache = typeof window === "undefined" ? null : createKeptCache();
+const NO_PERSISTER = { persistClient: async () => undefined, restoreClient: async () => undefined, removeClient: async () => undefined };
 
 const App = () => (
   <ErrorBoundary>
@@ -212,7 +219,15 @@ const App = () => (
         element for no visual gain. */}
     <div style={{ position: "relative", zIndex: 1 }}>
     <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: keptCache ?? NO_PERSISTER,
+        maxAge: MAX_AGE_MS,
+        buster: CACHE_VERSION,
+        dehydrateOptions: { shouldDehydrateQuery: shouldKeep },
+      }}
+    >
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -646,7 +661,7 @@ const App = () => (
           </ThemeProvider>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
     </HelmetProvider>
     </div>
   </ErrorBoundary>
