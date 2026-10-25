@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
+import { TITLE_LINE } from "@/lib/theme/truncate";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 const type = (size: number, weight: 400 | 500, color: string, line: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: `${line}px`, color });
@@ -30,7 +31,7 @@ export const COLUMN: CSSProperties = { display: "flex", flexDirection: "column",
 export const HEAD_ROW: CSSProperties = { display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 };
 export const HEAD_MARK: CSSProperties = { marginTop: 1, flexShrink: 0 };
 export const HEAD_TEXT: CSSProperties = { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 };
-export const HEAD_TITLE: CSSProperties = { ...type(15, 500, t.text, 22), margin: 0, overflowWrap: "anywhere" };
+export const HEAD_TITLE: CSSProperties = { ...type(15, 500, t.text, 22), margin: 0, ...TITLE_LINE };
 export const HEAD_LINE: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: 0, display: "flex", alignItems: "center", gap: 8, overflowWrap: "anywhere" };
 /** Edit: secondary, 28 tall, padding 0 10 (the `Button` draws the rest: 12.5/500, radius 6). */
 export const EDIT_BUTTON: CSSProperties = { padding: "0 10px", flexShrink: 0 };

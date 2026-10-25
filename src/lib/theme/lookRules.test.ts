@@ -823,6 +823,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ca27.p1.test.tsx",
   "src/pages/site/compose/findIndex.ts",
   "src/pages/site/compose/useBuildFind.ts",
+
+  // CA-27 P2
+  "e2e/audit/composer-ca27.spec.ts",
+  "src/lib/theme/truncate.ts",
+  "src/pages/site/compose/ca27.p2.test.tsx",
 ];
 
 /**

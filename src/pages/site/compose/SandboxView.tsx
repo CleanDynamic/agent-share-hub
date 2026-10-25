@@ -39,6 +39,7 @@ import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/component
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
+import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
 import { useInteractive } from "@/lib/theme/interactive";
 import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -257,7 +258,7 @@ export function notSavedLine(problem: SaveFailure): string {
   return `Not saved: ${problem.reason}.${problem.code ? ` Code ${problem.code}.` : ""}`;
 }
 
-export const LIST_HINT = "Click a tile to see its details · double-click to read all of it";
+export const LIST_HINT = "Click a tile to see its details · double-click to read all";
 /** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. */
 export const LIST_HINT_PHONE = "Tap a tile to see its details";
 export const listHint = (phone: boolean) => (phone ? LIST_HINT_PHONE : LIST_HINT);
@@ -1057,7 +1058,8 @@ function SandboxBody(props: SandboxViewProps) {
   const heading = (
     <h1
       data-testid="sandbox-heading"
-      style={{ ...text(20, 500, untitled ? t.text2 : t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}
+      {...fullText(untitled ? null : props.title.trim())}
+      style={{ ...text(20, 500, untitled ? t.text2 : t.text), margin: 0, letterSpacing: "-0.015em", ...TITLE_LINE }}
     >
       {untitled ? UNTITLED : props.title.trim()}
     </h1>

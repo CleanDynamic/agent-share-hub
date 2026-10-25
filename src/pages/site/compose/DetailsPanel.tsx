@@ -24,6 +24,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { changesLine, type ChangeRange } from "@/lib/build/changes";
 import { headOf, notSetLine, readSections, type BuildFacts, type ListItem, type ReadSection, type SectionValue } from "@/lib/build/tileSections";
 import { t } from "@/lib/theme/tokens";
+import { fullText } from "@/lib/theme/truncate";
 
 import type { HelpersRead } from "@/lib/build/agentCode";
 import type { RuntimePatch } from "@/lib/build/graph";
@@ -636,7 +637,7 @@ export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colou
         </span>
       ) : null}
       <div style={HEAD_TEXT}>
-        <h3 data-default-title={head.untitled ? "true" : undefined} style={head.untitled ? { ...HEAD_TITLE, color: t.text2 } : HEAD_TITLE}>
+        <h3 data-default-title={head.untitled ? "true" : undefined} {...fullText(head.title)} style={head.untitled ? { ...HEAD_TITLE, color: t.text2 } : HEAD_TITLE}>
           {head.title}
         </h3>
         <p data-testid="details-line" style={HEAD_LINE}>

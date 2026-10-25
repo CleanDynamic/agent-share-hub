@@ -55,6 +55,7 @@ import { definesOf } from "@/lib/build/agentCode";
 import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { GlyphButton } from "./ModalFrame";
 import { useAnnounce } from "./BuildAnnouncer";
+import { PREVIEW } from "@/lib/theme/truncate";
 import { FOUND_RING, FindHit, FindProvider, NO_FIND, type FindView } from "@/components/build/FindHit";
 import { useItemRing, useRovingList } from "./buildFocus";
 import { CodeLines } from "@/components/code/CodeLines";
@@ -151,7 +152,7 @@ import { useBuildSelectionContext } from "./useBuildSelection";
 export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
-  hint: "Click a tile to see its details · double-click to read all of it",
+  hint: "Click a tile to see its details · double-click to read all",
   /** CA-10 (CA-09 F12): a phone has no double-click (the card's onDoubleClick is off there) and taps, not clicks. */
   hintPhone: "Tap a tile to see its details",
   placeholder: "Paste or type a prompt…",
@@ -184,7 +185,7 @@ export interface BuildListProps {
   results: readonly ListResult[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  /** UI-P67's full prompt window. Absent: nothing opens and "Read all of it" is disabled. */
+  /** UI-P67's full prompt window. Absent: nothing opens and "Read all" is disabled. */
   onOpenPrompt?: (id: string) => void;
   /** CA-18: a double click on any other tile opens its own window, to change it. Absent: nothing opens. A phone has no double click. */
   onEditTile?: (id: string) => void;
@@ -331,7 +332,7 @@ export function useClamped<T extends HTMLElement>(text: string) {
 }
 
 export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
-export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+export const clamp2: CSSProperties = PREVIEW;
 
 /** CA-20 P3: the tile is chosen with others, and is drawn as selected is. */
 const usePicked = (id: string): boolean => Boolean(useBuildSelectionContext()?.tiles.has(id));
@@ -1240,7 +1241,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <ConvertRows step={step} phone={phone} />
-                <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all of it</MenuRow>
+                <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}

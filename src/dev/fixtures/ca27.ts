@@ -106,3 +106,15 @@ export function ca27Build(tiles: number = CA27_TILES): { tree: NodeTree[]; steps
   const groups = sessionGroups(steps, ca27Making.sessions, ca27Making.session_tools ?? {}, sessionsMetaOf(ca27Making), sessionOrderOf(ca27Making));
   return { tree, steps, groups, making: ca27Making };
 }
+
+/** Sources with long names: sessions, prompts, files and library rows no column can hold on one line. */
+export function ca27Sources() {
+  return {
+    sessions: [
+      { key: "s1", number: 1, tool: "Claude", detail: `Opus 5.5 · 3 Mar · ${LONG_TITLE}`, prompts: [{ id: "p1", number: "1", title: LONG_TITLE, isDefault: false }, { id: "p2", number: "2", title: LONG_WORD, isDefault: false }] },
+      { key: "s2", number: 2, tool: "Claude Code with a name that goes on and on", detail: "Sonnet 5.5 · 4 Mar", prompts: [{ id: "p3", number: "3", title: "Build the page", isDefault: false }] },
+    ],
+    files: [{ id: "f1", name: `menu-week-1-${LONG_WORD}.pdf`, note: `opened in session 1, ${LONG_TITLE}` }],
+    library: [{ id: "l1", label: `Claude ${LONG_TITLE}`, line: `1 Mar · 4 prompts · ${LONG_TITLE}`, adding: false, inThisDraft: false, alsoIn: `Also in ${LONG_TITLE}`, firstPrompt: null, date: "1 Mar", promptCount: 4, app: "Claude", appKnown: true, model: null, createdAt: "2026-03-01T10:00:00Z", draftCount: 0 }],
+  };
+}

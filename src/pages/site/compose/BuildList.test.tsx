@@ -572,7 +572,7 @@ describe("a manual step (UI-P70)", () => {
     expect(within(card()).queryByText("1 screenshot")).toBeNull();
   });
 
-  it("has Rename, Move up, Move down and Remove tile, and no 'Read all of it'", async () => {
+  it("has Rename, Move up, Move down and Remove tile, and no 'Read all'", async () => {
     const props = manualList();
     fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
     expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Move up", "Move down", "Remove tile"]);
@@ -649,12 +649,12 @@ describe("the refined look (UI-P93)", () => {
     expect(add.textContent).toBe("Add a prompt to this agent");
   });
 
-  it("has Attach a file after Read all of it, and calls onAttach for that prompt", async () => {
+  it("has Attach a file after Read all, and calls onAttach for that prompt", async () => {
     const onAttach = vi.fn();
     list({ onAttach, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all of it", "Attach a file", "Move up", "Move down", "Remove tile"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Move up", "Move down", "Remove tile"]);
     fireEvent.click(screen.getByRole("menuitem", { name: "Attach a file" }));
     expect(onAttach).toHaveBeenCalledWith("p2");
   });
@@ -664,7 +664,7 @@ describe("the refined look (UI-P93)", () => {
     list({ onAttach: vi.fn(), onNameMade, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all of it", "Attach a file", "Name a file it makes", "Move up", "Move down", "Remove tile"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Name a file it makes", "Move up", "Move down", "Remove tile"]);
     expect(items.at(-1)?.getAttribute("data-tone")).toBe("danger");
     fireEvent.click(screen.getByRole("menuitem", { name: "Name a file it makes" }));
     // CA-10: asked once the menu has let go of focus, so it cannot take it back from the field.

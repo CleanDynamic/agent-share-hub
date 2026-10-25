@@ -10,6 +10,7 @@ import type { CSSProperties } from "react";
 
 import { SELECTED, WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
+import { TITLE_LINE } from "@/lib/theme/truncate";
 import { FIGTREE } from "@/lib/theme/type";
 
 /* ── type ── */
@@ -39,7 +40,7 @@ export const EYEBROW: CSSProperties = {
   textTransform: "uppercase",
 };
 
-export const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+export const ellipsis: CSSProperties = TITLE_LINE;
 
 /** The indent that lines text up under a step's title: the 24 tile and its 12 gap. */
 export const INDENT = 36;

@@ -10,7 +10,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { CA22_A, CA22_B, CA22_S, ca22Build, node } from "@/dev/fixtures/ca22";
-import { ca27Build } from "@/dev/fixtures/ca27";
+import { LONG_TITLE, ca27Build, ca27Sources } from "@/dev/fixtures/ca27";
 import { sandboxSourcesProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeSource } from "@/dev/fixtures/shapes";
 import { useDesignTheme } from "@/dev/useDesignTheme";
@@ -301,10 +301,11 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
         fit={fit}
         {...sandboxViewProps("fox", state)}
         counts={{ sessions: 3, prompts: 5, files: 0 }}
-        title={TITLE}
+        title={params.get("build") === "ca27" ? LONG_TITLE : TITLE}
         lens={lens}
         onLens={setLens}
         mapAvailable
+        selectedKey={selectedId}
         find={phone ? undefined : find}
         viewOptions={params.get("build") === "ca27" ? { sessionList: false, sessionCount: sessionKeys.length, onChange: () => undefined } : undefined}
         list={
@@ -346,7 +347,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
             )}
           />
         }
-        sources={<SourcesPanel {...sandboxSourcesProps("bakery", state)} phone={phone} fine={fine} />}
+        sources={<SourcesPanel {...sandboxSourcesProps("bakery", state)} {...(params.get("build") === "ca27" ? ca27Sources() : null)} phone={phone} fine={fine} />}
         map={devMap.column}
         mapPanel={devMap.panel}
         selection={selectedId ? <DetailsPanel {...shapeDetailsProps("one-sitting", selectedId, source)} phone={phone} onSelect={setSelectedId} /> : undefined}

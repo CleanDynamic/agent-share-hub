@@ -22,6 +22,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { SESSION_TITLE_MAX } from "@/lib/build/making";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
+import { NO_SHRINK, TITLE_LINE, fullText } from "@/lib/theme/truncate";
 import { t } from "@/lib/theme/tokens";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
@@ -163,6 +164,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
         aria-label={`Title of Session ${session.number}`}
         placeholder={SESSION_HEAD_COPY.titlePlaceholder}
         value={draft}
+        title={draft || undefined}
         maxLength={SESSION_TITLE_MAX}
         autoComplete="off"
         onFocus={() => setEditing(true)}
@@ -180,6 +182,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
           borderRadius: 6,
           padding: "0 6px",
           margin: "0 -6px",
+          textOverflow: "ellipsis",
           ...text(15, 400, t.text),
           ...(phone ? { fontSize: 16 } : null),
         }}
@@ -227,7 +230,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
   };
 
   const app = (
-    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0, ...SESSION_META }}>
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, ...NO_SHRINK, ...SESSION_META }}>
       <span style={{ whiteSpace: "nowrap", ...SESSION_NAME }}>Session {session.number} ·</span>
       {session.tool === NO_APP && onPickApp && maker ? (
         <ToolPicker quiet label={`Pick an app for session ${session.number}`} placeholder={NO_APP} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
@@ -243,7 +246,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
       {maker ? (
           <TitleField session={session} phone={phone} onSave={(title) => ops?.onTitle(session.key, title)} />
         ) : session.title ? (
-          <span data-testid="session-title-text" style={{ ...text(13, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
+          <span data-testid="session-title-text" {...fullText(session.title)} style={{ ...text(13, 400, t.text), ...TITLE_LINE, flex: "1 1 120px" }}>
             <FindHit text={session.title} />
           </span>
         ) : (

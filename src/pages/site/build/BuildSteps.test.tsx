@@ -117,9 +117,9 @@ describe("StepsList", () => {
     expect(screen.getByText("Import workflow.json into n8n")).toBeTruthy();
   });
 
-  it("Read all of it opens the full prompt window, with the refined Before you send it", () => {
+  it("Read all opens the full prompt window, with the refined Before you send it", () => {
     mountList(view("list"));
-    fireEvent.click(screen.getByRole("button", { name: "Read all of it" }));
+    fireEvent.click(screen.getByRole("button", { name: "Read all" }));
     const window = screen.getByTestId("full-prompt-window");
     expect(window.textContent).toContain("Follow CLAUDE.md");
     const before = within(window).getByTestId("before-you-send");
