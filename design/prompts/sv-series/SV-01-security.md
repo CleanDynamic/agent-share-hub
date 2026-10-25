@@ -1,8 +1,8 @@
-# CA-29 · Security fixes
+# SV-01 · Security fixes
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** The first of the series CA-29 to CA-54. The series README (`design/prompts/ca-series/README.md`) holds the full order; this prompt carries its own rules. Run this after CA-28 has merged. Pull main first. Lovable commits straight to main. Branch `ca-29-security`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-29 security fixes` at the end.
+**Order.** The first of the series SV-01 to SV-26. The series README (`design/prompts/sv-series/README.md`) holds the full order; this prompt carries its own rules. Run this after CA-28 has merged. Pull main first. Lovable commits straight to main. Branch `sv-01-security`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-01 security fixes` at the end.
 
 The facts here were checked on 25 October 2026, at `6b8fe912`. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report. Never invent a table, a column or a policy.
 
@@ -10,12 +10,12 @@ If the session runs short, stop at the end of a finished part with every test gr
 
 ## How to work
 
-- **Plan first.** End Part 0 by writing two short lists at the top of `design/audits/security/ca-29-before.md`:
+- **Plan first.** End Part 0 by writing two short lists at the top of `design/audits/security/sv-01-before.md`:
   - `Assumptions`: each fact in "What is wrong now" that you checked, and what you found;
   - `Plan`: one line per part, `Part n: what changes -> verified by: which test`.
 - **Reproduce first.** For every hole, write the test that shows it open, watch it fail, then close it.
 - **A missing premise is reported, not fixed.** If a hole described here isn't there on disk, don't build a fix for it. Say so and move on.
-- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for CA-54; don't delete it.
+- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for SV-26; don't delete it.
 - **Questions.** Miles isn't watching the session. Where you would ask, take the safer reading, carry on, and put the question in the report.
 - **The domain isn't live yet.** Don't fetch `https://buildgallery.ai`. Work from the repo.
 
@@ -77,9 +77,9 @@ If the session runs short, stop at the end of a finished part with every test gr
    - who can execute it (`GRANT`, or the default for `PUBLIC`).
 4. **Advisor findings:** Miles may paste the Supabase security advisor's findings at the start of the session. If he has, use them. If not, work from the migrations and say so in the report.
 
-Write what you found as a table in `design/audits/security/ca-29-before.md`: one row per function and per raw HTML use, with what it trusts and what you will do. Put the `Assumptions` and `Plan` lists above it.
+Write what you found as a table in `design/audits/security/sv-01-before.md`: one row per function and per raw HTML use, with what it trusts and what you will do. Put the `Assumptions` and `Plan` lists above it.
 
-Commit: `CA-29 P0: security baseline and plan`.
+Commit: `SV-01 P0: security baseline and plan`.
 
 ## Part 1 · The password function
 
@@ -87,7 +87,7 @@ Commit: `CA-29 P0: security baseline and plan`.
 2. **Delete `supabase/functions/update-user-password/`**, since nothing calls it. Password changes go through `supabase.auth.updateUser` in the signed-in reader's own session, as the reset page does now. Check that path, and say how it works in the report.
 3. **Deleting the folder may not remove the function that is already running.** Put this Lovable message in the report: `Delete the edge function update-user-password from this project's Supabase functions, and confirm it no longer answers. Change nothing else.`
 
-Commit: `CA-29 P1: remove the open password function`.
+Commit: `SV-01 P1: remove the open password function`.
 
 ## Part 2 · Prompt text is text
 
@@ -107,7 +107,7 @@ Commit: `CA-29 P1: remove the open password function`.
    - Anything else that takes user text: change it to text.
 4. **A guard:** add a test that fails when a new `dangerouslySetInnerHTML`, `innerHTML =` or `insertAdjacentHTML` appears outside an allow list holding the three files above.
 
-Commit: `CA-29 P2: prompt text is text`.
+Commit: `SV-01 P2: prompt text is text`.
 
 ## Part 3 · Checkout
 
@@ -129,7 +129,7 @@ Write the tests first (Deno or Vitest, with the Stripe client faked), and watch 
 4. **Logged-in buyers:** when the caller sends a session, record the buyer's id from the token, never from the body.
 5. **Unused checkout functions:** `create-split-checkout-session` and `create-subscription-session` have no caller in `src`. Fix them the same way (they are still reachable), and list them under `Dead code seen`.
 
-Commit: `CA-29 P3: checkout`.
+Commit: `SV-01 P3: checkout`.
 
 ## Part 4 · Open functions
 
@@ -155,7 +155,7 @@ For each function in Part 0 that writes, or reads private rows, with the service
 - `notify-version-update` refuses a caller who doesn't own the item;
 - `check-compatibility-status` refuses a call without the secret.
 
-Commit: `CA-29 P4: open functions`.
+Commit: `SV-01 P4: open functions`.
 
 ## Part 5 · Origins and inputs
 
@@ -168,7 +168,7 @@ Commit: `CA-29 P4: open functions`.
 
 **Tests:** a call from a foreign origin gets no CORS allow header; a missing field gets a 400 naming it.
 
-Commit: `CA-29 P5: origins and inputs`.
+Commit: `SV-01 P5: origins and inputs`.
 
 ## Part 6 · Database functions
 
@@ -184,7 +184,7 @@ Commit: `CA-29 P5: origins and inputs`.
 
 **Tests:** a SQL test file, or a written check list in the report if the repo has no SQL tests, covering each changed function: signed out refused, wrong owner refused, owner allowed.
 
-Commit: `CA-29 P6: database functions`.
+Commit: `SV-01 P6: database functions`.
 
 ## Part 7 · Errors are reported
 
@@ -202,7 +202,7 @@ This part wires reporting in. It doesn't sweep the whole repo; the rest goes in 
 3. **Writes that drop errors:** find every `insert`, `update`, `upsert`, `delete` and `rpc` in `src` whose returned `error` isn't read.
    - Fix the ones on the paths this prompt changes (checkout, notifications, the PDF button, the password reset): each one throws to its caller or calls `reportError`, and the screen says what failed in CA-28's form (`{Thing} not {done}` with Retry) where there is a screen for it.
    - List every other one in the report as `file:line`, for a follow-up. Don't change them here.
-4. **`console` calls:** add the lint rule `no-console` as a **warning**, with `report.ts` allowed. Route `console.error` and `console.warn` through `reportError` only in files this prompt already changes. Report the count left. CA-54 turns the rule into an error.
+4. **`console` calls:** add the lint rule `no-console` as a **warning**, with `report.ts` allowed. Route `console.error` and `console.warn` through `reportError` only in files this prompt already changes. Report the count left. SV-26 turns the rule into an error.
 5. **The connector address:** build it from `import.meta.env.VITE_SUPABASE_URL` in one place, `connector.ts`. `Connect.tsx` imports it.
 
 **Tests:**
@@ -210,22 +210,22 @@ This part wires reporting in. It doesn't sweep the whole repo; the rest goes in 
 - a failed query reaches it once;
 - no DSN means no Sentry chunk is requested.
 
-Commit: `CA-29 P7: errors are reported`.
+Commit: `SV-01 P7: errors are reported`.
 
 ## Part 8 · Checks
 
-1. Write `design/audits/security/ca-29-after.md`: the Part 0 table, with what each row is now.
+1. Write `design/audits/security/sv-01-after.md`: the Part 0 table, with what each row is now.
 2. Search the diff for any secret value and for the em dash character.
 3. Run `npm run audit:design` to confirm that nothing looks different.
 
-Commit: `CA-29 P8: checks`.
+Commit: `SV-01 P8: checks`.
 
 ---
 
 ## Report (end the session with exactly this)
 
 ```
-CA-29 · security fixes
+SV-01 · security fixes
 Branch / PR:
 Facts in this prompt that were wrong on disk: (list, or "none")
 Baseline → end: tests N → N

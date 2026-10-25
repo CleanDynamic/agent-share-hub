@@ -1,21 +1,21 @@
-# CA-33 · Session numbers follow the order, counts, loading fill and fixes
+# SV-05 · Session numbers follow the order, counts, loading fill and fixes
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** After CA-32, before CA-34. CA-28 and this prompt both change `SandboxCard.tsx` and the session heads, and CA-32 moved the composer into the shared frame, so read the files as they are now. The numbering function this prompt writes is used later by OpenBuilds (CA-42), Builds (CA-51) and the build page. Read the series README (`design/prompts/ca-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `ca-33-numbering-and-fixes`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-33 session numbers, counts and fixes` at the end.
+**Order.** After SV-04, before SV-06. CA-28 and this prompt both change `SandboxCard.tsx` and the session heads, and SV-04 moved the composer into the shared frame, so read the files as they are now. The numbering function this prompt writes is used later by OpenBuilds (SV-14), Builds (SV-23) and the build page. Read the series README (`design/prompts/sv-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `sv-05-numbering-and-fixes`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-05 session numbers, counts and fixes` at the end.
 
-The facts here were checked on 25 October 2026, at `6b8fe912`, before CA-28 to CA-32 merged. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report. Never invent a table, a column or a policy.
+The facts here were checked on 25 October 2026, at `6b8fe912`, before CA-28 to SV-04 merged. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report. Never invent a table, a column or a policy.
 
 If the session runs short, stop at the end of a finished part with every test green, commit, and report which parts are left.
 
 ## How to work
 
-- **Plan first.** End Part 0 by writing two short lists in `design/audits/composer/ca-33/plan.md`:
+- **Plan first.** End Part 0 by writing two short lists in `design/audits/composer/sv-05/plan.md`:
   - `Assumptions`: each fact in "What is wrong now" and Part 0 that you checked, and what you found;
   - `Plan`: one line per part, `Part n: what changes -> verified by: which test`.
 - **Reproduce first.** For every fix, write the test that shows the problem, watch it fail, then fix it. Part 1's first test (3, 1, 2, 4) is written and seen failing before the numbering function exists.
 - **A missing premise is reported, not fixed.** If a cause can't be found, don't guess at a fix. Say so and move on.
-- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for CA-54; don't delete it.
+- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for SV-26; don't delete it.
 - **Questions.** Miles isn't watching the session. Where you would ask, take the safer reading, carry on, and put the question in the report.
 - **The domain isn't live yet.** Don't fetch `https://buildgallery.ai`. Use the dev pages and the page harnesses.
 
@@ -52,7 +52,7 @@ If the session runs short, stop at the end of a finished part with every test gr
 ## Motion limits
 
 This prompt adds one piece of motion: the number crossfade in Part 1 step 7.
-- It uses CA-22's existing count crossfade helper in `buildMotion.tsx`, with `CROSSFADE` (150 ms) and opacity only. No new `element.animate()` call, so CA-34 can route it through its animator later.
+- It uses CA-22's existing count crossfade helper in `buildMotion.tsx`, with `CROSSFADE` (150 ms) and opacity only. No new `element.animate()` call, so SV-06 can route it through its animator later.
 - No new duration, curve, stagger, shimmer or hover look. No ease-in, no spring, no scale.
 - Everything is off under reduced motion. `motion.test.ts` must pass.
 
@@ -100,20 +100,20 @@ This prompt adds one piece of motion: the number crossfade in Part 1 step 7.
   - `CardPreview.tsx` (line 46), `SessionHead.tsx` (`addToThis`), `SandboxView.tsx` (`mapHint`, `ADD_ASK_COPY.row` at line 358);
   - `src/lib/classify/storage.ts` (`isMissingColumn`, around line 27).
 
-**Before changing anything,** screenshot at 1440 in Dusk into `design/audits/composer/ca-33/before/`:
+**Before changing anything,** screenshot at 1440 in Dusk into `design/audits/composer/sv-05/before/`:
 - a draft with two parts, where Part 1 holds four sessions, one of them with no tiles;
 - an import in progress;
 - the post with one empty block;
 - Sources with the CLAUDE.md suggestion;
 - the Classification window.
 
-Commit: `CA-33 P0: before screens and plan`.
+Commit: `SV-05 P0: before screens and plan`.
 
 ## Part 1 · One order, one numbering
 
 1. **Write the tests first,** and watch them fail: Part 1 holding 3, 1, 2, 4 reads 1, 2, 3, 4; a session with no tiles has a number.
 2. **One function** gives every session its number from the List's order (the rule above): parts in order, then each part's sessions in order. Use it in every place from Part 0. **Remove every other numbering,** including the refill in `sessionGroups` if it disagrees. A source check passes only when no other code works out a session number.
-   - **Usable outside the composer.** The function is pure (no React, no Supabase) and lives in `src/lib/build/`, so OpenBuilds' step strips (CA-42), the Maps view (CA-40), stored counts (CA-51) and the build page can import it without pulling in the composer's chunk. It takes the steps and the session order and returns the map; a test imports it from a page outside `src/pages/site/compose/`.
+   - **Usable outside the composer.** The function is pure (no React, no Supabase) and lives in `src/lib/build/`, so OpenBuilds' step strips (SV-14), the Maps view (SV-12), stored counts (SV-23) and the build page can import it without pulling in the composer's chunk. It takes the steps and the session order and returns the map; a test imports it from a page outside `src/pages/site/compose/`.
    - **One map per order change.** The function builds one map from session key to number each time the order changes, and every place reads from that map (`js-index-maps`). No place runs its own `findIndex` over the order.
    - **Worked out during render, never copied.** No effect copies numbers or counts into state (`rerender-derived-state-no-effect`).
 3. **Sessions with no tiles are in that order and are numbered.** That covers typed sessions, imported sessions and sessions still importing.
@@ -144,7 +144,7 @@ Commit: `CA-33 P0: before screens and plan`.
 - the map is built once per order change, not once per place that shows a number (count the calls);
 - no `useEffect` sets a number or a count from the order (source check).
 
-Commit: `CA-33 P1: session numbers follow the order`.
+Commit: `SV-05 P1: session numbers follow the order`.
 
 ## Part 2 · Counts and the next number
 
@@ -154,17 +154,17 @@ Commit: `CA-33 P1: session numbers follow the order`.
 
 **Tests:** a build with a session that has no tiles counts it in all four places; importing while such a session exists gives the import a new number; adding into Part 1 of two renumbers Part 2.
 
-Commit: `CA-33 P2: counts include every session`.
+Commit: `SV-05 P2: counts include every session`.
 
 ## Part 3 · An imported session with no tiles
 
 1. **Find out** why a library row reading "1 prompt" became a session with **No tiles yet**. The prompt may never have been written, or written somewhere the build doesn't read, or the library count may be wrong. Reproduce it in a test first, then fix the cause, and say in the report which it was. If it can't be reproduced, say so and do steps 2 and 3 only.
 2. **If an import writes fewer tiles than the row says,** say so in the session head's detail line: `0 of 1 prompts imported`, with a `Retry` text link that runs the import again for the missing prompts.
-3. **A library row is named by its first prompt** (the series decision, matching the Drafts and Home boards), with the app's mark, and `<tool> · <model> · <date> · <n> prompts` in the detail line. Never the model alone as the name. When the tool is unknown, the detail line starts `No app chosen` (`NO_APP`) and the row has no mark (`No app chosen · Haiku 4.5 · 10 Oct · 1 prompt`). A first turn that is a Claude Code summary is skipped for the name (CA-35 makes it a Summary tile).
+3. **A library row is named by its first prompt** (the series decision, matching the Drafts and Home boards), with the app's mark, and `<tool> · <model> · <date> · <n> prompts` in the detail line. Never the model alone as the name. When the tool is unknown, the detail line starts `No app chosen` (`NO_APP`) and the row has no mark (`No app chosen · Haiku 4.5 · 10 Oct · 1 prompt`). A first turn that is a Claude Code summary is skipped for the name (SV-07 makes it a Summary tile).
 
 **Tests:** an import that writes all of its prompts; one that writes none shows `0 of 1 prompts imported` and Retry; Retry fills the session; a row is named by its first prompt; a row with an unknown tool reads `No app chosen` first in its detail line; a summary first turn is skipped for the name.
 
-Commit: `CA-33 P3: imports that come back empty`.
+Commit: `SV-05 P3: imports that come back empty`.
 
 ## Part 4 · Loading blocks fill the whole socket
 
@@ -176,13 +176,13 @@ Commit: `CA-33 P3: imports that come back empty`.
    - the blocks fill the socket's inner area, inset 10 from every edge (the tile's own padding);
    - use `width="fill"` and `height="fill"` in place of `SOCKET_BLOCK_ROWS`;
    - they keep the page-wide wave at its current speed, with no new shimmer, and fade out as each prompt drops in. A socket's blocks and its arriving prompt overlap in the slot, so the socket is never empty for a frame.
-3. **The first load** (`ComposeSkeleton.tsx`, which CA-32 made the composer's one placeholder): each tile box fills the tile's full height in the same way, so a block placeholder and a tile are the same size. Keep CA-32's check that the placeholder and the page match.
+3. **The first load** (`ComposeSkeleton.tsx`, which SV-04 made the composer's one placeholder): each tile box fills the tile's full height in the same way, so a block placeholder and a tile are the same size. Keep SV-04's check that the placeholder and the page match.
 4. **Socket numbers** sit inside the socket, 10 from its left edge, vertically centred, inside the part's frame. Nothing hangs outside the frame.
 5. **The import's progress row** (CA-24 Part 4: the bar, `6 of 18 prompts`, `Stop`) shows whenever the import can report progress. If it still can't, say why in the report.
 
 **Tests:** the cells cover the socket within one cell on every side, at 56, 64 and 72 tall; the first-load tile boxes match the tiles' height; socket numbers sit inside the frame; reduced motion shows a still fill.
 
-Commit: `CA-33 P4: loading fills the socket`.
+Commit: `SV-05 P4: loading fills the socket`.
 
 ## Part 5 · The post's grip
 
@@ -191,7 +191,7 @@ Commit: `CA-33 P4: loading fills the socket`.
 
 **Tests:** one empty block shows no grip; two blocks show it on hover; its box doesn't intersect the avatar's.
 
-Commit: `CA-33 P5: post grip`.
+Commit: `SV-05 P5: post grip`.
 
 ## Part 6 · Sources' file suggestion
 
@@ -200,7 +200,7 @@ Commit: `CA-33 P5: post grip`.
 
 **Tests:** at the Sources column's narrowest width, the full file name shows and `Add` stays on one line.
 
-Commit: `CA-33 P6: file suggestion`.
+Commit: `SV-05 P6: file suggestion`.
 
 ## Part 7 · Classification window
 
@@ -217,7 +217,7 @@ Commit: `CA-33 P6: file suggestion`.
 
 **Tests:** the inset is 20 on every side of the body at 1440; a missing-column save shows `Classification not saved`; another error whose message mentions "classification" is not read as missing columns.
 
-Commit: `CA-33 P7: Classification window`.
+Commit: `SV-05 P7: Classification window`.
 
 ## Part 8 · Wording on the page
 
@@ -228,24 +228,24 @@ Commit: `CA-33 P7: Classification window`.
 
 Search for any other "Add Tile" on screen and change it. Comments that quote the old words may be updated in the same line; change no other comment.
 
-Commit: `CA-33 P8: wording`.
+Commit: `SV-05 P8: wording`.
 
 ## Part 9 · Screens and checks
 
-1. Screenshot the Part 0 cases again into `design/audits/composer/ca-33/after/`, at 1440 and 390, in Dusk and Noon. Also take:
+1. Screenshot the Part 0 cases again into `design/audits/composer/sv-05/after/`, at 1440 and 390, in Dusk and Noon. Also take:
    - a move of Session 3 to the top, paused mid-slide and after;
    - an import paused while its sockets hold blocks.
 2. Compare with the before shots. Only what the parts above name may differ.
 3. Run `npm run audit:design -- --grep composer` and `npm run audit:contrast`. Search the diff for the em dash character.
 
-Commit: `CA-33 P9: screens and checks`.
+Commit: `SV-05 P9: screens and checks`.
 
 ---
 
 ## Report (end the session with exactly this)
 
 ```
-CA-33 · session numbers, counts and fixes
+SV-05 · session numbers, counts and fixes
 Branch / PR:
 Facts in this prompt that were wrong on disk: (list, or "none")
 Baseline → end: tests N → N · contrast

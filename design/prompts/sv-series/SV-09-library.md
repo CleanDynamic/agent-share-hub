@@ -1,14 +1,14 @@
-# CA-37 · Library
+# SV-09 · Library
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** After CA-36, before CA-38. Read the series README (`design/prompts/ca-series/README.md`) first: its How to work, Pages, Motion limits, Performance and Database rules, and its Report apply. Pull main first. Lovable commits straight to main. Branch `ca-37-library`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-37 Library` at the end.
+**Order.** After SV-08, before SV-10. Read the series README (`design/prompts/sv-series/README.md`) first: its How to work, Pages, Motion limits, Performance and Database rules, and its Report apply. Pull main first. Lovable commits straight to main. Branch `sv-09-library`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-09 Library` at the end.
 
-The facts here were checked on 25 October 2026, at `6b8fe91`, before CA-29 to CA-36 merged. **The file on disk wins.**
+The facts here were checked on 25 October 2026, at `6b8fe91`, before SV-01 to SV-08 merged. **The file on disk wins.**
 
 ## Intent
 
-Library holds what the reader keeps from any build, says what changed in it, and hands it to the composer. It must match `design/reference/vision/dusk/library.html`. This prompt builds the whole view and wires saved builds and collections, which exist. Saving smaller things arrives in CA-45, edits in CA-47, the changes list in CA-43.
+Library holds what the reader keeps from any build, says what changed in it, and hands it to the composer. It must match `design/reference/vision/dusk/library.html`. This prompt builds the whole view and wires saved builds and collections, which exist. Saving smaller things arrives in SV-17, edits in SV-19, the changes list in SV-15.
 
 ## Source
 
@@ -17,8 +17,8 @@ Library holds what the reader keeps from any build, says what changed in it, and
 
 ## What earlier prompts left here (keep all of it)
 
-- **CA-31 Part 5:** Saved is one request (`build_saves` with the build embedded, newest first, paged by `created_at`), the cause of "Something went wrong" was found or reported, and a failed panel reads `Saved didn't load` with `Retry`. Keep the request and the panel error. The panel error names the kind: `Builds didn't load`, `Collections didn't load`.
-- **CA-31 and CA-32:** the route table entry, `usePageReady("library")`, the `Placeholder` and its match test, `PageLink`.
+- **SV-03 Part 5:** Saved is one request (`build_saves` with the build embedded, newest first, paged by `created_at`), the cause of "Something went wrong" was found or reported, and a failed panel reads `Saved didn't load` with `Retry`. Keep the request and the panel error. The panel error names the kind: `Builds didn't load`, `Collections didn't load`.
+- **SV-03 and SV-04:** the route table entry, `usePageReady("library")`, the `Placeholder` and its match test, `PageLink`.
 
 ## Layout (exact values are in the board)
 
@@ -38,22 +38,22 @@ Library holds what the reader keeps from any build, says what changed in it, and
 
 ## Part 0 · Read and plan
 
-1. Check that Saved still loads (CA-31 Part 5): a test against a faked backend (`page.route`). If it fails again, find the cause, and fix it in Part 1 with a failing test first. If it passes, Part 1 adds only the test.
+1. Check that Saved still loads (SV-03 Part 5): a test against a faked backend (`page.route`). If it fails again, find the cause, and fix it in Part 1 with a failing test first. If it passes, Part 1 adds only the test.
 2. Table every element: element → function → exists or not. Write `Assumptions` and `Plan`.
 
-Commit: `CA-37 P0: plan`.
+Commit: `SV-09 P0: plan`.
 
 ## Part 1 · Saved stays fixed
 
 The test from Part 0 is kept in the suite, and any fix it needed. If the cause is outside this page's code, report it with a proposed patch and continue.
 
-Commit: `CA-37 P1: Library Saved stays fixed`.
+Commit: `SV-09 P1: Library Saved stays fixed`.
 
 ## Part 2 · The view
 
 `LibraryView` in `src/pages/site/library/` with every element of the board, for every kind, each section its own component (the selected panel adapts: a build shows its Plaque, Used in, In collections, Open; a step shows the version switch and content). The dev page `vision-library` renders the fixture. The route's `Placeholder` becomes this page's loading state.
 
-Commit: `CA-37 P2: Library view`.
+Commit: `SV-09 P2: Library view`.
 
 ## Part 3 · Wire what exists
 
@@ -66,17 +66,17 @@ Commit: `CA-37 P2: Library view`.
 | Another reader's library | `/library/:handle`, their public collections, read only |
 | Selected build: Open source, Copy | `PageLink` to the build page; `copyToClipboard` |
 
-The address holds the kind, the tab and the selected item, so Back and a shared link land where the reader was. **Not live yet:** Parts, Sessions, Steps, Requests and Filter sets kinds, notes, Used in, saved-by counts and Start a build from a collection (CA-45); the version switch and Edited (CA-47); the changes list (CA-43); In collections (CA-53). The live page shows only kinds with a source.
+The address holds the kind, the tab and the selected item, so Back and a shared link land where the reader was. **Not live yet:** Parts, Sessions, Steps, Requests and Filter sets kinds, notes, Used in, saved-by counts and Start a build from a collection (SV-17); the version switch and Edited (SV-19); the changes list (SV-15); In collections (SV-25). The live page shows only kinds with a source.
 
 `npm run audit:pages`: Library stays at 1 request round.
 
-Commit: `CA-37 P3: Library data`.
+Commit: `SV-09 P3: Library data`.
 
 ## Part 4 · Compare
 
 `npm run audit:design -- --grep "vision/dusk/library"` within 4%.
 
-Commit: `CA-37 P4: compare and checks`.
+Commit: `SV-09 P4: compare and checks`.
 
 ---
 

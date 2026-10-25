@@ -1,8 +1,8 @@
-# CA-31 · Fast data: pages show their content as close to instantly as possible
+# SV-03 · Fast data: pages show their content as close to instantly as possible
 
 One Claude Code session on `CleanDynamic/agent-share-hub`, default branch.
 
-**Order.** After CA-30, before CA-32. CA-30 has set the names Builds and OpenBuilds and their routes; this prompt builds the route table on them, keyed by `SITE_NAV` key. CA-32 uses the route table and the page-ready marks this prompt adds, and every page prompt (CA-36 to CA-42) registers its page in them. Read the series README (`design/prompts/ca-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `ca-31-fast-data`. Commit at the end of every part with the part number in the message. Open one pull request titled `CA-31 fast data` at the end.
+**Order.** After SV-02, before SV-04. SV-02 has set the names Builds and OpenBuilds and their routes; this prompt builds the route table on them, keyed by `SITE_NAV` key. SV-04 uses the route table and the page-ready marks this prompt adds, and every page prompt (SV-08 to SV-14) registers its page in them. Read the series README (`design/prompts/sv-series/README.md`) first: its How to work, Motion limits, Performance rules and Database rules apply, and where this prompt says more, this prompt wins. Pull main first. Lovable commits straight to main. Branch `sv-03-fast-data`. Commit at the end of every part with the part number in the message. Open one pull request titled `SV-03 fast data` at the end.
 
 The facts here were checked on 25 October 2026, at `6b8fe912`. **The file on disk wins.** If something here does not match the code, follow the code, do the nearest correct thing, and list the difference in the report. Never invent a table, a column or a policy.
 
@@ -10,13 +10,13 @@ If the session runs short, stop at the end of a finished part with every test gr
 
 ## How to work
 
-- **Plan first.** End Part 0 by writing two short lists at the top of `design/audits/pages/ca-31-before.md`:
+- **Plan first.** End Part 0 by writing two short lists at the top of `design/audits/pages/sv-03-before.md`:
   - `Assumptions`: each fact in "What is slow now" that you checked, and what you found;
   - `Plan`: one line per part, `Part n: what changes -> verified by: which test or audit number`.
 - **Measure, then build.** The audit in Part 0 is the judge. Parts 3 and 7 each have a simple step and a heavier one. Build the simple step, run `npm run audit:pages`, and build the heavier one only if its target still fails. Say in the report which you built and the numbers that decided it.
 - **Reproduce first.** For every fix, write the test that shows the problem, watch it fail, then fix it.
 - **A missing premise is reported, not fixed.** If a cause can't be found or reproduced in the harness, don't guess at a fix. Say so and move on.
-- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for CA-54; don't delete it.
+- **Surgical.** Every changed line traces to a part of this prompt. Match the style around it. Remove what your own change leaves unused. Dead code you didn't create goes under `Dead code seen` in the report, for SV-26; don't delete it.
 - **Questions.** Miles isn't watching the session. Where you would ask, take the safer reading, carry on, and put the question in the report.
 - **The domain isn't live yet.** Don't fetch `https://buildgallery.ai`. The harness is the site.
 
@@ -86,12 +86,12 @@ On a built bundle, with every database request delayed by a fixed 120 ms:
      - the **request rounds**, meaning the longest chain of requests where each starts after the one before it ended;
      - the bytes of JSON received.
    - It measures three ways: **cold** (empty cache), **warm** (visited earlier in the same visit) and **after a reload**.
-   - **Built to grow.** Pages and their targets come from one list in `e2e/audit/support/pageTargets.ts` (`{ key, path, readyMark, maxRounds }`). The page prompts CA-36 to CA-42 add or change their page by adding one entry, with no change to the spec.
+   - **Built to grow.** Pages and their targets come from one list in `e2e/audit/support/pageTargets.ts` (`{ key, path, readyMark, maxRounds }`). The page prompts SV-08 to SV-14 add or change their page by adding one entry, with no change to the spec.
    - It runs each measure **3 times and reports the median**, so the time columns are steady enough to read by eye.
 4. **Web Vitals.** Run the existing `npm run audit:perf` (`e2e/audit/performance.spec.ts`, BG-P31): LCP, CLS and its INP proxy on three routes in both themes. FID is retired; use INP.
-5. Save the numbers as a table in `design/audits/pages/ca-31-before.md`, under the `Assumptions` and `Plan` lists, with the Web Vitals beside them.
+5. Save the numbers as a table in `design/audits/pages/sv-03-before.md`, under the `Assumptions` and `Plan` lists, with the Web Vitals beside them.
 
-Commit: `CA-31 P0: page-ready marks, the page audit and the plan`.
+Commit: `SV-03 P0: page-ready marks, the page audit and the plan`.
 
 ## Part 1 · Signing in doesn't hold pages up
 
@@ -102,13 +102,13 @@ Commit: `CA-31 P0: page-ready marks, the page audit and the plan`.
    - waits only for the session;
    - `requireCreator` routes alone also wait for the profile;
    - while waiting, it shows the route's placeholder from the route table (Part 6), not a small centred skeleton. Until Part 6 exists, keep what it shows now.
-3. **`ComposeRoute`:** waits only for the session (CA-32 replaces its blank screen).
+3. **`ComposeRoute`:** waits only for the session (SV-04 replaces its blank screen).
 4. **Reads that run on page load use the session's user id,** from `useAuth()` or `getSession()`, never `auth.getUser()`. Keep `auth.getUser()` only where the server's own answer matters, for example before changing an email. List each of the 25 calls in the report with what it became.
 5. **Don't await before you need to** (`async-defer-await`, `async-cheap-condition-before-await`). Where a page-load function awaits the session, a flag or another read before a read that doesn't depend on it, start that read first and await it where it is used.
 
 **Tests:** a protected page renders once the session is known, with the profile still pending; `requireCreator` waits for the profile; no page-load path calls `getUser` (spy).
 
-Commit: `CA-31 P1: signing in doesn't hold pages up`.
+Commit: `SV-03 P1: signing in doesn't hold pages up`.
 
 ## Part 2 · Drafts in one request
 
@@ -116,7 +116,7 @@ Commit: `CA-31 P1: signing in doesn't hold pages up`.
    - `builds.select("id, title, updated_at, session_count")` for the signed-in maker's drafts, newest first, limit 50;
    - the creator id comes from the caller (the session), not a separate `getSession` call inside it.
    - Remove the second `session_count` read.
-2. **Light columns where a list is shown.** Add `BUILD_LIST_COLUMNS` (no `post_doc`, no `making`) in `builds.ts`. Use it in the list reads on the pages this prompt measures: drafts, a maker's builds, and any other list read Part 0 finds on those pages. List any other `BUILD_COLUMNS` list read for CA-54. Keep `BUILD_COLUMNS` for opening one build.
+2. **Light columns where a list is shown.** Add `BUILD_LIST_COLUMNS` (no `post_doc`, no `making`) in `builds.ts`. Use it in the list reads on the pages this prompt measures: drafts, a maker's builds, and any other list read Part 0 finds on those pages. List any other `BUILD_COLUMNS` list read for SV-26. Keep `BUILD_COLUMNS` for opening one build.
 3. **Drafts without content aren't made.**
    - Find what creates a `builds` row when New build opens. Every New build visit leaves a draft now: Drafts holds 27, most of them "Untitled build · No sessions".
    - Write the test first: opening New build and leaving writes no row. Watch it fail.
@@ -126,7 +126,7 @@ Commit: `CA-31 P1: signing in doesn't hold pages up`.
 
 **Tests:** one request for the list; no `post_doc` or `making` in it; opening New build and leaving writes no row; the empty-drafts action removes only empty drafts.
 
-Commit: `CA-31 P2: drafts in one request`.
+Commit: `SV-03 P2: drafts in one request`.
 
 ## Part 3 · Opening a draft
 
@@ -159,23 +159,23 @@ Steps 1 to 3 always. Step 4 only if the target still fails after them.
 - no `getNodeType` request when the record has loaded;
 - if step 4 was built: with the function present, opening a draft makes one request; with it missing, the fallback runs; every query key the page reads is filled from the one answer.
 
-Commit: `CA-31 P3: opening a draft`.
+Commit: `SV-03 P3: opening a draft`.
 
 ## Part 4 · Builds data (the Gallery today)
 
-CA-39 replaces the Gallery's views with the Builds page, and CA-38 moves the feed to Home. So this part changes only the data functions both keep, never the Gallery's or Home's views, whose double fetch goes with them.
+SV-11 replaces the Gallery's views with the Builds page, and SV-10 moves the feed to Home. So this part changes only the data functions both keep, never the Gallery's or Home's views, whose double fetch goes with them.
 
-1. **Classification and tries with the list.** Columns that are on `builds` come in `listGallery`'s own select, and in `getBuildFeed`'s, rather than through `getBuildClassifications` after it. Tries come in the same request as an embedded count, if the table allows it. If either can't, say so; CA-39 starts it the moment the list answers.
+1. **Classification and tries with the list.** Columns that are on `builds` come in `listGallery`'s own select, and in `getBuildFeed`'s, rather than through `getBuildClassifications` after it. Tries come in the same request as an embedded count, if the table allows it. If either can't, say so; SV-11 starts it the moment the list answers.
 2. **Facets alongside.** `classification_facets` answers `live` now that the CA-16 migration is applied. A caller can start `getClassificationFacets` at the same time as `listGallery` and doesn't need its answer to choose the list's filters: the starting value is the last answer kept in the cache, or `live`.
-3. **Keys.** Both functions' query keys follow `['<domain>', '<fn>', ...args]`, so CA-38 and CA-39 prefetch them from the route table.
+3. **Keys.** Both functions' query keys follow `['<domain>', '<fn>', ...args]`, so SV-10 and SV-11 prefetch them from the route table.
 
 **Tests:** `listGallery` and `getBuildFeed` return the classification columns in their one request; starting the facets alongside doesn't change the list's answer.
 
-Commit: `CA-31 P4: Builds data functions`.
+Commit: `SV-03 P4: Builds data functions`.
 
 ## Part 5 · Library › Saved
 
-CA-37 redraws Library later; this part fixes the data and the panel error, and CA-37 keeps both.
+SV-09 redraws Library later; this part fixes the data and the panel error, and SV-09 keeps both.
 
 1. **Find why Saved shows "Something went wrong".** The domain isn't live, so reproduce it in the audit harness. Check `build_saves`' rules, the embed in `withCardEmbeds`, and `gallerySelect(false)`.
    - If it reproduces, write the test that shows it, then fix the cause.
@@ -185,13 +185,13 @@ CA-37 redraws Library later; this part fixes the data and the panel error, and C
 
 **Tests:** Saved makes one request; a failed request shows the panel error with Retry; Retry loads it.
 
-Commit: `CA-31 P5: Library Saved`.
+Commit: `SV-03 P5: Library Saved`.
 
 ## Part 6 · A route table, and fetching on intent
 
-**Ready for the redrawn pages.** CA-36 to CA-42 replace Drafts, Library, Home, Builds and OpenBuilds. Each entry's `load`, `prefetch` and `Placeholder` are plain fields a later prompt can swap without touching the table's code, and a test checks every nav page has all three.
+**Ready for the redrawn pages.** SV-08 to SV-14 replace Drafts, Library, Home, Builds and OpenBuilds. Each entry's `load`, `prefetch` and `Placeholder` are plain fields a later prompt can swap without touching the table's code, and a test checks every nav page has all three.
 
-1. **`src/lib/routing/routeTable.ts`:** one entry per page, keyed by its `SITE_NAV` key (`gallery` is `/builds`, `bounties` is `/openbuilds`; CA-30 kept the keys and changed the values), so a later rename changes only a value. Query keys follow `['<domain>', '<fn>', ...args]`. Each entry holds:
+1. **`src/lib/routing/routeTable.ts`:** one entry per page, keyed by its `SITE_NAV` key (`gallery` is `/builds`, `bounties` is `/openbuilds`; SV-02 kept the keys and changed the values), so a later rename changes only a value. Query keys follow `['<domain>', '<fn>', ...args]`. Each entry holds:
    - its path pattern;
    - `load()`, the page's chunk import, the same function the route's `lazy()` uses;
    - `prefetch(params, queryClient)`, which starts the page's first-screen queries (`prefetchQuery` with the same keys and functions the page uses);
@@ -208,7 +208,7 @@ Commit: `CA-31 P5: Library Saved`.
 
 **Tests:** hovering a Drafts link starts the drafts query and the chunk once; the idle step loads the listed chunks; save-data skips it; with `requestIdleCallback` removed, the idle step still runs; the built `index.html` holds the preconnect.
 
-Commit: `CA-31 P6: route table and fetching on intent`.
+Commit: `SV-03 P6: route table and fetching on intent`.
 
 ## Part 7 · Keep what was fetched
 
@@ -228,7 +228,7 @@ Steps 1 and 2 always. Step 3 only if the after-reload target still fails after t
 
 **Tests:** a warm visit shows content in the first frame; a tab change keeps the old content until the new arrives. If step 3 was built: a reload shows Drafts from the kept cache in the first frame, then refreshes; sign out clears it; the composer's keys are never written; blocked storage doesn't throw.
 
-Commit: `CA-31 P7: keep what was fetched`.
+Commit: `SV-03 P7: keep what was fetched`.
 
 ## Part 8 · Database
 
@@ -243,24 +243,24 @@ Commit: `CA-31 P7: keep what was fetched`.
 3. **The plan to check.** In each migration's header comment, write the `EXPLAIN (ANALYZE, BUFFERS)` to run once it is applied, for the Drafts read, the Saved read, the `listGallery` read and (if built) `compose_open`, the way `20260829220000_build_feed_bounty_items.sql` and `20260921120000_import_ceilings.sql` already do. Say what the plan should show (the index used, no sequential scan on `builds`).
 4. One migration file for this part, plus Part 3's function if it was built. Don't apply either. Put the Lovable message in the report: `Apply supabase/migrations/<file> (and supabase/migrations/<file>) exactly as written. Change nothing else. Then run the performance advisor and list what is left, and run the EXPLAIN in each file's header comment and paste the plans back.`
 
-Commit: `CA-31 P8: database`.
+Commit: `SV-03 P8: database`.
 
 ## Part 9 · Measure again
 
-1. Run `npm run audit:pages` and `npm run audit:perf`, and save `design/audits/pages/ca-31-after.md`, with the before numbers beside the after ones and a change column (for example `5,020 ms to 410 ms, down 92%`).
+1. Run `npm run audit:pages` and `npm run audit:perf`, and save `design/audits/pages/sv-03-after.md`, with the before numbers beside the after ones and a change column (for example `5,020 ms to 410 ms, down 92%`).
 2. **Every target above must pass,** measured before the migrations are applied, and, if `compose_open` was built, with it faked as applied in the harness. If one fails, say why.
 3. **No regression elsewhere:** LCP, CLS and the INP proxy are no worse than before on any route.
 4. **Keep it enforced.** Make `npm run audit:pages` fail when a request-round target fails, or when a page's request count goes up by more than one over this prompt's after number. Report times without failing on them: a time is checked by eye, a count by the test.
 5. Run `npm run audit:design` to confirm that nothing looks different. Search the diff for the em dash character.
 
-Commit: `CA-31 P9: measure again`.
+Commit: `SV-03 P9: measure again`.
 
 ---
 
 ## Report (end the session with exactly this)
 
 ```
-CA-31 · fast data
+SV-03 · fast data
 Branch / PR:
 Facts in this prompt that were wrong on disk: (list, or "none")
 Baseline → end: tests N → N
