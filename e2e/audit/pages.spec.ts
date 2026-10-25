@@ -133,7 +133,10 @@ function summarise(spans: Span[], from: number, until: number, ms: number): Samp
     requests: counted.length,
     rounds: roundsOf(counted),
     bytes: counted.reduce((sum, span) => sum + span.bytes, 0),
-    urls: counted.map((span) => new URL(span.url).pathname.replace("/rest/v1/", "") + new URL(span.url).search.slice(0, 90)),
+    // With PAGES_TRACE=1: when each request started and ended, from the first of them, to read the chain by eye.
+    urls: [...counted]
+      .sort((a, b) => a.start - b.start)
+      .map((span) => `+${span.start - (counted[0] ? Math.min(...counted.map((c) => c.start)) : 0)}..+${span.end - Math.min(...counted.map((c) => c.start))}  ${new URL(span.url).pathname.replace("/rest/v1/", "")}${new URL(span.url).search.slice(0, 80)}`),
   };
 }
 

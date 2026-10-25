@@ -31,9 +31,10 @@ import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
-import { listDraftsWithSessions, type DraftListItem } from "@/lib/build/drafts";
+import { listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession } from "@/lib/build/sessions";
 
 import { DraftsView } from "./DraftsView";
@@ -45,10 +46,21 @@ export function DraftsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const connector = useConnectorDialog();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
 
+  /* One request, started the moment the session is known: the maker comes from it, so nothing asks who they are first. */
   const draftsQuery = useQuery({
-    queryKey: ["build", "listDraftsWithSessions"],
-    queryFn: listDraftsWithSessions,
+    queryKey: ["build", "listDraftsWithSessions", userId],
+    queryFn: () => listDraftsWithSessions(userId),
+    enabled: userId !== null,
+    staleTime: STALE_MS,
+  });
+  /* The drafts with nothing in them, counted beside the list and never before it: "Remove empty drafts (N)" at the foot. */
+  const emptyQuery = useQuery({
+    queryKey: ["build", "listEmptyDraftIds", userId],
+    queryFn: () => listEmptyDraftIds(userId),
+    enabled: userId !== null,
     staleTime: STALE_MS,
   });
   const [sessionsAnchor, sessionsOnScreen] = useOnScreen<HTMLSpanElement>();
@@ -60,6 +72,7 @@ export function DraftsPage() {
     () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] }),
+        qc.invalidateQueries({ queryKey: ["build", "listEmptyDraftIds"] }),
         qc.invalidateQueries({ queryKey: librarySessionsKey }),
         qc.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
         qc.invalidateQueries({ queryKey: ["build", "countDraftBuilds"] }),
@@ -99,6 +112,18 @@ export function DraftsPage() {
     [refresh],
   );
 
+  const removeEmpty = useCallback(async () => {
+    try {
+      const removed = await removeEmptyDrafts(userId);
+      toast(removed === 1 ? "Removed 1 empty draft." : `Removed ${removed} empty drafts.`);
+    } catch (error) {
+      console.error("[Drafts] removeEmptyDrafts failed", error);
+      failed("Couldn't remove the empty drafts.");
+    } finally {
+      void refresh();
+    }
+  }, [userId, refresh]);
+
   const draftsStatus = draftsQuery.data ? "ready" : draftsQuery.isLoadingError ? "error" : "loading";
   usePageReady("drafts", draftsStatus !== "loading");
   const sessionsStatus = library.data ? "ready" : library.isLoadingError ? "error" : "loading";
@@ -121,6 +146,7 @@ export function DraftsPage() {
         onAddToNew={addToNew}
         onAddToDraft={addToDraft}
         onConnect={connector.open}
+        emptyDrafts={emptyQuery.data && emptyQuery.data.length > 0 ? { count: emptyQuery.data.length, onRemove: () => void removeEmpty() } : undefined}
       />
     </>
   );

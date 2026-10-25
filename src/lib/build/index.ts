@@ -1,6 +1,8 @@
 export * from "./types";
 export {
   BUILD_COLUMNS,
+  BUILD_LIST_COLUMNS,
+  type BuildListRow,
   createBuild,
   deleteBuild,
   getBuild,
