@@ -8,6 +8,7 @@
    back and the solve panel says so, with a retry. */
 
 import { useCallback, useMemo, useState } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -96,6 +97,7 @@ export default function Bounties() {
   const cards = useMemo(() => sortCards((board.data?.pages ?? []).flatMap((page) => page.cards), sort), [board.data, sort]);
   const now = Date.now();
   const frameViews = useMemo(() => cards.map((card) => frameOf(card, now)), [cards, now]);
+  usePageReady("openbuilds", !board.isPending);
   const chosen = frameViews.find((frame) => frame.id === selectedId) ?? frameViews[0] ?? null;
 
   const frames: BountiesPropsFrames =

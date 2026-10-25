@@ -11,6 +11,7 @@
    is sent to sign in and back. */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -172,6 +173,8 @@ export function HomePage() {
         error: reproduced.error ?? runsWeek.error,
       }
     : undefined;
+
+  usePageReady("home", !feedQuery.isPending);
 
   const gate = { authLoading, signedIn: !!userId };
   const challenges = loadable(gate, week, (events) => challengeRows(weeklyProgress(events, new Date(now))));

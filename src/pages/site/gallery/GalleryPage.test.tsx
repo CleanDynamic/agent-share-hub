@@ -153,7 +153,7 @@ beforeEach(() => {
 
 describe("GalleryPage — the feed", () => {
   it("loads one page of the feed, never the stats or the lens counts, and says how many and in what order", async () => {
-    renderAt("/gallery");
+    renderAt("/builds");
     expect(await screen.findByRole("heading", { level: 1, name: "Gallery" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId("feed-count")).toHaveTextContent("3 builds, newest first"));
     expect(screen.getAllByTestId("feed-build-title").map((el) => el.textContent)).toEqual(["Build a", "Build b", "Build c"]);
@@ -168,14 +168,14 @@ describe("GalleryPage — the feed", () => {
 
   it("reads view, model, for, sort and q from the address and drops the old lens and facets", async () => {
     listGalleryFeed.mockResolvedValue(modelPage(["a"], ["b"]));
-    renderAt("/gallery?lens=proven&with=Claude&shape=agent&for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox");
-    await waitFor(() => expect(address()).toBe("/gallery?for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox"));
+    renderAt("/builds?lens=proven&with=Claude&shape=agent&for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox");
+    await waitFor(() => expect(address()).toBe("/builds?for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox"));
     expect(listGalleryFeed).toHaveBeenLastCalledWith({ model: "sonnet-5-5", audience: "lawyers", sort: "reproduced", q: "inbox", page: 0 });
   });
 
   it("with a model, splits the list into reproduced-on and not-yet, and the plaques speak for that model", async () => {
     listGalleryFeed.mockResolvedValue(modelPage(["on1"], ["not1"]));
-    renderAt("/gallery?model=sonnet-5-5");
+    renderAt("/builds?model=sonnet-5-5");
 
     const on = await screen.findByTestId("feed-section-reproduced");
     const not = screen.getByTestId("feed-section-not-yet");
@@ -192,7 +192,7 @@ describe("GalleryPage — the feed", () => {
     listGalleryFeed.mockImplementation(async ({ page }: { page: number }) =>
       page === 0 ? modelPage(["on1"], ["not1"], { on: true, not: true }) : modelPage(["on2"], ["not2"]),
     );
-    renderAt("/gallery?model=sonnet-5-5");
+    renderAt("/builds?model=sonnet-5-5");
 
     const on = await screen.findByTestId("feed-section-reproduced");
     fireEvent.click(within(on).getByRole("button", { name: "Show more" }));
@@ -205,15 +205,15 @@ describe("GalleryPage — the feed", () => {
   });
 
   it("the switch writes view=dashboard and shows the dashboard's table; Feed brings the feed back", async () => {
-    renderAt("/gallery");
+    renderAt("/builds");
     fireEvent.click(await screen.findByRole("radio", { name: "Dashboard" }));
-    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard"));
+    await waitFor(() => expect(address()).toBe("/builds?view=dashboard"));
     expect(await screen.findByRole("table", { name: "Builds" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Dashboard" })).toHaveAttribute("aria-checked", "true");
     expect(screen.queryByTestId("gallery-feed")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("radio", { name: "Feed" }));
-    await waitFor(() => expect(address()).toBe("/gallery"));
+    await waitFor(() => expect(address()).toBe("/builds"));
     expect(await screen.findByTestId("gallery-feed")).toBeInTheDocument();
   });
 
@@ -225,7 +225,7 @@ describe("GalleryPage — the feed", () => {
       removeEventListener: () => undefined,
     }));
     try {
-      renderAt("/gallery?view=dashboard");
+      renderAt("/builds?view=dashboard");
       expect(await screen.findByTestId("gallery-feed")).toBeInTheDocument();
       expect(screen.queryByRole("table", { name: "Builds" })).not.toBeInTheDocument();
       expect(listGalleryDashboard).not.toHaveBeenCalled();
@@ -237,17 +237,17 @@ describe("GalleryPage — the feed", () => {
   it("writes the search 300ms after typing stops, and Clear all keeps the sort", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
-      renderAt("/gallery?sort=rebuilt&for=lawyers");
+      renderAt("/builds?sort=rebuilt&for=lawyers");
       const field = await screen.findByRole("searchbox", { name: "Search the gallery" });
       fireEvent.change(field, { target: { value: "inbox" } });
-      expect(address()).toBe("/gallery?for=lawyers&sort=rebuilt");
+      expect(address()).toBe("/builds?for=lawyers&sort=rebuilt");
       await act(async () => {
         vi.advanceTimersByTime(300);
       });
-      await waitFor(() => expect(address()).toBe("/gallery?for=lawyers&sort=rebuilt&q=inbox"));
+      await waitFor(() => expect(address()).toBe("/builds?for=lawyers&sort=rebuilt&q=inbox"));
 
       fireEvent.click(await screen.findByRole("button", { name: "Clear all" }));
-      await waitFor(() => expect(address()).toBe("/gallery?sort=rebuilt"));
+      await waitFor(() => expect(address()).toBe("/builds?sort=rebuilt"));
       expect(screen.getByRole("searchbox", { name: "Search the gallery" })).toHaveValue("");
     } finally {
       vi.useRealTimers();
@@ -256,14 +256,14 @@ describe("GalleryPage — the feed", () => {
 
   it("says nobody has hung a build for the search yet, with the way to ask for it", async () => {
     listGalleryFeed.mockResolvedValue(allPage([]));
-    renderAt("/gallery?q=zzzz");
+    renderAt("/builds?q=zzzz");
     expect(await screen.findByText("Nobody has hung a build for “zzzz” yet.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ask for it on Bounties" })).toBeInTheDocument();
   });
 
   it("says That didn't load. when the read fails, and a retry asks again", async () => {
     listGalleryFeed.mockRejectedValue(new Error("boom"));
-    renderAt("/gallery");
+    renderAt("/builds");
     expect(await screen.findByText("That didn't load.")).toBeInTheDocument();
     expect(screen.queryByText("boom")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /try again|retry/i }));
@@ -273,41 +273,41 @@ describe("GalleryPage — the feed", () => {
 
 describe("GalleryPage — the dashboard", () => {
   it("asks the data layer with the address's filters and keeps the sidebar counts unfiltered", async () => {
-    renderAt("/gallery?view=dashboard&lab=Google&report=multi&active=30&dsort=prompts&q=inbox");
+    renderAt("/builds?view=dashboard&lab=Google&report=multi&active=30&dsort=prompts&q=inbox");
     await screen.findByRole("table", { name: "Builds" });
     expect(listGalleryDashboard).toHaveBeenCalledWith(undefined);
     expect(listGalleryDashboard).toHaveBeenCalledWith({ lab: "Google", activeWithinDays: 30, report: "multi", q: "inbox" });
     expect(screen.getByTestId("dash-pill")).toHaveTextContent("Google models");
     expect(screen.getByTestId("dash-lab-Google")).toHaveTextContent("3");
-    expect(address()).toBe("/gallery?view=dashboard&lab=Google&report=multi&active=30&dsort=prompts&q=inbox");
+    expect(address()).toBe("/builds?view=dashboard&lab=Google&report=multi&active=30&dsort=prompts&q=inbox");
   });
 
   it("is the table it was: no feed post, and the feed's reads are not made", async () => {
-    renderAt("/gallery?view=dashboard");
+    renderAt("/builds?view=dashboard");
     await screen.findByRole("table", { name: "Builds" });
     expect(document.querySelector("[data-feed-post]")).toBeNull();
     expect(listGalleryFeed).not.toHaveBeenCalled();
   });
 
   it("writes each control to the address, and a lab clears the model", async () => {
-    renderAt("/gallery?view=dashboard&model=opus-5-5");
+    renderAt("/builds?view=dashboard&model=opus-5-5");
     await screen.findByRole("table", { name: "Builds" });
     expect(screen.getByTestId("dash-pill")).toHaveTextContent("Made with Opus 5.5");
 
     fireEvent.click(screen.getByTestId("dash-lab-OpenAI"));
-    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&lab=OpenAI"));
+    await waitFor(() => expect(address()).toBe("/builds?view=dashboard&lab=OpenAI"));
     fireEvent.click(screen.getByTestId("dash-report-multi"));
-    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&lab=OpenAI&report=multi"));
+    await waitFor(() => expect(address()).toBe("/builds?view=dashboard&lab=OpenAI&report=multi"));
     fireEvent.click(screen.getByTestId("dash-lab-OpenAI"));
-    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&report=multi"));
+    await waitFor(() => expect(address()).toBe("/builds?view=dashboard&report=multi"));
     fireEvent.click(screen.getByTestId("dash-nav-makers"));
-    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&tab=makers&report=multi"));
+    await waitFor(() => expect(address()).toBe("/builds?view=dashboard&tab=makers&report=multi"));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Makers");
   });
 
   it("drops what the dashboard cannot read from the address", async () => {
-    renderAt("/gallery?view=dashboard&sort=rebuilt&dsort=nonsense");
+    renderAt("/builds?view=dashboard&sort=rebuilt&dsort=nonsense");
     await screen.findByRole("table", { name: "Builds" });
-    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard"));
+    await waitFor(() => expect(address()).toBe("/builds?view=dashboard"));
   });
 });

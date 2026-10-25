@@ -24,6 +24,7 @@
    The waiting read polls only while the Sessions panel is on screen. */
 
 import { useCallback } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -99,6 +100,7 @@ export function DraftsPage() {
   );
 
   const draftsStatus = draftsQuery.data ? "ready" : draftsQuery.isLoadingError ? "error" : "loading";
+  usePageReady("drafts", draftsStatus !== "loading");
   const sessionsStatus = library.data ? "ready" : library.isLoadingError ? "error" : "loading";
 
   return (

@@ -22,6 +22,7 @@
    follow, the track, and a message. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
@@ -451,6 +452,8 @@ export function ProfilePage() {
     },
     [isOwn, currentTrack, changeTrack],
   );
+
+  usePageReady("profile", !authLoading && Boolean(lookup) && !summaryQuery.isPending);
 
   /* ── the states ── */
 

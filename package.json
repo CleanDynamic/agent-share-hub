@@ -15,6 +15,7 @@
     "audit:contrast": "playwright test --config=playwright.audit.config.ts contrast-sweep",
     "audit:themes": "playwright test --config=playwright.audit.config.ts theme-completeness",
     "audit:perf": "playwright test --config=playwright.audit.config.ts performance",
+    "audit:pages": "vite build && playwright test --config=playwright.pages.config.ts",
     "audit:design": "playwright test --config=playwright.audit.config.ts design-compare"
   },
   "dependencies": {

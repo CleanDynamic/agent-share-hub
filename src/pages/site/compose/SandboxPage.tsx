@@ -24,6 +24,7 @@
    Mounted by `ComposeRoute` only while SANDBOX_COMPOSER_ENABLED is on. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { flushSync } from "react-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -189,6 +190,7 @@ function SandboxPageBody() {
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
   const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate } = useComposePage({ sessionsActive: sourcesOnScreen });
+  usePageReady("composer", !buildId || Boolean(build));
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
   const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);

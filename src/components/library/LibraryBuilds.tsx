@@ -14,6 +14,7 @@
 // the Dialog whose primary names the act (rows 16, 17).
 
 import { useMemo, useState, type ReactNode } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -165,6 +166,7 @@ export function SavedTab() {
     [saved.data],
   );
 
+  usePageReady("library", !saved.isLoading);
   if (saved.isLoading) return <CardGridSkeleton />;
   if (saved.isError) return <RefusedView error={saved.error} onRetry={() => void saved.refetch()} />;
   if (builds.length === 0) {
@@ -194,6 +196,7 @@ export function CollectionsTab({ ownerId, canEdit, onOpen }: CollectionsTabProps
     refetchOnWindowFocus: false,
   });
   const [naming, setNaming] = useState(false);
+  usePageReady("library", !collections.isLoading);
 
   const list = collections.data ?? [];
   const newCollection = (variant: "default" | "outline") => (

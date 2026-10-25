@@ -24,6 +24,7 @@
    countGalleryLenses. */
 
 import { useEffect, useMemo, useState } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -286,6 +287,7 @@ function GalleryFeedPage() {
 
   const error = firstQuery?.error ?? null;
   const status = error && !firstPage ? "error" : !firstPage ? "loading" : "ready";
+  usePageReady("builds", status !== "loading");
 
   return (
     <>
