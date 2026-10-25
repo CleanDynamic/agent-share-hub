@@ -76,7 +76,21 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   "post-thread": lazy(() => import("./PostThreadDemo")),
   /* UI-P36 — Sign in (and, with `?mode=`, Join, reset and verify). */
   signin: lazy(() => import("./SignInDemo")),
+  /* SV-02 — the vision boards (`design/reference/vision/index.json`). Each says "Not built yet" until its page prompt
+     replaces the entry: SV-10 home, SV-14 openbuilds, SV-11 builds-table, SV-12 builds-maps, SV-13
+     builds-classification, SV-09 library, SV-18 composer-add-from-library, SV-08 drafts. */
+  "vision-home": lazy(() => import("./VisionNotBuilt")),
+  "vision-openbuilds": lazy(() => import("./VisionNotBuilt")),
+  "vision-builds-table": lazy(() => import("./VisionNotBuilt")),
+  "vision-builds-maps": lazy(() => import("./VisionNotBuilt")),
+  "vision-builds-classification": lazy(() => import("./VisionNotBuilt")),
+  "vision-library": lazy(() => import("./VisionNotBuilt")),
+  "vision-composer-add-from-library": lazy(() => import("./VisionNotBuilt")),
+  "vision-drafts": lazy(() => import("./VisionNotBuilt")),
 };
+
+/** A vision page draws its own frame and its own `data-design-ready`, so the wrapper below stays out of its way. */
+const isVision = (page: string): boolean => page.startsWith("vision-");
 
 /** Entries that draw their own room and are not wrapped in the site frame (Sign in draws the bare one itself). */
 const UNFRAMED = new Set(["backdrop", "signin"]);
@@ -133,6 +147,14 @@ export default function KitPages() {
   const View = Object.prototype.hasOwnProperty.call(VIEWS, page) ? VIEWS[page] : undefined;
 
   if (!View) return <div data-design-ready="false">Not built yet</div>;
+
+  if (isVision(page)) {
+    return (
+      <Suspense fallback={<div data-design-ready="false">Loading</div>}>
+        <View viewport={viewport} fit="board" state={state} />
+      </Suspense>
+    );
+  }
 
   return (
     <div
