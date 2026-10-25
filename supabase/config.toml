@@ -1,30 +1,49 @@
 project_id = "zybdotagjwektucfdkri"
 
 [functions.notify-version-update]
-verify_jwt = false
+# SV-01: now true. The function needs a signed-in creator who owns the item, so
+# the gateway rejects an unsigned call before the function runs.
+verify_jwt = true
 
 [functions.check-compatibility-status]
+# Deliberately false. It is run by a schedule, not by a signed-in reader, so it
+# has no user token to check. SV-01: the function itself refuses any call that
+# does not carry the CRON_SECRET secret in the `x-cron-secret` header.
 verify_jwt = false
 
 [functions.create-split-checkout-session]
-verify_jwt = false
+# SV-01: now true. A split checkout needs a signed-in buyer, and the price and
+# the splits are read from the database, never from the body.
+verify_jwt = true
 
 [functions.create-pwyw-checkout-session]
+# Still false: the buyer may be anonymous, as before. SV-01: the amount is held
+# between the item's floor and 1,000 pounds, the return addresses are checked,
+# and nothing is written to the item when a checkout starts.
 verify_jwt = false
 
 [functions.import-github-readme]
+# Still false. SV-01: the function only fetches api.github.com, built from a
+# checked github.com address, and refuses any other.
 verify_jwt = false
 
 [functions.public-api]
+# Still false: a public read, open to every origin.
 verify_jwt = false
 
 [functions.post-json]
+# Still false: a public read, open to every origin. SV-01: it reads with the
+# public key, so the database's own rules apply.
 verify_jwt = false
 
 [functions.sitemap-xml]
+# Still false: a public read, open to every origin. SV-01: it reads with the
+# public key, so the database's own rules apply.
 verify_jwt = false
 
 [functions.generate-ai-pdf]
+# Still false: anyone may export a public, approved post. SV-01: the function
+# refuses anything else unless the caller (from the token) is its creator.
 verify_jwt = false
 
 [functions.generate-build-layers]

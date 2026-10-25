@@ -1,13 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-};
+import { corsHeaders as corsFor } from "../_shared/cors.ts";
+import { publicClient } from "../_shared/publicRead.ts";
 
 serve(async (req) => {
+  // A public read: every origin may read the answer.
+  const corsHeaders = corsFor(req, { open: true, methods: "GET, OPTIONS" });
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -25,10 +22,8 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    );
+    // The public key: this is a public read, so the database's own rules apply.
+    const supabase = publicClient();
 
     // Look up by slug, fallback to id
     let { data: post } = await supabase
@@ -70,7 +65,8 @@ serve(async (req) => {
       },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    console.error("post-json:", e);
+    return new Response(JSON.stringify({ error: "Could not read the post" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
