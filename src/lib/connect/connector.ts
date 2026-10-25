@@ -2,17 +2,14 @@
 //
 // UI-P45. These are the strings a creator carries into somebody else's product,
 // so they are written once here and the guide, the page and the tests all read
-// them. `src/pages/Connect.tsx` keeps its own copy until a later cleanup deletes
-// it; `public/ai.txt` carries the address too.
+// them. `src/pages/Connect.tsx` imports it from here; `public/ai.txt` carries the
+// address too.
 
 /**
- * The connector's address: the live project's `mcp` edge function.
- *
- * Written out rather than derived from the Supabase client's URL: this is the
- * string pasted into another product, so it has to be the live project's in
- * every build of the site, including a local one pointed elsewhere.
+ * The connector's address: the project's `mcp` edge function, built from
+ * VITE_SUPABASE_URL in this one place (CA-29).
  */
-export const CONNECTOR_URL = "https://zybdotagjwektucfdkri.supabase.co/functions/v1/mcp";
+export const CONNECTOR_URL = `${String(import.meta.env.VITE_SUPABASE_URL ?? "").replace(/\/+$/, "")}/functions/v1/mcp`;
 
 /** The one line Claude Code needs. Built from the address, never retyped. */
 export const CLAUDE_CODE_COMMAND = "claude mcp add --transport http buildgallery " + CONNECTOR_URL;

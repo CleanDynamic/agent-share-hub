@@ -43,7 +43,7 @@ export function createHandler(deps: Deps) {
       // when that is this site, and otherwise to the site itself.
       const origin = req.headers.get("origin");
       const base = isAllowedOrigin(origin) ? (origin as string) : ALLOWED_ORIGINS[0];
-      const success_url = parsed.data.success_url ?? `${base}/project/${project_id}?package=success`;
+      const success_url = parsed.data.success_url ?? `${base}/project/${project_id}?package=success&session_id={CHECKOUT_SESSION_ID}`;
       const cancel_url = parsed.data.cancel_url ?? `${base}/project/${project_id}`;
       const urlError = returnUrlError({ success_url, cancel_url });
       if (urlError) return errorResponse(urlError, 400, cors);

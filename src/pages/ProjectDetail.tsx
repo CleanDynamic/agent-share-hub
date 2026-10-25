@@ -3,6 +3,7 @@ import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom"
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { reportError } from "@/lib/errors/report";
 import { SeoHead } from "@/components/SeoHead";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { BookmarkButton } from "@/components/BookmarkButton";
@@ -234,7 +235,15 @@ const ProjectDetail = () => {
     const sessionId = searchParams.get("session_id");
     if (pkgStatus === "success" && id && profile?.id) {
       supabase.functions.invoke("verify-project-package", { body: { session_id: sessionId, project_id: id } })
-        .then(() => { refetchPurchase(); toast({ title: "Purchase complete!", description: "All blueprints are now unlocked." }); });
+        .then(({ error }) => {
+          if (error) {
+            reportError(error, { source: "verify-project-package", route: window.location.pathname });
+            toast({ title: "Purchase not confirmed", description: "Reload the page to try again.", variant: "destructive" });
+            return;
+          }
+          refetchPurchase();
+          toast({ title: "Purchase complete!", description: "All blueprints are now unlocked." });
+        });
     }
   }, [searchParams, id, profile?.id]);
 
@@ -289,11 +298,12 @@ const ProjectDetail = () => {
     setUnlocking(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-project-package-session", {
-        body: { project_id: id, success_url: `${window.location.origin}/project/${id}?package=success`, cancel_url: `${window.location.origin}/project/${id}` },
+        body: { project_id: id, success_url: `${window.location.origin}/project/${id}?package=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${window.location.origin}/project/${id}` },
       });
       if (error || data?.error) throw new Error(data?.error || "Failed");
       if (data?.url) window.location.href = data.url;
     } catch (err: any) {
+      reportError(err, { source: "checkout", route: window.location.pathname });
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally { setUnlocking(false); }
   };

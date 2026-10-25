@@ -16,6 +16,7 @@ import { AddToCollectionButton } from "@/components/AddToCollectionButton";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { reportError } from "@/lib/errors/report";
 import { feedback } from "@/lib/theme/motion";
 
 export interface ContentCardProps {
@@ -175,11 +176,13 @@ export function ContentCard({
           },
         });
         if (error || !data?.url) {
+          reportError(error ?? new Error("checkout gave no url"), { source: "checkout", route: window.location.pathname });
           toast({ title: "Checkout failed", description: "Could not start payment. Please try again.", variant: "destructive" });
         } else {
           window.location.href = data.url;
         }
-      } catch {
+      } catch (err) {
+        reportError(err, { source: "checkout", route: window.location.pathname });
         toast({ title: "Checkout failed", description: "Something went wrong.", variant: "destructive" });
       }
       setDownloading(false);

@@ -21,6 +21,13 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // CA-29: errors go through reportError (src/lib/errors/report.ts). A warning for now; CA-54 makes it an error.
+      "no-console": "warn",
     },
+  },
+  {
+    // reportError prints in development. Edge functions log to the server, which is where an error's detail belongs.
+    files: ["src/lib/errors/report.ts", "supabase/functions/**/*.ts"],
+    rules: { "no-console": "off" },
   },
 );

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Heart, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { reportError } from "@/lib/errors/report";
 
 const PRESET_AMOUNTS = [1, 3, 5];
 
@@ -37,11 +38,13 @@ export function TipSelector({ creatorId, creatorDisplayName, successUrl, cancelU
         },
       });
       if (error || !data?.url) {
+        reportError(error ?? new Error("tip gave no url"), { source: "checkout", route: window.location.pathname });
         toast({ title: "Could not start tip", description: "Please try again.", variant: "destructive" });
       } else {
         window.location.href = data.url;
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { source: "checkout", route: window.location.pathname });
       toast({ title: "Something went wrong", variant: "destructive" });
     }
     setLoading(false);

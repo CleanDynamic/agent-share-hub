@@ -3,6 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { reportError } from "@/lib/errors/report";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,24 +100,40 @@ export function PublishUpdateModal({
       if (updateError) throw updateError;
 
       // Insert version record
-      await supabase.from("content_versions").insert({
+      const { error: versionError } = await supabase.from("content_versions").insert({
         content_id: contentId,
         version_number: version.trim(),
         changelog: changelog.trim(),
         created_by: user.id,
         blocks_snapshot: null,
       });
+      if (versionError) throw versionError;
 
-      // Notify bookmarkers/downloaders
-      await supabase.functions.invoke("notify-version-update", {
-        body: {
-          content_id: contentId,
-          version_number: version.trim(),
-          changelog: changelog.trim(),
-          content_title: contentTitle,
-          creator_id: creatorId,
-        },
-      });
+      // Notify bookmarkers/downloaders. The function takes the creator from the
+      // sign-in, so only the item and the version are sent.
+      const notifyFollowers = async () => {
+        const { error: notifyError } = await supabase.functions.invoke("notify-version-update", {
+          body: {
+            content_id: contentId,
+            version_number: version.trim(),
+            changelog: changelog.trim(),
+            content_title: contentTitle,
+          },
+        });
+        if (notifyError) {
+          reportError(notifyError, { source: "notify-version-update", route: window.location.pathname });
+          toast({
+            title: "Followers not notified",
+            variant: "destructive",
+            action: (
+              <ToastAction altText="Retry notifying followers" onClick={() => void notifyFollowers()}>
+                Retry
+              </ToastAction>
+            ),
+          });
+        }
+      };
+      await notifyFollowers();
 
       queryClient.invalidateQueries({ queryKey: ["my_uploads"] });
 

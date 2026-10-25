@@ -1,5 +1,5 @@
 -- =============================================================================
--- buildgallery — function access acceptance checks (CA-29 Part 6)
+-- buildgallery: function access acceptance checks (CA-29 Part 6)
 -- =============================================================================
 -- Proves, after supabase/migrations/20261026120000_ca29_function_access.sql is
 -- applied, that each function it changed is refused to a signed-out caller,

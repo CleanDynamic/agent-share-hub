@@ -86,6 +86,8 @@ describe("CA-29 P3: create-project-package-session", () => {
     const params = createSession.mock.calls[0][0] as { success_url: string; cancel_url: string };
     expect(params.success_url.startsWith("https://buildgallery.ai/")).toBe(true);
     expect(params.cancel_url.startsWith("https://buildgallery.ai/")).toBe(true);
+    // Stripe fills the session id in, so verify-project-package can be told which session to check.
+    expect(params.success_url).toContain("session_id={CHECKOUT_SESSION_ID}");
   });
 
   it("refuses no login, a foreign return address, a project not for sale and a package already owned", async () => {

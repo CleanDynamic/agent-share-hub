@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 import { getCanonicalPayload } from "./getCanonicalPayload";
 import type { CanonicalPostPayload, ExportFormat } from "./types";
 
@@ -132,7 +133,7 @@ export async function exportToFormat({
         const { url } = await generateAIPdf(postId);
         result = { url };
       } catch (e) {
-        console.warn("[exportToFormat:ai-pdf] generation failed, falling back to HTML", e);
+        reportError(e, { source: "export-ai-pdf", route: window.location.pathname });
         result = { content: payloadToHtml(payload) };
       }
       break;
@@ -143,11 +144,12 @@ export async function exportToFormat({
 
   // Best-effort log.
   try {
-    await (supabase as any)
+    const { error: logError } = await (supabase as any)
       .from("ai_export_log")
       .insert({ post_id: postId, exporter_id: exporterId ?? null, format });
+    if (logError) reportError(logError, { source: "export-log" });
   } catch (e) {
-    console.warn("[exportToFormat] log failed", e);
+    reportError(e, { source: "export-log" });
   }
 
   return { ...result, format };

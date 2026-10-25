@@ -24,7 +24,7 @@ serve(async (req) => {
     return preflight(req, cors);
   }
   const corsHeaders = corsFor(req, cors);
-  const json = (data: any, status = 200) => jsonWith(corsHeaders, data, status);
+  const json = (data: unknown, status = 200) => jsonWith(corsHeaders, data, status);
 
   const ip = req.headers.get("x-forwarded-for") || "unknown";
   if (!rateLimit(ip)) {
@@ -112,7 +112,7 @@ serve(async (req) => {
   }
 });
 
-function jsonWith(headers: Record<string, string>, data: any, status = 200) {
+function jsonWith(headers: Record<string, string>, data: unknown, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     headers: { ...headers, "Content-Type": "application/json" },
     status,

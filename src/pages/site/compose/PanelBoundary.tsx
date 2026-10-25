@@ -9,13 +9,12 @@
 
    RETRY resets this boundary and runs `onRetry`, which refetches that panel's own queries and no others.
 
-   WHAT IS LOGGED. The failure is logged once, as a line naming the panel and the kind of error. No error tracker is installed
-   in this app (RouteBoundary says so), and an error's message can quote what the panel was drawing (a prompt's text, a post), so
-   the message is not logged for a render error; a query's error goes through `errorLine` as the other panels' do. */
+   WHAT IS REPORTED (CA-29). The failure goes to reportError once, naming the panel, the route and the kind of error. An error's
+   message can quote what the panel was drawing (a prompt's text, a post), and reportError never keeps or sends a message. */
 
 import { Component, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
-import { errorLine } from "@/lib/errors/code";
+import { reportError } from "@/lib/errors/report";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { controlPaint } from "@/lib/theme/refinedControl";
@@ -57,7 +56,7 @@ export function PanelFailed({ panel, onRetry, error }: { panel: PanelName; onRet
   useEffect(() => {
     if (error === undefined || logged.current === error) return;
     logged.current = error;
-    console.error(errorLine(`[Compose] ${panel} panel did not load`, error));
+    reportError(error, { source: "boundary", boundary: panel, route: window.location.pathname });
   }, [error, panel]);
   return (
     <div role="alert" data-testid="panel-failed" data-panel={panel} style={FALLBACK}>
@@ -90,8 +89,7 @@ class Boundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: unknown) {
-    const kind = error instanceof Error ? error.name : typeof error;
-    console.error(`[Compose] ${this.props.panel} panel failed while drawing (${kind})`);
+    reportError(error, { source: "boundary", boundary: this.props.panel, route: window.location.pathname });
   }
 
   private retry = () => {

@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { reportingCaches } from "@/lib/errors/queryReporting";
 import { BrowserRouter, Navigate, Route, useParams, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -180,6 +181,7 @@ const WideDemo = import.meta.env.DEV ? lazy(() => import("./pages/dev/WideDemo")
 /* CA-10 (CA-09 F10): a default staleTime of 30 s, so coming back to the tab re-reads only what is older than that,
    not every query on screen. */
 const queryClient = new QueryClient({
+  ...reportingCaches(),
   defaultOptions: {
     queries: { retry: (count, error) => count < 1 && !isPermissionError(error), staleTime: 30_000 },
   },

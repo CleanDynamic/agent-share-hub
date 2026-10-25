@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Lock } from "lucide-react";
+import { reportError } from "@/lib/errors/report";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,11 +47,13 @@ export function PwywPriceSelector({ contentId, floorGbp, avgPaid, purchaseCount 
         },
       });
       if (fnErr || !data?.url) {
+        reportError(fnErr ?? new Error("checkout gave no url"), { source: "checkout", route: window.location.pathname });
         toast({ title: "Checkout failed", description: "Could not start payment.", variant: "destructive" });
       } else {
         window.location.href = data.url;
       }
-    } catch {
+    } catch (err) {
+      reportError(err, { source: "checkout", route: window.location.pathname });
       toast({ title: "Checkout failed", description: "Something went wrong.", variant: "destructive" });
     }
     setLoading(false);

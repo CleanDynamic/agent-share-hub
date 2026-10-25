@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 
 /**
  * Email a link that lets the reader set a new password.
@@ -10,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function requestPasswordReset(email: string, redirectTo: string): Promise<boolean> {
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) reportError(error, { source: "password-reset", route: window.location.pathname });
   return !error;
 }
 
@@ -22,7 +24,10 @@ export async function requestPasswordReset(email: string, redirectTo: string): P
  */
 export async function setNewPassword(password: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw error;
+  if (error) {
+    reportError(error, { source: "password-reset", route: window.location.pathname });
+    throw error;
+  }
 
   await supabase.auth.signOut();
 }

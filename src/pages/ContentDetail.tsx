@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { reportError } from "@/lib/errors/report";
 import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContentDetailShell } from "@/components/content-detail/ContentDetailShell";
@@ -674,7 +676,16 @@ export default function ContentDetail() {
               toast({ title: "AI-PDF downloaded" });
             } else {
               downloadBlob(res.content ?? "", "text/html;charset=utf-8", "-ai.html");
-              toast({ title: "AI-PDF queued", description: "Renderer not yet available — HTML draft downloaded." });
+              toast({
+                title: "AI-PDF not made",
+                description: "A plain HTML copy was downloaded instead.",
+                variant: "destructive",
+                action: (
+                  <ToastAction altText="Retry making the AI-PDF" onClick={() => void triggerExport("ai-pdf")}>
+                    Retry
+                  </ToastAction>
+                ),
+              });
             }
             break;
           }
@@ -749,7 +760,7 @@ export default function ContentDetail() {
       // Keep post-level comment count badge in sync.
       if (drawerAnchor.anchorType === "post") setCommentCount(total);
     } catch (e) {
-      console.warn("[drawer] getComments failed", e);
+      reportError(e, { source: "drawer-comments", route: window.location.pathname });
     } finally {
       setDrawerLoading(false);
     }
@@ -1935,7 +1946,7 @@ export default function ContentDetail() {
       });
       setLbActivity(acts);
     } catch (e) {
-      console.warn("[leaderboard] refresh failed", e);
+      reportError(e, { source: "leaderboard-refresh", route: window.location.pathname });
     }
   }, [isBounty, post?.id, lbSort]);
 
@@ -2441,7 +2452,7 @@ function RemixLineageRow({
                 const res = await createRemix({ sourcePostId: postId, remixerId: remixerId! });
                 onRemixed(res.draftId, res.postType);
               } catch (err) {
-                console.error("[Remix] createRemix failed", err);
+                reportError(err, { source: "create-remix", route: window.location.pathname });
               }
             }}
           />

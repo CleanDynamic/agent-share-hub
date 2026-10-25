@@ -5,6 +5,7 @@
  * `notify*` triggers from `./triggers`.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 
 export async function insertNotification(params: {
   recipient_id: string;
@@ -17,7 +18,7 @@ export async function insertNotification(params: {
 }) {
   try {
     if (params.actor_id && params.actor_id === params.recipient_id) return;
-    await supabase.from("notifications" as any).insert({
+    const { error } = await supabase.from("notifications" as any).insert({
       recipient_id: params.recipient_id,
       actor_id: params.actor_id ?? null,
       notification_type: params.notification_type,
@@ -26,6 +27,7 @@ export async function insertNotification(params: {
       collection_id: params.collection_id ?? null,
       metadata: params.metadata ?? {},
     } as any);
+    if (error) reportError(error, { source: "notification-insert" });
   } catch {
     /* silent — notifications are non-critical */
   }

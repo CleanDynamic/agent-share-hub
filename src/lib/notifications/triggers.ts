@@ -14,6 +14,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 import { createNotification } from "./createNotification";
 import type { NotificationTargetType } from "./types";
 
@@ -23,8 +24,7 @@ import type { NotificationTargetType } from "./types";
 
 function silent<T>(p: Promise<T>): Promise<T | null> {
   return p.catch((err) => {
-    // eslint-disable-next-line no-console
-    console.error("[notifications/triggers]", err);
+    reportError(err, { source: "notification-trigger" });
     return null;
   });
 }
@@ -228,13 +228,14 @@ export function notifyNewMessageCoalesced(args: {
 
       if (Array.isArray(existing) && existing.length > 0) {
         const id = (existing[0] as any).id;
-        await supabase
+        const { error: refreshError } = await supabase
           .from("notifications" as any)
           .update({
             created_at: new Date().toISOString(),
             body: `New message: ${args.preview.slice(0, 60)}`,
           } as any)
           .eq("id", id);
+        if (refreshError) reportError(refreshError, { source: "notification-trigger" });
         return null;
       }
 
@@ -564,10 +565,11 @@ export function recomputeUserLevel(userId: string) {
 
       if (LEVEL_ORDER.indexOf(next) > LEVEL_ORDER.indexOf(previous)) {
         try {
-          await supabase
+          const { error: levelError } = await supabase
             .from("profiles")
             .update({ level: next } as any)
             .eq("id", userId);
+          if (levelError) reportError(levelError, { source: "notification-trigger" });
         } catch {
           /* ignore — we still send the notification below */
         }

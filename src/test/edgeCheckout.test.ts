@@ -112,13 +112,13 @@ describe("CA-29 P3: create-checkout-session", () => {
   });
 
   it("answers a Stripe failure with a plain error and no detail", async () => {
-    const stripe = { createSession: vi.fn(async () => { throw new Error("secret detail sk_live_123"); }) };
+    const stripe = { createSession: vi.fn(async () => { throw new Error("secret detail from the provider"); }) };
     const quiet = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const handler = createCheckout({ stripe, getItem: async () => paid as never, getUserId: async () => null });
     const response = await handler(post({ content_id: ID, ...OK }));
     quiet.mockRestore();
     expect(response.status).toBe(500);
-    expect(JSON.stringify(await response.json())).not.toContain("sk_live_123");
+    expect(JSON.stringify(await response.json())).not.toContain("secret detail");
   });
 });
 

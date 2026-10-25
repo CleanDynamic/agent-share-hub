@@ -1,5 +1,5 @@
 -- =============================================================================
--- CA-29 Part 6 — who can execute a SECURITY DEFINER function in public
+-- CA-29 Part 6: who can execute a SECURITY DEFINER function in public
 -- =============================================================================
 -- A function created in public is open to PUBLIC and, on this project, to anon
 -- too (the default privileges grant it), whatever a later GRANT adds. This

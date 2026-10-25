@@ -7,9 +7,12 @@ import { useState, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { recentErrors, resetReportedErrors } from "@/lib/errors/report";
+
 import { PanelBoundary, PanelFailed, panelFailedLine, type PanelName } from "./PanelBoundary";
 
 beforeEach(() => {
+  resetReportedErrors();
   vi.spyOn(console, "error").mockImplementation(() => undefined);
 });
 afterEach(() => {
@@ -106,15 +109,17 @@ describe("each panel fails alone", () => {
     expect(screen.getByText("Details didn't load")).toBeTruthy();
   });
 
-  it("logs the failure once as a line naming the panel and the kind of error, never the message", () => {
+  it("reports the failure once, naming the panel, and never prints the message", () => {
     const armed = { current: true };
     render(
       <PanelBoundary panel="Post">
         <Bomb panel="Post" armed={armed} />
       </PanelBoundary>,
     );
+    const reported = recentErrors().filter((entry) => entry.context.boundary === "Post");
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toMatchObject({ name: "Error", context: { source: "boundary", boundary: "Post" } });
     const lines = (console.error as ReturnType<typeof vi.fn>).mock.calls.map((call) => String(call[0]));
-    expect(lines.filter((line) => line.includes("Post panel failed while drawing (Error)"))).toHaveLength(1);
     expect(lines.some((line) => line.includes("secret text"))).toBe(false);
   });
 });
