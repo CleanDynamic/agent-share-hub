@@ -21,6 +21,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
+import { KeepSearchRedirect } from "@/components/routing/KeepSearchRedirect";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import { lazyPage } from "@/components/routing/lazyPage";
@@ -252,13 +253,13 @@ const App = () => (
                     1 Remove); the addresses stay reachable so a bookmark is
                     not a 404. /search carries its query across. The page
                     files stay until RC-P29 deletes them. */}
-                <Route path="/browse" element={<Navigate to="/gallery" replace />} />
-                <Route path="/discover" element={<Navigate to="/gallery" replace />} />
-                <Route path="/discover-legacy" element={<Navigate to="/gallery" replace />} />
-                <Route path="/recent" element={<Navigate to="/gallery" replace />} />
-                <Route path="/fyp" element={<Navigate to="/gallery" replace />} />
+                <Route path="/browse" element={<Navigate to="/builds" replace />} />
+                <Route path="/discover" element={<Navigate to="/builds" replace />} />
+                <Route path="/discover-legacy" element={<Navigate to="/builds" replace />} />
+                <Route path="/recent" element={<Navigate to="/builds" replace />} />
+                <Route path="/fyp" element={<Navigate to="/builds" replace />} />
                 <Route path="/search" element={<SearchRedirect />} />
-                <Route path="/category/:slug" element={<Navigate to="/gallery" replace />} />
+                <Route path="/category/:slug" element={<Navigate to="/builds" replace />} />
                 {/* The previous publishing tool. Still registered, still
                     saving, still publishing — wrapped in a banner that names
                     it as previous and links to the replacement. No redirect:
@@ -276,7 +277,7 @@ const App = () => (
                     legacy bounty post, and after the clear it reads nothing.
                     Its address lands on the solvers board. The page file stays
                     until the legacy bounty path is removed. */}
-                <Route path="/b/:id/leaderboard" element={<Navigate to="/bounties/solvers" replace />} />
+                <Route path="/b/:id/leaderboard" element={<Navigate to="/openbuilds/solvers" replace />} />
                 {/* RC-P14 — the old lineage address. It drew remix lineage; it
                     now lands on /b2/:slug/lineage when the slug names a build,
                     and says there is no build at it otherwise. */}
@@ -357,7 +358,7 @@ const App = () => (
                 <Route path="/drafts/posts" element={<ProtectedRoute><LegacyDraftsPage /></ProtectedRoute>} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
-                <Route path="/feed" element={<Navigate to="/gallery" replace />} />
+                <Route path="/feed" element={<Navigate to="/builds" replace />} />
                 {/* UI-P45 — /connect, in the frame. Public: it reads nothing and asks nobody to sign in. */}
                 <Route
                   path="/connect"
@@ -495,8 +496,10 @@ const App = () => (
                     />
                   }
                 />
+                {/* SV-02: the Gallery is Builds. The old address redirects, keeping search and hash. */}
+                <Route path="/gallery" element={<KeepSearchRedirect to="/builds" />} />
                 <Route
-                  path="/gallery"
+                  path="/builds"
                   element={
                     <FrameRoute
                       site={
@@ -514,12 +517,15 @@ const App = () => (
                     a destination before RC-P12 fills it. Lazy, with the
                     Gallery's fallback, inside its own RouteBoundary
                     (CONTRACT §2.6). */}
-                <Route path="/bounties" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Bounties /></Suspense></RouteBoundary>} />
+                <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds" />} />
+                <Route path="/openbuilds" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Bounties /></Suspense></RouteBoundary>} />
                 {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
                     like the board it sits under (CONTRACT §2.6). */}
                 <Route path="/bounties/solvers" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Solvers /></Suspense></RouteBoundary>} />
                 {/* Solve route for a specific bounty, inside its own RouteBoundary. */}
                 <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
+                <Route path="/openbuilds/solvers" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Solvers /></Suspense></RouteBoundary>} />
+                <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
                 <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ImportPage /></Suspense>} />
               </Route>
               {/* ── BG-P16 — the four authoring routes.

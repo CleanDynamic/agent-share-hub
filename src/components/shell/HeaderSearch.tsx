@@ -19,6 +19,8 @@ import { Search } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
+import { isBuildsPath } from "./siteNav";
+
 import { SearchField } from "@/components/brand/SearchField";
 import { normaliseQuery, SEARCH_MAX } from "@/lib/build/search";
 import { ring } from "@/lib/theme/controls";
@@ -50,7 +52,7 @@ export function useGallerySearch(): (query: string) => boolean {
   return (query: string) => {
     const tidy = normaliseQuery(query);
     if (tidy === null) return false;
-    navigate(`/gallery?q=${encodeURIComponent(tidy)}`);
+    navigate(`/builds?q=${encodeURIComponent(tidy)}`);
     return true;
   };
 }
@@ -216,7 +218,7 @@ export function RoutedHeaderSearch(props: Pick<HeaderSearchProps, "variant" | "a
   const search = useGallerySearch();
   const { pathname } = useLocation();
   const [params] = useSearchParams();
-  const initial = pathname === "/gallery" ? (params.get("q") ?? "") : "";
+  const initial = isBuildsPath(pathname) ? (params.get("q") ?? "") : "";
   return (
     <HeaderSearch
       variant={props.variant}

@@ -17,17 +17,20 @@ const labels = (path: string, title: string | null = "Invoice triage agent") =>
 describe("trailFor", () => {
   it.each([
     ["/", ["Home"]],
-    ["/gallery", ["Home", "Gallery"]],
-    ["/b2/invoice", ["Home", "Gallery", "Invoice triage agent"]],
-    ["/b2/invoice/lineage", ["Home", "Gallery", "Invoice triage agent", "Lineage"]],
-    ["/rebuild/invoice", ["Home", "Gallery", "Invoice triage agent", "Rebuild"]],
+    ["/builds", ["Home", "Builds"]],
+    ["/gallery", ["Home", "Builds"]],
+    ["/b2/invoice", ["Home", "Builds", "Invoice triage agent"]],
+    ["/b2/invoice/lineage", ["Home", "Builds", "Invoice triage agent", "Lineage"]],
+    ["/rebuild/invoice", ["Home", "Builds", "Invoice triage agent", "Rebuild"]],
     ["/import", ["Home", "New build", "Import"]],
     ["/drafts", ["Home", "Drafts"]],
     ["/drafts/posts", ["Home", "Drafts", "Older post drafts"]],
     ["/compose/new", ["Home", "Drafts", "Invoice triage agent"]],
     ["/compose/abc", ["Home", "Drafts", "Invoice triage agent"]],
-    ["/bounties", ["Home", "Bounties"]],
-    ["/bounties/solvers", ["Home", "Bounties", "Solvers"]],
+    ["/openbuilds", ["Home", "OpenBuilds"]],
+    ["/openbuilds/solvers", ["Home", "OpenBuilds", "Solvers"]],
+    ["/bounties", ["Home", "OpenBuilds"]],
+    ["/bounties/solvers", ["Home", "OpenBuilds", "Solvers"]],
     ["/profile/maya", ["Home", "Invoice triage agent"]],
     ["/notifications", ["Home", "Activity"]],
     ["/library", ["Home", "Library"]],
@@ -68,8 +71,8 @@ describe("Breadcrumb", () => {
   it("renders ancestors as links and the current page as aria-current", () => {
     at("/b2/x", "Invoice triage agent");
     const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(nav.textContent).toBe("Home/Gallery/Invoice triage agent");
-    expect(screen.getByRole("link", { name: "Gallery" }).getAttribute("href")).toBe("/gallery");
+    expect(nav.textContent).toBe("Home/Builds/Invoice triage agent");
+    expect(screen.getByRole("link", { name: "Builds" }).getAttribute("href")).toBe("/builds");
     expect(screen.getByText("Invoice triage agent").getAttribute("aria-current")).toBe("page");
   });
 
@@ -96,7 +99,7 @@ describe("SiteFooterView", () => {
       ["buildgallery", "/"],
       ["About", "/about"],
       ["API docs", "/api-docs"],
-      ["Solvers", "/bounties/solvers"],
+      ["Solvers", "/openbuilds/solvers"],
       ["Sign in", "/login"],
     ]);
   });

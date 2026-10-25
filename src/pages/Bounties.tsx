@@ -178,7 +178,7 @@ export default function Bounties() {
 
   return (
     <>
-      <SeoHead title="Bounties — buildgallery" description="Open asks on real builds, with rewards for solutions." path="/bounties" />
+      <SeoHead title="Bounties — buildgallery" description="Open asks on real builds, with rewards for solutions." path="/openbuilds" />
       <LiveRegion message={announcement} />
       <BountiesView
         frames={frames}

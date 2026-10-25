@@ -41,9 +41,9 @@ describe("SiteHeaderView", () => {
     header();
     const nav = screen.getByRole("navigation", { name: "Primary" });
     const links = within(nav).getAllByRole("link");
-    expect(links.map((a) => a.textContent)).toEqual(["Home", "Gallery", "Bounties", "Library", "Drafts"]);
-    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/gallery", "/bounties", "/library", "/drafts"]);
-    expect(links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent)).toEqual(["Gallery"]);
+    expect(links.map((a) => a.textContent)).toEqual(["Home", "Builds", "OpenBuilds", "Library", "Drafts"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/builds", "/openbuilds", "/library", "/drafts"]);
+    expect(links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent)).toEqual(["Builds"]);
   });
 
   it("draws the drafts count after the label, and nothing at 0", () => {
@@ -119,8 +119,8 @@ describe("SiteHeaderView", () => {
     expect(focusable).toEqual([
       "buildgallery home",
       "Home",
-      "Gallery",
-      "Bounties",
+      "Builds",
+      "OpenBuilds",
       "Library",
       "Drafts",
       "Search builds",
@@ -164,7 +164,7 @@ describe("SiteHeaderView under the refined look", () => {
   it("keeps every name and the order: links, search, New build, Activity, theme, account", () => {
     refined();
     const nav = screen.getByRole("navigation", { name: "Primary" });
-    expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Home", "Gallery", "Bounties", "Library", "Drafts2"]);
+    expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Home", "Builds", "OpenBuilds", "Library", "Drafts2"]);
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
     expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "New build" })).toBeTruthy();

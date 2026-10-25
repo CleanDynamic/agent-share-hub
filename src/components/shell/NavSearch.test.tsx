@@ -38,10 +38,10 @@ function enter(text: string) {
 }
 
 describe("NavSearch", () => {
-  it("Enter with claude goes to /gallery?q=claude", () => {
+  it("Enter with claude goes to /builds?q=claude", () => {
     renderAt("/");
     enter("claude");
-    expect(address()).toBe("/gallery?q=claude");
+    expect(address()).toBe("/builds?q=claude");
   });
 
   it("Enter with a single character does not navigate", () => {
@@ -53,7 +53,7 @@ describe("NavSearch", () => {
   it("sends the tidied query, encoded", () => {
     renderAt("/");
     enter("  inbox   triage & more ");
-    expect(address()).toBe("/gallery?q=inbox%20triage%20%26%20more");
+    expect(address()).toBe("/builds?q=inbox%20triage%20%26%20more");
   });
 
   it('"/" focuses the field', () => {
@@ -88,7 +88,7 @@ describe("NavSearch", () => {
   });
 
   it("shows the gallery's query on the gallery", () => {
-    renderAt("/gallery?q=inbox%20triage");
+    renderAt("/builds?q=inbox%20triage");
     expect(field()).toHaveValue("inbox triage");
   });
 
@@ -102,7 +102,7 @@ describe("NavSearch", () => {
 
 /* RC-P10 — the gallery's own field is this field with three props set. */
 describe("NavSearch as the gallery's own field", () => {
-  function renderOwn(onSearch: (query: string | null) => void, path = "/gallery?q=inbox") {
+  function renderOwn(onSearch: (query: string | null) => void, path = "/builds?q=inbox") {
     return render(
       <MemoryRouter initialEntries={[path]}>
         <NavSearch shortcut={false} label="Search the gallery" onSearch={onSearch} />
@@ -123,7 +123,7 @@ describe("NavSearch as the gallery's own field", () => {
     renderOwn((query) => calls.push(query));
     submit("  invoice   chaser ");
     expect(calls).toEqual(["invoice chaser"]);
-    expect(address()).toBe("/gallery?q=inbox");
+    expect(address()).toBe("/builds?q=inbox");
   });
 
   it("clears the search when submitted empty, and ignores a single character", () => {
@@ -141,7 +141,7 @@ describe("NavSearch as the gallery's own field", () => {
   });
 
   it("shows the gallery's query", () => {
-    renderOwn(() => {}, "/gallery?q=invoice");
+    renderOwn(() => {}, "/builds?q=invoice");
     expect(own()).toHaveValue("invoice");
   });
 });

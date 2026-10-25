@@ -33,8 +33,8 @@ describe("DockView", () => {
       "dock-tile-bounties",
       "dock-tile-activity",
     ]);
-    expect(tiles.map((a) => a.getAttribute("href"))).toEqual(["/", "/gallery", "/compose/new", "/bounties", "/notifications"]);
-    expect(tiles.map((a) => a.getAttribute("aria-label"))).toEqual(["Home", "Gallery", "New", "Bounties", "Activity"]);
+    expect(tiles.map((a) => a.getAttribute("href"))).toEqual(["/", "/builds", "/compose/new", "/openbuilds", "/notifications"]);
+    expect(tiles.map((a) => a.getAttribute("aria-label"))).toEqual(["Home", "Builds", "New", "OpenBuilds", "Activity"]);
   });
 
   it("marks only the current tile and never New", () => {
@@ -161,9 +161,9 @@ describe("phone chrome under the refined look", () => {
     render(inRefined(<DockView current="gallery" unread={4} />));
     expect(screen.getAllByRole("link").map((a) => a.getAttribute("aria-label"))).toEqual([
       "Home",
-      "Gallery",
+      "Builds",
       "New",
-      "Bounties",
+      "OpenBuilds",
       "Activity, 4 unread",
     ]);
     expect(screen.getByTestId("dock-tile-gallery").getAttribute("aria-current")).toBe("page");

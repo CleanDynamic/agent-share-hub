@@ -66,10 +66,10 @@ test.describe("/ in the site frame", () => {
     await expect(page).toHaveURL(/\/login\?redirect=(%2F|\/)/);
   });
 
-  test("Enter the gallery goes to /gallery", async ({ page }) => {
+  test("Enter the gallery goes to /builds (the old /gallery address redirects there)", async ({ page }) => {
     await open(page);
     await page.getByRole("button", { name: "Enter the gallery" }).first().click();
-    await expect(page).toHaveURL(/\/gallery/);
+    await expect(page).toHaveURL(/\/builds/);
   });
 });
 
