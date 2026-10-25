@@ -1,4 +1,4 @@
-/* CA-13 P8 — two collapsed sections in Details: "Build cost" on a build tile and "Running cost" on a runtime
+/* CA-13 P8: two collapsed sections in Details: "Build cost" on a build tile and "Running cost" on a runtime
    tile. Different things, never added together (rule 3). Time is typed in seconds, tokens as whole numbers, money in pounds
    or dollars. A figure typed here is "Maker's figure"; one read from a run file is "From the run". */
 
