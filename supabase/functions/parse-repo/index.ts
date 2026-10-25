@@ -28,15 +28,13 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withCors } from "../_shared/cors.ts";
 import { FetchBudget, parseRepoUrl, RepoReadError, readRepoSnapshot } from "./github.ts";
 import { parseRepo } from "./parse.ts";
 import type { RegistryTool } from "./snapshot.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// CORS comes from ../_shared/cors.ts: `withCors` replaces the headers on every answer below.
+const corsHeaders: Record<string, string> = {};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_SOURCE_HINT_CHARS = 120;
@@ -53,7 +51,9 @@ function fail(message: string, status: number): Response {
   return respond({ error: message }, status);
 }
 
-serve(async (req) => {
+serve(async (req) => withCors(req, await handle(req)));
+
+async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -134,7 +134,8 @@ serve(async (req) => {
       .maybeSingle();
 
     if (buildError) {
-      return fail(`Could not read that build: ${buildError.message}`, 500);
+      console.error("parse-repo: Could not read that build", buildError);
+      return fail("Could not read that build.", 500);
     }
     if (!build || build.creator_id !== user.id) {
       return fail("That build does not exist or is not yours to draft against.", 403);
@@ -178,6 +179,7 @@ serve(async (req) => {
     if (error instanceof RepoReadError) {
       return fail(error.message, error.status);
     }
-    return fail((error as Error).message ?? "parse-repo failed.", 500);
+    console.error("parse-repo:", error);
+    return fail("parse-repo failed.", 500);
   }
-});
+}
