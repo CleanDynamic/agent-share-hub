@@ -8,8 +8,8 @@
 // first, keyset on the save's created_at ⟦supabase-postgres-best-practices ›
 // references/data-pagination.md⟧, each build as the gallery's own card reads
 // it — gallerySelect(false) with withCardEmbeds, as where next reads its rows —
-// so a saved build looks the same in the Library as in the Gallery. Two
-// requests a page: the saves, then their builds by id.
+// so a saved build looks the same in the Library as in the Gallery. One
+// request a page (SV-03 P5): the saves, each with its build embedded.
 
 import { gallerySelect, toGalleryBuild, withCardEmbeds, type GalleryRow } from "@/lib/build/gallery";
 import {
@@ -86,33 +86,27 @@ export async function listMySavedBuilds(options: ListMySavedBuildsOptions = {}):
   const userId = await currentUserId();
   if (!userId) throw signedOutError("listMySavedBuilds");
 
-  let savesQuery = db
-    .from("build_saves")
-    .select("build_id, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  // One request: each save with its build embedded through the foreign key (SV-03 P5), as the gallery's card reads it.
+  let savesQuery = withCardEmbeds(
+    db
+      .from("build_saves")
+      .select(`created_at, build:builds!build_saves_build_id_fkey(${gallerySelect(false)})`)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    "build.",
+  );
   if (options.before) savesQuery = savesQuery.lt("created_at", options.before);
 
   const saves = await savesQuery;
-  if (saves.error) throw socialError("listMySavedBuilds (saves)", saves);
+  if (saves.error) throw socialError("listMySavedBuilds", saves);
 
-  const rows = (saves.data ?? []) as ReactionRow[];
+  const rows = (saves.data ?? []) as unknown as Array<{ created_at: string; build: GalleryRow | GalleryRow[] | null }>;
   const nextBefore = rows.length < limit ? null : (rows[rows.length - 1]?.created_at ?? null);
-  if (rows.length === 0) return { items: [], nextBefore };
 
-  const ids = uniqueIds(rows.map((row) => row.build_id));
-  const builds = await withCardEmbeds(
-    db.from("builds").select(gallerySelect(false)).in("id", ids).limit(ids.length),
-  );
-  if (builds.error) throw socialError("listMySavedBuilds (builds)", builds);
-
-  const byId = new Map(
-    ((builds.data ?? []) as unknown as GalleryRow[]).map((row) => [row.id, toGalleryBuild(row)]),
-  );
   const items = rows.flatMap((row) => {
-    const build = byId.get(row.build_id);
-    return build ? [{ savedAt: row.created_at, build }] : [];
+    const build = Array.isArray(row.build) ? (row.build[0] ?? null) : row.build;
+    return build ? [{ savedAt: row.created_at, build: toGalleryBuild(build) }] : [];
   });
 
   return { items, nextBefore };

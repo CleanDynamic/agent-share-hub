@@ -390,15 +390,16 @@ interface CardEmbedQuery {
  * key; listGallery keeps its inline copy because its ORDER BY is locked
  * (CONTRACT §4), and whereNext.test.ts holds the two equal.
  */
-export function withCardEmbeds<Q>(query: Q): Q {
+export function withCardEmbeds<Q>(query: Q, at = ""): Q {
+  // `at` is where the card's build sits in the select, for a query that embeds it ("build." under a save): SV-03 P5.
   return (query as unknown as CardEmbedQuery)
-    .in("build_nodes.type", [...GALLERY_NODE_TYPES])
-    .in("build_media.kind", [...GALLERY_MEDIA_KINDS])
-    .eq("bounties.status", "open")
-    .order("position", { referencedTable: "build_nodes", ascending: true, nullsFirst: false })
-    .limit(NODES_PER_BUILD, { referencedTable: "build_nodes" })
-    .limit(MEDIA_PER_BUILD, { referencedTable: "build_media" })
-    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" }) as unknown as Q;
+    .in(`${at}build_nodes.type`, [...GALLERY_NODE_TYPES])
+    .in(`${at}build_media.kind`, [...GALLERY_MEDIA_KINDS])
+    .eq(`${at}bounties.status`, "open")
+    .order("position", { referencedTable: `${at}build_nodes`, ascending: true, nullsFirst: false })
+    .limit(NODES_PER_BUILD, { referencedTable: `${at}build_nodes` })
+    .limit(MEDIA_PER_BUILD, { referencedTable: `${at}build_media` })
+    .limit(BOUNTIES_PER_BUILD, { referencedTable: `${at}bounties` }) as unknown as Q;
 }
 
 /**
