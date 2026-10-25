@@ -8,10 +8,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireCreator }: ProtectedRouteProps) {
-  const { isLoggedIn, isCreator, loading } = useAuth();
+  const { isLoggedIn, isCreator, loading, profileLoading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // The session is all a signed-in page waits for. A creator-only route also needs the profile to say who is a creator.
+  if (loading || (requireCreator && isLoggedIn && profileLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Skeleton className="h-8 w-48 rounded-md" />

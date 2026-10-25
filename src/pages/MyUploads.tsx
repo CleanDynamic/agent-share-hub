@@ -78,7 +78,9 @@ function statusBadge(status: string) {
 }
 
 export default function MyUploads() {
-  const { isLoggedIn, isCreator, profile, loading } = useAuth();
+  const { isLoggedIn, isCreator, profile, loading: sessionLoading, profileLoading } = useAuth();
+  // Whether the reader is a creator is in the profile, which arrives after the session (SV-03).
+  const loading = sessionLoading || profileLoading;
   const navigate = useNavigate();
   const [tab, setTab] = useState<"content" | "projects">("content");
   const { toast } = useToast();

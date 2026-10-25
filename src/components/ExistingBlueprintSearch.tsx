@@ -40,7 +40,8 @@ export function ExistingBlueprintSearch({
   const { data: results, isLoading } = useQuery({
     queryKey: ["creator_blueprints_search", query, excludeIds.join(",")],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
 
       let q = supabase

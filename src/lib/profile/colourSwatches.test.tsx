@@ -4,13 +4,14 @@
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const getSession = vi.fn();
 const getUser = vi.fn();
 const update = vi.fn();
 const eqUpdate = vi.fn();
 const select = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    auth: { getUser: () => getUser() },
+    auth: { getSession: () => getSession(), getUser: () => getUser() },
     from: (table: string) => {
       if (table !== "profiles") throw new Error(`unexpected table ${table}`);
       return {
@@ -39,7 +40,8 @@ beforeEach(() => {
   // jsdom has no canvas: the wheel draws nothing, as on a browser without one.
   HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as never;
   getUser.mockReset();
-  getUser.mockResolvedValue({ data: { user: { id: "me" } } });
+  getSession.mockReset();
+  getSession.mockResolvedValue({ data: { session: { user: { id: "me" } } } });
   update.mockReset();
   eqUpdate.mockReset();
   select.mockReset();
@@ -61,8 +63,13 @@ describe("what is read", () => {
   it("reads the signed-in maker's own row, and nothing when signed out", async () => {
     expect(await getColourSwatches()).toEqual({ recent: ["#7FA7D9"], favourites: ["#C9A86B"] });
     expect(select).toHaveBeenCalledWith("colour_swatches");
-    getUser.mockResolvedValue({ data: { user: null } });
+    getSession.mockResolvedValue({ data: { session: null } });
     expect(await getColourSwatches()).toEqual({ recent: [], favourites: [] });
+  });
+
+  it("knows who is signed in from the stored session, never by asking the auth server (SV-03 P1)", async () => {
+    await getColourSwatches();
+    expect(getUser).not.toHaveBeenCalled();
   });
 });
 
@@ -88,7 +95,7 @@ describe("what may be saved", () => {
   });
 
   it("does not save for a maker who is signed out", async () => {
-    getUser.mockResolvedValue({ data: { user: null } });
+    getSession.mockResolvedValue({ data: { session: null } });
     await expect(saveColourSwatches({ recent: [], favourites: [] })).rejects.toThrow();
     expect(update).not.toHaveBeenCalled();
   });

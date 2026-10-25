@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
@@ -29,7 +29,10 @@ interface AuthState {
   isLoggedIn: boolean;
   isAdmin: boolean;
   isCreator: boolean;
+  /** The stored session is known (SV-03: no longer waits for the profile). */
   loading: boolean;
+  /** The profile of the signed-in reader is on its way. `isCreator`, `isAdmin` and `profile` are not settled until it is false. */
+  profileLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -40,6 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const profileFor = useRef<string | null>(null);
+  const inFlight = useRef<{ userId: string; done: Promise<void> } | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -54,16 +60,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session?.user?.id) await fetchProfile(session.user.id);
   }, [session, fetchProfile]);
 
+  /* The profile for a reader, asked for once while a read for them is still out, and flagged as loading only the first
+     time for that reader, so a token refresh reads it again quietly. */
+  const loadProfile = useCallback(
+    (userId: string) => {
+      if (inFlight.current?.userId === userId) return inFlight.current.done;
+      if (profileFor.current !== userId) {
+        profileFor.current = userId;
+        setProfileLoading(true);
+      }
+      const done = fetchProfile(userId).finally(() => {
+        if (inFlight.current?.done === done) inFlight.current = null;
+        if (profileFor.current === userId) setProfileLoading(false);
+      });
+      inFlight.current = { userId, done };
+      return done;
+    },
+    [fetchProfile],
+  );
+
   useEffect(() => {
     // Set up listener BEFORE getSession per Supabase best practice
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
+          const userId = newSession.user.id;
+          // The reader changed: the profile is on its way before anything can read the old one as theirs.
+          if (profileFor.current !== userId) {
+            profileFor.current = userId;
+            setProfileLoading(true);
+          }
           // Defer profile fetch to avoid deadlock with auth state change
-          setTimeout(() => fetchProfile(newSession.user.id), 0);
+          setTimeout(() => void loadProfile(userId), 0);
         } else {
+          profileFor.current = null;
           setProfile(null);
+          setProfileLoading(false);
         }
         setLoading(false);
       }
@@ -71,20 +104,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
+      setLoading(false);
       if (s?.user) {
-        fetchProfile(s.user.id).finally(() => setLoading(false));
+        void loadProfile(s.user.id);
       } else {
-        setLoading(false);
+        profileFor.current = null;
+        setProfileLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, [loadProfile]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
+    profileFor.current = null;
     setSession(null);
     setProfile(null);
+    setProfileLoading(false);
   }, []);
 
   const value: AuthState = {
@@ -95,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: profile?.is_admin ?? false,
     isCreator: profile?.is_creator ?? false,
     loading,
+    profileLoading,
     signOut,
     refreshProfile,
   };
