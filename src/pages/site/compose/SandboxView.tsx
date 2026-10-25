@@ -234,18 +234,18 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   /* CA-12 P4: sessions are not in this menu: a session is a group of tiles, added with "+ Add a session" under the last one.
      CA-15: the twelve, with the terms the modals use. System prompt, Dataset and GitHub repository are ready only once their
      node type is live (`addEntries`). */
-  { key: "prompt", name: "Prompt", line: "A message sent to a model", ready: true },
-  { key: "agent", name: "Agent", line: "A single agent or a multi-agent team", ready: true },
-  { key: "decision", name: "Decision", line: "A structured classification your application requests from a model", ready: true },
-  { key: "system_prompt", name: "System prompt", line: "Instructions that apply across prompts", ready: false },
-  { key: "file", name: "File", line: "A file the model read", ready: true },
-  { key: "dataset", name: "Dataset", line: "Data used for training, evaluation or retrieval", ready: false },
-  { key: "tool", name: "Tool", line: "An external application the model used", ready: true },
-  { key: "repo", name: "GitHub repository", line: "A repository used in this build", ready: false },
+  { key: "prompt", name: "Prompt", line: "Message sent to a model", ready: true },
+  { key: "agent", name: "Agent", line: "Single agent or multi-agent team", ready: true },
+  { key: "decision", name: "Decision", line: "Structured answer from a model", ready: true },
+  { key: "system_prompt", name: "System prompt", line: "Instructions for several prompts", ready: false },
+  { key: "file", name: "File", line: "File the model read", ready: true },
+  { key: "dataset", name: "Dataset", line: "Data for training, evaluation or retrieval", ready: false },
+  { key: "tool", name: "Tool", line: "External app the model used", ready: true },
+  { key: "repo", name: "GitHub repository", line: "Repository used in this build", ready: false },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
   { key: "code", name: "Code", line: "Source code written or run", ready: true },
-  { key: "check", name: "Check", line: "A test that verifies part of the build", ready: true },
-  { key: "result", name: "Result", line: "The output the build produced", ready: true },
+  { key: "check", name: "Check", line: "Test of part of the build", ready: true },
+  { key: "result", name: "Result", line: "Output the build produced", ready: true },
 ];
 
 /** CA-03 P5: the Add menu's own words. */
@@ -291,10 +291,10 @@ export interface AddEntry {
 }
 
 /** CA-13 P1: the line under Add › Decision while the database change is not live. */
-export const DECISION_OFF_LINE = "Decisions need the CA-13 database change. Ask Lovable to apply it.";
+export const DECISION_OFF_LINE = "Not available yet";
 
 /** CA-15 P9: the line under Add › System prompt, Dataset or GitHub repository while its node type is not live. */
-export const TILE_OFF_LINE = "Not available yet: the database has not switched this on";
+export const TILE_OFF_LINE = "Not available yet";
 
 export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {

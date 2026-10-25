@@ -202,7 +202,7 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     expect(screen.getByRole("button", { name: "model" })).toBeTruthy();
     const region = screen.getByTestId("model-cleared");
     expect(region.getAttribute("aria-live")).toBeNull();
-    expect(region.textContent).toBe("ChatGPT doesn't offer Opus 5.5. Model cleared.");
+    expect(region.textContent).toBe("Opus 5.5 not on ChatGPT. Cleared.");
   });
 
   it("keeps a model the new tool offers", () => {
@@ -664,9 +664,9 @@ describe("the refined look (UI-P93)", () => {
     list({ onAttach: vi.fn(), onNameMade, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Name a file it makes", "Move up", "Move down", "Remove tile"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Add file name", "Move up", "Move down", "Remove tile"]);
     expect(items.at(-1)?.getAttribute("data-tone")).toBe("danger");
-    fireEvent.click(screen.getByRole("menuitem", { name: "Name a file it makes" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Add file name" }));
     // CA-10: asked once the menu has let go of focus, so it cannot take it back from the field.
     await waitFor(() => expect(onNameMade).toHaveBeenCalledWith("p2"));
   });
@@ -675,7 +675,7 @@ describe("the refined look (UI-P93)", () => {
     list({ onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     await screen.findAllByRole("menuitem");
-    expect(screen.queryByRole("menuitem", { name: "Name a file it makes" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Add file name" })).toBeNull();
   });
 
   it("says what a prompt makes, quietly, under its text", () => {

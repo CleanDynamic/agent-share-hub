@@ -200,7 +200,7 @@ export function promptRows(payload: Raw, promptText: string): ExtraRow[] {
   return [
     {
       name: FULL_PROMPT_COPY.modelSettings,
-      description: FULL_PROMPT_COPY.modelSettingsLine,
+      description: "",
       summary: summaryOf(settings.model, effortHeld ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions),
       fields: [
         { key: "model", label: FULL_PROMPT_COPY.model, kind: "model" },
@@ -214,7 +214,7 @@ export function promptRows(payload: Raw, promptText: string): ExtraRow[] {
       name: FULL_PROMPT_COPY.variables,
       description: FULL_PROMPT_COPY.variablesLine,
       summary: summaryOf(names.map((name) => `{${name}}`)),
-      fields: names.map((name) => ({ key: name, label: `{${name}}`, kind: "line" as const, max: 140, placeholder: "e.g. The customer's first name" })),
+      fields: names.map((name) => ({ key: name, label: `{${name}}`, kind: "line" as const, max: 140, placeholder: "The customer's first name" })),
       values: described,
       toPatch: (v) => ({ variables: names.map((name) => ({ name, description: v[name] ?? "" })) }),
     },
@@ -300,7 +300,7 @@ export function checkRows(payload: Raw): ExtraRow[] {
     },
     {
       name: CHECK_DIALOG_COPY.modelTested,
-      description: CHECK_DIALOG_COPY.modelTestedLine,
+      description: "",
       summary: summaryOf(extras.modelTested?.model, extras.modelTested?.version),
       fields: [
         { key: "model", label: CHECK_DIALOG_COPY.modelTested, kind: "model" },
@@ -313,10 +313,10 @@ export function checkRows(payload: Raw): ExtraRow[] {
       name: CHECK_DIALOG_COPY.evidence,
       description: CHECK_DIALOG_COPY.evidenceLine,
       summary: summaryOf(evidenceFile, evidenceFile ? null : evidence?.url),
-      fields: evidenceFile ? [] : [{ key: "url", label: CHECK_DIALOG_COPY.evidenceUrl, kind: "line", placeholder: CHECK_DIALOG_COPY.evidenceUrlPlaceholder }],
+      fields: evidenceFile ? [] : [{ key: "url", label: CHECK_DIALOG_COPY.evidenceUrl, kind: "line" }],
       values: { url: evidence?.url ?? "" },
       toPatch: (v) => ({ evidence: v.url ? { url: v.url } : null }),
-      ...(evidenceFile ? { note: `${evidenceFile} is kept as the evidence.` } : null),
+      ...(evidenceFile ? { note: `${evidenceFile} attached` } : null),
     },
   ];
 }
@@ -344,7 +344,7 @@ export function toolRows(payload: Raw): ExtraRow[] {
     },
     {
       name: TOOL_DIALOG_COPY.setup,
-      description: keyed ? TOOL_DIALOG_COPY.setupKeyHint : TOOL_DIALOG_COPY.setupLine,
+      description: keyed ? TOOL_DIALOG_COPY.setupKeyHint : "",
       summary: summaryOf(extras.setup ?? []),
       fields: [{ key: "setup", label: TOOL_DIALOG_COPY.setup, kind: "lines", rows: 4, placeholder: TOOL_DIALOG_COPY.setupPlaceholder }],
       values: { setup: (extras.setup ?? []).join("\n") },
@@ -354,7 +354,7 @@ export function toolRows(payload: Raw): ExtraRow[] {
       name: TOOL_DIALOG_COPY.alternatives,
       description: TOOL_DIALOG_COPY.alternativesLine,
       summary: summaryOf(extras.alternatives ?? []),
-      fields: [{ key: "alternatives", label: TOOL_DIALOG_COPY.alternatives, kind: "lines", rows: 3, placeholder: "e.g. Linear\nJira" }],
+      fields: [{ key: "alternatives", label: TOOL_DIALOG_COPY.alternatives, kind: "lines", rows: 3, placeholder: "Linear\nJira" }],
       values: { alternatives: (extras.alternatives ?? []).join("\n") },
       toPatch: (v) => ({ alternatives: linesOf(v.alternatives ?? "") }),
     },
@@ -369,7 +369,7 @@ export function codeRows(payload: Raw): ExtraRow[] {
   return [
     {
       name: CODE_DIALOG_COPY.filename,
-      description: CODE_DIALOG_COPY.filenameLine,
+      description: "",
       summary: summaryOf(filename),
       fields: [{ key: "filename", label: CODE_DIALOG_COPY.filename, kind: "line", max: 200, placeholder: CODE_DIALOG_COPY.filenamePlaceholder, mono: true }],
       values: { filename },
@@ -397,7 +397,7 @@ export function resultRows(payload: Raw): ExtraRow[] {
       name: "Caption",
       description: "One line under the result",
       summary: summaryOf(caption),
-      fields: [{ key: "caption", label: "Caption", kind: "line", max: 140, placeholder: "e.g. The final poster, as printed" }],
+      fields: [{ key: "caption", label: "Caption", kind: "line", max: 140, placeholder: "The final poster, as printed" }],
       values: { caption },
       toPatch: (v) => ({ caption: v.caption ?? "" }),
     },
@@ -413,7 +413,7 @@ export function systemPromptRows(payload: Raw): ExtraRow[] {
   return [
     {
       name: SYSTEM_PROMPT_DIALOG_COPY.model,
-      description: SYSTEM_PROMPT_DIALOG_COPY.modelLine,
+      description: "",
       summary: summaryOf(model),
       fields: [{ key: "model", label: SYSTEM_PROMPT_DIALOG_COPY.model, kind: "model" }],
       values: { model },
@@ -431,7 +431,7 @@ export function systemPromptRows(payload: Raw): ExtraRow[] {
       name: SYSTEM_PROMPT_DIALOG_COPY.variables,
       description: SYSTEM_PROMPT_DIALOG_COPY.variablesLine,
       summary: summaryOf(names.map((name) => `{${name}}`)),
-      fields: names.map((name) => ({ key: name, label: `{${name}}`, kind: "line" as const, max: 140, placeholder: "e.g. The customer's first name" })),
+      fields: names.map((name) => ({ key: name, label: `{${name}}`, kind: "line" as const, max: 140, placeholder: "The customer's first name" })),
       values: Object.fromEntries(names.map((name) => [name, saved.find((entry) => entry.name === name)?.description ?? ""])),
       toPatch: (v) => ({ variables: names.map((name) => ({ name, description: v[name] ?? "" })) }),
       ...(names.length === 0 ? { note: SYSTEM_PROMPT_DIALOG_COPY.noVariables } : null),
@@ -445,7 +445,7 @@ export function datasetRows(payload: Raw): ExtraRow[] {
   const rows: ExtraRow[] = [
     {
       name: DATASET_DIALOG_COPY.format,
-      description: DATASET_DIALOG_COPY.formatLine,
+      description: "",
       summary: summaryOf(facts.format),
       fields: [{ key: "format", label: DATASET_DIALOG_COPY.format, kind: "line", max: DATASET_FORMAT_MAX, placeholder: DATASET_DIALOG_COPY.formatPlaceholder }],
       values: { format: facts.format ?? "" },
@@ -453,7 +453,7 @@ export function datasetRows(payload: Raw): ExtraRow[] {
     },
     {
       name: DATASET_DIALOG_COPY.records,
-      description: DATASET_DIALOG_COPY.recordsLine,
+      description: "",
       summary: summaryOf(facts.recordCount === null ? null : facts.recordCount.toLocaleString("en-GB")),
       fields: [{ key: "records", label: DATASET_DIALOG_COPY.records, kind: "count", max: 12, placeholder: DATASET_DIALOG_COPY.recordsPlaceholder }],
       values: { records: facts.recordCount === null ? "" : String(facts.recordCount) },
@@ -469,7 +469,7 @@ export function datasetRows(payload: Raw): ExtraRow[] {
     },
     {
       name: DATASET_DIALOG_COPY.source,
-      description: DATASET_DIALOG_COPY.sourceLine,
+      description: "",
       summary: summaryOf(facts.source),
       fields: [{ key: "source", label: DATASET_DIALOG_COPY.source, kind: "line", max: DATASET_SOURCE_MAX, placeholder: DATASET_DIALOG_COPY.sourcePlaceholder }],
       values: { source: facts.source ?? "" },
@@ -485,7 +485,7 @@ export function datasetRows(payload: Raw): ExtraRow[] {
     },
     {
       name: DATASET_DIALOG_COPY.licence,
-      description: DATASET_DIALOG_COPY.licenceLine,
+      description: "",
       summary: summaryOf(facts.licence),
       fields: [{ key: "licence", label: DATASET_DIALOG_COPY.licence, kind: "line", max: DATASET_LICENCE_MAX, placeholder: DATASET_DIALOG_COPY.licencePlaceholder }],
       values: { licence: facts.licence ?? "" },
@@ -499,8 +499,8 @@ export function datasetRows(payload: Raw): ExtraRow[] {
       summary: summaryOf(facts.chunkStrategy, facts.chunkSize === null ? null : `size ${facts.chunkSize}`, facts.chunkOverlap === null ? null : `overlap ${facts.chunkOverlap}`, facts.embeddingModel),
       fields: [
         { key: "strategy", label: DATASET_DIALOG_COPY.strategy, kind: "line", max: DATASET_CHUNK_STRATEGY_MAX, placeholder: DATASET_DIALOG_COPY.strategyPlaceholder },
-        { key: "size", label: DATASET_DIALOG_COPY.size, kind: "count", max: 7, placeholder: "e.g. 512" },
-        { key: "overlap", label: DATASET_DIALOG_COPY.overlap, kind: "count", max: 7, placeholder: "e.g. 64" },
+        { key: "size", label: DATASET_DIALOG_COPY.size, kind: "count", max: 7, placeholder: "512" },
+        { key: "overlap", label: DATASET_DIALOG_COPY.overlap, kind: "count", max: 7, placeholder: "64" },
         { key: "embedding", label: DATASET_DIALOG_COPY.embedding, kind: "line", max: DATASET_EMBEDDING_MAX, placeholder: DATASET_DIALOG_COPY.embeddingPlaceholder },
       ],
       values: { strategy: facts.chunkStrategy ?? "", size: facts.chunkSize === null ? "" : String(facts.chunkSize), overlap: facts.chunkOverlap === null ? "" : String(facts.chunkOverlap), embedding: facts.embeddingModel ?? "" },

@@ -70,7 +70,7 @@ describe("Tool window (CA-18: the connection is chosen there, and Details only r
     expect(onToolConnection).toHaveBeenCalledWith("t", "mcp", null);
     cleanup();
     const again = mount(view({ connection: "mcp" }));
-    fireEvent.click(within(screen.getByRole("group", { name: "Where it ran" })).getByRole("radio", { name: "At a web address" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Where it ran" })).getByRole("radio", { name: "Web" }));
     save();
     expect(again).toHaveBeenCalledWith("t", "mcp", "web");
   });

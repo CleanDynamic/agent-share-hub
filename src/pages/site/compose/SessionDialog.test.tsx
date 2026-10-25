@@ -61,7 +61,7 @@ describe("the Session modal", () => {
     const field = within(dialog()).getByPlaceholderText("2026-10-12");
     fireEvent.change(field, { target: { value: "9 October" } });
     fireEvent.blur(field);
-    expect(screen.getByText("Write the day as 2026-10-12.")).toBeTruthy();
+    expect(screen.getByText("Format: 2026-10-12")).toBeTruthy();
     save();
     expect(calls(h)).toEqual([]);
   });
@@ -77,7 +77,7 @@ describe("the Session modal", () => {
 
   it("takes a goal off with null", () => {
     const { h } = open({ goal: { condition: "the tests pass", atMost: 40 } });
-    fireEvent.click(within(dialog()).getByRole("button", { name: "Take the goal off" }));
+    fireEvent.click(within(dialog()).getByRole("button", { name: "Remove goal" }));
     save();
     expect(calls(h)).toEqual([["onSessionGoal", "s2", null]]);
   });
@@ -97,7 +97,7 @@ describe("the Session modal", () => {
 
   it("marks a setup item Not shared (onNotShared), and ticks a prompt (onToggleSessionPrompt)", () => {
     const { h, v } = open({ setup: [{ id: "su1", kind: "Skill", name: "Brand skill", description: null, notShared: false }] });
-    fireEvent.click(within(dialog()).getByRole("button", { name: "Don't share it: Brand skill" }));
+    fireEvent.click(within(dialog()).getByRole("button", { name: "Keep private: Brand skill" }));
     fireEvent.click(within(within(dialog()).getByRole("group", { name: "Prompts in this session" })).getAllByRole("checkbox")[1]);
     save();
     expect(calls(h)).toEqual(

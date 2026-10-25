@@ -1551,7 +1551,7 @@ function SandboxPageBody() {
         return null;
       }
       if (file.size > MEDIA_MAX_BYTES) {
-        toast.error(`${file.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+        toast.error(`${file.name}: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
         return null;
       }
       try {
@@ -1644,7 +1644,7 @@ function SandboxPageBody() {
       return null;
     }
     if (file.size > MEDIA_MAX_BYTES) {
-      toast.error(`${file.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+      toast.error(`${file.name}: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
       return null;
     }
     return (await uploadMedia({ buildId, file })).id;
@@ -1987,6 +1987,7 @@ function SandboxPageBody() {
         if (real) prompts.add(real.id, row.ordinal);
       } else if (row.stepId) actions.removeTile(row.stepId);
     },
+    onRetrySessionPrompts: (key) => sessions.retryPrompts(key),
     onSessionTool: (sessionId, tool) => void sessions.setTool(sessionId, tool),
     onSessionMeta: (key, change) => void onSessionMeta(key, change),
     onSessionGoal: (key, goal) => void onSessionGoal(key, goal),

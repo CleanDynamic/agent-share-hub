@@ -25,7 +25,7 @@ const tool: NamedPiece = { id: "t1", name: "Gmail", note: "Tool" };
 
 describe("how it runs", () => {
   it("asks How did it run? with the three always shown, then the four under More ways it ran (CA-03 P3, CA-04 P6)", () => {
-    expect(RUNS_COPY.title).toBe("How did it run?");
+    expect(RUNS_COPY.title).toBe("How it ran");
     expect(RUNS_CHOICES.map((choice) => [choice.how, choice.label, choice.more])).toEqual([
       ["once", "When I asked", false],
       ["schedule", "On a schedule", false],

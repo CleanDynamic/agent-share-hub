@@ -45,8 +45,8 @@ describe("the Add dialog", () => {
   it("is the shared frame with a real radio group: a single agent, or a multi-agent team, a single agent chosen to start", () => {
     open();
     expect(screen.getByRole("dialog", { name: "Add an agent" })).toBeTruthy();
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("A model that runs on its own, with instructions and tools");
-    expect(screen.getByRole("radiogroup", { name: "What to add" })).toBeTruthy();
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Autonomous model with instructions and tools");
+    expect(screen.getByRole("radiogroup", { name: "Type" })).toBeTruthy();
     const one = screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.one) });
     const team = screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) });
     expect(AGENT_DIALOG_COPY.one).toBe("Single agent");
@@ -65,7 +65,7 @@ describe("the Add dialog", () => {
     open();
     expect(screen.getByLabelText("Name")).toBeTruthy();
     expect(screen.getByRole("group", { name: "Models" })).toBeTruthy();
-    expect(names()).toEqual(["System instructions", "Available tools", "Trigger", "Host platform", "Memory", "Supporting models", "Limits", "Output and destination", "Sample run"]);
+    expect(names()).toEqual(["System instructions", "Available tools", "Trigger", "Host platform", "Memory", "Helpers", "Limits", "Output and destination", "Sample run"]);
     expect(screen.getByTestId("optional-count").textContent).toBe("9 fields");
     expect(screen.getAllByTestId("optional-field").every((el) => el.querySelector("button")?.getAttribute("aria-expanded") === "false")).toBe(true);
     expect(screen.queryByLabelText("System instructions")).toBeNull();
@@ -79,7 +79,7 @@ describe("the Add dialog", () => {
     const name = screen.getByLabelText("Name") as HTMLInputElement;
     expect(name.placeholder).toBe("Agent 4");
     expect(name.value).toBe("");
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL, harness: null, tools: [] });
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
@@ -107,7 +107,7 @@ describe("the Add dialog", () => {
     open({ teamsAvailable: false });
     const team = screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }) as HTMLInputElement;
     expect(team.disabled).toBe(true);
-    expect(screen.getByText("Teams need the Deploy queue item from UI-P61.")).toBeTruthy();
+    expect(screen.getByText("Not available yet")).toBeTruthy();
   });
 
   it("closes on Cancel without adding", () => {
@@ -134,7 +134,7 @@ describe("the Add dialog", () => {
 describe("the host platform, its models and its tools (CA-02 P5)", () => {
   const pickHarness = (query: string, row: string | RegExp) => {
     openRow("Host platform");
-    fireEvent.click(screen.getByRole("button", { name: "Host platform" }));
+    fireEvent.click((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
     fireEvent.click(screen.getByRole("option", { name: row }));
   };
@@ -143,7 +143,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
   it("has no default for Host platform (it asks), and an unchosen host takes any model", () => {
     open();
     openRow("Host platform");
-    expect(screen.getByRole("button", { name: "Host platform" }).textContent).toBe("Select a platform");
+    expect((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement).textContent).toBe("Select a platform");
     openModel(`model ${DEFAULT_AGENT_MODEL}`);
     expect(screen.getByRole("menuitem", { name: "Other model…" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Grok 4.7" })).toBeTruthy();
@@ -162,9 +162,9 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
   it("clears a model the host does not offer and waits for one to be picked, saying what is required", () => {
     const props = open();
     pickHarness("codex", "Codex");
-    expect(screen.getByTestId("agent-model-cleared").textContent).toBe(`Codex doesn't offer ${DEFAULT_AGENT_MODEL}. Model cleared.`);
+    expect(screen.getByTestId("agent-model-cleared").textContent).toBe(`${DEFAULT_AGENT_MODEL} not on Codex. Cleared.`);
     expect(add().disabled).toBe(true);
-    expect(status()).toBe("Required: a model");
+    expect(status()).toBe("Required: Models");
     openModel("model");
     fireEvent.click(screen.getByRole("menuitemradio", { name: "GPT-6.1 Sol" }));
     fireEvent.click(add());
@@ -225,7 +225,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
     const start = { harness: null, models: [{ model: "Opus 5.5", role: "main" }, { model: "Haiku 5.5", role: "plans" }], tools: [] };
     const { value, cleared } = withHarness(start, "v0");
     expect(value.models).toEqual([{ model: null, role: "main" }]);
-    expect(cleared).toBe("v0 doesn't offer Opus 5.5. Model cleared.");
+    expect(cleared).toBe("Opus 5.5 not on v0. Cleared.");
   });
 
   it("lists the available tools as removable chips", () => {
@@ -269,7 +269,7 @@ describe("memory (CA-03 P6)", () => {
     openRow("Memory");
     const field = screen.getByLabelText("Memory") as HTMLInputElement;
     expect(field.tagName).toBe("INPUT");
-    expect(field.placeholder).toBe("e.g. Dishes already featured, stored in a notes file");
+    expect(field.placeholder).toBe("Dishes already featured, stored in a notes file");
     expect(field.maxLength).toBe(200);
   });
 
@@ -299,22 +299,22 @@ describe("the trigger and the system instructions (CA-12 P11, CA-15 P7)", () => 
   it("System instructions is the largest field, 4 lines, asking what the agent is told to do", () => {
     open();
     openRow("System instructions");
-    const box = screen.getByLabelText("System instructions") as HTMLTextAreaElement;
+    const box = (screen.getAllByLabelText("System instructions").at(-1) as HTMLElement) as HTMLTextAreaElement;
     expect(box.rows).toBe(4);
-    expect(box.placeholder).toMatch(/^e\.g\. /);
+    expect(box.placeholder).not.toMatch(/^e\.g\./);
   });
 
   it("hands back the instructions and a schedule, and Not sure leaves the host empty", () => {
     const props = open();
     openRow("System instructions");
-    fireEvent.change(screen.getByLabelText("System instructions"), { target: { value: "Triage my inbox" } });
+    fireEvent.change((screen.getAllByLabelText("System instructions").at(-1) as HTMLElement), { target: { value: "Triage my inbox" } });
     openRow("Trigger");
     fireEvent.click(screen.getByRole("radio", { name: "Scheduled" }));
     fireEvent.change(screen.getByLabelText("Schedule"), { target: { value: "Mondays 07:00" } });
     openRow("Host platform");
-    fireEvent.click(screen.getByRole("button", { name: "Host platform" }));
+    fireEvent.click((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement));
     fireEvent.click(screen.getByRole("option", { name: "Not sure" }));
-    expect(screen.getByRole("button", { name: "Host platform" }).textContent).toBe("Not sure");
+    expect((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement).textContent).toBe("Not sure");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ instructions: "Triage my inbox", harness: null, runs: { how: "schedule", detail: "Mondays 07:00" } }));
   });
@@ -396,7 +396,7 @@ describe("CA-13 · Deep Agents and supporting models in the Add dialog", () => {
   it("offers the Runtime models and services subcategory first under Host platform, with Deep Agents and LangGraph in Agent frameworks", () => {
     open();
     openRow("Host platform");
-    fireEvent.click(screen.getByRole("button", { name: "Host platform" }));
+    fireEvent.click((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement));
     const rows = screen.getAllByRole("option").map((row) => row.textContent ?? "");
     expect(screen.getByText("Runtime models and services")).toBeTruthy();
     // "Not sure", then the subcategory's own rows before any other tool.
@@ -408,11 +408,11 @@ describe("CA-13 · Deep Agents and supporting models in the Add dialog", () => {
 
   it("asks for Supporting models, and hands them back", () => {
     const props = open();
-    openRow("Supporting models");
-    fireEvent.click(screen.getByRole("button", { name: "Add a supporting model" }));
+    openRow("Helpers");
+    fireEvent.click(screen.getByRole("button", { name: "Add a helper" }));
     fireEvent.change(screen.getByLabelText("When the history reaches"), { target: { value: "80" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add this supporting model" }));
-    expect(within(rowOf("Supporting models")).getAllByTestId("optional-line")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Add helper" }));
+    expect(within(rowOf("Helpers")).getAllByTestId("optional-line")).toHaveLength(1);
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0].helpers).toEqual([{ provider: "scaledown", job: "summarize", trigger: { at: 0.8 } }]);
   });
@@ -420,9 +420,9 @@ describe("CA-13 · Deep Agents and supporting models in the Add dialog", () => {
   it("a team's supporting models go with it, for the agent that leads it", () => {
     const props = open();
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }));
-    openRow("Supporting models");
-    fireEvent.click(screen.getByRole("button", { name: "Add a supporting model" }));
-    fireEvent.click(screen.getByRole("button", { name: "Add this supporting model" }));
+    openRow("Helpers");
+    fireEvent.click(screen.getByRole("button", { name: "Add a helper" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add helper" }));
     fireEvent.click(add());
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject({ kind: "team", helpers: [{ provider: "scaledown", job: "summarize" }] });
   });

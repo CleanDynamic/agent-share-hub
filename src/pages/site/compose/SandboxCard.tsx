@@ -11,7 +11,7 @@
    TOP TO BOTTOM. The header (the title, "How this build is described and filed in the Gallery", the square close). The
    preview: the gallery card as the Gallery draws it, with no cover. The Title, the only required field. Then the Optional
    section, every row closed: Summary, Field, Task, Setting, Tools and stack, Data handled, Age suitability, Read from your
-   build, Build details. The footer says "Required: a title" or "All required fields complete", then Cancel and Save.
+   build, Build details. The footer says "Required: a title" or "Required fields complete", then Cancel and Save.
 
    A DRAFT, SAVED ONCE. The Card edits a draft of everything on it (the title, the summary, the classification, the build
    details) and writes it with Save; Cancel drops it. Save writes the title, the summary and the details through the
@@ -99,7 +99,7 @@ export interface SandboxCardProps extends CardProps {
 
 export const CLASSIFICATION_CARD = "Classification Card";
 export const CARD_SUBTITLE = "How this build is described and filed in the Gallery";
-export const NOT_LIVE_LINE = "Classification will save once the database update is applied";
+export const NOT_LIVE_LINE = "Not available yet";
 
 const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
 
@@ -146,10 +146,10 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
     <div style={{ display: "flex", flexDirection: "column" }}>
       <OptionalField phone={phone} filledText name="Known issue" description="What broke and how it was fixed" summary={details.symptom}>
         <RefinedField id="card-problem" label="Problem">
-          <FieldArea id="card-problem" phone={phone} rows={2} value={details.symptom} placeholder="e.g. exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} />
+          <FieldArea id="card-problem" phone={phone} rows={2} value={details.symptom} placeholder="exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} />
         </RefinedField>
         <RefinedField id="card-fix" label="Fix">
-          <FieldArea id="card-fix" phone={phone} rows={2} value={details.resolution} placeholder="e.g. Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} />
+          <FieldArea id="card-fix" phone={phone} rows={2} value={details.resolution} placeholder="Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} />
         </RefinedField>
       </OptionalField>
       <OptionalField phone={phone} filledText name="Build cost (£)" description="What it cost to make" summary={money(details.costSetup)}>
@@ -276,12 +276,12 @@ function CardBody(props: SandboxCardProps) {
 
         <Block testId="card-title-block">
           <RefinedField id={CARD_FIELD_ID.title} label="Title" right="Required">
-            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} placeholder="Name your build" autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
+            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
           </RefinedField>
         </Block>
 
         <div style={{ padding: `0 ${pad}px`, borderTop: `1px solid ${t.hairlineModule}` }}>
-          <OptionalSection hint="Suggestions come from your build" bleed={pad}>
+          <OptionalSection hint="Suggestions from the build" bleed={pad}>
             {row(
               "Summary",
               "One sentence on what the build does",
@@ -294,7 +294,7 @@ function CardBody(props: SandboxCardProps) {
                   rows={2}
                   value={summary}
                   maxLength={DESCRIPTION_MAX}
-                  placeholder="e.g. Answers customer questions from the help centre using keyword and vector search together"
+                  placeholder="Answers customer questions from the help centre using keyword and vector search together"
                   onChange={(event) => setSummary(event.target.value)}
                 />
               </RefinedField>,
@@ -302,19 +302,19 @@ function CardBody(props: SandboxCardProps) {
             )}
             {data
               ? [
-                  row("Field", "Not set", entriesLine("field", draft.field), suggestionCount("field"), <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="Search fields or type your own" onChange={(next) => set("field", next)} />),
-                  row("Task", "Not set", entriesLine("task", draft.task), suggestionCount("task"), <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="Search tasks or type your own" onChange={(next) => set("task", next)} />),
-                  row("Setting", "Not set", entriesLine("setting", draft.setting), suggestionCount("setting"), <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="Search settings or type your own" onChange={(next) => set("setting", next)} />),
+                  row("Field", "Not set", entriesLine("field", draft.field), suggestionCount("field"), <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="Search fields" onChange={(next) => set("field", next)} />),
+                  row("Task", "Not set", entriesLine("task", draft.task), suggestionCount("task"), <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="Search tasks" onChange={(next) => set("task", next)} />),
+                  row("Setting", "Not set", entriesLine("setting", draft.setting), suggestionCount("setting"), <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="Search settings" onChange={(next) => set("setting", next)} />),
                   row(
                     "Tools and stack",
                     "Not set",
                     stackLine,
-                    suggestions.stack.length === 0 && derivedStack.length > 0 ? "Read from your build" : suggestionCount("stack"),
+                    suggestions.stack.length === 0 && derivedStack.length > 0 ? "From the build" : suggestionCount("stack"),
                     <>
                       {derivedStack.length > 0 ? (
-                        <ul aria-label="Tools and stack, read from your build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        <ul aria-label="Tools and stack, from the build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
                           {derivedStack.map((id) => (
-                            <ChosenValue key={id} label={labelFor("stack", id)} phone={phone} removeLabel={`Read from your build: ${labelFor("stack", id)}`} onRemove={() => undefined} readOnly />
+                            <ChosenValue key={id} label={labelFor("stack", id)} phone={phone} removeLabel={`From the build: ${labelFor("stack", id)}`} onRemove={() => undefined} readOnly />
                           ))}
                         </ul>
                       ) : null}
@@ -322,7 +322,7 @@ function CardBody(props: SandboxCardProps) {
                       <MadeWithLine phone={phone} chips={props.madeWith} hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")} onToggle={props.onToggleMadeWith} onAdd={props.onAddMadeWith} />
                     </>,
                   ),
-                  row("Data handled", "Not set", entriesLine("data", draft.data), undefined, <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="Search data types or type your own" onChange={(next) => set("data", next)} />),
+                  row("Data handled", "Not set", entriesLine("data", draft.data), undefined, <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="Search data types" onChange={(next) => set("data", next)} />),
                   row(
                     "Age suitability",
                     "Not set",
@@ -338,10 +338,10 @@ function CardBody(props: SandboxCardProps) {
                     </div>,
                   ),
                   row(
-                    "Read from your build",
+                    "From the build",
                     "Not set",
                     readLine,
-                    questions.length > 0 ? plural(questions.length, "question", "questions") : "Read from your build",
+                    questions.length > 0 ? plural(questions.length, "question", "questions") : "From the build",
                     candidate ? (
                       <ReadFromBuild
                         classification={candidate}
@@ -382,7 +382,7 @@ function CardBody(props: SandboxCardProps) {
 
       <div data-testid="card-footer" style={footerStyle(phone)}>
         <span data-testid="card-required" style={FOOT_NOTE}>
-          {titleOk ? "All required fields complete" : "Required: a title"}
+          {titleOk ? "Required fields complete" : "Required: a title"}
         </span>
         <RecipeButton phone={phone} onClick={() => props.onOpenChange(false)}>
           Cancel

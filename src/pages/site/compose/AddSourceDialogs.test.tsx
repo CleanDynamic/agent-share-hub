@@ -19,7 +19,7 @@ afterEach(() => {
 
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const status = () => screen.getByTestId("modal-status").textContent;
-const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
+const type = (label: string, value: string) => fireEvent.change(screen.getAllByLabelText(label).at(-1) as HTMLElement, { target: { value } });
 const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
 const openRow = (name: string) => {
   const head = row(name).querySelector("button") as HTMLButtonElement;
@@ -42,22 +42,22 @@ describe("Add › System prompt", () => {
     open();
     expect(screen.getByRole("dialog", { name: SYSTEM_PROMPT_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("add-system-prompt-dialog").style.width).toBe("560px");
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Instructions that apply across prompts");
-    expect(status()).toBe("Required: a name");
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Instructions for several prompts");
+    expect(status()).toBe("Required: Name, Text");
     expect(add().disabled).toBe(true);
     type("Name", "Brand voice");
-    expect(status()).toBe("Required: the text");
+    expect(status()).toBe("Required: Text");
     type("Text", "Write in plain English.");
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     expect(add().disabled).toBe(false);
   });
 
-  it("lists Model, Version and Variables closed in Optional, with placeholders that start e.g.", () => {
+  it("lists Model, Version and Variables closed in Optional, with placeholders that are the example alone", () => {
     open();
     expect(rowNames()).toEqual(["Model", "Version", "Variables"]);
     expect(screen.queryByLabelText("Version")).toBeNull();
-    expect((screen.getByLabelText("Name") as HTMLInputElement).placeholder).toMatch(/^e\.g\. /);
-    expect((screen.getByLabelText("Text") as HTMLTextAreaElement).placeholder).toMatch(/^e\.g\. /);
+    expect((screen.getByLabelText("Name") as HTMLInputElement).placeholder).not.toMatch(/^e\.g\./);
+    expect((screen.getByLabelText("Text") as HTMLTextAreaElement).placeholder).not.toMatch(/^e\.g\./);
   });
 
   it("adds for all prompts by default, sending only what was given", () => {
@@ -87,7 +87,7 @@ describe("Add › System prompt", () => {
     type("Name", "n");
     type("Text", "x");
     fireEvent.click(screen.getByRole("radio", { name: "Selected prompts" }));
-    expect(status()).toBe("Required: at least one prompt for it to apply to");
+    expect(status()).toBe("Required: A prompt to apply to");
     expect(add().disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "2 Check the tone" }));
     expect(add().disabled).toBe(false);
@@ -138,11 +138,11 @@ describe("Add › Dataset", () => {
     open();
     expect(screen.getByRole("dialog", { name: DATASET_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("add-dataset-dialog").style.width).toBe("560px");
-    expect(status()).toBe("Required: a name");
+    expect(status()).toBe("Required: Name, Description");
     type("Name", "Tickets");
-    expect(status()).toBe("Required: a description");
+    expect(status()).toBe("Required: Description");
     type("Description", "Support tickets");
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
   });
 
   it("shows Use as five choices, none chosen, and a second press takes the choice off", () => {
@@ -197,7 +197,7 @@ describe("Add › Dataset", () => {
     openRow("Sample records");
     type("Sample records", "1\n2\n3\n4\n5\n6");
     expect(add().disabled).toBe(true);
-    expect(screen.getByRole("alert").textContent).toBe("Sample records are at most 5, one per line.");
+    expect(screen.getByRole("alert").textContent).toBe("Sample records: 5 max, one per line");
   });
 });
 
@@ -214,11 +214,11 @@ describe("Add › GitHub repository", () => {
     open();
     expect(screen.getByRole("dialog", { name: REPO_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("add-repo-dialog").style.width).toBe("560px");
-    expect(status()).toBe("Required: a repository URL");
+    expect(status()).toBe("Required: Repository URL, Ownership");
     type("Repository URL", "github.com/acme/shop");
-    expect(status()).toBe("Required: an ownership");
+    expect(status()).toBe("Required: Ownership");
     owner("Third-party repository");
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
   });
 
   it("asks GitHub once for a valid address, and shows the repository, language, licence and last commit", async () => {
@@ -245,8 +245,8 @@ describe("Add › GitHub repository", () => {
   it("stays valid with the URL alone when GitHub cannot be reached, and says so", async () => {
     const props = open(vi.fn().mockResolvedValue(null));
     type("Repository URL", "github.com/acme/shop");
-    owner("Your existing repository");
-    expect((await screen.findByTestId("repo-unreachable")).textContent).toBe("Could not reach GitHub. Details can be added by hand.");
+    owner("Maker's existing repository");
+    expect((await screen.findByTestId("repo-unreachable")).textContent).toBe("GitHub unreachable. Fields stay editable.");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ url: "https://github.com/acme/shop", ownership: "owned" });
   });
@@ -295,9 +295,9 @@ describe("Add › GitHub repository", () => {
   it("asks for run instructions as environment variable names, and refuses a line that holds a key's value before anything is added", () => {
     const props = open();
     type("Repository URL", "github.com/acme/shop");
-    owner("Your existing repository");
+    owner("Maker's existing repository");
     openRow("Run instructions");
-    expect(screen.getByText("One command per line. Name keys, never paste their values.")).toBeTruthy();
+    expect(screen.getByText("One per line. Key names only")).toBeTruthy();
     type("Run instructions", "npm ci\nAPI_KEY=abcdefghijklmnopqrstuvwxyz");
     fireEvent.click(add());
     expect(props.onAdd).not.toHaveBeenCalled();
@@ -311,7 +311,7 @@ describe("Add › GitHub repository", () => {
   it("sends a pinned version only once it has both a kind and a value", () => {
     const props = open();
     type("Repository URL", "github.com/acme/shop");
-    owner("Your existing repository");
+    owner("Maker's existing repository");
     openRow("Pinned version");
     fireEvent.click(screen.getByRole("radio", { name: "Tag" }));
     fireEvent.click(add());

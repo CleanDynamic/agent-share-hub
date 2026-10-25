@@ -226,7 +226,7 @@ export interface BuildListProps {
   /** TF-06: files dropped on a prompt's card. Only with a fine pointer; absent: a card takes no drop. */
   onDropOnStep?: (id: string, files: File[]) => void;
   fine?: boolean;
-  /** TF-08: "Name a file it makes" selects the prompt and opens the Makes field in Details. Absent: the item is not shown. */
+  /** TF-08: "Add file name" selects the prompt and opens the Makes field in Details. Absent: the item is not shown. */
   onNameMade?: (id: string) => void;
   /** TF-08: the names of the files each step makes, by step id. */
   madeNames?: Readonly<Record<string, readonly string[]>>;
@@ -918,7 +918,7 @@ function UsesRow({
 function GoesInto() {
   return (
     <>
-      <Quiet>Goes into</Quiet>
+      <Quiet>Used by</Quiet>
       <Pill tone="evidence">Result</Pill>
     </>
   );
@@ -1225,7 +1225,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 style={menuSurface()}
                 onClick={(event) => event.stopPropagation()}
                 onCloseAutoFocus={(event) => {
-                  /* CA-10: "Name a file it makes" opens a field in Details; the closing menu must not take focus
+                  /* CA-10: "Add file name" opens a field in Details; the closing menu must not take focus
                      back to its trigger after the field has it, so the ask runs once the menu has let go. */
                   if (nameNext.current) {
                     event.preventDefault();
@@ -1245,7 +1245,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all</MenuRow>
                 <CopyTogetherRow step={step} phone={phone} />
                 {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
-                {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Name a file it makes</MenuRow> : null}
+                {props.onNameMade ? <MenuRow phone={phone} onSelect={() => (nameNext.current = true)}>Add file name</MenuRow> : null}
                 <MenuRow phone={phone} disabled={!can(-1)} shortcut="moveUp" reason={moveReason("tile", -1, !can(-1))} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={!can(1)} shortcut="moveDown" reason={moveReason("tile", 1, !can(1))} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />

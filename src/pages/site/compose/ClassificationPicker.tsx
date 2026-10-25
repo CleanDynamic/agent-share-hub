@@ -4,9 +4,9 @@
    dashed edge. SUGGESTIONS are one row above the input, "Suggested" and then up to three dashed chips with "+"; nothing is
    pre-selected. TYPING searches the list (`findValues`, at most 8): each row has its name with the matching letters at 600
    and, at the right, its path in the data face (a technical Field says "Technical ›", a synonym match says "Synonym
-   match ·"). When the text is not an exact label the last row is Add "<text>" as your own entry, kept as `{ custom }` and
+   match ·"). When the text is not an exact label the last row is Add "<text>", kept as `{ custom }` and
    cut to 60 characters. LIMITS: Field 3, Task 3 (the first chosen is Primary, and a chip menu changes it), Setting 2;
-   Data handled and Tools and stack have none. At the limit the input says "Remove one to add another".
+   Data handled and Tools and stack have none. At the limit the input says "Limit reached".
 
    It is a combobox: `role="combobox"`, `aria-expanded`, `aria-controls` the `role="listbox"`, `aria-activedescendant` the
    active `role="option"`; ArrowDown, ArrowUp, Enter and Escape work. While typing, the field's edge and ring are the
@@ -25,8 +25,8 @@ import { isCustomEntry, type Entry } from "@/lib/classify/types";
 import { bareButton, ellipsis, text, wellField } from "./refinedStyles";
 import { ChosenValue, Matched, SuggestedRow, Suggestion, ownEntryRow, typeaheadList, typeaheadNote, typeaheadRow } from "./classificationPieces";
 
-export const OWN_ENTRY_NOTE = "Shown on your build, reviewed for the list";
-export const AT_LIMIT = "Remove one to add another";
+export const OWN_ENTRY_NOTE = "Shown on the build. Reviewed before listing.";
+export const AT_LIMIT = "Limit reached";
 export const MAX_RESULTS = 8;
 
 export interface ClassificationPickerProps {
@@ -251,7 +251,7 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
                 onClick={() => choose(results.length)}
                 style={ownEntryRow(results.length === activeIndex, phone)}
               >
-                <span style={{ ...ellipsis, flexShrink: 0, maxWidth: "60%" }}>{`Add \u201C${trimmed.slice(0, CUSTOM_MAX_LENGTH)}\u201D as your own entry`}</span>
+                <span style={{ ...ellipsis, flexShrink: 0, maxWidth: "60%" }}>{`Add \u201C${trimmed.slice(0, CUSTOM_MAX_LENGTH)}\u201D`}</span>
                 <span style={typeaheadNote(phone)}>{OWN_ENTRY_NOTE}</span>
               </li>
             ) : null}

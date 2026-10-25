@@ -69,15 +69,15 @@ describe("ReadFromBuild", () => {
     const skill = document.querySelector("[data-facet='skill']") as HTMLElement;
     expect(skill.textContent).toContain("No coding");
     expect(within(skill).getByText("Stated by you")).toBeTruthy();
-    expect(skill.textContent).toContain("Your reason: No code at all");
-    fireEvent.click(screen.getByRole("button", { name: "Undo your change to Skill needed" }));
+    expect(skill.textContent).toContain("Reason: No code at all");
+    fireEvent.click(screen.getByRole("button", { name: "Undo change to Skill needed" }));
     expect(props.onDispute).toHaveBeenCalledWith("skill", null);
   });
 
   it("puts gap questions first, each with its action and Dismiss", () => {
     const props = mount(base(), [QUESTION]);
     const questions = screen.getByRole("region", { name: "Questions" });
-    expect(questions.compareDocumentPosition(screen.getByRole("list", { name: "Read from your build" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(questions.compareDocumentPosition(screen.getByRole("list", { name: "From the build" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(within(questions).getByRole("button", { name: "Add a cost" }));
     expect(props.onAction).toHaveBeenCalledWith("add-cost", QUESTION);
     fireEvent.click(within(questions).getByRole("button", { name: "Dismiss" }));

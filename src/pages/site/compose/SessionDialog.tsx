@@ -33,7 +33,7 @@ import { ToolPicker } from "./ToolPicker";
 
 export const SESSION_DIALOG_COPY = {
   title: (n: number, tool: string) => `Session ${n}${tool ? ` · ${tool}` : ""}`,
-  subtitle: "The app, the day, what it cost and what it started with",
+  subtitle: "App, date, cost and setup",
   appAndModel: "App and model",
   app: "App",
   noApp: "No app chosen",
@@ -41,23 +41,23 @@ export const SESSION_DIALOG_COPY = {
   notNamed: "Not named",
   date: "Date",
   dateHint: "2026-10-12",
-  badDate: "Write the day as 2026-10-12.",
+  badDate: "Format: 2026-10-12",
   notDated: "Not dated",
   goal: "Worked until",
   condition: "The condition",
   conditionHint: "the tests pass and the page loads",
   atMost: "At most",
   turns: "turns",
-  reached: "Was it reached?",
+  reached: "Outcome",
   tookTurns: "Reached in",
-  removeGoal: "Take the goal off",
+  removeGoal: "Remove goal",
   badTurns: `Turns are whole numbers from ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}.`,
   costAndTokens: "Cost and tokens",
   together: "At the same time as",
   setup: "Setup",
   addToSetup: "Add to setup",
   notShared: "Not shared",
-  keepToMyself: "Don't share it",
+  keepToMyself: "Keep private",
   prompts: "Prompts shared",
   promptsIn: (inBuild: number, total: number | null) => (total === null ? `${inBuild}` : `${inBuild} of ${total}`),
 } as const;
@@ -65,7 +65,7 @@ export const SESSION_DIALOG_COPY = {
 const REACHED = [
   { value: "reached", label: "Reached" },
   { value: "limit", label: "Stopped at the limit" },
-  { value: "me", label: "Stopped by me" },
+  { value: "me", label: "Stopped by the maker" },
 ] as const;
 
 /** A whole number of turns, 1 to 500, undefined for blank, null for anything else. */
@@ -276,11 +276,20 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
         <Block label={SESSION_DIALOG_COPY.prompts} testId="session-prompts">
           <BlockHead label={SESSION_DIALOG_COPY.prompts} count={SESSION_DIALOG_COPY.promptsIn(Object.values(shared).filter(Boolean).length, view.total)} />
           {view.status === "loading" ? (
-            <LoadingRegion what="this session's prompts" data-testid="session-prompts-loading">
+            <LoadingRegion what="prompts" data-testid="session-prompts-loading">
               <LoadingBlocks kind="box" rows={SESSION_PROMPT_ROWS} width="fill" />
             </LoadingRegion>
           ) : null}
-          {view.status === "error" ? <Hint>This session&apos;s prompts did not load.</Hint> : null}
+          {view.status === "error" ? (
+            <Inline>
+              <Hint>Prompts didn&apos;t load</Hint>
+              {h.onRetrySessionPrompts ? (
+                <TextLink onClick={() => h.onRetrySessionPrompts?.(view.key)} phone={phone}>
+                  Retry
+                </TextLink>
+              ) : null}
+            </Inline>
+          ) : null}
           <div role="group" aria-label="Prompts in this session" style={PANEL_LIST}>
             {view.checklist.map((row) => (
               <label key={row.ordinal} style={BODY_TEXT}>

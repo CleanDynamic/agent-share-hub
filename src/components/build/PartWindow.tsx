@@ -32,7 +32,7 @@ import { certaintySource } from "@/lib/build/certainty";
 import { beforeAfterLine, helperChip, helperSavingsLine, markTool, providerLabel, type Helper } from "@/lib/build/helpers";
 import { LinkLines } from "@/components/build/LinkLines";
 import { TileCostLines } from "@/components/build/CostLines";
-import { answerLine, answerWord, runsWhenLabel, decisionHeadline, isTypeSafe, questionLine, questionTypeLabel, sourceNote, sureOf } from "@/lib/build/decision";
+import { answerLine, answerWord, runsWhenLabel, decisionHeadline, questionLine, questionTypeLabel, sourceNote, sureOf } from "@/lib/build/decision";
 import { callsOf, calledFromTiles, COPY_REQUEST_NOTE, decisionCopy } from "@/lib/build/decisionCopy";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { parseRefTo, refTo } from "@/lib/build/thread";
@@ -346,7 +346,7 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
         </Section>
       ) : null}
       {helpers.length ? (
-        <Section label="Supporting models">
+        <Section label="Helpers">
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {helpers.map((helper, index) => (
               <HelperBody key={`${helper.job}-${index}`} helper={helper} decisionName={decisionName} />
@@ -456,7 +456,7 @@ function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps
             return (
               <div key={q.id} data-testid="decision-question" style={{ ...WELL, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={text(13.5, 500, t.text)}>
-                  {q.id} <span style={text(12, 400, t.label)}>{questionTypeLabel(q.type)}{q.type === "yesno" && isTypeSafe(facts.provider) ? " · Noul" : ""}</span>
+                  {q.id} <span style={text(12, 400, t.label)}>{questionTypeLabel(q.type)}</span>
                 </span>
                 {q.instructions ? <span style={{ ...text(13, 400, t.text2), overflowWrap: "anywhere" }}>{q.instructions}</span> : null}
                 <span style={text(12.5, 400, t.label)}>{questionLine(q).slice(q.id.length + 2)}</span>

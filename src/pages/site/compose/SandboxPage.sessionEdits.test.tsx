@@ -220,7 +220,7 @@ describe("CA-14 P5 · adding to the right session", () => {
     fireEvent.keyDown(addRows()[0], { key: "Enter" });
     await chooseAdd(/^Tool/);
     const dialog = await screen.findByTestId("add-tool-dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: /Application/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /^App/ }));
     fireEvent.change(await screen.findByRole("combobox", { name: "Find an app" }), { target: { value: "GitHub" } });
     fireEvent.click(await screen.findByRole("option", { name: /GitHub/ }));
     fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));

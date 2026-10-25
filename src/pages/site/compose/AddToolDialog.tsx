@@ -3,7 +3,7 @@
    Built from `modalRecipes` exactly as the board "Add a tool" draws it, 560 wide (a `BottomSheet` below 768). One required
    row:
 
-   - Application: a picker field ("Select an application"), from the apps and services list with the build's own first. A
+   - Application: a picker field ("Select an app"), from the apps and services list with the build's own first. A
      listed application is stored by its name, any other name as typed (at most 40). Add waits until one is picked.
 
    Then the Optional section, six rows, each closed:
@@ -14,7 +14,7 @@
    3. Permissions: Read only, Read and write, Acting on your behalf.
    4. Required plan: one line.
    5. Setup steps: one step per line. With the API key method chosen it says: name the key, never paste its value.
-   6. Alternatives: other applications that perform the same function, picked with "Select applications".
+   6. Alternatives: other applications that perform the same function, picked with "Select apps".
 
    The footer says "Required: an application" until one is picked. No secret value is ever asked for, shown or stored. */
 
@@ -26,33 +26,31 @@ import { TOOL_ALTERNATIVES_MAX, TOOL_PERMISSIONS, TOOL_PERMISSION_LABEL, TOOL_PL
 import { toolName } from "@/lib/tools/registry";
 
 import { ChoiceGrid } from "./ChoiceGrid";
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { FieldArea, FieldInput, Hint, MODAL_WIDTH, RemovableTag, Row, SegmentedField, TagList } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
 
 export const TOOL_DIALOG_COPY = {
   title: "Add a tool",
-  subtitle: "An external application the model used during the build",
-  tool: "Application",
-  selectTool: "Select an application",
+  subtitle: "External app the model used",
+  tool: "App",
+  selectTool: "Select an app",
   connected: "Connection method",
   connectedLine: "MCP server, native integration, custom code and 6 more",
   did: "Actions performed",
-  didLine: "What the application did in this build",
-  didPlaceholder: "e.g. Read issues, opened pull requests",
+  didPlaceholder: "Read issues, opened pull requests",
   permissions: "Permissions",
-  permissionsLine: "Read only, read and write, or acting on your behalf",
+  permissionsLine: "Read only, read and write, or acts as the maker",
   plan: "Required plan",
-  planLine: "Free, or the name of the paid plan",
-  planPlaceholder: "e.g. Free",
+  planLine: "Free or plan name",
+  planPlaceholder: "Free",
   setup: "Setup steps",
-  setupLine: "The steps required to connect it",
   setupPlaceholder: "One step per line",
-  setupKeyHint: "Name the key, for example GITHUB_TOKEN. Never paste its value.",
+  setupKeyHint: "Key names only, like GITHUB_TOKEN",
   alternatives: "Alternatives",
-  alternativesLine: "Other applications that perform the same function",
-  selectAlternatives: "Select applications",
+  alternativesLine: "Apps that do the same job",
+  selectAlternatives: "Select apps",
   removeAlternative: (name: string) => `Remove ${name}`,
   add: "Add",
   cancel: "Cancel",
@@ -98,7 +96,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddTool
   const [alternatives, setAlternatives] = useState<string[]>(seed?.alternatives ?? []);
   const uid = useId();
   const service = picked ? (toolName(picked) ?? picked.trim()) : "";
-  const missing = firstMissing([[service.length > 0, "an application"]]);
+  const missing = missingLabels([[service.length > 0, "App"]]);
   const steps = linesOf(setup);
   const keyed = connection === "api_key";
   const input = (): AddToolInput => ({ service, connection, scopes: did.trim(), permissions, plan: plan.trim(), setup: steps.slice(0, TOOL_SETUP_MAX).map((line) => line.slice(0, TOOL_SETUP_LINE_MAX)), alternatives });
@@ -115,7 +113,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddTool
           <ChoiceGrid<ToolConnection> label={TOOL_DIALOG_COPY.connected} items={CONNECTION_CHOICES} value={connection} onChange={setConnection} phone={phone} allowClear />
         </OptionalField>
 
-        <OptionalField name={TOOL_DIALOG_COPY.did} description={TOOL_DIALOG_COPY.didLine} summary={summaryOf(did)} phone={phone}>
+        <OptionalField name={TOOL_DIALOG_COPY.did} summary={summaryOf(did)} phone={phone}>
           <FieldInput phone={phone} aria-label={TOOL_DIALOG_COPY.did} value={did} maxLength={TOOL_SCOPES_MAX} placeholder={TOOL_DIALOG_COPY.didPlaceholder} onChange={(event) => setDid(event.target.value)} />
         </OptionalField>
 
@@ -133,7 +131,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddTool
           <FieldInput phone={phone} aria-label={TOOL_DIALOG_COPY.plan} value={plan} maxLength={TOOL_PLAN_MAX} placeholder={TOOL_DIALOG_COPY.planPlaceholder} onChange={(event) => setPlan(event.target.value)} />
         </OptionalField>
 
-        <OptionalField name={TOOL_DIALOG_COPY.setup} description={TOOL_DIALOG_COPY.setupLine} summary={summaryOf(steps)} phone={phone}>
+        <OptionalField name={TOOL_DIALOG_COPY.setup} summary={summaryOf(steps)} phone={phone}>
           <FieldArea phone={phone} rows={3} aria-label={TOOL_DIALOG_COPY.setup} value={setup} placeholder={TOOL_DIALOG_COPY.setupPlaceholder} onChange={(event) => setSetup(event.target.value)} />
           {keyed ? <Hint testId="setup-key-hint">{TOOL_DIALOG_COPY.setupKeyHint}</Hint> : null}
         </OptionalField>

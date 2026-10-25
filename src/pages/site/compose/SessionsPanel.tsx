@@ -191,7 +191,6 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
                 ref={otherRef}
                 type="text"
                 aria-label="Model name"
-                placeholder="The model's name"
                 value={other}
                 maxLength={MADE_WITH_ENTRY_MAX}
                 autoComplete="off"

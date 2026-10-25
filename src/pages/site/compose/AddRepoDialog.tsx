@@ -49,21 +49,20 @@ import {
 } from "@/lib/build/sourceTiles";
 import { linesOf } from "@/lib/build/tileExtras";
 
-import { MODAL_COPY, ModalForm, ModalShell, firstMissing, type EditMode } from "./ModalFrame";
+import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { Block, BlockHead, FactList, FactRow, FieldArea, FieldInput, GroupHeading, Hint, MODAL_WIDTH, OptionGrid, Panel, Row, SegmentedField, StatusLine } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
 
 export const REPO_DIALOG_COPY = {
   title: "Add a GitHub repository",
-  subtitle: "A repository used in this build, owned by you or by a third party",
+  subtitle: "Repository used in this build",
   url: "Repository URL",
-  urlPlaceholder: "e.g. github.com/owner/name",
+  urlPlaceholder: "github.com/owner/name",
   ownership: "Ownership",
   description: "Description",
-  descriptionPlaceholder: "e.g. Rich text editor the composer is built on. Its keyboard shortcut extension was used.",
-  retrievedNote: "Retrieved from GitHub when the URL is entered. Repositories with no recent commits are flagged as possibly unmaintained.",
-  selectAll: "Select all that apply",
+  descriptionPlaceholder: "Rich text editor the composer is built on",
+  retrievedNote: "From GitHub. No recent commits: flagged as possibly unmaintained",
   retrieved: "Retrieved from GitHub",
   reading: "Reading from GitHub",
   repository: "Repository",
@@ -71,10 +70,9 @@ export const REPO_DIALOG_COPY = {
   licence: "Licence",
   lastCommit: "Last commit",
   unmaintained: "Possibly unmaintained",
-  unreachable: "Could not reach GitHub. Details can be added by hand.",
+  unreachable: "GitHub unreachable. Fields stay editable.",
   thirdParty: "Third-party repository",
   author: "Author",
-  authorLine: "Credited on the build page",
   usage: "Usage",
   visibility: "Visibility",
   public: "Public",
@@ -82,24 +80,24 @@ export const REPO_DIALOG_COPY = {
   generatedWith: "Generated with",
   selectTool: "Select a tool",
   deployed: "Deployed URL",
-  deployedPlaceholder: "e.g. example.com",
+  deployedPlaceholder: "example.com",
   pinned: "Pinned version",
-  pinnedLine: "A branch, tag or commit, so copies stay identical",
+  pinnedLine: "Branch, tag or commit",
   pinValue: "Pinned value",
-  pinPlaceholder: "e.g. v2.10.0",
+  pinPlaceholder: "v2.10.0",
   path: "Path",
-  pathLine: "A folder or file, when only part of the repository was used",
-  pathPlaceholder: "e.g. packages/extension-underline",
+  pathLine: "Folder or file, if only part was used",
+  pathPlaceholder: "packages/extension-underline",
   modifications: "Modifications",
-  modificationsLine: "What was changed from the original",
-  modificationsPlaceholder: "e.g. None, used unmodified",
+  modificationsLine: "Changes from the original",
+  modificationsPlaceholder: "None",
   keyFiles: "Key files",
   keyFilesLine: "README, CLAUDE.md, agent configuration, skills folder",
   keyFilesPlaceholder: "One path per line",
   run: "Run instructions",
-  runLine: "Clone command, dependencies, start command, and environment variable names only",
-  runPlaceholder: "One command per line. Name keys, never paste their values.",
-  runSecret: "A run instruction looks as if it holds a key's value. Name the key instead, for example GITHUB_TOKEN.",
+  runLine: "Clone, dependencies, start command, environment variable names",
+  runPlaceholder: "One per line. Key names only",
+  runSecret: "Contains a key value. Key names only, like GITHUB_TOKEN",
   add: "Add",
   cancel: "Cancel",
 } as const;
@@ -219,9 +217,9 @@ function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo, current, edit }
   const shownAuthor = author ?? parsed?.owner ?? "";
   const here = retrieved && retrieved.key === key ? retrieved : null;
   const runSecret = firstSecretLine(run);
-  const missing = firstMissing([
-    [parsed !== null, "a repository URL"],
-    [ownership !== null, "an ownership"],
+  const missing = missingLabels([
+    [parsed !== null, "Repository URL"],
+    [ownership !== null, "Ownership"],
   ]);
 
   const submit = () => {
@@ -266,11 +264,11 @@ function Form({ onAdd, onCancel, phone, inBuild = [], fetchRepo, current, edit }
       {third ? (
         <>
           <GroupHeading>{REPO_DIALOG_COPY.thirdParty}</GroupHeading>
-          <Row id={`${uid}-author`} label={REPO_DIALOG_COPY.author} hint={REPO_DIALOG_COPY.authorLine} noRule phone={phone}>
+          <Row id={`${uid}-author`} label={REPO_DIALOG_COPY.author} noRule phone={phone}>
             <FieldInput phone={phone} id={`${uid}-author`} maxLength={REPO_AUTHOR_MAX} value={shownAuthor} onChange={(event) => setAuthor(event.target.value)} />
           </Row>
           <Block>
-            <BlockHead label={REPO_DIALOG_COPY.usage} count={REPO_DIALOG_COPY.selectAll} />
+            <BlockHead label={REPO_DIALOG_COPY.usage} />
             <OptionGrid<RepoUsage>
               label={REPO_DIALOG_COPY.usage}
               phone={phone}

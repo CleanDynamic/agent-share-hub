@@ -181,7 +181,7 @@ describe("a check's extras (CA-15 P5)", () => {
   });
 
   it("refuses evidence that is not a URL, and an over-long target, saying so", async () => {
-    await expect(addCheck(BUILD, [], { ...base, evidence: { url: "not a url" } })).rejects.toThrow("Evidence is a URL, like example.com/results.");
+    await expect(addCheck(BUILD, [], { ...base, evidence: { url: "not a url" } })).rejects.toThrow("Format: example.com/results");
     await expect(addCheck(BUILD, [], { ...base, scoring: { how: "metric", target: "x".repeat(81) } })).rejects.toThrow(/at most 80/);
     expect(upsertNode).not.toHaveBeenCalled();
   });
@@ -301,7 +301,7 @@ describe("the three source tiles (CA-15 P9)", () => {
 
   it("a repository is refused for a URL that is not GitHub's, and for a run instruction that holds a key's value, which is never stored", async () => {
     await expect(addRepoTile(BUILD, [], { url: "gitlab.com/acme/shop", ownership: "owned" })).rejects.toThrow("A repository URL looks like github.com/owner/name.");
-    await expect(addRepoTile(BUILD, [], { url: "github.com/acme/shop", ownership: "owned", run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] })).rejects.toThrow(/looks as if it holds a key's value/);
+    await expect(addRepoTile(BUILD, [], { url: "github.com/acme/shop", ownership: "owned", run: ["API_KEY=abcdefghijklmnopqrstuvwxyz"] })).rejects.toThrow(/Contains a key value/);
     expect(upsertNode).not.toHaveBeenCalled();
   });
 

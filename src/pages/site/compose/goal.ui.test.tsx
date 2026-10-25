@@ -63,7 +63,7 @@ describe("Session window › Worked until", () => {
 
   it("takes the goal off with null", () => {
     const onSessionGoal = mount(session({ goal: { condition: "x" } }));
-    fireEvent.click(screen.getByRole("button", { name: "Take the goal off" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove goal" }));
     save();
     expect(onSessionGoal).toHaveBeenLastCalledWith("typed-a", null);
   });

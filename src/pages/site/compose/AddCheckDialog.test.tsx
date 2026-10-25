@@ -19,7 +19,7 @@ function open() {
   return { onAdd, onOpenChange };
 }
 
-const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
+const type = (label: string, value: string) => fireEvent.change(screen.getAllByLabelText(label).at(-1) as HTMLElement, { target: { value } });
 const add = () => screen.getByRole("button", { name: CHECK_DIALOG_COPY.add }) as HTMLButtonElement;
 const row = (name: string) => screen.getAllByTestId("optional-field").find((el) => el.querySelector("button span span")?.textContent === name) as HTMLElement;
 const openRow = (name: string) => fireEvent.click(within(row(name)).getByRole("button"));
@@ -36,7 +36,7 @@ describe("Add › Check", () => {
   it("asks the test description, the pass criteria and the runs, then keeps eight optional fields closed", () => {
     open();
     const dialog = screen.getByRole("dialog", { name: "Add a check" });
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("A test that verifies this part of the build");
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Test of part of the build");
     expect([...dialog.querySelectorAll("label")].map((label) => label.textContent).slice(0, 2)).toEqual(["Test description", "Pass criteria"]);
     expect((screen.getByLabelText("Test description") as HTMLTextAreaElement).rows).toBe(2);
     expect((screen.getByLabelText("Pass criteria") as HTMLTextAreaElement).rows).toBe(2);
@@ -60,15 +60,15 @@ describe("Add › Check", () => {
 
   it("says the first missing thing, in order, and Add waits", () => {
     open();
-    expect(status()).toBe("Required: a test description");
+    expect(status()).toBe("Required: Test description, Pass criteria, Runs");
     type("Test description", "Places a test order");
-    expect(status()).toBe("Required: pass criteria");
+    expect(status()).toBe("Required: Pass criteria, Runs");
     type("Pass criteria", "The total shows £9.00");
-    expect(status()).toBe("Required: runs or a test case");
+    expect(status()).toBe("Required: Runs");
     expect(add().disabled).toBe(true);
     type("Passed", "14");
     type("Total", "14");
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     expect(add().disabled).toBe(false);
   });
 
@@ -76,8 +76,7 @@ describe("Add › Check", () => {
     open();
     const panel = screen.getByTestId("check-runs").children[1] as HTMLElement;
     expect(getComputedStyle(panel).borderRadius).toBe("10px");
-    expect(within(screen.getByTestId("check-runs")).getByText("Or add test cases below")).toBeTruthy();
-    expect(screen.getByTestId("check-rate").textContent).toBe("");
+        expect(screen.getByTestId("check-rate").textContent).toBe("");
     type("Passed", "3");
     type("Total", "4");
     expect(screen.getByTestId("check-rate").textContent).toBe("75% pass rate");
@@ -103,7 +102,7 @@ describe("Add › Check", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add a test case" }));
     fireEvent.change(screen.getByLabelText("In of case 1"), { target: { value: "2 loaves" } });
     fireEvent.change(screen.getByLabelText("Expected of case 1"), { target: { value: "£9.00" } });
-    expect(status()).toBe("All required fields complete");
+    expect(status()).toBe("Required fields complete");
     expect((screen.getByLabelText("Passed") as HTMLInputElement).value).toBe("1");
     expect((screen.getByLabelText("Total") as HTMLInputElement).value).toBe("1");
     expect(within(row("Test cases")).queryByText("Test cases")).toBeTruthy();
@@ -119,7 +118,7 @@ describe("Add › Check", () => {
     openRow("Test method");
     fireEvent.click(screen.getByRole("radio", { name: "Peer review" }));
     openRow("Reviewer");
-    fireEvent.click(screen.getByRole("radio", { name: "A client" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Client" }));
     openRow("Scoring method");
     fireEvent.click(screen.getByRole("radio", { name: "Metric against a target" }));
     type("Target", "95% correct");
@@ -187,7 +186,7 @@ describe("Add › Check", () => {
     openRow("Evidence");
     type("Evidence URL", "not a url");
     fireEvent.click(add());
-    expect(screen.getByRole("alert").textContent).toBe("Evidence is a URL, like example.com/results.");
+    expect(screen.getByRole("alert").textContent).toBe("Format: example.com/results");
     expect(onAdd).not.toHaveBeenCalled();
   });
 

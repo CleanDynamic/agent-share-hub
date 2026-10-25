@@ -35,7 +35,7 @@ const openRow = (name: string) => {
 /** File path lives in the Optional section: opening its row is part of reaching it. */
 const filename = () => {
   openRow("File path");
-  return screen.getByLabelText("File path") as HTMLInputElement;
+  return screen.getAllByLabelText("File path").at(-1) as HTMLInputElement;
 };
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const upload = (...files: File[]) => fireEvent.change(screen.getByTestId("code-files"), { target: { files } });
@@ -53,8 +53,8 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(well().style.fontFamily).toContain("--font-data");
     expect(well().style.lineHeight).toBe("20px");
     expect(add().disabled).toBe(true);
-    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Source code produced in this step, as it was used");
-    expect(screen.getByTestId("modal-status").textContent).toBe("Required: code");
+    expect(screen.getByTestId("modal-subtitle").textContent).toBe("Source code as used");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required: Code");
   });
 
   it("shows the code, Upload files and Language in that order, then File path and Generated with closed in Optional", () => {
@@ -66,14 +66,14 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
     expect(screen.getAllByTestId("optional-field").map((el) => el.querySelector("button span span")?.textContent)).toEqual(["File path", "Generated with"]);
     expect(screen.queryByLabelText("File path")).toBeNull();
-    expect(screen.getByText("Or upload text files. Each file is added as a separate step.")).toBeTruthy();
+    expect(screen.getByText("Each file becomes its own tile")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/File name|Written with|optional/);
   });
 
   it("says All required fields complete once there is code", () => {
     open();
     fireEvent.change(well(), { target: { value: "x = 1" } });
-    expect(screen.getByTestId("modal-status").textContent).toBe("All required fields complete");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required fields complete");
   });
 
   it("puts two spaces in for a tab", () => {

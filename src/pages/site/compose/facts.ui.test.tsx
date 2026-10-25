@@ -84,8 +84,8 @@ describe("Session window › What it cost, Show readers and How did you work?", 
 
   it("asks How did you work? and saves In the background", () => {
     const onSessionExtras = mount(session());
-    expect((screen.getByRole("radio", { name: "With me watching" }) as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "In the background" }));
+    expect((screen.getByRole("radio", { name: "Supervised" }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "Background" }));
     save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { background: true });
   });

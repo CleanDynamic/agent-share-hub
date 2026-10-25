@@ -163,7 +163,7 @@ const runtimeReaders = {
   runsWhen: (tile: DetailsView): SectionValue | null => one("Runs when", tile.runtime?.runsWhen?.currentLabel ?? null),
   helpers: (tile: DetailsView): SectionValue | null => {
     const helpers = tile.runtime?.agent?.helpers ?? [];
-    return helpers.length === 0 ? null : { type: "list", items: helpers.map((helper, at) => ({ badge: String(at + 1), name: HELPER_JOB_LABEL[helper.job] ?? helper.job, detail: [helper.provider, helper.model].filter(Boolean).join(" · ") || null })), count: noun(helpers.length, "supporting model") };
+    return helpers.length === 0 ? null : { type: "list", items: helpers.map((helper, at) => ({ badge: String(at + 1), name: HELPER_JOB_LABEL[helper.job] ?? helper.job, detail: [helper.provider, helper.model].filter(Boolean).join(" · ") || null })), count: noun(helpers.length, "helper") };
   },
   definedIn: (tile: DetailsView): SectionValue | null => {
     const agent = tile.runtime?.agent;
@@ -201,18 +201,18 @@ const S = (key: string, label: string, hint: string, read: SectionDef["read"], r
 
 const RUNTIME = {
   runsWhen: S("runsWhen", "Runs when", "Only when a decision above it went a certain way", runtimeReaders.runsWhen),
-  helpers: S("helpers", "Supporting models", "Models that summarise history or extract fields for the agent", runtimeReaders.helpers),
-  definedIn: S("definedIn", "Defined in", "The Code tiles that define it", runtimeReaders.definedIn),
-  trace: S("trace", "Trace link", "https only, optional", runtimeReaders.trace),
-  install: S("install", "How to install", "Optional, exactly as you would type it", runtimeReaders.install),
+  helpers: S("helpers", "Helpers", "Models that summarise history or extract fields", runtimeReaders.helpers),
+  definedIn: S("definedIn", "Defined in", "", runtimeReaders.definedIn),
+  trace: S("trace", "Trace link", "https only", runtimeReaders.trace),
+  install: S("install", "How to install", "As typed", runtimeReaders.install),
   shape: S("shape", "Answer shape", "How the answer was constrained, and the schema", runtimeReaders.shape),
-  buildCost: S("buildCost", "What it took to make", "Time, tokens and cost of making it", runtimeReaders.buildCost),
-  runCost: S("runCost", "What it costs to run", "Time, tokens and cost of each run", runtimeReaders.runCost),
+  buildCost: S("buildCost", "Build cost", "Time, tokens and cost of making it", runtimeReaders.buildCost),
+  runCost: S("runCost", "Running cost", "Time, tokens and cost of each run", runtimeReaders.runCost),
 } as const;
 
-const USES = S("uses", "Uses", "What it takes in", usesOf);
-const MAKES = S("makes", "Makes", "Files it makes", (tile) => makesOf(tile));
-const GOES = S("goesInto", "Goes into", "Where its work goes", goesIntoOf);
+const USES = S("uses", "Uses", "", usesOf);
+const MAKES = S("makes", "Makes", "", (tile) => makesOf(tile));
+const GOES = S("goesInto", "Used by", "", goesIntoOf);
 const MODEL_RUN = S("modelRun", "How it was run", "Where the model ran, and its size", (tile) => modelRunOf(tile));
 
 const textOf = (tile: DetailsView): string => ("text" in tile ? tile.text : "");
@@ -228,11 +228,11 @@ const PROMPT: readonly SectionDef[] = [
   USES,
   MAKES,
   GOES,
-  S("settings", "Model settings", "Model, reasoning effort, custom instructions and project knowledge", (tile) => {
+  S("settings", "Model settings", "", (tile) => {
     const settings = settingsOf(payloadOf(tile).settings);
     return settings ? rows([["Model", settings.model ? modelLabel(settings.model) : null], ["Reasoning effort", settings.effort !== "default" ? EFFORT_LABEL[settings.effort] : null], ["Custom instructions", settings.instructions]]) : null;
   }),
-  S("variables", "Variables", "Words a copier replaces, such as {company name}", (tile) => {
+  S("variables", "Variables", "Format: {company name}", (tile) => {
     const names = variableNamesIn(textOf(tile));
     if (names.length === 0) return null;
     const saved = variablesOf(payloadOf(tile).variables);
@@ -243,13 +243,13 @@ const PROMPT: readonly SectionDef[] = [
 ];
 
 const MANUAL: readonly SectionDef[] = [
-  S("where", "Where was it done?", "An app or website, a terminal, a phone, offline or another website", (tile) => (tile.kind === "manual" ? one("Tool", tile.tool) : null), true),
+  S("where", "Where", "App or website, terminal, phone, in person, other website", (tile) => (tile.kind === "manual" ? one("Tool", tile.tool) : null), true),
   S("done", "What was done", "Up to twelve lines", (tile) => {
     if (tile.kind !== "manual") return null;
     const lines = tile.text.split(/\r?\n/).filter((line) => line.trim());
     return numbered(lines, "line");
   }, true),
-  S("picture", "Picture, optional", "One picture of the step", (tile) => (tile.kind === "manual" && tile.picture ? { type: "list", items: [{ badge: "1", name: tile.picture.name }], count: noun(1, "picture") } : null)),
+  S("picture", "Picture", "", (tile) => (tile.kind === "manual" && tile.picture ? { type: "list", items: [{ badge: "1", name: tile.picture.name }], count: noun(1, "picture") } : null)),
   USES,
   MAKES,
   GOES,
@@ -257,10 +257,10 @@ const MANUAL: readonly SectionDef[] = [
 ];
 
 const CODE: readonly SectionDef[] = [
-  S("code", "Code", "Source code produced in this step, as it was used", (tile) => (tile.kind === "code" ? prose(tile.source, noun(tile.lines, "line"), { copy: true, code: true }) : null), true),
+  S("code", "Code", "Source code as used", (tile) => (tile.kind === "code" ? prose(tile.source, noun(tile.lines, "line"), { copy: true, code: true }) : null), true),
   S("language", "Language", "The language the code is written in", (tile) => (tile.kind === "code" ? one("Language", tile.language) : null)),
-  S("filename", "File path", "Where the file lives in the project", (tile) => (tile.kind === "code" ? one("File path", tile.filename) : null)),
-  S("writtenWith", "Generated with", "The tool and model that wrote it", (tile) => (tile.kind === "code" ? rows([["Tool", tile.tool ? (toolName(tile.tool) ?? tile.tool) : null], ["Model", tile.model]]) : null)),
+  S("filename", "File path", "", (tile) => (tile.kind === "code" ? one("File path", tile.filename) : null)),
+  S("writtenWith", "Generated with", "Tool and model", (tile) => (tile.kind === "code" ? rows([["Tool", tile.tool ? (toolName(tile.tool) ?? tile.tool) : null], ["Model", tile.model]]) : null)),
   USES,
   MAKES,
   GOES,
@@ -273,36 +273,36 @@ const CODE: readonly SectionDef[] = [
 const CHECK: readonly SectionDef[] = [
   S("tested", "Test description", "What the check tests", (tile) => (tile.kind === "check" ? prose(tile.check.tested) : null), true),
   S("passing", "Pass criteria", "What counts as passing", (tile) => (tile.kind === "check" ? prose(tile.check.passing) : null)),
-  S("runs", "Runs", "Or add test cases below", (tile) => {
+  S("runs", "Runs", "", (tile) => {
     if (tile.kind !== "check") return null;
     const runs = tile.check.runs ?? [];
     if (runs.length > 0) return { type: "list", items: runs.map((run, at) => ({ badge: String(at + 1), name: `${run.passed} of ${run.total} passed`, detail: run.at ?? null })), count: noun(runs.length, "run") };
     return tile.check.passed !== null && tile.check.total !== null ? rows([["Passed", `${tile.check.passed} of ${tile.check.total}`]]) : null;
   }),
-  S("cases", "Test cases", "Inputs, expected outputs and actual outputs", (tile) => {
+  S("cases", "Test cases", "Input, expected output, actual output", (tile) => {
     if (tile.kind !== "check") return null;
     const cases = tile.check.caseList ?? [];
     return cases.length === 0 ? null : { type: "list", items: cases.map((entry, at) => ({ badge: String(at + 1), name: entry.input || `Case ${at + 1}`, detail: entry.expected || null, value: entry.passed === true ? "Passed" : entry.passed === false ? "Failed" : null })), count: noun(cases.length, "test case") };
   }),
-  S("failed", "Failure notes", "What failed, and what was changed before the next run", (tile) => (tile.kind === "check" ? prose(tile.check.onFail ?? "") : null)),
-  S("lastRun", "Last run date", "When the test last ran", (tile) => (tile.kind === "check" ? one("Last run", tile.check.runAt) : null)),
-  S("method", "Test method", "Manual, automated, test suite, peer review or comparison", (tile) => {
+  S("failed", "Failure notes", "What failed and what changed", (tile) => (tile.kind === "check" ? prose(tile.check.onFail ?? "") : null)),
+  S("lastRun", "Last run date", "", (tile) => (tile.kind === "check" ? one("Last run", tile.check.runAt) : null)),
+  S("method", "Test method", "Manual, automated, test suite, peer review, comparison", (tile) => {
     const method = checkExtrasOf(payloadOf(tile)).method;
     return method ? one("Test method", CHECK_METHOD_LABEL[method]) : null;
   }),
-  S("reviewer", "Reviewer", "You, a user or a client", (tile) => {
+  S("reviewer", "Reviewer", "Maker, user or client", (tile) => {
     const reviewer = checkExtrasOf(payloadOf(tile)).reviewer;
     return reviewer ? one("Reviewer", CHECK_REVIEWER_LABEL[reviewer]) : null;
   }),
-  S("scoring", "Scoring method", "Pass or fail, a metric against a target, a rating, or an A/B comparison", (tile) => {
+  S("scoring", "Scoring method", "Pass or fail, metric vs target, rating, A/B", (tile) => {
     const scoring = checkExtrasOf(payloadOf(tile)).scoring;
     return scoring ? rows([["Scoring", SCORING_LABEL[scoring.how]], ["Target", scoring.how === "metric" ? scoring.target : null]]) : null;
   }),
-  S("modelTested", "Model tested", "The model and version the test ran against", (tile) => {
+  S("modelTested", "Model tested", "", (tile) => {
     const tested = checkExtrasOf(payloadOf(tile)).modelTested;
     return tested ? rows([["Model", tested.model ? modelLabel(tested.model) : null], ["Version", tested.version]]) : null;
   }),
-  S("evidence", "Evidence", "A log, a screenshot, or a link to the test run", (tile) => {
+  S("evidence", "Evidence", "Log, screenshot or link", (tile) => {
     const evidence = checkExtrasOf(payloadOf(tile)).evidence;
     return evidence ? rows([["File", evidence.mediaId ? (evidence.name ?? "A file") : null], ["Link", evidence.url]]) : null;
   }),
@@ -319,27 +319,27 @@ const DECISION: readonly SectionDef[] = [
     const questions = tile.draft.questions.filter((question) => question.id.trim());
     return questions.length === 0 ? null : { type: "list", items: questions.map((question, at) => ({ badge: String(at + 1), name: question.id, detail: QUESTION_TYPE_LABEL[question.type] ?? question.type })), count: noun(questions.length, "question") };
   }, true),
-  S("callingCode", "Calling code", "The code that sends the request, added as a Code tile", (tile) => {
+  S("callingCode", "Calling code", "Code tile that sends the request", (tile) => {
     if (tile.kind !== "decision") return null;
     return chips(tile.draft.calledFrom.map((id) => tile.codeTiles.find((code) => code.id === id)?.label ?? id), "");
   }),
-  S("input", "Input", "The output of another step, or sample text", (tile) => {
+  S("input", "Input", "Another tile's output, or sample text", (tile) => {
     if (tile.kind !== "decision") return null;
     const draft = tile.draft;
-    return draft.reads === "step" ? one("Output of another step", tile.stepChoices.find((step) => step.id === draft.stateFrom)?.label) : prose(draft.stateSample, null);
+    return draft.reads === "step" ? one("Another tile's output", tile.stepChoices.find((step) => step.id === draft.stateFrom)?.label) : prose(draft.stateSample, null);
   }),
-  S("recorded", "Recorded answer", "One real answer the model returned", (tile) => {
+  S("recorded", "Recorded answer", "One real answer", (tile) => {
     if (tile.kind !== "decision") return null;
     const answers = Object.entries(tile.draft.answer).filter(([, answer]) => answer.value.trim());
     return answers.length === 0 ? null : { type: "rows", rows: answers.map(([id, answer]) => ({ label: id, value: answer.sure ? `${answer.value} · ${answer.sure}%` : answer.value })), count: null };
   }),
-  S("install", "Installation command", "Exactly as you typed it", (tile) => (tile.kind === "decision" ? prose(tile.draft.install, null, { code: true, copy: true }) : null)),
-  S("examples", "Examples", "Real inputs with the output returned for each", (tile) => {
+  S("install", "Installation command", "As typed", (tile) => (tile.kind === "decision" ? prose(tile.draft.install, null, { code: true, copy: true }) : null)),
+  S("examples", "Examples", "Real inputs and their outputs", (tile) => {
     if (tile.kind !== "decision") return null;
     const examples = tile.draft.examples ?? [];
     return examples.length === 0 ? null : { type: "list", items: examples.map((example, at) => ({ badge: String(at + 1), name: example.input })), count: noun(examples.length, "example") };
   }),
-  S("lowConfidence", "Low-confidence handling", "A confidence threshold, or escalation to a person", (tile) => {
+  S("lowConfidence", "Low-confidence handling", "Threshold or escalation", (tile) => {
     if (tile.kind !== "decision") return null;
     const low = tile.draft.lowConfidence;
     return low.mode === "threshold" && low.threshold.trim() ? one("Confidence threshold", low.threshold) : low.mode === "escalate" ? one("Low confidence", "Escalate to a person") : null;
@@ -355,19 +355,19 @@ const FILE: readonly SectionDef[] = [
 ];
 
 const TOOL: readonly SectionDef[] = [
-  S("tool", "Application", "An external application the model used during the build", (tile) => (tile.kind === "tool" ? one("Application", tile.service) : null), true),
+  S("tool", "App", "External app the model used", (tile) => (tile.kind === "tool" ? one("App", tile.service) : null), true),
   S("connected", "Connection method", "MCP server, native integration, custom code and 6 more", (tile) => {
     if (tile.kind !== "tool" || !tile.connection) return null;
-    return rows([["Connection method", CONNECTION_LABEL[tile.connection]], ["Where it ran", tile.connection === "mcp" ? (tile.runsAt === "web" ? "At a web address" : tile.runsAt === "local" ? "On my computer" : null) : null]]);
+    return rows([["Connection method", CONNECTION_LABEL[tile.connection]], ["Where it ran", tile.connection === "mcp" ? (tile.runsAt === "web" ? "Web" : tile.runsAt === "local" ? "Local" : null) : null]]);
   }),
-  S("did", "Actions performed", "What the application did in this build", (tile) => (tile.kind === "tool" ? prose(tile.scopes) : null)),
-  S("permissions", "Permissions", "Read only, read and write, or acting on your behalf", (tile) => {
+  S("did", "Actions performed", "", (tile) => (tile.kind === "tool" ? prose(tile.scopes) : null)),
+  S("permissions", "Permissions", "Read only, read and write, or acts as the maker", (tile) => {
     const permissions = toolExtrasOf(payloadOf(tile)).permissions;
     return permissions ? one("Permissions", TOOL_PERMISSION_LABEL[permissions]) : null;
   }),
-  S("plan", "Required plan", "Free, or the name of the paid plan", (tile) => one("Required plan", toolExtrasOf(payloadOf(tile)).plan)),
-  S("setup", "Setup steps", "The steps required to connect it", (tile) => numbered(toolExtrasOf(payloadOf(tile)).setup ?? [], "step")),
-  S("alternatives", "Alternatives", "Other applications that perform the same function", (tile) => chips(toolExtrasOf(payloadOf(tile)).alternatives ?? [], noun((toolExtrasOf(payloadOf(tile)).alternatives ?? []).length, "application"))),
+  S("plan", "Required plan", "Free or plan name", (tile) => one("Required plan", toolExtrasOf(payloadOf(tile)).plan)),
+  S("setup", "Setup steps", "", (tile) => numbered(toolExtrasOf(payloadOf(tile)).setup ?? [], "step")),
+  S("alternatives", "Alternatives", "Apps that do the same job", (tile) => chips(toolExtrasOf(payloadOf(tile)).alternatives ?? [], noun((toolExtrasOf(payloadOf(tile)).alternatives ?? []).length, "app"))),
   S("toolsUsed", "Tools it used", "The tools it was seen calling", (tile) => (tile.kind === "tool" && (tile.toolsUsed ?? []).length > 0 ? { type: "list", items: (tile.toolsUsed ?? []).map((used, at) => ({ badge: String(at + 1), name: used.name, value: String(used.count) })), count: noun(tile.toolsUsed?.length ?? 0, "tool") } : null)),
   S("usedBy", "Used by", "The steps that take it in", usedByOf),
   RUNTIME.runsWhen,
@@ -375,26 +375,26 @@ const TOOL: readonly SectionDef[] = [
 ];
 
 const AGENT_SECTIONS = (team: boolean): readonly SectionDef[] => [
-  S("model", team ? "Team" : "Models", team ? "Several agents working together" : "The main model, and up to three more with their roles", (tile) => {
+  S("model", team ? "Team" : "Models", team ? "" : "The main model, and up to three more with their roles", (tile) => {
     if (tile.kind !== "agent" && tile.kind !== "team") return null;
     if (tile.kind === "agent" && tile.setup) {
-      return rows([["Runs in", tile.setup.harness ? (toolName(tile.setup.harness) ?? tile.setup.harness) : "My own code (API)"], ...tile.setup.models.map((row, at) => [at === 0 ? "Model" : `Model ${at + 1}`, `${row.model ? modelLabel(row.model) : ""} · ${row.role}`] as const)]);
+      return rows([["Runs in", tile.setup.harness ? (toolName(tile.setup.harness) ?? tile.setup.harness) : "Own code (API)"], ...tile.setup.models.map((row, at) => [at === 0 ? "Model" : `Model ${at + 1}`, `${row.model ? modelLabel(row.model) : ""} · ${row.role}`] as const)]);
     }
     return rows([["In", tile.parent], ["Model", tile.model]]);
   }, !team),
-  S("instructions", "System instructions", "What the agent is told to do", (tile) => (tile.kind === "agent" ? prose(tile.instructions, wordsCount(tile.instructions.split(/\s+/).filter(Boolean).length)) : null)),
-  S("tools", "Available tools", "Applications the agent can call", (tile) => (tile.kind === "agent" ? chips(tile.setup?.tools ?? [], noun(tile.setup?.tools.length ?? 0, "application")) : null)),
-  S("starts", "Trigger", "Manual, scheduled, or started by an event", (tile) => {
+  S("instructions", "System instructions", "", (tile) => (tile.kind === "agent" ? prose(tile.instructions, wordsCount(tile.instructions.split(/\s+/).filter(Boolean).length)) : null)),
+  S("tools", "Available tools", "Apps the agent can call", (tile) => (tile.kind === "agent" ? chips(tile.setup?.tools ?? [], noun(tile.setup?.tools.length ?? 0, "app")) : null)),
+  S("starts", "Trigger", "", (tile) => {
     if (tile.kind !== "agent" && tile.kind !== "team") return null;
     return tile.runs && tile.runs.how !== "once" ? one("How it runs", [tile.runs.how === "parallel" ? `${tile.runs.count ?? ""} at the same time` : tile.runs.detail ?? tile.runs.how].filter(Boolean).join(" ")) : null;
   }),
-  S("memory", "Memory", "What the agent keeps between runs, and where", (tile) => (tile.kind === "agent" ? rows([["What it remembers", tile.setup?.memory], ["How it tidies", tile.memoryTidy], ["Changes each round", tile.changesEachRound]]) : null)),
+  S("memory", "Memory", "Stored between runs, and where", (tile) => (tile.kind === "agent" ? rows([["What it remembers", tile.setup?.memory], ["How it tidies", tile.memoryTidy], ["Changes each round", tile.changesEachRound]]) : null)),
   MODEL_RUN,
   RUNTIME.helpers,
-  S("limits", "Limits", "Maximum steps, budget or run time, approvals and prohibited actions", (tile) => numbered(agentExtrasOf(payloadOf(tile)).limits ?? [], "limit")),
-  S("output", "Output and destination", "A file, a message or a pull request, and where it is delivered", (tile) => prose(agentExtrasOf(payloadOf(tile)).output ?? "")),
-  S("sample", "Sample run", "A transcript or trace of one real run", (tile) => prose(agentExtrasOf(payloadOf(tile)).sample ?? "", null, { code: true, copy: true })),
-  S("pattern", "Orchestration pattern", "Sequential, lead with delegates, parallel then merged, or writer and reviewer", (tile) => {
+  S("limits", "Limits", "Steps, budget, run time, approvals, prohibited actions", (tile) => numbered(agentExtrasOf(payloadOf(tile)).limits ?? [], "limit")),
+  S("output", "Output and destination", "Format and destination", (tile) => prose(agentExtrasOf(payloadOf(tile)).output ?? "")),
+  S("sample", "Sample run", "Transcript or trace of one run", (tile) => prose(agentExtrasOf(payloadOf(tile)).sample ?? "", null, { code: true, copy: true })),
+  S("pattern", "Orchestration pattern", "Sequential, lead and delegates, parallel then merge, writer and reviewer", (tile) => {
     const pattern = patternOf(payloadOf(tile).pattern);
     return team && pattern ? one("Pattern", AGENT_PATTERN_LABEL[pattern]) : null;
   }),
@@ -420,7 +420,7 @@ const RESULT: readonly SectionDef[] = [
   S("url", "URL", "Where to see it", (tile) => (tile.kind === "result" ? one("URL", tile.url) : null)),
   S("baseModel", "Base model", "The model it was trained from", (tile) => (tile.kind === "result" && tile.trained ? one("Base model", tile.trained.baseModel ? modelLabel(tile.trained.baseModel) : null) : null)),
   S("method", "Training method", "How the model was trained", (tile) => (tile.kind === "result" && tile.trained ? one("Training method", tile.trained.method) : null)),
-  S("caption", "Caption", "One line describing what the output shows", (tile) => one("Caption", str(payloadOf(tile).caption))),
+  S("caption", "Caption", "One line", (tile) => one("Caption", str(payloadOf(tile).caption))),
   S("pictures", "Images and videos", "Pictures kept with the result", (tile) => (tile.kind === "result" && tile.pictures.length > 0 ? { type: "list", items: tile.pictures.map((picture, at) => ({ id: picture.id, badge: String(at + 1), name: picture.name })), count: noun(tile.pictures.length, "file") } : null)),
   S("trainedOn", "Trained on", "The ratings or examples it learned from", (tile) => {
     if (tile.kind !== "result" || !tile.trained?.trainedOn) return null;
@@ -437,8 +437,8 @@ const SYSTEM_PROMPT: readonly SectionDef[] = [
     const scope = scopeOf(tile.payload.scope);
     return one("Applies to", scope.kind === "all" ? "All prompts" : scope.kind === "session" ? "This session" : `Selected prompts · ${scope.ids.length}`);
   }, true),
-  S("model", "Model", "The model the system prompt was written for", (tile) => one("Model", str(payloadOf(tile).model) ? modelLabel(str(payloadOf(tile).model)) : null)),
-  S("version", "Version", "A version or date, so a change can be told apart", (tile) => (tile.kind === "system_prompt" ? one("Version", systemPromptOf(tile.payload).version) : null)),
+  S("model", "Model", "", (tile) => one("Model", str(payloadOf(tile).model) ? modelLabel(str(payloadOf(tile).model)) : null)),
+  S("version", "Version", "Version or date", (tile) => (tile.kind === "system_prompt" ? one("Version", systemPromptOf(tile.payload).version) : null)),
   S("variables", "Variables", "The {names} written in the text, each with a line about it", (tile) => {
     if (tile.kind !== "system_prompt") return null;
     const names = variableNamesIn(systemPromptOf(tile.payload).text);
@@ -458,17 +458,17 @@ const DATASET: readonly SectionDef[] = [
     const use = datasetOf(tile.payload).use;
     return use ? one("Use", DATASET_USE_LABEL[use]) : null;
   }, true),
-  S("format", "Format", "The file or data format", (tile) => (tile.kind === "dataset" ? one("Format", datasetOf(tile.payload).format) : null)),
-  S("records", "Record count", "How many records it holds", (tile) => {
+  S("format", "Format", "", (tile) => (tile.kind === "dataset" ? one("Format", datasetOf(tile.payload).format) : null)),
+  S("records", "Record count", "", (tile) => {
     if (tile.kind !== "dataset") return null;
     const count = datasetOf(tile.payload).recordCount;
     return count === null ? null : one("Record count", count.toLocaleString("en-GB"));
   }),
-  S("columns", "Columns", "One column name per line", (tile) => (tile.kind === "dataset" ? chips(datasetOf(tile.payload).columns, noun(datasetOf(tile.payload).columns.length, "column")) : null)),
+  S("columns", "Columns", "One per line", (tile) => (tile.kind === "dataset" ? chips(datasetOf(tile.payload).columns, noun(datasetOf(tile.payload).columns.length, "column")) : null)),
   S("source", "Source", "Where the data came from", (tile) => (tile.kind === "dataset" ? one("Source", datasetOf(tile.payload).source) : null)),
-  S("sample", "Sample records", "Up to five records, one per line", (tile) => (tile.kind === "dataset" ? numbered(datasetOf(tile.payload).sample, "record") : null)),
-  S("licence", "Licence", "The terms it may be used under", (tile) => (tile.kind === "dataset" ? one("Licence", datasetOf(tile.payload).licence) : null)),
-  S("chunking", "Chunking", "How it was split for retrieval, and the embedding model", (tile) => {
+  S("sample", "Sample records", "5 max, one per line", (tile) => (tile.kind === "dataset" ? numbered(datasetOf(tile.payload).sample, "record") : null)),
+  S("licence", "Licence", "", (tile) => (tile.kind === "dataset" ? one("Licence", datasetOf(tile.payload).licence) : null)),
+  S("chunking", "Chunking", "Split method and embedding model", (tile) => {
     if (tile.kind !== "dataset") return null;
     const facts = datasetOf(tile.payload);
     return facts.use === "retrieval" ? rows([["Chunk strategy", facts.chunkStrategy], ["Chunk size", facts.chunkSize === null ? null : String(facts.chunkSize)], ["Chunk overlap", facts.chunkOverlap === null ? null : String(facts.chunkOverlap)], ["Embedding model", facts.embeddingModel]]) : null;
@@ -502,15 +502,15 @@ const REPO: readonly SectionDef[] = [
     const fetched = repoOf(tile.payload)?.fetched;
     return fetched?.fetchedAt ? rows([["Primary language", fetched.language], ["Licence", fetched.licenceName ?? fetched.licenceSpdx]]) : null;
   }),
-  S("pinned", "Pinned version", "A branch, tag or commit, so copies stay identical", (tile) => {
+  S("pinned", "Pinned version", "Branch, tag or commit", (tile) => {
     if (tile.kind !== "repo") return null;
     const pin = repoOf(tile.payload)?.pin;
     return pin ? one("Pinned version", `${REPO_PIN_LABEL[pin.kind]} ${pin.value}`) : null;
   }),
-  S("path", "Path", "A folder or file, when only part of the repository was used", (tile) => (tile.kind === "repo" ? one("Path", repoOf(tile.payload)?.path) : null)),
-  S("modifications", "Modifications", "What was changed from the original", (tile) => (tile.kind === "repo" ? prose(repoOf(tile.payload)?.modifications ?? "") : null)),
+  S("path", "Path", "Folder or file, if only part was used", (tile) => (tile.kind === "repo" ? one("Path", repoOf(tile.payload)?.path) : null)),
+  S("modifications", "Modifications", "Changes from the original", (tile) => (tile.kind === "repo" ? prose(repoOf(tile.payload)?.modifications ?? "") : null)),
   S("keyFiles", "Key files", "README, CLAUDE.md, agent configuration, skills folder", (tile) => (tile.kind === "repo" ? chips(repoOf(tile.payload)?.keyFiles ?? [], noun(repoOf(tile.payload)?.keyFiles.length ?? 0, "file")) : null)),
-  S("run", "Run instructions", "Clone command, dependencies, start command, and environment variable names only", (tile) => (tile.kind === "repo" ? numbered(repoOf(tile.payload)?.run ?? [], "command") : null)),
+  S("run", "Run instructions", "Clone, dependencies, start command, environment variable names", (tile) => (tile.kind === "repo" ? numbered(repoOf(tile.payload)?.run ?? [], "command") : null)),
   USES,
   GOES,
 ];

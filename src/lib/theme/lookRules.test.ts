@@ -845,6 +845,21 @@ export const CA03_FILES: readonly string[] = [
   // CA-28 P0
   "e2e/audit/composer-ca28-shots.spec.ts",
   "src/pages/dev/Ca28Demo.tsx",
+
+  // CA-28 P1
+  "src/components/build/FullPromptWindow.test.tsx",
+  "src/components/build/PartWindow.decision.test.tsx",
+  "src/lib/build/decisionDraft.ts",
+  "src/lib/build/graph.ca15.test.ts",
+  "src/lib/build/sourceTiles.test.ts",
+  "src/lib/build/sourceTiles.ts",
+  "src/lib/build/tileExtras.ts",
+  "src/pages/site/build/BuildSteps.tiles.test.tsx",
+  "src/pages/site/compose/ClassificationPicker.test.tsx",
+  "src/pages/site/compose/HelpersField.test.tsx",
+  "src/pages/site/compose/ReadFromBuild.test.tsx",
+  "src/pages/site/compose/detailsOptional.tsx",
+  "src/pages/site/compose/readerWords.test.tsx",
 ];
 
 /**

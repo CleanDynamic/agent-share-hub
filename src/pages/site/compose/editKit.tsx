@@ -24,16 +24,14 @@ import { withRuntimePatch } from "./runtimeView";
 
 export const EDIT_COPY = {
   uses: "Uses",
-  usesLine: "What it takes in",
-  addInput: "Add an input",
-  attach: "A file from your computer",
+  addInput: "Add input",
+  attach: "File from computer",
   makes: "Makes",
-  makesLine: "Files it makes",
-  nameFile: "Name a file it makes",
-  filePlaceholder: "File name, such as brand-guide.md",
-  taken: "This step already makes a file with that name.",
-  goesInto: "Goes into",
-  runtime: "How it runs in the app",
+  nameFile: "Add file name",
+  filePlaceholder: "brand-guide.md",
+  taken: "Name already used by this tile",
+  goesInto: "Used by",
+  runtime: "Runtime",
   count: (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`,
 } as const;
 
@@ -66,7 +64,6 @@ export function UsesBlock({ id, rows: initial, options: initialOptions, phone, h
   return (
     <Block label={EDIT_COPY.uses} testId="edit-uses">
       <BlockHead label={EDIT_COPY.uses} count={EDIT_COPY.count(rows.length, "tile", "tiles")} />
-      {rows.length === 0 ? <Hint>{EDIT_COPY.usesLine}</Hint> : null}
       <div style={PANEL_LIST}>
         {rows.map((row) => (
           <FileLine key={keyOf(row)} name={nameOf(row)} removeLabel={`Remove ${row.label}`} onRemove={() => remove(row)} phone={phone} />
@@ -91,7 +88,7 @@ interface MadeRow {
   isNew: boolean;
 }
 
-/** Makes: the files it makes, each renamed in place and removed with Remove, and "Name a file it makes". */
+/** Makes: the files it makes, each renamed in place and removed with Remove, and "Add file name". */
 export function MakesBlock({ id, rows: initial, phone, handlers }: { id: string; rows: readonly MakesRow[]; phone: boolean; handlers: Pick<DetailsHandlers, "onAddMade" | "onRemoveMade" | "onFields"> }) {
   const [rows, setRows] = useState<MadeRow[]>(initial.map((row) => ({ ...row, isNew: false })));
   const [adding, setAdding] = useState(false);
@@ -122,7 +119,6 @@ export function MakesBlock({ id, rows: initial, phone, handlers }: { id: string;
   return (
     <Block label={EDIT_COPY.makes} testId="edit-makes">
       <BlockHead label={EDIT_COPY.makes} count={EDIT_COPY.count(rows.length, "file", "files")} />
-      {rows.length === 0 ? <Hint>{EDIT_COPY.makesLine}</Hint> : null}
       <div style={PANEL_LIST}>
         {rows.map((row) =>
           row.isNew ? (
@@ -244,14 +240,14 @@ export const EDIT_BLOCK_COPY = {
   useAsCover: "Use as cover",
   addPicture: "Add a picture",
   trainedOn: "Trained on",
-  trainedOnLine: "The ratings or examples it learned from.",
+  trainedOnLine: "Ratings or examples",
   addFile: "Add the file",
   replaceFile: "Replace the file",
   removeFile: "Remove the file",
   summary: "Summary",
   whereRan: "Where it ran",
-  web: "At a web address",
-  local: "On my computer",
+  web: "Web",
+  local: "Local",
   toolsUsed: "Tools it used",
 } as const;
 
@@ -412,7 +408,7 @@ export type PromptEditHandlers = Pick<DetailsHandlers, "onModel" | "onModelRun" 
 
 export const PROMPT_EDIT_COPY = {
   model: "Model",
-  noSession: "Model is empty because there is no session to read it from.",
+  noSession: "No session to read the model from",
 } as const;
 
 /**

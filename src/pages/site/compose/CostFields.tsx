@@ -1,4 +1,4 @@
-/* CA-13 P8 — two collapsed sections in Details: "What it took to make" on a build tile and "What it costs to run" on a runtime
+/* CA-13 P8 — two collapsed sections in Details: "Build cost" on a build tile and "Running cost" on a runtime
    tile. Different things, never added together (rule 3). Time is typed in seconds, tokens as whole numbers, money in pounds
    or dollars. A figure typed here is "Maker's figure"; one read from a run file is "From the run". */
 
@@ -13,7 +13,7 @@ import { t } from "@/lib/theme/tokens";
 import { Field, TextButton } from "./composeControls";
 import { text, tnum, typedField } from "./refinedStyles";
 
-export const COST_COPY = { build: "What it took to make", run: "What it costs to run", save: "Save", clear: "Clear" } as const;
+export const COST_COPY = { build: "Build cost", run: "Running cost", save: "Save", clear: "Clear" } as const;
 
 const PER_LABEL: Record<RunPer, string> = { call: "Each call", run: "Each run", hour: "Per hour", day: "Per day" };
 
@@ -50,7 +50,7 @@ export function figuresFromDraft(d: Draft, run: boolean): { value: CostFigures |
   const tokensIn = num(d.tokensIn);
   const tokensOut = num(d.tokensOut);
   const cost = num(d.cost);
-  if ([seconds, tokensIn, tokensOut, cost].some((n) => n === null)) return { error: "Figures are numbers, 0 or more." };
+  if ([seconds, tokensIn, tokensOut, cost].some((n) => n === null)) return { error: "Numbers, 0 or more" };
   const figures: Partial<CostFigures> = {
     ...(seconds !== undefined ? { ms: Math.round((seconds as number) * 1000) } : null),
     ...(tokensIn !== undefined ? { tokensIn: Math.round(tokensIn as number) } : null),
@@ -88,7 +88,7 @@ export function CostFields({ kind, value, phone, onChange }: { kind: "build" | "
       </TextButton>
       {open ? (
         <div id={`${uid}-body`} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {kind === "run" ? <Segmented<RunPer> label="How often the figures are for" size={phone ? 50 : 32} fontSize={13} items={RUN_PERS.map((per) => ({ value: per, label: PER_LABEL[per] }))} value={d.per} onChange={(per) => set({ per })} /> : null}
+          {kind === "run" ? <Segmented<RunPer> label="Per" size={phone ? 50 : 32} fontSize={13} items={RUN_PERS.map((per) => ({ value: per, label: PER_LABEL[per] }))} value={d.per} onChange={(per) => set({ per })} /> : null}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Field id={`${uid}-s`} label="Time" hint="Seconds"><input id={`${uid}-s`} type="text" inputMode="decimal" value={d.seconds} onChange={(e) => set({ seconds: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
             <Field id={`${uid}-ti`} label="Tokens in"><input id={`${uid}-ti`} type="text" inputMode="numeric" value={d.tokensIn} onChange={(e) => set({ tokensIn: e.target.value })} style={typedField(phone, { width: 112, ...tnum })} /></Field>

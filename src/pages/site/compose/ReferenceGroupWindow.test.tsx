@@ -44,7 +44,7 @@ describe("opening", () => {
     mount();
     openFromLabel();
     expect(within(win()).getByText("Reference group")).toBeTruthy();
-    expect(within(win()).getByText("Components that work together, under one colour")).toBeTruthy();
+    expect(within(win()).getByText("Components under one colour")).toBeTruthy();
     expect(within(win()).getByRole("button", { name: /^Close/ })).toBeTruthy();
   });
 
@@ -62,7 +62,7 @@ describe("opening", () => {
     expect(members()).toEqual(["node:rf-m2"]);
     expect(within(win()).queryByTestId("group-delete")).toBeNull();
     expect((within(win()).getByRole("textbox", { name: GROUP_WINDOW_COPY.colourCode }) as HTMLInputElement).value).toBe("#7FA7D9");
-    expect(within(win()).getByTestId("group-linked").textContent).toContain("Save the group to link words to it.");
+    expect(within(win()).getByTestId("group-linked").textContent).toContain("Linking needs a saved group");
   });
 });
 
@@ -71,13 +71,12 @@ describe("the blocks", () => {
     mount();
     openFromLabel();
     const body = within(win()).getByTestId("group-window-body");
-    expect((within(body).getByRole("textbox", { name: "Name" }) as HTMLInputElement).placeholder).toBe("Add a name");
+    expect((within(body).getByRole("textbox", { name: "Name" }) as HTMLInputElement).placeholder).toBe("Name");
     expect((within(body).getByRole("textbox", { name: GROUP_WINDOW_COPY.colourCode }) as HTMLInputElement).value).toBe("#7FB88A");
     expect(within(body).getByRole("button", { name: "Change…" })).toBeTruthy();
-    expect(within(body).getByTestId("group-components").textContent).toContain("3 · drag to set the order");
+    expect(within(body).getByTestId("group-components").textContent).toContain("Components3");
     expect(members()).toEqual(["session:typed-0b1c2d3e-0000-4000-8000-0000000000a2", "node:rf-c4", "node:rf-k5"]);
     expect([...body.querySelectorAll("[data-sortable]")].map((row) => row.textContent)).toEqual(["S2Session 2Session", "4Send the linkCode", "5Link opens onceCheck"]);
-    expect(within(body).getByTestId("group-notes").textContent).toContain("How these components work together · optional");
     expect(within(body).getByTestId("group-linked").textContent).toContain("Linked text · 1 of 1");
     expect(within(body).getByTestId("group-linked-words").textContent).toBe("Signing in by email link");
   });
@@ -132,7 +131,7 @@ describe("components", () => {
     openFromLabel();
     fireEvent.click(within(win()).getByRole("button", { name: "Remove Send the link" }));
     fireEvent.click(within(win()).getByRole("button", { name: "Remove Link opens once" }));
-    expect(within(win()).getByTestId("group-window-note").textContent).toBe("A group needs two or more components");
+    expect(within(win()).getByTestId("group-window-note").textContent).toBe("2 components min");
     expect(within(win()).getByRole("button", { name: "Save" })).toBeDisabled();
   });
 });
@@ -156,7 +155,7 @@ describe("saving and deleting", () => {
     fireEvent.click(within(win()).getByTestId("group-delete"));
     const confirm = screen.getByTestId("group-delete-confirm");
     expect(within(confirm).getByText("Delete Login flow?")).toBeTruthy();
-    expect(confirm.textContent).toContain("Its 3 components lose this colour. The linked text becomes plain words. The components stay.");
+    expect(confirm.textContent).toContain("3 components lose this colour. Linked text becomes plain text.");
     fireEvent.click(within(confirm).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByTestId("group-delete-confirm")).toBeNull();
     fireEvent.click(within(win()).getByTestId("group-delete"));

@@ -67,7 +67,7 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   it("a check: Test method, Reviewer, Scoring method, Model tested, Evidence", () => {
     const rows = checkRows({ method: "review", reviewer: "client", scoring: { how: "metric", target: "95% correct" }, model_tested: { model: "Opus 5.5", version: "2026-09-30" }, evidence: { url: "https://example.com/results" } });
     expect(rows.map((r) => r.name)).toEqual(["Test method", "Reviewer", "Scoring method", "Model tested", "Evidence"]);
-    expect(rows.map((r) => r.summary)).toEqual(["Peer review", "A client", "Metric against a target · 95% correct", "Opus 5.5 · 2026-09-30", "https://example.com/results"]);
+    expect(rows.map((r) => r.summary)).toEqual(["Peer review", "Client", "Metric against a target · 95% correct", "Opus 5.5 · 2026-09-30", "https://example.com/results"]);
     expect(rows[2].toPatch({ how: "pass_fail", target: "ignored" })).toEqual({ scoring: { how: "pass_fail", target: "" } });
     expect(rows[2].toPatch({ how: "", target: "" })).toEqual({ scoring: null });
   });
@@ -76,7 +76,7 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
     const evidence = checkRows({ evidence: { media_id: "m1", name: "results.csv" } })[4];
     expect(evidence.summary).toBe("results.csv");
     expect(evidence.fields).toEqual([]);
-    expect(evidence.note).toBe("results.csv is kept as the evidence.");
+    expect(evidence.note).toBe("results.csv attached");
   });
 
   it("a tool: Permissions, Required plan, Setup steps, Alternatives", () => {
@@ -85,8 +85,8 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   });
 
   it("an API-key tool's setup row says to name the key, never paste its value", () => {
-    expect(toolRows({ connection: "api_key" })[2].description).toBe("Name the key, for example GITHUB_TOKEN. Never paste its value.");
-    expect(toolRows({ connection: "mcp" })[2].description).toBe("The steps required to connect it");
+    expect(toolRows({ connection: "api_key" })[2].description).toBe("Key names only, like GITHUB_TOKEN");
+    expect(toolRows({ connection: "mcp" })[2].description).toBe("");
   });
 
   it("code: File path and Generated with; a result: Caption", () => {
@@ -125,7 +125,7 @@ describe("the Optional section in a tile's window (CA-15 P11, CA-18 P2)", () => 
   it("saves a choice on Save, and only the keys it owns", () => {
     const { props } = windowFor(checkTree(), "ck");
     openRow("Reviewer");
-    fireEvent.click(within(row("Reviewer")).getByRole("radio", { name: "A client" }));
+    fireEvent.click(within(row("Reviewer")).getByRole("radio", { name: "Client" }));
     expect(props.onExtras).not.toHaveBeenCalled();
     save();
     expect(props.onExtras).toHaveBeenCalledWith("ck", { reviewer: "client" });
@@ -175,18 +175,18 @@ describe("the Optional section in a tile's window (CA-15 P11, CA-18 P2)", () => 
 
   it("a tool says Application and Actions performed, and has no Service or What it was used for", () => {
     windowFor([node("tl", "integration", { step: true, service: "Slack", scopes: "Posted" })], "tl");
-    expect(screen.getByRole("button", { name: "Application" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "App" })).toBeTruthy();
     openRow("Actions performed");
-    expect(screen.getByLabelText("Actions performed")).toBeTruthy();
+    expect(screen.getAllByLabelText("Actions performed").length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Service")).toBeNull();
     expect(screen.queryByLabelText("What it was used for")).toBeNull();
     expect(rowNames()).toEqual(expect.arrayContaining(["Permissions", "Required plan", "Setup steps", "Alternatives"]));
   });
 
-  it("the placeholders of its fields start e.g.", () => {
+  it("the placeholders of its fields are the example alone", () => {
     windowFor([node("tl", "integration", { step: true, service: "Slack" })], "tl");
     openRow("Required plan");
-    expect((screen.getByRole("textbox", { name: "Required plan" }) as HTMLInputElement).placeholder).toMatch(/^e\.g\. /);
+    expect((screen.getByRole("textbox", { name: "Required plan" }) as HTMLInputElement).placeholder).not.toMatch(/^e\.g\./);
   });
 });
 
@@ -275,7 +275,7 @@ describe("a system prompt, a dataset and a GitHub repository in their windows (C
   it("a repository's run instructions say to name keys, never paste values", () => {
     windowFor([node("rp", "repo", { step: true, url: "github.com/acme/shop", ownership: "owned" })], "rp");
     openRow("Run instructions");
-    expect(screen.getByText("One command per line. Name keys, never paste their values.")).toBeTruthy();
+    expect(screen.getByText("One per line. Key names only")).toBeTruthy();
   });
 
   it("each is renamed from its Name field, through onRename", () => {

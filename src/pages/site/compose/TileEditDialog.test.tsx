@@ -83,7 +83,7 @@ describe("Save writes through the same handlers with the same arguments", () => 
 
   it("a tool: where an MCP server ran is written with the connection", () => {
     const { h } = open(tileView("tool", "full"));
-    fireEvent.click(within(dialog()).getByRole("radio", { name: "On my computer" }));
+    fireEvent.click(within(dialog()).getByRole("radio", { name: "Local" }));
     save();
     expect(h.onToolConnection).toHaveBeenCalledWith("t1", "mcp", "local");
   });
@@ -213,7 +213,7 @@ describe("Save writes through the same handlers with the same arguments", () => 
     const { h } = open(view);
     fireEvent.click(within(dialog()).getByRole("button", { name: "Remove menu.pdf" }));
     // Put back from the menu of what it may take.
-    fireEvent.keyDown(within(dialog()).getByRole("button", { name: "Add an input" }), { key: "Enter" });
+    fireEvent.keyDown(within(dialog()).getByRole("button", { name: "Add input" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: /menu\.pdf/ }));
     save();
     expect(callsOf(h)).toEqual([]);

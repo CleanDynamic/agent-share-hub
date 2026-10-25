@@ -18,7 +18,7 @@ import { MODAL_WIDTH } from "./modalRecipes";
 
 export const DECISION_DIALOG_COPY = {
   title: "Add a decision",
-  subtitle: "A structured classification your application requests from a model",
+  subtitle: "Structured answer from a model",
   add: "Add",
   cancel: "Cancel",
 } as const;

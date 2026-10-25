@@ -1,4 +1,4 @@
-/* CA-16 P5: "Read from your build": every facet the tiles say, where it came from, and what the maker can correct.
+/* CA-16 P5: "From the build": every facet the tiles say, where it came from, and what the maker can correct.
 
    GAP QUESTIONS come first. They are questions, never errors: each has its action (Add code) and Dismiss. Under them,
    one row per derived facet: its name, its value (the maker's correction when there is one), a provenance dot (Derived,
@@ -79,7 +79,7 @@ function DisputeForm({ facet, phone, current, onApply, onCancel }: { facet: Face
         autoComplete="off"
         maxLength={280}
         value={reason}
-        placeholder={free ? CONFIRMED_FREE : "e.g. a friend set it up without writing any code"}
+        placeholder={free ? CONFIRMED_FREE : undefined}
         onChange={(event) => setReason(event.target.value)}
         style={field}
       />
@@ -121,7 +121,7 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
         </section>
       ) : null}
 
-      <ul aria-label="Read from your build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
+      <ul aria-label="From the build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
         {DERIVED_FACETS.map((facet) => {
           const shown = shownValues(classification, facet);
           const from = classification.derived[facet]?.from ?? [];
@@ -136,7 +136,7 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
                 <span style={{ ...text(12.5, 400, labels.length > 0 ? t.text : t.label), flex: "1 1 120px", minWidth: 0, overflowWrap: "anywhere" }}>{labels.length > 0 ? labels.join(", ") : "Not stated"}</span>
                 <ProvenanceDot kind={shown.provenance} viewer="maker" showWord />
               </div>
-              {disputed ? <p style={{ margin: 0, ...text(12, 400, t.text2) }}>{`Your reason: ${disputed.reason}`}</p> : null}
+              {disputed ? <p style={{ margin: 0, ...text(12, 400, t.text2) }}>{`Reason: ${disputed.reason}`}</p> : null}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", minHeight: 0 }}>
                 {from.length > 0 && !disputed ? (
                   <LinkButton label={`Source of ${name}`} phone={phone} onClick={() => onSource?.(from[0])}>
@@ -149,7 +149,7 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
                   </LinkButton>
                 ) : null}
                 {disputed && editing !== facet ? (
-                  <LinkButton label={`Undo your change to ${name}`} phone={phone} onClick={() => onDispute(facet, null)}>
+                  <LinkButton label={`Undo change to ${name}`} phone={phone} onClick={() => onDispute(facet, null)}>
                     Undo
                   </LinkButton>
                 ) : null}

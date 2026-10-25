@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ModalForm, ModalShell, firstMissing, requiredLine } from "./ModalFrame";
+import { ModalForm, ModalShell, missingLabels, requiredLine } from "./ModalFrame";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 let phone = false;
@@ -100,9 +100,9 @@ describe("OptionalSection (CA-15 P1)", () => {
 describe("the modal frame (CA-15 P1)", () => {
   it("says the first thing missing, or that all is complete", () => {
     expect(requiredLine("a URL")).toBe("Required: a URL");
-    expect(requiredLine(null)).toBe("All required fields complete");
-    expect(firstMissing([[true, "a name"], [false, "a URL"], [false, "a file"]])).toBe("a URL");
-    expect(firstMissing([[true, "a name"]])).toBeNull();
+    expect(requiredLine(null)).toBe("Required fields complete");
+    expect(missingLabels([[true, "Name"], [false, "URL"], [false, "File"]])).toBe("URL, File");
+    expect(missingLabels([[true, "Name"]])).toBeNull();
   });
 
   function shell(over: { missing: string | null; onSubmit?: () => void; onOpenChange?: (open: boolean) => void }) {
@@ -137,7 +137,7 @@ describe("the modal frame (CA-15 P1)", () => {
 
   it("adds when complete, and Cancel and the close button close it", () => {
     const { onSubmit, onOpenChange } = shell({ missing: null });
-    expect(screen.getByTestId("modal-status").textContent).toBe("All required fields complete");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required fields complete");
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));

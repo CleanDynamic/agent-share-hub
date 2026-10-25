@@ -40,7 +40,7 @@ export interface OptionalFieldProps {
   /** The field's name: "Failure notes". */
   name: string;
   /** One grey line saying what goes here. Shown while the row holds nothing. */
-  description: string;
+  description?: string;
   /** What the row holds, as one line; null or empty when it holds nothing. */
   summary?: string | null;
   /** Opens the row, and again each time it turns true. */

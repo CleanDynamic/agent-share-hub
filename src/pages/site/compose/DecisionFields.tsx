@@ -60,54 +60,54 @@ export const DECISION_COPY = {
   provider: "Model or service",
   selectProvider: "Select a model or service",
   version: "Version",
-  versionPlaceholder: "e.g. jev-1.13.0",
+  versionPlaceholder: "jev-1.13.0",
   invocation: "Invocation",
   direct: "Direct",
   adapter: "Through an adapter",
   questions: "Questions",
   addQuestion: "Add a question",
   key: "Key",
-  keyPlaceholder: "e.g. team",
-  paste: "Import from a logged request and response",
-  pasteLine: "Populates the fields above from JSON, a curl command or Python",
-  pastePlaceholder: "The JSON request body and response, a curl command, or Python with every value written out",
+  keyPlaceholder: "team",
+  paste: "Import request and response",
+  pasteLine: "From JSON, curl or Python",
+  pastePlaceholder: "JSON request and response, curl, or Python",
   import: "Import",
   readCode: "Read from a Code tile",
   callingCode: "Calling code",
-  callingCodeLine: "The code that sends the request, added as a Code tile",
-  noCode: "Add the code that calls it as a Code tile, so people copying this get the real thing",
+  callingCodeLine: "Code tile that sends the request",
+  noCode: "No Code tile linked",
   addCode: "Add code",
   input: "Input",
-  inputLine: "The output of another step, or sample text",
-  fromStep: "Output of another step",
+  inputLine: "Another tile's output, or sample text",
+  fromStep: "Another tile's output",
   fromText: "Sample text",
   state: "Sample text",
-  statePlaceholder: "e.g. Customer: I was charged twice for my order.",
+  statePlaceholder: "Customer: I was charged twice for my order.",
   answer: "Recorded answer",
-  answerLine: "One real answer the model returned",
-  answerHint: "One value and confidence per question.",
+  answerLine: "One real answer",
+  answerHint: "Value and confidence per question",
   confidence: "Confidence",
   install: "Installation command",
-  installLine: "Exactly as you typed it",
-  installPlaceholder: "e.g. pip install typesafe",
+  installLine: "As typed",
+  installPlaceholder: "pip install typesafe",
   examples: "Examples",
-  examplesLine: "Real inputs with the output returned for each",
+  examplesLine: "Real inputs and their outputs",
   addExample: "Add an example",
   exampleInput: "Input",
   exampleOutput: "Expected output",
   lowConfidence: "Low-confidence handling",
-  lowConfidenceLine: "A confidence threshold, or escalation to a person",
+  lowConfidenceLine: "Threshold or escalation",
   threshold: "Confidence threshold",
   escalate: "Escalate to a person",
-  thresholdPlaceholder: "e.g. 0.6",
-  optionDescription: "Description (optional)",
+  thresholdPlaceholder: "0.6",
+  optionDescription: "Description",
   fieldType: "Field type",
   questionsCount: (n: number) => `${n} ${n === 1 ? "question" : "questions"}`,
   question: (n: number) => `Question ${n}`,
   removeQuestion: (n: number) => `Remove question ${n}`,
   type: "Type",
   instructions: "Instructions",
-  instructionsPlaceholder: "e.g. Which team should handle this message?",
+  instructionsPlaceholder: "Which team should handle this message?",
   options: "Options",
   levels: "Levels",
   addOption: "Add an option",
@@ -154,14 +154,14 @@ function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, la
       <button
         type="button"
         draggable
-        aria-label={`Move ${label.toLowerCase()} ${index + 1}. Drag, or use the up and down arrow keys.`}
+        aria-label={`Move ${label.toLowerCase()} ${index + 1}`}
         onDragStart={(event) => event.dataTransfer.setData("text/plain", String(index))}
         onKeyDown={onKey}
         style={GRIP}
       >
         <Glyph name="grip" size={14} />
       </button>
-      <FieldInput phone={phone} mono aria-label={`${label} ${index + 1}`} value={option.key} maxLength={80} placeholder="e.g. billing" onChange={(e) => onChange({ ...option, key: e.target.value })} />
+      <FieldInput phone={phone} mono aria-label={`${label} ${index + 1}`} value={option.key} maxLength={80} placeholder="billing" onChange={(e) => onChange({ ...option, key: e.target.value })} />
       <FieldInput phone={phone} aria-label={`Description of ${label.toLowerCase()} ${index + 1}`} value={option.line} maxLength={200} placeholder={DECISION_COPY.optionDescription} onChange={(e) => onChange({ ...option, line: e.target.value })} />
       {count > 2 ? <IconSquare glyph="x" phone={phone} label={`Remove ${label.toLowerCase()} ${index + 1}`} onClick={onRemove} /> : <span />}
     </div>
@@ -193,7 +193,7 @@ function QuestionEditor({ q, index, onChange, onRemove, phone, provider, canRemo
         <SegmentedField<QuestionType>
           label={`Type of question ${index + 1}`}
           phone={phone}
-          items={QUESTION_TYPES.map((value) => ({ value, label: value === "yesno" && isTypeSafe(provider) ? "Yes or no (Noul)" : questionTypeLabel(value) }))}
+          items={QUESTION_TYPES.map((value) => ({ value, label: value === "yesno" && isTypeSafe(provider) ? "Yes or no" : questionTypeLabel(value) }))}
           value={q.type}
           onChange={(next) => onChange({ ...q, type: next })}
         />
@@ -204,7 +204,7 @@ function QuestionEditor({ q, index, onChange, onRemove, phone, provider, canRemo
       {takesOptions(q.type) ? (
         <>
           <QuestionRow id={`${uid}-options`} label={DECISION_COPY.options} group top phone={phone}>
-            {q.type === "rank" ? <Hint>The answer puts every option in order.</Hint> : null}
+            {q.type === "rank" ? <Hint>Answer ranks every option</Hint> : null}
           </QuestionRow>
           <div role="group" aria-label={`Options of question ${index + 1}`} style={PANEL_LIST}>
             {q.options.map((option, i) => (
@@ -232,7 +232,7 @@ function QuestionEditor({ q, index, onChange, onRemove, phone, provider, canRemo
             <Hint>Lowest to highest</Hint>
             {q.levels.map((level, i) => (
               <Spread key={i}>
-                <FieldInput phone={phone} aria-label={`Level ${i + 1}`} value={level} maxLength={60} placeholder={i === 0 ? "e.g. Calm" : "e.g. Annoyed"} onChange={(e) => onChange({ ...q, levels: q.levels.map((l, j) => (j === i ? e.target.value : l)) })} />
+                <FieldInput phone={phone} aria-label={`Level ${i + 1}`} value={level} maxLength={60} placeholder={i === 0 ? "Calm" : "Annoyed"} onChange={(e) => onChange({ ...q, levels: q.levels.map((l, j) => (j === i ? e.target.value : l)) })} />
                 {q.levels.length > 2 ? <IconSquare glyph="x" phone={phone} label={`Remove level ${i + 1}`} onClick={() => onChange({ ...q, levels: q.levels.filter((_, j) => j !== i) })} /> : null}
               </Spread>
             ))}
@@ -265,11 +265,11 @@ function AnswerEditor({ q, answer, onChange, phone }: { q: QuestionDraft; answer
         ) : q.type === "score" ? (
           <PickMenu field id={`${uid}-v`} label={`Answer to ${q.id}`} phone={phone} placeholder="No answer" value={value || null} options={[{ value: NONE, label: "No answer" }, ...levels.map((level, i) => ({ value: String(i), label: level }))]} onChange={(next) => (next === NONE ? onChange(null) : set({ value: next }))} />
         ) : q.type === "multi" || q.type === "rank" ? (
-          <FieldInput phone={phone} id={`${uid}-v`} aria-label={`Answer to ${q.id}`} value={value} placeholder={q.type === "rank" ? "e.g. every option, in order, comma separated" : "e.g. billing, support"} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
+          <FieldInput phone={phone} id={`${uid}-v`} aria-label={`Answer to ${q.id}`} value={value} placeholder={q.type === "rank" ? "Every option, in order, comma separated" : "billing, support"} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
         ) : q.type === "extract" ? (
-          <FieldInput phone={phone} id={`${uid}-v`} aria-label={`Answer to ${q.id}`} value={value} placeholder={`e.g. the ${EXTRACT_FIELD_LABEL[q.field].toLowerCase()} it pulled out`} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
+          <FieldInput phone={phone} id={`${uid}-v`} aria-label={`Answer to ${q.id}`} value={value} placeholder={`the ${EXTRACT_FIELD_LABEL[q.field].toLowerCase()} it pulled out`} onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
         ) : (
-          <FieldInput phone={phone} mono id={`${uid}-v`} aria-label={`Answer to ${q.id}`} inputMode="decimal" value={value} placeholder="e.g. 0 to 1" onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
+          <FieldInput phone={phone} mono id={`${uid}-v`} aria-label={`Answer to ${q.id}`} inputMode="decimal" value={value} placeholder="0 to 1" onChange={(e) => (e.target.value ? set({ value: e.target.value }) : onChange(null))} />
         )}
         {q.type !== "yesno" ? <FieldInput phone={phone} mono width={NARROW.date} aria-label={`${DECISION_COPY.confidence}, percent`} inputMode="numeric" placeholder="Percent" value={answer?.sure ?? ""} disabled={!value} onChange={(e) => set({ sure: e.target.value })} /> : null}
       </Inline>
@@ -386,7 +386,7 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
         <OptionalField name={DECISION_COPY.input} description={DECISION_COPY.inputLine} summary={draft.reads === "step" ? summaryOf(stepChoices.find((choice) => choice.id === draft.stateFrom)?.label) : summaryOf(firstLineOf(draft.stateSample, 80))} forceOpen={open.input} phone={phone}>
           <SegmentedField<"step" | "paste"> label={DECISION_COPY.input} phone={phone} items={[{ value: "step", label: DECISION_COPY.fromStep, disabled: stepChoices.length === 0 }, { value: "paste", label: DECISION_COPY.fromText }]} value={draft.reads} onChange={(reads) => set({ reads })} />
           {draft.reads === "step" ? (
-            <PickMenu field label="Step it reads" phone={phone} placeholder="Select a step" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
+            <PickMenu field label="Tile it reads" phone={phone} placeholder="Select a tile" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
           ) : (
             <>
               <FieldArea phone={phone} rows={3} aria-label={DECISION_COPY.state} value={draft.stateSample} maxLength={STATE_SAMPLE_MAX} placeholder={DECISION_COPY.statePlaceholder} onChange={(e) => set({ stateSample: e.target.value })} />
@@ -425,8 +425,8 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
         <OptionalField name={DECISION_COPY.examples} description={DECISION_COPY.examplesLine} summary={examples.length > 0 ? `${examples.length} ${examples.length === 1 ? "example" : "examples"}` : null} forceOpen={open.examples} phone={phone}>
           {examples.map((example, at) => (
             <div key={at} role="group" aria-label={`Example ${at + 1}`} data-testid="decision-example" style={PANEL_LIST}>
-              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleInput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.input} placeholder="e.g. I was charged twice" onChange={(e) => setExample(at, { input: e.target.value })} />
-              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleOutput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.output} placeholder="e.g. team = billing" onChange={(e) => setExample(at, { output: e.target.value })} />
+              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleInput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.input} placeholder="I was charged twice" onChange={(e) => setExample(at, { input: e.target.value })} />
+              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleOutput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.output} placeholder="team = billing" onChange={(e) => setExample(at, { output: e.target.value })} />
               <TextLink phone={phone} onClick={() => set({ examples: examples.filter((_, i) => i !== at) })} aria-label={`Remove example ${at + 1}`}>
                 Remove
               </TextLink>
@@ -456,7 +456,7 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
           {low.mode === "threshold" ? (
             <>
               <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.threshold} inputMode="decimal" value={low.threshold} placeholder={DECISION_COPY.thresholdPlaceholder} onChange={(e) => set({ lowConfidence: { ...low, threshold: e.target.value.replace(/[^0-9.]/g, "") } })} />
-              <Hint>A number from 0 to 1. Below it, the answer is not trusted.</Hint>
+              <Hint>0 to 1. Below it: not trusted</Hint>
             </>
           ) : null}
         </OptionalField>

@@ -1,7 +1,7 @@
 /* CA-19 P6: the reference group window (board "References: groups and the Colours window", left).
 
    A 560 window from the modal recipes (a BottomSheet on a phone). It opens from a group's label, from Make a group, from
-   Open group and from the Colours window. Head: "Reference group", "Components that work together, under one colour", and
+   Open group and from the Colours window. Head: "Reference group", "Components under one colour", and
    the close square. Then, top to bottom:
 
    1. Name: a row with the field, "Add a name".
@@ -13,7 +13,7 @@
    5. Linked text: an inner panel, "Linked text · 1 of 1", with Go to it and Remove; or Find words and Select words.
 
    The footer: Undo and Redo, Delete group in the danger colour, then Cancel and Save. Save is one step and needs two or more
-   components ("A group needs two or more components"). Delete group asks first.
+   components ("2 components min"). Delete group asks first.
 
    What the window holds is its own until Save; Cancel, Escape and the close square leave the group as it was. */
 
@@ -36,34 +36,33 @@ import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, InnerPanel, PA
 
 export const GROUP_WINDOW_COPY = {
   title: "Reference group",
-  subtitle: "Components that work together, under one colour",
+  subtitle: "Components under one colour",
   name: "Name",
-  namePlaceholder: "Add a name",
+  namePlaceholder: "Name",
   colour: "Colour",
   colourCode: "Colour code",
   change: "Change…",
   components: "Components",
-  order: (n: number) => `${n} · drag to set the order`,
+  order: (n: number) => `${n}`,
   add: "Add components",
   remove: (name: string) => `Remove ${name}`,
   notes: "Notes",
-  notesHint: "How these components work together · optional",
   notesCount: (n: number) => `${n.toLocaleString("en-US")} / ${GROUP_NOTES_MAX.toLocaleString("en-US")}`,
   linkedText: "Linked text",
   oneOfOne: (has: boolean) => ` · ${has ? 1 : 0} of 1`,
   goTo: "Go to it",
   removeLink: "Remove",
   findWords: "Find words in the post",
-  selectWords: "Select words in the post",
-  saveFirst: "Save the group to link words to it.",
-  noMatch: "Those words are not in the post",
+  selectWords: "Selecting in the post",
+  saveFirst: "Linking needs a saved group",
+  noMatch: "Not in the post",
   delete: "Delete group",
   cancel: "Cancel",
   save: "Save",
-  needsTwo: "A group needs two or more components",
-  needsColour: "A group needs a colour",
+  needsTwo: "2 components min",
+  needsColour: "Colour required",
   deleteTitle: (name: string) => `Delete ${name}?`,
-  deleteBody: (n: number) => `Its ${n} ${n === 1 ? "component loses" : "components lose"} this colour. The linked text becomes plain words. The components stay.`,
+  deleteBody: (n: number) => `${n} ${n === 1 ? "component loses" : "components lose"} this colour. Linked text becomes plain text.`,
   deleteAction: "Delete",
   noName: "No name",
   inGroup: "In another group",
@@ -328,7 +327,7 @@ function GroupForm(props: ReferenceGroupWindowProps) {
             />
           </div>
           <div role="group" aria-labelledby="group-notes" data-testid="group-notes" style={block}>
-            <BlockTitle title={GROUP_WINDOW_COPY.notes} id="group-notes" sub={GROUP_WINDOW_COPY.notesHint}>
+            <BlockTitle title={GROUP_WINDOW_COPY.notes} id="group-notes">
               <span data-testid="group-notes-count" style={COUNT}>
                 {GROUP_WINDOW_COPY.notesCount(notes.length)}
               </span>

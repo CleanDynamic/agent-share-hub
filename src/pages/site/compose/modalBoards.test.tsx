@@ -60,118 +60,116 @@ describe("each modal as its board (CA-15b P2)", () => {
   it("Add a result", () => {
     mount(<AddResultDialog open onOpenChange={() => {}} onAdd={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Image or video" }));
-    header("Add a result", "The output this prompt produced");
+    header("Add a result", "Output of this prompt");
     const body = screen.getByTestId("modal-body").textContent ?? "";
-    expect(inOrder(body, ["Output type", "12 types", "Link", "Image or video", "File", "Model", "Text", "Audio", "Deployed app or website", "Data table", "Sent message", "Change in an external app", "Metric", "Offline outcome", "Images and videos", "0 files", "Drop images or videos here", "Choose files", "Optional", "1 field"])).toEqual([]);
-    expect(optionalRows()).toEqual([["Caption", "One line describing what the output shows"]]);
-    footer("Required: at least one image or video");
+    expect(inOrder(body, ["Output type", "12 types", "Link", "Image or video", "File", "Model", "Text", "Audio", "Deployed app or website", "Data table", "Sent message", "Change in an external app", "Metric", "Offline outcome", "Images and videos", "0 files", "Drop images or videos", "Select files", "Optional", "1 field"])).toEqual([]);
+    expect(optionalRows()).toEqual([["Caption", "One line"]]);
+    footer("Required: Images and videos");
   });
 
   it("Add a tool", () => {
     mount(<AddToolDialog open onOpenChange={() => {}} onAdd={() => {}} />);
-    header("Add a tool", "An external application the model used during the build");
-    expect(screen.getByRole("button", { name: "Application" }).textContent).toBe("Select an application");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Application", "Select an application", "Optional", "6 fields"])).toEqual([]);
+    header("Add a tool", "External app the model used");
+    expect(screen.getByRole("button", { name: "App" }).textContent).toBe("Select an app");
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["App", "Select an app", "Optional", "6 fields"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Connection method", "MCP server, native integration, custom code and 6 more"],
-      ["Actions performed", "What the application did in this build"],
-      ["Permissions", "Read only, read and write, or acting on your behalf"],
-      ["Required plan", "Free, or the name of the paid plan"],
-      ["Setup steps", "The steps required to connect it"],
-      ["Alternatives", "Other applications that perform the same function"],
+      ["Actions performed", ""],
+      ["Permissions", "Read only, read and write, or acts as the maker"],
+      ["Required plan", "Free or plan name"],
+      ["Setup steps", ""],
+      ["Alternatives", "Apps that do the same job"],
     ]);
-    footer("Required: an application");
+    footer("Required: App");
   });
 
   it("Add a check", () => {
     mount(<AddCheckDialog open onOpenChange={() => {}} onAdd={() => {}} />);
-    header("Add a check", "A test that verifies this part of the build");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Test description", "0 / 280", "Pass criteria", "Runs", "Or add test cases below", "passed out of", "Optional", "8 fields"])).toEqual([]);
+    header("Add a check", "Test of part of the build");
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Test description", "0 / 280", "Pass criteria", "Runs", "passed out of", "Optional", "8 fields"])).toEqual([]);
     expect(optionalRows()).toEqual([
-      ["Test cases", "Inputs, expected outputs and actual outputs"],
-      ["Failure notes", "What failed, and what was changed before the next run"],
-      ["Last run date", "When the test last ran"],
-      ["Test method", "Manual, automated, test suite, peer review or comparison"],
-      ["Reviewer", "You, a user or a client"],
-      ["Scoring method", "Pass or fail, a metric against a target, a rating, or an A/B comparison"],
-      ["Model tested", "The model and version the test ran against"],
-      ["Evidence", "A log, a screenshot, or a link to the test run"],
+      ["Test cases", "Input, expected output, actual output"],
+      ["Failure notes", "What failed and what changed"],
+      ["Last run date", ""],
+      ["Test method", "Manual, automated, test suite, peer review, comparison"],
+      ["Reviewer", "Maker, user or client"],
+      ["Scoring method", "Pass or fail, metric vs target, rating, A/B"],
+      ["Model tested", ""],
+      ["Evidence", "Log, screenshot or link"],
     ]);
-    footer("Required: a test description");
+    footer("Required: Test description, Pass criteria, Runs");
   });
 
   it("Add code", () => {
     mount(<AddCodeDialog open onOpenChange={() => {}} onAdd={() => {}} seed={"const a = 1;\nconst b = 2;"} />);
-    header("Add code", "Source code produced in this step, as it was used");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Code", "2 lines", "Upload files", "Or upload text files. Each file is added as a separate step.", "Language", "Optional", "2 fields"])).toEqual([]);
+    header("Add code", "Source code as used");
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Code", "2 lines", "Upload files", "Each file becomes its own tile", "Language", "Optional", "2 fields"])).toEqual([]);
     // The language field shows the language's name, guessed from the code until it is chosen.
     expect(screen.getByRole("button", { name: "Language" }).textContent).toMatch(/^(TypeScript|JavaScript)$/);
     expect(optionalRows()).toEqual([
-      ["File path", "Where the file lives in the project"],
-      ["Generated with", "The tool and model that wrote it"],
+      ["File path", ""],
+      ["Generated with", "Tool and model"],
     ]);
-    footer("All required fields complete");
+    footer("Required fields complete");
   });
 
   it("Add an agent", () => {
     mount(<AddAgentDialog open onOpenChange={() => {}} onAdd={() => {}} nextNumber={4} teamsAvailable />);
-    header("Add an agent", "A model that runs on its own, with instructions and tools");
-    expect(within(screen.getByRole("radiogroup", { name: "What to add" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Single agent", "Multi-agent team"]);
+    header("Add an agent", "Autonomous model with instructions and tools");
+    expect(within(screen.getByRole("radiogroup", { name: "Type" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Single agent", "Multi-agent team"]);
     expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Name", "Models", "Primary", "Optional", "9 fields"])).toEqual([]);
     expect(optionalRows()).toEqual([
-      ["System instructions", "What the agent is told to do"],
-      ["Available tools", "Applications the agent can call"],
-      ["Trigger", "Manual, scheduled, or started by an event"],
-      ["Host platform", "Where the agent runs"],
-      ["Memory", "What the agent keeps between runs, and where"],
-      ["Supporting models", "Models that summarise history or extract fields for the agent"],
-      ["Limits", "Maximum steps, budget or run time, approvals and prohibited actions"],
-      ["Output and destination", "A file, a message or a pull request, and where it is delivered"],
-      ["Sample run", "A transcript or trace of one real run"],
+      ["System instructions", ""],
+      ["Available tools", "Apps the agent can call"],
+      ["Trigger", ""],
+      ["Host platform", ""],
+      ["Memory", "Stored between runs, and where"],
+      ["Helpers", "Models that summarise history or extract fields"],
+      ["Limits", "Steps, budget, run time, approvals, prohibited actions"],
+      ["Output and destination", "Format and destination"],
+      ["Sample run", "Transcript or trace of one run"],
     ]);
     fireEvent.click(screen.getByRole("radio", { name: "Multi-agent team" }));
-    expect(optionalRows().at(-1)).toEqual(["Orchestration pattern", "Sequential, lead with delegates, parallel then merged, or writer and reviewer"]);
+    expect(optionalRows().at(-1)).toEqual(["Orchestration pattern", "Sequential, lead and delegates, parallel then merge, writer and reviewer"]);
     expect(screen.getByTestId("optional-title-count").textContent).toBe("Multi-agent only");
-    footer("All required fields complete");
+    footer("Required fields complete");
   });
 
   it("Add a decision", () => {
     mount(<AddDecisionDialog open onOpenChange={() => {}} onAdd={() => {}} codeTiles={[]} stepChoices={[]} />);
-    header("Add a decision", "A structured classification your application requests from a model");
+    header("Add a decision", "Structured answer from a model");
     expect(
       inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Model", "Model or service", "Version", "Invocation", "Direct", "Through an adapter", "Questions", "1 question", "Question 1", "Key", "Type", "Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction", "Instructions", "Options", "Add an option", "Add a question", "Optional", "7 fields"]),
     ).toEqual([]);
     expect(optionalRows()).toEqual([
-      ["Import from a logged request and response", "Populates the fields above from JSON, a curl command or Python"],
-      ["Calling code", "The code that sends the request, added as a Code tile"],
-      ["Input", "The output of another step, or sample text"],
-      ["Recorded answer", "One real answer the model returned"],
-      ["Installation command", "Exactly as you typed it"],
-      ["Examples", "Real inputs with the output returned for each"],
-      ["Low-confidence handling", "A confidence threshold, or escalation to a person"],
+      ["Import request and response", "From JSON, curl or Python"],
+      ["Calling code", "Code tile that sends the request"],
+      ["Input", "Another tile's output, or sample text"],
+      ["Recorded answer", "One real answer"],
+      ["Installation command", "As typed"],
+      ["Examples", "Real inputs and their outputs"],
+      ["Low-confidence handling", "Threshold or escalation"],
     ]);
     expect(within(screen.getByTestId("modal-footer")).getAllByRole("button").map((button) => button.textContent)).toEqual(["Cancel", "Add"]);
   });
 
   it("Add a GitHub repository", () => {
     mount(<AddRepoDialog open onOpenChange={() => {}} onAdd={() => {}} fetchRepo={() => Promise.resolve(null)} />);
-    header("Add a GitHub repository", "A repository used in this build, owned by you or by a third party");
+    header("Add a GitHub repository", "Repository used in this build");
     fireEvent.click(screen.getByRole("radio", { name: "Third-party repository" }));
     expect(
       inOrder(screen.getByTestId("modal-body").textContent ?? "", [
         "Repository URL",
-        "Retrieved from GitHub when the URL is entered. Repositories with no recent commits are flagged as possibly unmaintained.",
+        "From GitHub. No recent commits: flagged as possibly unmaintained",
         "Ownership",
         "Created in this build",
-        "Your existing repository",
+        "Maker's existing repository",
         "Third-party repository",
         "Description",
         "0 / 500",
         "Third-party repository",
         "Author",
-        "Credited on the build page",
         "Usage",
-        "Select all that apply",
         "Installed as a dependency",
         "Copied source code",
         "Followed its documentation",
@@ -183,13 +181,13 @@ describe("each modal as its board (CA-15b P2)", () => {
       ]),
     ).toEqual([]);
     expect(optionalRows()).toEqual([
-      ["Pinned version", "A branch, tag or commit, so copies stay identical"],
-      ["Path", "A folder or file, when only part of the repository was used"],
-      ["Modifications", "What was changed from the original"],
+      ["Pinned version", "Branch, tag or commit"],
+      ["Path", "Folder or file, if only part was used"],
+      ["Modifications", "Changes from the original"],
       ["Key files", "README, CLAUDE.md, agent configuration, skills folder"],
-      ["Run instructions", "Clone command, dependencies, start command, and environment variable names only"],
+      ["Run instructions", "Clone, dependencies, start command, environment variable names"],
     ]);
-    footer("Required: a repository URL");
+    footer("Required: Repository URL");
   });
 
   it("the prompt window", () => {
@@ -200,14 +198,13 @@ describe("each modal as its board (CA-15b P2)", () => {
     expect(within(window).getByRole("button", { name: /^Close/ })).toBeTruthy();
     expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 of 4,000 characters", "Optional", "2 fields", "Esc Close · ← → Previous or next prompt", "Done"])).toEqual([]);
     expect(optionalRows()).toEqual([
-      ["Model settings", "Model, reasoning effort, custom instructions and project knowledge"],
-      ["Variables", "Words a copier replaces, such as {company name}"],
+      ["Model settings", ""],
+      ["Variables", "Format: {company name}"],
     ]);
     fireEvent.click(within(screen.getAllByTestId("optional-field")[0]).getByRole("button"));
     expect(within(screen.getByRole("radiogroup", { name: "Reasoning effort" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Default", "Low", "High"]);
     expect((screen.getByLabelText("Custom instructions or project knowledge that applied") as HTMLTextAreaElement).placeholder).toBe("Custom instructions or project knowledge that applied");
     fireEvent.click(within(screen.getAllByTestId("optional-field")[1]).getByRole("button"));
-    expect(screen.getByText("Select words in the prompt, then mark them as a variable.")).toBeTruthy();
     expect(screen.getByText("No variables yet")).toBeTruthy();
   });
 });

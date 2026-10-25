@@ -140,7 +140,7 @@ export function markVariable(text: string, start: number, end: number): string |
 
 export const TOOL_PERMISSIONS = ["read", "write", "delegated"] as const;
 export type ToolPermission = (typeof TOOL_PERMISSIONS)[number];
-export const TOOL_PERMISSION_LABEL: Record<ToolPermission, string> = { read: "Read only", write: "Read and write", delegated: "Acting on your behalf" };
+export const TOOL_PERMISSION_LABEL: Record<ToolPermission, string> = { read: "Read only", write: "Read and write", delegated: "Acts as the maker" };
 
 export const TOOL_PLAN_MAX = 80;
 export const TOOL_SETUP_MAX = 12;
@@ -169,7 +169,7 @@ export const CHECK_METHOD_LABEL: Record<CheckMethod, string> = { manual: "Manual
 
 export const CHECK_REVIEWERS = ["you", "user", "client"] as const;
 export type CheckReviewer = (typeof CHECK_REVIEWERS)[number];
-export const CHECK_REVIEWER_LABEL: Record<CheckReviewer, string> = { you: "You", user: "A user", client: "A client" };
+export const CHECK_REVIEWER_LABEL: Record<CheckReviewer, string> = { you: "Maker", user: "User", client: "Client" };
 
 export const SCORING_HOWS = ["pass_fail", "metric", "rating", "ab"] as const;
 export type ScoringHow = (typeof SCORING_HOWS)[number];
@@ -294,7 +294,7 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     evidence: (value) => {
       if (!isRecord(value)) return null;
       const url = clean(value.url) ? cleanUrl(value.url) : null;
-      if (clean(value.url) && !url) throw new Error("Evidence is a URL, like example.com/results.");
+      if (clean(value.url) && !url) throw new Error("Format: example.com/results");
       const mediaId = clean(value.media_id) || clean(value.mediaId);
       const name = clean(value.name, EVIDENCE_NAME_MAX);
       if (mediaId) return { media_id: mediaId, ...(name ? { name } : null) };

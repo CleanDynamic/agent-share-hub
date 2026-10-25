@@ -113,7 +113,7 @@ export function datasetOf(payload: Raw): DatasetFacts {
 
 export const REPO_OWNERSHIPS = ["created", "owned", "third_party"] as const;
 export type RepoOwnership = (typeof REPO_OWNERSHIPS)[number];
-export const REPO_OWNERSHIP_LABEL: Record<RepoOwnership, string> = { created: "Created in this build", owned: "Your existing repository", third_party: "Third-party repository" };
+export const REPO_OWNERSHIP_LABEL: Record<RepoOwnership, string> = { created: "Created in this build", owned: "Maker's existing repository", third_party: "Third-party repository" };
 
 export const REPO_USAGES = ["dependency", "copied", "docs", "tool", "context", "fork"] as const;
 export type RepoUsage = (typeof REPO_USAGES)[number];
@@ -245,7 +245,7 @@ export function repoDay(iso: string | null | undefined): string {
 }
 
 /** What "Run instructions" asks, in one place: one command per line, naming keys, never their values. */
-export const RUN_HINT = "One command per line. Name keys, never paste their values.";
+export const RUN_HINT = "One per line. Key names only";
 
 /** A line that looks as if it holds a secret value: a long token after an equals sign, or a well-known key prefix. */
 export function looksLikeSecret(line: string): boolean {
@@ -402,7 +402,7 @@ registerCleaners("repo", {
   },
   run: (value) => {
     const lines = linesValue(value, REPO_RUN_MAX, REPO_RUN_LINE_MAX, "Run instructions");
-    if (lines.some(looksLikeSecret)) throw new Error("A run instruction looks as if it holds a key's value. Name the key instead, for example GITHUB_TOKEN.");
+    if (lines.some(looksLikeSecret)) throw new Error("Contains a key value. Key names only, like GITHUB_TOKEN");
     return lines.length > 0 ? lines : null;
   },
   // What GitHub said, kept as it came back.

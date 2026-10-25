@@ -211,7 +211,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       return;
     }
     if (file.size > MEDIA_MAX_BYTES) {
-      setMediaError(`That file is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+      setMediaError(`File: ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB max`);
       return;
     }
     setMediaError(null);

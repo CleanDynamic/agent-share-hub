@@ -130,16 +130,14 @@ export const FULL_PROMPT_COPY = {
   keepAsWritten: "Keep as written",
   prompt: "Prompt",
   response: "Response",
-  titlePlaceholder: "e.g. Welcome email",
+  titlePlaceholder: "Welcome email",
   rename: "Rename prompt",
   modelSettings: "Model settings",
-  modelSettingsLine: "Model, reasoning effort, custom instructions and project knowledge",
   model: "Model",
   effort: "Reasoning effort",
   instructions: "Custom instructions or project knowledge that applied",
   variables: "Variables",
-  variablesLine: "Words a copier replaces, such as {company name}",
-  variablesHow: "Select words in the prompt, then mark them as a variable.",
+  variablesLine: "Format: {company name}",
   noVariablesCount: "No variables yet",
   replyCount: (n: number) => `${n.toLocaleString("en-GB")} of ${REPLY_MAX.toLocaleString("en-GB")} characters`,
   markVariable: "Mark selection as a variable",
@@ -426,7 +424,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
     return (
       <OptionalSection>
         {settingsHeld ? (
-          <OptionalField name={FULL_PROMPT_COPY.modelSettings} description={FULL_PROMPT_COPY.modelSettingsLine} summary={settingsLine} phone={phone}>
+          <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
             {shownModel ? (
               <ReadLine label={FULL_PROMPT_COPY.model}>
                 <ModelTag tool={tool} model={model}>
@@ -453,7 +451,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
 
   return (
     <OptionalSection>
-      <OptionalField name={FULL_PROMPT_COPY.modelSettings} description={FULL_PROMPT_COPY.modelSettingsLine} summary={settingsLine} phone={phone}>
+      <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
         <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />
         <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
         <FieldArea
@@ -470,7 +468,6 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
         />
       </OptionalField>
       <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
-        <Hint>{FULL_PROMPT_COPY.variablesHow}</Hint>
         {variables.length === 0 ? <Count>{FULL_PROMPT_COPY.noVariablesCount}</Count> : null}
         {variables.map((variable) => (
           <Row key={variable.name} id={`variable-${step.id}-${variable.name}`} label={`{${variable.name}}`} noRule phone={phone}>
@@ -479,7 +476,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
               id={`variable-${step.id}-${variable.name}`}
               maxLength={VARIABLE_DESCRIPTION_MAX}
               value={described[variable.name] ?? variable.description}
-              placeholder="e.g. The customer's first name"
+              placeholder="The customer's first name"
               onChange={(event) => setDescribed((now) => ({ ...now, [variable.name]: event.target.value }))}
               onBlur={() => saveVariables(described)}
             />
@@ -618,7 +615,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
                       {use.label}
                     </span>
                   ))}
-                  {goesInto.length > 0 ? <span style={{ ...quiet, marginLeft: uses.length > 0 ? 8 : 0 }}>Goes into</span> : null}
+                  {goesInto.length > 0 ? <span style={{ ...quiet, marginLeft: uses.length > 0 ? 8 : 0 }}>Used by</span> : null}
                   {goesInto.map((to) => (
                     <span key={to.id} style={refChip}>
                       {to.number} · {stepTitle(to)}

@@ -36,13 +36,13 @@ export const EXTRAS_COPY = {
   costDollar: "$",
   costBad: `Cost is a number from 0 to ${COST_MAX.toLocaleString("en-GB")}.`,
   showReaders: "Show readers",
-  showReadersLine: "Readers see what it cost only when this is on.",
-  how: "How did you work?",
-  watching: "With me watching",
-  background: "In the background",
+  showReadersLine: "Off: cost hidden from readers",
+  how: "Method",
+  watching: "Supervised",
+  background: "Background",
   startedWith: "Started with",
   startedWithHint: "claude --model opus --permission-mode plan",
-  together: "Ran at the same time as",
+  together: "Ran alongside",
   togetherNone: "No other session",
   ownCopy: "Own copy of the code",
   ownCopyHint: "fix-totals",
@@ -113,7 +113,7 @@ export function SessionFactsFields({ id, extras, phone, onChange }: { id: string
         </label>
         <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.showReadersLine}</span>
       </Field>
-      <Field id={`${id}-time`} label="How long it ran" hint="Minutes, optional">
+      <Field id={`${id}-time`} label="How long it ran" hint="Minutes">
         <div style={{ width: 120 }}>
           <ExtrasInput
             key={`${id}:ms:${extras.ms ?? ""}`}
@@ -147,7 +147,7 @@ export function SessionFactsFields({ id, extras, phone, onChange }: { id: string
           />
         </div>
       </Field>
-      <Field id={`${id}-trace`} label="Trace link" hint="https only, optional">
+      <Field id={`${id}-trace`} label="Trace link" hint="https only">
         <ExtrasInput
           key={`${id}:trace:${extras.traceUrl ?? ""}`}
           label="Trace link"
@@ -288,7 +288,7 @@ export const RUNS_FIELD_COPY = {
   of: "of",
   remove: (n: number) => `Remove run ${n}`,
   more: (n: number) => `Showing the newest ${n}. A check keeps 20 runs at most.`,
-  bad: "Each run needs a date written as 2026-10-12, and whole numbers with passed no more than the total.",
+  bad: "Each run: date as 2026-10-12, whole numbers, passed no more than total",
 } as const;
 
 /** One run as the three wells hold it. */

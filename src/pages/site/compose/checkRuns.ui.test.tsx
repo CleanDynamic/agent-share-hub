@@ -155,7 +155,7 @@ describe("Check window › Runs (CA-18: written there, held until Save)", () => 
     fireEvent.change(date, { target: { value: "2026-10-16" } });
     fireEvent.keyDown(date, { key: "Enter" });
     expect(onCheckRuns).not.toHaveBeenCalled();
-    expect(screen.getByText(/Each run needs a date/)).toBeTruthy();
+    expect(screen.getByText(/Each run: date as 2026-10-12/)).toBeTruthy();
     const passed = within(fresh).getByLabelText("Passed in run 1");
     fireEvent.change(passed, { target: { value: "38" } });
     fireEvent.keyDown(passed, { key: "Enter" });
