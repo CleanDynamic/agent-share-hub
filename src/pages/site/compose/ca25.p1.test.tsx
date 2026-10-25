@@ -169,9 +169,9 @@ describe("the checklist's actions, each of which closes the window", () => {
     await waitFor(() => expect(onShowApps).toHaveBeenCalledWith(["s2", "s4"]));
   });
 
-  it("Open card opens the Classification Card", async () => {
+  it("Open Classification opens the Classification", async () => {
     view({ ...OPEN, missing: [...OPEN.missing] });
-    await choose("Open card");
+    await choose("Open Classification");
     await waitFor(() => expect(screen.getByTestId("sandbox-card")).toBeTruthy());
   });
 });

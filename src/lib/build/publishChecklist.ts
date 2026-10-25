@@ -123,7 +123,7 @@ export function publishChecklist(input: ChecklistInput): Checklist {
     });
   }
   if (!input.cardFilled) {
-    recommended.push({ key: "card", section: "recommended", done: false, words: "Classification Card", detail: CHECKLIST_COPY.notFilled, action: { id: "open_card", label: "Open card" } });
+    recommended.push({ key: "card", section: "recommended", done: false, words: "Classification", detail: CHECKLIST_COPY.notFilled, action: { id: "open_card", label: "Open Classification" } });
   }
   input.reminders.forEach((reminder, at) =>
     recommended.push({ key: `reminder-${at}`, section: "recommended", done: false, words: reminder.line, detail: null, action: { id: "go_to", label: CHECKLIST_COPY.goTo }, stepId: reminder.stepId }),
@@ -186,7 +186,7 @@ export function confirmRows(input: ConfirmInput): ConfirmRow[] {
     { key: "post", name: "Post", value: post },
     { key: "build", name: "Build", value: build },
     { key: "files", name: "Files", value: files },
-    { key: "card", name: "Classification Card", value: input.card.length > 0 ? input.card.join(", ") : CHECKLIST_COPY.notFilled },
+    { key: "card", name: "Classification", value: input.card.length > 0 ? input.card.join(", ") : CHECKLIST_COPY.notFilled },
   ];
 }
 

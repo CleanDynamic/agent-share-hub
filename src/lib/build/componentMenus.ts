@@ -151,7 +151,7 @@ export function clearList(counts: ClearCounts): string {
 export const CLEAR_COPY = {
   menu: "Clear the build…",
   title: "Clear the build?",
-  body: (counts: ClearCounts) => `Removes ${clearList(counts)}, with their colours, groups and links. The title, the post's words and the Classification Card stay.`,
+  body: (counts: ClearCounts) => `Removes ${clearList(counts)}, with their colours, groups and links. The title, the post's words and the Classification stay.`,
   cancel: "Cancel",
   confirm: "Clear the build",
   /** Greyed while there is nothing in the build. */

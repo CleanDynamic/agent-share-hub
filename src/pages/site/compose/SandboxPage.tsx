@@ -1362,7 +1362,7 @@ function SandboxPageBody() {
           queryClient.setQueryData<StoredClassification>(classificationKey(id), { live: true, classification: value, facets: computeFacets(value) });
           await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
         };
-        buildHistory.record({ sentence: "Saved the Classification Card", undo: put(before), redo: put(after) });
+        buildHistory.record({ sentence: "Saved the Classification", undo: put(before), redo: put(after) });
       }
       return result;
     },

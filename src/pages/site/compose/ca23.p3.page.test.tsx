@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 async function retitle(to: string) {
-  fireEvent.click(await screen.findByRole("button", { name: "Classification Card" }, { timeout: 10_000 }));
+  fireEvent.click(await screen.findByRole("button", { name: "Classification" }, { timeout: 10_000 }));
   const dialog = await screen.findByTestId("sandbox-card");
   fireEvent.change(within(dialog).getByLabelText("Title"), { target: { value: to } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));

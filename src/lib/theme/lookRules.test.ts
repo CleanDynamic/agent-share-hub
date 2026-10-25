@@ -860,6 +860,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ReadFromBuild.test.tsx",
   "src/pages/site/compose/detailsOptional.tsx",
   "src/pages/site/compose/readerWords.test.tsx",
+
+  // CA-28 P2
+  "src/pages/site/compose/ca28.p2.test.tsx",
 ];
 
 /**

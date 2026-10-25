@@ -1297,7 +1297,7 @@ function SandboxBody(props: SandboxViewProps) {
           }}
         >
           <Button variant="ghost" size={48} fontSize={14} onClick={() => openCard(null)}>
-            Classification Card
+            Classification
           </Button>
           {published ? (
             <>
@@ -1349,8 +1349,8 @@ function SandboxBody(props: SandboxViewProps) {
         {tabs}
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
           <BuildTitleActions />
-          <Button variant="secondary" size={28} fontSize={12} aria-label="Classification Card" onClick={() => openCard(null)}>
-            Card
+          <Button variant="secondary" size={28} fontSize={12} aria-label="Classification" onClick={() => openCard(null)}>
+            Classification
           </Button>
           {published ? (
             <>

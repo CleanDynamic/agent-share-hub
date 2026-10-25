@@ -1,4 +1,4 @@
-// CA-16 P5, the Classification Card: the same dialog, ids, focus and phone behaviour as the Card it replaces, now with
+// CA-16 P5, the Classification: the same dialog, ids, focus and phone behaviour as the Card it replaces, now with
 // a preview, the Optional rows (every one closed), the classification pickers, "From the build" with disputes
 // and questions, and Save. The acceptance tests run the real data hook and the real storage layer over a mocked
 // database, so what they check is what would be written.
@@ -88,11 +88,11 @@ const live = () => maybeSingle.mockResolvedValue({ data: { classification: {}, f
 const card = () => screen.getByTestId("sandbox-card");
 const row = (name: string) => within(card()).getByRole("button", { name: new RegExp(`^${name.replace(/[()£]/g, "\\$&")}`) });
 
-describe("Classification Card: the sheet", () => {
-  it("is a dialog named Classification Card, with its subtitle, a preview and the title", async () => {
+describe("Classification: the sheet", () => {
+  it("is a dialog named Classification, with its subtitle, a preview and the title", async () => {
     live();
     mount();
-    const dialog = await screen.findByRole("dialog", { name: "Classification Card" });
+    const dialog = await screen.findByRole("dialog", { name: "Classification" });
     expect(within(dialog).getByText(CARD_SUBTITLE)).toBeTruthy();
     expect(within(dialog).getByTestId("card-preview")).toBeTruthy();
     expect((within(dialog).getByLabelText("Title") as HTMLInputElement).value).toBe("Policy search");
@@ -108,7 +108,7 @@ describe("Classification Card: the sheet", () => {
     expect(sheet.style.width).toBe("560px");
     expect(sheet.style.borderRadius).toBe("12px");
     expect(sheet.style.boxShadow).toBe("var(--window-shadow)");
-    const title = screen.getByRole("heading", { name: "Classification Card" });
+    const title = screen.getByRole("heading", { name: "Classification" });
     expect(title.style.fontSize).toBe("15px");
     expect(title.style.fontWeight).toBe("500");
   });
@@ -209,7 +209,7 @@ describe("Classification Card: the sheet", () => {
   });
 });
 
-describe("Classification Card: Build details", () => {
+describe("Classification: Build details", () => {
   it("renames the fields and keeps them where they were stored", async () => {
     live();
     const onDetail = vi.fn();
@@ -241,7 +241,7 @@ describe("Classification Card: Build details", () => {
   });
 });
 
-describe("Classification Card: acceptance", () => {
+describe("Classification: acceptance", () => {
   it("opens with every row closed, adds a Field from a suggestion, adds a custom Task, disputes Skill needed, saves, and writes classification and facets", async () => {
     live();
     updateBuild.mockResolvedValue({});
@@ -319,7 +319,7 @@ describe("Classification Card: acceptance", () => {
   });
 });
 
-describe("Classification Card: before the database update is applied", () => {
+describe("Classification: before the database update is applied", () => {
   it("shows the one line, still saves the title, and never throws", async () => {
     maybeSingle.mockResolvedValue({ data: null, error: { code: "42703", message: "column builds.classification does not exist" } });
     updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {

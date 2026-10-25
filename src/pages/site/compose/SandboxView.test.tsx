@@ -120,9 +120,9 @@ describe("SandboxView frame", () => {
     expect(addEntries({ checkable: true }).find((item) => item.key === "check")?.enabled).toBe(false);
   });
 
-  it("opens the Classification Card from its button with the title, the preview and the Optional rows closed", () => {
+  it("opens the Classification from its button with the title, the preview and the Optional rows closed", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(within(card).getByLabelText("Title")).toBeTruthy();
     expect(within(card).getByTestId("card-preview")).toBeTruthy();
@@ -236,9 +236,9 @@ describe("the refined look (UI-P93)", () => {
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
     expect(publish.getAttribute("style")).toMatch(/height:\s*28px/);
-    const card = screen.getByRole("button", { name: "Classification Card" });
+    const card = screen.getByRole("button", { name: "Classification" });
     expect(card.getAttribute("data-variant")).toBe("secondary");
-    expect(card.textContent).toBe("Card");
+    expect(card.textContent).toBe("Classification");
     expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*28px/);
     // The three sit 8 apart.
     expect(within(row).getByRole("link", { name: "Preview" }).parentElement?.getAttribute("style")).toContain("gap: 8px");
@@ -333,7 +333,7 @@ describe("the refined Map and Card (UI-P94)", () => {
 
   it("opens the Card as the modal window", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(card.style.width).toBe("560px");
   });
@@ -406,7 +406,7 @@ describe("the Card and the post", () => {
 
   it("carries no cover line and no Edit the post: the cover is edited in the post", () => {
     viewAt("/compose/x");
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(within(card).queryByText("The cover is the first picture in your post.")).toBeNull();
     expect(within(card).queryByRole("button", { name: "Edit the post" })).toBeNull();
@@ -414,7 +414,7 @@ describe("the Card and the post", () => {
 
   it("keeps the Title, the Summary, Tools and stack with Made with, and Build details", () => {
     viewAt("/compose/x");
-    fireEvent.click(screen.getByRole("button", { name: "Classification Card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
     expect(within(card).getByLabelText("Title")).toBeTruthy();
     for (const name of ["Summary", "Build details"]) expect(within(card).getByRole("button", { name: new RegExp(`^${name}`) })).toBeTruthy();

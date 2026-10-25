@@ -97,7 +97,7 @@ export interface SandboxCardProps extends CardProps {
   onEditPost?: () => void;
 }
 
-export const CLASSIFICATION_CARD = "Classification Card";
+export const CLASSIFICATION_CARD = "Classification";
 export const CARD_SUBTITLE = "How this build is described and filed in the Gallery";
 export const NOT_LIVE_LINE = "Not available yet";
 

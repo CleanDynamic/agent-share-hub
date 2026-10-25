@@ -218,7 +218,7 @@ describe("the composer", () => {
     expect(document.querySelector('[data-testid="reference-notice"][role="status"]')).toBeNull();
 
     // A save: Saved.
-    fireEvent.click(await screen.findByRole("button", { name: "Classification Card" }, { timeout: 10_000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "Classification" }, { timeout: 10_000 }));
     const dialog = await screen.findByTestId("sandbox-card");
     fireEvent.change(dialog.querySelector('input[aria-label="Title"], input#title, input') as HTMLInputElement, { target: { value: "A new title" } });
     fireEvent.click(Array.from(dialog.querySelectorAll("button")).find((button) => button.textContent === "Save") as HTMLElement);
@@ -229,7 +229,7 @@ describe("the composer", () => {
 
     // A notice that is news: Reconnected. 1 change saved.
     setBrowserOnline(false);
-    fireEvent.click(await screen.findByRole("button", { name: "Classification Card" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Classification" }));
     const again = await screen.findByTestId("sandbox-card");
     fireEvent.change(again.querySelector("input") as HTMLInputElement, { target: { value: "Offline title" } });
     fireEvent.click(Array.from(again.querySelectorAll("button")).find((button) => button.textContent === "Save") as HTMLElement);
