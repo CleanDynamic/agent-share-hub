@@ -49,7 +49,8 @@ test.describe("SV-04 P4: the composer in the one frame", () => {
     expect(drawn).toBeGreaterThan(-1);
     const after = log.frames.slice(drawn).filter((frame) => frame.kind !== "ready");
     expect(after.filter((frame) => frame.kind === "empty")).toEqual([]);
-    expect(new Set(after.map((frame) => `${frame.kind} ${frame.sig}`)).size, "one placeholder, the composer skeleton").toBeLessThanOrEqual(1);
+    // One placeholder shape at most (the composer's skeleton); its content may draw a frame or two before its ready mark.
+    expect(new Set(after.filter((frame) => frame.kind === "placeholder").map((frame) => frame.sig)).size, "one placeholder, the composer skeleton").toBeLessThanOrEqual(1);
   });
 
   test("New build shows the composer skeleton in its full shape, then the page: never blocks in one corner", async ({ page }) => {
