@@ -19,7 +19,8 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { armMotion, installMotionTools, measureMotion, readMotion, type MotionNumbers } from "./support/frames";
 
-const STAGE = process.env.MOTION_STAGE === "before" ? "before" : "after";
+/** "after" judges the thresholds; any other name ("before", or a scratch run while working) only records. */
+const STAGE = process.env.MOTION_STAGE ?? "after";
 const OUT = "design/audits/composer/sv-06";
 const VIDEO = process.env.MOTION_VIDEO === "1";
 /** Each moment is played this many times on a fresh page, and each number is the median: one slow frame in a container is not the motion. */

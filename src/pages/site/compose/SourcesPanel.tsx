@@ -35,7 +35,8 @@ import type { AddToPart } from "./AddSessionRow";
 import { MenuContent } from "./ComposeMenu";
 import { MENU_COPY } from "@/lib/build/componentMenus";
 import { RemoveRow } from "./removePieces";
-import { useFlip, useLeaving } from "./buildMotion";
+import { useLeaving } from "./buildMotion";
+import { MotionBoundary, NO_SLIDE, useListMotion } from "./listMotion";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
@@ -445,13 +446,13 @@ const group: CSSProperties = { display: "flex", flexDirection: "column", minWidt
 
 export function SourcesPanel(props: SourcesPanelProps) {
   const { phone, fine, status, sessions, library } = props;
-  /* CA-22 P2: a removed file's row lifts out in place; then the rows below slide up. */
+  /* CA-22 P2: a removed file's row lifts out in place; then the rows below slide up (SV-06: through the animator, measured only
+     in the commit that lets the row go). */
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const flip = useFlip(rootRef);
-  const { items: files, leaving } = useLeaving(props.files, (file) => file.id, {
+  const motion = useListMotion(rootRef);
+  const { items: files, leaving, releasing } = useLeaving(props.files, (file) => file.id, {
     find: (key) => rootRef.current?.querySelector<HTMLElement>(`[data-file-id="${key}"]`) ?? null,
     enabled: peekIntent() !== null,
-    onRelease: () => flip.measure(),
   });
   const reminders = (props.reminders ?? []).slice(0, REMINDER_ROWS);
   const inBuild = sessions.length + files.length;
@@ -471,80 +472,82 @@ export function SourcesPanel(props: SourcesPanelProps) {
   if (status === "error") return <PanelFailed panel="Sources" onRetry={props.onRetry} error={props.error} />;
 
   return (
-    <div ref={rootRef} data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: 2, marginBottom: -8 }}>
-        {/* On a phone the bottom sheet's own title is "Sources". */}
-        {phone ? null : <h2 style={{ ...text(14, 500, t.text), margin: 0 }}>Sources</h2>}
-        <span style={{ ...text(12, 400, t.label), ...tnum }}>{inBuild} in build</span>
-      </div>
-
-      {empty ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <p style={{ ...text(13, 400, t.text), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
-          <Link to={props.connectHref} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
-            {SOURCES_COPY.connect}
-          </Link>
-          <p style={{ ...text(13, 400, t.text), margin: "6px 0 0" }}>{SOURCES_COPY.noFiles}</p>
+    <MotionBoundary motion={motion} slide={NO_SLIDE} when={releasing}>
+      <div ref={rootRef} data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: 2, marginBottom: -8 }}>
+          {/* On a phone the bottom sheet's own title is "Sources". */}
+          {phone ? null : <h2 style={{ ...text(14, 500, t.text), margin: 0 }}>Sources</h2>}
+          <span style={{ ...text(12, 400, t.label), ...tnum }}>{inBuild} in build</span>
         </div>
-      ) : null}
 
-      {sessions.length > 0 ? (
-        <section aria-label={SOURCES_COPY.inBuild} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.inBuild}` }} style={group}>
-          <GroupHead name={SOURCES_COPY.inBuild} count={sessions.length} />
-          <Capped
-            rows={sessions}
-            phone={phone}
-            render={(session) => <SessionRow key={session.key} session={session} phone={phone} selectedId={props.selectedId} onSelect={props.onSelect} />}
-          />
-        </section>
-      ) : null}
+        {empty ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <p style={{ ...text(13, 400, t.text), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
+            <Link to={props.connectHref} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
+              {SOURCES_COPY.connect}
+            </Link>
+            <p style={{ ...text(13, 400, t.text), margin: "6px 0 0" }}>{SOURCES_COPY.noFiles}</p>
+          </div>
+        ) : null}
 
-      {files.length > 0 || reminders.length > 0 ? (
-        <section aria-label={SOURCES_COPY.files} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.files}` }} style={group}>
-          <GroupHead name={SOURCES_COPY.files} count={files.length} />
-          <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
-          {reminders.map((reminder) => (
-            <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
-          ))}
-        </section>
-      ) : null}
+        {sessions.length > 0 ? (
+          <section aria-label={SOURCES_COPY.inBuild} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.inBuild}` }} style={group}>
+            <GroupHead name={SOURCES_COPY.inBuild} count={sessions.length} />
+            <Capped
+              rows={sessions}
+              phone={phone}
+              render={(session) => <SessionRow key={session.key} session={session} phone={phone} selectedId={props.selectedId} onSelect={props.onSelect} />}
+            />
+          </section>
+        ) : null}
 
-      {library.length > 0 ? (
-        <section aria-label={SOURCES_COPY.yourSessions} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.yourSessions}` }} style={group}>
-          <GroupHead name={SOURCES_COPY.yourSessions} count={library.length} hollow />
-          <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} />} />
-          {props.libraryHasMore ? (
-            <div style={{ ...rowLine, paddingTop: 8 }}>
-              {props.libraryLoadingMore ? (
-                <LoadingRegion what="more sessions" data-testid="library-more-loading">
-                  <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
-                </LoadingRegion>
-              ) : (
-                <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={text(12.5, 500, t.text2)}>
-                  {SOURCES_COPY.showMoreSessions}
-                </TextButton>
-              )}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+        {files.length > 0 || reminders.length > 0 ? (
+          <section aria-label={SOURCES_COPY.files} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.files}` }} style={group}>
+            <GroupHead name={SOURCES_COPY.files} count={files.length} />
+            <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
+            {reminders.map((reminder) => (
+              <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
+            ))}
+          </section>
+        ) : null}
 
-      {(props.arriving ?? []).length > 0 ? (
-        <section aria-label={SOURCES_COPY.stillArriving} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.stillArriving}` }} style={group}>
-          <GroupHead name={SOURCES_COPY.stillArriving} count={(props.arriving ?? []).length} hollow />
-          <Capped rows={props.arriving ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
-        </section>
-      ) : null}
+        {library.length > 0 ? (
+          <section aria-label={SOURCES_COPY.yourSessions} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.yourSessions}` }} style={group}>
+            <GroupHead name={SOURCES_COPY.yourSessions} count={library.length} hollow />
+            <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} />} />
+            {props.libraryHasMore ? (
+              <div style={{ ...rowLine, paddingTop: 8 }}>
+                {props.libraryLoadingMore ? (
+                  <LoadingRegion what="more sessions" data-testid="library-more-loading">
+                    <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
+                  </LoadingRegion>
+                ) : (
+                  <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={text(12.5, 500, t.text2)}>
+                    {SOURCES_COPY.showMoreSessions}
+                  </TextButton>
+                )}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
-      {(props.didntFinish ?? []).length > 0 ? (
-        <section aria-label={SOURCES_COPY.didntFinish} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.didntFinish}` }} style={group}>
-          <GroupHead name={SOURCES_COPY.didntFinish} count={(props.didntFinish ?? []).length} hollow />
-          <Capped rows={props.didntFinish ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
-        </section>
-      ) : null}
+        {(props.arriving ?? []).length > 0 ? (
+          <section aria-label={SOURCES_COPY.stillArriving} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.stillArriving}` }} style={group}>
+            <GroupHead name={SOURCES_COPY.stillArriving} count={(props.arriving ?? []).length} hollow />
+            <Capped rows={props.arriving ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
+          </section>
+        ) : null}
 
-      <DropZone fine={fine} onDropFiles={props.onDropFiles} onPick={props.onPick} />
-    </div>
+        {(props.didntFinish ?? []).length > 0 ? (
+          <section aria-label={SOURCES_COPY.didntFinish} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.didntFinish}` }} style={group}>
+            <GroupHead name={SOURCES_COPY.didntFinish} count={(props.didntFinish ?? []).length} hollow />
+            <Capped rows={props.didntFinish ?? []} phone={phone} render={(item) => <UnfinishedRow key={item.id} item={item} phone={phone} />} />
+          </section>
+        ) : null}
+
+        <DropZone fine={fine} onDropFiles={props.onDropFiles} onPick={props.onPick} />
+      </div>
+    </MotionBoundary>
   );
 }
 

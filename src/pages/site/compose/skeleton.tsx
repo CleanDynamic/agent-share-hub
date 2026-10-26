@@ -5,18 +5,19 @@
    with its ticks and numbers, and the place the held thing would land. It never changes a component's own style. It exists only
    while something is held (and while it fades out after the drop), and fades in over `SKELETON_IN`.
 
-   Where a box moves because things slid, it slides too (a translate, and a scale for a lane): `animateFrom`, `FAST`, `STANDARD`. */
+   Where a box moves because things slid, it slides too (a translate, and a scale for a lane), through the List's animator
+   (`listMotion.ts`, `slideBox`), `FAST`, `STANDARD`. */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { LANE_OPEN_MS, SKELETON_IN, SKELETON_OUT, SOCKETS_AFTER_MS, SOCKETS_IN_MS } from "@/lib/build/buildMotion";
 import { EMPTY_PLACE_HEIGHT, type Lane, type Rail, type Rect, type Skeleton, type Socket, type Target } from "@/lib/build/sortLayout";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { fade, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
+import { fade, prefersReducedMotion } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { mono } from "@/lib/theme/type";
 
-import { animateFrom } from "./flip";
+import { animateOn, slideBox } from "./listMotion";
 import { text } from "./refinedStyles";
 
 const place = (rect: Rect): CSSProperties => ({ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxSizing: "border-box" });
@@ -32,7 +33,7 @@ function Box({ id, rect, style, children, testId, onMount }: { id: string; rect:
   useLayoutEffect(() => {
     const before = was.current;
     was.current = rect;
-    if (before && ref.current) animateFrom(ref.current, { x: before.x, y: before.y, w: before.w, h: before.h }, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+    if (before && ref.current) slideBox(ref.current, { x: before.x, y: before.y, w: before.w, h: before.h }, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
   }, [rect.x, rect.y, rect.w, rect.h]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div ref={ref} data-testid={testId} data-skeleton-id={id} style={{ ...place(rect), ...style }}>
@@ -46,14 +47,12 @@ const socketStyle = (radius: number, edge: string): CSSProperties => ({ border: 
 
 /** A socket that fades in with a new session's lane: 80 ms after it starts to open, over 160. */
 const fadeSocket = (element: HTMLElement) => {
-  if (prefersReducedMotion() || typeof element.animate !== "function") return;
-  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SOCKETS_IN_MS, delay: SOCKETS_AFTER_MS, easing: STANDARD, fill: "backwards" });
+  animateOn(element, "fade", [{ opacity: 0 }, { opacity: 1 }], { duration: SOCKETS_IN_MS, delay: SOCKETS_AFTER_MS, fill: "backwards" });
 };
 
 /** A lane that opens: from nothing to its height, over 200 ms (a scale from its top; nothing else of it changes). */
 const openLane = (element: HTMLElement) => {
-  if (prefersReducedMotion() || typeof element.animate !== "function") return;
-  element.animate([{ transform: "scaleY(0)", transformOrigin: "0 0" }, { transform: "none", transformOrigin: "0 0" }], { duration: LANE_OPEN_MS, easing: STANDARD, fill: "backwards" });
+  animateOn(element, "open", [{ transform: "scaleY(0)", transformOrigin: "0 0" }, { transform: "none", transformOrigin: "0 0" }], { duration: LANE_OPEN_MS, fill: "backwards" });
 };
 
 function SocketBox({ socket, fadeIn }: { socket: Socket; fadeIn: boolean }) {

@@ -1,15 +1,13 @@
 // CA-22 P1 - the five helpers, with fake timers and recorded animations: the order of calls, cancelling, reduced motion.
 
 import { act, cleanup, render } from "@testing-library/react";
-import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BASE, FAST } from "@/lib/theme/motion";
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, STAGGER_CAP, CROSSFADE } from "@/lib/build/buildMotion";
 
-import { SLIDE_ATTR } from "./flip";
-import { crossfade, useCrossfade, dropIn, finishRunning, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useFlip, useLeaving } from "./buildMotion";
+import { crossfade, useCrossfade, dropIn, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useLeaving } from "./buildMotion";
 
 interface Played {
   element: Element;
@@ -43,7 +41,9 @@ beforeEach(() => {
     } as unknown as Animation;
   }) as never;
   Element.prototype.getAnimations = function (this: Element) {
-    return played.filter((entry) => entry.element === this && !entry.finished && !entry.cancelled).map((entry) => ({ id: entry.options.id ?? "", finish: () => (entry.finished = true) }) as unknown as Animation);
+    return played
+      .filter((entry) => entry.element === this && !entry.finished && !entry.cancelled)
+      .map((entry) => ({ id: entry.options.id ?? "", playState: "running", finish: () => (entry.finished = true), cancel: () => (entry.cancelled = true) }) as unknown as Animation);
   } as never;
   vi.useFakeTimers();
 });
@@ -100,15 +100,14 @@ describe("dropIn", () => {
     expect(played.every((entry) => entry.cancelled)).toBe(true);
   });
 
-  it("a change mid-animation finishes the running one at once, then starts", () => {
+  it("SV-06: a change mid-animation carries on from the running one: it is let go in the same call, never finished at once", () => {
     const item = div();
     dropIn([item]);
     dropIn([item]);
     expect(played).toHaveLength(2);
-    expect(played[0].finished).toBe(true);
-    expect(played[1].finished).toBe(false);
-    finishRunning(item);
-    expect(played[1].finished).toBe(true);
+    expect(played[0].finished).toBe(false);
+    expect(played[0].cancelled).toBe(true);
+    expect(played[1].cancelled).toBe(false);
   });
 
   it("under reduced motion nothing moves: no animation, and it is already finished", async () => {
@@ -143,70 +142,6 @@ describe("slideOut", () => {
     expect(played[0].keyframes[0]).toMatchObject({ opacity: 0, transform: "translate(0px, -100px) scale(1, 1)" });
     expect(played[0].keyframes[1]).toMatchObject({ opacity: 1, transform: "none" });
     expect(played[0].options.duration).toBe(DROP);
-  });
-});
-
-describe("useFlip", () => {
-  function Boxes({ shift, onFlip }: { shift: boolean; onFlip?: (flip: ReturnType<typeof useFlip>) => void }) {
-    const ref = useRef<HTMLDivElement>(null);
-    const flip = useFlip(ref);
-    onFlip?.(flip);
-    return (
-      <div ref={ref}>
-        <div data-testid="a" {...{ [SLIDE_ATTR]: "a" }} data-top={shift ? 100 : 0} />
-        <div data-testid="b" {...{ [SLIDE_ATTR]: "b" }} data-top={0} />
-      </div>
-    );
-  }
-  const at = (element: Element) => ({ top: Number(element.getAttribute("data-top") ?? 0) });
-  const patch = () => {
-    const proto = Element.prototype as { getBoundingClientRect: () => DOMRect };
-    const was = proto.getBoundingClientRect;
-    proto.getBoundingClientRect = function (this: Element) {
-      const { top } = at(this);
-      return { left: 0, top, width: 100, height: 20, right: 100, bottom: top + 20, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
-    };
-    return () => {
-      proto.getBoundingClientRect = was;
-    };
-  };
-
-  it("measures before the change and slides from there, with transforms only", () => {
-    const restore = patch();
-    let flip: ReturnType<typeof useFlip> | undefined;
-    const view = render(<Boxes shift={false} onFlip={(f) => (flip = f)} />);
-    act(() => flip?.measure());
-    expect(flip?.pending()).toBe(true);
-    view.rerender(<Boxes shift onFlip={(f) => (flip = f)} />);
-    const slid = played.filter((entry) => entry.options.id === "slide");
-    expect(slid).toHaveLength(1);
-    expect(slid[0].keyframes[0]).toMatchObject({ transform: "translate(0px, -100px) scale(1, 1)" });
-    expect(only(slid[0].keyframes).sort()).toEqual(["transform", "transformOrigin"]);
-    expect(slid[0].options.duration).toBe(SLIDE);
-    expect(flip?.pending()).toBe(false);
-    restore();
-  });
-
-  it("a delay holds the sliding things where they were until it ends", () => {
-    const restore = patch();
-    let flip: ReturnType<typeof useFlip> | undefined;
-    const view = render(<Boxes shift={false} onFlip={(f) => (flip = f)} />);
-    act(() => flip?.measure({ delay: LIFT }));
-    view.rerender(<Boxes shift onFlip={(f) => (flip = f)} />);
-    expect(played.find((entry) => entry.options.id === "slide")?.options).toMatchObject({ delay: LIFT, fill: "backwards" });
-    restore();
-  });
-
-  it("does not slide at all under reduced motion", () => {
-    reduced = true;
-    __resetMotionMediaCache();
-    const restore = patch();
-    let flip: ReturnType<typeof useFlip> | undefined;
-    const view = render(<Boxes shift={false} onFlip={(f) => (flip = f)} />);
-    act(() => flip?.measure());
-    view.rerender(<Boxes shift onFlip={(f) => (flip = f)} />);
-    expect(played).toHaveLength(0);
-    restore();
   });
 });
 

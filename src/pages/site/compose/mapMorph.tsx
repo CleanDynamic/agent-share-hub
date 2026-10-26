@@ -13,7 +13,7 @@
    `FAST` instead.
 
    Phones are untouched (they have no Map). Under reduced motion the view simply changes. A switch while another is running ends
-   the running one at once. The copies are `fixed`, `pointer-events: none` and removed when they land: nothing in the page moves
+   the running one's copies and steps at once; what the tiles were doing carries on, through the List's animator. The copies are `fixed`, `pointer-events: none` and removed when they land: nothing in the page moves
    but by `transform`. */
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
@@ -21,7 +21,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { FOLD_RISE, MAP_FOLD, MAP_LINES, MAP_LINES_BACK, MAP_MORPH, MAP_MORPH_MAX, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
 import { FAST, STANDARD } from "@/lib/theme/motion";
 
-import { dropIn, fadeIn, finishRunning, liftOut, motionOn, type MotionRun } from "./buildMotion";
+import { dropIn, fadeIn, liftOut, motionOn, type MotionRun } from "./buildMotion";
 import type { SandboxLens } from "./SandboxView";
 
 interface Flight {
@@ -96,6 +96,7 @@ export interface LensMorph {
 export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onLens: (lens: SandboxLens) => void; getRoot: () => HTMLElement | null }): LensMorph {
   const pending = useRef<{ to: SandboxLens; flights: Flight[]; crossfade: boolean } | null>(null);
   const timers = useRef<number[]>([]);
+  /** The copies in flight and the lines: what a switch while one runs ends at once. The tiles' own motion is the List's. */
   const runs = useRef<MotionRun[]>([]);
   const hidden = useRef<HTMLElement[]>([]);
   const onLensRef = useRef(onLens);
@@ -109,9 +110,7 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
     for (const element of hidden.current) element.style.visibility = "";
     hidden.current = [];
     document.querySelectorAll(`[data-testid="${LAYER}"]`).forEach((layer) => layer.remove());
-    const root = getRoot();
-    if (root) for (const element of root.querySelectorAll<HTMLElement>("*")) finishRunning(element);
-  }, [getRoot]);
+  }, []);
   useEffect(() => clear, [clear]);
 
   const later = (ms: number, run: () => void) => {
@@ -139,7 +138,7 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
         // 1. The tiles fold up behind their heads, all together.
         for (const { element } of heads) {
           const tiles = element.closest("[data-session-key]")?.querySelector<HTMLElement>('[data-testid="session-tiles"]');
-          if (tiles) runs.current.push(liftOut([...tiles.children], { rise: FOLD_RISE, ms: MAP_FOLD }));
+          if (tiles) liftOut([...tiles.children], { rise: FOLD_RISE, ms: MAP_FOLD });
         }
         later(MAP_FOLD, () => {
           pending.current = { to, flights, crossfade: false };
@@ -173,13 +172,13 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
     const column = root.querySelector<HTMLElement>(lens === "map" ? '[data-testid="map-view"]' : '[data-testid="build-list"]');
     if (!column) return;
     if (work.crossfade) {
-      runs.current.push(fadeIn([column], { ms: FAST }));
+      fadeIn([column], { ms: FAST });
       return;
     }
     const targets = (lens === "map" ? boxesIn(root) : headsIn(root)).filter(({ key }) => work.flights.some((flight) => flight.key === key));
     const rects = new Map(targets.map(({ key, element }) => [key, element.getBoundingClientRect()]));
     if (targets.length === 0 || !targets.every(({ key }) => fits(rects.get(key) as DOMRect))) {
-      runs.current.push(fadeIn([column], { ms: FAST }));
+      fadeIn([column], { ms: FAST });
       return;
     }
     // The real view waits, unseen, while the copies fly; then it is shown.
@@ -206,10 +205,10 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
       hidden.current = hidden.current.filter((element) => element !== column);
       if (lens === "map") {
         runs.current.push(...drawLines(column, MAP_LINES, false));
-        runs.current.push(fadeIn([...column.querySelectorAll('[data-testid="map-part-label"], [data-testid="map-stage-label"], [data-testid="map-strip"], [data-testid="map-divider"]')], { ms: MAP_LINES }));
+        fadeIn([...column.querySelectorAll('[data-testid="map-part-label"], [data-testid="map-stage-label"], [data-testid="map-strip"], [data-testid="map-divider"]')], { ms: MAP_LINES });
       } else {
         const sessions = [...column.querySelectorAll<HTMLElement>('[data-testid="session-tiles"]')];
-        for (const container of sessions) runs.current.push(dropIn([...container.children], { stagger: UNFOLD_STAGGER, cap: UNFOLD_STAGGERED, from: FOLD_RISE }));
+        for (const container of sessions) dropIn([...container.children], { stagger: UNFOLD_STAGGER, cap: UNFOLD_STAGGERED, from: FOLD_RISE });
       }
     });
   }, [lens, getRoot]);

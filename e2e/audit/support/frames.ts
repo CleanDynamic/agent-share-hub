@@ -287,7 +287,7 @@ export function measureChange(log: FrameLog, input: number): ChangeNumbers {
 
    `installMotionTools(page)` adds a second init script, lighter than the page change sampler above (no page-area walk), that keeps
    while it is armed:
-     - every frame's time, how many animations were running, and where each `[data-slide-id]` element in the window stood, in document
+     - every frame's time, how many animations were running, and where each `[data-slide-id]` element near the window stood, in document
        coordinates (so a page that scrolls does not count as the element moving);
      - every `element.animate()` call: when, on which element, which properties;
      - every animation cut short: cancelled, or finished early by `finish()`, before it reached its end. A cut is "continued" when
@@ -301,8 +301,8 @@ export interface MotionFrame {
   running: number;
   /** Something in the document changed since the frame before: the DOM, the scroll, or an animation was started. */
   dirty: boolean;
-  /** `data-slide-id` → [x, y] in document coordinates. */
-  at: Record<string, [number, number]>;
+  /** `data-slide-id` → [x, y] in document coordinates, and 1 when any of it is in the window. */
+  at: Record<string, [number, number, number]>;
 }
 
 export interface MotionLog {
@@ -415,13 +415,14 @@ function motionRecorder() {
 
   const sample = (t: number) => {
     if (state.armed) {
-      const at: Record<string, [number, number]> = {};
+      const at: Record<string, [number, number, number]> = {};
       const height = innerHeight;
       for (const element of document.querySelectorAll("[data-slide-id]")) {
         const box = element.getBoundingClientRect();
-        // Only what can be seen: a box off screen is not seen to move (the List does not slide it, on purpose).
-        if (box.bottom <= 0 || box.top >= height) continue;
-        at[element.getAttribute("data-slide-id") as string] = [Math.round((box.left + scrollX) * 10) / 10, Math.round((box.top + scrollY) * 10) / 10];
+        // Near the window: its whole travel is known, though only a step taken on screen can be seen (see `measureMotion`).
+        if (box.bottom < -height || box.top > 2 * height) continue;
+        const shown = box.bottom > 0 && box.top < height ? 1 : 0;
+        at[element.getAttribute("data-slide-id") as string] = [Math.round((box.left + scrollX) * 10) / 10, Math.round((box.top + scrollY) * 10) / 10, shown];
       }
       const running = document.getAnimations().filter((animation) => animation.playState === "running").length;
       if (scrollY !== lastScroll) dirty = true;
@@ -474,9 +475,9 @@ export async function readMotion(page: Page): Promise<MotionLog> {
 }
 
 export interface MotionNumbers {
-  /** Frames more than 25 ms after the one before, from the input until nothing runs. */
+  /** Frames more than 25 ms after one where an animation was running. */
   frameGaps: number;
-  /** Long tasks over 50 ms that overlap the time something moved. */
+  /** Long tasks over 50 ms begun while an animation ran, with one still running when they ended. */
   longTasks: number;
   longestTaskMs: number;
   /** Animations cut short (cancelled, or finished early) with nothing continuing on that element in the same frame. */
@@ -503,12 +504,17 @@ export function measureMotion(log: MotionLog): MotionNumbers {
   const lastRunning = [...after].reverse().find((frame) => frame.running > 0 || frame.dirty);
   const end = lastRunning ? lastRunning.t : input;
   const moving = after.filter((frame) => frame.t <= end + 20);
+  // While something moves: a gap after a frame where an animation was running, a long task begun while one ran and ended with one
+  // still to run. The render that answers the input comes before anything moves, and is in click to first frame instead.
   let gaps = 0;
-  for (let at = 1; at < moving.length; at += 1) if (moving[at].t - moving[at - 1].t > 25) gaps += 1;
+  for (let at = 1; at < moving.length; at += 1) if (moving[at - 1].running > 0 && moving[at].t - moving[at - 1].t > 25) gaps += 1;
   const first = after.find((frame) => frame.dirty || frame.running > 0);
-  const tasks = log.longTasks.filter((task) => task.duration > 50 && task.start + task.duration >= input && task.start <= end);
+  const runningAt = (t: number, side: "before" | "after") => (side === "before" ? [...moving].reverse().find((frame) => frame.t <= t) : moving.find((frame) => frame.t >= t))?.running ?? 0;
+  const tasks = log.longTasks.filter((task) => task.duration > 50 && task.start >= input && task.start <= end && runningAt(task.start, "before") > 0 && runningAt(task.start + task.duration, "after") > 0);
   const cancelled = log.cuts.filter((cut) => !log.started.some((start) => start.el === cut.el && Math.abs(start.t - cut.t) <= 20)).length;
-  // The jump: per element, each frame's move and the sum of them; only frames where it was there before and after.
+  // The jump: per element, each frame's move and the sum of them; only frames where it was there before and after. A step counts as
+  // a jump only when the element is in the window in one of its two frames: a box off screen is not seen to move, and the List
+  // does not slide it, on purpose.
   const travel = new Map<string, { total: number; most: number }>();
   for (let at = 1; at < after.length; at += 1) {
     const was = after[at - 1].at;
@@ -518,7 +524,7 @@ export function measureMotion(log: MotionLog): MotionNumbers {
       const step = Math.hypot(now[id][0] - was[id][0], now[id][1] - was[id][1]);
       const entry = travel.get(id) ?? { total: 0, most: 0 };
       entry.total += step;
-      entry.most = Math.max(entry.most, step);
+      if (was[id][2] || now[id][2]) entry.most = Math.max(entry.most, step);
       travel.set(id, entry);
     }
   }

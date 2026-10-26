@@ -134,7 +134,7 @@ import { useBuildFind } from "./useBuildFind";
 import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar, type SelectionBarProps } from "./removePieces";
-import { useFlip, useHeld } from "./buildMotion";
+import { useHeld } from "./buildMotion";
 import { BASE } from "@/lib/theme/motion";
 import type { Drawn } from "@/lib/build/buildSelection";
 import { ADDED, HANDLERS_THAT_CHANGE_NOTHING, HANDLERS_THAT_REMOVE, handlerSentence } from "@/lib/build/stepSentences";
@@ -253,9 +253,7 @@ function SandboxPageBody() {
   useConnectionWatch();
   /* CA-23 P4: two tabs (or two devices) on one build. What each clash is called and where it falls is said once the page knows its tiles (`describeClash`, below). */
   const describeClash = useRef<(clash: RawClash) => ClashDescription>(() => ({ name: "This", badge: "", rank: 0 }));
-  const motionRoot = useRef<HTMLElement | null>(typeof document === "undefined" ? null : document.body);
-  const flip = useFlip(motionRoot);
-  const twoTabs = useTwoTabs({ buildId, nodes, history: buildHistory, thread, rehydrate, flip, describe: (clash) => describeClash.current(clash) });
+  const twoTabs = useTwoTabs({ buildId, nodes, history: buildHistory, thread, rehydrate, describe: (clash) => describeClash.current(clash) });
   useWriteGuard(buildId, { onWritten: twoTabs.announce });
   useEffect(() => () => pendingWrites.reset(), []);
   const offline = useOffline();

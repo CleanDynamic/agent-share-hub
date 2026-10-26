@@ -17,9 +17,10 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "re
 
 import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_STEP_MS, SKELETON_OUT, STAGGERED_PROMPTS } from "@/lib/build/buildMotion";
 import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
-import { prefersReducedMotion, scrollBehavior, STANDARD } from "@/lib/theme/motion";
+import { prefersReducedMotion, scrollBehavior } from "@/lib/theme/motion";
 
-import { play, SLIDE_ATTR, snapshot, type Box } from "./flip";
+import { dropIn } from "./buildMotion";
+import { SLIDE_ATTR, type Box } from "./flip";
 import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
 import { TILE_HEIGHT } from "./loadingBlocks";
 import { SessionHead } from "./SessionHead";
@@ -62,6 +63,8 @@ export interface Arrival {
   fadeIn: ReadonlySet<string>;
   /** The lanes that open. */
   opening: ReadonlySet<string>;
+  /** While the lane opens or closes, what slides (everything below it) slides over `LANE_OPEN_MS`. */
+  slideMs: number | null;
 }
 
 const NONE: ReadonlySet<string> = new Set();
@@ -98,16 +101,8 @@ function anchorOf(root: HTMLElement, part: string | undefined): HTMLElement {
   return sessions[sessions.length - 1] ?? root;
 }
 
-const fall = (element: Element, delay: number): Animation | null => {
-  if (typeof (element as HTMLElement).animate !== "function") return null;
-  return (element as HTMLElement).animate(
-    [
-      { opacity: 0, transform: `translateY(-${FALL_SHIFT}px)` },
-      { opacity: 1, transform: "none" },
-    ],
-    { duration: FALL_MS, delay, easing: STANDARD, fill: "backwards" },
-  );
-};
+/** A head or a prompt falls from `FALL_SHIFT` above, see-through, to its place, over `FALL_MS`: a drop, through the animator. */
+const fall = (element: Element, delay: number) => dropIn([element], { delay, ms: FALL_MS, from: FALL_SHIFT });
 
 export function useArrival(input: { arriving: Arriving | null | undefined; landed: boolean; rootRef: RefObject<HTMLElement | null>; onArrived?: (key: string, status: Arriving["status"]) => void }): Arrival {
   const { arriving, landed, rootRef } = input;
@@ -116,7 +111,6 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
   const [shown, setShown] = useState(false);
   const [tick, setTick] = useState(0);
   const [fade, setFade] = useState<ReadonlySet<string>>(NONE);
-  const before = useRef<Map<string, Box> | null>(null);
   const headAt = useRef(0);
   const timers = useRef<number[]>([]);
   const callback = useRef(input.onArrived);
@@ -145,7 +139,6 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
     const box = anchor.getBoundingClientRect();
     const off = box.bottom < 0 || box.bottom > window.innerHeight;
     const open = () => {
-      before.current = snapshot(root);
       headAt.current = performance.now() + HEAD_AFTER_MS;
       setShown(true);
       setPhase("open");
@@ -209,14 +202,10 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
 
   const block = phase === "open" && status === "writing" && !landed;
 
-  // After every change of what is drawn: slide what moved, and measure the page for the layer.
+  // After every change of what is drawn, measure the page for the layer. (What moved has slid already: the animator's pass.)
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || phase === "idle" || phase === "quiet") return;
-    if (before.current) {
-      play(root, before.current, LANE_OPEN_MS);
-      before.current = null;
-    }
     if (phase === "open" || phase === "landing") {
       // SV-05 P4: an import's numbers stand inside their sockets, so nothing hangs outside the part's frame.
       const next = measureStill(root, undefined, true);
@@ -230,7 +219,7 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
 
   void tick;
   const opening = key && (phase === "open" || phase === "landing") ? new Set([key]) : NONE;
-  return { block, active: phase === "open" || phase === "landing" || phase === "closing", skeleton, shown, fadeIn: fade, opening };
+  return { block, active: phase === "open" || phase === "landing" || phase === "closing", skeleton, shown, fadeIn: fade, opening, slideMs: phase === "open" || phase === "closing" ? LANE_OPEN_MS : null };
 }
 
 /** The place for the session while its prompts are on their way: its head, and an empty place for each prompt. */
@@ -239,7 +228,7 @@ export function ArrivingBlock({ arriving, rootRef, first }: { arriving: Arriving
   if (height.current === null) height.current = rootRef.current ? estimate(rootRef.current) : TILE_HEIGHT;
   const head = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
-    if (head.current && typeof head.current.animate === "function" && !prefersReducedMotion()) fall(head.current, HEAD_AFTER_MS);
+    if (head.current) fall(head.current, HEAD_AFTER_MS);
   }, []);
   /* CA-24 P4: past a second, a chat's import shows it is working: the tag, building blocks in each empty socket, and, when the import can say how far it is, the bar. */
   const slow = useSlow(arriving.kind === "chat" && arriving.status === "writing");

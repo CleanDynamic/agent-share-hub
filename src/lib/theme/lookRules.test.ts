@@ -1020,6 +1020,15 @@ export const CA03_FILES: readonly string[] = [
   // SV-06
   "e2e/audit/motion.spec.ts",
   "e2e/audit/support/frames.ts",
+  "src/pages/site/compose/listMotion.ts",
+  "src/pages/site/compose/listMotion.test.tsx",
+  "src/pages/site/compose/motionStub.ts",
+  "src/pages/site/compose/flip.ts",
+  "src/pages/site/compose/buildMotion.test.tsx",
+  "src/pages/site/compose/foldMotion.tsx",
+  "src/pages/site/compose/mapMorph.tsx",
+  "src/pages/site/compose/useBuildSorting.ts",
+  "src/pages/site/compose/useTwoTabs.tsx",
 ];
 
 /**

@@ -1,7 +1,8 @@
 /* CA-21 P3, P4: moving by hand on the build page. The state of a drag, and what it makes of the page.
 
    While something is held, the build is drawn from a LIVE ORDER (`MoveModel`): the held thing's place moves from slot to slot as the
-   pointer's middle passes each neighbour's middle, and everything around it slides (measured, then a transform, `flip.ts`).
+   pointer's middle passes each neighbour's middle, and everything around it slides (SV-06: the List's one animator, which measures
+   round every commit; nothing here plays or cancels a slide).
    Nothing folds and nothing changes size. The held thing itself is a copy of its element in the `DragOverlay`; its own place stays
    in the page as a plain socket (its element, hidden), which the skeleton layer draws behind.
 
@@ -12,13 +13,13 @@
 import type { DragEndEvent, DragMoveEvent, DragStartEvent, KeyboardCoordinateGetter } from "@dnd-kit/core";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 
-import { DWELL_OPEN_MS, DWELL_SEND_MS, SETTLE_MS, SLIDE_MS } from "@/lib/build/buildMotion";
+import { DWELL_OPEN_MS, DWELL_SEND_MS, SETTLE_MS } from "@/lib/build/buildMotion";
 import type { Step } from "@/lib/build/graph";
 import { flatOrder, locate, moveBy, movedLine, placeNested, placePart, placeSession, placeTile, sameModel, spotOf, withoutTile, writeOf, type Move, type MoveKind, type MoveModel, type MoveNames, type Spot, type Write } from "@/lib/build/moveRules";
 import { RAIL_ROOM, skeletonOf, type HeldKind, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
-import { play, settle, snapshot, type Box } from "./flip";
+import type { Box } from "./flip";
 
 /** What is held: a top-level tile, a tile among its siblings, a session, a part. */
 export type HeldType = "tile" | "nested" | "session" | "part";
@@ -378,6 +379,8 @@ export interface Sorting {
   onDragCancel: () => void;
   /** Show a move that something else writes (a menu's Move up): the new order at once, sliding, put back when the write does not land. */
   show: (model: MoveModel, line: string, run: Promise<unknown> | void) => void;
+  /** Everything is sliding back to where it was (Esc, a write that did not land): those slides take `SETTLE_MS`. Null otherwise. */
+  settleMs: number | null;
 }
 
 /** A copy of an element's markup, without what must stay unique on the page. */
@@ -415,8 +418,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   optionsRef.current = options;
   const setSaid = (line: string) => optionsRef.current.say(line);
   const pointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const before = useRef<Map<string, Box> | null>(null);
-  const slideMs = useRef(SLIDE_MS);
+  /** Putting back: the slides of the commits that follow take `SETTLE_MS`, as the held copy's own drop does. */
+  const [settleMs, setSettleMs] = useState<number | null>(null);
   const timers = useRef<{ send?: number; open?: number; settle?: number; fade?: number; give?: number }>({});
   const candidate = useRef<{ send: string | null; open: string | null }>({ send: null, open: null });
 
@@ -425,27 +428,18 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     candidate.current = { send: null, open: null };
   };
 
-  /** Remember where everything is, so the next layout can slide from there. */
-  const capture = (ms: number = SLIDE_MS) => {
-    const root = rootRef.current;
-    if (!root) return;
-    before.current = snapshot(root);
-    slideMs.current = ms;
-  };
-
   const set = (next: Drag | null) => {
     dragRef.current = next;
     setDrag(next);
     setTick((value) => value + 1);
   };
 
-  // After every change of order: stop what was sliding, measure the page for the layer, then slide from where things were.
+  // After every change of order: measure the page for the layer. (What moved is already sliding: the animator's pass.)
   const live = drag?.live ?? pending?.model ?? null;
   const heldNow = drag?.held ?? pending?.held ?? null;
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    settle(root);
     if (heldNow && live && drag) setSkeleton(measureSkeleton(root, heldNow, live, drag.start, optionsRef.current.names, leftEdge()));
     if (viaKeys.current && heldNow && drag && initial) {
       const own = root.querySelector<HTMLElement>(`${SELECTOR[heldNow.type]}[data-skel-id="${heldNow.id}"]`);
@@ -454,30 +448,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
         setKeyboardAt({ x: box.x - initial.left, y: box.y - initial.top });
       }
     }
-    if (before.current) {
-      play(root, before.current, slideMs.current);
-      before.current = null;
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick]);
-
-  /* Any other change of order (a menu's Move up, Option with the arrows, Undo, a write from another tab) slides the same way: what
-     stood where is measured as the new order is drawn, and everything slides from there to where it now stands. */
-  const sig = useMemo(() => JSON.stringify([options.model.parts, options.model.tiles, options.model.nested, options.model.loose]), [options.model]);
-  const lastSig = useRef(sig);
-  const heldSnap = useRef<Map<string, Box> | null>(null);
-  if (lastSig.current !== sig) {
-    lastSig.current = sig;
-    if (!drag && !pending && rootRef.current) heldSnap.current = snapshot(rootRef.current);
-  }
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (heldSnap.current && root) {
-      settle(root);
-      play(root, heldSnap.current, SLIDE_MS);
-    }
-    heldSnap.current = null;
-  });
 
   // The held copy: the markup of its own element at its own size, taken after the page has drawn the hold.
   const copied = drag?.held.id ?? null;
@@ -505,7 +477,6 @@ export function useBuildSorting(options: SortingOptions): Sorting {
       window.clearTimeout(timers.current.send);
       candidate.current.send = placement.sendCandidate;
       if (current.send && placement.sendCandidate !== current.send) {
-        capture();
         set({ ...current, send: null });
       }
       if (placement.sendCandidate) {
@@ -513,7 +484,6 @@ export function useBuildSorting(options: SortingOptions): Sorting {
         timers.current.send = window.setTimeout(() => {
           const now = dragRef.current;
           if (!now || candidate.current.send !== target) return;
-          capture();
           set({ ...now, send: target, live: withoutTile(now.start, now.held.id) });
           setSaid(`Send with ${optionsRef.current.names.tile(target)}`);
         }, DWELL_SEND_MS);
@@ -532,7 +502,6 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const now = dragRef.current;
     if (!now || now.send) return;
     if (!sameModel(now.live, placement.model)) {
-      capture();
       const next = { ...now, live: placement.model };
       set(next);
       setSaid(overLine(now.held, placement.model, o.names));
@@ -581,6 +550,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     if (!held || !root) return;
     window.clearTimeout(timers.current.fade);
     window.clearTimeout(timers.current.settle);
+    setSettleMs(null);
     const from = point(event.activatorEvent as Event);
     viaKeys.current = (event.activatorEvent as Event | null)?.type === "keydown";
     setKeyboardAt(null);
@@ -602,7 +572,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   /** Slide back to where it was picked up from. */
   const putBack = (current: Drag) => {
     clearTimers();
-    capture(SETTLE_MS);
+    setSettleMs(SETTLE_MS);
     const start = current.start;
     setSaid(putBackLine(current.held, start, optionsRef.current.names));
     dragRef.current = null;
@@ -622,7 +592,6 @@ export function useBuildSorting(options: SortingOptions): Sorting {
       const result = moveBy(current.live, current.held.id, by);
       if (!result) setSaid(`${overLine(current.held, current.live, o.names)} That is the ${by === -1 ? "first" : "last"} place.`);
       else {
-        capture();
         set({ ...current, live: result.model });
         setSaid(overLine(current.held, result.model, o.names));
       }
@@ -640,7 +609,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setPending({ model, held });
     const finish = (ok: boolean) => {
       if (ok) return;
-      capture(SETTLE_MS);
+      setSettleMs(SETTLE_MS);
       setPending({ model: start, held });
       setTick((value) => value + 1);
       setSaid(failed);
@@ -657,7 +626,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
             setPending((current) => {
               if (!current || current.model !== model) return current;
               if (result === true) return null;
-              capture(SETTLE_MS);
+              setSettleMs(SETTLE_MS);
               setSaid(failed);
               setTick((value) => value + 1);
               window.setTimeout(() => setPending((now) => (now && now.model === start ? null : now)), SETTLE_MS + 50);
@@ -711,7 +680,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   };
 
   const show = (model: MoveModel, line: string, run: Promise<unknown> | void) => {
-    capture();
+    setSettleMs(null);
     const start = optionsRef.current.model;
     if (line) setSaid(line);
     setTick((value) => value + 1);
@@ -747,6 +716,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     onDragEnd,
     onDragCancel,
     show,
+    settleMs: settleMs !== null && (pending !== null || drag !== null) ? settleMs : null,
   };
 }
 

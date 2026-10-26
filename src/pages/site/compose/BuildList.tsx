@@ -120,9 +120,10 @@ import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
 import { SLIDE_ATTR } from "./flip";
 import { listRuns, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
-import { useFoldMotion } from "./foldMotion";
+import { foldShut, useFoldMotion } from "./foldMotion";
 import { outlineOnce } from "./buildMotion";
-import { SLIDE } from "@/lib/build/buildMotion";
+import { FOLD, SLIDE } from "@/lib/build/buildMotion";
+import { ListMotionContext, MotionBoundary, NO_SLIDE, useListMotion, type SlideOptions } from "./listMotion";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 import { ArrivingBlock, useArrival, type Arriving } from "./arrival";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
@@ -2068,6 +2069,10 @@ const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
 };
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
+/** The gaps a folding run cancels: a session's, between its head and its tiles, and a part's, between its head and its sessions. */
+const SESSION_GAP = 4;
+const PART_GAP = 8;
+
 function SessionRun({ head, phone: _phone, first, lit = false, found = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; found?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
@@ -2102,6 +2107,9 @@ export function BuildList(raw: BuildListProps) {
   /* CA-22 P2, P3: what leaves is held on screen while it lifts out, then the new view is drawn and the rest slides; what arrives drops in. */
   const rootHolder = useRef<RefObject<HTMLDivElement | null> | null>(null);
   const busyHolder = useRef(false);
+  /* SV-06 P1: the List's one animator. It is the only thing that animates the build list; the hooks below say what is coming. */
+  const [listRoot] = useState<RefObject<HTMLElement | null>>(() => ({ get current() { return rootHolder.current?.current ?? null; } }) as RefObject<HTMLElement | null>);
+  const motion = useListMotion(listRoot);
   const director = useBuildDirector(incoming, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
   const base = director.view;
   /* CA-22 P5: a session or part being folded keeps its tiles drawn while they rise away behind the head. */
@@ -2325,7 +2333,7 @@ export function BuildList(raw: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} skip={steps.length >= WINDOW_FROM} style={headed ? RUN : undefined}>
+              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} skip={steps.length >= WINDOW_FROM} style={headed ? (closed && !shut ? { ...RUN, ...foldShut(SESSION_GAP) } : RUN) : undefined}>
                 {shut ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
@@ -2376,7 +2384,7 @@ export function BuildList(raw: BuildListProps) {
           onColour={parts?.onColour ? (anchor) => parts.onColour?.(view.key, anchor, part.title, view.colour ?? null) : undefined}
         />
         <MentionedLine to={refTo({ kind: "workstream", id: view.key })} phone={props.phone} />
-        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed && !folding.parts.has(view.key)} style={WORKSTREAM_BODY}>
+        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed && !folding.parts.has(view.key)} style={view.collapsed && folding.parts.has(view.key) ? { ...WORKSTREAM_BODY, ...foldShut(PART_GAP) } : WORKSTREAM_BODY}>
           {view.collapsed && !folding.parts.has(view.key) ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
             <>
               {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
@@ -2450,7 +2458,17 @@ export function BuildList(raw: BuildListProps) {
       {props.onAddPart ? <AddPartRow phone={props.phone} adding={props.addSession?.adding ?? false} onAdd={props.onAddPart} /> : null}
     </div>
   );
-  const body = <FindProvider value={props.find?.view ?? NO_FIND}>{list}</FindProvider>;
+  /* SV-06 P1: what this commit's slides take, when a hook times them: a put back, a fold, a lane opening. */
+  const slide: SlideOptions = sorting.settleMs !== null ? { ms: sorting.settleMs } : folding.moving ? { ms: FOLD } : arrival.slideMs !== null ? { ms: arrival.slideMs } : NO_SLIDE;
+  const body = (
+    <FindProvider value={props.find?.view ?? NO_FIND}>
+      <ListMotionContext.Provider value={motion}>
+        <MotionBoundary motion={motion} slide={slide}>
+          {list}
+        </MotionBoundary>
+      </ListMotionContext.Provider>
+    </FindProvider>
+  );
   const sessionOf = new Map<string, string>();
   const sessionNumbers = new Map<string, number>();
   const firstOf = new Set<string>();

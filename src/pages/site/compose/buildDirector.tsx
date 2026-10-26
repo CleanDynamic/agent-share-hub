@@ -14,10 +14,12 @@
    the gap (`SLIDE`) while what came waits, see-through, and then drops in (`DROP`). A copy instead slides out from under its
    original. Several coming at once drop `STAGGER` apart. The skeleton of the sessions involved shows, then fades.
 
-   Everything is a transform or an opacity, started on the Web Animations API (`buildMotion.tsx`). A new intent while one is
-   running finishes it at once. Under reduced motion nothing here does anything: the new view is simply drawn. */
+   Everything is a transform or an opacity, played by the List's one animator (`listMotion.ts`): the slides come from its pass
+   round each commit, and the lifts and drops from its vocabulary (`buildMotion.tsx`). A new intent while one is running stops its
+   steps where they are; what is moving keeps moving, and the next plan starts from where things are drawn. Under reduced motion
+   nothing here does anything: the new view is simply drawn. */
 
-import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { DROP, LIFT, SLIDE, STAGGER, STAGGER_CAP } from "@/lib/build/buildMotion";
 import { FADE_AFTER_MS, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SKELETON_IN, SKELETON_OUT } from "@/lib/build/buildMotion";
@@ -29,8 +31,8 @@ import { BASE as BASE_MS } from "@/lib/theme/motion";
 import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
 import { listRuns } from "./buildRuns";
-import { captureWords, crossfadeFrom, dropIn, finishRunning, liftOut, liftSpan, motionOn, openClip, outlineOnce, slideOut, staggerDelay, useFlip, type MotionRun, type Words } from "./buildMotion";
-import { finishSlides, type Box } from "./flip";
+import { captureWords, crossfadeFrom, dropIn, liftOut, motionOn, openClip, outlineOnce, slideOut, staggerDelay, type MotionRun, type Words } from "./buildMotion";
+import type { Box } from "./flip";
 
 /* ── what is on the page ── */
 
@@ -318,23 +320,15 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
   const [skeleton, setSkeleton] = useState<Skeleton | null>(null);
   const [shown, setShown] = useState(false);
   const [, redraw] = useState(0);
-  const rootObject = useMemo<RefObject<HTMLElement | null>>(() => ({ get current() { return getRoot(); } }) as RefObject<HTMLElement | null>, [getRoot]);
-  const flip = useFlip(rootObject);
 
   const later = (ms: number, run: () => void) => {
     timers.current.push(window.setTimeout(run, ms));
   };
-  /** A new intent while one runs: everything of the running one ends at once, in its end state. */
+  /** A new intent while one runs: its steps stop where they are; what is moving keeps moving, and the next plan starts from there. */
   const endNow = () => {
     for (const timer of timers.current) window.clearTimeout(timer);
     timers.current = [];
-    for (const run of runs.current) run.finish();
     runs.current = [];
-    const root = getRoot();
-    if (root) {
-      finishSlides(root);
-      for (const element of root.querySelectorAll<HTMLElement>("*")) finishRunning(element);
-    }
     setShown(false);
     setSkeleton(null);
   };
@@ -371,8 +365,7 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
         if (intent.kind === "convert") {
           const ids = changedTiles(shownView.current, incoming);
           if (ids.length > 0 && root) {
-            // The tile may be taller or shorter: what stood below slides with it (measured now, played once it is drawn).
-            flip.measure({ ms: SLIDE });
+            // The tile may be taller or shorter: what stood below slides with it (the animator's pass, as for any change).
             converted.current = { ids, intent, words: ids.map((id) => { const eyebrow = tileEl(root, id)?.querySelector<HTMLElement>('[data-testid$="-eyebrow"]'); return eyebrow ? captureWords(eyebrow) : null; }) };
           }
         } else if (hasMoved(change)) settle.current = { change, intent, after: layout, before, changed: [] };
@@ -502,10 +495,9 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
     }
   });
 
-  /** The lift has ended: draw the new view; whatever stood below slides up by the gap. */
+  /** The lift has ended: draw the new view; whatever stood below slides up by the gap (the animator's pass round that commit). */
   function release(current: Frozen) {
     if (frozen.current !== current) return;
-    flip.measure({ ms: SLIDE });
     remeasure.current = null;
     frozen.current = null;
     released.current = true;
