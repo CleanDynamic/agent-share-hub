@@ -35,7 +35,7 @@ function panel(over: Partial<SourcesPanelProps> = {}) {
 
 const sessionRows = (n: number): SourceSession[] => many(n, (at) => ({ key: `s${at}`, number: at, tool: "Claude", detail: "Opus 5.5 · 3 Mar", prompts: [] }));
 const fileRows = (n: number): SourceFile[] => many(n, (at) => ({ id: `f${at}`, name: `file-${at}.pdf`, note: "added by you" }));
-const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `l${at}`, label: "Claude", line: "1 Mar · 2 prompts", adding: false, inThisDraft: false, alsoIn: null, firstPrompt: null, date: "1 Mar", promptCount: 2, app: "Claude", appKnown: true, model: null, createdAt: "2026-03-01T10:00:00Z", draftCount: 0 }));
+const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `l${at}`, label: "Claude", line: "1 Mar · 2 prompts", adding: false, inThisDraft: false, alsoIn: null, firstPrompt: "Claude", date: "1 Mar", promptCount: 2, app: "Claude", appKnown: true, model: null, createdAt: "2026-03-01T10:00:00Z", draftCount: 0 }));
 
 describe("Sources' choice budgets", () => {
   it.each([
@@ -110,12 +110,25 @@ describe("Sources' rows", () => {
 describe("the setup-file reminder", () => {
   const reminder = (toolId: string, name: string, file: string) => ({ toolId, line: `${name} reads ${file}`, file });
 
-  it("sits under Files in this build, and Add it opens the file picker", () => {
+  it("sits under Files in this build, and Add opens the file picker", () => {
     const props = panel({ files: fileRows(1), reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md")] });
     const files = screen.getByRole("region", { name: "Files in this build" });
     expect(within(files).getByText("Claude Code reads CLAUDE.md")).toBeTruthy();
     fireEvent.click(within(files).getByRole("button", { name: "Add CLAUDE.md" }));
     expect(props.onPick).toHaveBeenCalledTimes(1);
+  });
+
+  it("SV-05 P6: wraps its words rather than cutting the file name, and Add never wraps or shrinks", () => {
+    panel({ files: [], reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md")] });
+    const line = screen.getByTestId("reminder-line");
+    expect(line.textContent).toBe("Claude Code reads CLAUDE.md");
+    expect(line.style.whiteSpace).toBe("normal");
+    expect(line.style.textOverflow).toBe("");
+    expect(line.style.overflowWrap).toBe("normal");
+    const add = screen.getByRole("button", { name: "Add CLAUDE.md" });
+    expect(add.textContent).toBe("Add");
+    expect(add.style.whiteSpace).toBe("nowrap");
+    expect(add.style.flexShrink).toBe("0");
   });
 
   it("shows even when the build has no file yet, and caps at two rows", () => {

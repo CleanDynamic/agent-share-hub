@@ -5,7 +5,7 @@
    build's first queries load. A phone gets its single column: the title lines, then the post and the tiles.
 
    The sizes are the board's "Loading: building blocks": title 180 and 120 wide, 10 apart; Sources five lines, 22 apart; Build
-   a post box of three rows, a counts line 210 wide and five tile boxes of three rows, 54 apart; Details six lines, 22 apart.
+   a post box of three rows, a counts line 210 wide and five tile boxes as tall as a tile (SV-05), 18 apart; Details six lines, 22 apart.
 
    `gone` fades the blocks out over 200 ms while the page's content fades in (`ComposeArrival`, below), the blocks staying
    exactly where they were. */
@@ -20,7 +20,7 @@ import { useWindowSize } from "./DetailsAside";
 import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 import { COMPOSER_PAD } from "./detailsRecipes";
 import { LoadingBlocks, LoadingStatus } from "./LoadingBlocks";
-import { BLOCKS_OUT_MS, CELL_H, COLUMNS_TOP, CONTENT_IN_MS, COUNTS_WIDTH, DETAILS_WIDTHS, LINE_GAP, POST_ROWS, SOURCES_WIDTHS, TILES, TILE_INSET, TILE_PITCH, TILE_ROWS, TITLE_BLOCK_HEIGHT, TITLE_WIDTHS, TITLE_WRAP_ROOM, TITLE_WRAP_UNDER, takeFirstShow } from "./loadingBlocks";
+import { BLOCKS_OUT_MS, CELL_H, COLUMNS_TOP, CONTENT_IN_MS, COUNTS_WIDTH, DETAILS_WIDTHS, LINE_GAP, POST_ROWS, SOURCES_WIDTHS, TILES, TILE_GAP, TILE_HEIGHT, TILE_INSET, TITLE_BLOCK_HEIGHT, TITLE_WIDTHS, TITLE_WRAP_ROOM, TITLE_WRAP_UNDER, takeFirstShow } from "./loadingBlocks";
 import { TAB_ROW } from "./tabRowRecipes";
 
 const column = (gap: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap, minWidth: 0 });
@@ -52,9 +52,10 @@ function BuildBlocks({ plan, start, building, gone }: { plan: Plan; start: numbe
     <div style={column(20)}>
       <LoadingBlocks kind="box" rows={POST_ROWS} width={buildWidth} order={start} building={building} gone={gone} />
       <LoadingBlocks kind="line" width={COUNTS_WIDTH} order={start + 1} building={building} gone={gone} />
-      <div style={{ ...column(TILE_PITCH - TILE_ROWS * CELL_H), ...(plan.phone ? null : { paddingLeft: TILE_INSET - 1 }) }}>
+      <div style={{ ...column(TILE_GAP), ...(plan.phone ? null : { paddingLeft: TILE_INSET - 1 }) }}>
+        {/* SV-05 P4: each tile box fills a tile's whole height, so a box and the tile that takes its place are one size. */}
         {Array.from({ length: TILES }, (_, at) => (
-          <LoadingBlocks key={at} kind="box" rows={TILE_ROWS} width={tileWidth} order={start + 2 + at} building={building} gone={gone} />
+          <LoadingBlocks key={at} kind="box" rows={TILE_HEIGHT / CELL_H} width={tileWidth} order={start + 2 + at} building={building} gone={gone} />
         ))}
       </div>
     </div>

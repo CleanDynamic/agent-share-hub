@@ -12,6 +12,7 @@
 
 import { promptModel, promptOrigin } from "@/lib/build/composePrompts";
 import { toolLabel, type MadeWithState } from "@/lib/build/making";
+import { numberSessions } from "@/lib/build/sessionNumbers";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { MINIMUM_PUBLISHABLE_KEYS, type Completeness, type RequirementKey } from "@/lib/build/signals";
 import { nestNodes } from "@/lib/build/nodes";
@@ -165,19 +166,37 @@ export function parsePromptDragData(data: string): { importId: string; ordinal: 
   return { importId, ordinal };
 }
 
-/** "Session 2 · Opus 5.5", or "Written by you". */
+/**
+ * SV-05 P1: the old composer's session numbers, from the one numbering (`sessionNumbers.ts`): each session where its
+ * first prompt stands in the tree, a session with none after them. Built once per change of the prompts.
+ */
+export function importNumbers(
+  prompts: readonly Pick<BuildNode, "source_ref" | "payload">[],
+  sessions: readonly Pick<SessionSummary, "id">[],
+): ReadonlyMap<string, number> {
+  const first = new Map<string, number>();
+  prompts.forEach((node, at) => {
+    const id = promptOrigin(node)?.importSessionId;
+    if (id && !first.has(id)) first.set(id, at);
+  });
+  return numberSessions(sessions.map((session) => ({ key: session.id, firstTile: first.get(session.id) ?? null })), []).numberOf;
+}
+
+/** "Session 2 · Opus 5.5", or "Written by you". `numberOf` is `importNumbers`. */
 export function promptSourceLine(
   node: Pick<BuildNode, "source_ref" | "payload">,
   sessions: readonly Pick<SessionSummary, "id" | "modelName" | "client">[],
+  numberOf: ReadonlyMap<string, number>,
 ): string {
   const origin = promptOrigin(node);
   if (!origin) return "Written by you";
-  const at = sessions.findIndex((session) => session.id === origin.importSessionId);
-  if (at === -1) {
+  const session = sessions.find((entry) => entry.id === origin.importSessionId);
+  const number = session ? numberOf.get(session.id) : undefined;
+  if (!session || number === undefined) {
     const model = promptModel(node);
     return model ? `From a session · ${model}` : "From a session";
   }
-  return `Session ${at + 1} · ${sessionSource(sessions[at])}`;
+  return `Session ${number} · ${sessionSource(session)}`;
 }
 
 /**

@@ -22,7 +22,7 @@ import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type Sh
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { previewColours, previewWorkstreams, type ColourPreview } from "@/lib/build/colourPreview";
 import { groupKey, sessionGroups, type Step } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { makingWithGroupColours, previewGroupColour, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { parseRefTo, type ThreadDoc } from "@/lib/build/thread";
@@ -92,7 +92,7 @@ export default function ReferencesDemo({ fit = "board", state = "populated" }: D
   const [made, setMade] = useState<Making>(fixture.making);
   const [tileColours, setTileColours] = useState<Record<string, string | null>>({});
   const savedSteps = useMemo(() => withTileColours(fixture.steps, tileColours), [fixture, tileColours]);
-  const savedGroups = useMemo(() => sessionGroups(savedSteps, made.sessions, made.session_tools ?? {}, sessionsMetaOf(made), sessionOrderOf(made)), [savedSteps, made]);
+  const savedGroups = useMemo(() => sessionGroups(savedSteps, made.sessions, made.session_tools ?? {}, sessionsMetaOf(made), sessionOrderOf(made), storedWorkstreamsOf(made)), [savedSteps, made]);
   const writeColour = useCallback((to: string, colour: string | null) => {
     const target = parseRefTo(to);
     if (!target || target.kind === "group") return;

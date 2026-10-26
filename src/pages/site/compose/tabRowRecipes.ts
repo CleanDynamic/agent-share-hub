@@ -38,9 +38,6 @@ export const tabStyle = (selected: boolean): CSSProperties => ({
   boxShadow: selected ? `inset 0 -1.5px 0 ${t.text}` : "none",
 });
 
-/** "Map is now available", at 11.5 `--label`, just after the tabs. */
-export const TAB_HINT: CSSProperties = { fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 400, lineHeight: "normal", color: t.label, paddingLeft: 12, paddingBottom: 14, whiteSpace: "nowrap" };
-
 /** Card, Preview and Publish: 28 tall, 8 apart, 9 above the rule. */
 export const TAB_ACTIONS: CSSProperties = { display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", marginBottom: 9, flexShrink: 0 };
 

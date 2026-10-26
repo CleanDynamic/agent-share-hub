@@ -21,6 +21,7 @@ import { prefersReducedMotion, scrollBehavior, STANDARD } from "@/lib/theme/moti
 
 import { play, SLIDE_ATTR, snapshot, type Box } from "./flip";
 import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
+import { TILE_HEIGHT } from "./loadingBlocks";
 import { SessionHead } from "./SessionHead";
 import type { SourceSession } from "./sourcesModel";
 import { RUN } from "./tileRecipes";
@@ -68,11 +69,11 @@ const NONE: ReadonlySet<string> = new Set();
 /** The median height of the prompts already on the page: what a place for a prompt not yet written is. */
 function estimate(root: HTMLElement): number {
   const heights = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].map((element) => naturalBox(element).h).filter((h) => h > 0).sort((a, b) => a - b);
-  return heights.length > 0 ? Math.round(heights[Math.floor(heights.length / 2)]) : 108;
+  return heights.length > 0 ? Math.round(heights[Math.floor(heights.length / 2)]) : TILE_HEIGHT;
 }
 
 /** The page, as a skeleton with nothing held: every tile's socket, every session's lane, the numbers. `only` (CA-22): just these sessions. */
-export function measureStill(root: HTMLElement, only?: ReadonlySet<string>): Skeleton {
+export function measureStill(root: HTMLElement, only?: ReadonlySet<string>, inside = false): Skeleton {
   const origin = naturalBox(root);
   const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
   const items: SkeletonItem[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].filter((element) => !only || only.has(element.getAttribute("data-skel-container") ?? "")).map((element) => ({
@@ -86,7 +87,7 @@ export function measureStill(root: HTMLElement, only?: ReadonlySet<string>): Ske
     return { id, rect: rel(naturalBox(element)), items: items.filter((item) => item.container === id).map((item) => item.id), framed: false, name: element.getAttribute("data-skel-name") ?? `Session` };
   });
   const left = items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + origin.x : origin.x;
-  return skeletonOf({ kind: "tile", items, containers, held: null, moved: false, room: left - leftEdge() });
+  return skeletonOf({ kind: "tile", items, containers, held: null, moved: false, room: left - leftEdge(), inside });
 }
 
 /** Where the new session will stand: the end of the part, or of the build. */
@@ -217,7 +218,8 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
       before.current = null;
     }
     if (phase === "open" || phase === "landing") {
-      const next = measureStill(root);
+      // SV-05 P4: an import's numbers stand inside their sockets, so nothing hangs outside the part's frame.
+      const next = measureStill(root, undefined, true);
       const same = (a: Skeleton | null) => a !== null && JSON.stringify(a) === JSON.stringify(next);
       setSkeleton((current) => (same(current) ? current : next));
       // The new session's sockets fade in with its lane.
@@ -234,7 +236,7 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
 /** The place for the session while its prompts are on their way: its head, and an empty place for each prompt. */
 export function ArrivingBlock({ arriving, rootRef, first }: { arriving: Arriving; rootRef: RefObject<HTMLElement | null>; first: boolean }) {
   const height = useRef<number | null>(null);
-  if (height.current === null) height.current = rootRef.current ? estimate(rootRef.current) : 108;
+  if (height.current === null) height.current = rootRef.current ? estimate(rootRef.current) : TILE_HEIGHT;
   const head = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     if (head.current && typeof head.current.animate === "function" && !prefersReducedMotion()) fall(head.current, HEAD_AFTER_MS);
@@ -257,8 +259,10 @@ export function ArrivingBlock({ arriving, rootRef, first }: { arriving: Arriving
       {arriving.count > 0 ? (
         <div id={`session-tiles-${arriving.key}`} data-testid="session-tiles" style={RUN}>
           {Array.from({ length: arriving.count }, (_, at) => (
-            <div key={at} data-skel-kind="tile" data-skel-id={`${arriving.key}:wait:${at}`} data-skel-container={arriving.key} data-testid="arriving-place" style={{ position: "relative", height: height.current ?? 108, visibility: "hidden" }}>
-              {arriving.written && at < arriving.written.length ? <WrittenPrompt text={arriving.written[at]} /> : slow ? <SocketBlocks /> : null}
+            <div key={at} data-skel-kind="tile" data-skel-id={`${arriving.key}:wait:${at}`} data-skel-container={arriving.key} data-testid="arriving-place" style={{ position: "relative", height: height.current ?? TILE_HEIGHT, visibility: "hidden" }}>
+              {arriving.written && at < arriving.written.length ? <WrittenPrompt text={arriving.written[at]} /> : null}
+              {/* SV-05 P4: the blocks stay over the prompt that drops in and fade out there, so the socket is never empty for a frame. */}
+              {slow ? <SocketBlocks gone={Boolean(arriving.written && at < arriving.written.length)} /> : null}
             </div>
           ))}
         </div>

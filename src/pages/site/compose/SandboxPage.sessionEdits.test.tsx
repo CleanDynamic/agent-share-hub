@@ -183,7 +183,7 @@ const positions = () =>
     .sort((a, b) => Number(a.position) - Number(b.position));
 
 describe("CA-14 P5 · adding to the right session", () => {
-  it("has no prompt box at the foot and no Adding to picker; every open session ends with + Add Tile", async () => {
+  it("has no prompt box at the foot and no Adding to picker; every open session ends with + Add tile", async () => {
     await twoSessions();
     expect(screen.queryByTestId("adding-to")).toBeNull();
     expect(screen.queryByTestId("add-prompt")).toBeNull();
@@ -283,7 +283,8 @@ describe("CA-14 P6 · View", () => {
     await turnOn("Session list");
     const nav = await screen.findByRole("navigation", { name: "Sessions" });
     const chips = within(nav).getAllByRole("button");
-    expect(chips.map((chip) => chip.textContent)).toEqual(["1Claude Code", "2Claude Code"]);
+    // SV-05 P1: two sessions with the same app: each chip adds its day.
+    expect(chips.map((chip) => chip.textContent)).toEqual([expect.stringMatching(/^1Claude Code · \d{1,2} \w{3}$/), expect.stringMatching(/^2Claude Code · \d{1,2} \w{3}$/)]);
     expect(chips[0].getAttribute("aria-current")).toBe("true");
     expect(chips[1].getAttribute("aria-current")).toBeNull();
     // Session 2's head has reached the top of the screen: its chip is the current one.

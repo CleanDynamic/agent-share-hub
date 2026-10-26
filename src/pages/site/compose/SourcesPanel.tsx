@@ -41,7 +41,7 @@ import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { fullText } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
-import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
+import { libraryName, REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
@@ -50,6 +50,8 @@ export const SOURCES_COPY = {
   inBuild: "Sessions in this build",
   files: "Files in this build",
   yourSessions: "Your sessions",
+  /** SV-05 P6: the text button beside a file a tool in the build reads. */
+  addFile: "Add",
   stillArriving: "Still arriving",
   didntFinish: "Didn't finish",
   inThisDraft: "In this draft",
@@ -282,13 +284,18 @@ function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile;
   );
 }
 
-/** "Claude Code reads CLAUDE.md · Add it": quiet, with a text button that opens the file picker. */
+/**
+ * "Claude Code reads CLAUDE.md · Add": quiet, with a text button that opens the file picker. SV-05 P6: the words wrap onto a
+ * second line, between words, before a file name is cut; the button never wraps and never shrinks.
+ */
 function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; phone: boolean; onPick: () => void }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
-      <span {...fullText(reminder.line)} style={{ ...text(12.5, 400, t.text2), flexGrow: 1, ...ellipsis }}>{reminder.line}</span>
-      <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={text(12.5, 500, t.text)}>
-        Add it
+      <span data-testid="reminder-line" style={{ ...text(12.5, 400, t.text2), flex: "1 1 auto", minWidth: 0, whiteSpace: "normal", overflowWrap: "normal", wordBreak: "normal" }}>
+        {reminder.line}
+      </span>
+      <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={{ ...text(12.5, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
+        {SOURCES_COPY.addFile}
       </TextButton>
     </div>
   );
@@ -319,9 +326,10 @@ function AddToMenu({ item, parts, phone, onAdd }: { item: SourceLibraryItem; par
 function LibraryRow({ item, phone, onAdd, parts }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string, part?: string) => void; parts?: readonly AddToPart[] }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
-      <ToolMark tool={item.label} size={20} />
+      {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
+      {item.appKnown ? <ToolMark tool={item.app} size={20} /> : <span aria-hidden="true" style={{ width: 20, flexShrink: 0 }} />}
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-        <span {...fullText(item.label)} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
+        <span {...fullText(libraryName(item))} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{libraryName(item)}</span>
         <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
         {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
       </span>

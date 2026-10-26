@@ -81,7 +81,21 @@ function TargetBox({ target }: { target: Target }) {
 
 const NUMBER: CSSProperties = { ...mono(11), color: t.label, position: "absolute", transform: "translate(-100%, -50%)", whiteSpace: "nowrap", lineHeight: 1 };
 
+/** SV-05 P4: an import's numbers, inside their sockets: left-aligned, vertically centred. */
+const NUMBER_INSIDE: CSSProperties = { ...NUMBER, transform: "translate(0, -50%)" };
+
 function RailBox({ rail }: { rail: Rail }) {
+  if (rail.inside) {
+    return (
+      <div data-testid="skeleton-rail" data-container={rail.container} data-inside="" style={{ position: "absolute", left: 0, top: 0 }}>
+        {rail.ticks.map((tick) => (
+          <span key={tick.id} data-testid="skeleton-number" data-n={tick.n} style={{ ...NUMBER_INSIDE, left: tick.numberLeft, top: tick.y }}>
+            {tick.n}
+          </span>
+        ))}
+      </div>
+    );
+  }
   return (
     <div data-testid="skeleton-rail" data-container={rail.container} style={{ position: "absolute", left: 0, top: 0 }}>
       <div style={{ position: "absolute", left: rail.x, top: rail.top, width: 1, height: Math.max(0, rail.bottom - rail.top), background: t.windowBorder }} />

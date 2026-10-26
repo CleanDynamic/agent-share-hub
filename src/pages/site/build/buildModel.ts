@@ -806,7 +806,7 @@ export function runBody(
      branches numbered 4a, 4b; and What you need adds the accounts, keys and installs. Any other build is returned as it always was. */
   const graph = buildSteps(tree);
   const making = asMaking(build.making);
-  const groups = sessionGroups(graph, making.sessions, making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making));
+  const groups = sessionGroups(graph, making.sessions, making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making), storedWorkstreamsOf(build.making));
   const needs = runtimeNeeds(graph, groups).map((need, index): RunPrerequisiteView => ({ id: `need:${index}`, title: need.title, requirement: need.steps.length ? `step${need.steps.length === 1 ? "" : "s"} ${need.steps.join(", ")}` : null }));
   if (!hasRuntimeFacts(graph) && needs.length === 0) {
     return { steps: base, prerequisites: prereqs, allText: runSequenceText(build, prerequisites, steps), words: runLayer ? layerSteps(runLayer, resolveNode) : null };

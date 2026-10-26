@@ -63,7 +63,7 @@ export default function Ca24Demo({ fit = "board", state = "populated" }: DesignP
       ? {
           key: "imp-18",
           kind: "chat",
-          head: { key: "imp-18", number: 3, tool: "Claude", detail: "Opus 5.5 · 24 Oct", prompts: [], date: "24 Oct" },
+          head: { key: "imp-18", number: 4, tool: "Claude", detail: "Opus 5.5 · 24 Oct", prompts: [], date: "24 Oct" },
           count: 18,
           status: "writing",
           progress: { done: 6, total: 18 },

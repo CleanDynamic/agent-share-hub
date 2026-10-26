@@ -41,7 +41,10 @@ import { useCrossfade } from "./buildMotion";
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
   noTiles: "No tiles yet",
-  addToThis: "+ Add Tile",
+  /** SV-05 P3: an import that wrote fewer tiles than its session has prompts. */
+  imported: (have: number, of: number) => `${have} of ${of} prompts imported`,
+  retry: "Retry",
+  addToThis: "+ Add tile",
   moveUp: "Move up",
   moveDown: "Move down",
   edit: "Edit session…",
@@ -67,6 +70,8 @@ export interface SessionOps {
   onMoveToPart?: (key: string, workstream: string) => void;
   /** CA-17 P2: share the stage of the session above, or stop. Absent: no menu item. */
   onWithAbove?: (key: string, on: boolean) => void;
+  /** SV-05 P3: import a short session's missing prompts again. Absent: no Retry. */
+  onRetryImport?: (key: string) => void;
 }
 
 /** CA-17 P2: what a session's head knows about the build's parts. Absent with one part. */
@@ -80,6 +85,8 @@ export interface SessionPartInfo {
 
 export interface SessionHeadProps {
   session: SourceSession;
+  /** SV-05 P1: how many figures the build's largest session number has: every head's number slot is that wide. */
+  numberDigits?: number;
   phone: boolean;
   /** How many tiles the session holds. */
   tiles: number;
@@ -108,6 +115,9 @@ export interface SessionHeadProps {
 }
 
 /** "Session 1 · Claude": the head's name, and the group's accessible name. */
+/** SV-05 P1: the number's slot: as wide as `digits` figures, so "9" becoming "10" leaves the words beside it where they are. */
+export const numberSlot = (digits: number) => ({ display: "inline-block", minWidth: `${Math.max(1, digits)}ch`, fontVariantNumeric: "tabular-nums" as const });
+
 export const headName = (session: Pick<SourceSession, "number" | "tool">): string => `Session ${session.number} · ${session.tool}`;
 
 /** A session's title as an inline field: saved on blur and on Enter, Esc puts it back. */
@@ -200,9 +210,11 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
 /** CA-15b: the session line's facts, 12.5 `--label`. */
 const quiet = (colour: string) => ({ ...SESSION_META, color: colour, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 });
 
-export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, canMove, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part, importing = false }: SessionHeadProps) {
+export function SessionHead({ session, phone, tiles, collapsed, controls, onToggle, first, last, canMove, ops, onOpenSetup, onPickApp, onColour, onEdit, inBuild = [], editable, part, importing = false, numberDigits = 1 }: SessionHeadProps) {
   /* CA-22 P4: the folded head's count crossfades when a tile joins or leaves. */
   const countRef = useCrossfade<HTMLSpanElement>(tiles);
+  /* SV-05 P1: a number that changes where it stands crossfades, old over new; its slot is as wide as the build's widest number. */
+  const numberRef = useCrossfade<HTMLSpanElement>(session.number, undefined, true);
   const drop = useNestSession(session.key);
   const drag = useNestSessionDrag(session.key);
   const head = useRef<HTMLDivElement>(null);
@@ -231,7 +243,13 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
 
   const app = (
     <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, ...NO_SHRINK, ...SESSION_META }}>
-      <span style={{ whiteSpace: "nowrap", ...SESSION_NAME }}>Session {session.number} ·</span>
+      <span style={{ whiteSpace: "nowrap", ...SESSION_NAME }}>
+        Session{" "}
+        <span ref={numberRef} data-testid="session-number" style={numberSlot(numberDigits)}>
+          {session.number}
+        </span>{" "}
+        ·
+      </span>
       {session.tool === NO_APP && onPickApp && maker ? (
         <ToolPicker quiet label={`Pick an app for session ${session.number}`} placeholder={NO_APP} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
       ) : (
@@ -258,6 +276,12 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           </span>
         ) : null}
         {session.date ? <span style={quiet(t.label)}>{session.date}</span> : null}
+        {session.imported ? <span data-testid="session-imported" style={quiet(t.text2)}>{SESSION_HEAD_COPY.imported(session.imported.have, session.imported.of)}</span> : null}
+        {session.imported && maker && ops?.onRetryImport ? (
+          <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Retry importing Session ${session.number}`} onClick={() => ops.onRetryImport?.(session.key)}>
+            {SESSION_HEAD_COPY.retry}
+          </TextButton>
+        ) : null}
         {session.setupCount && onOpenSetup ? (
           <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
             {`Setup ${session.setupCount}`}

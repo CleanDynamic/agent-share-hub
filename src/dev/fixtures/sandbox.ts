@@ -57,7 +57,6 @@ export function sandboxViewProps(which: SandboxFixture = "fox", state: DesignSta
     lens: "list",
     onLens: noop,
     mapAvailable: !fox,
-    mapHint: !fox,
   };
 }
 

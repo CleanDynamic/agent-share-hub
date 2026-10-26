@@ -24,9 +24,13 @@ export const NOT_LIVE: StoredClassification = { live: false, classification: rea
 
 let columnMissing = false;
 
+/** SV-05 P7: the columns are missing only when the error's code says so: Postgres 42703 or PostgREST PGRST204. Never by its words. */
+const MISSING_COLUMN_CODES = new Set(["42703", "PGRST204"]);
+
 export const isMissingColumn = (error: unknown): boolean => {
-  const text = `${(error as { code?: string })?.code ?? ""} ${(error as { message?: string })?.message ?? ""} ${(error as { cause?: { code?: string } })?.cause?.code ?? ""}`;
-  return /42703|PGRST204|classification|facets/.test(text);
+  const code = (error as { code?: unknown } | null)?.code;
+  const causeCode = (error as { cause?: { code?: unknown } } | null)?.cause?.code;
+  return [code, causeCode].some((value) => typeof value === "string" && MISSING_COLUMN_CODES.has(value));
 };
 
 interface ClassificationTable {

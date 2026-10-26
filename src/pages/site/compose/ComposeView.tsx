@@ -364,7 +364,7 @@ function TextPanel({
             id="compose-title"
             type="text"
             value={title}
-            placeholder="Name your build"
+            placeholder="Fox poster"
             autoComplete="off"
             onChange={(event) => onTitle(event.target.value)}
             {...titleRing.handlers}

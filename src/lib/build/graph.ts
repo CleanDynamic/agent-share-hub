@@ -26,6 +26,7 @@ import { HEX_HINT, normaliseHex } from "@/lib/theme/partColour";
 import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
+import { numberSessions } from "./sessionNumbers";
 import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } from "./cost";
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
@@ -1066,6 +1067,7 @@ export function sessionGroups(
   sessionTools: Readonly<Record<string, string>>,
   meta: Readonly<Record<string, SessionMeta>> = {},
   order: readonly string[] = [],
+  workstreams: readonly { key: string }[] = [],
 ): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
@@ -1073,14 +1075,14 @@ export function sessionGroups(
 
   const groups: SessionGroup[] = [];
   const byKey = new Map<string, SessionGroup>();
-  let numbered = 0;
   let legacy = 0;
   /** The run of typed prompts the last step was in, while it is unbroken. */
   let run: SessionGroup | null = null;
   let previous: SessionGroup | null = null;
 
   const open = (group: Omit<SessionGroup, "number" | "stepNumbers"> & { key: string }): SessionGroup => {
-    const made: SessionGroup = { ...group, number: group.implicit ? 0 : ++numbered, stepNumbers: [] };
+    // Numbered below, once every group is open (SV-05 P1).
+    const made: SessionGroup = { ...group, number: 0, stepNumbers: [] };
     groups.push(made);
     byKey.set(group.key, made);
     return made;
@@ -1139,20 +1141,38 @@ export function sessionGroups(
     if (byKey.has(key) || !key.startsWith(TYPED_SESSION_PREFIX) || key.startsWith(LEGACY_SESSION_PREFIX) || !own.date) continue;
     open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
   }
-  // CA-12 P5: sessions are numbered by `build_sessions.position`, the order they were added. `order` lists the keys of a
-  // draft that has rows, in position order. Only the places those sessions already hold are refilled, in that order:
-  // a session that has no row (an old draft's, or an old build's run of typed prompts) keeps its own place, so a draft
-  // with no rows, or rows that agree with where its steps sit, reads exactly as it did.
-  if (order.length > 0) {
-    const rank = new Map(order.map((key, at) => [key, at]));
-    const slots = groups.flatMap((group, at) => (!group.implicit && rank.has(groupKey(group)) ? [at] : []));
-    const sorted = slots.map((at) => groups[at]).sort((a, b) => (rank.get(groupKey(a)) as number) - (rank.get(groupKey(b)) as number));
-    slots.forEach((at, n) => {
-      groups[at] = sorted[n];
+  // SV-05 P1: a session the order holds that has no step yet (an import whose prompts are not in, a session made here
+  // whose entry has no date) is a session of the build all the same: it is opened, counted and numbered.
+  for (const key of order) {
+    if (byKey.has(key) || key.startsWith(LEGACY_SESSION_PREFIX)) continue;
+    const session = known.get(key);
+    const own = meta[key];
+    if (!session && own && key.startsWith(TYPED_SESSION_PREFIX)) {
+      open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date ?? TYPED_HERE });
+      continue;
+    }
+    const model = session?.model ?? own?.model ?? null;
+    open({
+      key,
+      kind: "import",
+      sessionId: key,
+      tool: (session ? toolLabel(session.client) : null) ?? chosenTool(sessionTools[key]) ?? chosenTool(own?.tool ?? undefined),
+      model: model ? modelLabel(model) : null,
+      startedAt: session?.started_at ?? null,
     });
-    let numberedAgain = 0;
-    for (const group of groups) if (!group.implicit) group.number = ++numberedAgain;
   }
+  // SV-05 P1: one numbering (`sessionNumbers.ts`): the parts in their order, each part's sessions in the build's order,
+  // a session the order does not hold where its first tile stands. The groups are listed in that order, numbered from 1.
+  const tileAt = new Map(steps.map((step, at) => [step.number, at]));
+  const counted = groups.filter((group) => !group.implicit);
+  const numbers = numberSessions(
+    counted.map((group) => ({ key: group.key as string, firstTile: group.stepNumbers.length > 0 ? (tileAt.get(group.stepNumbers[0]) ?? null) : null })),
+    order,
+    { meta, workstreams },
+  );
+  const byNumber = new Map(counted.map((group) => [group.key as string, group]));
+  for (const group of counted) group.number = numbers.numberOf.get(group.key as string) ?? 0;
+  groups.splice(0, groups.length, ...groups.filter((group) => group.implicit), ...numbers.keys.map((key) => byNumber.get(key) as SessionGroup));
   // CA-04 P6: what each session worked until, from its entry.
   for (const [key, group] of byKey) {
     const goal = goalOf(meta[key]?.goal);
