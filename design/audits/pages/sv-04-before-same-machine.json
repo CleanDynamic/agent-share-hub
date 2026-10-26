@@ -1,0 +1,1548 @@
+{
+  "rows": [
+    {
+      "step": "Home → Builds",
+      "way": "cold",
+      "firstChangeMs": 3,
+      "readyMs": 899,
+      "emptyFrames": 0,
+      "placeholderStates": 2,
+      "states": "placeholder#1 → placeholder#2",
+      "layoutShift": 0,
+      "footerShift": 0.018,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.004 div 0,0 0x0 -> 7,650 1426x50",
+        "0.014 div 7,650 1426x50 -> 0,0 0x0"
+      ]
+    },
+    {
+      "step": "Builds → a build",
+      "way": "cold",
+      "firstChangeMs": 5,
+      "readyMs": 321,
+      "emptyFrames": 0,
+      "placeholderStates": 1,
+      "states": "placeholder#1",
+      "layoutShift": 0,
+      "footerShift": 0.05,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 295,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.050 div 7,381 1426x51 -> 0,0 0x0"
+      ]
+    },
+    {
+      "step": "Back to Builds",
+      "way": "cold",
+      "firstChangeMs": 1,
+      "readyMs": 1,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0.037,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": 0,
+      "topOff": null,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.037 div 0,0 0x0 -> 7,642 1426x51"
+      ]
+    },
+    {
+      "step": "Builds → OpenBuilds",
+      "way": "cold",
+      "firstChangeMs": 6,
+      "readyMs": 322,
+      "emptyFrames": 0,
+      "placeholderStates": 1,
+      "states": "placeholder#1",
+      "layoutShift": 0,
+      "footerShift": 0,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.000 a 966,391 56x4 -> 966,357 56x26"
+      ]
+    },
+    {
+      "step": "OpenBuilds → Library",
+      "way": "cold",
+      "firstChangeMs": 6,
+      "readyMs": 323,
+      "emptyFrames": 0,
+      "placeholderStates": 1,
+      "states": "placeholder#1",
+      "layoutShift": 0,
+      "footerShift": 0.001,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.001 div 7,642 1426x51 -> 7,652 1426x48",
+        "0.001 div 7,652 1426x48 -> 7,642 1426x51"
+      ]
+    },
+    {
+      "step": "Library → Drafts",
+      "way": "cold",
+      "firstChangeMs": 7,
+      "readyMs": 320,
+      "emptyFrames": 0,
+      "placeholderStates": 1,
+      "states": "placeholder#1",
+      "layoutShift": 0,
+      "footerShift": 0.012,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.012 div 7,642 1426x51 -> 0,0 0x0"
+      ]
+    },
+    {
+      "step": "Drafts → a draft",
+      "way": "cold",
+      "firstChangeMs": 5,
+      "readyMs": 1988,
+      "emptyFrames": 10,
+      "placeholderStates": 1,
+      "states": "empty → placeholder#1",
+      "layoutShift": 0,
+      "footerShift": 0.025,
+      "headerKept": false,
+      "headerMoved": true,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 936,
+      "shiftSources": [
+        "0.025 div 7,642 1426x51 -> 0,0 0x0"
+      ]
+    },
+    {
+      "step": "Back to Drafts",
+      "way": "cold",
+      "firstChangeMs": 14,
+      "readyMs": 14,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0,
+      "headerKept": false,
+      "headerMoved": false,
+      "scrollOff": 0,
+      "topOff": null,
+      "longestTaskMs": 0,
+      "shiftSources": []
+    },
+    {
+      "step": "Drafts → Profile",
+      "way": "cold",
+      "firstChangeMs": 6,
+      "readyMs": 1356,
+      "emptyFrames": 0,
+      "placeholderStates": 2,
+      "states": "placeholder#1 → placeholder#2",
+      "layoutShift": 0.018,
+      "footerShift": 0.017,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.017 div 7,642 1426x51 -> 0,0 0x0",
+        "0.018 div 0,0 0x0 -> 7,642 1426x51",
+        "0.018 span 127,77 120x12 -> 127,73 38x19"
+      ]
+    },
+    {
+      "step": "Profile → Home",
+      "way": "warm",
+      "firstChangeMs": 7,
+      "readyMs": 7,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0.021,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.021 div 7,642 1426x51 -> 0,0 0x0"
+      ]
+    },
+    {
+      "step": "Home → Builds",
+      "way": "warm",
+      "firstChangeMs": 6,
+      "readyMs": 6,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": []
+    },
+    {
+      "step": "Builds → a build",
+      "way": "warm",
+      "firstChangeMs": 7,
+      "readyMs": 7,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0.037,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 295,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.037 div 7,642 1426x51 -> 0,0 0x0"
+      ]
+    },
+    {
+      "step": "Back to Builds",
+      "way": "warm",
+      "firstChangeMs": 2,
+      "readyMs": 2,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0.037,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": 0,
+      "topOff": null,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.037 div 0,0 0x0 -> 7,642 1426x51"
+      ]
+    },
+    {
+      "step": "Builds → OpenBuilds",
+      "way": "warm",
+      "firstChangeMs": 6,
+      "readyMs": 6,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": []
+    },
+    {
+      "step": "OpenBuilds → Library",
+      "way": "warm",
+      "firstChangeMs": 6,
+      "readyMs": 6,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": []
+    },
+    {
+      "step": "Library → Drafts",
+      "way": "warm",
+      "firstChangeMs": 3,
+      "readyMs": 3,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0.013,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.013 div 7,642 1426x51 -> 0,0 0x0"
+      ]
+    },
+    {
+      "step": "Drafts → a draft",
+      "way": "warm",
+      "firstChangeMs": 6,
+      "readyMs": 6,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0,
+      "headerKept": false,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 260,
+      "longestTaskMs": 86,
+      "shiftSources": []
+    },
+    {
+      "step": "Back to Drafts",
+      "way": "warm",
+      "firstChangeMs": 3,
+      "readyMs": 3,
+      "emptyFrames": 0,
+      "placeholderStates": 0,
+      "states": "none",
+      "layoutShift": 0,
+      "footerShift": 0,
+      "headerKept": false,
+      "headerMoved": false,
+      "scrollOff": 0,
+      "topOff": null,
+      "longestTaskMs": 0,
+      "shiftSources": []
+    },
+    {
+      "step": "Drafts → Profile",
+      "way": "warm",
+      "firstChangeMs": 4,
+      "readyMs": 1320,
+      "emptyFrames": 0,
+      "placeholderStates": 1,
+      "states": "placeholder#1",
+      "layoutShift": 0.018,
+      "footerShift": 0.004,
+      "headerKept": true,
+      "headerMoved": false,
+      "scrollOff": null,
+      "topOff": 0,
+      "longestTaskMs": 0,
+      "shiftSources": [
+        "0.004 div 7,642 1426x51 -> 0,0 0x0",
+        "0.018 div 0,0 0x0 -> 7,642 1426x51",
+        "0.018 span 127,77 120x12 -> 127,73 38x19"
+      ]
+    }
+  ],
+  "runs": [
+    [
+      {
+        "step": "Home → Builds",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 15,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1",
+          "placeholder#2"
+        ],
+        "placeholderStates": 2,
+        "layoutShift": 0,
+        "footerShift": 0.018,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 899,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.004 div 0,0 0x0 -> 7,650 1426x50",
+          "0.014 div 7,650 1426x50 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Builds → a build",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 295,
+        "firstChangeMs": 5,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.05,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 321,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.050 div 7,381 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Builds",
+        "way": "cold",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 1,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 0,0 0x0 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Builds → OpenBuilds",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 4,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 320,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.000 a 966,391 56x4 -> 966,357 56x26"
+        ]
+      },
+      {
+        "step": "OpenBuilds → Library",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 3,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.001,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 320,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.001 div 7,642 1426x51 -> 7,652 1426x48",
+          "0.001 div 7,652 1426x48 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Library → Drafts",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.012,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 307,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.012 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Drafts → a draft",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 10,
+        "states": [
+          "empty",
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.025,
+        "headerKept": false,
+        "headerMoved": true,
+        "readyMs": 2256,
+        "scrollAtReady": 0,
+        "longestTaskMs": 1023,
+        "shiftSources": [
+          "0.025 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Drafts",
+        "way": "cold",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 14,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 14,
+        "scrollAtReady": 260,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Drafts → Profile",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 14,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1",
+          "placeholder#2"
+        ],
+        "placeholderStates": 2,
+        "layoutShift": 0.018,
+        "footerShift": 0.017,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1397,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.017 div 7,642 1426x51 -> 0,0 0x0",
+          "0.018 div 0,0 0x0 -> 7,642 1426x51",
+          "0.018 span 127,77 120x12 -> 127,73 38x19"
+        ]
+      },
+      {
+        "step": "Profile → Home",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.021,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 7,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.021 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Home → Builds",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 6,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Builds → a build",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 295,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 7,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Builds",
+        "way": "warm",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 1,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 0,0 0x0 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Builds → OpenBuilds",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 5,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 5,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "OpenBuilds → Library",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 6,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Library → Drafts",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 3,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.013,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 3,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.013 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Drafts → a draft",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 260,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 6,
+        "scrollAtReady": 260,
+        "longestTaskMs": 114,
+        "shiftSources": []
+      },
+      {
+        "step": "Back to Drafts",
+        "way": "warm",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 1,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 1,
+        "scrollAtReady": 260,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Drafts → Profile",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 4,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0.018,
+        "footerShift": 0.004,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1337,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.004 div 7,642 1426x51 -> 0,0 0x0",
+          "0.018 div 0,0 0x0 -> 7,642 1426x51",
+          "0.018 span 127,77 120x12 -> 127,73 38x19"
+        ]
+      }
+    ],
+    [
+      {
+        "step": "Home → Builds",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 3,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1",
+          "placeholder#2"
+        ],
+        "placeholderStates": 2,
+        "layoutShift": 0,
+        "footerShift": 0.018,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 886,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.004 div 0,0 0x0 -> 7,650 1426x50",
+          "0.014 div 7,650 1426x50 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Builds → a build",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 295,
+        "firstChangeMs": 5,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.05,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 321,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.050 div 7,381 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Builds",
+        "way": "cold",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 1,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 0,0 0x0 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Builds → OpenBuilds",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 322,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.000 a 966,391 56x4 -> 966,357 56x26"
+        ]
+      },
+      {
+        "step": "OpenBuilds → Library",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.001,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 323,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.001 div 7,642 1426x51 -> 7,652 1426x48",
+          "0.001 div 7,652 1426x48 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Library → Drafts",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 4,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.012,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 320,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.012 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Drafts → a draft",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 5,
+        "emptyFrames": 10,
+        "states": [
+          "empty",
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.025,
+        "headerKept": false,
+        "headerMoved": true,
+        "readyMs": 1988,
+        "scrollAtReady": 0,
+        "longestTaskMs": 936,
+        "shiftSources": [
+          "0.025 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Drafts",
+        "way": "cold",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 2,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 2,
+        "scrollAtReady": 260,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Drafts → Profile",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1",
+          "placeholder#2"
+        ],
+        "placeholderStates": 2,
+        "layoutShift": 0.018,
+        "footerShift": 0.017,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1356,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.017 div 7,642 1426x51 -> 0,0 0x0",
+          "0.018 div 0,0 0x0 -> 7,642 1426x51",
+          "0.018 span 127,77 120x12 -> 127,73 38x19"
+        ]
+      },
+      {
+        "step": "Profile → Home",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.021,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 6,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.021 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Home → Builds",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 8,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 8,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Builds → a build",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 295,
+        "firstChangeMs": 3,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 3,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Builds",
+        "way": "warm",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 13,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 13,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 0,0 0x0 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Builds → OpenBuilds",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 7,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "OpenBuilds → Library",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 8,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 8,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Library → Drafts",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 5,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.013,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 5,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.013 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Drafts → a draft",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 260,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 6,
+        "scrollAtReady": 260,
+        "longestTaskMs": 86,
+        "shiftSources": []
+      },
+      {
+        "step": "Back to Drafts",
+        "way": "warm",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 3,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 3,
+        "scrollAtReady": 260,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Drafts → Profile",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 4,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0.018,
+        "footerShift": 0.004,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1320,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.004 div 7,642 1426x51 -> 0,0 0x0",
+          "0.018 div 0,0 0x0 -> 7,642 1426x51",
+          "0.018 span 127,77 120x12 -> 127,73 38x19"
+        ]
+      }
+    ],
+    [
+      {
+        "step": "Home → Builds",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 1,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1",
+          "placeholder#2"
+        ],
+        "placeholderStates": 2,
+        "layoutShift": 0,
+        "footerShift": 0.018,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 901,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.004 div 0,0 0x0 -> 7,650 1426x50",
+          "0.014 div 7,650 1426x50 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Builds → a build",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 295,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.05,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 324,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.050 div 7,381 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Builds",
+        "way": "cold",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": -1,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 15,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 0,0 0x0 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Builds → OpenBuilds",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 324,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.000 a 966,391 56x4 -> 966,357 56x26"
+        ]
+      },
+      {
+        "step": "OpenBuilds → Library",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1",
+          "placeholder#2"
+        ],
+        "placeholderStates": 2,
+        "layoutShift": 0,
+        "footerShift": 0.017,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 324,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.001 div 7,642 1426x51 -> 7,652 1426x48",
+          "0.008 div 7,652 1426x48 -> 0,0 0x0",
+          "0.009 div 0,0 0x0 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Library → Drafts",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.012,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 324,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.012 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Drafts → a draft",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 5,
+        "emptyFrames": 10,
+        "states": [
+          "empty",
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0,
+        "footerShift": 0.025,
+        "headerKept": false,
+        "headerMoved": true,
+        "readyMs": 1905,
+        "scrollAtReady": 0,
+        "longestTaskMs": 910,
+        "shiftSources": [
+          "0.025 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Drafts",
+        "way": "cold",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 15,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 15,
+        "scrollAtReady": 260,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Drafts → Profile",
+        "way": "cold",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1",
+          "placeholder#2"
+        ],
+        "placeholderStates": 2,
+        "layoutShift": 0.018,
+        "footerShift": 0.017,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1356,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.017 div 7,642 1426x51 -> 0,0 0x0",
+          "0.018 div 0,0 0x0 -> 7,642 1426x51",
+          "0.018 span 127,77 120x12 -> 127,73 38x19"
+        ]
+      },
+      {
+        "step": "Profile → Home",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 7,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.021,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 7,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.021 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Home → Builds",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 5,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 5,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Builds → a build",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 295,
+        "firstChangeMs": 13,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 13,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Back to Builds",
+        "way": "warm",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 2,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.037,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 2,
+        "scrollAtReady": 295,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.037 div 0,0 0x0 -> 7,642 1426x51"
+        ]
+      },
+      {
+        "step": "Builds → OpenBuilds",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 6,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "OpenBuilds → Library",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 4,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 4,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Library → Drafts",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 1,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0.013,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.013 div 7,642 1426x51 -> 0,0 0x0"
+        ]
+      },
+      {
+        "step": "Drafts → a draft",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 260,
+        "firstChangeMs": 6,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 6,
+        "scrollAtReady": 260,
+        "longestTaskMs": 85,
+        "shiftSources": []
+      },
+      {
+        "step": "Back to Drafts",
+        "way": "warm",
+        "scrollOff": 0,
+        "topOff": null,
+        "firstChangeMs": 4,
+        "emptyFrames": 0,
+        "states": [],
+        "placeholderStates": 0,
+        "layoutShift": 0,
+        "footerShift": 0,
+        "headerKept": false,
+        "headerMoved": false,
+        "readyMs": 4,
+        "scrollAtReady": 260,
+        "longestTaskMs": 0,
+        "shiftSources": []
+      },
+      {
+        "step": "Drafts → Profile",
+        "way": "warm",
+        "scrollOff": null,
+        "topOff": 0,
+        "firstChangeMs": 5,
+        "emptyFrames": 0,
+        "states": [
+          "placeholder#1"
+        ],
+        "placeholderStates": 1,
+        "layoutShift": 0.018,
+        "footerShift": 0.004,
+        "headerKept": true,
+        "headerMoved": false,
+        "readyMs": 1305,
+        "scrollAtReady": 0,
+        "longestTaskMs": 0,
+        "shiftSources": [
+          "0.004 div 7,642 1426x51 -> 0,0 0x0",
+          "0.018 div 0,0 0x0 -> 7,642 1426x51",
+          "0.018 span 127,77 120x12 -> 127,73 38x19"
+        ]
+      }
+    ]
+  ]
+}

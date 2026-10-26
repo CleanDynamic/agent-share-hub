@@ -19,7 +19,7 @@
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/SeoHead";
-import { ShellHeader } from "@/components/shell/ShellHeader";
+import { LibraryShell, type LibraryTab } from "@/components/library/libraryLoading";
 import {
   CollectionView,
   CollectionsTab,
@@ -28,16 +28,11 @@ import {
 } from "@/components/library/LibraryBuilds";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLibraryOwner } from "@/lib/library";
-import { SPACE } from "@/lib/theme/space";
+
 import { t } from "@/lib/theme/tokens";
 import { body } from "@/lib/theme/type";
 
-export const LIBRARY_TABS = [
-  { id: "saved", label: "Saved" },
-  { id: "collections", label: "Collections" },
-] as const;
-
-type LibraryTab = (typeof LIBRARY_TABS)[number]["id"];
+export { LIBRARY_TABS } from "@/components/library/libraryLoading";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -87,17 +82,7 @@ export default function LibraryPage() {
         path={visiting ? `/library/${handle}` : "/library"}
         noIndex
       />
-      <ShellHeader
-        onBack={() => navigate(-1)}
-        tabs={visiting ? undefined : LIBRARY_TABS.map((item) => ({ id: item.id, label: item.label }))}
-        activeTab={tab}
-        onTabChange={(id) => go({ tab: id as LibraryTab })}
-      />
-      <div
-        data-testid="library-page"
-        data-tab={tab}
-        style={{ padding: `0 20px ${SPACE.lg}px`, display: "flex", flexDirection: "column", gap: SPACE.sm }}
-      >
+      <LibraryShell tab={tab} tabs={!visiting} onBack={() => navigate(-1)} onTabChange={(id) => go({ tab: id })}>
         {visiting ? (
           owner.isLoading ? null : owner.data ? (
             openId ? (
@@ -118,7 +103,7 @@ export default function LibraryPage() {
         ) : (
           <CollectionsTab canEdit onOpen={(id) => go({ collection: id })} />
         )}
-      </div>
+      </LibraryShell>
     </div>
   );
 }

@@ -9,7 +9,7 @@
    THE SEARCH FIELD, THE MENU'S PANEL AND ITS OPTIONS are exported: the refined dashboard (`GalleryDashboardView`)
    uses the same three. */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { ModelMark } from "@/components/brand/ModelMark";
@@ -19,9 +19,7 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { Glyph } from "@/components/brand/Glyph";
 import { MenuButton } from "@/components/brand/MenuButton";
-import { SearchField } from "@/components/brand/SearchField";
 import { Segmented } from "@/components/brand/Segmented";
-import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { ClassificationFilters, QuickFilters, describeKey, type FacetCounts } from "@/components/gallery/ClassificationFilters";
 import { GalleryBoard, type GalleryBoardExtras } from "./GalleryBoard";
@@ -42,6 +40,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { Shortfall } from "./GalleryExtras";
+import { FeedHeading, ListSkeleton, RefinedSearchField, text, tnum } from "./galleryFrame";
 import { formatCount, FEED_SORT_ITEMS, feedCountLine, sortItemLabel, sortLabel } from "./galleryModel";
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
@@ -54,6 +53,8 @@ import { TOOL_GROUPS, toolsInGroup, type Tool } from "@/lib/tools/registry";
 import { r } from "@/lib/theme/radius";
 
 /** One row: the build, and the record its plaque reads (its own figures, or one model's). */
+export { PLACEHOLDER, RefinedSearchField, SEARCH_DEBOUNCE_MS } from "./galleryFrame";
+
 export interface FeedRowView {
   build: GalleryFeedRow;
   plaque: PlaqueBuild;
@@ -148,8 +149,6 @@ export const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 
-export const SEARCH_DEBOUNCE_MS = 300;
-
 /**
  * The field is the form around the input, so the input itself is bare. The app
  * stylesheet gives every input a border and a `--recess` ground with
@@ -161,8 +160,6 @@ export const bareInput = (node: HTMLInputElement | null) => {
   node.style.setProperty("background", "transparent", "important");
   node.style.setProperty("border-width", "0", "important");
 };
-
-export const PLACEHOLDER = "Search builds, makers, models";
 
 export interface MenuOption {
   key: string;
@@ -323,102 +320,6 @@ export function countLineOf(props: GalleryFeedViewProps): string | null {
   const rest = list.notYet.total;
   if (reproduced === null || rest === null || !model) return null;
   return feedCountLine(sort, reproduced + rest, { name: model.name, reproduced });
-}
-
-const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
-  fontFamily: FIGTREE,
-  fontSize: px,
-  fontWeight: weight,
-  lineHeight: "normal",
-  color,
-  ...extra,
-});
-
-const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
-
-/* ── the search ── */
-
-/* index.css gives every <input> a fill, a border and a focus outline, all `!important`; the field is a transparent
-   input inside the drawn well, so those are switched off with Tailwind's important utilities, as the header's is. */
-const INPUT_CLASS =
-  "placeholder:text-[color:var(--label)] !bg-transparent !border-0 focus-visible:!outline-none focus-visible:!border-0";
-
-/**
- * The gallery's search on the refined `SearchField` (the well, 28 high, no key hint). The same form, name, label,
- * placeholder and 300ms debounce as the current field.
- */
-export function RefinedSearchField({
-  query,
-  onSearch,
-  phone,
-  autoFocus = false,
-  width,
-}: {
-  query: string | null;
-  onSearch: (query: string | null) => void;
-  phone: boolean;
-  autoFocus?: boolean;
-  /** A fixed width (the dashboard's 240); absent, the field fills its row. */
-  width?: number;
-}) {
-  const [value, setValue] = useState(query ?? "");
-  /** The last value this field sent, so the address echoing it back does not rewrite what is being typed. */
-  const sent = useRef<string | null>(query);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (query !== sent.current) {
-      sent.current = query;
-      setValue(query ?? "");
-    }
-  }, [query]);
-
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-
-  const send = (next: string) => {
-    const tidy = next.trim() === "" ? null : next.trim();
-    sent.current = tidy;
-    onSearch(tidy);
-  };
-
-  return (
-    <form
-      role="search"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (timer.current) clearTimeout(timer.current);
-        send(value);
-      }}
-      style={{
-        margin: 0,
-        display: "flex",
-        minWidth: 0,
-        flex: width !== undefined ? "0 1 auto" : phone ? "1 1 auto" : "1 1 200px",
-      }}
-    >
-      <SearchField
-        label="Search the gallery"
-        name="q"
-        placeholder={PLACEHOLDER}
-        className={INPUT_CLASS}
-        autoFocus={autoFocus}
-        value={value}
-        width={width ?? "100%"}
-        style={{ height: phone ? 44 : 28 }}
-        onChange={(event) => {
-          const next = event.target.value;
-          setValue(next);
-          if (timer.current) clearTimeout(timer.current);
-          timer.current = setTimeout(() => send(next), SEARCH_DEBOUNCE_MS);
-        }}
-      />
-    </form>
-  );
 }
 
 /* ── the menus ── */
@@ -678,27 +579,6 @@ function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
   );
 }
 
-function ListSkeleton() {
-  return (
-    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={{ display: "flex", flexDirection: "column" }}>
-      {Array.from({ length: 3 }, (_, i) => (
-        <div
-          key={i}
-          style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 0 16px", borderBottom: `1px solid ${t.hairline}` }}
-        >
-          <Skeleton width={40} height={40} radius={999} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-            <Skeleton width="40%" height={16} />
-            <Skeleton width="90%" height={24} />
-            <Skeleton width="70%" height={16} />
-            <Skeleton width="100%" height={180} radius={6} />
-          </div>
-        </div>
-      ))}
-    </LoadingRegion>
-  );
-}
-
 function EmptyFeed({ query, onNavigate }: Pick<GalleryFeedViewProps, "query" | "onClearAll" | "onNavigate">) {
   /* UI-P97: one line and one action. "Clear filters" is not repeated here: the filter row above this line already
      carries "Clear all" whenever a filter or a query is set, so the way out of the empty list is one tap away. */
@@ -765,31 +645,7 @@ function FeedList(props: GalleryFeedViewProps) {
 /* ── the heading ── */
 
 function Heading({ props, phone }: { props: GalleryFeedViewProps; phone: boolean }) {
-  const line = countLineOf(props);
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <h1 style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>Gallery</h1>
-        <p data-testid="feed-count" style={text(12.5, 400, t.text2, { margin: 0, minHeight: 16, ...tnum })}>
-          {line ?? " "}
-        </p>
-      </div>
-      {phone ? null : (
-        <Segmented<GalleryViewMode>
-          label="Gallery view"
-          size={28}
-          fontSize={12}
-          semantics="radio"
-          value={props.view}
-          onChange={props.onViewChange}
-          items={[
-            { value: "feed", label: "Feed" },
-            { value: "dashboard", label: "Dashboard" },
-          ]}
-        />
-      )}
-    </div>
-  );
+  return <FeedHeading line={countLineOf(props)} view={props.view} onViewChange={props.onViewChange} phone={phone} />;
 }
 
 /* ── the page ── */

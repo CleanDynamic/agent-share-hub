@@ -1,12 +1,14 @@
 // SV-03 P6: after the first page is ready, load the code of the pages a reader goes to next, while the browser is idle.
 //
-// Home, Builds, Drafts and Library; and the composer when signed in. Nothing when the reader asked for less data
+// Home, Builds, Drafts and Library, and the build page (SV-04: every card leads there, and a press on a card has nothing of
+// its own to mark, so its page's code should already be in); and the composer when signed in. Nothing when the reader asked for less data
 // (`navigator.connection.saveData`). Safari has no requestIdleCallback: a 1 ms timeout stands in for it.
 
+import { loadEntry } from "./go";
 import { PAGE_READY_EVENT, PAGE_READY_ATTRIBUTE } from "./pageReady";
 import { ROUTE_TABLE } from "./routeTable";
 
-const ALWAYS = ["home", "gallery", "drafts", "library"] as const;
+const ALWAYS = ["home", "gallery", "drafts", "library", "build"] as const;
 const SIGNED_IN = ["create"] as const;
 
 type Idle = (callback: () => void) => unknown;
@@ -27,7 +29,7 @@ export function loadChunksWhenIdle(signedIn: boolean): void {
     for (const key of [...ALWAYS, ...(signedIn ? SIGNED_IN : [])]) {
       if (asked.has(key)) continue;
       asked.add(key);
-      void ROUTE_TABLE[key].load().catch(() => asked.delete(key));
+      void loadEntry(key, ROUTE_TABLE[key].load).catch(() => asked.delete(key));
     }
   });
 }

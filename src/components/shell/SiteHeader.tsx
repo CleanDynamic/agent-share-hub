@@ -29,7 +29,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Bell, Moon, Search, Sun } from "lucide-react";
 import { memo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
@@ -40,6 +40,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { countDraftBuilds } from "@/lib/build/sessions";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { useCurrentPath, useGo } from "@/lib/routing/go";
+import { PageLink } from "@/lib/routing/PageLink";
 import { MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -148,13 +150,13 @@ function AccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: FrameView
           }}
         >
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <Link to={profileHref} style={item}>Profile</Link>
+            <PageLink to={profileHref} style={item}>Profile</PageLink>
           </DropdownMenu.Item>
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <Link to={SITE_NAV.library} style={item}>Library</Link>
+            <PageLink to={SITE_NAV.library} style={item}>Library</PageLink>
           </DropdownMenu.Item>
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <Link to={SITE_NAV.drafts} style={item}>Drafts</Link>
+            <PageLink to={SITE_NAV.drafts} style={item}>Drafts</PageLink>
           </DropdownMenu.Item>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 4px", background: t.line }} />
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
@@ -375,7 +377,10 @@ export function SiteHeaderView(props: SiteHeaderViewProps) {
 /** The container: the route, the reader, the theme and the unread count, around the pure view. */
 function SiteHeaderContainer() {
   const { pathname } = useLocation();
+  // SV-04: the nav marks the page a change is on its way to, at once (go.ts).
+  const current = useCurrentPath();
   const navigate = useNavigate();
+  const go = useGo() ?? navigate;
   const { isLoggedIn, user, profile, signOut } = useAuth();
   const { resolved, setTheme } = useTheme();
   const { count } = useUnreadNotifications();
@@ -400,8 +405,8 @@ function SiteHeaderContainer() {
 
   return (
     <SiteHeaderView
-      current={sectionForPath(pathname)}
-      activityCurrent={isActivityPath(pathname)}
+      current={sectionForPath(current)}
+      activityCurrent={isActivityPath(current)}
       unread={count}
       drafts={isLoggedIn ? (draftCount.data ?? 0) : 0}
       viewer={viewer}
@@ -412,7 +417,7 @@ function SiteHeaderContainer() {
         await signOut();
         navigate("/");
       }}
-      onNewBuild={() => navigate(SITE_NAV.create)}
+      onNewBuild={() => go(SITE_NAV.create)}
       newBuildSecondary={pathname.startsWith("/compose/")}
       onSearch={search}
       searchInitial={isBuildsPath(pathname) ? (params.get("q") ?? "") : ""}

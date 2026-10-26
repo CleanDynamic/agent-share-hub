@@ -21,10 +21,10 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { BUILDS, BUILD_SLUG, THEM, installStub, withSession, withTheme } from "./support/harness";
-import { filterRows } from "./support/restFilter";
-import { SV_BUILD_SESSIONS, SV_DRAFTS, SV_DRAFT_ID, SV_IMPORT_SESSIONS, SV_SAVES } from "./fixtures/svPages";
+import { BUILD_SLUG, THEM } from "./support/harness";
+import { SV_DRAFT_ID } from "./fixtures/svPages";
 import { DB_DELAY_MS, PAGE_TARGETS, type PageTarget } from "./support/pageTargets";
+import { stage as stageDatabase, type Span } from "./support/pageStage";
 import { roundsOf } from "./support/rounds";
 import { OUT_DIR, writeText } from "./support/report";
 
@@ -50,15 +50,6 @@ interface Sample {
   urls: string[];
 }
 
-interface Span {
-  url: string;
-  start: number;
-  end: number;
-  bytes: number;
-}
-
-const isDatabase = (url: string) => /\/(rest|auth|functions)\/v1\//.test(url);
-
 const median = (values: number[]) => {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)];
@@ -67,58 +58,7 @@ const median = (values: number[]) => {
 const resolvePath = (target: PageTarget) =>
   target.path.replace("{draft}", SV_DRAFT_ID).replace("{build}", BUILD_SLUG).replace("{maker}", THEM.username);
 
-/** The harness, plus the SV-03 rows answered the way PostgREST would, and the delay on every database request. */
-async function stage(page: Page, target: PageTarget, spans: Span[]) {
-  await withTheme(page, "dusk");
-  if (target.auth) await withSession(page);
-  await installStub(page);
-
-  const answer = (rows: Record<string, unknown>[]) => async (route: import("@playwright/test").Route) => {
-    if (route.request().method() !== "GET") return route.fallback();
-    const found = filterRows(rows, route.request().url());
-    const object = (route.request().headers()["accept"] ?? "").includes("pgrst.object");
-    return route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: { "content-range": `0-${Math.max(found.length - 1, 0)}/${found.length}`, "access-control-allow-origin": "*" },
-      body: JSON.stringify(object ? (found[0] ?? null) : found),
-    });
-  };
-  await page.route(/\/rest\/v1\/builds(\?|$)/, answer([...BUILDS, ...SV_DRAFTS]));
-  await page.route(/\/rest\/v1\/import_sessions(\?|$)/, answer(SV_IMPORT_SESSIONS));
-  await page.route(/\/rest\/v1\/build_sessions(\?|$)/, answer(SV_BUILD_SESSIONS));
-  await page.route(/\/rest\/v1\/build_saves(\?|$)/, answer(SV_SAVES(String(BUILDS[0].id))));
-
-  // Registered last, so it runs first: hold the request, then hand it to the handlers above.
-  await page.route(/\/(rest|auth|functions)\/v1\//, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, DB_DELAY_MS));
-    await route.fallback();
-  });
-
-  const open = new Map<import("@playwright/test").Request, number>();
-  page.on("request", (request) => {
-    if (isDatabase(request.url())) open.set(request, Date.now());
-  });
-  const done = (request: import("@playwright/test").Request) => {
-    const start = open.get(request);
-    if (start === undefined) return;
-    open.delete(request);
-    spans.push({ url: request.url(), start, end: Date.now(), bytes: 0 });
-  };
-  page.on("requestfinished", done);
-  page.on("requestfailed", done);
-  page.on("response", (response) => {
-    if (!isDatabase(response.url())) return;
-    void response
-      .body()
-      .then((body) => {
-        const span = [...spans].reverse().find((entry) => entry.url === response.url() && entry.bytes === 0);
-        if (span) span.bytes = body.length;
-        else spans.push({ url: response.url(), start: Date.now(), end: Date.now(), bytes: body.length });
-      })
-      .catch(() => {});
-  });
-}
+const stage = (page: Page, target: PageTarget, spans: Span[]) => stageDatabase(page, { auth: target.auth }, spans);
 
 const ready = (page: Page, mark: string) =>
   page.waitForFunction((name) => document.documentElement.getAttribute("data-page-ready") === name, mark, { timeout: 30_000 });

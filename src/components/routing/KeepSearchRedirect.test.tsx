@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import { lazy, Suspense, type ComponentType } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
@@ -30,5 +31,22 @@ describe("KeepSearchRedirect", () => {
   it("sends /bounties to /openbuilds", () => {
     at("/bounties");
     expect(screen.getByTestId("where").textContent).toBe("/openbuilds");
+  });
+
+  it("SV-04: draws the new page's placeholder while that page's code is on its way, never an empty page area", async () => {
+    const Builds = lazy(() => new Promise<{ default: ComponentType }>(() => undefined));
+    render(
+      <MemoryRouter initialEntries={["/gallery"]} future={{ v7_startTransition: true }}>
+        <Suspense fallback={<p>the boundary's fallback</p>}>
+          <Routes>
+            <Route path="/gallery" element={<KeepSearchRedirect to="/builds" />} />
+            <Route path="/builds" element={<Builds />} />
+          </Routes>
+        </Suspense>
+      </MemoryRouter>,
+    );
+    await act(async () => undefined);
+    expect(screen.getByText(/Loading the gallery/)).toBeTruthy();
+    expect(screen.queryByText("the boundary's fallback")).toBeNull();
   });
 });

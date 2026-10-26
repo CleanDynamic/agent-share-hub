@@ -10,7 +10,7 @@ import { warmPath } from "./warm";
 
 export const HOVER_DELAY_MS = 60;
 
-async function storedUserId(): Promise<string | null> {
+export async function storedUserId(): Promise<string | null> {
   try {
     const { data } = await supabase.auth.getSession();
     return data.session?.user?.id ?? null;

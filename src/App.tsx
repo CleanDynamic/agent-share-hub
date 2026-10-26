@@ -25,53 +25,52 @@ import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { KeepSearchRedirect } from "@/components/routing/KeepSearchRedirect";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
-import { lazyPage } from "@/components/routing/lazyPage";
 import { QUERY_DEFAULTS } from "@/lib/query/client";
 import { CACHE_VERSION, MAX_AGE_MS, createKeptCache, shouldKeep } from "@/lib/query/persist";
-import { RoutePlaceholder } from "@/lib/routing/RoutePlaceholder";
 import { RouteWarmup } from "@/lib/routing/RouteWarmup";
+import { PageChangeProvider } from "@/lib/routing/PageChangeProvider";
+import { ScrollKeeper } from "@/lib/routing/ScrollKeeper";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
 import { FrameRoute } from "./components/shell/FrameRoute";
-import { SiteFrame } from "./components/shell/SiteFrame";
 import { ComposeRoute } from "./pages/site/compose/ComposeRoute";
 import { LinkFrameRoute, SignInSite } from "./pages/site/signin/SignInRoutes";
 
-const Upload = lazyPage(() => import("./pages/Upload"));
-const UploadTypeSelector = lazyPage(() => import("./pages/UploadTypeSelector"));
-const BlogUpload = lazyPage(() => import("./pages/BlogUpload"));
-const BountyUploadShell = lazyPage(() => import("./pages/BountyUploadShell"));
+const Upload = lazy(() => import("./pages/Upload"));
+const UploadTypeSelector = lazy(() => import("./pages/UploadTypeSelector"));
+const BlogUpload = lazy(() => import("./pages/BlogUpload"));
+const BountyUploadShell = lazy(() => import("./pages/BountyUploadShell"));
 import { LegacyUploadRoute } from "@/components/upload/LegacyUploadNotice";
-const About = lazyPage(() => import("./pages/About"));
-const ContentDetail = lazyPage(() => import("./pages/ContentDetail"));
-const ContentOrReblogRoute = lazyPage(() => import("@/components/routing/ContentOrReblogRoute"));
-const ProjectDetail = lazyPage(() => import("./pages/ProjectDetail"));
-const Admin = lazyPage(() => import("./pages/Admin"));
-const AdminLogin = lazyPage(() => import("./pages/AdminLogin"));
+const About = lazy(() => import("./pages/About"));
+const ContentDetail = lazy(() => import("./pages/ContentDetail"));
+const ContentOrReblogRoute = lazy(() => import("@/components/routing/ContentOrReblogRoute"));
+const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 
 
-const AuthCallback = lazyPage(() => import("./pages/AuthCallback"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 
-const Onboarding = lazyPage(() => import("./pages/Onboarding"));
-const OnboardingProfile = lazyPage(() => import("./pages/OnboardingProfile"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const OnboardingProfile = lazy(() => import("./pages/OnboardingProfile"));
 
 
-const LibraryPage = lazyPage(ROUTE_TABLE.library.load as () => Promise<{ default: React.ComponentType }>);
-const CollectionDetailRoute = lazyPage(() => import("./pages/CollectionDetail"));
-const NotFound = lazyPage(() => import("./pages/NotFound"));
+const LibraryPage = lazy(ROUTE_TABLE.library.load as () => Promise<{ default: React.ComponentType }>);
+const CollectionDetailRoute = lazy(() => import("./pages/CollectionDetail"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-const MessagesPage = lazyPage(() => import("./pages/Messages"));
-const CollectionDetail = lazyPage(() => import("./pages/CollectionDetail"));
+const MessagesPage = lazy(() => import("./pages/Messages"));
+const CollectionDetail = lazy(() => import("./pages/CollectionDetail"));
 // LearningPathDetail removed from UI
-const ApiDocs = lazyPage(() => import("./pages/ApiDocs"));
+const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 
 // UI-P46 — /drafts is the new page (builds and sessions); the old one, which reads
 // content_items and content_blocks, is routed at /drafts/posts unchanged.
-const DraftsPage = lazyPage(ROUTE_TABLE.drafts.load as () => Promise<{ default: React.ComponentType }>);
-const LegacyDraftsPage = lazyPage(() => import("./pages/Drafts"));
-const PostPreviewPage = lazyPage(() => import("./pages/PostPreview"));
-const PublishMetadata = lazyPage(() => import("./pages/PublishMetadata"));
-const ContentEditPage = lazyPage(() => import("./pages/ContentEdit"));
-const BountyUpload = lazyPage(() => import("@/pages/BountyUpload"));
+const DraftsPage = lazy(ROUTE_TABLE.drafts.load as () => Promise<{ default: React.ComponentType }>);
+const LegacyDraftsPage = lazy(() => import("./pages/Drafts"));
+const PostPreviewPage = lazy(() => import("./pages/PostPreview"));
+const PublishMetadata = lazy(() => import("./pages/PublishMetadata"));
+const ContentEditPage = lazy(() => import("./pages/ContentEdit"));
+const BountyUpload = lazy(() => import("@/pages/BountyUpload"));
 
 // The gallery. Its own chunk: a reader who never opens it never pays for the
 // card bodies. Reachable from the primary navigation (RC-P05), directly, and
@@ -126,6 +125,7 @@ const Compose = lazy(() => import("./pages/Compose"));
 const ComposeNew = lazy(() => import("./pages/ComposeNew"));
 // UI-P47 — the legacy workspace, exactly as before, for the flows the new composer
 // does not handle (a rebuild, anything arriving with a `from` parameter).
+const OUTSIDE_FRAME_FALLBACK = <div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />;
 const legacyCompose = (
   <Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}>
     <Compose />
@@ -231,7 +231,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        {/* SV-04: navigation runs as a transition, so the page on screen stays while the next one's code loads. */}
+        <BrowserRouter future={{ v7_startTransition: true }}>
           <ThemeProvider>
           <AuthProvider>
             <PresenceProvider />
@@ -244,6 +245,12 @@ const App = () => (
                 Save toast; addToCollection.ts says why it lives here. */}
             <AddToCollectionHost />
             <RouteWarmup />
+            <ScrollKeeper />
+            {/* SV-04: inside the frame, the one boundary is AppShell's (the matched route's Placeholder). This one is
+                for the routes drawn without the frame (sign in, the legacy workspaces, consent, the dev pages), which
+                wait on the ground colour, as they did. */}
+            <PageChangeProvider>
+            <Suspense fallback={OUTSIDE_FRAME_FALLBACK}>
             <Routes>
               <Route element={<Layout />}>
                 <Route
@@ -252,16 +259,12 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <HomePage />
-                          </Suspense>
+                          <HomePage />
                         </RouteBoundary>
                       }
                       legacy={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <HomePage />
-                          </Suspense>
+                          <HomePage />
                         </RouteBoundary>
                       }
                     />
@@ -340,12 +343,10 @@ const App = () => (
                       <FrameRoute
                         site={
                           <RouteBoundary>
-                            <Suspense fallback={<RoutePlaceholder />}>
-                              <ProfileSitePage />
-                            </Suspense>
+                            <ProfileSitePage />
                           </RouteBoundary>
                         }
-                        legacy={<Suspense fallback={null}><ProfileSitePage /></Suspense>}
+                        legacy={<ProfileSitePage />}
                       />
                     </ProtectedRoute>
                   }
@@ -356,12 +357,10 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <ProfileSitePage />
-                          </Suspense>
+                          <ProfileSitePage />
                         </RouteBoundary>
                       }
-                      legacy={<Suspense fallback={null}><ProfileSitePage /></Suspense>}
+                      legacy={<ProfileSitePage />}
                     />
                   }
                 />
@@ -385,9 +384,7 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <ConnectSitePage />
-                          </Suspense>
+                          <ConnectSitePage />
                         </RouteBoundary>
                       }
                     />
@@ -400,19 +397,17 @@ const App = () => (
                       <FrameRoute
                         site={
                           <RouteBoundary>
-                            <Suspense fallback={<RoutePlaceholder />}>
-                              <ActivitySitePage />
-                            </Suspense>
+                            <ActivitySitePage />
                           </RouteBoundary>
                         }
-                        legacy={<Suspense fallback={null}><ActivitySitePage /></Suspense>}
+                        legacy={<ActivitySitePage />}
                       />
                     </ProtectedRoute>
                   }
                 />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-                <Route path="/analytics" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense></RouteBoundary>} />
+                <Route path="/analytics" element={<RouteBoundary><ProtectedRoute><Analytics /></ProtectedRoute></RouteBoundary>} />
                 {/* NS-P54. The standalone bounty form, retired the same way
                     the previous publishing tool was: the route stays
                     registered so a bookmark is not a 404, the notice above it
@@ -425,9 +420,9 @@ const App = () => (
                   <Route
                     path="/dev/wide"
                     element={
-                      <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                      
                         <WideDemo />
-                      </Suspense>
+                      
                     }
                   />
                 )}
@@ -471,12 +466,10 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <BuildSitePage />
-                          </Suspense>
+                          <BuildSitePage />
                         </RouteBoundary>
                       }
-                      legacy={<Suspense fallback={<RoutePlaceholder />}><BuildSitePage /></Suspense>}
+                      legacy={<BuildSitePage />}
                     />
                   }
                 />
@@ -487,12 +480,10 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <CompareSitePage />
-                          </Suspense>
+                          <CompareSitePage />
                         </RouteBoundary>
                       }
-                      legacy={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><CompareSitePage /></Suspense></RouteBoundary>}
+                      legacy={<RouteBoundary><CompareSitePage /></RouteBoundary>}
                     />
                   }
                 />
@@ -506,12 +497,10 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <LineageSitePage />
-                          </Suspense>
+                          <LineageSitePage />
                         </RouteBoundary>
                       }
-                      legacy={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><LineageSitePage /></Suspense></RouteBoundary>}
+                      legacy={<RouteBoundary><LineageSitePage /></RouteBoundary>}
                     />
                   }
                 />
@@ -523,12 +512,10 @@ const App = () => (
                     <FrameRoute
                       site={
                         <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <GalleryPage />
-                          </Suspense>
+                          <GalleryPage />
                         </RouteBoundary>
                       }
-                      legacy={<Suspense fallback={<RoutePlaceholder />}><GalleryPage /></Suspense>}
+                      legacy={<GalleryPage />}
                     />
                   }
                 />
@@ -537,15 +524,39 @@ const App = () => (
                     Gallery's fallback, inside its own RouteBoundary
                     (CONTRACT §2.6). */}
                 <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds" />} />
-                <Route path="/openbuilds" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><Bounties /></Suspense></RouteBoundary>} />
+                <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
                 {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
                     like the board it sits under (CONTRACT §2.6). */}
-                <Route path="/bounties/solvers" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><Solvers /></Suspense></RouteBoundary>} />
+                <Route path="/bounties/solvers" element={<RouteBoundary><Solvers /></RouteBoundary>} />
                 {/* Solve route for a specific bounty, inside its own RouteBoundary. */}
-                <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
-                <Route path="/openbuilds/solvers" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><Solvers /></Suspense></RouteBoundary>} />
-                <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<RoutePlaceholder />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
-                <Route path="/import" element={<Suspense fallback={<RoutePlaceholder />}><ImportPage /></Suspense>} />
+                <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
+                <Route path="/openbuilds/solvers" element={<RouteBoundary><Solvers /></RouteBoundary>} />
+                <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
+                <Route path="/import" element={<ImportPage />} />
+                {/* UI-P47: the composer. /compose/new and /compose/:buildId are children of ONE route on purpose: the first
+                    change makes the draft and replaces the URL, and React keeps the page (and the cursor in its field)
+                    across that, which two sibling routes would not (each remounts). The parent reads the params the children
+                    match. ComposeRoute renders the new composer, or the legacy `Compose` untouched, with its own chrome, for
+                    a rebuild or a `from` parameter. SV-04 P4: inside Layout, so the composer shares the one frame. */}
+                <Route path="/compose" element={<ComposeRoute legacy={legacyCompose} />}>
+                  <Route path="new" element={null} />
+                  <Route path=":buildId" element={null} />
+                </Route>
+                {/* UI-P31: /rebuild/:slug is a page in the site frame (the family, what changed, readiness), not a door.
+                    SV-04: inside Layout, so it shares the one frame, rather than drawing a SiteFrame of its own. */}
+                <Route
+                  path="/rebuild/:slug"
+                  element={
+                    <FrameRoute
+                      site={
+                        <RouteBoundary>
+                          <RebuildSitePage />
+                        </RouteBoundary>
+                      }
+                      legacy={<RebuildSitePage />}
+                    />
+                  }
+                />
               </Route>
               {/* ── BG-P16 — the four authoring routes.
 
@@ -567,42 +578,10 @@ const App = () => (
                   `--bg` it would be a flash of black before a luminous grey
                   room on Noon. `--bg` is the live theme's ground, so the
                   fallback is the room the route is about to paint. ── */}
-              {/* UI-P47 — the composer. /compose/new and /compose/:buildId are children
-                  of ONE route on purpose: the first change makes the draft and
-                  replaces the URL, and React keeps the page (and the cursor in its
-                  field) across that, which two sibling routes would not (each
-                  remounts). The parent reads the params the children match. ComposeRoute renders the new composer in the site
-                  frame, or the legacy `Compose` untouched, with its own chrome,
-                  for a rebuild or a `from` parameter. /compose/start is the old
-                  intake (paste a transcript, a repo) as it always was. */}
-              <Route path="/compose/start" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
-              <Route path="/compose" element={<ComposeRoute legacy={legacyCompose} />}>
-                <Route path="new" element={null} />
-                <Route path=":buildId" element={null} />
-              </Route>
-              {/* UI-P31 — /rebuild/:slug behind the flag is a page in the site
-                  frame (the family, what changed, readiness), not a door. It
-                  stays out here so the legacy door renders exactly as it did,
-                  outside every frame; the site page brings its own SiteFrame,
-                  which is the frame AppShell would have chosen for it. */}
-              <Route
-                path="/rebuild/:slug"
-                element={
-                  <FrameRoute
-                    site={
-                      <SiteFrame>
-                        <RouteBoundary>
-                          <Suspense fallback={<RoutePlaceholder />}>
-                            <RebuildSitePage />
-                          </Suspense>
-                        </RouteBoundary>
-                      </SiteFrame>
-                    }
-                    legacy={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><RebuildSitePage /></Suspense>}
-                  />
-                }
-              />
-              <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}><ConvertPrompt /></Suspense>} />
+              {/* UI-P47: /compose/start is the old intake (paste a transcript, a repo) as it always was. The composer
+                  itself moved inside Layout (SV-04 P4). */}
+              <Route path="/compose/start" element={<ComposeNew />} />
+              <Route path="/convert/:contentItemId" element={<ConvertPrompt />} />
               {/* ── EX-P03 — /oauth/consent.
 
                   OUT HERE FOR A DIFFERENT REASON THAN THE FOUR ABOVE. They are
@@ -621,14 +600,14 @@ const App = () => (
                   THE FALLBACK IS `--bg` AND FULL-VIEWPORT, matching the
                   authoring routes above: this page has no frame already on
                   screen to fill around, so the fallback is the whole room. ── */}
-              <Route path="/oauth/consent" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><OAuthConsent /></Suspense>} />
+              <Route path="/oauth/consent" element={<OAuthConsent />} />
               {Kit && (
                 <Route
                   path="/dev/kit"
                   element={
-                    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                    
                       <Kit />
-                    </Suspense>
+                    
                   }
                 />
               )}
@@ -636,9 +615,9 @@ const App = () => (
                 <Route
                   path="/dev/kit/components"
                   element={
-                    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                    
                       <KitComponents />
-                    </Suspense>
+                    
                   }
                 />
               )}
@@ -646,14 +625,16 @@ const App = () => (
                 <Route
                   path="/dev/kit/pages/:page"
                   element={
-                    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                    
                       <KitPages />
-                    </Suspense>
+                    
                   }
                 />
               )}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
+            </PageChangeProvider>
             </UploadPickerProvider>
             </ReblogComposeProvider>
             </ShareMenuProvider>

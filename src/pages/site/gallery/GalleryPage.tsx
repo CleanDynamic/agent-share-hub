@@ -49,7 +49,9 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 
 import { GalleryDashboardPage } from "./GalleryDashboardPage";
 import { MakersRow } from "./GalleryExtras";
+import { PageArrival } from "@/components/shell/PageArrival";
 import { GalleryFeedView, type FeedListView, type FeedSectionView } from "./GalleryFeedView";
+import { GalleryLoadingView } from "./galleryFrame";
 import { feedRowView } from "./galleryModel";
 import { GalleryBoardGroups } from "./GalleryBoardGroups";
 
@@ -302,71 +304,74 @@ function GalleryFeedPage() {
         description="Things people built with AI, and the exact model versions other people got them working on."
         path="/builds"
       />
-      <GalleryFeedView
-        fit="content"
-        view={view}
-        onViewChange={(next) => go({ view: next })}
-        query={query}
-        onSearch={(next) => go({ query: next })}
-        model={chosen}
-        onModelChange={(id) => go({ model: id ?? undefined })}
-        tool={chosenTool}
-        onToolChange={(id) => go({ tool: id ?? undefined })}
-        pattern={patternId}
-        onPatternChange={(next) => go({ pattern: next ?? undefined })}
-        patterns={patterns}
-        patternMarks={patternMarks.data}
-        classification={
-          classificationLive
-            ? {
-                counts: classificationFacets.data?.counts ?? {},
-                selected: activeFacets,
-                onToggle: (key) => go({ facets: activeFacets.includes(key) ? activeFacets.filter((entry) => entry !== key) : [...activeFacets, key] }),
-                onApply: (keys) => go({ facets: [...activeFacets, ...keys.filter((key) => !activeFacets.includes(key))] }),
-              }
-            : undefined
-        }
-        classifications={classificationLive ? classifications.data : undefined}
-        board={
-          classificationLive
-            ? {
-                tab,
-                onTab: (next) => go({ by: next ?? undefined }),
-                lens,
-                onLens: (next) => go({ lens: next }),
-                tries: tries.data,
-                groups: tab ? (
-                  <GalleryBoardGroups
-                    by={tab}
-                    counts={classificationFacets.data?.counts ?? {}}
-                    facets={activeFacets}
-                    query={query}
-                    lens={lens}
-                    onShowAll={(key) => go({ by: undefined, facets: activeFacets.includes(key) ? activeFacets : [...activeFacets, key] })}
-                  />
-                ) : undefined,
-              }
-            : undefined
-        }
-        audience={audience}
-        onAudienceChange={(next) => go({ madeFor: next ? [next] : [] })}
-        audiences={audiences}
-        sort={feedSort}
-        onSortChange={(next) => go({ sort: next })}
-        counts={firstPage?.counts ?? null}
-        status={status}
-        errorKind={error && isPermissionError(error) ? "permission" : "error"}
-        error={error ?? undefined}
-        onRetry={() => void firstQuery?.refetch()}
-        list={list}
-        srcByPath={srcByPath}
-        viewerId={user?.id ?? null}
-        engagement={engagement}
-        aboveList={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
-        onClearAll={() => go({ query: null, model: undefined, tool: undefined, pattern: undefined, facets: [], madeFor: [] })}
-        onNavigate={navigate}
-        autoFocusSearch={focusSearch}
-      />
+      {/* SV-04 P5: the list fades in over its loading state, the route's Placeholder, when it lands. */}
+      <PageArrival loading={status === "loading"} placeholder={<GalleryLoadingView />}>
+        <GalleryFeedView
+          fit="content"
+          view={view}
+          onViewChange={(next) => go({ view: next })}
+          query={query}
+          onSearch={(next) => go({ query: next })}
+          model={chosen}
+          onModelChange={(id) => go({ model: id ?? undefined })}
+          tool={chosenTool}
+          onToolChange={(id) => go({ tool: id ?? undefined })}
+          pattern={patternId}
+          onPatternChange={(next) => go({ pattern: next ?? undefined })}
+          patterns={patterns}
+          patternMarks={patternMarks.data}
+          classification={
+            classificationLive
+              ? {
+                  counts: classificationFacets.data?.counts ?? {},
+                  selected: activeFacets,
+                  onToggle: (key) => go({ facets: activeFacets.includes(key) ? activeFacets.filter((entry) => entry !== key) : [...activeFacets, key] }),
+                  onApply: (keys) => go({ facets: [...activeFacets, ...keys.filter((key) => !activeFacets.includes(key))] }),
+                }
+              : undefined
+          }
+          classifications={classificationLive ? classifications.data : undefined}
+          board={
+            classificationLive
+              ? {
+                  tab,
+                  onTab: (next) => go({ by: next ?? undefined }),
+                  lens,
+                  onLens: (next) => go({ lens: next }),
+                  tries: tries.data,
+                  groups: tab ? (
+                    <GalleryBoardGroups
+                      by={tab}
+                      counts={classificationFacets.data?.counts ?? {}}
+                      facets={activeFacets}
+                      query={query}
+                      lens={lens}
+                      onShowAll={(key) => go({ by: undefined, facets: activeFacets.includes(key) ? activeFacets : [...activeFacets, key] })}
+                    />
+                  ) : undefined,
+                }
+              : undefined
+          }
+          audience={audience}
+          onAudienceChange={(next) => go({ madeFor: next ? [next] : [] })}
+          audiences={audiences}
+          sort={feedSort}
+          onSortChange={(next) => go({ sort: next })}
+          counts={firstPage?.counts ?? null}
+          status={status}
+          errorKind={error && isPermissionError(error) ? "permission" : "error"}
+          error={error ?? undefined}
+          onRetry={() => void firstQuery?.refetch()}
+          list={list}
+          srcByPath={srcByPath}
+          viewerId={user?.id ?? null}
+          engagement={engagement}
+          aboveList={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
+          onClearAll={() => go({ query: null, model: undefined, tool: undefined, pattern: undefined, facets: [], madeFor: [] })}
+          onNavigate={navigate}
+          autoFocusSearch={focusSearch}
+        />
+      </PageArrival>
     </>
   );
 }

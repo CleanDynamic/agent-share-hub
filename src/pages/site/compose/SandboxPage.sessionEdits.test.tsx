@@ -97,6 +97,8 @@ async function twoSessions(options: Parameters<typeof mount>[1] = {}) {
   fireEvent.click(within(await openRow()).getByRole("listitem", { name: /66 prompts$/ }));
   await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 15_000 });
   await screen.findByRole("group", { name: /^Session 2 · / }, { timeout: 10_000 });
+  // SV-04: the add is finished when it says so; a move before that has its notice replaced by the add's.
+  await screen.findByText("Added Session 2 with 66 prompts.", undefined, { timeout: 15_000 });
 }
 
 const draftRow = () => tableRows("builds").find((row) => row.id === DRAFT);

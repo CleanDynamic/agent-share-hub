@@ -7,7 +7,12 @@
 import type { CSSProperties } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { BountiesLoadingView } from "@/pages/site/bounties/BountiesFrame";
+import { LibraryLoadingView } from "@/components/library/libraryLoading";
+import { BuildViewSkeleton } from "@/pages/site/build/BuildViewSkeleton";
 import { ComposeSkeleton } from "@/pages/site/compose/ComposeSkeleton";
+import { DraftsLoadingView } from "@/pages/site/drafts/DraftsFrame";
+import { GalleryLoadingView } from "@/pages/site/gallery/galleryFrame";
 
 const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, minHeight: "60vh", paddingTop: 24 };
 
@@ -23,11 +28,12 @@ function ListPlaceholder({ what, rows = 6, rowHeight = 52, title = true }: { wha
 }
 
 export const HomePlaceholder = () => <ListPlaceholder what="Home" rowHeight={96} rows={4} />;
-export const BuildsPlaceholder = () => <ListPlaceholder what="Builds" rowHeight={72} />;
-export const OpenBuildsPlaceholder = () => <ListPlaceholder what="OpenBuilds" rowHeight={72} />;
-export const LibraryPlaceholder = () => <ListPlaceholder what="Library" rowHeight={96} rows={4} />;
-export const DraftsPlaceholder = () => <ListPlaceholder what="Drafts" />;
-export const BuildPlaceholder = () => <ListPlaceholder what="Build" rowHeight={64} />;
+export const BuildsPlaceholder = GalleryLoadingView;
+export const OpenBuildsPlaceholder = BountiesLoadingView;
+export const LibraryPlaceholder = LibraryLoadingView;
+// SV-04 P5: the page's own loading state, from its small frame module (no page code in the first download).
+export const DraftsPlaceholder = DraftsLoadingView;
+export const BuildPlaceholder = () => <BuildViewSkeleton />;
 // The profile's own skeleton lives in the profile page's chunk; importing it here would put that page into the first download.
 export const ProfilePlaceholder = () => <ListPlaceholder what="Profile" rowHeight={80} rows={4} />;
 export const ComposerPlaceholder = () => <ComposeSkeleton />;

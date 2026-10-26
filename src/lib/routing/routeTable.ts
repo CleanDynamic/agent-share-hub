@@ -15,6 +15,8 @@ import type { ComponentType } from "react";
 import { matchPath } from "react-router-dom";
 
 import { SITE_NAV } from "@/components/shell/siteNav";
+import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
+import { SkipToBuild } from "@/pages/site/compose/buildFocus";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 
 import {
@@ -42,6 +44,8 @@ export interface RouteEntry {
   load: () => Promise<{ default: ComponentType<never> }>;
   prefetch: (params: RouteParams, queryClient: QueryClient, context: RouteContext) => Promise<void> | void;
   Placeholder: ComponentType;
+  /** SV-04 P4: what the one frame does for this page. `wide`: no 1428 cap and no side padding; `SkipLink`: the first stop. */
+  frame?: { wide: boolean; SkipLink?: ComponentType };
 }
 
 
@@ -140,6 +144,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       startComposerReads(queryClient, buildId);
     },
     Placeholder: ComposerPlaceholder,
+    frame: SANDBOX_COMPOSER_ENABLED ? { wide: true, SkipLink: SkipToBuild } : undefined,
   },
   build: {
     key: "build",

@@ -40,7 +40,7 @@
 // pages that already hold the pieces render this directly.
 
 import { useId, useState, type CSSProperties, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { PageLink as Link } from "@/lib/routing/PageLink";
 
 import { hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
 import { feedback } from "@/lib/theme/motion";
@@ -54,17 +54,8 @@ import { gapEdge } from "./GapMarker";
 import { PictureLamp } from "./PictureLamp";
 import { Plaque, plaqueState, type PlaqueBuild } from "./Plaque";
 
-/** Cover heights by where the card stands, as the design draws them. */
-export const COVER_HEIGHT = {
-  /** The catalogue. */
-  catalogue: 112,
-  /** The gallery wall. */
-  wall: 92,
-  /** A profile's works. */
-  works: 86,
-  /** Mobile, two columns. */
-  mobile: 96,
-} as const;
+export { COVER_HEIGHT } from "./coverHeight";
+import { COVER_HEIGHT } from "./coverHeight";
 
 /** The title's size: 19, or 18 / 17 on a mobile two-column wall. */
 export type BuildCardTitleSize = 17 | 18 | 19;

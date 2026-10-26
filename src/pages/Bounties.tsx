@@ -32,6 +32,8 @@ import {
   type Load,
   type SolverView,
 } from "@/pages/site/bounties/BountiesView";
+import { BountiesLoadingView } from "@/pages/site/bounties/BountiesFrame";
+import { PageArrival } from "@/components/shell/PageArrival";
 
 const SORTS: readonly BountySort[] = ["newest", "reward", "closing"];
 
@@ -182,34 +184,37 @@ export default function Bounties() {
     <>
       <SeoHead title="Bounties — buildgallery" description="Open asks on real builds, with rewards for solutions." path="/openbuilds" />
       <LiveRegion message={announcement} />
-      <BountiesView
-        frames={frames}
-        solvers={solvers}
-        selectedId={chosen?.id ?? null}
-        onSelect={(id) => {
-          const next = new URLSearchParams(params);
-          next.set("bounty", id);
-          setParams(next, { replace: true });
-        }}
-        sort={sort}
-        onSortChange={(next) => {
-          const nextParams = new URLSearchParams(params);
-          if (next === "newest") nextParams.delete("sort");
-          else nextParams.set("sort", next);
-          setParams(nextParams, { replace: true });
-        }}
-        meToo={
-          chosen
-            ? {
-                pressed: Boolean(mine.data),
-                count: chosen.meToo,
-                onToggle: onMeToo,
-                failure: failure ? { onRetry: onMeToo, error: failure.error } : undefined,
-              }
-            : undefined
-        }
-        onNavigate={navigate}
-      />
+      {/* SV-04 P5: the board fades in over its loading state, the route's Placeholder, when it lands. */}
+      <PageArrival loading={board.isPending} placeholder={<BountiesLoadingView />}>
+        <BountiesView
+          frames={frames}
+          solvers={solvers}
+          selectedId={chosen?.id ?? null}
+          onSelect={(id) => {
+            const next = new URLSearchParams(params);
+            next.set("bounty", id);
+            setParams(next, { replace: true });
+          }}
+          sort={sort}
+          onSortChange={(next) => {
+            const nextParams = new URLSearchParams(params);
+            if (next === "newest") nextParams.delete("sort");
+            else nextParams.set("sort", next);
+            setParams(nextParams, { replace: true });
+          }}
+          meToo={
+            chosen
+              ? {
+                  pressed: Boolean(mine.data),
+                  count: chosen.meToo,
+                  onToggle: onMeToo,
+                  failure: failure ? { onRetry: onMeToo, error: failure.error } : undefined,
+                }
+              : undefined
+          }
+          onNavigate={navigate}
+        />
+      </PageArrival>
     </>
   );
 }

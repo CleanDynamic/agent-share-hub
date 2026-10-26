@@ -18,7 +18,9 @@ import { usePageReady } from "@/lib/routing/pageReady";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
+import { GalleryCard } from "@/components/gallery/GalleryCard";
+import { CardGridSkeleton, CollectionsLoading, LIBRARY_COLUMNS } from "@/components/library/libraryLoading";
+import { PageArrival } from "@/components/shell/PageArrival";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -38,7 +40,7 @@ import {
   type BuildCollection,
 } from "@/lib/library";
 import { commentTime, listMySavedBuilds } from "@/lib/social";
-import { buttonStyle, fieldStyle, ring, skeletonStyle } from "@/lib/theme/controls";
+import { buttonStyle, fieldStyle, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { feedback } from "@/lib/theme/motion";
 import { SPACE } from "@/lib/theme/space";
@@ -52,12 +54,7 @@ import {
 } from "./addToCollection";
 
 /** Two cards a row in the standard frame; one on a phone. */
-const COLUMNS = {
-  xl: "repeat(2, minmax(0, 1fr))",
-  lg: "repeat(2, minmax(0, 1fr))",
-  md: "repeat(2, minmax(0, 1fr))",
-  mobile: "minmax(0, 1fr)",
-} as const;
+const COLUMNS = LIBRARY_COLUMNS;
 
 const SECONDARY = { background: "transparent", minHeight: 44 } as const;
 
@@ -86,21 +83,6 @@ export function BuildCardGrid({ builds }: { builds: GalleryBuild[] }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-function CardGridSkeleton() {
-  const columns = COLUMNS[useBreakpoint()];
-  return (
-    <div
-      data-testid="library-loading"
-      aria-hidden
-      style={{ display: "grid", gridTemplateColumns: columns, gap: SPACE.sm }}
-    >
-      {[0, 1, 2, 3].map((index) => (
-        <GalleryCardSkeleton key={index} />
-      ))}
-    </div>
   );
 }
 
@@ -170,12 +152,18 @@ export function SavedTab() {
   );
 
   usePageReady("library", !saved.isLoading);
-  if (saved.isLoading) return <CardGridSkeleton />;
-  if (saved.isError) return <RefusedView what="Saved" error={saved.error} onRetry={() => void saved.refetch()} />;
+  /* SV-04 P5: every state below goes through one arrival, so the saved builds fade in over their loading grid. */
+  const arrive = (node: ReactNode) => (
+    <PageArrival loading={saved.isLoading} placeholder={<CardGridSkeleton />}>
+      {node}
+    </PageArrival>
+  );
+  if (saved.isLoading) return arrive(<CardGridSkeleton />);
+  if (saved.isError) return arrive(<RefusedView what="Saved" error={saved.error} onRetry={() => void saved.refetch()} />);
   if (builds.length === 0) {
-    return <EmptyView testId="library-saved-empty" sentence="Save a build and it waits for you here." action={<BrowseTheGallery />} />;
+    return arrive(<EmptyView testId="library-saved-empty" sentence="Save a build and it waits for you here." action={<BrowseTheGallery />} />);
   }
-  return (
+  return arrive(
     <section data-testid="library-saved" style={{ display: "flex", flexDirection: "column", gap: SPACE.sm }}>
       <BuildCardGrid builds={builds} />
       {saved.hasNextPage ? <ShowMore busy={saved.isFetchingNextPage} onPress={() => void saved.fetchNextPage()} /> : null}
@@ -215,13 +203,7 @@ export function CollectionsTab({ ownerId, canEdit, onOpen }: CollectionsTabProps
 
   let content: ReactNode;
   if (collections.isLoading) {
-    content = (
-      <div data-testid="library-loading" aria-hidden style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
-        {[0, 1, 2].map((index) => (
-          <div key={index} style={{ ...skeletonStyle(), height: 56 }} />
-        ))}
-      </div>
-    );
+    content = <CollectionsLoading />;
   } else if (collections.isError) {
     content = <RefusedView what="Collections" error={collections.error} onRetry={() => void collections.refetch()} />;
   } else if (list.length === 0) {

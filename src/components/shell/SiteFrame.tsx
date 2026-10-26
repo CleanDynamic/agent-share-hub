@@ -39,7 +39,7 @@
 // `position: relative` root (see PageBackdrop) — never `fixed` — and it is the
 // entrance's own tone (`signin`, UI-P36).
 
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -50,6 +50,7 @@ import { Breadcrumb } from "./Breadcrumb";
 import { HEADER_HEIGHT } from "./chromeSize";
 import { Dock } from "./Dock";
 import { MobileHeader } from "./MobileHeader";
+import { PageProgress } from "./PageProgress";
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
@@ -79,6 +80,8 @@ export interface SiteFrameViewProps {
   mobileHeader?: ReactNode;
   /** Phone: the fixed dock (UI-P19). */
   dock?: ReactNode;
+  /** SV-04: the progress line, along the foot of the header slot while a page change waits. */
+  progress?: ReactNode;
   /** The page. */
   children?: ReactNode;
   /** `board` on the dev compare page: the footer is placed where the board draws it (UI-P55). */
@@ -87,7 +90,12 @@ export interface SiteFrameViewProps {
   wide?: boolean;
   /** CA-26 P1: replaces "Skip to content" as the first stop (the composer's "Skip to build"). */
   skipLink?: ReactNode;
+  /** SV-04 P4: false for a page that draws its own chrome (the legacy workspace). The slots go and every box steps back
+      (`display: contents`), but the page stays at the same place in the tree, so it is not mounted again. */
+  chrome?: boolean;
 }
+
+const CONTENTS: CSSProperties = { display: "contents" };
 
 const SKIP_BASE: CSSProperties = {
   position: "absolute",
@@ -151,13 +159,17 @@ export function SiteFrameView({
   footer,
   mobileHeader,
   dock,
+  progress,
   children,
   wide = false,
   skipLink,
+  chrome = true,
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
   const win = useWindowSize();
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
+  /* SV-04: set once when the frame mounts, so the page audit can tell a header kept across a page change from one drawn again. */
+  const [frameId] = useState(() => Math.random().toString(36).slice(2, 10));
 
   const root: CSSProperties = {
     position: "relative",
@@ -177,15 +189,35 @@ export function SiteFrameView({
     );
   }
 
+  if (!chrome) {
+    // The same elements at the same places as below, so the page under `<main>` keeps its state.
+    return (
+      <div data-testid="site-frame" data-variant="none" style={CONTENTS}>
+        {null}
+        {null}
+        <div style={CONTENTS}>
+          <main id="main" style={CONTENTS}>
+            {null}
+            {children}
+          </main>
+          {null}
+        </div>
+        {null}
+      </div>
+    );
+  }
+
   const refinedRoot: CSSProperties = { ...root, display: "flex", flexDirection: "column", background: t.frame };
   return (
     <div data-testid="site-frame" data-variant="site" data-viewport={phone ? "mobile" : "desktop"} style={refinedRoot}>
       {skipLink ?? <SkipLink phone={phone} />}
       <div
         data-slot={phone ? "mobile-header" : "header"}
+        data-frame-id={frameId}
         style={{ position: "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
       >
         {phone ? mobileHeader : header}
+        {progress}
       </div>
       <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? { ...SURFACE, maxWidth: "none" } : SURFACE}>
         <main
@@ -226,10 +258,12 @@ export interface SiteFrameProps {
   wide?: boolean;
   /** CA-26 P1: see `SiteFrameViewProps.skipLink`. */
   skipLink?: ReactNode;
+  /** SV-04 P4: see `SiteFrameViewProps.chrome`. */
+  chrome?: boolean;
 }
 
 /** The container: live chrome around the page. UI-P17 to UI-P19 fill the slots. */
-export function SiteFrame({ variant = "site", children, wide, skipLink }: SiteFrameProps) {
+export function SiteFrame({ variant = "site", children, wide, skipLink, chrome }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
       <ConnectorDialogProvider>
@@ -240,8 +274,10 @@ export function SiteFrame({ variant = "site", children, wide, skipLink }: SiteFr
         footer={<SiteFooter />}
         mobileHeader={<MobileHeader />}
         dock={<Dock />}
+        progress={<PageProgress />}
         wide={wide}
         skipLink={skipLink}
+        chrome={chrome}
       >
         {children}
       </SiteFrameView>
