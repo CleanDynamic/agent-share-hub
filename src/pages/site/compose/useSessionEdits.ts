@@ -340,6 +340,8 @@ export function useSessionEdits(input: SessionEditsInput) {
           (said: string | null) => said ?? "",
           async () => {
             const title = titleOf(key);
+            // The parts' titles as they stand before the part goes: the page has the change as soon as it is written.
+            const titles = latest.current.parts?.titles;
             let joins = "";
             // Let go of what points at the part first, so the size rule has run before the part is gone.
             if (storedWorkstreamsOf(latest.current.made).some((part) => part.key === key)) {
@@ -353,7 +355,7 @@ export function useSessionEdits(input: SessionEditsInput) {
               return change;
             });
             if (!done) return null;
-            const into = latest.current.parts?.titles.get(joins);
+            const into = titles?.get(joins);
             const said = into ? REMOVE_COPY.part(title, into) : REMOVE_COPY.partAlone(title);
             latest.current.say(`${said}.`);
             return said;

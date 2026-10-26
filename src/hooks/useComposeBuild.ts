@@ -23,7 +23,7 @@
 // and `retrySave` (Try again) or the maker's next edit sends it again.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { replaceEqualDeep, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   computeCompleteness,
@@ -42,6 +42,7 @@ import type {
   NodeTree,
   NodeType,
 } from "@/lib/build";
+import { onBuildWritten } from "@/lib/build/builds";
 import { connection, isNetworkFailure } from "@/lib/build/connection";
 import { pendingWrites } from "@/lib/build/pendingWrites";
 import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
@@ -125,6 +126,20 @@ export interface ComposeBuild {
   retrySave: () => void;
 }
 
+/** SV-07 P2: a build row's `updated_at`, as a number to compare. */
+const stampOf = (build: { updated_at?: unknown } | null | undefined): number => Date.parse(String(build?.updated_at ?? "")) || 0;
+
+/**
+ * SV-07 P2: a refetch never takes the page back. An answer whose build row is older than the one held was read before a write
+ * of this tab landed: the record held stays until a newer read confirms it. Otherwise the answer is shared as usual.
+ */
+export function newerRecord(held: unknown, next: unknown): unknown {
+  const before = held as BuildRecord | null | undefined;
+  const after = next as BuildRecord | null | undefined;
+  if (before?.build && after?.build && before.build.id === after.build.id && stampOf(after.build) < stampOf(before.build)) return held;
+  return replaceEqualDeep(held, next);
+}
+
 export function useComposeBuild(buildId: string | undefined): ComposeBuild {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -138,7 +153,17 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 1,
+    structuralSharing: newerRecord,
   });
+
+  /* SV-07 P2: the row each of this tab's writes leaves is what the page holds from that moment, not from the refetch after it. */
+  useEffect(() => {
+    if (!buildId) return;
+    return onBuildWritten((row) => {
+      if (row.id !== buildId) return;
+      queryClient.setQueryData<BuildRecord | null>(composeBuildQueryKey(buildId), (held) => (held && stampOf(row) > stampOf(held.build) ? { ...held, build: { ...held.build, ...row } } : held));
+    });
+  }, [buildId, queryClient]);
 
   /* CA-23 P4: what this tab last knew of the build, for the checks that stop a write from undoing another tab's change. The first
      read is learned; a later one only adds what is new. */
