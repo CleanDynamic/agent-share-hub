@@ -39,7 +39,7 @@
 // `position: relative` root (see PageBackdrop) — never `fixed` — and it is the
 // entrance's own tone (`signin`, UI-P36).
 
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -158,6 +158,8 @@ export function SiteFrameView({
   const narrow = useIsPhone();
   const win = useWindowSize();
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
+  /* SV-04: set once when the frame mounts, so the page audit can tell a header kept across a page change from one drawn again. */
+  const [frameId] = useState(() => Math.random().toString(36).slice(2, 10));
 
   const root: CSSProperties = {
     position: "relative",
@@ -183,6 +185,7 @@ export function SiteFrameView({
       {skipLink ?? <SkipLink phone={phone} />}
       <div
         data-slot={phone ? "mobile-header" : "header"}
+        data-frame-id={frameId}
         style={{ position: "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
       >
         {phone ? mobileHeader : header}

@@ -905,6 +905,9 @@ export const CA03_FILES: readonly string[] = [
   "src/components/vision/TypeChip.tsx",
   "src/components/vision/vision.test.tsx",
   "src/pages/dev/VisionNotBuilt.tsx",
+
+  // SV-04
+  "src/components/shell/SiteFrame.tsx",
 ];
 
 /**

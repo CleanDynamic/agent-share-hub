@@ -10,7 +10,7 @@ process.env.PERF_BASE_URL = BASE_URL;
 
 export default defineConfig({
   ...base,
-  testMatch: /pages\.spec\.ts/,
+  testMatch: /(pages|page-changes)\.spec\.ts/,
   use: { ...base.use, baseURL: BASE_URL },
   reporter: [["list"]],
   webServer: {
