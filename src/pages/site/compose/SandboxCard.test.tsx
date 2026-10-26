@@ -21,7 +21,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => maybeSingle() }) }) }) },
 }));
 
-import { CARD_FIELD_ID, CARD_SUBTITLE, NOT_LIVE_LINE, SandboxCard, type SandboxCardProps } from "./SandboxCard";
+import { CARD_FIELD_ID, CARD_SUBTITLE, NOT_SAVED_LINE, SandboxCard, type SandboxCardProps } from "./SandboxCard";
 import { useClassificationCard } from "./useClassificationCard";
 
 beforeEach(() => {
@@ -319,8 +319,8 @@ describe("Classification: acceptance", () => {
   });
 });
 
-describe("Classification: before the database update is applied", () => {
-  it("shows the one line, still saves the title, and never throws", async () => {
+describe("SV-05 P7 · Classification when its columns are missing", () => {
+  it("shows no not-live line; a save that fails says Classification not saved and keeps the window open", async () => {
     maybeSingle.mockResolvedValue({ data: null, error: { code: "42703", message: "column builds.classification does not exist" } });
     updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {
       if ("classification" in patch) throw { code: "PGRST204", message: "Could not find the 'classification' column of 'builds'" };
@@ -328,13 +328,15 @@ describe("Classification: before the database update is applied", () => {
     });
     const onDescription = vi.fn();
     const { onTitle, onOpenChange } = mount({ onDescription });
-    expect(await screen.findByText(NOT_LIVE_LINE)).toBeTruthy();
-    expect(screen.getAllByText(NOT_LIVE_LINE)).toHaveLength(1);
+    await screen.findByTestId("sandbox-card");
+    expect(screen.queryByTestId("classification-not-live")).toBeNull();
+    expect(screen.queryByText(/database update/)).toBeNull();
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Policy finder" } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
-    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    await waitFor(() => expect(screen.getByTestId("card-required").textContent).toBe(NOT_SAVED_LINE));
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
     expect(onTitle).toHaveBeenCalledWith("Policy finder");
     // the shape still lands, because it needs no new column
     expect(updateBuild).toHaveBeenCalledWith("b1", { shape: "app" });
@@ -346,5 +348,20 @@ describe("Classification: before the database update is applied", () => {
     await screen.findByTestId("sandbox-card");
     expect(buildSteps([])).toEqual([]);
     expect(row("From the build").getAttribute("aria-expanded")).toBe("false");
+  });
+});
+
+describe("SV-05 P7 · the window's inset", () => {
+  it("pads the body 20 on each side at 1440, as every other window does, and 0 on a phone", async () => {
+    live();
+    mount({ phone: false });
+    await screen.findByTestId("sandbox-card");
+    const preview = screen.getByTestId("card-body").firstElementChild as HTMLElement;
+    expect(preview.style.padding).toBe("0px 20px 16px");
+    cleanup();
+    live();
+    mount({ phone: true });
+    await screen.findByTestId("sandbox-card");
+    expect((screen.getByTestId("card-body").firstElementChild as HTMLElement).style.padding).toBe("0px 0px 16px");
   });
 });

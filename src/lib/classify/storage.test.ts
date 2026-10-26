@@ -70,3 +70,20 @@ describe("writeClassification", () => {
     await expect(writeClassification("b1", c())).rejects.toBeTruthy();
   });
 });
+
+describe("SV-05 P7 · what counts as a missing column", () => {
+  it("is the error's code only: Postgres 42703 or PostgREST PGRST204", async () => {
+    const { isMissingColumn } = await import("./storage");
+    expect(isMissingColumn({ code: "42703", message: "column builds.classification does not exist" })).toBe(true);
+    expect(isMissingColumn({ code: "PGRST204", message: "Could not find the 'facets' column" })).toBe(true);
+    expect(isMissingColumn({ message: "x", cause: { code: "42703" } })).toBe(true);
+  });
+
+  it("never reads the message: another error that mentions classification is not a missing column", async () => {
+    const { isMissingColumn } = await import("./storage");
+    expect(isMissingColumn({ code: "23514", message: "new row for relation builds violates check constraint classification_shape" })).toBe(false);
+    expect(isMissingColumn({ message: "facets could not be saved" })).toBe(false);
+    expect(isMissingColumn(new Error("classification"))).toBe(false);
+    expect(isMissingColumn(null)).toBe(false);
+  });
+});
