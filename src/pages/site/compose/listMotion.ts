@@ -24,10 +24,11 @@
 
 import { Component, createContext, useContext, useRef, useState, type ReactNode, type RefObject } from "react";
 
-import { SEQUENCE_CAP, SLIDE } from "@/lib/build/buildMotion";
+import { DROP, DROP_FALL, SEQUENCE_CAP, SLIDE } from "@/lib/build/buildMotion";
 import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
 import { SLIDE_ATTR, type Box } from "./flip";
+import { FRAME_PIECE } from "./framePieces";
 
 /* ── labels ── */
 
@@ -352,7 +353,7 @@ const slidingParent = (element: HTMLElement): HTMLElement | null => element.pare
  */
 export function planSlides(before: Measure, after: Measure, options: SlideOptions, id: number): Plan {
   const moves: { element: HTMLElement; dx: number; dy: number }[] = [];
-  const grown: { element: HTMLElement; by: number }[] = [];
+  const grown: { element: HTMLElement; was: number; now: number; framed: boolean }[] = [];
   const by = new Map<string, { dx: number; dy: number }>();
   for (const [key, now] of after) {
     const was = before.get(key);
@@ -366,18 +367,22 @@ export function planSlides(before: Measure, after: Measure, options: SlideOption
       dy -= carried.dy;
     }
     if (!seen(was) && !seen(now)) continue;
-    // A thing that grew (a tile that took a nested row, a tile converted to a taller kind) opens down.
-    if (now.h - was.h > 1) grown.push({ element: now.element, by: now.h - was.h });
+    // A thing that changed size: a framed one (a part) moves its frame's pieces; a tile that grew drops its new part in.
+    const framed = framedBy(now.element) !== null;
+    if (Math.abs(now.h - was.h) > 1 && (framed || (now.h > was.h && /^(tile|nested):/.test(key)))) grown.push({ element: now.element, was: was.h, now: now.h, framed });
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
     by.set(key, { dx: dx + (carried?.dx ?? 0), dy: dy + (carried?.dy ?? 0) });
     moves.push({ element: now.element, dx, dy });
   }
   const ms = options.ms ?? SLIDE;
   const delay = options.delay ?? 0;
-  const slides = moves.map(({ element, dx, dy }) =>
-    animateOn(element, "slide", [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: ms, composite: "add", ...(delay > 0 ? { delay, fill: "backwards" as const } : null) }),
-  );
-  for (const { element, by: height } of grown) slides.push(animateOn(element, "grow", [{ clipPath: `inset(0 0 ${height}px 0)` }, { clipPath: "inset(0 0 0 0)" }], { duration: BASE, ...(delay > 0 ? { delay, fill: "backwards" as const } : null) }));
+  const timing = { duration: ms, ...(delay > 0 ? { delay, fill: "backwards" as const } : null) };
+  // Reads first: what of each grown tile stands below its old height.
+  const reveal = grown.filter((entry) => !entry.framed).map((entry) => belowOldHeight(entry.element, entry.was, after));
+  const slides = moves.map(({ element, dx, dy }) => animateOn(element, "slide", [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { ...timing, composite: "add" }));
+  for (const entry of grown) if (entry.framed) slides.push(...resizePieces(entry.element, entry.was, entry.now, timing));
+  // The box has its new size at once, behind; what it gained drops in from `DROP_FALL` above, as anything arriving does.
+  for (const elements of reveal) for (const element of elements) slides.push(animateOn(element, "drop", [{ opacity: 0, transform: `translateY(-${DROP_FALL}px)` }, { opacity: 1, transform: "none" }], { duration: DROP, delay, fill: "backwards", continueFrom: true }));
   return {
     id,
     moved: [...by.keys()].map(bare),
@@ -388,14 +393,114 @@ export function planSlides(before: Measure, after: Measure, options: SlideOption
   };
 }
 
-/** A box of the skeleton that stands somewhere else now: it slides from where it was, and a lane scales from its old size. */
+/* ── frames in three pieces (`framePieces.tsx`) ── */
+
+const pieceOf = (element: Element, name: "whole" | "top" | "sides" | "bottom") => element.querySelector<HTMLElement>(`:scope > [${FRAME_PIECE}="${name}"]`);
+
+/** How many of a frame's moves are running: while any is, its pieces show and its whole frame does not. */
+const MOVING_FRAMES = new WeakMap<Element, number>();
+
+/** The pieces show while `animations` run, the frame drawn whole once they have all ended, so a frame at rest is drawn as it always was. */
+function showPieces(element: HTMLElement, animations: Animation[]): Animation[] {
+  if (animations.length === 0) return animations;
+  const whole = pieceOf(element, "whole");
+  const pieces = (["top", "sides", "bottom"] as const).map((name) => pieceOf(element, name));
+  const show = (moving: boolean) => {
+    if (whole) whole.style.visibility = moving ? "hidden" : "";
+    for (const piece of pieces) if (piece) piece.style.visibility = moving ? "" : "hidden";
+  };
+  MOVING_FRAMES.set(element, (MOVING_FRAMES.get(element) ?? 0) + 1);
+  show(true);
+  void Promise.all(animations.map(ended)).then(() => {
+    const left = (MOVING_FRAMES.get(element) ?? 1) - 1;
+    MOVING_FRAMES.set(element, left);
+    if (left === 0) show(false);
+  });
+  return animations;
+}
+
+/** The radius of the frame drawn round `element` in pieces, or null when it has none: read from the sides' own style, not the layout. */
+function framedBy(element: Element): number | null {
+  const sides = pieceOf(element, "sides");
+  if (!sides) return null;
+  const radius = Number.parseFloat(sides.style.top);
+  return Number.isFinite(radius) ? radius : null;
+}
+
+/**
+ * A framed box that was `was` tall and is `now` tall, drawn at its new size: its bottom edge slides from where it was, and its sides
+ * (1px lines, no corners) scale from their old length. Nothing with a corner is scaled; nothing repaints.
+ */
+export function resizePieces(element: HTMLElement, was: number, now: number, timing: KeyframeAnimationOptions): Animation[] {
+  const radius = framedBy(element);
+  const bottom = pieceOf(element, "bottom");
+  const sides = pieceOf(element, "sides");
+  if (radius === null || !bottom || !sides) return [];
+  const length = (height: number) => Math.max(0, height - 2 * radius);
+  const scale = length(now) > 0 ? length(was) / length(now) : 1;
+  return showPieces(
+    element,
+    [
+      animateOn(bottom, "slide", [{ transform: `translateY(${was - now}px)` }, { transform: "none" }], { ...timing, composite: "add" }),
+      animateOn(sides, "frame-sides", [{ transform: `scaleY(${scale})` }, { transform: "none" }], { ...timing, continueFrom: true }),
+    ].filter((animation): animation is Animation => animation !== null),
+  );
+}
+
+/** A framed box that opens: its top edge falls in with its head, its bottom edge slides down from the top, its sides grow. */
+export function openFrame(element: HTMLElement, { delay = 0, ms = BASE }: { delay?: number; ms?: number } = {}): MotionRun {
+  const top = pieceOf(element, "top");
+  const sides = pieceOf(element, "sides");
+  const bottom = pieceOf(element, "bottom");
+  const radius = framedBy(element);
+  if (!top || !sides || !bottom || radius === null) return DONE;
+  const height = element.getBoundingClientRect().height;
+  const timing = { duration: ms, delay, fill: "backwards" as const };
+  return runOf(
+    showPieces(
+      element,
+      [
+        animateOn(top, "drop", [{ opacity: 0, transform: `translateY(-${DROP_FALL}px)` }, { opacity: 1, transform: "none" }], { duration: DROP, delay, fill: "backwards" }),
+        animateOn(sides, "frame-sides", [{ transform: "scaleY(0)" }, { transform: "none" }], timing),
+        animateOn(bottom, "slide", [{ transform: `translateY(${radius - height}px)` }, { transform: "none" }], { ...timing, composite: "add" }),
+      ].filter((animation): animation is Animation => animation !== null),
+    ),
+  );
+}
+
+/**
+ * What of a tile stands wholly below the height it had: the shallowest elements that start under it (a nested row, a taller kind's
+ * new part). One that is itself sliding in this plan is left to its slide. Reads only.
+ */
+function belowOldHeight(element: HTMLElement, was: number, after: Measure): HTMLElement[] {
+  const line = element.getBoundingClientRect().top + was - 1;
+  const sliding = new Set([...after.values()].map((entry) => entry.element));
+  const out: HTMLElement[] = [];
+  const visit = (node: Element, depth: number) => {
+    for (const child of node.children) {
+      if (!(child instanceof HTMLElement) || child.hasAttribute(FRAME_PIECE)) continue;
+      const box = child.getBoundingClientRect();
+      if (box.width === 0 && box.height === 0) continue;
+      if (box.top >= line) {
+        if (!sliding.has(child)) out.push(child);
+      } else if (box.bottom > line + 1 && depth < 4) visit(child, depth + 1);
+    }
+  };
+  visit(element, 0);
+  return out;
+}
+
+/**
+ * A box of the skeleton that stands somewhere else now: it slides from where it was, and takes its new size at once. A framed box
+ * (a lane, `FramePieces`) moves its pieces instead of scaling, so its corners never stretch.
+ */
 export function slideBox(element: HTMLElement, from: Box, to: Box, ms: number = SLIDE): MotionRun {
   const dx = from.x - to.x;
   const dy = from.y - to.y;
-  const sx = to.w > 0 ? from.w / to.w : 1;
-  const sy = to.h > 0 ? from.h / to.h : 1;
-  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(sx - 1) < 0.001 && Math.abs(sy - 1) < 0.001) return DONE;
-  return runOf([animateOn(element, "slide", [{ transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, transformOrigin: "0 0" }, { transform: "none", transformOrigin: "0 0" }], { duration: ms, composite: "add" })]);
+  const timing = { duration: ms };
+  const resized = Math.abs(from.h - to.h) > 0.5 ? resizePieces(element, from.h, to.h, timing) : [];
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return runOf(resized);
+  return runOf([animateOn(element, "slide", [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { ...timing, composite: "add" }), ...resized]);
 }
 
 /* ── words that change, through the same pass ── */

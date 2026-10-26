@@ -1039,6 +1039,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/aroundBuild.test.tsx",
   "src/pages/site/compose/mapMorph.test.tsx",
   "src/pages/site/compose/ca21.p6.test.tsx",
+  "src/pages/site/compose/compositor.test.tsx",
+  "src/pages/site/compose/framePieces.tsx",
+  "src/pages/site/compose/workstreamRecipes.ts",
+  "src/pages/site/compose/BuildList.parts.test.tsx",
 ];
 
 /**

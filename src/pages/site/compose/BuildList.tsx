@@ -111,7 +111,8 @@ import { FOOT_LINK, LIST_BOX, MarkedName, listRow, NumberBadge, RESPONSE_WORD, R
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
 import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
-import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "./workstreamRecipes";
+import { WORKSTREAM_BODY, WORKSTREAM_FRAME, WORKSTREAM_GROUP } from "./workstreamRecipes";
+import { FramePieces } from "./framePieces";
 import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNest";
@@ -2377,6 +2378,7 @@ export function BuildList(raw: BuildListProps) {
     const count = parts?.parts.length ?? 0;
     return (
       <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={{ ...WORKSTREAM_GROUP, ...(sorting.hidden === view.key ? { visibility: "hidden" } : null), ...(props.find?.view.current === view.key ? FOUND_RING : null) }}>
+        <FramePieces radius={WORKSTREAM_FRAME.radius} colour={WORKSTREAM_FRAME.colour} />
         <WorkstreamHead
           part={view}
           phone={props.phone}

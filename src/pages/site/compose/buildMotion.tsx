@@ -97,18 +97,6 @@ export function liftOut(elements: readonly Element[], { stagger = 0, cap = STAGG
 /** How long a lift of `count` items takes from the first starting to the last ending. */
 export const liftSpan = (count: number, stagger: number = STAGGER, cap: number = STAGGER_CAP, ms: number = LIFT): number => (count > 0 ? staggerDelay(count - 1, stagger, cap) + ms : 0);
 
-/* ── openClip: a frame that opens ── */
-
-/**
- * A frame that grows to hold what is in it, drawn with `clip-path: inset()` so no layout property moves: it is revealed from the
- * top down over `BASE`. Used for a part's frame, which holds sessions and so cannot fade without fading them.
- */
-export function openClip(elements: readonly Element[], { delay = 0, ms = LIFT }: { delay?: number; ms?: number } = {}): MotionRun {
-  return runOf(
-    elements.map((element) => (canAnimate(element) ? start(element, "clip", [{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: ms, delay, fill: "backwards" }) : null)),
-  );
-}
-
 /* ── resizeFrame: a window that grows or closes about its fixed centre ── */
 
 /** The three parts of a modal window that move when its frame changes size. */
@@ -156,17 +144,16 @@ export function resizeFrame(frame: HTMLElement, parts: FrameParts, from: number,
 
 /* ── slideOut: arriving from under something ── */
 
-/** An element that starts at `from` (behind what it comes out of) and moves to where it is, fading in, over `DROP`. A copy slides out from under its original. */
+/**
+ * An element that starts at `from` (behind what it comes out of) and moves to where it is, fading in, over `DROP`. A copy slides out
+ * from under its original. SV-06 P4: a translate and an opacity only; a copy is its original's size, and its rounded corners never scale.
+ */
 export function slideOut(element: Element, from: Box, ms: number = DROP, delay = 0): MotionRun {
   if (!canAnimate(element)) return DONE;
   const now = element.getBoundingClientRect();
   const dx = from.x - now.left;
   const dy = from.y - now.top;
-  const sx = now.width > 0 ? from.w / now.width : 1;
-  const sy = now.height > 0 ? from.h / now.height : 1;
-  return runOf([
-    start(element, "out", [{ opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, transformOrigin: "0 0" }, { opacity: 1, transform: "none", transformOrigin: "0 0" }], { duration: ms, delay, fill: "backwards" }),
-  ]);
+  return runOf([start(element, "out", [{ opacity: 0, transform: `translate(${dx}px, ${dy}px)` }, { opacity: 1, transform: "none" }], { duration: ms, delay, fill: "backwards" })]);
 }
 
 /* ── useLeaving ── */

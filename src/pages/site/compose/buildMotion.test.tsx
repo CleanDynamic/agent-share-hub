@@ -122,7 +122,7 @@ describe("slideOut", () => {
     const item = div();
     item.getBoundingClientRect = () => ({ left: 10, top: 110, width: 200, height: 50, right: 210, bottom: 160, x: 10, y: 110, toJSON: () => ({}) });
     slideOut(item, { x: 10, y: 10, w: 200, h: 50 });
-    expect(played[0].keyframes[0]).toMatchObject({ opacity: 0, transform: "translate(0px, -100px) scale(1, 1)" });
+    expect(played[0].keyframes[0]).toEqual({ opacity: 0, transform: "translate(0px, -100px)" });
     expect(played[0].keyframes[1]).toMatchObject({ opacity: 1, transform: "none" });
     expect(played[0].options.duration).toBe(DROP);
   });

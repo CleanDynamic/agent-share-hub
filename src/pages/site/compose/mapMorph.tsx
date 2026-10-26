@@ -78,7 +78,11 @@ function fly(layer: HTMLElement, flight: Flight, to: DOMRect, fade: "out" | "in"
   return { finished: Promise.resolve(move.finished).then(() => undefined, () => undefined), finish: () => move.finish?.(), cancel: () => move.cancel?.() };
 }
 
-/** Lines draw in from their start (`stroke-dashoffset`), or retract. */
+/**
+ * Lines draw in from their start (`stroke-dashoffset`), or retract. SV-06 P4: the one animation on the build page that is not a
+ * transform or an opacity, and so repaints on the main thread: kept because the lines draw after the boxes have landed and retract
+ * before they move, when nothing else is moving.
+ */
 function drawLines(root: HTMLElement, ms: number, backwards: boolean): MotionRun[] {
   return [...root.querySelectorAll<SVGPathElement>('[data-testid="map-line-stroke"], [data-testid="map-line-halo"]')].flatMap((path) => {
     const length = typeof path.getTotalLength === "function" ? path.getTotalLength() : 0;

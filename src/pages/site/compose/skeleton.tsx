@@ -5,8 +5,8 @@
    with its ticks and numbers, and the place the held thing would land. It never changes a component's own style. It exists only
    while something is held (and while it fades out after the drop), and fades in over `SKELETON_IN`.
 
-   Where a box moves because things slid, it slides too (a translate, and a scale for a lane), through the List's animator
-   (`listMotion.ts`, `slideBox`), `FAST`, `STANDARD`. */
+   Where a box moves because things slid, it slides too, through the List's animator (`listMotion.ts`, `slideBox`), `FAST`, `STANDARD`:
+   a translate, and for a lane (drawn in pieces, `FramePieces`) its bottom edge sliding and its sides growing, so no corner stretches. */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
@@ -17,7 +17,8 @@ import { fade, prefersReducedMotion } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { mono } from "@/lib/theme/type";
 
-import { animateOn, runOf, slideBox } from "./listMotion";
+import { FramePieces } from "./framePieces";
+import { animateOn, openFrame, runOf, slideBox } from "./listMotion";
 import { text } from "./refinedStyles";
 
 const place = (rect: Rect): CSSProperties => ({ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxSizing: "border-box" });
@@ -50,18 +51,23 @@ const fadeSocket = (element: HTMLElement) => {
   animateOn(element, "fade", [{ opacity: 0 }, { opacity: 1 }], { duration: SOCKETS_IN_MS, delay: SOCKETS_AFTER_MS, fill: "backwards" });
 };
 
-/** A lane that opens: from nothing to its height, over 200 ms (a scale from its top; nothing else of it changes). */
+/** A lane that opens, over 200 ms: its bottom edge slides down from its top and its sides grow (SV-06: no corner is scaled). */
 const openLane = (element: HTMLElement) => {
-  animateOn(element, "open", [{ transform: "scaleY(0)", transformOrigin: "0 0" }, { transform: "none", transformOrigin: "0 0" }], { duration: LANE_OPEN_MS, fill: "backwards" });
+  openFrame(element, { ms: LANE_OPEN_MS });
 };
 
 function SocketBox({ socket, fadeIn }: { socket: Socket; fadeIn: boolean }) {
   return <Box id={socket.id} rect={socket.rect} testId="skeleton-socket" onMount={fadeIn ? fadeSocket : undefined} style={socketStyle(socket.radius, t.skeletonEdge)} />;
 }
 
+/** A lane round a container: its outline and its faint fill, in three pieces (`FramePieces`), so it changes size with nothing stretched. */
 function LaneBox({ lane, dusk, opens }: { lane: Lane; dusk: boolean; opens: boolean }) {
   if (!lane.outline) return null;
-  return <Box id={lane.id} rect={lane.rect} testId="skeleton-lane" onMount={opens ? openLane : undefined} style={{ border: `1px solid ${t.hairlineModule}`, borderRadius: lane.radius, background: tokenAlpha("text", dusk ? 0.012 : 0.015) }} />;
+  return (
+    <Box id={lane.id} rect={lane.rect} testId="skeleton-lane" onMount={opens ? openLane : undefined} style={{}}>
+      <FramePieces radius={lane.radius} colour={t.hairlineModule} fill={tokenAlpha("text", dusk ? 0.012 : 0.015)} />
+    </Box>
+  );
 }
 
 /** "Lands here", then, 8 apart, the place: "Session 2 · 2 of 3". Over its own start, a plain socket. */

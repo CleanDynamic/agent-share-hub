@@ -300,11 +300,14 @@ describe("adding a part", () => {
     const { again } = mount(props);
     announce("part");
     again(two);
-    const heads = played.filter((entry) => entry.keyframes[0]?.transform === "translateY(-20px)").map((entry) => (entry.element as HTMLElement).getAttribute("data-testid"));
-    expect(heads).toEqual(["workstream-head", "workstream-head"]);
-    const clip = played.filter((entry) => entry.keyframes.some((frame) => frame.clipPath));
-    expect(clip).toHaveLength(2);
-    expect(clip[0].keyframes).toEqual([{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }]);
+    const heads = played.filter((entry) => entry.keyframes[0]?.transform === "translateY(-20px)" && (entry.element as HTMLElement).getAttribute("data-testid") === "workstream-head");
+    expect(heads).toHaveLength(2);
+    // SV-06 P4: each frame opens in pieces: its top edge falls with the head, its sides grow from nothing, its bottom edge slides down.
+    const piece = (name: string) => played.filter((entry) => (entry.element as HTMLElement).getAttribute("data-frame-piece") === name);
+    expect(piece("top").map((entry) => entry.keyframes[0])).toEqual([{ opacity: 0, transform: "translateY(-20px)" }, { opacity: 0, transform: "translateY(-20px)" }]);
+    expect(piece("sides").map((entry) => entry.keyframes[0].transform)).toEqual(["scaleY(0)", "scaleY(0)"]);
+    expect(piece("bottom")).toHaveLength(2);
+    expect(played.some((entry) => entry.keyframes.some((frame) => frame.clipPath))).toBe(false);
   });
 });
 

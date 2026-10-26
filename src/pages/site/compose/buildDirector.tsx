@@ -32,8 +32,8 @@ import type { Skeleton } from "@/lib/build/sortLayout";
 import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
 import { listRuns } from "./buildRuns";
-import { captureWords, crossfadeFrom, dropIn, liftOut, motionOn, openClip, outlineOnce, slideOut, staggerDelay, type MotionRun, type Words } from "./buildMotion";
-import { allOf, capSequence, type ListMotion, type MotionKind, type MotionLabel } from "./listMotion";
+import { captureWords, crossfadeFrom, dropIn, liftOut, motionOn, outlineOnce, slideOut, staggerDelay, type MotionRun, type Words } from "./buildMotion";
+import { allOf, capSequence, openFrame, type ListMotion, type MotionKind, type MotionLabel } from "./listMotion";
 import type { Box } from "./flip";
 
 /* ── what is on the page ── */
@@ -237,7 +237,7 @@ export function planLift(root: HTMLElement, change: Change, before: Layout, kind
 export interface DropPlan {
   /** Things that fall into place. */
   drops: HTMLElement[];
-  /** Frames that open (a new part's), revealed from the top down. */
+  /** Frames that open (a new part's): the top edge falls in with the head, the bottom edge slides down, the sides grow. */
   frames: HTMLElement[];
   /** Copies, with the original each comes out from under. */
   copies: { copy: HTMLElement; original: HTMLElement }[];
@@ -519,7 +519,7 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
       setShown(true);
       // What came waits, see-through, while the gap opens (its delay, on the same clock as the slide), then drops.
       const open = plan.stagger > 0 && plan.drops.length > 1 ? SKELETON_IN : SLIDE;
-      const arriving = allOf([openClip(plan.frames, { delay: SLIDE }), dropIn(plan.drops, { stagger: plan.stagger, delay: open }), ...plan.copies.map(({ copy, original }) => copyOut(copy, original, open))]);
+      const arriving = allOf([...plan.frames.map((frame) => openFrame(frame, { delay: SLIDE })), dropIn(plan.drops, { stagger: plan.stagger, delay: open }), ...plan.copies.map(({ copy, original }) => copyOut(copy, original, open))]);
       const mine = begin(() => arriving.finish());
       fadeWhen(mine, arriving.finished);
     }
