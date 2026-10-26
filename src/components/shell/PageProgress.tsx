@@ -55,6 +55,7 @@ export function PageProgress() {
       ref={line}
       aria-hidden="true"
       data-testid="page-progress"
+      data-ui="page-progress"
       data-phase={phase}
       onAnimationEnd={(event) => {
         if (event.animationName === "bgPageProgressOut") setPhase("off");

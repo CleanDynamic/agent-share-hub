@@ -1042,6 +1042,47 @@ input[type="search"] { border-radius: var(--r-control); }
   50%  { opacity: 0; }
   100% { opacity: 0; }
 }
+/* SV-04: one fade, on the compositor. A page change runs in `document.startViewTransition` (PageChangeProvider.tsx).
+   The frame is named, piece by piece, and none of its pieces animates: the header, the footer, the dock and the progress
+   line stand still, and the root (the surface around the page) changes at once. Only the page area, `<main id="main">`,
+   crossfades: the old page out and the new one in together over FAST on STANDARD, opacity only. No group animates its
+   size or place, so nothing slides or scales. Under reduced motion no view transition is started at all. */
+[data-slot="header"],
+[data-slot="mobile-header"] {
+  view-transition-name: site-header;
+}
+[data-slot="footer"] {
+  view-transition-name: site-footer;
+}
+[data-slot="dock"] > * {
+  view-transition-name: site-dock;
+}
+[data-ui="page-progress"] {
+  view-transition-name: page-progress;
+}
+#main {
+  view-transition-name: page;
+}
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation: none;
+}
+::view-transition-old(page) {
+  animation: bgPageOut var(--motion-fast) var(--motion-ease) both;
+}
+::view-transition-new(page) {
+  animation: bgPageIn var(--motion-fast) var(--motion-ease) both;
+}
+@keyframes bgPageOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes bgPageIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* SV-04: the progress line under the header while a page change waits (PageProgress.tsx). One fill while waiting, then
    the rest of the way and out when the page changes; transform and opacity only. */
 @keyframes bgPageProgress {
