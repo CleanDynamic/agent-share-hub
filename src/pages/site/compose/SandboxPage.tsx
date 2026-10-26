@@ -53,11 +53,12 @@ import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/ru
 import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { defaultWorkstream, labelsOf, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamLabel, workstreamMark, workstreamsOf } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
-import { addSessionToBuild } from "@/lib/build/addSession";
+import { addSessionToBuild, fillMissingTiles } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
+import { nextSessionNumber as nextNumber } from "@/lib/build/sessionNumbers";
 import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessionOrder, orderKeys } from "@/lib/build/sessionLayout";
-import { SessionJump, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
+import { SessionJump, jumpItemsOf, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
 import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } from "@/lib/build/moveRules";
@@ -291,7 +292,7 @@ function SandboxPageBody() {
   const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
     const steps = buildSteps(tree);
     // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
-    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made), order);
+    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made), order, storedWorkstreamsOf(made));
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
@@ -727,7 +728,11 @@ function SandboxPageBody() {
   const [startingSession, setStartingSession] = useState(false);
   /* CA-21 P7: the session on its way, for the List to open a lane for and fill; it lets go when its animation is over. */
   const [arriving, setArriving] = useState<Arriving | null>(null);
-  const nextSessionNumber = useCallback(() => Math.max(0, ...groups.filter((group) => !group.implicit).map((group) => group.number)) + 1, [groups]);
+  /* SV-05 P2: a new session's number is the next place at the end of its part, from the one numbering. */
+  const nextSessionNumber = useCallback(
+    (part?: string) => nextNumber(shownGroups(groups).map(groupKey), { meta: sessionsMetaOf(made), workstreams: storedWorkstreamsOf(made) }, part),
+    [groups, made],
+  );
   useEffect(() => {
     if (!ringedSession) return;
     document.querySelector(`[data-session-key="${ringedSession.key}"]`)?.scrollIntoView?.({ block: "center" });
@@ -755,7 +760,7 @@ function SandboxPageBody() {
       else if (emptyFirst && first) key = groupKey(first);
       else {
         key = newSessionKey();
-        setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
+        setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(part), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
         await trackWrite("making", async () => {
           await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
@@ -1512,10 +1517,10 @@ function SandboxPageBody() {
       setAdding((previous) => new Set(previous).add(importId));
       // CA-21 P7: the lane opens as soon as it is pressed; the count is all it needs of the chat to make a place for each prompt.
       const item = libraryRows.find((row) => row.id === importId);
-      const number = nextSessionNumber();
+      const number = nextSessionNumber(defaultWorkstream(made, workstream));
       if (item) {
-        setArriving({ key: importId, kind: "chat", head: { key: importId, number, tool: item.label, detail: [item.model, item.date].filter(Boolean).join(" · "), prompts: [], date: item.date }, count: item.promptCount, part: workstream, status: "writing" });
-        setSessionSaid(`Adding ${item.label} · ${item.date} as Session ${number}…`);
+        setArriving({ key: importId, kind: "chat", head: { key: importId, number, tool: item.appKnown ? item.app : NO_APP, detail: [item.model, item.date].filter(Boolean).join(" · "), prompts: [], date: item.date }, count: item.promptCount, part: workstream, status: "writing" });
+        setSessionSaid(`Adding ${item.appKnown ? item.app : NO_APP} · ${item.date} as Session ${number}…`);
       }
       try {
         const id = await ensureBuild();
@@ -1541,7 +1546,27 @@ function SandboxPageBody() {
         });
       }
     },
-    [ensureBuild, queryClient, libraryRows, nextSessionNumber],
+    [ensureBuild, queryClient, libraryRows, nextSessionNumber, made],
+  );
+
+  /** SV-05 P3: Retry on a session that came in short: its missing prompts are imported again, and the head's line goes. */
+  const onRetryImport = useCallback(
+    async function again(key: string): Promise<void> {
+      if (!buildId) return;
+      try {
+        const written = await fillMissingTiles(key, buildId);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) }),
+          queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
+          queryClient.invalidateQueries({ queryKey: ["build", "getMadeWith"] }),
+        ]);
+        setSessionSaid(`Imported ${written} ${written === 1 ? "prompt" : "prompts"}.`);
+      } catch (cause) {
+        console.error("[Sandbox] prompts not imported", cause);
+        sayFailed(cause, "Prompts not imported", () => void again(key));
+      }
+    },
+    [buildId, queryClient],
   );
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
@@ -1839,7 +1864,7 @@ function SandboxPageBody() {
     if (collapsedKeys.has(key)) onToggleCollapsed(key, false);
   };
   /* CA-14 P6: the session list, when it is on and there are two sessions to jump between. */
-  const jumpItems = useMemo(() => sourceSessionRows.map((row) => ({ key: row.key, number: row.number, label: row.title ?? row.tool })), [sourceSessionRows]);
+  const jumpItems = useMemo(() => jumpItemsOf(sourceSessionRows), [sourceSessionRows]);
   const headOf = useCallback((key: string) => document.querySelector<HTMLElement>(`[data-session-key="${key}"] [data-testid="session-head"]`), []);
   const inView = useCurrentSession(
     useMemo(() => jumpItems.map((item) => item.key), [jumpItems]),
@@ -2267,7 +2292,7 @@ function SandboxPageBody() {
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={stepOf.prompt}
             addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
-            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: (key) => actions.askRemoveSessions([key]), onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined }}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: (key) => actions.askRemoveSessions([key]), onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined, onRetryImport: (key) => void onRetryImport(key) }}
             onDropSession={edits.onDrop}
             parts={
               partsModel

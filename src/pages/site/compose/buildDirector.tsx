@@ -28,7 +28,7 @@ import { BASE as BASE_MS } from "@/lib/theme/motion";
 
 import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
-import { runsOf, withEmptySessions } from "./buildRuns";
+import { listRuns } from "./buildRuns";
 import { captureWords, crossfadeFrom, dropIn, finishRunning, liftOut, liftSpan, motionOn, openClip, outlineOnce, slideOut, staggerDelay, useFlip, type MotionRun, type Words } from "./buildMotion";
 import { finishSlides, type Box } from "./flip";
 
@@ -47,7 +47,7 @@ export interface Layout {
 export function layoutOf(view: BuildListProps): Layout {
   const tiles = new Map<string, string>();
   const sessions = new Map<string, string>();
-  const runs = withEmptySessions(runsOf(view.steps, view.dividers), view.emptySessions ?? []);
+  const runs = listRuns(view.steps, view.dividers, view.emptySessions ?? []);
   const partOf = new Map<string, string>();
   const parts = view.parts && view.parts.parts.length >= 2 ? view.parts : null;
   if (parts) for (const part of parts.parts) for (const key of part.sessions) partOf.set(key, part.view.key);

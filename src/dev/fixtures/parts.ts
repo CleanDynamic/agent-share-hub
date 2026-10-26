@@ -7,7 +7,7 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { buildSteps, sessionGroups, type SessionGroup, type Step } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import type { ThreadDoc } from "@/lib/build/thread";
 import type { NodeTree } from "@/lib/build/types";
 
@@ -100,6 +100,6 @@ export const partsPost: ThreadDoc = {
 /** The build as the composer reads it. */
 export function partsBuild(): { tree: NodeTree[]; steps: Step[]; groups: SessionGroup[]; making: Making } {
   const steps = buildSteps(partsTree);
-  const groups = sessionGroups(steps, partsMaking.sessions, partsMaking.session_tools ?? {}, sessionsMetaOf(partsMaking), sessionOrderOf(partsMaking));
+  const groups = sessionGroups(steps, partsMaking.sessions, partsMaking.session_tools ?? {}, sessionsMetaOf(partsMaking), sessionOrderOf(partsMaking), storedWorkstreamsOf(partsMaking));
   return { tree: partsTree, steps, groups, making: partsMaking };
 }

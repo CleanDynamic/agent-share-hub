@@ -102,6 +102,7 @@ export type AttachTarget = { kind: "new" } | { kind: "existing"; buildId: string
 const SESSION_COLUMNS =
   "id, client, model, target_build_id, build_id, created_at, " +
   "first_prompt:proposal->events->0->payload->>text, " +
+  "second_prompt:proposal->events->1->payload->>text, " +
   "user_turns:proposal->summary->user_turn_count, " +
   "assistant_turns:proposal->summary->assistant_turn_count";
 
@@ -113,6 +114,8 @@ interface SessionRow {
   build_id: string | null;
   created_at: string;
   first_prompt: unknown;
+  /** SV-05 P3: event 1's text, for a session whose first turn is Claude Code's summary of an earlier one. */
+  second_prompt?: unknown;
   user_turns: unknown;
   assistant_turns: unknown;
   status?: string | null;
@@ -150,13 +153,18 @@ function sessionsTable(): SessionsTable {
   return (supabase as unknown as { from: (table: string) => SessionsTable }).from("import_sessions");
 }
 
+/** SV-05 P3: the turn Claude Code opens a continued session with, its summary of the one before. */
+export const isSessionSummary = (text: string): boolean => /^\s*This session is being continued from a previous conversation/.test(text);
+
 function asCount(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
 function toSummary(row: SessionRow): SessionSummary {
   const model = typeof row.model === "string" && row.model.trim() ? row.model : null;
-  const first = typeof row.first_prompt === "string" ? row.first_prompt.trim().slice(0, FIRST_PROMPT_MAX).trimEnd() : "";
+  // SV-05 P3: a first turn that is Claude Code's summary of an earlier session does not name it: the next turn does.
+  const opening = typeof row.first_prompt === "string" && isSessionSummary(row.first_prompt) ? row.second_prompt : row.first_prompt;
+  const first = typeof opening === "string" ? opening.trim().slice(0, FIRST_PROMPT_MAX).trimEnd() : "";
   const user = asCount(row.user_turns);
   return {
     id: row.id,

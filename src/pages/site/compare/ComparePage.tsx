@@ -10,7 +10,7 @@ import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { differenceSentence, matchSteps, shareRoot, totalsOf, totalsRows, type CompareSide } from "@/lib/build/compare";
 import { buildSteps, sessionGroups } from "@/lib/build/graph";
 import { getBuildBySlug, type BuildRecord } from "@/lib/build";
-import { sessionOrderOf, sessionsMetaOf } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf } from "@/lib/build/making";
 import { asMaking } from "@/pages/site/build/buildModel";
 import { modelLabel } from "@/lib/models/registry";
 
@@ -24,7 +24,7 @@ const STALE_TIME = 300_000;
 export function sideOf(record: BuildRecord): CompareSide {
   const steps = buildSteps(record.tree);
   const making = asMaking(record.build.making);
-  const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(record.build.making), sessionOrderOf(record.build.making));
+  const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(record.build.making), sessionOrderOf(record.build.making), storedWorkstreamsOf(record.build.making));
   const models = [...groups.map((group) => group.model), ...steps.map((step) => step.model)].filter((name): name is string => Boolean(name)).map((name) => modelLabel(name) || name);
   return { title: (record.build.title ?? "").trim() || "Untitled build", steps, groups, models };
 }

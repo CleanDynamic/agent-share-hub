@@ -10,7 +10,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { centre, focusGroup } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, WORKSTREAM_PREFIX, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, WORKSTREAM_PREFIX, type Making } from "@/lib/build/making";
 import { refGroups, refLookup, withGroupEntries } from "@/lib/build/postRefs";
 import { makingWithGroupColours, referenceGroupsOf, withGroupColours } from "@/lib/build/referenceGroups";
 import { parseRefTo, refTo } from "@/lib/build/thread";
@@ -36,7 +36,7 @@ export function useReaderPostLinks({
   const links = useMemo(() => {
     if (!enabled || !making) return null;
     const steps = buildSteps(tree);
-    const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(making), sessionOrderOf(making));
+    const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(making), sessionOrderOf(making), storedWorkstreamsOf(making));
     const firstStep = (key: string) => {
       const group = groups.find((candidate) => groupKey(candidate) === key);
       return group ? (steps.find((step) => group.stepNumbers.includes(step.number))?.id ?? null) : null;

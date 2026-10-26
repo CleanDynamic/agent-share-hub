@@ -276,6 +276,41 @@ async function readMaking(buildId: string): Promise<unknown> {
   return data?.making ?? {};
 }
 
+/** SV-05 P3: the prompts of a session that have no tile in the draft yet, read by where they stand in the session. */
+export function missingPrompts(tree: readonly NodeTree[], importId: string, prompts: readonly PromptTile[]): PromptTile[] {
+  const have = new Set<number>();
+  const read = (nodes: readonly NodeTree[]) => {
+    for (const node of nodes) {
+      const ref = (node.source_ref ?? {}) as { import_session_id?: unknown; index?: unknown };
+      if (ref.import_session_id === importId && typeof ref.index === "number") have.add(ref.index);
+      read(node.children ?? []);
+    }
+  };
+  read(tree);
+  return prompts.filter((prompt) => !have.has(prompt.sourceRef.index));
+}
+
+/**
+ * SV-05 P3: Retry, for a session that came in short: its missing prompts are written as tiles and stacked with the rest of
+ * the session, in the build's order. Resolves how many were written.
+ */
+export async function fillMissingTiles(importId: string, buildId: string): Promise<number> {
+  await verifyDraft(buildId);
+  const [row, proposal, tree, making, rows] = await Promise.all([readImport(importId), loadImportProposal(importId), getNodeTree(buildId), readMaking(buildId), listBuildSessionRows(buildId)]);
+  const missing = missingPrompts(tree, importId, promptsOfProposal(proposal));
+  if (missing.length === 0) return 0;
+  const model = row?.model?.trim() ? modelLabel(row.model) : null;
+  try {
+    await insertTiles(tileRows(buildId, importId, model, missing, nextTopPosition(tree)));
+  } catch (cause) {
+    throw buildLayerError("fillMissingTiles", cause);
+  }
+  const moves = planLayout(await getNodeTree(buildId), making, sessionsMetaOf(making), getSessionOrder(making, rows)).moves;
+  if (moves.length > 0) await reorderNodes(buildId, moves);
+  await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
+  return missing.length;
+}
+
 /**
  * Link a session to a draft without writing its tiles: one of its prompts was added by hand, so the session belongs here
  * from now on (its model and tool join Made with). Nothing happens when it is already linked.

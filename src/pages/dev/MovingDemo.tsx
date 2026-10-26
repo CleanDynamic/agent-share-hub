@@ -15,7 +15,7 @@ import { sandboxSourcesProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeSource } from "@/dev/fixtures/shapes";
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import { applyWrite, type MemoryBuild } from "@/lib/build/moveMemory";
 import { locate, moveBy, movedLine, placePart, placeSession, writeOf, type MoveModel, type Write } from "@/lib/build/moveRules";
 import { BuildList } from "@/pages/site/compose/BuildList";
@@ -44,7 +44,7 @@ export default function MovingDemo({ fit = "board", state = "populated" }: Desig
   const [said, setSaid] = useState("");
 
   const steps = useMemo(() => buildSteps(build.tree), [build.tree]);
-  const groups = useMemo(() => sessionGroups(steps, build.making.sessions, build.making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making)), [steps, build.making]);
+  const groups = useMemo(() => sessionGroups(steps, build.making.sessions, build.making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making), storedWorkstreamsOf(build.making)), [steps, build.making]);
   const partsModel = useMemo(() => listPartsOf(build.making, groups, theme), [build.making, groups, theme]);
   const addToParts = useMemo(() => partsModel?.list.map((part) => ({ key: part.view.key, label: part.view.label, title: part.title, colour: part.view.colour })), [partsModel]);
   const source: ShapeSource = useMemo(() => ({ tree: build.tree, making: build.making, selected: selectedId ?? "" }), [build, selectedId]);

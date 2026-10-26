@@ -118,7 +118,7 @@ import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNes
 import { EmptyPlace, SkeletonLayer } from "./skeleton";
 import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
 import { SLIDE_ATTR } from "./flip";
-import { runsOf, withEmptySessions, type Run } from "./buildRuns";
+import { listRuns, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
 import { useFoldMotion } from "./foldMotion";
 import { outlineOnce } from "./buildMotion";
@@ -2271,9 +2271,10 @@ export function BuildList(raw: BuildListProps) {
       </div>
     );
   };
-  const runs = withEmptySessions(runsOf(steps, props.dividers), props.emptySessions ?? []);
+  const runs = listRuns(steps, props.dividers, props.emptySessions ?? []);
   const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, onArrived: base.onArrived });
   const containerOfTile = new Map(runs.flatMap((run) => (run.head ? run.steps.map((step) => [step.id, run.head?.key ?? ""] as const) : [])));
+  const numberDigits = String(runs.reduce((most, run) => Math.max(most, run.head?.number ?? 0), 0)).length;
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
   const headed = runs.some((run) => run.head);
   /* CA-17 P2: with two or more parts the sessions stand in part groups; with one, nothing about parts is drawn. */
@@ -2304,6 +2305,7 @@ export function BuildList(raw: BuildListProps) {
             {run.head ? (
               <SessionHead
                 session={run.head}
+                numberDigits={numberDigits}
                 phone={props.phone}
                 tiles={run.steps.length}
                 collapsed={closed}

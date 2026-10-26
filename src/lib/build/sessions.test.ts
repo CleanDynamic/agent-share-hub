@@ -190,6 +190,12 @@ describe("listSessions", () => {
     });
   });
 
+  it("SV-05 P3: skips a first turn that is Claude Code's summary, and is named by the next", async () => {
+    answer({ data: [row({ first_prompt: "This session is being continued from a previous conversation that ran out of context.", second_prompt: "Fix the inbox filters" })] });
+    const [s] = await listSessions();
+    expect(s.firstPrompt).toBe("Fix the inbox filters");
+  });
+
   it("cuts the first prompt to 160 characters", async () => {
     answer({ data: [row({ first_prompt: "x".repeat(400) })] });
     const [s] = await listSessions();

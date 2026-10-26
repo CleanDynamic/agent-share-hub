@@ -7,7 +7,7 @@ import { stepTitle, withSentWith, type Step } from "@/lib/build/graph";
 import type { FindField, FindTarget } from "@/lib/build/findInBuild";
 
 import type { BuildListProps } from "./BuildList";
-import { runsOf, withEmptySessions } from "./buildRuns";
+import { listRuns } from "./buildRuns";
 import type { SourceSession } from "./sourcesModel";
 
 type FindInput = Pick<BuildListProps, "steps" | "dividers" | "emptySessions" | "parts">;
@@ -37,7 +37,7 @@ function sessionTarget(head: SourceSession, part: string | null): FindTarget {
 }
 
 export function findTargetsOf(input: FindInput): FindTarget[] {
-  const runs = withEmptySessions(runsOf(input.steps, input.dividers), input.emptySessions ?? []);
+  const runs = listRuns(input.steps, input.dividers, input.emptySessions ?? []);
   const parts = input.parts && input.parts.parts.length >= 2 ? input.parts : null;
   const out: FindTarget[] = [];
   const draw = (run: (typeof runs)[number], part: string | null) => {

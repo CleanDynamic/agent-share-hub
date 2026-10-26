@@ -41,7 +41,7 @@ import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { fullText } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
-import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
+import { libraryName, REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
@@ -319,9 +319,10 @@ function AddToMenu({ item, parts, phone, onAdd }: { item: SourceLibraryItem; par
 function LibraryRow({ item, phone, onAdd, parts }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string, part?: string) => void; parts?: readonly AddToPart[] }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
-      <ToolMark tool={item.label} size={20} />
+      {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
+      {item.appKnown ? <ToolMark tool={item.app} size={20} /> : <span aria-hidden="true" style={{ width: 20, flexShrink: 0 }} />}
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-        <span {...fullText(item.label)} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
+        <span {...fullText(libraryName(item))} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{libraryName(item)}</span>
         <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
         {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
       </span>

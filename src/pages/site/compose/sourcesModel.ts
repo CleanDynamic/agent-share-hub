@@ -17,6 +17,7 @@ import type { SessionSummary, UnfinishedSession } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
 import { isSetupPayload } from "@/lib/build/setup";
 import type { BuildNode } from "@/lib/build/types";
+import { nextSessionNumber } from "@/lib/build/sessionNumbers";
 import { sessionApp, sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
 export interface SourcePrompt {
@@ -53,6 +54,8 @@ export interface SourceSession {
   colour?: string;
   /** CA-14 P1: the maker's title for the session; absent when it has none. */
   title?: string;
+  /** SV-05 P3: an import that wrote fewer tiles than its session has prompts: how many it wrote, of how many. Absent otherwise. */
+  imported?: { have: number; of: number };
   /** CA-14 P2: the session's day as the head shows it, "22 Oct"; "" for an old build's typed prompts. */
   date?: string;
   /** CA-17 P2: "Session 2" when the session shares the stage of the session above it in its part; absent otherwise. */
@@ -68,7 +71,9 @@ export interface SourceFile {
 export interface SourceLibraryItem {
   id: string;
   label: string;
-  /** "{d MMM} · {n} prompts". */
+  /** SV-05 P3: what the row is called: its first prompt (Claude Code's summary turn skipped), never the model alone. */
+  name?: string;
+  /** SV-05 P3: "{app} · {model} · {d MMM} · {n} prompts", "No app chosen" first when the app is not known. */
   line: string;
   adding: boolean;
   /** CA-12: the session is already in this draft: "In this draft" stands where the + button was. */
@@ -90,6 +95,14 @@ export interface SourceLibraryItem {
   /** CA-14 P5: how many drafts hold it, this one included. */
   draftCount: number;
 }
+
+const NO_SESSION_PARTS = { meta: {}, workstreams: [] };
+
+/** SV-05 P3: a library row whose session has no first prompt to name it by. */
+export const UNTITLED_SESSION = "Untitled session";
+
+/** SV-05 P3: what a library row is called: its first prompt, never the model alone. */
+export const libraryName = (item: Pick<SourceLibraryItem, "name" | "firstPrompt">): string => item.name ?? (item.firstPrompt || UNTITLED_SESSION);
 
 /** CA-14 P5: what an unknown client reads as. */
 export const UNKNOWN_APP = "Unknown app";
@@ -175,6 +188,12 @@ export function sourceSessions(
   runsWhen: Readonly<Record<string, string>> = {},
 ): SourceSession[] {
   const clients = new Map(inBuild.map((session) => [session.id, session.client]));
+  const promptCounts = new Map(inBuild.map((session) => [session.id, session.promptCount]));
+  /* SV-05 P3: a session that came in short says how many of its prompts are tiles. */
+  const short = (id: string, have: number): Pick<SourceSession, "imported"> | null => {
+    const of = promptCounts.get(id) ?? 0;
+    return have < of ? { imported: { have, of } } : null;
+  };
   const pickTool = (id: string): SourceSession["pickTool"] =>
     toolLabel(clients.get(id)) ? undefined : { value: sessionTools[id] ?? null };
   const prompts = flatten(steps).filter((step) => step.kind === "prompt");
@@ -193,6 +212,7 @@ export function sourceSessions(
       detail: [model, when].filter(Boolean).join(" · "),
       date: when,
       ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
+      ...(kind === "import" && group.sessionId ? short(group.sessionId, mine.length) : null),
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
       ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
       ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
@@ -209,17 +229,21 @@ export function sourceSessions(
     };
   });
   const seen = new Set(groups.map(groupKey));
-  const waiting = inBuild
-    .filter((session) => !seen.has(session.id))
-    .map((session, at): SourceSession => ({
+  const waiting: SourceSession[] = [];
+  for (const session of inBuild) {
+    if (seen.has(session.id)) continue;
+    waiting.push({
       key: session.id,
-      number: grouped.length + at + 1,
+      // SV-05 P1: the next place, from the one numbering (`sessionGroups` already holds every session in the order).
+      number: nextSessionNumber([...grouped, ...waiting].map((row) => row.key), NO_SESSION_PARTS),
       tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : NO_APP),
       detail: [session.modelName, shortDate(session.createdAt)].filter(Boolean).join(" · "),
       date: shortDate(session.createdAt),
       pickTool: pickTool(session.id),
+      ...short(session.id, 0),
       prompts: [],
-    }));
+    });
+  }
   return [...grouped, ...waiting];
 }
 
@@ -285,10 +309,12 @@ export function librarySources(library: readonly SessionSummary[], adding: Reado
   return library.map((session) => {
     const ids = session.draftIds ?? (session.buildId ? [session.buildId] : []);
     const date = shortDate(session.createdAt) || sessionDate(session.createdAt, now);
+    const app = sessionApp(session);
     return {
       id: session.id,
       label: sessionSource(session),
-      line: `${date} · ${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`,
+      name: session.firstPrompt || UNTITLED_SESSION,
+      line: [app ?? NO_APP, session.modelName, date, `${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · "),
       adding: adding.has(session.id),
       inThisDraft: buildId !== null && ids.includes(buildId),
       alsoIn: alsoInLine(ids, buildId),

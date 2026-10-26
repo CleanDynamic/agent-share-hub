@@ -16,7 +16,7 @@ import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type Sh
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { announce } from "@/lib/build/motionIntent";
 import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import { applyWrite, type MemoryBuild } from "@/lib/build/moveMemory";
 import { locate, moveBy, placePart, placeSession, writeOf, type MoveModel, type Write } from "@/lib/build/moveRules";
 import type { NodeTree } from "@/lib/build/types";
@@ -116,7 +116,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
   }, [future, build]);
 
   const steps = useMemo(() => buildSteps(build.tree), [build.tree]);
-  const groups = useMemo(() => sessionGroups(steps, build.making.sessions, build.making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making)), [steps, build.making]);
+  const groups = useMemo(() => sessionGroups(steps, build.making.sessions, build.making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making), storedWorkstreamsOf(build.making)), [steps, build.making]);
   const partsModel = useMemo(() => listPartsOf(build.making, groups, theme), [build.making, groups, theme]);
   const source: ShapeSource = useMemo(() => ({ tree: build.tree, making: build.making, selected: selectedId ?? "" }), [build, selectedId]);
   const list = { ...shapeListProps("one-sitting", source), steps };
