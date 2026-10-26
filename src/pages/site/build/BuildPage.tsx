@@ -24,6 +24,7 @@
                       where next asks for nothing until the reader nears it */
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 
 import { useReaderPostLinks, type ReaderFocus } from "./useReaderPostLinks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -383,6 +384,7 @@ export function BuildPage() {
 
   /* The current crumb: the title, a skeleton while it loads, and words for the two dead ends. */
   useCrumbTitle(build ? build.title : recordQuery.isPending ? null : recordQuery.isError ? "Build" : "Not found");
+  usePageReady("build", !recordQuery.isPending);
 
   const media = useQuery<BuildMedia[]>({
     queryKey: ["build", "getMediaForBuild", buildId],

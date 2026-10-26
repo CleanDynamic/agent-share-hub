@@ -18,7 +18,9 @@ import { cardTitle, data as dataText, eyebrow, FIGTREE, tabular } from "@/lib/th
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 
 export default function Onboarding() {
-  const { isLoggedIn, profile, loading, refreshProfile } = useAuth();
+  const { isLoggedIn, profile, loading: sessionLoading, profileLoading, refreshProfile } = useAuth();
+  // What to ask next depends on what the profile already holds, which arrives after the session (SV-03).
+  const loading = sessionLoading || profileLoading;
   const navigate = useNavigate();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const [step, setStep] = useState(1);

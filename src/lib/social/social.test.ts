@@ -179,39 +179,45 @@ describe("likes and saves", () => {
 });
 
 describe("listMySavedBuilds", () => {
-  it("reads the saves newest first, then their builds by id, in save order", async () => {
-    answer = (table) =>
-      table === "build_saves"
-        ? {
-            data: [
-              { build_id: "build-2", created_at: "2026-09-02T00:00:00.000Z" },
-              { build_id: "build-1", created_at: "2026-09-01T00:00:00.000Z" },
-            ],
-            error: null,
-            status: 200,
-          }
-        : {
-            data: [
-              { id: "build-1", build_nodes: [], build_media: [], bounties: [] },
-              { id: "build-2", build_nodes: [], build_media: [], bounties: [] },
-            ],
-            error: null,
-            status: 200,
-          };
+  it("is one request: the saves newest first, each with its build embedded, in save order (SV-03 P5)", async () => {
+    answer = () => ({
+      data: [
+        { created_at: "2026-09-02T00:00:00.000Z", build: { id: "build-2", build_nodes: [], build_media: [], bounties: [] } },
+        { created_at: "2026-09-01T00:00:00.000Z", build: { id: "build-1", build_nodes: [], build_media: [], bounties: [] } },
+      ],
+      error: null,
+      status: 200,
+    });
 
     const page = await listMySavedBuilds({ limit: 2, before: "2026-09-03T00:00:00.000Z" });
 
-    expect(requests()).toHaveLength(2);
-    expect(calls.filter((call) => call.builder === 1).map((call) => call.method)).toEqual([
-      "select",
-      "eq",
-      "order",
-      "limit",
-      "lt",
-      "request",
-    ]);
+    expect(requests()).toHaveLength(1);
+    expect(calls.filter((call) => call.table === "builds")).toEqual([]);
+    expect(String(callOf("select")?.args[0])).toMatch(/^created_at, build:builds!build_saves_build_id_fkey\(/);
+    expect(callOf("eq")?.args).toEqual(["user_id", "reader-1"]);
+    expect(callOf("lt")?.args).toEqual(["created_at", "2026-09-03T00:00:00.000Z"]);
     expect(page.items.map((item) => item.build.id)).toEqual(["build-2", "build-1"]);
     expect(page.nextBefore).toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  it("leaves out a save whose build the reader can no longer read, and the cursor still moves past it", async () => {
+    answer = () => ({
+      data: [
+        { created_at: "2026-09-02T00:00:00.000Z", build: { id: "build-2", build_nodes: [], build_media: [], bounties: [] } },
+        { created_at: "2026-09-01T00:00:00.000Z", build: null },
+      ],
+      error: null,
+      status: 200,
+    });
+    const page = await listMySavedBuilds({ limit: 2 });
+    expect(page.items.map((item) => item.build.id)).toEqual(["build-2"]);
+    expect(page.nextBefore).toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  it("reads nothing for a reader who is signed out", async () => {
+    session = null;
+    await expect(listMySavedBuilds()).rejects.toBeInstanceOf(SocialError);
+    expect(requests()).toHaveLength(0);
   });
 });
 

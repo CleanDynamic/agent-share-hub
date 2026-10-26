@@ -18,6 +18,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", async () => (await import("@/lib/build/__audit__/fakeSupabase")).clientModule);
 
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { isPermissionError } from "@/lib/errors/permission";
 import { REPO_SCHEMA, requests, startAuditBackend, type Fault, type FaultAnswer } from "@/lib/build/__audit__/fakeSupabase";
 
@@ -36,7 +37,7 @@ const TIMEOUT: FaultAnswer = { status: 500, body: { code: "57014", details: null
 
 /** The two reads, by their requests (CA-12: one session library read; builds.ts:245-260). CA-12 removed the separate read of sessions already in a build. */
 const WAITING = /^\/rest\/v1\/import_sessions\?.*status=in\.\(parsed,claimed,expired\)(&|$)/;
-const DRAFTS = /^\/rest\/v1\/builds\?select=id,creator_id/;
+const DRAFTS = /^\/rest\/v1\/builds\?select=id,title,updated_at,session_count/;
 
 function mount(faults: Fault[] = []) {
   const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -46,9 +47,11 @@ function mount(faults: Fault[] = []) {
     <QueryClientProvider client={appQueryClient()}>
       <HelmetProvider>
         <MemoryRouter initialEntries={["/drafts"]}>
-          <ConnectorDialogProvider>
-            <DraftsPage />
-          </ConnectorDialogProvider>
+          <AuthProvider>
+            <ConnectorDialogProvider>
+              <DraftsPage />
+            </ConnectorDialogProvider>
+          </AuthProvider>
         </MemoryRouter>
       </HelmetProvider>
     </QueryClientProvider>,

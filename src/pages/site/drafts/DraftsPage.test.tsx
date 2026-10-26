@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", async () => (await import("@/lib/build/__audit__/fakeSupabase")).clientModule);
 
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { isPermissionError } from "@/lib/errors/permission";
 import { REPO_SCHEMA, requests, startAuditBackend, type Delay, type Fault, type FaultAnswer } from "@/lib/build/__audit__/fakeSupabase";
 
@@ -29,7 +30,7 @@ const appQueryClient = () =>
 const TIMEOUT: FaultAnswer = { status: 500, body: { code: "57014", details: null, hint: null, message: "canceling statement due to statement timeout" } };
 
 const WAITING = /^\/rest\/v1\/import_sessions\?.*status=in\.\(parsed,claimed,expired\)(&|$)/;
-const DRAFTS = /^\/rest\/v1\/builds\?select=id,creator_id/;
+const DRAFTS = /^\/rest\/v1\/builds\?select=id,title,updated_at,session_count/;
 
 function mount({ faults = [], delays = [] }: { faults?: Fault[]; delays?: Delay[] } = {}) {
   const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -39,9 +40,11 @@ function mount({ faults = [], delays = [] }: { faults?: Fault[]; delays?: Delay[
     <QueryClientProvider client={appQueryClient()}>
       <HelmetProvider>
         <MemoryRouter initialEntries={["/drafts"]}>
-          <ConnectorDialogProvider>
-            <DraftsPage />
-          </ConnectorDialogProvider>
+          <AuthProvider>
+            <ConnectorDialogProvider>
+              <DraftsPage />
+            </ConnectorDialogProvider>
+          </AuthProvider>
         </MemoryRouter>
       </HelmetProvider>
     </QueryClientProvider>,

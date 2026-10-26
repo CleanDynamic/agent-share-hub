@@ -30,6 +30,8 @@ import { useState, type CSSProperties, type DragEvent, type ReactNode, type Ref 
 import { ChevronRight, GripVertical, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { IntentLink } from "@/lib/routing/IntentLink";
+
 import { Button } from "@/components/brand/Button";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -38,6 +40,7 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { Panel } from "@/components/brand/Panel";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
+import { ConfirmDialog } from "@/pages/site/compose/referencePieces";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import {
   DropdownMenu,
@@ -94,6 +97,8 @@ export interface DraftsViewProps {
   onAddToDraft: (sessionId: string, draft: Pick<DraftListItem, "id" | "title">) => void;
   /** "Connect a tool" and "How they get here" open the connector dialog. */
   onConnect: () => void;
+  /** SV-03 P2: drafts with no title, no sessions, no tiles, no files and no post. Removed in one delete, after the confirm window. */
+  emptyDrafts?: { count: number; onRemove: () => void };
 }
 
 /* ── shared pieces ── */
@@ -219,7 +224,7 @@ function DraftRow({
   const untitled = isUntitled(draft.title);
   return (
     <li style={{ listStyle: "none" }}>
-      <Link
+      <IntentLink
         to={`/compose/${draft.id}`}
         data-testid="draft-row"
         data-over={over ? "true" : undefined}
@@ -259,7 +264,7 @@ function DraftRow({
           </span>
         </span>
         <ChevronRight size={16} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" style={{ flexShrink: 0 }} />
-      </Link>
+      </IntentLink>
     </li>
   );
 }
@@ -498,8 +503,10 @@ export function DraftsView({
   onAddToNew,
   onAddToDraft,
   onConnect,
+  emptyDrafts,
 }: DraftsViewProps) {
   const phone = useIsPhone();
+  const [confirmingEmpty, setConfirmingEmpty] = useState(false);
   const fine = useFinePointer();
   const canDrag = !phone && fine;
   const [dragging, setDragging] = useState<string | null>(null);
@@ -613,6 +620,26 @@ export function DraftsView({
     </Link>
   );
 
+  const removeEmpty =
+    emptyDrafts && emptyDrafts.count > 0 ? (
+      <>
+        <TextButton onClick={() => setConfirmingEmpty(true)} style={{ alignSelf: "flex-start" }}>
+          {`Remove empty drafts (${emptyDrafts.count})`}
+        </TextButton>
+        <ConfirmDialog
+          open={confirmingEmpty}
+          title={`Remove ${emptyDrafts.count} empty ${emptyDrafts.count === 1 ? "draft" : "drafts"}?`}
+          body="They have no title, no sessions, no parts, no files and no post. This can't be undone."
+          action="Remove"
+          onCancel={() => setConfirmingEmpty(false)}
+          onConfirm={() => {
+            setConfirmingEmpty(false);
+            emptyDrafts.onRemove();
+          }}
+        />
+      </>
+    ) : null;
+
   if (phone) {
     return (
       <div data-testid="drafts-view" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -623,6 +650,7 @@ export function DraftsView({
           Connect a tool
         </Button>
         {older}
+        {removeEmpty}
       </div>
     );
   }
@@ -647,7 +675,10 @@ export function DraftsView({
         {continuePanel}
         {sessionsPanel}
       </div>
-      <div style={{ marginTop: 17, display: "flex" }}>{older}</div>
+      <div style={{ marginTop: 17, display: "flex", flexDirection: "column", gap: 8 }}>
+        {older}
+        {removeEmpty}
+      </div>
     </div>
   );
 }

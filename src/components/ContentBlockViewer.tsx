@@ -1396,7 +1396,8 @@ export function ContentBlockViewer({
   const { data: hasPurchased } = useQuery({
     queryKey: ["user_has_downloaded", contentId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return false;
       const { data } = await supabase.from("downloads").select("id").eq("content_id", contentId).eq("user_id", user.id).limit(1);
       return (data?.length ?? 0) > 0;
@@ -1407,7 +1408,8 @@ export function ContentBlockViewer({
   const { data: hasSubscription } = useQuery({
     queryKey: ["viewer_subscription_check", creatorId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return false;
       const { data } = await supabase.from("subscriptions").select("id").eq("subscriber_id", user.id).eq("creator_id", creatorId).eq("status", "active").limit(1);
       return (data?.length ?? 0) > 0;

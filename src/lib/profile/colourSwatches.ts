@@ -59,8 +59,9 @@ interface ProfilesSwatches {
 const profiles = (): ProfilesSwatches => (supabase as unknown as { from: (table: string) => ProfilesSwatches }).from("profiles");
 
 async function signedInId(): Promise<string | null> {
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
+  // The stored session names the maker with no round trip to the auth server (SV-03).
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.id ?? null;
 }
 
 /** The signed-in maker's swatches; none when signed out. */

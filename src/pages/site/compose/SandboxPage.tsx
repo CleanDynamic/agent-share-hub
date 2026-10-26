@@ -24,6 +24,7 @@
    Mounted by `ComposeRoute` only while SANDBOX_COMPOSER_ENABLED is on. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { flushSync } from "react-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -62,7 +63,7 @@ import { useViewOptions } from "./viewOptions";
 import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } from "@/lib/build/moveRules";
 import { listPartsOf } from "./partsModel";
 import type { Arriving } from "./arrival";
-import { getNodeType } from "@/lib/build/nodeTypes";
+import { useNodeType } from "@/hooks/useNodeType";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
 import { runtimeChecks, runtimeFindings } from "@/lib/build/runtimeChecks";
@@ -189,6 +190,7 @@ function SandboxPageBody() {
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
   const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate } = useComposePage({ sessionsActive: sourcesOnScreen });
+  usePageReady("composer", !buildId || Boolean(build));
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
   const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);
@@ -357,20 +359,20 @@ function SandboxPageBody() {
 
   /* ── agents and teams (UI-P69) ── */
 
-  const teamType = useQuery({ queryKey: ["build", "getNodeType", "team"], queryFn: () => getNodeType("team"), staleTime: Infinity });
-  const teamsAvailable = Boolean(teamType.data?.is_active);
+  const teamType = useNodeType(compose.nodeTypes, "team");
+  const teamsAvailable = Boolean(teamType?.is_active);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
   /** CA-13 P1, P2: Add › Decision, disabled until the `decision` node type is live. */
-  const decisionType = useQuery({ queryKey: ["build", "getNodeType", "decision"], queryFn: () => getNodeType("decision"), staleTime: Infinity });
-  const decisionAvailable = Boolean(decisionType.data?.is_active);
+  const decisionType = useNodeType(compose.nodeTypes, "decision");
+  const decisionAvailable = Boolean(decisionType?.is_active);
   const [addDecisionOpen, setAddDecisionOpen] = useState(false);
   /** CA-15 P9: Add › System prompt, Dataset and GitHub repository, each disabled until its node type is live. */
-  const systemPromptType = useQuery({ queryKey: ["build", "getNodeType", "system_prompt"], queryFn: () => getNodeType("system_prompt"), staleTime: Infinity });
-  const datasetType = useQuery({ queryKey: ["build", "getNodeType", "dataset"], queryFn: () => getNodeType("dataset"), staleTime: Infinity });
-  const repoType = useQuery({ queryKey: ["build", "getNodeType", "repo"], queryFn: () => getNodeType("repo"), staleTime: Infinity });
-  const systemPromptAvailable = Boolean(systemPromptType.data?.is_active);
-  const datasetAvailable = Boolean(datasetType.data?.is_active);
-  const repoAvailable = Boolean(repoType.data?.is_active);
+  const systemPromptType = useNodeType(compose.nodeTypes, "system_prompt");
+  const datasetType = useNodeType(compose.nodeTypes, "dataset");
+  const repoType = useNodeType(compose.nodeTypes, "repo");
+  const systemPromptAvailable = Boolean(systemPromptType?.is_active);
+  const datasetAvailable = Boolean(datasetType?.is_active);
+  const repoAvailable = Boolean(repoType?.is_active);
   const [addSystemPromptOpen, setAddSystemPromptOpen] = useState(false);
   const [addDatasetOpen, setAddDatasetOpen] = useState(false);
   const [addRepoOpen, setAddRepoOpen] = useState(false);
@@ -438,8 +440,8 @@ function SandboxPageBody() {
     },
     [settleCode],
   );
-  const manualType = useQuery({ queryKey: ["build", "getNodeType", "manual_step"], queryFn: () => getNodeType("manual_step"), staleTime: Infinity });
-  const manualAvailable = Boolean(manualType.data?.is_active);
+  const manualType = useNodeType(compose.nodeTypes, "manual_step");
+  const manualAvailable = Boolean(manualType?.is_active);
   /* ── List (UI-P65) ── */
 
   /* CA-10 (CA-09 F2): Add › Prompt focuses the add field INSIDE THE TAP that chose it, so an iPhone raises the

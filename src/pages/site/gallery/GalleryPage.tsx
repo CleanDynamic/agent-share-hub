@@ -24,6 +24,8 @@
    countGalleryLenses. */
 
 import { useEffect, useMemo, useState } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
+import { SLOW_STALE_MS } from "@/lib/query/client";
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -31,7 +33,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { feedMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEngagement } from "@/hooks/useEngagement";
-import { galleryHref, getBuildClassifications, getBuildPatterns, getBuildTries, getClassificationFacets, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
+import { galleryHref, getBuildPatterns, getBuildTries, getClassificationFacets, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
 import {
   listGalleryFeed,
   type GalleryFeed,
@@ -52,7 +54,7 @@ import { feedRowView } from "./galleryModel";
 import { GalleryBoardGroups } from "./GalleryBoardGroups";
 
 /** Facets change far more slowly than the builds they describe. */
-const FACETS_STALE_MS = 5 * 60 * 1000;
+const FACETS_STALE_MS = SLOW_STALE_MS;
 
 /** The rows of one list across its loaded pages, first occurrence kept. */
 function collect(pages: readonly GalleryFeed[], pick: (page: GalleryFeed) => GalleryFeedRow[]): GalleryFeedRow[] {
@@ -99,11 +101,14 @@ function GalleryFeedPage() {
   const chosen = modelId ? (MODEL_VERSIONS.find((version) => version.id === modelId) ?? null) : null;
 
   /* CA-16 P6: the classification filters exist once `classification_facets` answers. Until then the Gallery is exactly as it was. */
-  const classificationFacets = useQuery({ queryKey: ["gallery-classification-facets"], queryFn: getClassificationFacets, staleTime: FACETS_STALE_MS });
+  const classificationFacets = useQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: FACETS_STALE_MS });
+  /* SV-03 P4: the list does not wait for the facets. Until they answer the start value is `live` (CA-16's migration is applied), so
+     the feed is asked once, and the facets run beside it; a "not live" answer later changes the address of the list as it always did. */
   const classificationLive = classificationFacets.data?.live === true;
-  const activeFacets = classificationLive ? chosenFacets : [];
+  const feedLive = classificationFacets.data ? classificationLive : true;
+  const activeFacets = feedLive ? chosenFacets : [];
   /* CA-16b: the board has one order, builds with the most worked reproductions first and then the newest, and says so. */
-  const feedSort: GalleryFeedSort = classificationLive ? "reproduced" : sort;
+  const feedSort: GalleryFeedSort = feedLive ? "reproduced" : sort;
 
   /** What the feed's address holds: the old lens and facet parameters are left out. */
   const feedParams = useMemo<Partial<GalleryParams>>(
@@ -137,7 +142,7 @@ function GalleryFeedPage() {
 
   /* ── the feed, a page at a time ── */
 
-  const filters = { model: modelId, tool: toolId, pattern: patternId, facets: activeFacets, classified: classificationLive, audience, sort: feedSort, q: query };
+  const filters = { model: modelId, tool: toolId, pattern: patternId, facets: activeFacets, classified: feedLive, audience, sort: feedSort, q: query };
   const viewKey = JSON.stringify(filters);
   const [paging, setPaging] = useState<Paging>({ key: viewKey, first: 1, second: 1 });
   const shown: Paging = paging.key === viewKey ? paging : { key: viewKey, first: 1, second: 1 };
@@ -152,7 +157,7 @@ function GalleryFeedPage() {
           tool: toolId ?? undefined,
           pattern: patternId ?? undefined,
           facets: activeFacets.length > 0 ? activeFacets : undefined,
-          classified: classificationLive ? true : undefined,
+          classified: feedLive ? true : undefined,
           audience: audience ?? undefined,
           sort: feedSort,
           q: query ?? undefined,
@@ -229,7 +234,7 @@ function GalleryFeedPage() {
 
   /* ── the menus ── */
 
-  const facets = useQuery({ queryKey: ["gallery-facets"], queryFn: getGalleryFacets, staleTime: FACETS_STALE_MS });
+  const facets = useQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: FACETS_STALE_MS });
   const audiences = useMemo(
     () =>
       [...(facets.data?.roles ?? [])]
@@ -251,12 +256,14 @@ function GalleryFeedPage() {
 
   /* CA-16 P6: each card's classification, asked for only once the columns are known to be live. */
   const classificationIds = useMemo(() => patternIds, [patternIds]);
-  const classifications = useQuery({
-    queryKey: ["build", "getBuildClassifications", classificationIds.join(",")],
-    queryFn: () => getBuildClassifications(classificationIds),
-    enabled: classificationLive && classificationIds.length > 0,
-    staleTime: FACETS_STALE_MS,
-  });
+  /* The classification came with the list (listGalleryFeed selects the column), so there is no read after it. */
+  const classifications = {
+    data: Object.fromEntries(
+      (list.kind === "all" ? list.list.rows : [...list.reproducedOn.rows, ...list.notYet.rows]).flatMap((row) =>
+        row.build.classifiedAs ? [[row.build.id, row.build.classifiedAs] as const] : [],
+      ),
+    ),
+  };
 
   const tries = useQuery({
     queryKey: ["build", "getBuildTries", classificationIds.join(",")],
@@ -267,7 +274,7 @@ function GalleryFeedPage() {
 
   /* Up to three makers whose names match the query: the one extra request, and only with a query. */
   const makers = useQuery({
-    queryKey: ["gallery-makers", query],
+    queryKey: ["profile", "searchMakers", query],
     queryFn: () => searchMakers(query as string),
     enabled: query !== null,
     staleTime: FACETS_STALE_MS,
@@ -286,6 +293,7 @@ function GalleryFeedPage() {
 
   const error = firstQuery?.error ?? null;
   const status = error && !firstPage ? "error" : !firstPage ? "loading" : "ready";
+  usePageReady("builds", status !== "loading");
 
   return (
     <>

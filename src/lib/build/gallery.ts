@@ -390,15 +390,16 @@ interface CardEmbedQuery {
  * key; listGallery keeps its inline copy because its ORDER BY is locked
  * (CONTRACT §4), and whereNext.test.ts holds the two equal.
  */
-export function withCardEmbeds<Q>(query: Q): Q {
+export function withCardEmbeds<Q>(query: Q, at = ""): Q {
+  // `at` is where the card's build sits in the select, for a query that embeds it ("build." under a save): SV-03 P5.
   return (query as unknown as CardEmbedQuery)
-    .in("build_nodes.type", [...GALLERY_NODE_TYPES])
-    .in("build_media.kind", [...GALLERY_MEDIA_KINDS])
-    .eq("bounties.status", "open")
-    .order("position", { referencedTable: "build_nodes", ascending: true, nullsFirst: false })
-    .limit(NODES_PER_BUILD, { referencedTable: "build_nodes" })
-    .limit(MEDIA_PER_BUILD, { referencedTable: "build_media" })
-    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" }) as unknown as Q;
+    .in(`${at}build_nodes.type`, [...GALLERY_NODE_TYPES])
+    .in(`${at}build_media.kind`, [...GALLERY_MEDIA_KINDS])
+    .eq(`${at}bounties.status`, "open")
+    .order("position", { referencedTable: `${at}build_nodes`, ascending: true, nullsFirst: false })
+    .limit(NODES_PER_BUILD, { referencedTable: `${at}build_nodes` })
+    .limit(MEDIA_PER_BUILD, { referencedTable: `${at}build_media` })
+    .limit(BOUNTIES_PER_BUILD, { referencedTable: `${at}bounties` }) as unknown as Q;
 }
 
 /**
@@ -486,6 +487,11 @@ export interface GalleryBuild
    * on a card assembled from a feed row that did not carry it.
    */
   post_doc?: ThreadDoc | null;
+  /**
+   * SV-03 P4: the classification, when the read carried the column (the feed and the gallery list do), so a card needs no
+   * read of its own after the list. Absent when the read did not ask; empty entries are left out, as getBuildClassifications does.
+   */
+  classifiedAs?: Classification;
   nodes: GalleryNode[];
   media: GalleryMedia[];
   /**
@@ -632,7 +638,7 @@ export async function listGallery(
 
   let query = supabase
     .from("builds")
-    .select(gallerySelect(openBounties), { count: "exact" })
+    .select(`${gallerySelect(openBounties)}, classification`, { count: "exact" })
     // Never drafts. The RLS policy would hand a creator their own back.
     .in("status", ["published", "gallery"]);
 
@@ -718,8 +724,12 @@ export interface GalleryRow
 
 export function toGalleryBuild(row: GalleryRow): GalleryBuild {
   const { build_nodes, build_media, bounties, ...header } = row;
+  const asked = "classification" in header;
+  const read = asked ? readClassification((header as { classification?: unknown }).classification) : null;
+  delete (header as { classification?: unknown }).classification;
   return {
     ...header,
+    ...(read && hasClassification(read) ? { classifiedAs: read } : null),
     nodes: build_nodes ?? [],
     media: build_media ?? [],
     // Always an array here, never absent: this query asked. See GalleryBuild.
@@ -1468,7 +1478,7 @@ async function feedRows(
   if (ids.length === 0) return [];
 
   const query = withFeedEmbeds(
-    feedTable("builds").select(`${gallerySelect(false)}, models_used, like_count, comment_count`).in("id", ids)
+    feedTable("builds").select(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`).in("id", ids)
   ).limit(ids.length);
   const { data, error } = await query;
   if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1580,7 +1590,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   if (version === null) {
     const query = withFeedEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern, facets), params.sort)
+      feedOrder(feedBase(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern, facets), params.sort)
     ).range(start, end);
     const { data, error, count } = await query;
     if (error) throw buildLayerError("listGalleryFeed", error);

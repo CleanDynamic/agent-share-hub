@@ -22,7 +22,9 @@ type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
  */
 export default function OnboardingProfile() {
   const navigate = useNavigate();
-  const { user, profile, loading, isLoggedIn, refreshProfile } = useAuth();
+  const { user, profile, loading: sessionLoading, profileLoading, isLoggedIn, refreshProfile } = useAuth();
+  // Whether the profile is already complete is in the profile, which arrives after the session (SV-03).
+  const loading = sessionLoading || profileLoading;
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");

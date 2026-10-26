@@ -14,6 +14,7 @@ import {
   type BuildPatch,
   type BuildRecord,
   type BuildShape,
+  type NodeType,
 } from "./types";
 
 // post_doc (PT-01) is newer than the generated types, so PostgREST's type-level
@@ -34,6 +35,18 @@ import {
 // record without it showed none of them after a reload.
 export const BUILD_COLUMNS =
   "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at, rebuild_note, rebuild_count, source_title_at_fork, source_handle_at_fork, solves_node_id, post_doc, making";
+
+/**
+ * SV-03 P2: BUILD_COLUMNS without `post_doc` and `making`, the two large ones. A list of builds (a maker's builds, their
+ * drafts) never draws a post or a making, so it does not carry them; opening one build still reads BUILD_COLUMNS.
+ *
+ * One string literal for the same reason as above: PostgREST parses the list at the type level.
+ */
+export const BUILD_LIST_COLUMNS =
+  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at, rebuild_note, rebuild_count, source_title_at_fork, source_handle_at_fork, solves_node_id";
+
+/** A build as a list reads it: the header with no post and no making. */
+export type BuildListRow = Omit<Build, "post_doc" | "making">;
 
 const CREATOR_LIST_LIMIT = 50;
 
@@ -167,10 +180,25 @@ export async function getBuildHeaderBySlug(slug: string): Promise<Build | null> 
  * assemble it themselves — that is the mistake that produced the fifteen-query
  * home feed. The four dependent reads run concurrently.
  */
-export async function getBuild(id: string): Promise<BuildRecord | null> {
+export async function getBuild(id: string, options: ComposeOptions = {}): Promise<BuildRecord | null> {
   const build = await getBuildHeader(id);
   if (!build) return null;
-  return composeRecord(build);
+  return composeRecord(build, options.nodeTypes);
+}
+
+/** How a record reads the node types: the registry's own cache by default, or the caller's (one query key, SV-03 P3). */
+export interface ComposeOptions {
+  nodeTypes?: () => Promise<NodeType[]>;
+}
+
+/**
+ * Only what the composer's route needs to choose a screen: the build's id and the build it was made from. A rebuild opens
+ * the legacy composer, and the check does not need the whole record, the tree or the registry to say so (SV-03 P3).
+ */
+export async function getBuildParent(id: string): Promise<{ id: string; parent_build_id: string | null } | null> {
+  const { data, error } = await supabase.from("builds").select("id, parent_build_id").eq("id", id).maybeSingle();
+  if (error) throw buildLayerError("getBuildParent", error);
+  return (data as { id: string; parent_build_id: string | null } | null) ?? null;
 }
 
 /**
@@ -197,12 +225,12 @@ export async function getBuildBySlug(slug: string): Promise<BuildRecord | null> 
   };
 }
 
-async function composeRecord(build: Build): Promise<BuildRecord> {
+async function composeRecord(build: Build, loadNodeTypes: () => Promise<NodeType[]> = getNodeTypes): Promise<BuildRecord> {
   const [tree, tray, events, nodeTypes] = await Promise.all([
     getNodeTree(build.id),
     getTray(build.id),
     getEvents(build.id),
-    getNodeTypes(),
+    loadNodeTypes(),
   ]);
   return { build, tree, tray, events, nodeTypes };
 }
@@ -336,17 +364,17 @@ async function updateBuildChecked(id: string, patch: BuildPatch, from?: { base: 
 export async function listBuildsByCreator(
   creatorId: string,
   { limit = CREATOR_LIST_LIMIT, offset = 0 }: ListBuildsOptions = {}
-): Promise<Build[]> {
+): Promise<BuildListRow[]> {
   const { data, error } = await supabase
     .from("builds")
-    .select(BUILD_COLUMNS)
+    .select(BUILD_LIST_COLUMNS)
     .eq("creator_id", creatorId)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1)
     .limit(limit);
 
   if (error) throw buildLayerError("listBuildsByCreator", error);
-  return (data ?? []) as unknown as Build[];
+  return (data ?? []) as unknown as BuildListRow[];
 }
 
 /**
@@ -358,10 +386,10 @@ export async function listBuildsByCreator(
 export async function listDraftBuildsByCreator(
   creatorId: string,
   { limit = CREATOR_LIST_LIMIT, offset = 0 }: ListBuildsOptions = {}
-): Promise<Build[]> {
+): Promise<BuildListRow[]> {
   const { data, error } = await supabase
     .from("builds")
-    .select(BUILD_COLUMNS)
+    .select(BUILD_LIST_COLUMNS)
     .eq("creator_id", creatorId)
     .eq("status", "draft")
     .order("updated_at", { ascending: false })
@@ -369,7 +397,7 @@ export async function listDraftBuildsByCreator(
     .limit(limit);
 
   if (error) throw buildLayerError("listDraftBuildsByCreator", error);
-  return (data ?? []) as unknown as Build[];
+  return (data ?? []) as unknown as BuildListRow[];
 }
 
 /** Delete a build. Nodes and events go with it — the FKs cascade. */

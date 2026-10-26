@@ -236,3 +236,34 @@ describe("draftsModel", () => {
     expect(menuItems(sessionsFixture[0], many).filter((i) => i.kind === "draft")).toHaveLength(8);
   });
 });
+
+describe("DraftsView · Remove empty drafts (SV-03 P2)", () => {
+  it("shows nothing about it when no draft is empty", () => {
+    view({ emptyDrafts: { count: 0, onRemove: vi.fn() } });
+    expect(screen.queryByRole("button", { name: /Remove empty drafts/ })).toBeNull();
+  });
+
+  it("says how many at the foot of the page, and removes nothing until the confirm window is answered", () => {
+    const onRemove = vi.fn();
+    view({ emptyDrafts: { count: 3, onRemove } });
+    fireEvent.click(screen.getByRole("button", { name: "Remove empty drafts (3)" }));
+
+    const window = screen.getByRole("alertdialog");
+    expect(within(window).getByText("Remove 3 empty drafts?")).toBeInTheDocument();
+    expect(onRemove).not.toHaveBeenCalled();
+
+    fireEvent.click(within(window).getByRole("button", { name: "Cancel" }));
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("removes them when the window is confirmed", () => {
+    const onRemove = vi.fn();
+    view({ emptyDrafts: { count: 1, onRemove } });
+    fireEvent.click(screen.getByRole("button", { name: "Remove empty drafts (1)" }));
+    const window = screen.getByRole("alertdialog");
+    expect(within(window).getByText("Remove 1 empty draft?")).toBeInTheDocument();
+    fireEvent.click(within(window).getByRole("button", { name: "Remove" }));
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,0 +1,608 @@
+[
+  {
+    "key": "home",
+    "mode": "cold",
+    "ms": 722,
+    "requests": 10,
+    "rounds": 2,
+    "roundsBest": 1,
+    "kb": 19.2,
+    "urls": [
+      "+0..+147  dm_presence?on_conflict=user_id",
+      "+3..+156  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+3..+156  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+5..+156  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+5..+156  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+7..+158  rpc/get_build_feed",
+      "+8..+159  rpc/get_build_feed",
+      "+9..+169  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+10..+170  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+170..+443  builds?select=id&status=in.%28published%2Cgallery%29&last_confirmed_at=gte.2026-10-25T"
+    ]
+  },
+  {
+    "key": "home",
+    "mode": "first",
+    "ms": 337,
+    "requests": 1,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 9.3,
+    "urls": [
+      "+0..+130  rpc/get_build_feed"
+    ]
+  },
+  {
+    "key": "home",
+    "mode": "warm",
+    "ms": 27,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "home",
+    "mode": "reload",
+    "ms": 617,
+    "requests": 7,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.5,
+    "urls": [
+      "+0..+131  dm_presence?on_conflict=user_id",
+      "+3..+146  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+4..+146  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+8..+148  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+10..+153  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+12..+151  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+12..+153  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001"
+    ]
+  },
+  {
+    "key": "builds",
+    "mode": "cold",
+    "ms": 1269,
+    "requests": 14,
+    "rounds": 4,
+    "roundsBest": 4,
+    "kb": 31,
+    "urls": [
+      "+0..+129  rpc/classification_facets",
+      "+24..+174  rpc/gallery_facets",
+      "+26..+174  dm_presence?on_conflict=user_id",
+      "+29..+183  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+30..+185  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+36..+192  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+36..+193  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+38..+203  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+39..+203  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+117..+247  builds?select=id&status=in.%28published%2Cgallery%29&or=%28status.eq.gallery%2Cand%28s",
+      "+253..+384  build_reproductions?select=build_id%2Cmodel_used%2Cworked%2Cconfirmed_at&build_id=in.%2833333333-00",
+      "+392..+521  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+528..+656  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url&id=in.%2811111111-0000-4000-80",
+      "+528..+657  build_reproductions?select=build_id%2Cmodel_used%2Cworked%2Cconfirmed_at&build_id=in.%2833333333-00"
+    ]
+  },
+  {
+    "key": "builds",
+    "mode": "first",
+    "ms": 868,
+    "requests": 7,
+    "rounds": 5,
+    "roundsBest": 5,
+    "kb": 30.5,
+    "urls": [
+      "+0..+128  rpc/classification_facets",
+      "+11..+138  rpc/gallery_facets",
+      "+303..+432  builds?select=id&status=in.%28published%2Cgallery%29&or=%28status.eq.gallery%2Cand%28s",
+      "+436..+564  build_reproductions?select=build_id%2Cmodel_used%2Cworked%2Cconfirmed_at&build_id=in.%2833333333-00",
+      "+569..+701  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+705..+833  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url&id=in.%2811111111-0000-4000-80",
+      "+705..+835  build_reproductions?select=build_id%2Cmodel_used%2Cworked%2Cconfirmed_at&build_id=in.%2833333333-00"
+    ]
+  },
+  {
+    "key": "builds",
+    "mode": "warm",
+    "ms": 19,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "builds",
+    "mode": "reload",
+    "ms": 1162,
+    "requests": 14,
+    "rounds": 5,
+    "roundsBest": 5,
+    "kb": 31,
+    "urls": [
+      "+0..+125  rpc/classification_facets",
+      "+17..+142  rpc/gallery_facets",
+      "+17..+144  dm_presence?on_conflict=user_id",
+      "+26..+159  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+26..+159  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+31..+163  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+31..+165  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+43..+171  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+43..+175  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+268..+398  builds?select=id&status=in.%28published%2Cgallery%29&or=%28status.eq.gallery%2Cand%28s",
+      "+400..+527  build_reproductions?select=build_id%2Cmodel_used%2Cworked%2Cconfirmed_at&build_id=in.%2833333333-00",
+      "+529..+658  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+662..+792  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url&id=in.%2811111111-0000-4000-80",
+      "+662..+793  build_reproductions?select=build_id%2Cmodel_used%2Cworked%2Cconfirmed_at&build_id=in.%2833333333-00"
+    ]
+  },
+  {
+    "key": "openbuilds",
+    "mode": "cold",
+    "ms": 719,
+    "requests": 9,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.9,
+    "urls": [
+      "+0..+136  dm_presence?on_conflict=user_id",
+      "+4..+138  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+4..+139  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+20..+146  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+45..+173  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+46..+176  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+49..+178  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+49..+181  bounties?select=id%2Cbuild_id%2Cgap_node_id%2Clegacy_item_id%2Cauthor_id%2Cstatus%2Crewa"
+    ]
+  },
+  {
+    "key": "openbuilds",
+    "mode": "first",
+    "ms": 314,
+    "requests": 1,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.4,
+    "urls": [
+      "+0..+132  bounties?select=id%2Cbuild_id%2Cgap_node_id%2Clegacy_item_id%2Cauthor_id%2Cstatus%2Crewa"
+    ]
+  },
+  {
+    "key": "openbuilds",
+    "mode": "warm",
+    "ms": 10,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "openbuilds",
+    "mode": "reload",
+    "ms": 584,
+    "requests": 8,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.9,
+    "urls": [
+      "+0..+137  dm_presence?on_conflict=user_id",
+      "+1..+139  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+2..+139  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+3..+139  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+5..+153  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+6..+153  bounties?select=id%2Cbuild_id%2Cgap_node_id%2Clegacy_item_id%2Cauthor_id%2Cstatus%2Crewa",
+      "+7..+153  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+7..+153  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft"
+    ]
+  },
+  {
+    "key": "library-saved",
+    "mode": "cold",
+    "ms": 707,
+    "requests": 8,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.7,
+    "urls": [
+      "+0..+133  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1..+133  dm_presence?on_conflict=user_id",
+      "+1..+137  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+1..+138  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+1..+140  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+2..+142  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+3..+141  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+4..+142  build_saves?select=created_at%2Cbuild%3Abuilds%21build_saves_build_id_fkey%28id%2Ccreator_i"
+    ]
+  },
+  {
+    "key": "library-saved",
+    "mode": "first",
+    "ms": 312,
+    "requests": 1,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.1,
+    "urls": [
+      "+0..+127  build_saves?select=created_at%2Cbuild%3Abuilds%21build_saves_build_id_fkey%28id%2Ccreator_i"
+    ]
+  },
+  {
+    "key": "library-saved",
+    "mode": "warm",
+    "ms": 8,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "library-saved",
+    "mode": "reload",
+    "ms": 603,
+    "requests": 8,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.7,
+    "urls": [
+      "+0..+129  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+16..+144  dm_presence?on_conflict=user_id",
+      "+16..+153  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+16..+153  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+26..+156  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+41..+167  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+43..+171  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+64..+191  build_saves?select=created_at%2Cbuild%3Abuilds%21build_saves_build_id_fkey%28id%2Ccreator_i"
+    ]
+  },
+  {
+    "key": "library-collections",
+    "mode": "cold",
+    "ms": 831,
+    "requests": 9,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 1,
+    "urls": [
+      "+0..+126  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+14..+151  dm_presence?on_conflict=user_id",
+      "+18..+152  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+18..+156  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+19..+156  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+21..+158  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+52..+180  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+58..+184  build_saves?select=created_at%2Cbuild%3Abuilds%21build_saves_build_id_fkey%28id%2Ccreator_i",
+      "+225..+352  collections?select=id%2Cowner_id%2Ctitle%2Cis_public%2Cupdated_at%2Ccollection_items%28coun"
+    ]
+  },
+  {
+    "key": "library-collections",
+    "mode": "first",
+    "ms": 444,
+    "requests": 2,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 0.5,
+    "urls": [
+      "+0..+246  build_saves?select=created_at%2Cbuild%3Abuilds%21build_saves_build_id_fkey%28id%2Ccreator_i",
+      "+289..+416  collections?select=id%2Cowner_id%2Ctitle%2Cis_public%2Cupdated_at%2Ccollection_items%28coun"
+    ]
+  },
+  {
+    "key": "library-collections",
+    "mode": "warm",
+    "ms": 9,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "library-collections",
+    "mode": "reload",
+    "ms": 744,
+    "requests": 9,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 1,
+    "urls": [
+      "+0..+132  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+9..+135  dm_presence?on_conflict=user_id",
+      "+24..+151  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+27..+157  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+30..+162  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+31..+163  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+32..+167  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+32..+167  build_saves?select=created_at%2Cbuild%3Abuilds%21build_saves_build_id_fkey%28id%2Ccreator_i",
+      "+215..+343  collections?select=id%2Cowner_id%2Ctitle%2Cis_public%2Cupdated_at%2Ccollection_items%28coun"
+    ]
+  },
+  {
+    "key": "drafts",
+    "mode": "cold",
+    "ms": 717,
+    "requests": 8,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 8.4,
+    "urls": [
+      "+0..+136  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+0..+138  dm_presence?on_conflict=user_id",
+      "+4..+141  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+4..+141  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+5..+142  builds?select=id%2Ctitle%2Cupdated_at%2Csession_count&creator_id=eq.11111111-0000-4000",
+      "+5..+143  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+7..+145  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+7..+146  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft"
+    ]
+  },
+  {
+    "key": "drafts",
+    "mode": "first",
+    "ms": 316,
+    "requests": 1,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 7.8,
+    "urls": [
+      "+0..+127  builds?select=id%2Ctitle%2Cupdated_at%2Csession_count&creator_id=eq.11111111-0000-4000"
+    ]
+  },
+  {
+    "key": "drafts",
+    "mode": "warm",
+    "ms": 15,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "drafts",
+    "mode": "reload",
+    "ms": 616,
+    "requests": 7,
+    "rounds": 1,
+    "roundsBest": 1,
+    "kb": 0.5,
+    "urls": [
+      "+0..+131  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1..+131  dm_presence?on_conflict=user_id",
+      "+3..+139  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+4..+140  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+5..+140  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+6..+142  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+6..+144  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001"
+    ]
+  },
+  {
+    "key": "composer",
+    "mode": "cold",
+    "ms": 1980,
+    "requests": 15,
+    "rounds": 3,
+    "roundsBest": 2,
+    "kb": 16,
+    "urls": [
+      "+0..+132  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1..+136  dm_presence?on_conflict=user_id",
+      "+6..+138  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+7..+139  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+9..+142  build_sessions?select=build_id%2Csession_key%2Cimport_id%2Cposition%2Ccollapsed&build_id=eq.77",
+      "+10..+145  import_sessions?select=id%2Cclient%2Cmodel%2Ctarget_build_id%2Cbuild_id%2Ccreated_at%2Cfirst_pr",
+      "+12..+147  build_sessions?select=build_id%2Csession_key%2Cimport_id%2Cposition%2Ccollapsed&build_id=eq.77",
+      "+14..+147  builds?select=made_with%2Cmaking&id=eq.77777777-0000-4000-8000-000000000001",
+      "+14..+147  builds?select=id%2Cparent_build_id&id=eq.77777777-0000-4000-8000-000000000001",
+      "+148..+314  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+148..+314  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+150..+314  build_events?select=id%2Cbuild_id%2Cordinal%2Coccurred_at%2Ckind%2Cpayload%2Cphase%2Cphase_t",
+      "+270..+396  node_types?select=key%2Clabel%2Ccategory%2Ccolour%2Cicon%2Cschema%2Crenderer%2Ccopyable%2C",
+      "+280..+566  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+281..+566  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft"
+    ]
+  },
+  {
+    "key": "composer",
+    "mode": "first",
+    "ms": 1769,
+    "requests": 11,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 15.5,
+    "urls": [
+      "+0..+126  builds?select=id%2Cparent_build_id&id=eq.77777777-0000-4000-8000-000000000001",
+      "+10..+329  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+18..+329  build_sessions?select=build_id%2Csession_key%2Cimport_id%2Cposition%2Ccollapsed&build_id=eq.77",
+      "+19..+330  import_sessions?select=id%2Cclient%2Cmodel%2Ctarget_build_id%2Cbuild_id%2Ccreated_at%2Cfirst_pr",
+      "+20..+333  build_sessions?select=build_id%2Csession_key%2Cimport_id%2Cposition%2Ccollapsed&build_id=eq.77",
+      "+21..+333  builds?select=made_with%2Cmaking&id=eq.77777777-0000-4000-8000-000000000001",
+      "+336..+1238  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+356..+1238  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+356..+1239  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+357..+1239  build_events?select=id%2Cbuild_id%2Cordinal%2Coccurred_at%2Ckind%2Cpayload%2Cphase%2Cphase_t",
+      "+357..+1239  node_types?select=key%2Clabel%2Ccategory%2Ccolour%2Cicon%2Cschema%2Crenderer%2Ccopyable%2C"
+    ]
+  },
+  {
+    "key": "composer",
+    "mode": "warm",
+    "ms": 34,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "composer",
+    "mode": "reload",
+    "ms": 1331,
+    "requests": 14,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 14.1,
+    "urls": [
+      "+0..+132  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+0..+135  dm_presence?on_conflict=user_id",
+      "+3..+137  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+4..+138  builds?select=id%2Cparent_build_id&id=eq.77777777-0000-4000-8000-000000000001",
+      "+4..+138  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+7..+231  build_sessions?select=build_id%2Csession_key%2Cimport_id%2Cposition%2Ccollapsed&build_id=eq.77",
+      "+7..+231  import_sessions?select=id%2Cclient%2Cmodel%2Ctarget_build_id%2Cbuild_id%2Ccreated_at%2Cfirst_pr",
+      "+8..+231  build_sessions?select=build_id%2Csession_key%2Cimport_id%2Cposition%2Ccollapsed&build_id=eq.77",
+      "+13..+232  builds?select=made_with%2Cmaking&id=eq.77777777-0000-4000-8000-000000000001",
+      "+233..+362  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+245..+372  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+296..+430  build_events?select=id%2Cbuild_id%2Cordinal%2Coccurred_at%2Ckind%2Cpayload%2Cphase%2Cphase_t",
+      "+305..+509  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+306..+509  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft"
+    ]
+  },
+  {
+    "key": "build",
+    "mode": "cold",
+    "ms": 951,
+    "requests": 12,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 12.4,
+    "urls": [
+      "+0..+130  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+2..+130  dm_presence?on_conflict=user_id",
+      "+20..+151  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+23..+151  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+23..+152  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+25..+154  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+26..+160  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+27..+160  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+140..+270  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+140..+272  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+142..+275  build_events?select=id%2Cbuild_id%2Cordinal%2Coccurred_at%2Ckind%2Cpayload%2Cphase%2Cphase_t",
+      "+143..+275  node_types?select=key%2Clabel%2Ccategory%2Ccolour%2Cicon%2Cschema%2Crenderer%2Ccopyable%2C"
+    ]
+  },
+  {
+    "key": "build",
+    "mode": "first",
+    "ms": 341,
+    "requests": 5,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 11.9,
+    "urls": [
+      "+0..+127  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+130..+265  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+131..+265  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+133..+265  build_events?select=id%2Cbuild_id%2Cordinal%2Coccurred_at%2Ckind%2Cpayload%2Cphase%2Cphase_t",
+      "+134..+268  node_types?select=key%2Clabel%2Ccategory%2Ccolour%2Cicon%2Cschema%2Crenderer%2Ccopyable%2C"
+    ]
+  },
+  {
+    "key": "build",
+    "mode": "warm",
+    "ms": 15,
+    "requests": 0,
+    "rounds": 0,
+    "roundsBest": 0,
+    "kb": 0,
+    "urls": []
+  },
+  {
+    "key": "build",
+    "mode": "reload",
+    "ms": 697,
+    "requests": 12,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 12.4,
+    "urls": [
+      "+0..+135  builds?select=id%2Ccreator_id%2Cslug%2Ctitle%2Coutcome%2Cshape%2Cstatus%2Cmade_for%2Cm",
+      "+1..+140  dm_presence?on_conflict=user_id",
+      "+1..+145  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+1..+145  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+1..+145  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+28..+152  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+72..+200  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+97..+223  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+149..+283  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+150..+285  build_nodes?select=id%2Cbuild_id%2Cparent_id%2Cposition%2Ctype%2Ctitle%2Cnote%2Cpayload%2Cs",
+      "+150..+286  build_events?select=id%2Cbuild_id%2Cordinal%2Coccurred_at%2Ckind%2Cpayload%2Cphase%2Cphase_t",
+      "+150..+286  node_types?select=key%2Clabel%2Ccategory%2Ccolour%2Cicon%2Cschema%2Crenderer%2Ccopyable%2C"
+    ]
+  },
+  {
+    "key": "profile",
+    "mode": "cold",
+    "ms": 1887,
+    "requests": 11,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 2.6,
+    "urls": [
+      "+0..+139  dm_presence?on_conflict=user_id",
+      "+28..+158  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+32..+163  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+33..+164  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+37..+168  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+38..+175  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+41..+189  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+137..+266  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+143..+271  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1270..+1397  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1276..+1414  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u"
+    ]
+  },
+  {
+    "key": "profile",
+    "mode": "first",
+    "ms": 1333,
+    "requests": 2,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 1,
+    "urls": [
+      "+0..+129  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1132..+1259  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u"
+    ]
+  },
+  {
+    "key": "profile",
+    "mode": "warm",
+    "ms": 1291,
+    "requests": 2,
+    "rounds": 2,
+    "roundsBest": 2,
+    "kb": 1,
+    "urls": [
+      "+0..+128  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1134..+1261  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u"
+    ]
+  },
+  {
+    "key": "profile",
+    "mode": "reload",
+    "ms": 1776,
+    "requests": 11,
+    "rounds": 3,
+    "roundsBest": 2,
+    "kb": 2.6,
+    "urls": [
+      "+0..+138  dm_presence?on_conflict=user_id",
+      "+9..+140  notifications?select=id&recipient_id=eq.11111111-0000-4000-8000-000000000001&is_read=eq.false",
+      "+14..+145  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+15..+145  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+25..+152  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+103..+236  user_progress?select=welcome_xp_shown_at&user_id=eq.11111111-0000-4000-8000-000000000001",
+      "+107..+237  builds?select=id&creator_id=eq.11111111-0000-4000-8000-000000000001&status=eq.draft",
+      "+142..+273  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+147..+276  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1275..+1403  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u",
+      "+1278..+1412  profiles?select=id%2Cusername%2Cdisplay_name%2Cavatar_url%2Cbanner_url%2Cbio%2Cwebsite_u"
+    ]
+  }
+]

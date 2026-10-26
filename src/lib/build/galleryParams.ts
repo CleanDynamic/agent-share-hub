@@ -82,7 +82,7 @@ export const GALLERY_BY: readonly GalleryBy[] = ["field", "task", "built", "tech
 const isBy = (value: string | null | undefined): value is GalleryBy => typeof value === "string" && (GALLERY_BY as readonly string[]).includes(value);
 
 /** Where the gallery lives. */
-const GALLERY_PATH = "/gallery";
+const GALLERY_PATH = "/builds";
 
 /** What the gallery's address says. */
 export interface GalleryParams {

@@ -22,7 +22,8 @@
    follow, the track, and a message. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePageReady } from "@/lib/routing/pageReady";
+import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -205,6 +206,8 @@ export function ProfilePage() {
       listMakerBuilds(makerId as string, { rebuildsOnly: tab === "rebuilds", after: pageParam }),
     getNextPageParam: (last) => last.next ?? undefined,
     refetchOnWindowFocus: false,
+    // Builds to Rebuilds keeps the first list until the second arrives.
+    placeholderData: keepPreviousData,
   });
   const reproducedList = useInfiniteQuery({
     queryKey: ["profile-builds", makerId, "reproduced"],
@@ -451,6 +454,8 @@ export function ProfilePage() {
     },
     [isOwn, currentTrack, changeTrack],
   );
+
+  usePageReady("profile", !authLoading && Boolean(lookup) && !summaryQuery.isPending);
 
   /* ── the states ── */
 

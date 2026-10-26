@@ -13,7 +13,8 @@
 // are tertiary text actions, Delete last, 16 further along, and confirmed in
 // the Dialog whose primary names the act (rows 16, 17).
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { usePageReady } from "@/lib/routing/pageReady";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -116,13 +117,16 @@ function EmptyView({ testId, sentence, action }: { testId: string; sentence: str
   );
 }
 
-/** STATES.md row 21: one sentence and a secondary "Try again". */
-function RefusedView({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+/** STATES.md row 21: one sentence and a secondary "Retry". The sentence names the panel (CA-24 Part 3); a refusal says so. */
+function RefusedView({ error, onRetry, what }: { error: unknown; onRetry: () => void; what: string }) {
+  useEffect(() => {
+    console.error(`[Library] ${what} read failed`, error);
+  }, [error, what]);
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: SPACE.xs, paddingBlock: SPACE.md }}>
-      <p style={{ ...body, color: t.text, margin: 0 }}>{refusalText(error)}</p>
+    <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: SPACE.xs, paddingBlock: SPACE.md }}>
+      <p style={{ ...body, color: t.text, margin: 0 }}>{isPermissionError(error) ? "You don't have access to this." : `${what} didn't load.`}</p>
       <Button type="button" variant="outline" onClick={onRetry} style={SECONDARY}>
-        Try again
+        Retry
       </Button>
     </div>
   );
@@ -165,8 +169,9 @@ export function SavedTab() {
     [saved.data],
   );
 
+  usePageReady("library", !saved.isLoading);
   if (saved.isLoading) return <CardGridSkeleton />;
-  if (saved.isError) return <RefusedView error={saved.error} onRetry={() => void saved.refetch()} />;
+  if (saved.isError) return <RefusedView what="Saved" error={saved.error} onRetry={() => void saved.refetch()} />;
   if (builds.length === 0) {
     return <EmptyView testId="library-saved-empty" sentence="Save a build and it waits for you here." action={<BrowseTheGallery />} />;
   }
@@ -194,6 +199,7 @@ export function CollectionsTab({ ownerId, canEdit, onOpen }: CollectionsTabProps
     refetchOnWindowFocus: false,
   });
   const [naming, setNaming] = useState(false);
+  usePageReady("library", !collections.isLoading);
 
   const list = collections.data ?? [];
   const newCollection = (variant: "default" | "outline") => (
@@ -217,7 +223,7 @@ export function CollectionsTab({ ownerId, canEdit, onOpen }: CollectionsTabProps
       </div>
     );
   } else if (collections.isError) {
-    content = <RefusedView error={collections.error} onRetry={() => void collections.refetch()} />;
+    content = <RefusedView what="Collections" error={collections.error} onRetry={() => void collections.refetch()} />;
   } else if (list.length === 0) {
     content = canEdit ? (
       <EmptyView
@@ -371,6 +377,7 @@ export function CollectionView({ collectionId, viewerId, onBack }: CollectionVie
   else if (meta.isError || builds.isError) {
     content = (
       <RefusedView
+        what="This collection"
         error={meta.error ?? builds.error}
         onRetry={() => {
           void meta.refetch();

@@ -10,6 +10,9 @@ import {
   type NodeTypeRow,
 } from "./types";
 
+/** The registry's query key (SV-03): the record's read of it and the page's types share this one, which never goes stale. */
+export const nodeTypesKey = ["build", "getNodeTypes"] as const;
+
 export const NODE_TYPE_COLUMNS =
   "key, label, category, colour, icon, schema, renderer, copyable, is_active, sort";
 
