@@ -5,7 +5,8 @@
 // with the up and down arrows move it one place (moveTextBlock). CA-07: a post's pictures are its grid, its last block,
 // so the handle offers no grid and no picture, and a block of words never goes below its post's pictures.
 //
-// The grip is the PT-02 glyph in t.label, 24px left of the block. A phone has no margin and no pointer to hover with,
+// The grip is the PT-02 glyph in t.label, 24px left of the block (in a narrower gutter, its box fills the gutter; SV-05).
+// It shows only once there are two blocks of words to move between (SV-05). A phone has no margin and no pointer to hover with,
 // so it has no handle; the arrow keys are for a keyboard, which a phone seldom has.
 
 import { useEditorState, type Editor } from "@tiptap/react";
@@ -28,18 +29,31 @@ interface Caret {
   index: number;
   focused: boolean;
   count: number;
+  /** SV-05 P5: the blocks of words the handle can move (a post's breaks and pictures are not). */
+  movable: number;
 }
+
+/** The blocks a handle never moves. */
+const FIXED = new Set(["postBreak", "postMediaGrid"]);
 
 function caretOf(editor: Editor | null): Caret {
-  if (!editor) return { index: -1, focused: false, count: 0 };
+  if (!editor) return { index: -1, focused: false, count: 0, movable: 0 };
   const { selection, doc } = editor.state;
   const index = selection.$from.depth > 0 || selection instanceof NodeSelection ? selection.$from.index(0) : -1;
-  return { index, focused: editor.isFocused, count: doc.childCount };
+  let movable = 0;
+  doc.forEach((child) => {
+    if (!FIXED.has(child.type.name)) movable += 1;
+  });
+  return { index, focused: editor.isFocused, count: doc.childCount, movable };
 }
 
-export function BlockHandle({ editor, phone }: { editor: Editor | null; host?: PictureHost; phone: boolean }) {
+/**
+ * `gutter` (SV-05 P5): the clear room left of the words, when it is narrower than the grip (a post's avatar stands 12 to
+ * the left): the grip's box takes that room and no more, so it never touches what stands beside it.
+ */
+export function BlockHandle({ editor, phone, gutter = MARGIN }: { editor: Editor | null; host?: PictureHost; phone: boolean; gutter?: number }) {
   const layer = useRef<HTMLDivElement>(null);
-  const caret = useEditorState({ editor, selector: ({ editor: current }) => caretOf(current) }) ?? { index: -1, focused: false, count: 0 };
+  const caret = useEditorState({ editor, selector: ({ editor: current }) => caretOf(current) }) ?? { index: -1, focused: false, count: 0, movable: 0 };
   const [hover, setHover] = useState<number | null>(null);
   const [held, setHeld] = useState(false);
   const [top, setTop] = useState(0);
@@ -49,7 +63,8 @@ export function BlockHandle({ editor, phone }: { editor: Editor | null; host?: P
   const index = hover ?? (caret.focused || held ? caret.index : -1);
   const block = editor && index >= 0 && index < caret.count ? editor.state.doc.child(index) : null;
   // CA-07: the words move; a post's pictures stay its last block, and are moved inside their grid.
-  const shown = !phone && Boolean(editor) && block !== null && block.type.name !== "postBreak" && block.type.name !== "postMediaGrid";
+  // SV-05 P5: with a single block there is nothing to move it past, so no grip.
+  const shown = !phone && Boolean(editor) && block !== null && !FIXED.has(block.type.name) && caret.movable >= 2;
 
   // Hover: whichever block the pointer is level with, over the editor or in the margin beside it.
   useEffect(() => {
@@ -133,9 +148,9 @@ export function BlockHandle({ editor, phone }: { editor: Editor | null; host?: P
           }}
           style={{
             position: "absolute",
-            left: -MARGIN,
+            left: -Math.min(MARGIN, gutter),
             top,
-            width: SIZE,
+            width: Math.min(SIZE, gutter),
             height: SIZE,
             padding: 0,
             border: 0,

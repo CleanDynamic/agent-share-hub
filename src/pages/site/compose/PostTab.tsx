@@ -103,6 +103,8 @@ export const RAIL_AVATAR = { desktop: 40, phone: 36 } as const;
 export const RAIL_GAP = { desktop: 12, phone: 12 } as const;
 /** CA-07: a post's first line starts this far below the top of its avatar, as X sets it. */
 export const FIRST_LINE_DROP = 8;
+/** SV-05 P5: the least room between the post's grip and its avatar. */
+export const GRIP_CLEAR = 4;
 /** Room kept at the right of the words for the focused post's remove button. */
 const REMOVE_ROOM = 32;
 
@@ -550,7 +552,8 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
               style={{ position: "absolute", left: -4, right: -4, top: dropBox.top, height: Math.max(0, dropBox.bottom - dropBox.top), border: `2px dashed ${t.label}`, borderRadius: 16, pointerEvents: "none", boxSizing: "border-box" }}
             />
           ) : null}
-          <BlockHandle editor={editor} host={host} phone={phone} />
+          {/* SV-05 P5: the grip stands in the gap beside the avatar, 4 clear of it. */}
+          <BlockHandle editor={editor} host={host} phone={phone} gutter={RAIL_GAP.desktop - GRIP_CLEAR} />
           {showRemove && editor ? (
             <IconButton
               icon={NO_ICON}
