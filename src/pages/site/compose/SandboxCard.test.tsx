@@ -332,6 +332,8 @@ describe("SV-05 P7 · Classification when its columns are missing", () => {
     expect(screen.queryByTestId("classification-not-live")).toBeNull();
     expect(screen.queryByText(/database update/)).toBeNull();
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Policy finder" } });
+    fireEvent.click(row("Field"));
+    fireEvent.click(screen.getByRole("button", { name: "Add AI and machine learning › Retrieval systems › Hybrid search" }));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
@@ -348,6 +350,24 @@ describe("SV-05 P7 · Classification when its columns are missing", () => {
     await screen.findByTestId("sandbox-card");
     expect(buildSteps([])).toEqual([]);
     expect(row("From the build").getAttribute("aria-expanded")).toBe("false");
+  });
+});
+
+describe("SV-05 P7 · a title change alone", () => {
+  it("saves the title and closes, even while the classification's columns are missing", async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: { code: "42703", message: "column builds.classification does not exist" } });
+    updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {
+      if ("classification" in patch) throw { code: "PGRST204", message: "Could not find the 'classification' column of 'builds'" };
+      return {};
+    });
+    const { onTitle, onOpenChange } = mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Policy finder" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(onTitle).toHaveBeenCalledWith("Policy finder");
   });
 });
 

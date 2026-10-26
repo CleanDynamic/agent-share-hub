@@ -188,6 +188,8 @@ function CardBody(props: SandboxCardProps) {
   const [summary, setSummary] = useState(props.description);
   const [details, setDetails] = useState<ComposeDetails>(props.details);
   const [draft, setDraft] = useState<ClassificationDraft>(() => draftOf(data?.stored ?? emptyClassification()));
+  /** SV-05 P7: the draft as the window opened, to tell whether the maker changed the classification itself. */
+  const [opened] = useState(() => JSON.stringify(draft));
   const [saving, setSaving] = useState(false);
   const [notSaved, setNotSaved] = useState(false);
   const pad = useModalInset();
@@ -221,9 +223,10 @@ function CardBody(props: SandboxCardProps) {
         if (details[key] !== props.details[key]) props.onDetail(key, details[key]);
       }
       if (details.gapOn !== props.details.gapOn) props.onGapSwitch(details.gapOn);
-      // SV-05 P7: a classification that could not be written (its columns missing) keeps the window open and says so.
+      // SV-05 P7: a classification the maker changed that could not be written (its columns missing) keeps the window open
+      // and says so. The title, the summary and the details are saved either way.
       const saved = data ? await data.onSave(draft) : null;
-      if (saved && !saved.written) {
+      if (saved && saved.missing && JSON.stringify(draft) !== opened) {
         setNotSaved(true);
         return;
       }
