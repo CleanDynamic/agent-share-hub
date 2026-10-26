@@ -49,9 +49,9 @@ export const promptStart = (n: number, count: number): number => PROMPT_STEP_MS 
    One language for sixteen moments: sockets and lanes for structure, a slide to open or close a gap, a drop for anything arriving,
    a lift for anything leaving, a crossfade for words that change, and an outline once for what just moved or was found.
 
-   `motion.ts` keeps its three durations and its 200 ms ceiling for feedback. Three timings below are longer BECAUSE they carry
-   something to a new place and are not feedback: `DROP` (240), `MAP_MORPH` (300) and `SCROLL_TO` (450). Everything else is
-   `FAST` or `BASE`, or a pause between two of them. */
+   `motion.ts` keeps its three durations and its 200 ms ceiling for feedback. Two timings below are longer BECAUSE they carry
+   something to a new place and are not feedback: `DROP` (240) and `MAP_MORPH` (300). A scroll is the browser's own smooth scroll
+   (SV-06 P7, `pageScroll.ts`). Everything else is `FAST` or `BASE`, or a pause between two of them. */
 
 /** Opening or closing a gap, moving, undo and redo, a part or lane resizing: the shortest, for a move of no distance (`slideMs`). */
 export const SLIDE = FAST;
@@ -93,8 +93,6 @@ export const OPTIONAL_LIFT_STAGGER = 40;
 export const OPTIONAL_DROP_AFTER = 100;
 /** The notice rises this far and fades in. */
 export const NOTICE_RISE = 8;
-/** Scrolling to something off screen. Longer than the ceiling: it carries the eye to a new place. */
-export const SCROLL_TO = 450;
 /** List to Map: the tiles fold behind their heads, each head morphs into its box, the lines draw in. */
 export const MAP_FOLD = 180;
 /** Longer than the ceiling: a head travels to a new place. */

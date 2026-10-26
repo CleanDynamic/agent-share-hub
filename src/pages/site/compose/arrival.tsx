@@ -20,10 +20,11 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "re
 
 import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_SPREAD_MAX, PROMPT_STEP_MS, staggerStep } from "@/lib/build/buildMotion";
 import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
-import { prefersReducedMotion, scrollBehavior } from "@/lib/theme/motion";
+import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { dropIn } from "./buildMotion";
-import { allOf, capSequence, untilScrollEnds, type ListMotion } from "./listMotion";
+import { allOf, capSequence, type ListMotion } from "./listMotion";
+import { scrollToShow } from "./pageScroll";
 import { SLIDE_ATTR, type Box } from "./flip";
 import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
 import { TILE_HEIGHT } from "./loadingBlocks";
@@ -157,12 +158,13 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
       setShown(true);
       setPhase("open");
     };
-    if (off && typeof anchor.scrollIntoView === "function") {
+    // Through the page's one scroll helper, which stops on the maker's input and waits while they scroll themselves.
+    const scroll = off ? scrollToShow(anchor, { align: "middle", edge: "bottom" }) : null;
+    if (scroll?.moved) {
       setPhase("scrolling");
-      anchor.scrollIntoView({ block: "center", behavior: scrollBehavior() });
-      // The lane opens when the scroll has ended, however long it took: `scrollend`, or the page still for two frames.
+      // The lane opens when the scroll has ended, however long it took (or the maker took over): never on a guess.
       const mine = sequence.current;
-      void untilScrollEnds().then(() => {
+      void scroll.finished.then(() => {
         if (sequence.current === mine) open();
       });
     } else open();

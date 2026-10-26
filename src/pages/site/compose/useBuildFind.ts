@@ -1,7 +1,7 @@
 /* CA-27 P1: Find in build, as the page holds it.
 
    `/` or the Find in build button opens the field. What is typed settles for FIND_DELAY, then the targets that hold it are counted
-   and the first is gone to: scrolled to the middle over SCROLL_TO and ringed. Enter and Shift+Enter move between matches (wrapping);
+   and the first is gone to: scrolled to the middle (`pageScroll.ts`) and ringed. Enter and Shift+Enter move between matches (wrapping);
    a match inside a folded session or part opens it for as long as the find is on that match, unless the maker opened it themselves
    meanwhile. Esc or Close find ends it and gives focus back to where it was. The count is said through the page's announcer. */
 
@@ -12,7 +12,7 @@ import { FIND_DELAY, countWords, findMatches, normaliseFind, stepMatch, type Fin
 
 import { useAnnounce } from "./BuildAnnouncer";
 import { scrollToMiddle } from "./buildMotion";
-import { settle, tileElement } from "./largeBuild";
+import { tileElement } from "./largeBuild";
 import { NO_FIND, type FindView } from "@/components/build/FindHit";
 import { overlayOpen } from "./useBuildSelection";
 
@@ -100,16 +100,8 @@ export function useBuildFind({ targets, isFolded, enabled = true }: BuildFindInp
     const frame = window.requestAnimationFrame(() => {
       const element = elementOf(current);
       if (!element) return;
-      void scrollToMiddle(element).finished.then(() => {
-        /* In a large build the tiles above were guessed at: keep this one in the middle while they are drawn. */
-        stop = settle(
-          () => {
-            const box = (elementOf(current) ?? element).getBoundingClientRect();
-            return Math.abs((box.top + box.bottom) / 2 - window.innerHeight / 2) < 24 || box.height > window.innerHeight;
-          },
-          () => void scrollToMiddle(elementOf(current) ?? element, 0),
-        );
-      });
+      /* In a large build the tiles above were guessed at: it is kept in the middle while they are drawn (`hold`). */
+      stop = scrollToMiddle(element, { hold: true }).cancel;
     });
     return () => {
       window.cancelAnimationFrame(frame);

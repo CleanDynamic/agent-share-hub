@@ -4,7 +4,7 @@ import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildFacts, tileView } from "@/dev/fixtures/detailsKinds";
-import { BAR_RISE, CROSSFADE, GOTO_HOLD, GOTO_OUT, NOTICE_RISE, SCROLL_TO } from "@/lib/build/buildMotion";
+import { BAR_RISE, CROSSFADE, GOTO_HOLD, GOTO_OUT, NOTICE_RISE } from "@/lib/build/buildMotion";
 import { BASE, FAST, __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { goToIt, useHeld } from "./buildMotion";
@@ -183,9 +183,9 @@ describe("Go to it", () => {
     return el;
   };
 
-  it("an off-screen component is scrolled to the middle, then outlined once in the link's colour: 800 hold, 600 out", async () => {
-    const scrolls: number[] = [];
-    window.scrollTo = ((_x: number, y: number) => void scrolls.push(y)) as never;
+  it("an off-screen component is scrolled to the middle by the browser's smooth scroll, then outlined once in the link's colour: 800 hold, 600 out", async () => {
+    const scrolls: ScrollToOptions[] = [];
+    window.scrollTo = ((options: ScrollToOptions) => void scrolls.push(options)) as never;
     vi.spyOn(performance, "now").mockImplementation(() => Date.now());
     vi.stubGlobal("requestAnimationFrame", (run: FrameRequestCallback) => window.setTimeout(() => run(performance.now()), 16));
     vi.stubGlobal("cancelAnimationFrame", (id: number) => window.clearTimeout(id));
@@ -193,9 +193,9 @@ describe("Go to it", () => {
     const el = target(2000);
     const run = goToIt(el, "#7FA7D9");
     expect(played).toHaveLength(0);
-    await vi.advanceTimersByTimeAsync(SCROLL_TO + 40);
-    expect(scrolls.length).toBeGreaterThan(5);
-    expect(scrolls.at(-1)).toBeCloseTo(2000 - (800 - 100) / 2, 0);
+    // SV-06 P7: one smooth scroll, and the ring once the page is still.
+    expect(scrolls).toEqual([{ top: 2000 - (800 - 100) / 2, behavior: "smooth" }]);
+    await vi.advanceTimersByTimeAsync(100);
     const ring = played.at(-1)?.element as HTMLElement;
     expect(ring.getAttribute("data-testid")).toBe("outline-once");
     expect(ring.style.borderColor).toBe("#7fa7d9");

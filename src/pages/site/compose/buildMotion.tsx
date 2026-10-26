@@ -13,7 +13,6 @@
    one had it. Only `transform` and `opacity` are ever animated; never a layout property, never `box-shadow`. Under reduced motion
    nothing moves or fades: every change arrives at once, in the same end state (the helpers return an already-finished run). */
 
-import { settle } from "./largeBuild";
 import { cloneElement, useEffect, useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from "react";
 
 import {
@@ -27,7 +26,6 @@ import {
   OUTLINE_HOLD,
   OUTLINE_IN,
   OUTLINE_OUT,
-  SCROLL_TO,
   STAGGER,
   STAGGER_SPREAD_MAX,
   staggerStep,
@@ -36,6 +34,7 @@ import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
 import type { Box } from "./flip";
+import { scrollToShow, type ScrollRun } from "./pageScroll";
 import { animateOn, capSequence, captureWords, crossfadeFrom as crossfadeWords, DONE, inWindow, motionOn, runOf, useListAnimator, type MotionRun, type Words, type WordsEntry } from "./listMotion";
 
 export { captureWords, motionOn, type MotionRun, type Words };
@@ -451,79 +450,38 @@ export function outlineOnce(element: HTMLElement, ringColour: string = t.selecte
 
 /* ── Go to it ── */
 
-const onScreenWhole = (element: HTMLElement): boolean => {
-  const box = element.getBoundingClientRect();
-  return box.top >= 0 && box.bottom <= (window.innerHeight || Number.POSITIVE_INFINITY);
-};
-
-/** Scrolls the window so the element is in the middle, over `ms`, easing out. Resolves when it has arrived (or was cut short). */
-export function scrollToMiddle(element: HTMLElement, ms: number = SCROLL_TO): { finished: Promise<void>; cancel: () => void } {
-  const box = element.getBoundingClientRect();
-  const from = window.scrollY;
-  const to = Math.max(0, from + box.top - (window.innerHeight - box.height) / 2);
-  let frame = 0;
-  let stop = false;
-  const finished = new Promise<void>((resolve) => {
-    if (prefersReducedMotion() || ms <= 0 || Math.abs(to - from) < 1 || typeof window.requestAnimationFrame !== "function") {
-      window.scrollTo?.(0, to);
-      resolve();
-      return;
-    }
-    const began = performance.now();
-    const step = (now: number) => {
-      if (stop) return resolve();
-      const done = Math.min(1, (now - began) / ms);
-      // The product's one curve, as a cubic ease-out: fast away, settling.
-      window.scrollTo?.(0, from + (to - from) * (1 - (1 - done) ** 3));
-      if (done < 1) frame = window.requestAnimationFrame(step);
-      else resolve();
-    };
-    frame = window.requestAnimationFrame(step);
-  });
-  return {
-    finished,
-    cancel: () => {
-      stop = true;
-      window.cancelAnimationFrame?.(frame);
-    },
-  };
+/**
+ * Scrolls the window so the element is in the middle, through the page's one scroll helper (`pageScroll.ts`): the browser's smooth
+ * scroll, which stops on the maker's input. With `hold`, it is kept there while a windowed build draws what it passed. Resolves when
+ * it has arrived (or was cut short, or was in view already).
+ */
+export function scrollToMiddle(element: HTMLElement, { hold = false }: { hold?: boolean } = {}): ScrollRun {
+  return scrollToShow(element, { align: "middle", hold });
 }
 
 /**
- * Go to it. A component that is off screen is scrolled to the middle over `SCROLL_TO`; then it is outlined once in the link's colour
- * (1.5px, 4 outside), holding `GOTO_HOLD` and fading over `GOTO_OUT`, so the eye has time to arrive.
+ * Go to it. A component that is not in view is scrolled to the middle (and held there in a large build, where the tiles above were
+ * guessed at and shift as they are drawn); then it is outlined once in the link's colour (1.5px, 4 outside), holding `GOTO_HOLD` and
+ * fading over `GOTO_OUT`, so the eye has time to arrive.
  */
 export function goToIt(element: HTMLElement, colour?: string | null): MotionRun {
   let ring: MotionRun | null = null;
-  let scrolling: { cancel: () => void } | null = null;
-  const draw = () => {
-    ring = outlineOnce(element, colour || t.selectedEdge, { hold: GOTO_HOLD, out: GOTO_OUT });
-  };
+  const draw = () => (ring = outlineOnce(element, colour || t.selectedEdge, { hold: GOTO_HOLD, out: GOTO_OUT }));
+  const scroll = scrollToMiddle(element, { hold: true });
+  // In view already: the ring comes at once.
+  if (!scroll.moved) draw();
   const done = (async () => {
-    if (!onScreenWhole(element)) {
-      const scroll = scrollToMiddle(element);
-      scrolling = scroll;
-      await scroll.finished;
-      /* CA-27 P3: in a large build the tiles above were guessed at, and shift as they are drawn: it is kept in the middle for a moment. */
-      settle(
-        () => {
-          const box = element.getBoundingClientRect();
-          return !element.isConnected || Math.abs((box.top + box.bottom) / 2 - window.innerHeight / 2) < 24 || box.height > window.innerHeight;
-        },
-        () => void scrollToMiddle(element, 0),
-      );
-    }
-    draw();
-    await ring?.finished;
+    await scroll.finished;
+    await (ring ?? draw()).finished;
   })();
   return {
     finished: done,
     finish: () => {
-      scrolling?.cancel();
+      scroll.cancel();
       ring?.finish();
     },
     cancel: () => {
-      scrolling?.cancel();
+      scroll.cancel();
       ring?.cancel();
     },
   };
