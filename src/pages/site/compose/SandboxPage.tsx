@@ -278,11 +278,7 @@ function SandboxPageBody() {
   }, [thread, viewProps, writesFailed, retryWrites]);
 
   const [lens, setLens] = useState<SandboxLens>("list");
-  const [switched, setSwitched] = useState(false);
-  const onLens = useCallback((next: SandboxLens) => {
-    setLens(next);
-    setSwitched(true);
-  }, []);
+  const onLens = useCallback((next: SandboxLens) => setLens(next), []);
 
   const made = (build as { making?: unknown } | null)?.making;
   /* CA-12 P5: sessions are numbered by `build_sessions.position`; a draft with no rows is numbered by its steps, as before. */
@@ -1841,7 +1837,7 @@ function SandboxPageBody() {
     [addOneFile, addSetup, takeResultFiles],
   );
 
-  /* CA-14 P5: what the Add items do, shared by the Add button at the top and each session's "+ Add Tile". */
+  /* CA-14 P5: what the Add items do, shared by the Add button at the top and each session's "+ Add tile". */
   const addHandlers = {
     onAddFile: pickTile,
     onAddPromptFocus,
@@ -2367,7 +2363,6 @@ function SandboxPageBody() {
         lens={lens}
         onLens={onLens}
         mapAvailable={mapAvailable}
-        mapHint={mapAvailable && !switched}
       />
       </DetailsReferencesProvider>
       </GroupLabelsProvider>

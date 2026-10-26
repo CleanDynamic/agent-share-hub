@@ -6,8 +6,7 @@
    Card (drawn by `SandboxCard`, UI-P94), the same order of parts and the same accessible names. The page and
    the dev page choose with `useLook()`, and hand this the refined forks of the panels.
 
-   THE TITLE ROW, under a hairline: the draft's title 20/500 and its status line 12.5 `--text2`; List / Map with
-   "Map is now available" under it; Card and Preview (secondary 30) and Publish (primary
+   THE TITLE ROW, under a hairline: the draft's title 20/500 and its status line 12.5 `--text2`; List / Map; Card and Preview (secondary 30) and Publish (primary
    30), the view's one primary. THE COLUMNS, a wrapping row with gap 24: Sources on the surface with a hairline on its
    right (`flex: 1 1 216px`, max 232), Build (`flex: 999 1 480px`), Details as a module (`flex: 1 1 280px`, max 300).
    A phone keeps today's order: the title, the Build panel with Sources and Details behind two buttons, and the action
@@ -52,7 +51,7 @@ import { isUntitled, UNTITLED, type PublishKey, type SaveState } from "./compose
 import { SandboxCard } from "./SandboxCard";
 import type { CardField } from "./SandboxCard";
 import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
-import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_HINT, TAB_ROW, tabStyle } from "./tabRowRecipes";
+import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_ROW, tabStyle } from "./tabRowRecipes";
 import { ClickToEdit, DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
@@ -146,8 +145,6 @@ export interface SandboxViewProps extends CardProps {
   onLens: (lens: SandboxLens) => void;
   /** CONCEPT §5: two sessions or an agent. Until then the switch is not drawn. */
   mapAvailable: boolean;
-  /** "Map is now available", until the maker has switched once. */
-  mapHint: boolean;
   onUseResultPicture?: () => void;
 
   /**
@@ -355,7 +352,7 @@ export interface AddTargets {
   onSession?: (key: string) => void;
 }
 
-export const ADD_ASK_COPY = { title: "Add to which session?", row: "Add Tile" } as const;
+export const ADD_ASK_COPY = { title: "Add to which session?", row: "Add tile" } as const;
 
 /** The small list that asks "Add to which session?": one row per session, the default under the cursor. */
 function SessionAsk({ sessions, current, onPick, phone }: { sessions: readonly { key: string; label: string }[]; current: string | null; onPick: (key: string) => void; phone: boolean }) {
@@ -386,7 +383,7 @@ function SessionAsk({ sessions, current, onPick, phone }: { sessions: readonly {
  * straight back. A row that moves focus (Prompt) says so, and the menu then leaves focus where the row put it instead
  * of returning it to Add. On a phone, the same rows in a bottom sheet, 44pt each, under "Add".
  *
- * CA-14 P5: the same menu is the "+ Add Tile" row at the end of a session (`variant: "row"`, `fixedSession`),
+ * CA-14 P5: the same menu is the "+ Add tile" row at the end of a session (`variant: "row"`, `fixedSession`),
  * which already knows its session. The Add button at the top asks which session first when there are two or more
  * (`targets`): a small list on a computer, and the first screen of the sheet on a phone.
  */
@@ -1111,7 +1108,6 @@ function SandboxBody(props: SandboxViewProps) {
           {value === "list" ? "List" : "Map"}
         </button>
       ))}
-      {props.mapAvailable && !phone && props.mapHint ? <span style={TAB_HINT}>Map is now available</span> : null}
     </div>
   );
 

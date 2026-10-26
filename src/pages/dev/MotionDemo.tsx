@@ -351,7 +351,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
             dividers={heads}
             addToSession={(key) => (
               <button type="button" data-testid={`add-tile-${key}`} onClick={() => addTile(key)} style={{ alignSelf: "flex-start", font: "13px inherit", padding: "4px 0", background: "none", border: 0, color: "var(--text2)" }}>
-                + Add Tile
+                + Add tile
               </button>
             )}
           />

@@ -960,6 +960,7 @@ export const CA03_FILES: readonly string[] = [
   "src/dev/fixtures/ca27.ts",
   "src/dev/fixtures/parts.ts",
   "src/dev/fixtures/references.ts",
+  "src/dev/fixtures/sandbox.ts",
   "src/lib/build/addSession.ts",
   "src/lib/build/graph.ts",
   "src/lib/build/patternsWrite.ts",
@@ -989,6 +990,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SandboxCard.tsx",
   "src/pages/site/compose/SandboxPage.sessionEdits.test.tsx",
   "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/SandboxView.test.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
   "src/pages/site/compose/SessionHead.tsx",
   "src/pages/site/compose/SourcesPanel.budget.test.tsx",
   "src/pages/site/compose/SourcesPanel.test.tsx",
@@ -1010,6 +1013,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/sv05.imports.test.tsx",
   "src/pages/site/compose/sv05.loading.test.tsx",
   "src/pages/site/compose/sv05.numbers.test.ts",
+  "src/pages/site/compose/tabRowRecipes.ts",
   "src/pages/site/compose/useComposePrompts.ts",
 ];
 

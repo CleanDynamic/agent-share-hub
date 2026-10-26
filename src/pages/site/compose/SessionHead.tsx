@@ -44,7 +44,7 @@ export const SESSION_HEAD_COPY = {
   /** SV-05 P3: an import that wrote fewer tiles than its session has prompts. */
   imported: (have: number, of: number) => `${have} of ${of} prompts imported`,
   retry: "Retry",
-  addToThis: "+ Add Tile",
+  addToThis: "+ Add tile",
   moveUp: "Move up",
   moveDown: "Move down",
   edit: "Edit session…",
