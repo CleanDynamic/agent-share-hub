@@ -2,7 +2,7 @@
 // first-screen reads start in one go.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Suspense } from "react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -24,7 +24,7 @@ vi.mock("@/lib/build/builds", () => ({
   getBuildParent: (...args: unknown[]) => (getBuildParent as (...a: unknown[]) => unknown)(...args),
 }));
 vi.mock("./ComposeSkeleton", () => ({ ComposeSkeleton: () => <p>the composer skeleton</p> }));
-vi.mock("./composerOpen", () => ({ startComposerReads: vi.fn() }));
+vi.mock("./composerOpen", () => ({ startComposerReads: vi.fn(), startLibraryRead: vi.fn() }));
 vi.mock("@/hooks/useNodeType", () => ({ fetchNodeTypes: vi.fn(async () => []) }));
 const mounts = { count: 0 };
 vi.mock("./SandboxPage", async () => {
@@ -51,10 +51,13 @@ vi.mock("./ComposePage", () => ({ default: () => <p>the old composer</p> }));
 
 import { FrameChromeContext } from "@/components/shell/frameChrome";
 
-import { ComposeRoute } from "./ComposeRoute";
+import { librarySessionsKey } from "@/hooks/useLibrarySessions";
+
+import { ComposeRoute, LIBRARY_SESSIONS_KEY } from "./ComposeRoute";
 import { startComposerReads } from "./composerOpen";
 
 const chrome = vi.fn();
+let client: QueryClient;
 
 beforeEach(() => {
   auth.loading = false;
@@ -66,10 +69,13 @@ beforeEach(() => {
 afterEach(cleanup);
 
 /** The route as App.tsx mounts it: inside the frame's one boundary (FrameOutlet), whose placeholder is the skeleton. */
-function open(path = "/compose/b1") {
+function open(path = "/compose/b1", { library = true }: { library?: boolean } = {}) {
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // The session library Sources lists, as startLibraryRead leaves it (mocked here).
+  if (library) client.setQueryData(LIBRARY_SESSIONS_KEY, { pages: [], pageParams: [] });
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider client={client}>
         <FrameChromeContext.Provider value={chrome}>
           <Routes>
             <Route
@@ -167,5 +173,18 @@ describe("ComposeRoute · SV-04 P4, the one frame", () => {
     await waitFor(() => expect(getBuildParent).not.toHaveBeenCalled());
     expect(screen.getByText("the composer")).toBe(node);
     expect(mounts.count).toBe(1);
+  });
+
+  it("holds the skeleton until Sources' session library is in, so the page is never drawn with blocks in one corner", async () => {
+    open("/compose/new", { library: false });
+    expect(screen.getByText("the composer skeleton")).toBeInTheDocument();
+    await act(async () => {
+      client.setQueryData(LIBRARY_SESSIONS_KEY, { pages: [], pageParams: [] });
+    });
+    expect(await screen.findByText("the composer")).toBeInTheDocument();
+  });
+
+  it("watches the session library on the key useLibrarySessions reads", () => {
+    expect(LIBRARY_SESSIONS_KEY).toEqual(librarySessionsKey);
   });
 });

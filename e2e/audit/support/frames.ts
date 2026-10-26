@@ -51,7 +51,8 @@ export interface FrameSample {
 export interface FrameLog {
   frames: FrameSample[];
   longTasks: { start: number; duration: number }[];
-  shifts: { t: number; value: number }[];
+  /** Each shift, with what moved (tag, test id or data-ui, and the box before and after) for reading by eye. */
+  shifts: { t: number; value: number; sources: string[]; footerOnly: boolean }[];
   lastClick: number;
   lastPop: number;
 }
@@ -174,7 +175,24 @@ function recorder() {
   }
   try {
     new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) log.shifts.push({ t: entry.startTime, value: (entry as PerformanceEntry & { value: number }).value });
+      for (const entry of list.getEntries()) {
+        const shift = entry as PerformanceEntry & { value: number; sources?: { node?: Node | null; previousRect: DOMRectReadOnly; currentRect: DOMRectReadOnly }[] };
+        const sources = (shift.sources ?? []).map((source) => {
+          const node = source.node instanceof Element ? source.node : source.node?.parentElement;
+          const name = node ? `${node.tagName.toLowerCase()}${node.getAttribute("data-testid") ? `#${node.getAttribute("data-testid")}` : ""}${node.getAttribute("data-ui") ? `[${node.getAttribute("data-ui")}]` : ""}` : "?";
+          const box = (rect: DOMRectReadOnly) => `${Math.round(rect.x)},${Math.round(rect.y)} ${Math.round(rect.width)}x${Math.round(rect.height)}`;
+          return `${name} ${box(source.previousRect)} -> ${box(source.currentRect)}`;
+        });
+        // The footer sits at the foot of the surface: it moves whenever a page of another length is drawn. A shift that
+        // moved nothing else is the frame following the page's length, not the page's content shifting.
+        const footerOnly =
+          (shift.sources ?? []).length > 0 &&
+          (shift.sources ?? []).every((source) => {
+            const node = source.node instanceof Element ? source.node : source.node?.parentElement;
+            return Boolean(node?.closest('[data-slot="footer"]'));
+          });
+        log.shifts.push({ t: entry.startTime, value: shift.value, sources, footerOnly });
+      }
     }).observe({ type: "layout-shift", buffered: true });
   } catch {
     /* as above */
@@ -211,7 +229,10 @@ export interface ChangeNumbers {
   states: string[];
   /** How many of those were placeholders of different shapes. */
   placeholderStates: number;
+  /** Layout shift during the change, in the page area: a shift that moved only the footer is not counted here. */
   layoutShift: number;
+  /** The footer's own shifts, as the page's length changed. Reported, not judged. */
+  footerShift: number;
   /** The header slot was the same element, with the same `data-frame-id`, in every frame. */
   headerKept: boolean;
   /** The header's box moved in some frame (more than half a pixel). */
@@ -221,6 +242,8 @@ export interface ChangeNumbers {
   /** The scroll position in the first frame the new page was ready. */
   scrollAtReady: number;
   longestTaskMs: number;
+  /** What moved in the shifts counted, for reading by eye. */
+  shiftSources: string[];
 }
 
 /** The numbers of one page change, from a window that `resetFrames` started just before the input. */
@@ -249,11 +272,13 @@ export function measureChange(log: FrameLog, input: number): ChangeNumbers {
     emptyFrames: until.filter((frame) => frame.kind === "empty").length,
     states: states.map((state) => (state.startsWith("placeholder") ? `placeholder#${[...shapes].indexOf(state.slice(12)) + 1}` : state)),
     placeholderStates: shapes.size,
-    layoutShift: Math.round(log.shifts.filter((shift) => shift.t > input && shift.t <= end).reduce((sum, shift) => sum + shift.value, 0) * 1000) / 1000,
+    layoutShift: Math.round(log.shifts.filter((shift) => shift.t > input && shift.t <= end && !shift.footerOnly).reduce((sum, shift) => sum + shift.value, 0) * 1000) / 1000,
+    footerShift: Math.round(log.shifts.filter((shift) => shift.t > input && shift.t <= end && shift.footerOnly).reduce((sum, shift) => sum + shift.value, 0) * 1000) / 1000,
     headerKept: frames.every((frame) => frame.headerSame && frame.headerId === headerId && frame.headerId !== "gone"),
     headerMoved: frames.some((frame) => !frame.header || Math.abs(frame.header.y - headerTop) > 0.5 || Math.abs(frame.header.x - headerLeft) > 0.5),
     readyMs: readyAt === -1 ? -1 : Math.round(after[readyAt].t - input),
     scrollAtReady: readyAt === -1 ? -1 : Math.round(after[readyAt].scrollY),
     longestTaskMs: Math.round(Math.max(0, ...log.longTasks.filter((task) => task.start + task.duration > input).map((task) => task.duration))),
+    shiftSources: log.shifts.filter((shift) => shift.t > input && shift.t <= end).flatMap((shift) => shift.sources.map((source) => `${shift.value.toFixed(3)} ${source}`)),
   };
 }

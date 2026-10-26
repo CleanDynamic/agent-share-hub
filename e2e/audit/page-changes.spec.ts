@@ -6,7 +6,8 @@
    the median of the runs.
 
    FOR EACH STEP, from the frame tools (support/frames.ts): click to first visible change, empty frames, the states the page
-   area went through before the page was ready, layout shift during the change, whether the header was kept (the same
+   area went through before the page was ready, layout shift during the change (in the page area; the footer, which
+   follows the page's length, is reported apart), whether the header was kept (the same
    element and `data-frame-id`, never moved), and, after Back, the scroll position against the one the page was left at.
 
    WHAT FAILS (SV-04 Part 7), unless PAGES_REPORT_ONLY=1: a step over 100 ms to its first change, a step with an empty frame,
@@ -151,22 +152,26 @@ test("page changes: report and thresholds", async () => {
       placeholderStates: median(same.map((row) => row.placeholderStates)),
       states: same[0].states.join(" → ") || "none",
       layoutShift: median(same.map((row) => row.layoutShift)),
+      footerShift: median(same.map((row) => row.footerShift)),
       headerKept: same.every((row) => row.headerKept),
       headerMoved: same.some((row) => row.headerMoved),
       scrollOff: offs.length ? median(offs) : null,
       topOff: tops.length ? median(tops) : null,
       longestTaskMs: median(same.map((row) => row.longestTaskMs)),
+      shiftSources: same[0].shiftSources,
     };
   });
 
   const table = [
-    "| step | way | click to change ms | to ready ms | empty frames | placeholder states | states before ready (first run) | layout shift | header kept | header still | opened at y | Back scroll off px | longest task ms |",
-    "| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | --- | --- | ---: | ---: | ---: |",
+    "| step | way | click to change ms | to ready ms | empty frames | placeholder states | states before ready (first run) | layout shift | footer shift | header kept | header still | opened at y | Back scroll off px | longest task ms |",
+    "| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | --- | ---: | ---: | ---: |",
     ...rows.map(
       (row) =>
-        `| ${row.step} | ${row.way} | ${row.firstChangeMs} | ${row.readyMs} | ${row.emptyFrames} | ${row.placeholderStates} | ${row.states} | ${row.layoutShift} | ${row.headerKept ? "yes" : "no"} | ${row.headerMoved ? "no" : "yes"} | ${row.topOff ?? ""} | ${row.scrollOff ?? ""} | ${row.longestTaskMs} |`,
+        `| ${row.step} | ${row.way} | ${row.firstChangeMs} | ${row.readyMs} | ${row.emptyFrames} | ${row.placeholderStates} | ${row.states} | ${row.layoutShift} | ${row.footerShift} | ${row.headerKept ? "yes" : "no"} | ${row.headerMoved ? "no" : "yes"} | ${row.topOff ?? ""} | ${row.scrollOff ?? ""} | ${row.longestTaskMs} |`,
     ),
   ].join("\n");
+  const shifted = rows.filter((row) => row.layoutShift > 0 || row.footerShift > 0).map((row) => `- ${row.step} (${row.way}), ${row.layoutShift}:\n${row.shiftSources.map((source) => `  - ${source}`).join("\n")}`);
+  writeText("page-changes-shifts.md", `What moved, first run.\n\n${shifted.join("\n")}\n`);
   writeText("page-changes.md", `Page change tour, every database request delayed ${DB_DELAY_MS} ms, ${VIEWPORT.width} x ${VIEWPORT.height}, median of ${RUNS}.\n\n${table}\n`);
   writeText("page-changes.json", JSON.stringify({ rows, runs }, null, 2));
   fs.mkdirSync(OUT_DIR, { recursive: true });

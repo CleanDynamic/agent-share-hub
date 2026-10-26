@@ -339,23 +339,15 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
 
   /* ── the page's state ── */
 
-  /* SV-04 P4: the first screen is in when the record is, and Sources' session library too (a new build has no record to
-     wait for). Until then it is "loading", so the whole composer skeleton stands in, never the page with blocks in its
-     Sources corner. A build made here is drawn at once, as before. */
-  const firstReads = sessions.status === "loading";
   const status: ComposeStatus = !buildId
-    ? firstReads
-      ? "loading"
-      : "ready"
+    ? "ready"
     : compose.loadError
       ? "error"
       : compose.isLoading
         ? createdHere ? "ready" : "loading"
         : !build || !compose.isOwner
           ? "notFound"
-          : firstReads && !createdHere
-            ? "loading"
-            : "ready";
+          : "ready";
 
   const viewProps: ComposeViewProps = {
     status,

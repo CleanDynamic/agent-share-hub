@@ -34,7 +34,7 @@
    page's code suspends to the frame's one boundary, whose placeholder is that same skeleton. A rebuild swaps to the legacy
    workspace, which hides the frame's chrome (`useHideFrameChrome`) and draws its own, exactly as before. */
 
-import { lazy, useEffect, useState, type ReactNode } from "react";
+import { lazy, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 
@@ -53,6 +53,23 @@ const ComposePage = lazy(() => import("./ComposePage"));
 /** UI-P63: the new composer, its own chunk, only fetched while the switch is on. */
 const SandboxPage = lazy(() => preloadComposer() as Promise<{ default: React.ComponentType }>);
 
+/** useLibrarySessions' key, written out: importing that hook would put the session library's code in the first download.
+    ComposeRoute.test.tsx holds the two to each other. */
+export const LIBRARY_SESSIONS_KEY = ["build", "listLibrarySessions"] as const;
+
+/** Whether a query has answered (data, or an error), read from the cache without asking for it. */
+function useInCache(key: readonly unknown[]): boolean {
+  const queryClient = useQueryClient();
+  return useSyncExternalStore(
+    (onChange) => queryClient.getQueryCache().subscribe(onChange),
+    () => {
+      const state = queryClient.getQueryState(key);
+      return Boolean(state && (state.data !== undefined || state.status === "error"));
+    },
+    () => false,
+  );
+}
+
 /** The route's own check, under its own key: it is not the composer's record any more. */
 const composeParentKey = (buildId: string | undefined) => ["build", "getBuildParent", buildId] as const;
 
@@ -69,6 +86,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const [startedNew] = useState(() => !buildId);
 
   const queryClient = useQueryClient();
+  const libraryIn = useInCache(LIBRARY_SESSIONS_KEY);
   const reads = Boolean(buildId) && isLoggedIn && !hasFrom && !startedNew;
   /* Its data starts first, once the session says who is asking: the small module that holds the reads is asked for before
      the composer's page, so the page's download (the heavy one) does not queue in front of it. The keys are the page's. */
@@ -76,6 +94,12 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     if (!reads || !buildId) return;
     void import("./composerOpen").then(({ startComposerReads }) => startComposerReads(queryClient, buildId));
   }, [reads, buildId, queryClient]);
+  /* SV-04 P4: a new build's first screen waits on Sources' session library alone, so that starts now too. */
+  const newBuild = isLoggedIn && !hasFrom && !buildId;
+  useEffect(() => {
+    if (!newBuild) return;
+    void import("./composerOpen").then(({ startLibraryRead }) => startLibraryRead(queryClient));
+  }, [newBuild, queryClient]);
   /* The composer's code starts now, whoever is signed in: it is the same file for everybody. */
   useEffect(() => {
     void preloadComposer();
@@ -102,6 +126,10 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     retry: 1,
   });
   const waitingForRecord = reads && record.isPending && record.fetchStatus !== "idle";
+  /* SV-04 P4: and when Sources' session library is in (startLibraryRead started it with the rest), so the page is never
+     drawn with blocks in its Sources corner alone. A new build has nothing else to wait for. A read that failed does not
+     hold the page: Sources says so itself. */
+  const waitingForLibrary = isLoggedIn && !hasFrom && !libraryIn;
   const checking = Boolean(buildId) && !startedNew && check.isPending && check.fetchStatus !== "idle";
   const rebuild = Boolean(buildId) && !startedNew && Boolean(check.data?.parent_build_id);
   const showLegacy = !loading && isLoggedIn && (hasFrom || rebuild);
@@ -116,7 +144,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
 
   /* No RouteBoundary: it is keyed by pathname, and the first change replaces /compose/new with /compose/{id}, which would
      remount the page under the creator's cursor. */
-  return waitingForRecord ? <ComposeSkeleton /> : SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />;
+  return waitingForRecord || waitingForLibrary ? <ComposeSkeleton /> : SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />;
 }
 
 export default ComposeRoute;
