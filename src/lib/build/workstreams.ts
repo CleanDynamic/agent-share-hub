@@ -153,11 +153,13 @@ function finished(making: unknown, change: WorkstreamChange): WorkstreamChange {
  * "Add a part". With no stored parts it writes two entries: the first for the sessions already there (they have no
  * `workstream`, so nothing is written on them), the second empty. Null when the build already has 26.
  */
-export function addWorkstream(making: unknown, order: readonly string[]): (WorkstreamChange & { key: string }) | null {
+export function addWorkstream(making: unknown, order: readonly string[], newKey: () => string = newWorkstreamKey): (WorkstreamChange & { key: string }) | null {
   const stored = storedWorkstreamsOf(making);
   if (stored.length >= WORKSTREAM_MAX) return null;
-  const key = newWorkstreamKey();
-  const workstreams = stored.length === 0 ? [{ key: newWorkstreamKey() }, { key }] : [...stored, { key }];
+  // SV-07 P3: `newKey` lets the parts drawn at the click and the parts written have the same keys.
+  const first = stored.length === 0 ? newKey() : null;
+  const key = newKey();
+  const workstreams = first ? [{ key: first }, { key }] : [...stored, { key }];
   return { key, workstreams, sessions: {}, order: [...order] };
 }
 

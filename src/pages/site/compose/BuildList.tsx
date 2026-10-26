@@ -252,6 +252,8 @@ export interface BuildListProps {
   onDropWorkstream?: (workstreamKey: string, over: string) => Promise<unknown> | void;
   /** CA-17 P2: "Add a part", the row under "Add a session". Resolves once the part is made. Absent: no row. */
   onAddPart?: () => void;
+  /** SV-07 P3: a part is being written: "Add a part" is disabled until it lands. */
+  addingPart?: boolean;
   /** CA-14 P5: the "+ Add tile" row at the end of a session, drawn by the page (it holds the Add items). */
   addToSession?: (sessionKey: string) => ReactNode;
   /** CA-14 P5: the session whose prompt box is open. An empty draft has Session 1's open without it. */
@@ -2464,7 +2466,7 @@ export function BuildList(raw: BuildListProps) {
         />
       )}
       {props.addSession ? <AddSessionRow phone={props.phone} {...props.addSession} openFor={addFor} /> : null}
-      {props.onAddPart ? <AddPartRow phone={props.phone} adding={props.addSession?.adding ?? false} onAdd={props.onAddPart} /> : null}
+      {props.onAddPart ? <AddPartRow phone={props.phone} adding={(props.addSession?.adding ?? false) || Boolean(props.addingPart)} onAdd={props.onAddPart} /> : null}
     </div>
   );
   /* SV-06 P1: what this commit's slides take, when a hook times them: a put back, a fold, a lane opening. */

@@ -32,6 +32,8 @@ describe("SV-07 P0 · the recorded sequence", () => {
     // 3: Add a part, twice.
     maker("Add a part", () => fireEvent.click(screen.getByTestId("add-part-row")));
     await waitFor(() => expect(partKeys()).toHaveLength(2), { timeout: 30_000 });
+    // The row is disabled while the part is written (SV-07 P3): the maker presses it again once it can be pressed.
+    await waitFor(() => expect((screen.getByTestId("add-part-row") as HTMLButtonElement).disabled).toBe(false), { timeout: 30_000 });
     maker("Add a part", () => fireEvent.click(screen.getByTestId("add-part-row")));
     await waitFor(() => expect(partKeys()).toHaveLength(3), { timeout: 30_000 });
 

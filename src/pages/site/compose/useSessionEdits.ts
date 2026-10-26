@@ -15,7 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession } from "@/lib/build/buildSessions";
 import { buildSteps, groupKey, topSteps, type SessionGroup, type Step } from "@/lib/build/graph";
-import { isLegacySession, newSessionKey, patchMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsCollapsedOf, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, newSessionKey, newWorkstreamKey, patchMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsCollapsedOf, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta, type Workstream } from "@/lib/build/making";
 import { reorderNodes } from "@/lib/build/nodes";
 import { droppedKey, movedKey, orderKeys, setSessionOrder, stackBySessionMoves } from "@/lib/build/sessionLayout";
 import { dayOfNode, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
@@ -67,6 +67,8 @@ export interface SessionEditsInput {
   bridge?: ReferenceBridge;
   /** CA-21 P1: where every tile, session and part stands, so Move up and Move down always have somewhere to go. Absent: a session swaps with the one next to it in its part. */
   moveModel?: MoveModel;
+  /** SV-07 P3: the parts as Add a part will write them, drawn from the click until the write lands; null when it has. */
+  showParts?: (workstreams: readonly Workstream[] | null) => void;
 }
 
 const findTop = (tree: readonly NodeTree[], id: string): NodeTree | undefined => tree.find((node) => node.id === id);
@@ -235,7 +237,7 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   /** Write a change to the parts: the parts, the sessions' entries, the one order, then the tiles' places. Resolves what was written, or null. */
   const applyParts = useCallback(
-    async (plan: (making: unknown) => WorkstreamChange | null): Promise<WorkstreamChange | null> => {
+    async (plan: (making: unknown) => WorkstreamChange | null, onWritten?: () => void): Promise<WorkstreamChange | null> => {
       const { buildId, nodes } = latest.current;
       if (!buildId) throw new Error("That draft is not saved yet.");
       let applied: WorkstreamChange | null = null;
@@ -258,6 +260,8 @@ export function useSessionEdits(input: SessionEditsInput) {
           }
         }
       });
+      // SV-07 P3: what waits on the write (Add a part's disabled row) lets go here, not after the refetch.
+      onWritten?.();
       await refresh(buildId);
       return applied;
     },
@@ -278,21 +282,47 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   const titleOf = (key: string): string => latest.current.parts?.titles.get(key) ?? "that part";
 
-  /** "Add a part". Resolves the new part's key. */
+  /** SV-07 P3: a part is being added: a second click makes no second part. */
+  const addingPart = useRef(false);
+  /**
+   * "Add a part". SV-07 P3: the parts show at once, as they will be written (the same keys), and stay until the write lands.
+   * Resolves the new part's key.
+   */
   const onAddPart = useCallback(async (): Promise<string | null> => {
+    if (addingPart.current) return null;
+    addingPart.current = true;
+    const fresh = [newWorkstreamKey(), newWorkstreamKey()];
+    const keysOf = () => {
+      let at = 0;
+      return () => fresh[at++] ?? newWorkstreamKey();
+    };
+    const shown = addWorkstream(latest.current.made, editableKeys(), keysOf());
+    if (shown) latest.current.showParts?.(shown.workstreams);
     let key: string | null = null;
-    await guard("Part not added", () =>
-      track("Added a part", async () => {
-        const change = await applyParts((making) => addWorkstream(making, editableKeys()));
-        key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
-        if (key) latest.current.say("Added a part.");
-      }),
-    );
+    try {
+      await guard("Part not added", () =>
+        track("Added a part", async () => {
+          const change = await applyParts(
+            (making) => addWorkstream(making, editableKeys(), keysOf()),
+            () => {
+              addingPart.current = false;
+              latest.current.showParts?.(null);
+            },
+          );
+          key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
+          if (key) latest.current.say("Added a part.");
+        }),
+      );
+    } finally {
+      addingPart.current = false;
+      latest.current.showParts?.(null);
+    }
     return key;
   }, [applyParts, editableKeys, guard, track]);
 
   const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Name not saved", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
-  const onPartFold = useCallback((key: string, collapsed: boolean) => void editPart("Fold not saved", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
+  /** SV-07 P3: resolves when the fold is written, so the page's at-once fold can let go then. */
+  const onPartFold = useCallback((key: string, collapsed: boolean): Promise<void> => editPart("Fold not saved", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
   const onPartColour = useCallback((key: string, colour: string | null) => editPart("Colour not saved", (stored) => withWorkstream(stored, key, { colour: colour ?? undefined })), [editPart]);
   const onPartStartsAfter = useCallback(
     (key: string, session: string | null) =>

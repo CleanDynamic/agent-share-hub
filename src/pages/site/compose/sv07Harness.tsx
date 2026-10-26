@@ -10,7 +10,7 @@ import { Toaster } from "sonner";
 
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { REPO_SCHEMA, startAuditBackend, tableRows, type Delay, type Row } from "@/lib/build/__audit__/fakeSupabase";
+import { REPO_SCHEMA, requests, startAuditBackend, tableRows, type Delay, type Row } from "@/lib/build/__audit__/fakeSupabase";
 import { storedWorkstreamsOf } from "@/lib/build/making";
 
 import { SandboxPage } from "./SandboxPage";
@@ -147,8 +147,23 @@ export function setUp() {
   action = "open";
 }
 
-/** After each test: sampling stops and the page goes. */
-export function tearDown() {
+/** Resolves once no request has reached the backend for `quiet` ms (at most `most`): what a test left on its way has landed. */
+export async function idle(quiet = 1000, most = 15_000) {
+  const began = Date.now();
+  let count = requests().length;
+  let still = Date.now();
+  while (Date.now() - still < quiet && Date.now() - began < most) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (requests().length !== count) {
+      count = requests().length;
+      still = Date.now();
+    }
+  }
+}
+
+/** After each test: what is on its way lands (so none of it reaches the next test's backend), then sampling stops and the page goes. */
+export async function tearDown() {
+  await idle();
   window.cancelAnimationFrame(sampling);
   cleanup();
   vi.restoreAllMocks();
@@ -204,7 +219,10 @@ export const settled = (count: number) =>
       for (const row of screen.queryAllByTestId("add-session-row")) expect((row as HTMLButtonElement).disabled).toBe(false);
     },
     { timeout: 30_000 },
-  );
+  ).catch((cause) => {
+    if (process.env.DBG) process.stdout.write(`SETTLE ${JSON.stringify(making())} · ${requests().slice(-12).map((request) => `${request.method} ${request.path.slice(0, 60)} ${request.status}`).join(" | ")}\n`);
+    throw cause;
+  });
 
 /** A chat by its name, from a picker that is open. */
 export async function pickChat(name: string) {
