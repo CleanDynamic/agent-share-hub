@@ -35,6 +35,7 @@ import {
   GLYPH_OPACITY,
   buildDelay,
   columnsOf,
+  fillOf,
   layersOf,
   lineOf,
   pageClock,
@@ -46,6 +47,8 @@ export interface LoadingBlocksProps {
   width: number | "fill";
   /** A box's rows (a line is always one). */
   rows?: number;
+  /** SV-05 P4: "fill" takes the height of its parent: as many rows as fit, the cells centred so they cover the whole box. */
+  height?: "fill";
   kind?: "line" | "box";
   /** Reading order among the blocks of one placeholder, for building. */
   order?: number;
@@ -85,12 +88,13 @@ const layerStyle = (glyph: number, delay: number): CSSProperties => ({
 /** The still fill: a `·` at 62%. */
 const STILL: CSSProperties = { ...TEXT, opacity: GLYPH_OPACITY[0] };
 
-export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, building = false, gone = false, at, style }: LoadingBlocksProps) {
+export function LoadingBlocks({ width, rows = 1, height, kind = "box", order = 0, building = false, gone = false, at, style }: LoadingBlocksProps) {
   const root = useRef<HTMLDivElement | null>(null);
   const [reduced] = useState(() => prefersReducedMotion());
   const [clock] = useState(() => pageClock());
   const [origin, setOrigin] = useState<{ x: number; y: number } | null>(at ?? null);
   const [measured, setMeasured] = useState<number | null>(null);
+  const [tall, setTall] = useState<number | null>(null);
 
   /* Where the block stands on the page (not in its parent), and, for "fill", how wide it is. Read once, and again if the
      window changes size. */
@@ -108,16 +112,27 @@ export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, buildi
         const room = Math.floor(element.parentElement?.clientWidth ?? box.width);
         setMeasured((held) => (held === room ? held : room));
       }
+      if (height === "fill") {
+        const room = Math.floor(element.parentElement?.clientHeight ?? box.height);
+        setTall((held) => (held === room ? held : room));
+      }
     };
     read();
     window.addEventListener("resize", read);
-    return () => window.removeEventListener("resize", read);
+    // SV-05 P4: a box that fills its parent is read again when the parent changes size, not only the window.
+    const observer = (width === "fill" || height === "fill") && typeof ResizeObserver !== "undefined" && element.parentElement ? new ResizeObserver(read) : null;
+    if (observer && element.parentElement) observer.observe(element.parentElement);
+    return () => {
+      window.removeEventListener("resize", read);
+      observer?.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width, at?.x, at?.y]);
+  }, [width, height, at?.x, at?.y]);
 
   const total = width === "fill" ? (measured ?? 0) : width;
-  const count = rowsOf(kind, rows);
-  const cols = columnsOf(total);
+  const filled = height === "fill" ? fillOf(total, tall ?? 0) : null;
+  const count = filled ? filled.rows : rowsOf(kind, rows);
+  const cols = filled ? filled.cols : columnsOf(total);
   const base = at ?? origin ?? { x: 0, y: 0 };
   const out = gone && !reduced;
   const rising = building && !reduced;
@@ -130,7 +145,7 @@ export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, buildi
   );
 
   const layers: ReactNode[] = [];
-  if (cols > 0) {
+  if (cols > 0 && count > 0) {
     if (reduced) {
       layers.push(
         <span key="still" style={STILL}>
@@ -167,7 +182,7 @@ export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, buildi
       style={{
         position: "relative",
         width: width === "fill" ? "100%" : width,
-        height: count * CELL_H,
+        height: filled ? "100%" : count * CELL_H,
         overflow: "hidden",
         flexShrink: 0,
         pointerEvents: "none",
@@ -177,7 +192,7 @@ export function LoadingBlocks({ width, rows = 1, kind = "box", order = 0, buildi
         ...style,
       }}
     >
-      {layers}
+      {filled ? <div style={{ position: "absolute", left: filled.left, top: filled.top, right: 0, bottom: 0 }}>{layers}</div> : layers}
     </div>
   );
 }

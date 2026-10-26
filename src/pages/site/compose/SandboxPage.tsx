@@ -1524,7 +1524,10 @@ function SandboxPageBody() {
       }
       try {
         const id = await ensureBuild();
-        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id, workstream });
+        // SV-05 P4: the progress row follows the tiles as each batch is written. Stop is not offered: a session is never half-added.
+        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id, workstream }, (progress) =>
+          setArriving((current) => (current && current.key === importId ? { ...current, progress } : current)),
+        );
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }),
           queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),

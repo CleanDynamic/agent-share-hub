@@ -47,6 +47,8 @@ export interface SkeletonInput {
   moved: boolean;
   /** Free room to the left of the components, in px; under `RAIL_ROOM` there is no rail and no numbers. */
   room: number;
+  /** SV-05 P4: an import's sockets: each number inside its socket, `SOCKET_NUMBER_IN` from its left edge, and no rail. */
+  inside?: boolean;
 }
 
 export const SOCKET_OUT = 4;
@@ -60,6 +62,8 @@ export const NUMBER_END = 26;
 export const RAIL_ROOM = 40;
 export const RAIL_INSET = 14;
 export const SESSION_TICK_DOWN = 22;
+/** SV-05 P4: how far in from a socket's left edge its number stands, when the numbers are inside. */
+export const SOCKET_NUMBER_IN = 10;
 export const EMPTY_PLACE_HEIGHT = 44;
 
 export interface Socket {
@@ -84,6 +88,8 @@ export interface Tick {
   n: number;
   /** x of the right end of the number. */
   numberRight: number;
+  /** SV-05 P4: x of the left end of the number, when it stands inside its socket. */
+  numberLeft?: number;
   tickFrom: number;
   tickTo: number;
 }
@@ -94,6 +100,8 @@ export interface Rail {
   top: number;
   bottom: number;
   ticks: Tick[];
+  /** SV-05 P4: the numbers stand inside their sockets; no rail and no ticks are drawn. */
+  inside?: boolean;
 }
 
 export interface Target {
@@ -143,7 +151,8 @@ export function skeletonOf(input: SkeletonInput): Skeleton {
   });
   const lanes: Lane[] = input.containers.map((container) => ({ id: container.id, rect: grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT), radius: LANE_RADIUS, outline: !container.framed }));
   const rails: Rail[] = [];
-  if (input.room >= RAIL_ROOM) {
+  const socketOf = new Map(sockets.map((socket) => [socket.id, socket]));
+  if (input.inside || input.room >= RAIL_ROOM) {
     for (const container of input.containers) {
       const mine = container.items.map((id) => input.items.find((item) => item.id === id)).filter((item): item is SkeletonItem => Boolean(item));
       if (mine.length === 0) continue;
@@ -161,7 +170,9 @@ export function skeletonOf(input: SkeletonInput): Skeleton {
           numberRight: item.rect.x - NUMBER_END,
           tickFrom: item.rect.x - TICK_FROM,
           tickTo: item.rect.x - TICK_TO,
+          ...(input.inside ? { numberLeft: (socketOf.get(item.id)?.rect.x ?? item.rect.x) + SOCKET_NUMBER_IN } : null),
         })),
+        ...(input.inside ? { inside: true } : null),
       });
     }
   }

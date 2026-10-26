@@ -52,6 +52,16 @@ export function waveDelay(x: number, y: number, now = 0): number {
 /** How many cells fill `width`. */
 export const columnsOf = (width: number): number => Math.max(0, Math.floor(width / CELL_W));
 
+/**
+ * SV-05 P4: a block that fills its box both ways: as many 12-tall rows and 8-wide columns as fit, and the room left over
+ * split on both sides, so the cells cover the whole box to within one cell.
+ */
+export function fillOf(width: number, height: number): { cols: number; rows: number; left: number; top: number } {
+  const cols = columnsOf(width);
+  const rows = Math.max(0, Math.floor(height / CELL_H));
+  return { cols, rows, left: Math.floor((width - cols * CELL_W) / 2), top: Math.floor((height - rows * CELL_H) / 2) };
+}
+
 /** A line is one row; a box is `rows`. */
 export const rowsOf = (kind: "line" | "box", rows: number): number => (kind === "line" ? 1 : Math.max(1, Math.round(rows)));
 
@@ -137,9 +147,10 @@ export const DETAILS_WIDTHS = [150, 104, 168, 126, 146, 84] as const;
 export const COUNTS_WIDTH = 210;
 export const POST_ROWS = 3;
 export const TILES = 5;
-export const TILE_ROWS = 3;
-/** Tile boxes are 54 apart: three rows (36) and 18 between. */
-export const TILE_PITCH = 54;
+/** SV-05 P4: a tile's height before the List has measured one (`arrival.tsx` holds its sockets at it too). A tile box fills it. */
+export const TILE_HEIGHT = 108;
+/** Tile boxes are 18 apart. */
+export const TILE_GAP = 18;
 /** The columns start this far under the title row, as `SandboxView` has them. */
 export const COLUMNS_TOP = 32;
 /** The title area's height: the heading, 6, the status line, and the 12 under them. The same box the real title row has. */

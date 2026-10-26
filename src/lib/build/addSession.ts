@@ -143,7 +143,10 @@ async function verifyDraft(buildId: string): Promise<string> {
 
 const isUniqueViolation = (error: unknown): boolean => Boolean(error) && typeof error === "object" && (error as { code?: unknown }).code === "23505";
 
-async function insertTiles(rows: BuildNodeInsert[]): Promise<string[]> {
+/** SV-05 P4: how many of a session's tiles are written so far, after each batch. */
+export type TileProgress = (progress: { done: number; total: number }) => void;
+
+async function insertTiles(rows: BuildNodeInsert[], onProgress?: TileProgress): Promise<string[]> {
   const ids: string[] = [];
   for (let at = 0; at < rows.length; at += TILE_BATCH) {
     const { data, error } = await supabase.from("build_nodes").insert(rows.slice(at, at + TILE_BATCH)).select("id");
@@ -152,6 +155,7 @@ async function insertTiles(rows: BuildNodeInsert[]): Promise<string[]> {
       throw error;
     }
     for (const row of data ?? []) ids.push(row.id);
+    onProgress?.({ done: ids.length, total: rows.length });
   }
   return ids;
 }
@@ -167,7 +171,7 @@ async function removeTiles(ids: readonly string[]): Promise<void> {
  * Add a session to a draft (or to a new one), every prompt a tile. Refuses a session that is already in the draft and one
  * that never finished arriving. Resolves with where it went.
  */
-export async function addSessionToBuild(importId: string, target: AddTarget): Promise<AddSessionResult> {
+export async function addSessionToBuild(importId: string, target: AddTarget, onProgress?: TileProgress): Promise<AddSessionResult> {
   const row = await readImport(importId);
   if (!row) throw buildLayerError("addSessionToBuild", new Error("That session is no longer available."));
   if (!["parsed", "claimed", "expired"].includes(row.status)) throw buildLayerError("addSessionToBuild", new Error("That session hasn't finished arriving."));
@@ -203,10 +207,11 @@ export async function addSessionToBuild(importId: string, target: AddTarget): Pr
     // The tiles, at the end of the draft. A second writer taking the position first is read again and tried once more.
     let ids: string[];
     try {
-      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(tree)));
+      onProgress?.({ done: 0, total: prompts.length });
+      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(tree)), onProgress);
     } catch (cause) {
       if (!isUniqueViolation(cause)) throw buildLayerError("addSessionToBuild (tiles)", cause);
-      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(await getNodeTree(buildId)))).catch((again) => {
+      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(await getNodeTree(buildId))), onProgress).catch((again) => {
         throw buildLayerError("addSessionToBuild (tiles)", again);
       });
     }

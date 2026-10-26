@@ -66,7 +66,8 @@ describe.each([900, 1280, 1440, 1920])("the skeleton at %i", (width) => {
     expect(build).toHaveLength(2 + TILES);
     expect([build[0].getAttribute("data-rows"), px(build[0].style.width)]).toEqual(["3", frame.build]);
     expect([build[1].getAttribute("data-rows"), px(build[1].style.width)]).toEqual(["1", COUNTS_WIDTH]);
-    for (const tile of build.slice(2)) expect([tile.getAttribute("data-rows"), px(tile.style.width)]).toEqual(["3", frame.build - TILE_INSET]);
+    // SV-05 P4: a tile box is a tile's height.
+    for (const tile of build.slice(2)) expect([tile.getAttribute("data-rows"), px(tile.style.width)]).toEqual(["9", frame.build - TILE_INSET]);
     const title = within(screen.getByTestId("skeleton-tabrow")).getAllByTestId("loading-blocks");
     expect(title.map((block) => px((block as HTMLElement).style.width))).toEqual([180, 120]);
   });
@@ -89,7 +90,7 @@ describe("the skeleton on a phone", () => {
     expect(screen.queryByTestId("skeleton-sources")).toBeNull();
     expect(screen.queryByTestId("skeleton-details")).toBeNull();
     const blocks = within(root).getAllByTestId("loading-blocks");
-    expect(blocks.map((block) => block.getAttribute("data-rows"))).toEqual(["1", "1", "3", "1", "3", "3", "3", "3", "3"]);
+    expect(blocks.map((block) => block.getAttribute("data-rows"))).toEqual(["1", "1", "3", "1", "9", "9", "9", "9", "9"]);
   });
 });
 

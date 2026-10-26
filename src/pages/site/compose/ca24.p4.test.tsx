@@ -36,9 +36,10 @@ describe("CA-24 P4 · a slow import", () => {
     expect(head.textContent).toMatch(/Claude.*Importing/);
     const places = within(block).getAllByTestId("arriving-place");
     expect(places).toHaveLength(1);
-    expect(within(places[0]).getByTestId("loading-blocks").getAttribute("data-rows")).toBe("3");
-    // One go: nothing to count and nothing to stop.
-    expect(within(block).queryByTestId("import-progress")).toBeNull();
+    // SV-05 P4: the blocks fill the socket's whole inner area.
+    expect(within(places[0]).getByTestId("loading-blocks").style.height).toBe("100%");
+    // SV-05 P4: the count follows the tiles as they are written; a session is never half-added, so there is no Stop.
+    expect(within(block).getByTestId("import-progress").textContent).toMatch(/0 of 1 prompt/);
     expect(screen.queryByRole("button", { name: "Stop" })).toBeNull();
     await finished();
   });

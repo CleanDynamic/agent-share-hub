@@ -96,7 +96,8 @@ describe("sourceFiles and librarySources", () => {
       ["3", false, "Also in 2 drafts", false],
       ["4", false, "Also in 1 draft", false],
     ]);
-    expect(rows[0]).toMatchObject({ label: "Opus 5.5", line: "1 Mar · 2 prompts" });
+    // SV-05 P3: the line starts with the app (No app chosen when it is not known), then the model, the day and the count.
+    expect(rows[0]).toMatchObject({ label: "Opus 5.5", line: expect.stringMatching(/ · Opus 5\.5 · 1 Mar · 2 prompts$/) });
     expect(JSON.stringify(rows)).not.toMatch(/expired/i);
   });
 

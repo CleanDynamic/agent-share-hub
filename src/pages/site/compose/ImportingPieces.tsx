@@ -5,7 +5,7 @@
 
    THE TAG, after the app name in the session head: "Importing", 20 tall, padding 0 7, radius 5, the control recipe, the data
    face 10.5 `--text2`.
-   THE SOCKETS: every empty socket is filled with building blocks, a box three rows tall inset 12 from the socket's edges, waving
+   THE SOCKETS: every empty socket is filled with building blocks, its whole inner area inset 10 from every edge (SV-05), waving
    with the rest of the page (`SocketBlocks`).
    THE ROW under the sockets, 8 below: a bar 4 tall (radius 2, track `--hairline`, fill `--text2`) filling to done divided by
    total; 12 apart the count in the data face 11 `--label` ("6 of 18 prompts"); 12 apart a text link "Stop" (12.5/500,
@@ -15,8 +15,8 @@
 
    WHAT THE PAGE FEEDS IT. `addSessionToBuild` writes a session in one go: its tiles in batches, the session's row last, and it
    takes the tiles away again if anything fails, so that nothing is ever half-added. So the page can show the tag and the
-   sockets but knows no count, and a session cannot be stopped half-way without being half-added. The page passes neither
-   `progress` nor `onStop`. */
+   sockets, and (SV-05) the count as each batch of tiles is written; a session cannot be stopped half-way without being
+   half-added, so the page passes `progress` and never `onStop`. */
 
 import { useEffect, useState, type CSSProperties } from "react";
 
@@ -27,8 +27,8 @@ import { LoadingBlocks } from "./LoadingBlocks";
 import { tileStyle } from "./tileRecipes";
 
 export const SLOW_IMPORT_MS = 1000;
-export const SOCKET_INSET = 12;
-export const SOCKET_BLOCK_ROWS = 3;
+/** SV-05 P4: the tile's own padding: the blocks fill the socket's inner area, this far in from every edge. */
+export const SOCKET_INSET = 10;
 
 export const IMPORTING_COPY = {
   tag: "Importing",
@@ -79,11 +79,11 @@ export function ImportingTag() {
   );
 }
 
-/** The blocks that fill an empty socket: a box three rows tall, 12 in from the socket's edges. The socket is the positioned parent. */
-export function SocketBlocks() {
+/** SV-05 P4: the blocks that fill an empty socket, its whole inner area, 10 in from every edge. The socket is the positioned parent. */
+export function SocketBlocks({ gone = false }: { gone?: boolean }) {
   return (
-    <div data-testid="socket-blocks" style={{ position: "absolute", top: SOCKET_INSET, left: SOCKET_INSET, right: SOCKET_INSET, visibility: "visible" }}>
-      <LoadingBlocks kind="box" rows={SOCKET_BLOCK_ROWS} width="fill" />
+    <div data-testid="socket-blocks" style={{ position: "absolute", inset: SOCKET_INSET, visibility: "visible" }}>
+      <LoadingBlocks kind="box" width="fill" height="fill" gone={gone} />
     </div>
   );
 }
