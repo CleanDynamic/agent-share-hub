@@ -1057,6 +1057,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/sv07Harness.tsx",
   "src/pages/site/compose/sv07.parts.test.tsx",
   "src/pages/site/compose/sv07.motion.test.tsx",
+  "src/pages/site/compose/sv07.notice.test.tsx",
 ];
 
 /**

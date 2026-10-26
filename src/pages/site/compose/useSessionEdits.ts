@@ -316,7 +316,8 @@ export function useSessionEdits(input: SessionEditsInput) {
           );
           key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
           if (key) latest.current.say("Added a part.");
-        }, { motion: "part", keys: shown ? [shown.key] : [] }),
+          // SV-07 P5: the notice is the one visible confirmation, now that the List prints no line.
+        }, { notice: true, motion: "part", keys: shown ? [shown.key] : [] }),
       );
     } finally {
       addingPart.current = false;

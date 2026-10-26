@@ -63,9 +63,9 @@ describe("the row", () => {
     expect(style).not.toMatch(/dashed/);
   });
 
-  it("says Adding… while a session is being added", () => {
+  it("is disabled while a session is being added, and keeps its words (SV-07 P5: no Adding…)", () => {
     mount({ adding: true });
-    expect(screen.getByTestId("add-session-row").textContent).toBe("Adding…");
+    expect(screen.getByTestId("add-session-row").textContent).toBe("Add a session");
     expect((screen.getByTestId("add-session-row") as HTMLButtonElement).disabled).toBe(true);
   });
 });

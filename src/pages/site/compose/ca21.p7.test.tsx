@@ -152,10 +152,13 @@ describe("the page is off screen", () => {
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
       return { x: 0, y: 5000, width: 100, height: 100, left: 0, top: 5000, right: 100, bottom: 5100, toJSON: () => ({}) } as DOMRect;
     });
+    // SV-07 P4: through SV-06's one scroll helper, which scrolls the window, never by `scrollIntoView`.
+    const helper = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
     mount(`/compose/${DRAFT}`);
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
-    await waitFor(() => expect(scrolled.some((element) => element.getAttribute("data-testid") === "build-list" || element.hasAttribute("data-skel-kind"))).toBe(true), { timeout: 10_000 });
+    await waitFor(() => expect(helper.mock.calls.some(([options]) => typeof options === "object" && (options as ScrollToOptions).top !== undefined && (options as ScrollToOptions).top !== 0)).toBe(true), { timeout: 10_000 });
+    expect(scrolled).toEqual([]);
   });
 });
 

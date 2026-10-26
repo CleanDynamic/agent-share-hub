@@ -22,19 +22,19 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { NOTICE_RISE } from "@/lib/build/buildMotion";
+import { LIFT } from "@/lib/build/buildMotion";
 import { NOTICE_COPY, NOTICE_MS } from "@/lib/build/referenceHistory";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { FAST } from "@/lib/theme/motion";
 import { nameColourFor, swatchFor } from "@/lib/theme/partColour";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { fallOut, riseIn, useCrossfade, useHeld } from "./buildMotion";
+import { dropIn, liftOut, useCrossfade, useHeld } from "./buildMotion";
 import { BAR_AIR, PHONE_BARS_BOTTOM } from "./composeChrome";
 import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, frameStyle } from "./modalRecipes";
 
@@ -193,20 +193,30 @@ export function UndoRedo({ canUndo, canRedo, onUndo, onRedo, phone = false }: { 
 
 /* ── the notice ── */
 
-/** The sentence after a step, with Undo: six seconds, or until the next step. */
+/** SV-07 P5: the notice's height and its place above the foot of the window: the page keeps this much room below its last row. */
+export const NOTICE_HEIGHT = 40;
+export const NOTICE_BOTTOM = 24;
+/** The room the page leaves at its foot while a notice shows: the notice's height and 16 more. */
+export const NOTICE_ROOM = NOTICE_HEIGHT + 16;
+
+/**
+ * The sentence after a step, with Undo: six seconds, or until the next step. SV-07 P5: always in one place, fixed 24 from the
+ * foot of the window and centred on the build column (which `frameOf` centres on the window), drawn at the body so no
+ * transformed ancestor (a page fade) can move it. It arrives as a drop and leaves as a lift, at once and quicker than it came.
+ */
 export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }: { notice: { sentence: string; n: number; noUndo?: boolean } | null; onUndo: () => void; onDone: (n: number) => void; phone?: boolean }) {
   const done = useRef(onDone);
   done.current = onDone;
-  /* CA-22 P6: it rises 8 and fades in over FAST, and fades out over FAST; a new notice replaces the words with a crossfade, not a second rise. */
-  const held = useHeld(given, FAST);
+  /* A new notice replaces the words with a crossfade in place, not a second drop: one notice at a time. */
+  const held = useHeld(given, LIFT);
   const notice = held.value;
   const box = useRef<HTMLDivElement | null>(null);
   const sentence = useCrossfade<HTMLSpanElement>(notice?.n ?? 0);
   useLayoutEffect(() => {
     if (!box.current) return;
-    if (held.leaving) fallOut(box.current, { by: NOTICE_RISE, ms: FAST, base: "translateX(-50%)" });
-    else if (notice) riseIn(box.current, { by: NOTICE_RISE, ms: FAST, base: "translateX(-50%)" });
-    // The rise belongs to the notice appearing, not to its words changing: `n` is not a dependency.
+    if (held.leaving) liftOut([box.current]);
+    else if (notice) dropIn([box.current]);
+    // The drop belongs to the notice appearing, not to its words changing: `n` is not a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [held.leaving, notice === null]);
   useEffect(() => {
@@ -217,19 +227,22 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
     return () => window.clearTimeout(timer);
   }, [given]);
   if (!notice) return null;
-  return (
+  return createPortal(
     <div
       ref={box}
       data-testid="reference-notice"
       style={{
         position: "fixed",
-        left: "50%",
+        // Centred by its margins, not a transform, so the drop and the lift own its transform.
+        left: 0,
+        right: 0,
+        marginInline: "auto",
+        width: "max-content",
         // On a phone the dock and the action bar cover the foot of the screen, and the page (z-index 1) is under the dock: the notice stands above them.
-        bottom: phone ? `calc(${PHONE_BARS_BOTTOM + BAR_AIR}px + env(safe-area-inset-bottom))` : 24,
-        transform: "translateX(-50%)",
+        bottom: phone ? `calc(${PHONE_BARS_BOTTOM + BAR_AIR}px + env(safe-area-inset-bottom))` : NOTICE_BOTTOM,
         zIndex: 80,
         boxSizing: "border-box",
-        height: 40,
+        height: NOTICE_HEIGHT,
         maxWidth: "calc(100vw - 32px)",
         display: "flex",
         alignItems: "center",
@@ -251,7 +264,8 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
           {NOTICE_COPY.undo}
         </RecipeButton>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

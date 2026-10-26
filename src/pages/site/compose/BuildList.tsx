@@ -54,6 +54,7 @@ import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
 import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { GlyphButton } from "./ModalFrame";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useAnnounce } from "./BuildAnnouncer";
 import { PREVIEW } from "@/lib/theme/truncate";
 import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
@@ -2445,13 +2446,15 @@ export function BuildList(raw: BuildListProps) {
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.phone ? undefined : props.onEditTile} />
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
+      {/* SV-07 P5: what the List says is heard through the page's one announcer, and the notice is the one thing seen. These
+          two keep the last sentence as a record only: never drawn, and hidden from screen readers so nothing is said twice. */}
       {nestOn || said ? (
-        <div data-testid="nest-said">
-          {said ? <Quiet>{said}</Quiet> : null}
+        <div data-testid="nest-said" aria-hidden="true" style={VISUALLY_HIDDEN}>
+          {said}
         </div>
       ) : null}
-      <div data-testid="sessions-said" style={props.said ? undefined : { display: "none" }}>
-        {props.said ? <Quiet>{props.said}</Quiet> : null}
+      <div data-testid="sessions-said" aria-hidden="true" style={VISUALLY_HIDDEN}>
+        {props.said}
       </div>
       {/* CA-14 P5: with session heads the prompt box stands in its session; an old draft with none keeps it at the foot, as it was. */}
       {headed ? null : (

@@ -174,12 +174,15 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     expect(picker.getByText("No session matches.")).toBeTruthy();
   });
 
-  it("says Adding… on the row at once on a new post whose draft is being made", async () => {
+  it("shows the session arriving and disables the row at once on a new post whose draft is being made (SV-07 P5: no Adding…)", async () => {
     mount("/compose/new", { delays: [{ method: "POST", path: /^\/rest\/v1\/builds(\?|$)/, delayMs: 1500 }] });
     await field();
     const picker = within(await openRow());
     fireEvent.click(picker.getAllByRole("listitem")[0]);
-    expect((await screen.findByTestId("add-session-row")).textContent).toBe("Adding…");
+    expect(await screen.findByTestId("arriving-session")).toBeTruthy();
+    const row = await screen.findByTestId("add-session-row");
+    expect((row as HTMLButtonElement).disabled).toBe(true);
+    expect(row.textContent).not.toContain("Adding");
   });
 
   it("a draft that cannot be made says so once", async () => {

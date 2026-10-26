@@ -91,8 +91,6 @@ export const OPTIONAL_LIFT = 160;
 export const OPTIONAL_LIFT_STAGGER = 40;
 /** The first field starts to fall this long after the press, while the frame is still opening. */
 export const OPTIONAL_DROP_AFTER = 100;
-/** The notice rises this far and fades in. */
-export const NOTICE_RISE = 8;
 /** List to Map: the tiles fold behind their heads, each head morphs into its box, the lines draw in. */
 export const MAP_FOLD = 180;
 /** Longer than the ceiling: a head travels to a new place. */

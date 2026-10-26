@@ -115,7 +115,7 @@ import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { makingWithGroupColours, previewGroupColour, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
-import { ReferenceNotice } from "./referencePieces";
+import { NOTICE_ROOM, ReferenceNotice } from "./referencePieces";
 import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
 import { useLeaveGuard } from "./useLeaveGuard";
@@ -2288,6 +2288,7 @@ function SandboxPageBody() {
       <DetailsReferencesProvider value={detailsRefs}>
       <SandboxView
         {...viewProps}
+        noticeRoom={buildHistory.notice ? NOTICE_ROOM : undefined}
         classification={classification}
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}

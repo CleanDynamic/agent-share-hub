@@ -123,6 +123,8 @@ export interface SandboxViewProps extends CardProps {
   pendingWrites?: number;
   /** CA-23: the strips at the top of the Build column (Offline; Changed in another tab). Absent or empty: none is drawn. */
   strips?: ReactNode;
+  /** SV-07 P5: room at the foot of the Build column while the notice shows (its height and 16), so it never covers the last row. */
+  noticeRoom?: number;
   /** CA-10: a save that stopped: its reason and code, for "Not saved: {reason}. Code {code}." */
   saveProblem?: SaveFailure | null;
   /** CA-10: why the build did not load: logged once, its code shown under "This build didn't load." */
@@ -1236,6 +1238,7 @@ function SandboxBody(props: SandboxViewProps) {
         flexDirection: "column",
         gap: 20,
         ...(phone ? { flex: "999 1 480px" } : { flex: `0 1 ${frame.build}px`, width: frame.build }),
+        ...(props.noticeRoom ? { paddingBottom: props.noticeRoom } : null),
       }}
     >
       {props.strips && !phone && lens !== "map" ? (

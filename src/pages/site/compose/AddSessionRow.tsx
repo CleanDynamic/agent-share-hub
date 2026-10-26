@@ -30,7 +30,6 @@ import { FLOATING_Z } from "./ToolPicker";
 export const ADD_SESSION_COPY = {
   row: "Add a session",
   addPart: "Add a part",
-  adding: "Adding…",
   title: "Add a session",
   startNew: "Start a new session",
   startNewLine: "An empty one at the end. Pick its app later.",
@@ -347,15 +346,13 @@ export function AddSessionRow(props: AddSessionRowProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openN]);
   const triggerStyle: CSSProperties = addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding);
-  const label = adding ? ADD_SESSION_COPY.adding : ADD_SESSION_COPY.row;
+  // SV-07 P5: no "Adding…": the disabled row and the session arriving in the List show that it is working.
   const content = (
     <>
-      {adding ? null : (
-        <span aria-hidden="true" style={{ display: "inline-flex" }}>
-          <Glyph name="plus" size={16} />
-        </span>
-      )}
-      {label}
+      <span aria-hidden="true" style={{ display: "inline-flex" }}>
+        <Glyph name="plus" size={16} />
+      </span>
+      {ADD_SESSION_COPY.row}
     </>
   );
 
