@@ -28,6 +28,7 @@ import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import { QUERY_DEFAULTS } from "@/lib/query/client";
 import { CACHE_VERSION, MAX_AGE_MS, createKeptCache, shouldKeep } from "@/lib/query/persist";
 import { RouteWarmup } from "@/lib/routing/RouteWarmup";
+import { PageChangeProvider } from "@/lib/routing/PageChangeProvider";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
 import { FrameRoute } from "./components/shell/FrameRoute";
 import { ComposeRoute } from "./pages/site/compose/ComposeRoute";
@@ -246,6 +247,7 @@ const App = () => (
             {/* SV-04: inside the frame, the one boundary is AppShell's (the matched route's Placeholder). This one is
                 for the routes drawn without the frame (sign in, the legacy workspaces, consent, the dev pages), which
                 wait on the ground colour, as they did. */}
+            <PageChangeProvider>
             <Suspense fallback={OUTSIDE_FRAME_FALLBACK}>
             <Routes>
               <Route element={<Layout />}>
@@ -631,6 +633,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
+            </PageChangeProvider>
             </UploadPickerProvider>
             </ReblogComposeProvider>
             </ShareMenuProvider>

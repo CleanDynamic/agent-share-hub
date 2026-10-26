@@ -40,7 +40,7 @@
 // pages that already hold the pieces render this directly.
 
 import { useId, useState, type CSSProperties, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { PageLink as Link } from "@/lib/routing/PageLink";
 
 import { hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
 import { feedback } from "@/lib/theme/motion";

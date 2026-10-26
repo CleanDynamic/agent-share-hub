@@ -1042,6 +1042,19 @@ input[type="search"] { border-radius: var(--r-control); }
   50%  { opacity: 0; }
   100% { opacity: 0; }
 }
+/* SV-04: the progress line under the header while a page change waits (PageProgress.tsx). One fill while waiting, then
+   the rest of the way and out when the page changes; transform and opacity only. */
+@keyframes bgPageProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(0.9); }
+}
+@keyframes bgPageProgressFill {
+  to { transform: scaleX(1); }
+}
+@keyframes bgPageProgressOut {
+  to { opacity: 0; }
+}
+
 @keyframes bgContentIn {
   from { opacity: 0; }
   to   { opacity: 1; }

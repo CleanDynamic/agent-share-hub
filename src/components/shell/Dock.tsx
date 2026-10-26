@@ -15,7 +15,7 @@
 
 import { Bell, Home, Image as ImageIcon, Plus, Target, type LucideIcon } from "lucide-react";
 import { memo } from "react";
-import { useLocation } from "react-router-dom";
+import { useCurrentPath } from "@/lib/routing/go";
 
 import type { GlyphName } from "@/components/brand/Glyph";
 import { Icon as AnyIcon } from "@/components/brand/Icon";
@@ -147,7 +147,8 @@ export function DockView(props: DockViewProps) {
 
 /** The container: the current tile from the route, the unread count from the notifications hook. */
 function DockContainer() {
-  const { pathname } = useLocation();
+  // SV-04: the tile of the page a change is on its way to is current at once (go.ts).
+  const pathname = useCurrentPath();
   const { count } = useUnreadNotifications();
   const section = sectionForPath(pathname);
   const current: DockViewProps["current"] = isActivityPath(pathname)

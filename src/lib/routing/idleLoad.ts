@@ -3,6 +3,7 @@
 // Home, Builds, Drafts and Library; and the composer when signed in. Nothing when the reader asked for less data
 // (`navigator.connection.saveData`). Safari has no requestIdleCallback: a 1 ms timeout stands in for it.
 
+import { loadEntry } from "./go";
 import { PAGE_READY_EVENT, PAGE_READY_ATTRIBUTE } from "./pageReady";
 import { ROUTE_TABLE } from "./routeTable";
 
@@ -27,7 +28,7 @@ export function loadChunksWhenIdle(signedIn: boolean): void {
     for (const key of [...ALWAYS, ...(signedIn ? SIGNED_IN : [])]) {
       if (asked.has(key)) continue;
       asked.add(key);
-      void ROUTE_TABLE[key].load().catch(() => asked.delete(key));
+      void loadEntry(key, ROUTE_TABLE[key].load).catch(() => asked.delete(key));
     }
   });
 }

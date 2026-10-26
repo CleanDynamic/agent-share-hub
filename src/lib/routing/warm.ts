@@ -5,6 +5,7 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 
+import { loadEntry } from "./go";
 import { matchRoute, type RouteEntry } from "./routeTable";
 
 export const FRESH_MS = 30_000;
@@ -42,7 +43,7 @@ export function warmPath(href: string, queryClient: QueryClient, userId: string 
   if (last !== undefined && now - last < FRESH_MS) return { entry: match.entry, started: false };
   started.set(key, now);
 
-  void match.entry.load().catch(() => started.delete(key));
+  void loadEntry(match.entry.key, match.entry.load).catch(() => started.delete(key));
   if (!match.entry.signedIn || userId) {
     void Promise.resolve(match.entry.prefetch(match.params, queryClient, { userId })).catch(() => undefined);
   }

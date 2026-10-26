@@ -7,7 +7,7 @@
 
 import type { ComponentProps } from "react";
 import type { Link } from "react-router-dom";
-import { IntentLink } from "@/lib/routing/IntentLink";
+import { PageLink } from "@/lib/routing/PageLink";
 
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -39,7 +39,7 @@ export function FrameLink({
     onPointerCancel,
   });
   return (
-    <IntentLink
+    <PageLink
       {...rest}
       {...handlers}
       style={{ textDecoration: "none", ...style, ...(state.hovered ? hoverStyle : null), ...ring(state.focusVisible) }}

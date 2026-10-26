@@ -2,11 +2,11 @@
 
    Title 14/500 at line-height 1.3, the meta line 12/400 in `--label` two below it, and, when the section has a page of
    its own, a 28px chevron at the top right: `--control` with a 1px `--control-border`, radius 6, a 12px chevron in
-   `--text`. The chevron is a link named "Open <section>". It is a `Link` until SV-04 makes `PageLink`. On a phone the
+   `--text`. The chevron is a link named "Open <section>". It is a `PageLink` (SV-04), so it changes page through `go()`. On a phone the
    hit area reaches 44px by padding with a matching negative margin, so the drawn 28px does not change. */
 
 import type { ElementType, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { PageLink as Link } from "@/lib/routing/PageLink";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";

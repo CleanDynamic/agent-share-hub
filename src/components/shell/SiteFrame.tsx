@@ -50,6 +50,7 @@ import { Breadcrumb } from "./Breadcrumb";
 import { HEADER_HEIGHT } from "./chromeSize";
 import { Dock } from "./Dock";
 import { MobileHeader } from "./MobileHeader";
+import { PageProgress } from "./PageProgress";
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
@@ -79,6 +80,8 @@ export interface SiteFrameViewProps {
   mobileHeader?: ReactNode;
   /** Phone: the fixed dock (UI-P19). */
   dock?: ReactNode;
+  /** SV-04: the progress line, along the foot of the header slot while a page change waits. */
+  progress?: ReactNode;
   /** The page. */
   children?: ReactNode;
   /** `board` on the dev compare page: the footer is placed where the board draws it (UI-P55). */
@@ -151,6 +154,7 @@ export function SiteFrameView({
   footer,
   mobileHeader,
   dock,
+  progress,
   children,
   wide = false,
   skipLink,
@@ -189,6 +193,7 @@ export function SiteFrameView({
         style={{ position: "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
       >
         {phone ? mobileHeader : header}
+        {progress}
       </div>
       <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? { ...SURFACE, maxWidth: "none" } : SURFACE}>
         <main
@@ -243,6 +248,7 @@ export function SiteFrame({ variant = "site", children, wide, skipLink }: SiteFr
         footer={<SiteFooter />}
         mobileHeader={<MobileHeader />}
         dock={<Dock />}
+        progress={<PageProgress />}
         wide={wide}
         skipLink={skipLink}
       >

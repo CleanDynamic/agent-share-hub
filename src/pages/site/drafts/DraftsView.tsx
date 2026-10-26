@@ -28,7 +28,7 @@
 
 import { useState, type CSSProperties, type DragEvent, type ReactNode, type Ref } from "react";
 import { ChevronRight, GripVertical, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { PageLink as Link } from "@/lib/routing/PageLink";
 
 import { IntentLink } from "@/lib/routing/IntentLink";
 

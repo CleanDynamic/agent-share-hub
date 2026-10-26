@@ -909,9 +909,23 @@ export const CA03_FILES: readonly string[] = [
   // SV-04
   "src/components/AppShell.tsx",
   "src/components/ProtectedRoute.tsx",
+  "src/components/shell/Dock.tsx",
+  "src/components/shell/FrameLink.tsx",
   "src/components/shell/FrameOutlet.tsx",
-  "src/components/shell/frameOutlet.test.tsx",
+  "src/components/shell/PageProgress.tsx",
   "src/components/shell/SiteFrame.tsx",
+  "src/components/shell/SiteHeader.tsx",
+  "src/components/shell/frameOutlet.test.tsx",
+  "src/components/vision/SectionHead.tsx",
+  "src/lib/routing/PageChangeProvider.tsx",
+  "src/lib/routing/PageLink.tsx",
+  "src/lib/routing/RoutePlaceholder.tsx",
+  "src/lib/routing/go.test.tsx",
+  "src/lib/routing/go.ts",
+  "src/lib/routing/idleLoad.ts",
+  "src/lib/routing/useIntent.ts",
+  "src/lib/routing/warm.ts",
+  "src/pages/site/drafts/DraftsView.tsx",
 ];
 
 /**

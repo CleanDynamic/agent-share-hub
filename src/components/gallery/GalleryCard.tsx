@@ -53,7 +53,7 @@
 // Tailwind's generated utilities win over hand-written classes at build time.
 
 import { useId, useMemo, useState } from "react";
-import { IntentLink as Link } from "@/lib/routing/IntentLink";
+import { PageLink as Link } from "@/lib/routing/PageLink";
 import { BuildCard, CardCredit, COVER_HEIGHT, type BuildCardTitleSize } from "@/components/brand/BuildCard";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import type { Pattern } from "@/lib/build/patterns";
