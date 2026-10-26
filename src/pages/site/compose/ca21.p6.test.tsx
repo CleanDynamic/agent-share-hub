@@ -3,6 +3,7 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { slideMs } from "@/lib/build/buildMotion";
 import { STANDARD, __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { done, mountList, said, stubLayout, stubMedia } from "./ca21Harness";
@@ -29,7 +30,7 @@ async function moveDown(name: string) {
 }
 
 describe("a move from the menu", () => {
-  it("slides the moved tile and its neighbour from their old places: a translate that ends at none, over 150 ms in the standard easing", async () => {
+  it("slides the moved tile and its neighbour from their old places: a translate that ends at none, in the standard easing, all over the time the longer move asks (SV-06 P5)", async () => {
     stubLayout();
     const { props } = mountList({ onMove: vi.fn(() => Promise.resolve(true)) });
     const [first, second] = tileIds();
@@ -37,10 +38,14 @@ describe("a move from the menu", () => {
     expect(props.onMove).toHaveBeenCalledWith(first, 1);
     await waitFor(() => expect(tileIds().slice(0, 2)).toEqual([second, first]));
     expect(animations.length).toBeGreaterThanOrEqual(2);
+    const travel = animations.map(({ keyframes }) => {
+      const [dx, dy] = (String(keyframes[0].transform).match(/-?[\d.]+/g) ?? []).map(Number);
+      return Math.hypot(dx ?? 0, dy ?? 0);
+    });
     for (const { keyframes, options } of animations) {
       expect(String(keyframes[0].transform)).toMatch(/translate\(/);
       expect(keyframes[1].transform).toBe("none");
-      expect(options.duration).toBe(150);
+      expect(options.duration).toBe(slideMs(Math.max(...travel)));
       expect(options.easing).toBe(STANDARD);
     }
     // No skeleton: nothing is held.

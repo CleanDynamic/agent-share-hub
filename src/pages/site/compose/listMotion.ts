@@ -7,7 +7,8 @@
    ONE PASS PER COMMIT. `MotionBoundary` stands round the list. Before React changes the DOM (`getSnapshotBeforeUpdate`) it reads
    where every `[data-slide-id]` element is DRAWN, a running slide included; after (`componentDidUpdate`) it reads where each now
    stands, and everything that moved slides from the one to the other. Nothing is measured while rendering. All the reads come
-   first and then all the writes. Two changes in one commit are one plan, and every slide in a plan has the same duration.
+   first and then all the writes. Two changes in one commit are one plan, and every slide in a plan has the same duration: the one
+   for its longest move (`slideMs`, P5), so a long move is not a jump and what moves together arrives together.
 
    NEVER CANCEL, ALWAYS CONTINUE. A slide is added to whatever the element is already doing (`composite: "add"`): an element
    mid-slide when the next change lands carries on from where it is drawn to its new place, and the slide it was in finishes
@@ -24,7 +25,7 @@
 
 import { Component, createContext, useContext, useRef, useState, type ReactNode, type RefObject } from "react";
 
-import { DROP, DROP_FALL, SEQUENCE_CAP, SLIDE } from "@/lib/build/buildMotion";
+import { DROP, DROP_FALL, SEQUENCE_CAP, slideMs } from "@/lib/build/buildMotion";
 import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
 import { SLIDE_ATTR, type Box } from "./flip";
@@ -321,7 +322,7 @@ export function measureDrawn(root: ParentNode): Measure {
 }
 
 export interface SlideOptions {
-  /** How long; by default the slide's own timing. */
+  /** How long; by default the slide's own timing for the plan's longest move (`slideMs`). */
   ms?: number;
   /** Before the slide starts: what slides sits where it was until then. */
   delay?: number;
@@ -355,6 +356,8 @@ export function planSlides(before: Measure, after: Measure, options: SlideOption
   const moves: { element: HTMLElement; dx: number; dy: number }[] = [];
   const grown: { element: HTMLElement; was: number; now: number; framed: boolean }[] = [];
   const by = new Map<string, { dx: number; dy: number }>();
+  /** The longest anything travels in this plan, carried by its parent or not, and the bottom edge of a frame that resized. */
+  let farthest = 0;
   for (const [key, now] of after) {
     const was = before.get(key);
     if (!was) continue;
@@ -370,11 +373,13 @@ export function planSlides(before: Measure, after: Measure, options: SlideOption
     // A thing that changed size: a framed one (a part) moves its frame's pieces; a tile that grew drops its new part in.
     const framed = framedBy(now.element) !== null;
     if (Math.abs(now.h - was.h) > 1 && (framed || (now.h > was.h && /^(tile|nested):/.test(key)))) grown.push({ element: now.element, was: was.h, now: now.h, framed });
+    if (framed) farthest = Math.max(farthest, Math.abs(now.h - was.h));
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
     by.set(key, { dx: dx + (carried?.dx ?? 0), dy: dy + (carried?.dy ?? 0) });
+    farthest = Math.max(farthest, Math.hypot(was.x - now.x, was.y - now.y));
     moves.push({ element: now.element, dx, dy });
   }
-  const ms = options.ms ?? SLIDE;
+  const ms = options.ms ?? slideMs(farthest);
   const delay = options.delay ?? 0;
   const timing = { duration: ms, ...(delay > 0 ? { delay, fill: "backwards" as const } : null) };
   // Reads first: what of each grown tile stands below its old height.
@@ -492,9 +497,10 @@ function belowOldHeight(element: HTMLElement, was: number, after: Measure): HTML
 
 /**
  * A box of the skeleton that stands somewhere else now: it slides from where it was, and takes its new size at once. A framed box
- * (a lane, `FramePieces`) moves its pieces instead of scaling, so its corners never stretch.
+ * (a lane, `FramePieces`) moves its pieces instead of scaling, so its corners never stretch. By default it takes as long as a slide
+ * of its distance (`slideMs`), as the tile or session it frames does.
  */
-export function slideBox(element: HTMLElement, from: Box, to: Box, ms: number = SLIDE): MotionRun {
+export function slideBox(element: HTMLElement, from: Box, to: Box, ms: number = slideMs(Math.max(Math.hypot(from.x - to.x, from.y - to.y), Math.abs(from.h - to.h)))): MotionRun {
   const dx = from.x - to.x;
   const dy = from.y - to.y;
   const timing = { duration: ms };

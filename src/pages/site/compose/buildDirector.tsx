@@ -8,13 +8,13 @@
 
    LEAVING (something went). The old view is held on screen, in place, while what went lifts out (`LIFT`: fades and rises 8). The
    skeleton of the sessions involved shows meanwhile (their lanes and sockets; the removed one's socket stays where it was). Then
-   the new view is drawn and everything slides by the gap (`SLIDE`), the skeleton's boxes with it, and the numbers crossfade
+   the new view is drawn and everything slides by the gap (`slideMs`, by its distance), the skeleton's boxes with it, and the numbers crossfade
    (`useCrossfade` in the number badges). The skeleton fades out once the slides have ended, `FADE_AFTER_MS` after (SV-06: each
    step waits on the one before it ending, never on a timer; `SEQUENCE_CAP` ends anything still running at 1.2 s).
-   A clear lifts every head and tile that is on screen from the last to the first, `STAGGER` apart, up to `STAGGER_CAP`.
+   A clear lifts every head and tile that is on screen from the last to the first, `STAGGER` apart, over `STAGGER_SPREAD_MAX` at most.
 
    ARRIVING (something came). The new view is drawn at once, so its place is already measured; the things below slide to open
-   the gap (`SLIDE`) while what came waits, see-through, and then drops in (`DROP`). A copy instead slides out from under its
+   the gap (`slideMs`) while what came waits, see-through, and then drops in (`DROP`). A copy instead slides out from under its
    original. Several coming at once drop `STAGGER` apart. The skeleton of the sessions involved shows, then fades.
 
    Everything is a transform or an opacity, played by the List's one animator (`listMotion.ts`): the slides come from its pass
@@ -24,7 +24,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 
-import { DROP, LIFT, SLIDE, STAGGER, STAGGER_CAP } from "@/lib/build/buildMotion";
+import { DROP, LIFT, SLIDE, STAGGER } from "@/lib/build/buildMotion";
 import { SKELETON_IN } from "@/lib/build/buildMotion";
 import type { Step } from "@/lib/build/graph";
 import type { Skeleton } from "@/lib/build/sortLayout";
@@ -191,18 +191,11 @@ export function planLift(root: HTMLElement, change: Change, before: Layout, kind
   const goneTiles = new Set(change.removedTiles);
   const wholeBuild = kind === "clear" || (before.tiles.size > 0 && change.removedTiles.length === before.tiles.size);
   if (wholeBuild) {
-    // Every head and tile, last to first; only those on screen are staggered, the rest go with the last of them.
+    // Every head and tile on screen, last to first, staggered over a fixed spread however many there are. What is not in the
+    // window is not lifted by the eye: it simply goes with the rest.
     const all = [...root.querySelectorAll<HTMLElement>('[data-testid="workstream-head"], [data-testid="session-head"], [data-skel-kind="tile"]')].reverse();
-    const seen = all.filter(onScreen);
-    const rest = all.filter((element) => !onScreen(element));
-    const staggered = seen.slice(0, STAGGER_CAP);
-    const together = [...seen.slice(STAGGER_CAP), ...rest];
-    const last = staggerDelay(Math.max(staggered.length - 1, 0), stagger);
-    // What is not in the window is not lifted by the eye: it simply goes with the rest.
-    const elements = [...staggered, ...seen.slice(STAGGER_CAP)];
-    void rest;
-    const delays = [...staggered.map((_, at) => staggerDelay(at, stagger)), ...seen.slice(STAGGER_CAP).map(() => last)];
-    void together;
+    const elements = all.filter(onScreen);
+    const delays = elements.map((_, at) => staggerDelay(at, elements.length, stagger));
     return { elements, delays, span: (elements.length > 0 ? Math.max(...delays) : 0) + LIFT, scope: null };
   }
   const elements: HTMLElement[] = [];
@@ -517,9 +510,11 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
       if (plan.drops.length + plan.copies.length + plan.frames.length === 0) return;
       setSkeleton(measureStill(element, plan.scope ?? undefined));
       setShown(true);
-      // What came waits, see-through, while the gap opens (its delay, on the same clock as the slide), then drops.
-      const open = plan.stagger > 0 && plan.drops.length > 1 ? SKELETON_IN : SLIDE;
-      const arriving = allOf([...plan.frames.map((frame) => openFrame(frame, { delay: SLIDE })), dropIn(plan.drops, { stagger: plan.stagger, delay: open }), ...plan.copies.map(({ copy, original }) => copyOut(copy, original, open))]);
+      // What came waits, see-through, while the gap opens (its delay, on the same clock as the slide: this commit's plan, as long
+      // as its longest move), then drops.
+      const gap = Math.max(SLIDE, motion.plan().ms);
+      const open = plan.stagger > 0 && plan.drops.length > 1 ? SKELETON_IN : gap;
+      const arriving = allOf([...plan.frames.map((frame) => openFrame(frame, { delay: gap })), dropIn(plan.drops, { stagger: plan.stagger, delay: open }), ...plan.copies.map(({ copy, original }) => copyOut(copy, original, open))]);
       const mine = begin(() => arriving.finish());
       fadeWhen(mine, arriving.finished);
     }

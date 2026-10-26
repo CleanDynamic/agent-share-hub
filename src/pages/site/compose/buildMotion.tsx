@@ -4,7 +4,7 @@
 
      slides        measure, change, then slide what moved from where it stood to where it stands: SV-06's `MotionBoundary`
      useLeaving    keep a removed component on screen, in place, while it lifts out; then let it go, so nothing jumps
-     dropIn        anything arriving falls 20 from above and fades in; several arrive `stagger` apart, capped
+     dropIn        anything arriving falls 20 from above and fades in; several arrive `stagger` apart, over a fixed spread at most
      outlineOnce   a ring 4 outside the component, drawn by a separate element whose OPACITY is all that changes
      crossfade     words that change: the old words fade out over the new
 
@@ -29,7 +29,8 @@ import {
   OUTLINE_OUT,
   SCROLL_TO,
   STAGGER,
-  STAGGER_CAP,
+  STAGGER_SPREAD_MAX,
+  staggerStep,
 } from "@/lib/build/buildMotion";
 import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
@@ -44,16 +45,19 @@ const canAnimate = (element: Element): element is HTMLElement => !prefersReduced
 /** Starts one of this file's animations through the animator; a drop or a lift that takes the place of one carries on from it. */
 const start = (element: HTMLElement, id: string, frames: Keyframe[], options: KeyframeAnimationOptions): Animation | null => animateOn(element, id, frames, { ...options, continueFrom: true });
 
-/** The delay of item `index` among those moving together: `stagger` apart, and from the `cap`th on, together with it. */
-export const staggerDelay = (index: number, stagger: number = STAGGER, cap: number = STAGGER_CAP): number => Math.min(Math.max(index, 0), Math.max(cap, 1) - 1) * stagger;
+/**
+ * The delay of item `index` of `count` moving together: `stagger` apart, closer together when `count` would spread them past `spread`
+ * (SV-06 P5: the spread never grows with the count).
+ */
+export const staggerDelay = (index: number, count: number, stagger: number = STAGGER, spread: number = STAGGER_SPREAD_MAX): number => Math.max(index, 0) * staggerStep(count, stagger, spread);
 
 /* ── dropIn ── */
 
 export interface DropOptions {
   /** Between one and the next, in ms. 0: all at once. */
   stagger?: number;
-  /** Items beyond this go together with the last staggered one. */
-  cap?: number;
+  /** The longest from the first starting to the last: more items stand closer together. */
+  spread?: number;
   /** Before the first starts. */
   delay?: number;
   ms?: number;
@@ -62,10 +66,10 @@ export interface DropOptions {
 }
 
 /** Anything arriving: fades in and falls `DROP_FALL` from above to its place, over `DROP`. In the order given. */
-export function dropIn(elements: readonly Element[], { stagger = 0, cap = STAGGER_CAP, delay = 0, ms = DROP, from = DROP_FALL }: DropOptions = {}): MotionRun {
+export function dropIn(elements: readonly Element[], { stagger = 0, spread = STAGGER_SPREAD_MAX, delay = 0, ms = DROP, from = DROP_FALL }: DropOptions = {}): MotionRun {
   const animations = elements.map((element, at) =>
     canAnimate(element)
-      ? start(element, "drop", [{ opacity: 0, transform: `translateY(-${from}px)` }, { opacity: 1, transform: "none" }], { duration: ms, delay: delay + staggerDelay(at, stagger, cap), fill: "backwards" })
+      ? start(element, "drop", [{ opacity: 0, transform: `translateY(-${from}px)` }, { opacity: 1, transform: "none" }], { duration: ms, delay: delay + staggerDelay(at, elements.length, stagger, spread), fill: "backwards" })
       : null,
   );
   return runOf(animations);
@@ -80,22 +84,22 @@ export function fadeIn(elements: readonly Element[], { ms = CROSSFADE, delay = 0
 
 export interface LiftOptions {
   stagger?: number;
-  cap?: number;
+  spread?: number;
   delay?: number;
   ms?: number;
   rise?: number;
 }
 
 /** Anything leaving: fades out and rises `LIFT_RISE`, over `LIFT`. It stays as it ended (`fill: both`) until it is taken away. */
-export function liftOut(elements: readonly Element[], { stagger = 0, cap = STAGGER_CAP, delay = 0, ms = LIFT, rise = LIFT_RISE }: LiftOptions = {}): MotionRun {
+export function liftOut(elements: readonly Element[], { stagger = 0, spread = STAGGER_SPREAD_MAX, delay = 0, ms = LIFT, rise = LIFT_RISE }: LiftOptions = {}): MotionRun {
   const animations = elements.map((element, at) =>
-    canAnimate(element) ? start(element, "lift", [{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateY(-${rise}px)` }], { duration: ms, delay: delay + staggerDelay(at, stagger, cap), fill: "both" }) : null,
+    canAnimate(element) ? start(element, "lift", [{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateY(-${rise}px)` }], { duration: ms, delay: delay + staggerDelay(at, elements.length, stagger, spread), fill: "both" }) : null,
   );
   return runOf(animations);
 }
 
 /** How long a lift of `count` items takes from the first starting to the last ending. */
-export const liftSpan = (count: number, stagger: number = STAGGER, cap: number = STAGGER_CAP, ms: number = LIFT): number => (count > 0 ? staggerDelay(count - 1, stagger, cap) + ms : 0);
+export const liftSpan = (count: number, stagger: number = STAGGER, spread: number = STAGGER_SPREAD_MAX, ms: number = LIFT): number => (count > 0 ? staggerDelay(count - 1, count, stagger, spread) + ms : 0);
 
 /* ── resizeFrame: a window that grows or closes about its fixed centre ── */
 

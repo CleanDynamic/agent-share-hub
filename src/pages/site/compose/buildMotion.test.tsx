@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BASE, FAST } from "@/lib/theme/motion";
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
-import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, STAGGER_CAP, CROSSFADE } from "@/lib/build/buildMotion";
+import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, CROSSFADE } from "@/lib/build/buildMotion";
 
 import { crossfade, useCrossfade, dropIn, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useLeaving } from "./buildMotion";
 import { passes, stubAnimations } from "./motionStub";
@@ -43,16 +43,17 @@ const only = (keyframes: Keyframe[]) => [...new Set(keyframes.flatMap((frame) =>
 
 describe("the timings", () => {
   it("names the figures the boards give, and leaves motion.ts its three durations", () => {
-    expect([SLIDE, LIFT, LIFT_RISE, DROP, DROP_FALL, STAGGER, STAGGER_CAP, CROSSFADE, OUTLINE_IN, OUTLINE_HOLD, OUTLINE_OUT]).toEqual([FAST, BASE, 8, 240, 20, 60, 12, FAST, 150, 500, 300]);
+    expect([SLIDE, LIFT, LIFT_RISE, DROP, DROP_FALL, STAGGER, CROSSFADE, OUTLINE_IN, OUTLINE_HOLD, OUTLINE_OUT]).toEqual([FAST, BASE, 8, 240, 20, 60, FAST, 150, 500, 300]);
   });
 
-  it("staggers 60 apart and sends everything past the 12th with the 12th", () => {
-    expect(staggerDelay(0)).toBe(0);
-    expect(staggerDelay(1)).toBe(60);
-    expect(staggerDelay(11)).toBe(660);
-    expect(staggerDelay(12)).toBe(660);
-    expect(staggerDelay(40)).toBe(660);
-    expect(liftSpan(40)).toBe(660 + LIFT);
+  it("staggers 60 apart up to 6 items, and closer for more, so the spread never passes 300", () => {
+    expect(staggerDelay(0, 1)).toBe(0);
+    expect(staggerDelay(1, 2)).toBe(60);
+    expect(staggerDelay(5, 6)).toBe(300);
+    expect(staggerDelay(11, 12)).toBeLessThanOrEqual(300);
+    expect(staggerDelay(39, 40)).toBeLessThanOrEqual(300);
+    expect(liftSpan(40)).toBeLessThanOrEqual(300 + LIFT);
+    expect(liftSpan(1)).toBe(LIFT);
     expect(liftSpan(0)).toBe(0);
   });
 });
@@ -67,9 +68,12 @@ describe("dropIn", () => {
     expect(played.every((entry) => entry.options.duration === DROP && entry.options.fill === "backwards")).toBe(true);
   });
 
-  it("caps the stagger: the 13th and the rest go with the 12th", () => {
+  it("spreads 15 over 300 at most, in order, evenly", () => {
     dropIn(Array.from({ length: 15 }, div), { stagger: STAGGER });
-    expect(played.map((entry) => entry.options.delay).slice(10)).toEqual([600, 660, 660, 660, 660]);
+    const delays = played.map((entry) => Number(entry.options.delay));
+    expect(delays).toHaveLength(15);
+    expect(delays[14]).toBeLessThanOrEqual(300);
+    expect(new Set(delays.slice(1).map((delay, at) => delay - delays[at])).size).toBe(1);
   });
 
   it("animates opacity and transform and nothing else", () => {

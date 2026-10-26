@@ -6,7 +6,7 @@
    drawn folded. SV-06: that is a style the List draws, not one set by hand afterwards, so the animator's pass round the commit
    measures the closed space and slides what stood below, over `FOLD`.
    UNFOLD. The space opens (the session grows, revealed by clip-path as every grown thing is) and the tiles come down from 24 above,
-   top first, `UNFOLD_STAGGER` (40) apart; from the 8th on they come together.
+   top first, `UNFOLD_STAGGER` (40) apart; for more than 8, closer together, over `UNFOLD_SPREAD_MAX` (280).
    The arrow turns over `SLIDE`. Collapse all and Expand all fold every session and part at once: no stagger between sessions.
    Folded sessions' counts ("3 tiles") fade in with the fold.
 
@@ -15,7 +15,7 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
-import { FOLD, FOLD_RISE, SLIDE, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
+import { FOLD, FOLD_RISE, SLIDE, UNFOLD_SPREAD_MAX, UNFOLD_STAGGER } from "@/lib/build/buildMotion";
 
 import { dropIn, fadeIn, liftOut, motionOn, type MotionRun } from "./buildMotion";
 import { allOf, animateOn, capSequence, runOf } from "./listMotion";
@@ -104,7 +104,7 @@ export function useFoldMotion({ sessions, parts, getRoot }: { sessions: Readonly
     for (const key of work.opening.sessions) {
       const container = sessionContainer(root, key);
       if (!container) continue;
-      dropIn(tilesIn(container), { stagger: UNFOLD_STAGGER, cap: UNFOLD_STAGGERED, from: FOLD_RISE, ms: FOLD });
+      dropIn(tilesIn(container), { stagger: UNFOLD_STAGGER, spread: UNFOLD_SPREAD_MAX, from: FOLD_RISE, ms: FOLD });
       turnArrow(arrowOf(root, `session-tiles-${key}`), false);
     }
     for (const key of work.opening.parts) {

@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
-import { FOLD, FOLD_RISE, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
+import { FOLD, FOLD_RISE, UNFOLD_SPREAD_MAX, UNFOLD_STAGGER } from "@/lib/build/buildMotion";
 import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
 
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
@@ -106,11 +106,11 @@ describe("unfolding a session", () => {
     expect(down[0].keyframes[1]).toEqual({ opacity: 1, transform: "none" });
   });
 
-  it("from the 8th on they come together", () => {
-    expect(staggerDelay(6, UNFOLD_STAGGER, UNFOLD_STAGGERED)).toBe(240);
-    expect(staggerDelay(7, UNFOLD_STAGGER, UNFOLD_STAGGERED)).toBe(280);
-    expect(staggerDelay(8, UNFOLD_STAGGER, UNFOLD_STAGGERED)).toBe(280);
-    expect(staggerDelay(30, UNFOLD_STAGGER, UNFOLD_STAGGERED)).toBe(280);
+  it("up to 8 keep 40 apart; more come closer together, so the last never starts past 280", () => {
+    expect(staggerDelay(6, 8, UNFOLD_STAGGER, UNFOLD_SPREAD_MAX)).toBe(240);
+    expect(staggerDelay(7, 8, UNFOLD_STAGGER, UNFOLD_SPREAD_MAX)).toBe(280);
+    expect(staggerDelay(8, 9, UNFOLD_STAGGER, UNFOLD_SPREAD_MAX)).toBeLessThanOrEqual(280);
+    expect(staggerDelay(29, 30, UNFOLD_STAGGER, UNFOLD_SPREAD_MAX)).toBeLessThanOrEqual(280);
   });
 });
 

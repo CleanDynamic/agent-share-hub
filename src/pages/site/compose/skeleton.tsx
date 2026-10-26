@@ -5,7 +5,7 @@
    with its ticks and numbers, and the place the held thing would land. It never changes a component's own style. It exists only
    while something is held (and while it fades out after the drop), and fades in over `SKELETON_IN`.
 
-   Where a box moves because things slid, it slides too, through the List's animator (`listMotion.ts`, `slideBox`), `FAST`, `STANDARD`:
+   Where a box moves because things slid, it slides too, through the List's animator (`listMotion.ts`, `slideBox`), as long as its distance asks (`slideMs`), `STANDARD`:
    a translate, and for a lane (drawn in pieces, `FramePieces`) its bottom edge sliding and its sides growing, so no corner stretches. */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";

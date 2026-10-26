@@ -7,8 +7,9 @@
                   by its height over 200 ms; the rest of the build shows its skeleton, faded in over 120 ms
      +80 ms       an empty socket for each prompt, numbered, fade in over 160 ms
      +260 ms      the session's head falls into place: from 20 above and see-through, over 240 ms
-     then         each prompt falls the same way, 110 ms after the one before (from the 9th on, with the 8th); a prompt not yet
-                  written waits in its socket, and so do the ones after it, so the order never jumps
+     then         each prompt falls the same way, 110 ms after the one before (SV-06 P5: for more than 4, closer together, so the
+                  last starts at most 330 ms after the first); a prompt not yet written waits in its socket, and so do the ones
+                  after it, so the order never jumps
      +200 ms      after the last lands, the skeleton fades over 200 ms, and the page says "Added Session 2 with 3 prompts."
 
    A failed add closes the lane and the sockets back over 200 ms. Under reduced motion nothing moves: the session is there, complete.
@@ -17,7 +18,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
-import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_STEP_MS, STAGGERED_PROMPTS } from "@/lib/build/buildMotion";
+import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_SPREAD_MAX, PROMPT_STEP_MS, staggerStep } from "@/lib/build/buildMotion";
 import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
 import { prefersReducedMotion, scrollBehavior } from "@/lib/theme/motion";
 
@@ -184,13 +185,12 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
     const now = performance.now();
     const head = root.querySelector(`[data-session-key="${key}"] [data-testid="session-head"]`);
     const toHead = Math.max(0, headAt.current - now);
-    // The head falls when its turn comes; if the placeholder's already did, the real one is simply there.
-    if (head && toHead > 0) fall(head, toHead);
     const tiles = [...root.querySelectorAll(`[data-skel-kind="tile"][data-skel-container="${key}"]`)];
-    // The first prompt waits for its turn, 110 ms after the head, and for its row; the others follow, 110 ms apart.
+    // The first prompt waits for its turn, 110 ms after the head, and for its row; the others follow, 110 ms apart, closer for more
+    // than 4 so the spread stays the same. The head falls when its turn comes; if the placeholder's already did, it is simply there.
     const first = Math.max(0, headAt.current + PROMPT_STEP_MS - now);
-    tiles.forEach((tile, at) => fall(tile, first + PROMPT_STEP_MS * Math.min(at, STAGGERED_PROMPTS - 1)));
-    const falls = allOf([...(head && toHead > 0 ? [fall(head, toHead)] : []), ...tiles.map((tile, at) => fall(tile, first + PROMPT_STEP_MS * Math.min(at, STAGGERED_PROMPTS - 1)))]);
+    const step = staggerStep(tiles.length, PROMPT_STEP_MS, PROMPT_SPREAD_MAX);
+    const falls = allOf([...(head && toHead > 0 ? [fall(head, toHead)] : []), ...tiles.map((tile, at) => fall(tile, first + at * step))]);
     // When the last prompt has landed the skeleton fades (`FADE_AFTER_MS` after, its own delay); when that has ended, it is done.
     const done = () => {
       setSkeleton(null);

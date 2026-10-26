@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
-import { DROP, FADE_AFTER_MS, LIFT, SKELETON_IN, SKELETON_OUT, SLIDE, STAGGER } from "@/lib/build/buildMotion";
+import { DROP, FADE_AFTER_MS, LIFT, SKELETON_IN, SKELETON_OUT, SLIDE, STAGGER, STAGGER_SPREAD_MAX, staggerStep } from "@/lib/build/buildMotion";
 import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
 
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
@@ -156,7 +156,7 @@ describe("removing a tile", () => {
 });
 
 describe("clearing the build", () => {
-  it("lifts every tile from the last to the first, 60 apart, and then the build is empty", async () => {
+  it("lifts every tile from the last to the first, 60 apart (closer for more than 6), and then the build is empty", async () => {
     const props = base();
     const { again } = mount(props);
     const box = { left: 0, top: 10, width: 100, height: 40, right: 100, bottom: 50, x: 0, y: 10, toJSON: () => ({}) } as DOMRect;
@@ -169,7 +169,7 @@ describe("clearing the build", () => {
     expect(tiles).toEqual(["a5", "p4", "p3", "p2", "p1"].filter((id) => tiles.includes(id)));
     const delays = lifts().map((entry) => Number(entry.options.delay ?? 0));
     expect(delays).toEqual([...delays].sort((a, b) => a - b));
-    expect(delays[1] - delays[0]).toBe(STAGGER);
+    expect(delays[1] - delays[0]).toBe(staggerStep(delays.length, STAGGER, STAGGER_SPREAD_MAX));
     await passes(Math.max(...delays) + LIFT);
     expect(tile("p1")).toBeNull();
     Element.prototype.getBoundingClientRect = rect;
@@ -193,7 +193,7 @@ describe("a tile coming", () => {
     expect(document.querySelector('[data-testid="skeleton-layer"]')).toBeNull();
   });
 
-  it("a whole build coming back waits for the skeleton to fade in, then drops in from the first to the last, 60 apart", () => {
+  it("a whole build coming back waits for the skeleton to fade in, then drops in from the first to the last, 60 apart (closer for more than 6)", () => {
     const props = base();
     const { again } = mount({ ...props, steps: [], dividers: new Map(), emptySessions: [] });
     announce("undo");
@@ -201,7 +201,7 @@ describe("a tile coming", () => {
     const delays = drops().map((entry) => Number(entry.options.delay ?? 0));
     expect(delays.length).toBeGreaterThan(1);
     expect(delays[0]).toBe(SKELETON_IN);
-    expect(delays[1] - delays[0]).toBe(STAGGER);
+    expect(delays[1] - delays[0]).toBe(staggerStep(delays.length, STAGGER, STAGGER_SPREAD_MAX));
   });
 
   it("a copy slides out from under its original", () => {
@@ -261,7 +261,7 @@ describe("removing a session", () => {
 });
 
 describe("the stagger cap", () => {
-  it("staggers at most 12 and sends the rest with the 12th", async () => {
+  it("staggers 20 over 300 at most, evenly, the last first (SV-06 P5)", async () => {
     const { planLift } = await import("./buildDirector");
     const root = document.createElement("div");
     for (let at = 0; at < 20; at += 1) {
@@ -275,9 +275,10 @@ describe("the stagger cap", () => {
     const before = { tiles: new Map(Array.from({ length: 20 }, (_, at) => [`t${at}`, "s"])), sessions: new Map([["s", ""]]), parts: new Set<string>(), order: new Map<string, string[]>() };
     const plan = planLift(root, { removedTiles: [...before.tiles.keys()], addedTiles: [], removedSessions: ["s"], addedSessions: [], removedParts: [], addedParts: [], movedTiles: [], movedSessions: [], movedParts: [] }, before, "clear");
     expect(plan.elements[0].getAttribute("data-skel-id")).toBe("t19");
-    expect(plan.delays.slice(0, 13)).toEqual([0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 660]);
-    expect(Math.max(...plan.delays)).toBe(660);
-    expect(plan.span).toBe(660 + LIFT);
+    const step = staggerStep(20, STAGGER, STAGGER_SPREAD_MAX);
+    expect(plan.delays).toEqual(Array.from({ length: 20 }, (_, at) => at * step));
+    expect(Math.max(...plan.delays)).toBeLessThanOrEqual(300);
+    expect(plan.span).toBe(19 * step + LIFT);
     root.remove();
   });
 });

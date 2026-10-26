@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { FOLD_RISE, MAP_FOLD, MAP_LINES, MAP_LINES_BACK, MAP_MORPH, MAP_MORPH_MAX, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
+import { FOLD_RISE, MAP_FOLD, MAP_LINES, MAP_LINES_BACK, MAP_MORPH, MAP_MORPH_MAX, UNFOLD_SPREAD_MAX, UNFOLD_STAGGER } from "@/lib/build/buildMotion";
 import { FAST, STANDARD } from "@/lib/theme/motion";
 
 import { dropIn, fadeIn, liftOut, motionOn, type MotionRun } from "./buildMotion";
@@ -231,7 +231,7 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
         fadeIn([...column.querySelectorAll('[data-testid="map-part-label"], [data-testid="map-stage-label"], [data-testid="map-strip"], [data-testid="map-divider"]')], { ms: MAP_LINES });
       } else {
         const sessions = [...column.querySelectorAll<HTMLElement>('[data-testid="session-tiles"]')];
-        for (const container of sessions) dropIn([...container.children], { stagger: UNFOLD_STAGGER, cap: UNFOLD_STAGGERED, from: FOLD_RISE });
+        for (const container of sessions) dropIn([...container.children], { stagger: UNFOLD_STAGGER, spread: UNFOLD_SPREAD_MAX, from: FOLD_RISE });
       }
     });
   }, [lens, getRoot]);
