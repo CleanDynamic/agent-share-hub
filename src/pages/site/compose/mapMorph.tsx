@@ -12,7 +12,8 @@
    TOO MANY. With more than `MAP_MORPH_MAX` (30) sessions, or when the map's boxes do not fit on screen, the new view fades in over
    `FAST` instead.
 
-   Phones are untouched (they have no Map). Under reduced motion the view simply changes. A switch while another is running ends
+   SV-06: each step starts when the one before has ended (`finished`), not after its duration, and `SEQUENCE_CAP` ends a switch
+   still running at 1.2 s. Phones are untouched (they have no Map). Under reduced motion the view simply changes. A switch while another is running ends
    the running one's copies and steps at once; what the tiles were doing carries on, through the List's animator. The copies are `fixed`, `pointer-events: none` and removed when they land: nothing in the page moves
    but by `transform`. */
 
@@ -22,6 +23,7 @@ import { FOLD_RISE, MAP_FOLD, MAP_LINES, MAP_LINES_BACK, MAP_MORPH, MAP_MORPH_MA
 import { FAST, STANDARD } from "@/lib/theme/motion";
 
 import { dropIn, fadeIn, liftOut, motionOn, type MotionRun } from "./buildMotion";
+import { allOf, capSequence } from "./listMotion";
 import type { SandboxLens } from "./SandboxView";
 
 interface Flight {
@@ -95,7 +97,9 @@ export interface LensMorph {
 
 export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onLens: (lens: SandboxLens) => void; getRoot: () => HTMLElement | null }): LensMorph {
   const pending = useRef<{ to: SandboxLens; flights: Flight[]; crossfade: boolean } | null>(null);
-  const timers = useRef<number[]>([]);
+  /** SV-06 P3: each switch counts up; a step that finds a newer switch stands down. Each step waits on the one before ending. */
+  const sequence = useRef(0);
+  const stopCap = useRef<() => void>(() => undefined);
   /** The copies in flight and the lines: what a switch while one runs ends at once. The tiles' own motion is the List's. */
   const runs = useRef<MotionRun[]>([]);
   const hidden = useRef<HTMLElement[]>([]);
@@ -103,8 +107,8 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
   onLensRef.current = onLens;
 
   const clear = useCallback(() => {
-    for (const timer of timers.current) window.clearTimeout(timer);
-    timers.current = [];
+    stopCap.current();
+    sequence.current += 1;
     for (const run of runs.current) run.finish();
     runs.current = [];
     for (const element of hidden.current) element.style.visibility = "";
@@ -113,8 +117,18 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
   }, []);
   useEffect(() => clear, [clear]);
 
-  const later = (ms: number, run: () => void) => {
-    timers.current.push(window.setTimeout(run, ms));
+  /** The next step, once `ended` has: unless another switch has started since. The whole switch is capped at `SEQUENCE_CAP`. */
+  const after = (ended: Promise<unknown>, run: () => void) => {
+    const mine = sequence.current;
+    void ended.then(() => {
+      if (sequence.current === mine) run();
+    });
+  };
+  const capped = () => {
+    const mine = sequence.current;
+    stopCap.current = capSequence(() => {
+      if (sequence.current === mine) clear();
+    });
   };
 
   const switchTo = useCallback(
@@ -136,11 +150,13 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
         }
         const flights = heads.map(({ key, element }) => ({ key, from: element.getBoundingClientRect(), html: copyOf(element) }));
         // 1. The tiles fold up behind their heads, all together.
+        const folded: MotionRun[] = [];
         for (const { element } of heads) {
           const tiles = element.closest("[data-session-key]")?.querySelector<HTMLElement>('[data-testid="session-tiles"]');
-          if (tiles) liftOut([...tiles.children], { rise: FOLD_RISE, ms: MAP_FOLD });
+          if (tiles) folded.push(liftOut([...tiles.children], { rise: FOLD_RISE, ms: MAP_FOLD }));
         }
-        later(MAP_FOLD, () => {
+        capped();
+        after(allOf(folded).finished, () => {
           pending.current = { to, flights, crossfade: false };
           onLensRef.current(to);
         });
@@ -154,8 +170,10 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
         return;
       }
       const flights = boxes.map(({ key, element }) => ({ key, from: element.getBoundingClientRect(), html: copyOf(element) }));
-      runs.current.push(...drawLines(root, MAP_LINES_BACK, true));
-      later(MAP_LINES_BACK, () => {
+      const retract = drawLines(root, MAP_LINES_BACK, true);
+      runs.current.push(...retract);
+      capped();
+      after(allOf(retract).finished, () => {
         pending.current = { to, flights, crossfade: false };
         onLensRef.current(to);
       });
@@ -199,7 +217,8 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
       if (other) flying.push(fly(layer, { key: flight.key, from: flight.from, html: copyOf(other.element) }, to, "in"));
     }
     runs.current.push(...flying);
-    later(MAP_MORPH, () => {
+    // (The switch's cap was set when it began: the morph is its second step.)
+    after(allOf(flying).finished, () => {
       layer.remove();
       column.style.visibility = "";
       hidden.current = hidden.current.filter((element) => element !== column);

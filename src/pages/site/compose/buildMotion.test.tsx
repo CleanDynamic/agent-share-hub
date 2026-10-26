@@ -8,6 +8,7 @@ import { __resetMotionMediaCache } from "@/lib/theme/motion";
 import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, STAGGER_CAP, CROSSFADE } from "@/lib/build/buildMotion";
 
 import { crossfade, useCrossfade, dropIn, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useLeaving } from "./buildMotion";
+import { passes, stubAnimations } from "./motionStub";
 
 interface Played {
   element: Element;
@@ -26,25 +27,7 @@ beforeEach(() => {
   played = [];
   window.matchMedia = ((query: string) => ({ matches: reduced && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined })) as never;
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    const entry: Played = { element: this, keyframes, options, finished: false, cancelled: false };
-    played.push(entry);
-    return {
-      id: options.id ?? "",
-      finished: Promise.resolve(),
-      finish: () => {
-        entry.finished = true;
-      },
-      cancel: () => {
-        entry.cancelled = true;
-      },
-    } as unknown as Animation;
-  }) as never;
-  Element.prototype.getAnimations = function (this: Element) {
-    return played
-      .filter((entry) => entry.element === this && !entry.finished && !entry.cancelled)
-      .map((entry) => ({ id: entry.options.id ?? "", playState: "running", finish: () => (entry.finished = true), cancel: () => (entry.cancelled = true) }) as unknown as Animation);
-  } as never;
+  ({ played } = stubAnimations());
   vi.useFakeTimers();
 });
 afterEach(() => {
@@ -100,7 +83,7 @@ describe("dropIn", () => {
     expect(played.every((entry) => entry.cancelled)).toBe(true);
   });
 
-  it("SV-06: a change mid-animation carries on from the running one: it is let go in the same call, never finished at once", () => {
+  it("SV-06: a change mid-animation carries on from the running one: it is let go in the same call, never finished at once", async () => {
     const item = div();
     dropIn([item]);
     dropIn([item]);
@@ -161,7 +144,7 @@ describe("useLeaving", () => {
   }
   const ids = () => [...document.querySelectorAll("p")].map((p) => p.textContent);
 
-  it("keeps the removed element mounted, in place, for LIFT, lifting; then removes it", () => {
+  it("keeps the removed element mounted, in place, for LIFT, lifting; then removes it", async () => {
     const view = render(<List items={[{ id: "a" }, { id: "b" }, { id: "c" }]} />);
     view.rerender(<List items={[{ id: "a" }, { id: "c" }]} />);
     expect(ids()).toEqual(["a", "b", "c"]);
@@ -169,20 +152,20 @@ describe("useLeaving", () => {
     expect(played).toHaveLength(1);
     expect(played[0].element).toBe(document.querySelector('[data-key="b"]'));
     expect(played[0].options.duration).toBe(LIFT);
-    act(() => vi.advanceTimersByTime(LIFT - 1));
+    await passes(LIFT - 1);
     expect(ids()).toEqual(["a", "b", "c"]);
-    act(() => vi.advanceTimersByTime(1));
+    await passes(1);
     expect(ids()).toEqual(["a", "c"]);
   });
 
-  it("lifts from the last to the first, 60 apart, when asked, and lets go once the last has lifted", () => {
+  it("lifts from the last to the first, 60 apart, when asked, and lets go once the last has lifted", async () => {
     const view = render(<List items={[{ id: "a" }, { id: "b" }, { id: "c" }]} stagger={STAGGER} reverse />);
     view.rerender(<List items={[]} stagger={STAGGER} reverse />);
     expect(played.map((entry) => entry.element.getAttribute("data-key"))).toEqual(["c", "b", "a"]);
     expect(played.map((entry) => entry.options.delay)).toEqual([0, 60, 120]);
-    act(() => vi.advanceTimersByTime(120 + LIFT - 1));
+    await passes(120 + LIFT - 1);
     expect(ids()).toHaveLength(3);
-    act(() => vi.advanceTimersByTime(1));
+    await passes(1);
     expect(ids()).toHaveLength(0);
   });
 
@@ -200,11 +183,11 @@ describe("useLeaving", () => {
     expect(played).toHaveLength(0);
   });
 
-  it("an item that comes back while it is leaving is simply there again", () => {
+  it("an item that comes back while it is leaving is simply there again", async () => {
     const view = render(<List items={[{ id: "a" }, { id: "b" }]} />);
     view.rerender(<List items={[{ id: "a" }]} />);
     view.rerender(<List items={[{ id: "a" }, { id: "b" }]} />);
-    act(() => vi.advanceTimersByTime(LIFT * 2));
+    await passes(LIFT * 2);
     expect(ids()).toEqual(["a", "b"]);
   });
 
@@ -229,7 +212,7 @@ describe("outlineOnce", () => {
     run.finish();
   });
 
-  it("takes the colour it is given, and the link's longer hold", () => {
+  it("takes the colour it is given, and the link's longer hold", async () => {
     const host = div();
     outlineOnce(host, "#7FA7D9", { hold: 800, out: 600 });
     expect((host.querySelector('[data-testid="outline-once"]') as HTMLElement).style.borderColor).toBe("#7fa7d9");
@@ -238,19 +221,19 @@ describe("outlineOnce", () => {
 
   it("removes itself when it ends", async () => {
     const host = div();
-    const run = outlineOnce(host);
-    await run.finished;
+    outlineOnce(host);
+    await passes(OUTLINE_IN + OUTLINE_HOLD + OUTLINE_OUT);
     expect(host.querySelector('[data-testid="outline-once"]')).toBeNull();
   });
 
-  it("under reduced motion shows for the hold and goes, with no fade", () => {
+  it("under reduced motion shows for the hold and goes, with no fade", async () => {
     reduced = true;
     __resetMotionMediaCache();
     const host = div();
     outlineOnce(host);
     expect(played).toHaveLength(0);
     expect((host.querySelector('[data-testid="outline-once"]') as HTMLElement).style.opacity).toBe("1");
-    act(() => vi.advanceTimersByTime(OUTLINE_HOLD));
+    await passes(OUTLINE_HOLD);
     expect(host.querySelector('[data-testid="outline-once"]')).toBeNull();
   });
 });

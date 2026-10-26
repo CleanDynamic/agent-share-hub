@@ -11,6 +11,7 @@ import { goToIt, useHeld } from "./buildMotion";
 import { DetailsPanel, type DetailsPanelProps } from "./DetailsPanel";
 import { ReferenceNotice } from "./referencePieces";
 import { SelectionBar, type SelectionBarProps } from "./removePieces";
+import { passes, stubAnimations } from "./motionStub";
 
 interface Played {
   element: Element;
@@ -26,13 +27,12 @@ beforeEach(() => {
   played = [];
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: reduced && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    played.push({ element: this, keyframes, options });
-    return { id: options.id ?? "", finished: Promise.resolve(), finish: () => undefined, cancel: () => undefined } as unknown as Animation;
-  }) as never;
+  ({ played } = stubAnimations());
 });
 afterEach(() => {
   cleanup();
+  // The old words of a crossfade stand in the body until their fade ends; a test that stops first leaves them.
+  document.querySelectorAll('[data-testid="crossfade-old"]').forEach((node) => node.remove());
   vi.useRealTimers();
   vi.unstubAllGlobals();
   delete (Element.prototype as { animate?: unknown }).animate;
@@ -75,7 +75,7 @@ describe("the selection bar", () => {
     expect(toolbar.style.pointerEvents).toBe("none");
   });
 
-  it("is held for BASE after its data goes, then gone; at once under reduced motion", () => {
+  it("is held for BASE after its data goes, then gone; at once under reduced motion", async () => {
     function Probe({ on }: { on: boolean }) {
       const held = useHeld(on ? { n: 2 } : null, BASE);
       return <p data-testid="probe">{held.value ? `${held.value.n}${held.leaving ? " leaving" : ""}` : "none"}</p>;
@@ -83,7 +83,7 @@ describe("the selection bar", () => {
     const view = render(<Probe on />);
     view.rerender(<Probe on={false} />);
     expect(document.querySelector('[data-testid="probe"]')?.textContent).toBe("2 leaving");
-    act(() => vi.advanceTimersByTime(BASE));
+    await passes(BASE);
     expect(document.querySelector('[data-testid="probe"]')?.textContent).toBe("none");
     cleanup();
     reduced = true;
@@ -110,13 +110,13 @@ describe("the notice", () => {
     expect(box()?.textContent).toContain("Duplicated Prompt 2");
   });
 
-  it("fades out over FAST before it is gone", () => {
+  it("fades out over FAST before it is gone", async () => {
     const view = render(<ReferenceNotice notice={notice(1)} onUndo={() => undefined} onDone={() => undefined} />);
     view.rerender(<ReferenceNotice notice={null} onUndo={() => undefined} onDone={() => undefined} />);
     expect(box()).not.toBeNull();
     const fall = played.filter((entry) => entry.element === box()).at(-1);
     expect(fall?.keyframes[1]).toEqual({ opacity: 0, transform: `translateX(-50%) translateY(${NOTICE_RISE}px)` });
-    act(() => vi.advanceTimersByTime(FAST));
+    await passes(FAST);
     expect(box()).toBeNull();
   });
 });
@@ -142,7 +142,7 @@ describe("Details", () => {
   });
   const kindShown = () => document.querySelector('[data-testid="details-panel"]')?.getAttribute("data-kind");
 
-  it("when the selection changes the old content fades out over FAST, then the new fades in over FAST; nothing slides", () => {
+  it("when the selection changes the old content fades out over FAST, then the new fades in over FAST; nothing slides", async () => {
     const view = render(<DetailsPanel {...props(tileView("prompt", "full"))} />);
     expect(played).toHaveLength(0);
     view.rerender(<DetailsPanel {...props(tileView("agent", "full"))} />);
@@ -150,7 +150,7 @@ describe("Details", () => {
     const out = played.at(-1);
     expect(out?.keyframes).toEqual([{ opacity: 1 }, { opacity: 0 }]);
     expect(out?.options.duration).toBe(FAST);
-    act(() => vi.advanceTimersByTime(FAST));
+    await passes(FAST);
     expect(kindShown()).toBe("agent");
     const inn = played.at(-1);
     expect(inn?.keyframes).toEqual([{ opacity: 0 }, { opacity: 1 }]);
@@ -158,15 +158,15 @@ describe("Details", () => {
     expect(played.every((entry) => entry.keyframes.every((frame) => !("transform" in frame)))).toBe(true);
   });
 
-  it("the empty line crossfades the same way", () => {
+  it("the empty line crossfades the same way", async () => {
     const view = render(<DetailsPanel {...props(null)} />);
     view.rerender(<DetailsPanel {...props(tileView("prompt", "full"))} />);
     expect(document.body.textContent).toContain("Select a tile or session to see it here.");
-    act(() => vi.advanceTimersByTime(FAST));
+    await passes(FAST);
     expect(kindShown()).toBe("prompt");
   });
 
-  it("under reduced motion the new content is simply there", () => {
+  it("under reduced motion the new content is simply there", async () => {
     reduced = true;
     __resetMotionMediaCache();
     const view = render(<DetailsPanel {...props(tileView("prompt", "full"))} />);
@@ -204,7 +204,7 @@ describe("Go to it", () => {
     run.cancel();
   });
 
-  it("a component already on screen is not scrolled; the ring comes at once", () => {
+  it("a component already on screen is not scrolled; the ring comes at once", async () => {
     const scrolls: number[] = [];
     window.scrollTo = ((_x: number, y: number) => void scrolls.push(y)) as never;
     Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });

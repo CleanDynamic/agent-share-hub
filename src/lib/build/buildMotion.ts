@@ -108,3 +108,8 @@ export const MAP_LINES = 200;
 export const MAP_LINES_BACK = 100;
 /** With more sessions than this, or boxes that do not fit on screen, the two views crossfade instead of morphing. */
 export const MAP_MORPH_MAX = 30;
+
+/* ── SV-06: sequences ── */
+
+/** The longest any sequence of steps runs (a lift, the slide after it, the skeleton fading): past it, everything goes to its end. */
+export const SEQUENCE_CAP = 1200;

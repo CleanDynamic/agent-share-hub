@@ -122,7 +122,7 @@ import { listRuns, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
 import { foldShut, useFoldMotion } from "./foldMotion";
 import { outlineOnce } from "./buildMotion";
-import { FOLD, SLIDE } from "@/lib/build/buildMotion";
+import { FADE_AFTER_MS, FOLD } from "@/lib/build/buildMotion";
 import { ListMotionContext, MotionBoundary, NO_SLIDE, useListMotion, type SlideOptions } from "./listMotion";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 import { ArrivingBlock, useArrival, type Arriving } from "./arrival";
@@ -2110,6 +2110,8 @@ export function BuildList(raw: BuildListProps) {
   /* SV-06 P1: the List's one animator. It is the only thing that animates the build list; the hooks below say what is coming. */
   const [listRoot] = useState<RefObject<HTMLElement | null>>(() => ({ get current() { return rootHolder.current?.current ?? null; } }) as RefObject<HTMLElement | null>);
   const motion = useListMotion(listRoot);
+  /** A tile moved from its menu: outlined once where it lands, when the slide that takes it there has ended. */
+  const ringAfterSlide = useRef<string | null>(null);
   const director = useBuildDirector(incoming, motion, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
   const base = director.view;
   /* CA-22 P5: a session or part being folded keeps its tiles drawn while they rise away behind the head. */
@@ -2168,16 +2170,20 @@ export function BuildList(raw: BuildListProps) {
     const written = run(id, by);
     if (result) {
       sorting.show(result.model, "", Promise.resolve(written) as Promise<unknown>);
-      // CA-22 P4: it slides (CA-21), and is outlined once where it lands.
-      if (!prefersReducedMotion()) {
-        window.setTimeout(() => {
-          const moved = rootHolder.current?.current?.querySelector<HTMLElement>(`[data-skel-id="${id}"]`);
-          if (moved) outlineOnce(moved);
-        }, SLIDE);
-      }
+      // CA-22 P4: it slides (CA-21), and is outlined once where it lands: when that commit's slide has ended (below).
+      if (!prefersReducedMotion()) ringAfterSlide.current = id;
     }
     return written as Promise<unknown> | void;
   };
+  useLayoutEffect(() => {
+    const id = ringAfterSlide.current;
+    if (!id) return;
+    ringAfterSlide.current = null;
+    void motion.plan().slides.finished.then(() => {
+      const moved = rootHolder.current?.current?.querySelector<HTMLElement>(`[data-skel-id="${id}"]`);
+      if (moved) outlineOnce(moved);
+    });
+  });
   const shown = viewOf(base, sorting.live);
   const props: BuildListProps = {
     ...shown,
@@ -2416,7 +2422,7 @@ export function BuildList(raw: BuildListProps) {
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
     <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
-      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} /> : null}
+      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {parts ? (

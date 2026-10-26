@@ -1,7 +1,7 @@
 // SV-06 P2 - a change carries its own label (`motion.expect({ kind, keys })`), used by the first commit that touches those keys and
 // spent there, never by time; a change with none still slides; nothing is read while rendering. BuildList mounted for real.
 
-import { act, cleanup, render } from "@testing-library/react";
+import { cleanup, render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,7 +12,7 @@ import { __resetMotionMediaCache } from "@/lib/theme/motion";
 import { BuildList, type BuildListProps } from "./BuildList";
 import { stubLayout } from "./ca21Harness";
 import { MotionChannel, MotionChannelContext } from "./listMotion";
-import { stubAnimations, type Played } from "./motionStub";
+import { passes, stubAnimations, type Played } from "./motionStub";
 
 let played: Played[] = [];
 let restore = () => undefined;
@@ -106,14 +106,14 @@ describe("the channel", () => {
 });
 
 describe("labels on the List", () => {
-  it("a labelled remove lifts the tile, then lets it go and what was below slides up", () => {
+  it("a labelled remove lifts the tile, then lets it go and what was below slides up", async () => {
     const props = base();
     const again = mount(props);
     channel.expect({ kind: "remove", keys: ["p2"], sentence: "Removed Prompt 2" });
     again(without(props, "p2"));
     expect(lifts().map((entry) => entry.element)).toEqual([tile("p2")]);
     expect(slides()).toHaveLength(0);
-    act(() => vi.advanceTimersByTime(LIFT));
+    await passes(LIFT);
     expect(tile("p2")).toBeNull();
     expect(slides().length).toBeGreaterThan(0);
     expect(slides().every((entry) => entry.element !== null)).toBe(true);
@@ -128,11 +128,11 @@ describe("labels on the List", () => {
     expect(slides().length).toBeGreaterThan(0);
   });
 
-  it("a label waits for a slow write: five seconds later it is still used", () => {
+  it("a label waits for a slow write: five seconds later it is still used", async () => {
     const props = base();
     const again = mount(props);
     channel.expect({ kind: "remove", keys: ["p2"] });
-    act(() => vi.advanceTimersByTime(5000));
+    await passes(5000);
     again(without(props, "p2"));
     expect(lifts().map((entry) => entry.element)).toEqual([tile("p2")]);
     expect(channel.waiting()).toBeNull();
@@ -147,18 +147,18 @@ describe("labels on the List", () => {
     expect(lifts().map((entry) => entry.element)).toEqual([tile("p2")]);
   });
 
-  it("nothing is measured while rendering: not a lift, a slide, a reorder, a number or a fold", () => {
+  it("nothing is measured while rendering: not a lift, a slide, a reorder, a number or a fold", async () => {
     const props = base();
     const again = mount(props);
     channel.expect({ kind: "remove", keys: ["p2"] });
     again(without(props, "p2"));
-    act(() => vi.advanceTimersByTime(LIFT + 1000));
+    await passes(LIFT + 1000);
     again({ ...props, steps: [...props.steps].reverse() });
     // A number that changes (SV-05's crossfade): its old words are taken by the animator's measure, not by the render.
     again({ ...props, steps: props.steps.map((step) => (step.id === "p2" ? { ...step, number: "9" } : step)) });
     const first = [...props.dividers.values()][0].key;
     again({ ...props, collapsed: new Set([first]) });
-    act(() => vi.advanceTimersByTime(1000));
+    await passes(1000);
     again({ ...props, collapsed: new Set() });
     expect(readsInRender).toBe(0);
   });

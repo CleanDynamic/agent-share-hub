@@ -6,17 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { STANDARD, __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { done, mountList, said, stubLayout, stubMedia } from "./ca21Harness";
+import { stubAnimations, type Played } from "./motionStub";
 
-const animations: { keyframes: Keyframe[]; options: KeyframeAnimationOptions }[] = [];
+let animations: Played[] = [];
 
 beforeEach(() => {
   stubMedia();
   __resetMotionMediaCache();
-  animations.length = 0;
-  Element.prototype.animate = vi.fn((keyframes: Keyframe[], options: KeyframeAnimationOptions) => {
-    animations.push({ keyframes, options });
-    return { cancel: () => undefined } as unknown as Animation;
-  }) as never;
+  ({ played: animations } = stubAnimations());
 });
 afterEach(() => {
   delete (Element.prototype as { animate?: unknown }).animate;

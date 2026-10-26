@@ -11,16 +11,18 @@
                   written waits in its socket, and so do the ones after it, so the order never jumps
      +200 ms      after the last lands, the skeleton fades over 200 ms, and the page says "Added Session 2 with 3 prompts."
 
-   A failed add closes the lane and the sockets back over 200 ms. Under reduced motion nothing moves: the session is there, complete. */
+   A failed add closes the lane and the sockets back over 200 ms. Under reduced motion nothing moves: the session is there, complete.
+   SV-06: each step waits on the one before it ending, not on a timer: the lane opens when the scroll has ended, the skeleton fades
+   when the last prompt has landed, and the arrival is over when that fade has ended; `SEQUENCE_CAP` ends anything still running. */
 
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
-import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_STEP_MS, SKELETON_OUT, STAGGERED_PROMPTS } from "@/lib/build/buildMotion";
+import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_STEP_MS, STAGGERED_PROMPTS } from "@/lib/build/buildMotion";
 import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
 import { prefersReducedMotion, scrollBehavior } from "@/lib/theme/motion";
 
 import { dropIn } from "./buildMotion";
-import type { ListMotion } from "./listMotion";
+import { allOf, capSequence, untilScrollEnds, type ListMotion } from "./listMotion";
 import { SLIDE_ATTR, type Box } from "./flip";
 import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
 import { TILE_HEIGHT } from "./loadingBlocks";
@@ -66,6 +68,10 @@ export interface Arrival {
   opening: ReadonlySet<string>;
   /** While the lane opens or closes, what slides (everything below it) slides over `LANE_OPEN_MS`. */
   slideMs: number | null;
+  /** The skeleton's fade has ended (`SkeletonLayer`'s `onGone`): the arrival is done. */
+  gone: () => void;
+  /** How long after the last prompt lands the skeleton starts to fade; a failed add closes at once. */
+  fadeAfter: number;
 }
 
 const NONE: ReadonlySet<string> = new Set();
@@ -113,18 +119,19 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
   const [tick, setTick] = useState(0);
   const [fade, setFade] = useState<ReadonlySet<string>>(NONE);
   const headAt = useRef(0);
-  const timers = useRef<number[]>([]);
+  /** SV-06 P3: each arrival counts up; a step that finds a newer one stands down. */
+  const sequence = useRef(0);
+  const stopCap = useRef<() => void>(() => undefined);
+  /** What the skeleton's fade ends: the arrival is told, and the List goes quiet. */
+  const afterFade = useRef<(() => void) | null>(null);
   const callback = useRef(input.onArrived);
   callback.current = input.onArrived;
   const key = arriving?.key ?? null;
   const status = arriving?.status ?? null;
 
   const clear = () => {
-    for (const timer of timers.current) window.clearTimeout(timer);
-    timers.current = [];
-  };
-  const later = (ms: number, run: () => void) => {
-    timers.current.push(window.setTimeout(run, ms));
+    stopCap.current();
+    sequence.current += 1;
   };
   useEffect(() => clear, []);
 
@@ -149,7 +156,11 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
     if (off && typeof anchor.scrollIntoView === "function") {
       setPhase("scrolling");
       anchor.scrollIntoView({ block: "center", behavior: scrollBehavior() });
-      later(scrollBehavior() === "smooth" ? 450 : 0, open);
+      // The lane opens when the scroll has ended, however long it took: `scrollend`, or the page still for two frames.
+      const mine = sequence.current;
+      void untilScrollEnds().then(() => {
+        if (sequence.current === mine) open();
+      });
     } else open();
     return clear;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,28 +190,52 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
     // The first prompt waits for its turn, 110 ms after the head, and for its row; the others follow, 110 ms apart.
     const first = Math.max(0, headAt.current + PROMPT_STEP_MS - now);
     tiles.forEach((tile, at) => fall(tile, first + PROMPT_STEP_MS * Math.min(at, STAGGERED_PROMPTS - 1)));
-    const last = tiles.length > 0 ? first + PROMPT_STEP_MS * Math.min(tiles.length - 1, STAGGERED_PROMPTS - 1) + FALL_MS : toHead + FALL_MS;
-    later(last + FADE_AFTER_MS, () => setShown(false));
-    later(last + FADE_AFTER_MS + SKELETON_OUT, () => {
+    const falls = allOf([...(head && toHead > 0 ? [fall(head, toHead)] : []), ...tiles.map((tile, at) => fall(tile, first + PROMPT_STEP_MS * Math.min(at, STAGGERED_PROMPTS - 1)))]);
+    // When the last prompt has landed the skeleton fades (`FADE_AFTER_MS` after, its own delay); when that has ended, it is done.
+    const done = () => {
       setSkeleton(null);
       setPhase("idle");
       callback.current?.(key, "written");
+    };
+    stopCap.current();
+    sequence.current += 1;
+    const mine = sequence.current;
+    afterFade.current = done;
+    stopCap.current = capSequence(() => {
+      if (sequence.current !== mine) return;
+      falls.finish();
+      afterFade.current = null;
+      done();
+    });
+    void falls.finished.then(() => {
+      if (sequence.current === mine) setShown(false);
     });
     setTick((value) => value + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // Nothing was added: the lane and the sockets close back, and everything slides up again.
+  // Nothing was added: the lane and the sockets close back, and everything slides up again; it is over when that slide has ended.
   useLayoutEffect(() => {
     if (status !== "failed" || !key || (phase !== "open" && phase !== "scrolling")) return;
     clear();
+    const mine = sequence.current;
     setShown(false);
     setPhase("closing");
-    later(LANE_OPEN_MS, () => {
+    afterFade.current = () => setSkeleton(null);
+    const end = () => {
       setSkeleton(null);
       setPhase("idle");
       callback.current?.(key, "failed");
+    };
+    stopCap.current = capSequence(() => {
+      if (sequence.current === mine) end();
     });
+    void (input.motion?.plan().slides.finished ?? Promise.resolve()).then(() => {
+      if (sequence.current !== mine) return;
+      stopCap.current();
+      end();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, key, phase]);
 
   const block = phase === "open" && status === "writing" && !landed;
@@ -222,7 +257,14 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
 
   void tick;
   const opening = key && (phase === "open" || phase === "landing") ? new Set([key]) : NONE;
-  return { block, active: phase === "open" || phase === "landing" || phase === "closing", skeleton, shown, fadeIn: fade, opening, slideMs: phase === "open" || phase === "closing" ? LANE_OPEN_MS : null };
+  const gone = () => {
+    const after = afterFade.current;
+    afterFade.current = null;
+    stopCap.current();
+    if (after) after();
+    else setSkeleton(null);
+  };
+  return { block, active: phase === "open" || phase === "landing" || phase === "closing", skeleton, shown, fadeIn: fade, opening, slideMs: phase === "open" || phase === "closing" ? LANE_OPEN_MS : null, gone, fadeAfter: phase === "closing" ? 0 : FADE_AFTER_MS };
 }
 
 /** The place for the session while its prompts are on their way: its head, and an empty place for each prompt. */

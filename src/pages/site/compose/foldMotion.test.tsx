@@ -9,14 +9,16 @@ import { sandboxListProps } from "@/dev/fixtures/sandbox";
 import { FOLD, FOLD_RISE, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
 import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
 
-/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
-const channel = new MotionChannel();
-const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
-const resetIntent = () => channel.reset();
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { BuildList, type BuildListProps } from "./BuildList";
 import { staggerDelay } from "./buildMotion";
+import { passes, stubAnimations } from "./motionStub";
+
+/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
+const channel = new MotionChannel();
+const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
+const resetIntent = () => channel.reset();
 
 interface Played {
   element: Element;
@@ -34,14 +36,7 @@ beforeEach(() => {
   resetIntent();
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: reduced && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    const entry: Played = { element: this, keyframes, options, finished: false };
-    played.push(entry);
-    return { id: options.id ?? "", finished: Promise.resolve(), finish: () => (entry.finished = true), cancel: () => undefined } as unknown as Animation;
-  }) as never;
-  Element.prototype.getAnimations = function (this: Element) {
-    return played.filter((entry) => entry.element === this && !entry.finished).map((entry) => ({ id: entry.options.id ?? "", finish: () => (entry.finished = true) }) as unknown as Animation);
-  } as never;
+  ({ played } = stubAnimations());
 });
 afterEach(() => {
   cleanup();
@@ -70,7 +65,7 @@ const tilesOf = (key: string) => document.getElementById(`session-tiles-${key}`)
 const risers = () => played.filter((entry) => entry.keyframes.some((frame) => frame.transform === `translateY(-${FOLD_RISE}px)`));
 
 describe("folding a session", () => {
-  it("the tiles rise 24 behind the head and fade over 200 while the space is already gone; then it is drawn folded", () => {
+  it("the tiles rise 24 behind the head and fade over 200 while the space is already gone; then it is drawn folded", async () => {
     const props = base();
     const [first] = keys(props);
     const { again } = mount(props);
@@ -82,7 +77,7 @@ describe("folding a session", () => {
     expect(lifted.map((entry) => entry.element)).toEqual(inside);
     expect(lifted[0].options).toMatchObject({ duration: FOLD, fill: "both" });
     expect(played.some((entry) => entry.keyframes.some((frame) => frame.transform === "rotate(90deg)"))).toBe(true);
-    act(() => vi.advanceTimersByTime(FOLD));
+    await passes(FOLD);
     expect(tilesOf(first).hidden).toBe(true);
     expect(tilesOf(first).style.height).toBe("");
     expect(tilesOf(first).children).toHaveLength(0);
@@ -120,7 +115,7 @@ describe("unfolding a session", () => {
 });
 
 describe("Collapse all and Expand all", () => {
-  it("every session folds at the same time, with no stagger between sessions", () => {
+  it("every session folds at the same time, with no stagger between sessions", async () => {
     const props = base();
     const all = keys(props);
     const { again } = mount(props);
@@ -128,13 +123,13 @@ describe("Collapse all and Expand all", () => {
     const starts = all.map((key) => risers().filter((entry) => tilesOf(key).contains(entry.element) || tilesOf(key) === entry.element.parentElement).map((entry) => Number(entry.options.delay ?? 0))[0]);
     expect(starts.every((start) => start === 0)).toBe(true);
     expect(all.every((key) => tilesOf(key).style.height === "0px")).toBe(true);
-    act(() => vi.advanceTimersByTime(FOLD));
+    await passes(FOLD);
     expect(all.every((key) => tilesOf(key).hidden)).toBe(true);
   });
 });
 
 describe("interrupting a fold", () => {
-  it("unfolding at once finishes the fold, and the session ends open", () => {
+  it("unfolding at once finishes the fold, and the session ends open", async () => {
     const props = base();
     const [first] = keys(props);
     const { again } = mount(props);
@@ -143,7 +138,7 @@ describe("interrupting a fold", () => {
     expect(tilesOf(first).hidden).toBe(false);
     expect(tilesOf(first).style.height).toBe("");
     expect(tilesOf(first).children.length).toBeGreaterThan(0);
-    act(() => vi.advanceTimersByTime(FOLD * 3));
+    await passes(FOLD * 3);
     expect(tilesOf(first).hidden).toBe(false);
   });
 });
@@ -165,7 +160,7 @@ describe("reduced motion", () => {
 });
 
 describe("folding a part", () => {
-  it("its sessions rise 24 and fade, then the part is drawn folded", () => {
+  it("its sessions rise 24 and fade, then the part is drawn folded", async () => {
     const props = base();
     const [a, b] = keys(props);
     const view = (key: string, label: string, collapsed = false) => ({ key, label, nameColour: "var(--text)", sessions: 1, collapsed });
@@ -184,7 +179,7 @@ describe("folding a part", () => {
     expect(body.hidden).toBe(false);
     expect(body.style.height).toBe("0px");
     expect(risers().length).toBeGreaterThan(0);
-    act(() => vi.advanceTimersByTime(FOLD));
+    await passes(FOLD);
     expect(body.hidden).toBe(true);
   });
 });

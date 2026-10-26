@@ -18,7 +18,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { FOLD, FOLD_RISE, SLIDE, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
 
 import { dropIn, fadeIn, liftOut, motionOn, type MotionRun } from "./buildMotion";
-import { animateOn, runOf } from "./listMotion";
+import { allOf, animateOn, capSequence, runOf } from "./listMotion";
 
 export interface FoldHold {
   /** Sessions being folded: their tiles stay drawn until the fold ends. */
@@ -57,7 +57,9 @@ export function useFoldMotion({ sessions, parts, getRoot }: { sessions: Readonly
   const last = useRef<{ sessions: ReadonlySet<string>; parts: ReadonlySet<string> } | null>(null);
   const held = useRef<FoldHold>(NONE);
   const pending = useRef<{ closing: { sessions: string[]; parts: string[] }; opening: { sessions: string[]; parts: string[] } } | null>(null);
-  const timers = useRef<number[]>([]);
+  /** SV-06 P3: each fold counts up; a release that finds a newer fold stands down. */
+  const sequence = useRef(0);
+  const stopCap = useRef<() => void>(() => undefined);
   const [, redraw] = useState(0);
   const now = { sessions: sessions ?? (NONE.sessions as ReadonlySet<string>), parts };
 
@@ -70,8 +72,8 @@ export function useFoldMotion({ sessions, parts, getRoot }: { sessions: Readonly
     last.current = now;
     if (motionOn()) {
       // A fold while another is running: that one's steps stop; what is still folding stays held, and this one is added to it.
-      for (const timer of timers.current) window.clearTimeout(timer);
-      timers.current = [];
+      stopCap.current();
+      sequence.current += 1;
       const keep = (set: ReadonlySet<string>, open: string[], add: string[]) => new Set([...[...set].filter((key) => !open.includes(key)), ...add]);
       held.current = { sessions: keep(held.current.sessions, opening.sessions, closing.sessions), parts: keep(held.current.parts, opening.parts, closing.parts), moving: true };
       pending.current = { closing, opening };
@@ -85,17 +87,18 @@ export function useFoldMotion({ sessions, parts, getRoot }: { sessions: Readonly
     if (!work || !root) return;
     pending.current = null;
     // The space has closed or opened in this commit, and what stood below is already sliding; the tiles move in the same time.
+    const lifts: MotionRun[] = [];
     for (const key of work.closing.sessions) {
       const container = sessionContainer(root, key);
       if (!container) continue;
-      liftOut(tilesIn(container), { rise: FOLD_RISE, ms: FOLD });
+      lifts.push(liftOut(tilesIn(container), { rise: FOLD_RISE, ms: FOLD }));
       fadeIn([...root.querySelectorAll(`[data-session-key="${key}"] [data-testid="session-count"]`)], { ms: FOLD });
       turnArrow(arrowOf(root, `session-tiles-${key}`), true);
     }
     for (const key of work.closing.parts) {
       const container = partContainer(root, key);
       if (!container) continue;
-      liftOut(sessionsIn(container), { rise: FOLD_RISE, ms: FOLD });
+      lifts.push(liftOut(sessionsIn(container), { rise: FOLD_RISE, ms: FOLD }));
       turnArrow(arrowOf(root, `workstream-body-${key}`), true);
     }
     for (const key of work.opening.sessions) {
@@ -111,21 +114,24 @@ export function useFoldMotion({ sessions, parts, getRoot }: { sessions: Readonly
       turnArrow(arrowOf(root, `workstream-body-${key}`), false);
     }
     if (held.current.sessions.size + held.current.parts.size > 0) {
-      timers.current.push(
-        window.setTimeout(() => {
-          held.current = NONE;
-          redraw((value) => value + 1);
-        }, FOLD),
-      );
+      // Drawn folded once the tiles have risen away, however long that took; the cap ends a fold that is still running at 1.2 s.
+      const mine = sequence.current;
+      const risen = allOf(lifts);
+      const done = () => {
+        if (sequence.current !== mine) return;
+        stopCap.current();
+        held.current = NONE;
+        redraw((value) => value + 1);
+      };
+      stopCap.current = capSequence(() => {
+        risen.finish();
+        done();
+      });
+      void risen.finished.then(done);
     } else held.current = NONE;
   });
 
-  useLayoutEffect(
-    () => () => {
-      for (const timer of timers.current) window.clearTimeout(timer);
-    },
-    [],
-  );
+  useLayoutEffect(() => () => stopCap.current(), []);
 
   return { ...held.current, moving };
 }

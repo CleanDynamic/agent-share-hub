@@ -17,7 +17,7 @@ import { fade, prefersReducedMotion } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { mono } from "@/lib/theme/type";
 
-import { animateOn, slideBox } from "./listMotion";
+import { animateOn, runOf, slideBox } from "./listMotion";
 import { text } from "./refinedStyles";
 
 const place = (rect: Rect): CSSProperties => ({ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxSizing: "border-box" });
@@ -110,9 +110,29 @@ function RailBox({ rail }: { rail: Rail }) {
   );
 }
 
-/** The layer. `shown` fades it in; false fades it out (it stays mounted until the page takes it away). */
-export function SkeletonLayer({ skeleton, shown, fadeIn, opening }: { skeleton: Skeleton; shown: boolean; fadeIn?: ReadonlySet<string>; opening?: ReadonlySet<string> }) {
+/**
+ * The layer. `shown` fades it in; false fades it out (it stays mounted until the page takes it away). SV-06: with `onGone`, the fade
+ * out is played by the List's animator, `fadeAfter` after `shown` turns false, and `onGone` is called when it has ended: the page
+ * takes the layer away on the animation's end, not on a timer.
+ */
+export function SkeletonLayer({ skeleton, shown, fadeIn, opening, fadeAfter = 0, onGone }: { skeleton: Skeleton; shown: boolean; fadeIn?: ReadonlySet<string>; opening?: ReadonlySet<string>; fadeAfter?: number; onGone?: () => void }) {
   const dusk = useResolvedTheme() === "dusk";
+  const layer = useRef<HTMLDivElement | null>(null);
+  const gone = useRef(onGone);
+  gone.current = onGone;
+  const played = Boolean(onGone);
+  useLayoutEffect(() => {
+    const element = layer.current;
+    if (shown || !played || !element) return;
+    let live = true;
+    const out = runOf([animateOn(element, "fade", [{ opacity: 1 }, { opacity: 0 }], { duration: SKELETON_OUT, delay: fadeAfter, fill: "backwards" })]);
+    void out.finished.then(() => {
+      if (live) gone.current?.();
+    });
+    return () => {
+      live = false;
+    };
+  }, [shown, played, fadeAfter]);
   const held = skeleton.target?.id;
   // It comes in from nothing: mounted see-through, then shown, so the fade has somewhere to start from.
   const [entered, setEntered] = useState(prefersReducedMotion());
@@ -122,10 +142,11 @@ export function SkeletonLayer({ skeleton, shown, fadeIn, opening }: { skeleton: 
   }, []);
   return (
     <div
+      ref={layer}
       data-testid="skeleton-layer"
       data-kind={skeleton.kind}
       aria-hidden="true"
-      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: shown && entered ? 1 : 0, transition: fade(shown ? SKELETON_IN : SKELETON_OUT) }}
+      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: shown && entered ? 1 : 0, transition: shown ? fade(SKELETON_IN) : played ? "none" : fade(SKELETON_OUT) }}
     >
       {skeleton.lanes.map((lane) => (
         <LaneBox key={`lane:${lane.id}`} lane={lane} dusk={dusk} opens={Boolean(opening?.has(lane.id))} />

@@ -35,7 +35,7 @@ import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
 import type { Box } from "./flip";
-import { animateOn, captureWords, crossfadeFrom as crossfadeWords, DONE, inWindow, motionOn, runOf, useListAnimator, type MotionRun, type Words, type WordsEntry } from "./listMotion";
+import { animateOn, capSequence, captureWords, crossfadeFrom as crossfadeWords, DONE, inWindow, motionOn, runOf, useListAnimator, type MotionRun, type Words, type WordsEntry } from "./listMotion";
 
 export { captureWords, motionOn, type MotionRun, type Words };
 
@@ -206,7 +206,7 @@ export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, {
   const previous = useRef<readonly T[]>(items);
   const held = useRef(new Map<string, { item: T; after: string | null }>());
   const fresh = useRef<string[]>([]);
-  const timers = useRef<number[]>([]);
+  const caps = useRef<(() => void)[]>([]);
   const [release, redraw] = useState(0);
   const released = useRef(release);
   const releasing = released.current !== release;
@@ -249,19 +249,27 @@ export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, {
     }
     const ordered = backwards ? [...keys].reverse() : keys;
     const elements = ordered.map((key) => where(key)).filter((element): element is HTMLElement => element !== null);
-    liftOut(elements, { stagger: step, ms: duration });
-    const span = liftSpan(ordered.length, step, STAGGER_CAP, duration);
-    timers.current.push(
-      window.setTimeout(() => {
-        for (const key of keys) held.current.delete(key);
-        redraw((value) => value + 1);
-      }, span),
-    );
+    const lift = liftOut(elements, { stagger: step, ms: duration });
+    // SV-06 P3: let go when the lift has ended, not after a guess at how long it takes; the cap ends one still running at 1.2 s.
+    let done = false;
+    const letGo = () => {
+      if (done) return;
+      done = true;
+      stop();
+      for (const key of keys) held.current.delete(key);
+      redraw((value) => value + 1);
+    };
+    const stop = capSequence(() => {
+      lift.finish();
+      letGo();
+    });
+    caps.current.push(stop);
+    void lift.finished.then(letGo);
   });
   useEffect(
     () => () => {
-      for (const timer of timers.current) window.clearTimeout(timer);
-      timers.current = [];
+      for (const stop of caps.current) stop();
+      caps.current = [];
     },
     [],
   );
@@ -334,7 +342,6 @@ export function Swap({ id, children, ms = CROSSFADE }: { id: string; children: R
   latest.current = id;
   const kept = useRef<ReactElement>(children);
   const element = useRef<HTMLElement | null>(null);
-  const timer = useRef<number | undefined>(undefined);
   const settling = useRef(false);
   const reduced = !motionOn();
   if (drawn === id || reduced) kept.current = children;
@@ -346,13 +353,17 @@ export function Swap({ id, children, ms = CROSSFADE }: { id: string; children: R
       setDrawn(id);
       return;
     }
-    if (element.current) fallOutFade(element.current, ms);
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => {
+    // SV-06 P3: the new content is drawn when the old one's fade has ended, not after a guess at how long that takes.
+    let live = true;
+    const out = element.current ? fallOutFade(element.current, ms) : DONE;
+    void out.finished.then(() => {
+      if (!live) return;
       settling.current = true;
       setDrawn(latest.current);
-    }, ms);
-    return () => window.clearTimeout(timer.current);
+    });
+    return () => {
+      live = false;
+    };
   }, [id, drawn, ms, reduced]);
   useLayoutEffect(() => {
     if (!settling.current) return;

@@ -9,10 +9,6 @@ import { buildFacts, tileView } from "@/dev/fixtures/detailsKinds";
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
 import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
 
-/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
-const channel = new MotionChannel();
-const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
-const resetIntent = () => channel.reset();
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { BuildList, type BuildListProps } from "./BuildList";
@@ -20,21 +16,24 @@ import { goToIt } from "./buildMotion";
 import { DetailsPanel } from "./DetailsPanel";
 import { ReferenceNotice } from "./referencePieces";
 import { SelectionBar } from "./removePieces";
+import { passes, stubAnimations, type Played } from "./motionStub";
 
-let animated = 0;
+/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
+const channel = new MotionChannel();
+const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
+const resetIntent = () => channel.reset();
+
+/** Every animation started: under reduced motion there are none. */
+let played: Played[] = [];
 let reduced = true;
 
 beforeEach(() => {
   vi.useFakeTimers();
   reduced = true;
-  animated = 0;
   resetIntent();
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: reduced && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function () {
-    animated += 1;
-    return { id: "", finished: Promise.resolve(), finish: () => undefined, cancel: () => undefined } as unknown as Animation;
-  }) as never;
+  ({ played } = stubAnimations());
 });
 afterEach(() => {
   cleanup();
@@ -87,18 +86,18 @@ describe("the sixteen moments, under reduced motion", () => {
     ["undo of a move", "undo", (props) => [props, { ...props, steps: [...props.steps.slice(0, -2), props.steps[props.steps.length - 1], props.steps[props.steps.length - 2]] }], () => expect(tile("p4")).not.toBeNull()],
     ["convert", "convert", (props) => [props, { ...props, steps: props.steps.map((step) => (step.id === "p3" ? { ...step, title: "Changed" } : step)) }], () => expect(tile("p3")).not.toBeNull()],
   ];
-  it.each(cases)("%s", (_name, kind, make, end) => {
+  it.each(cases)("%s", async (_name, kind, make, end) => {
     const props = base();
     const [from, to] = make(props);
     const again = mount(from);
     announce(kind);
     again(to);
-    act(() => vi.advanceTimersByTime(0));
+    await passes(0);
     end(props);
-    expect(animated).toBe(0);
+    expect(played.length).toBe(0);
     clean();
     // And nothing is still waiting to happen.
-    act(() => vi.advanceTimersByTime(5000));
+    await passes(5000);
     end(props);
     clean();
   });
@@ -111,11 +110,11 @@ describe("the sixteen moments, under reduced motion", () => {
     expect(document.getElementById(`session-tiles-${first}`)?.hidden).toBe(true);
     again(props);
     expect(document.getElementById(`session-tiles-${first}`)?.hidden).toBe(false);
-    expect(animated).toBe(0);
+    expect(played.length).toBe(0);
     clean();
   });
 
-  it("the selection bar, the notice and Details", () => {
+  it("the selection bar, the notice and Details", async () => {
     const bar = { phone: false, count: 2, moveTo: { sessions: [], parts: [] }, holds: { tiles: 2, sessions: 0 }, onMoveToSession: vi.fn(), onMoveToPart: vi.fn(), onRemove: vi.fn(), onClear: vi.fn() };
     const first = render(<SelectionBar {...bar} />);
     first.rerender(<SelectionBar {...bar} count={3} />);
@@ -130,7 +129,7 @@ describe("the sixteen moments, under reduced motion", () => {
     const details = render(<DetailsPanel {...props} view={tileView("prompt", "full")} />);
     details.rerender(<DetailsPanel {...props} view={tileView("agent", "full")} />);
     expect(document.querySelector('[data-testid="details-panel"]')?.getAttribute("data-kind")).toBe("agent");
-    expect(animated).toBe(0);
+    expect(played.length).toBe(0);
   });
 
   it("Go to it jumps, and the ring is there for the hold without a fade", async () => {
@@ -141,7 +140,7 @@ describe("the sixteen moments, under reduced motion", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(window.scrollTo).toHaveBeenCalledTimes(1);
     expect(el.querySelector('[data-testid="outline-once"]')).not.toBeNull();
-    expect(animated).toBe(0);
+    expect(played.length).toBe(0);
   });
 });
 
@@ -151,7 +150,7 @@ describe("a change while another is running", () => {
     __resetMotionMediaCache();
   });
 
-  it("a removal, then Undo straight away: the removal ends, the undo runs, the tile is back once", () => {
+  it("a removal, then Undo straight away: the removal ends, the undo runs, the tile is back once", async () => {
     const props = base();
     const again = mount(props);
     announce("remove");
@@ -160,31 +159,31 @@ describe("a change while another is running", () => {
     announce("undo");
     again(props);
     expect(document.querySelectorAll('[data-skel-kind="tile"][data-skel-id="p2"]')).toHaveLength(1);
-    act(() => vi.advanceTimersByTime(3000));
+    await passes(3000);
     expect(document.querySelectorAll('[data-skel-kind="tile"][data-skel-id="p2"]')).toHaveLength(1);
     expect(document.querySelector('[data-testid="skeleton-layer"]')).toBeNull();
   });
 
-  it("a fold, then an unfold at once: the session ends open, with nothing left collapsed", () => {
+  it("a fold, then an unfold at once: the session ends open, with nothing left collapsed", async () => {
     const props = base();
     const [first] = heads(props);
     const again = mount(props);
     again({ ...props, collapsed: new Set([first]) });
     again(props);
-    act(() => vi.advanceTimersByTime(1000));
+    await passes(1000);
     const tiles = document.getElementById(`session-tiles-${first}`) as HTMLElement;
     expect(tiles.hidden).toBe(false);
     expect(tiles.style.height).toBe("");
     expect(tiles.style.marginTop).toBe("10px"); // the run's own, put back
   });
 
-  it("an unfold, then a fold at once: the session ends folded", () => {
+  it("an unfold, then a fold at once: the session ends folded", async () => {
     const props = base();
     const [first] = heads(props);
     const again = mount({ ...props, collapsed: new Set([first]) });
     again(props);
     again({ ...props, collapsed: new Set([first]) });
-    act(() => vi.advanceTimersByTime(1000));
+    await passes(1000);
     const tiles = document.getElementById(`session-tiles-${first}`) as HTMLElement;
     expect(tiles.hidden).toBe(true);
     expect(tiles.style.height).toBe("");

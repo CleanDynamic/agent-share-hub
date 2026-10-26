@@ -9,7 +9,8 @@
    LEAVING (something went). The old view is held on screen, in place, while what went lifts out (`LIFT`: fades and rises 8). The
    skeleton of the sessions involved shows meanwhile (their lanes and sockets; the removed one's socket stays where it was). Then
    the new view is drawn and everything slides by the gap (`SLIDE`), the skeleton's boxes with it, and the numbers crossfade
-   (`useCrossfade` in the number badges). The skeleton fades out `FADE_AFTER_MS` later.
+   (`useCrossfade` in the number badges). The skeleton fades out once the slides have ended, `FADE_AFTER_MS` after (SV-06: each
+   step waits on the one before it ending, never on a timer; `SEQUENCE_CAP` ends anything still running at 1.2 s).
    A clear lifts every head and tile that is on screen from the last to the first, `STAGGER` apart, up to `STAGGER_CAP`.
 
    ARRIVING (something came). The new view is drawn at once, so its place is already measured; the things below slide to open
@@ -24,7 +25,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { DROP, LIFT, SLIDE, STAGGER, STAGGER_CAP } from "@/lib/build/buildMotion";
-import { FADE_AFTER_MS, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SKELETON_IN, SKELETON_OUT } from "@/lib/build/buildMotion";
+import { SKELETON_IN } from "@/lib/build/buildMotion";
 import type { Step } from "@/lib/build/graph";
 import type { Skeleton } from "@/lib/build/sortLayout";
 
@@ -32,7 +33,7 @@ import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
 import { listRuns } from "./buildRuns";
 import { captureWords, crossfadeFrom, dropIn, liftOut, motionOn, openClip, outlineOnce, slideOut, staggerDelay, type MotionRun, type Words } from "./buildMotion";
-import type { ListMotion, MotionKind, MotionLabel } from "./listMotion";
+import { allOf, capSequence, type ListMotion, type MotionKind, type MotionLabel } from "./listMotion";
 import type { Box } from "./flip";
 
 /* ── what is on the page ── */
@@ -289,6 +290,8 @@ export interface Director {
   view: BuildListProps;
   skeleton: Skeleton | null;
   shown: boolean;
+  /** The skeleton's fade has ended: take it away (`SkeletonLayer`'s `onGone`, `FADE_AFTER_MS` after it is no longer shown). */
+  gone: () => void;
   /** Ids of the things leaving now. */
   busy: boolean;
 }
@@ -331,20 +334,39 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
   const words = useRef(new Map<string, Words | null>());
   const released = useRef(false);
   const remeasure = useRef<Set<string> | null | undefined>(undefined);
-  const timers = useRef<number[]>([]);
+  /** SV-06 P3: each sequence counts up; a step that finds a newer one running stands down. */
+  const sequence = useRef(0);
+  const stopCap = useRef<() => void>(() => undefined);
   const [skeleton, setSkeleton] = useState<Skeleton | null>(null);
   const [shown, setShown] = useState(false);
   const [, redraw] = useState(0);
 
-  const later = (ms: number, run: () => void) => {
-    timers.current.push(window.setTimeout(run, ms));
+  /** A new sequence: the one running stops where its steps are (what is moving keeps moving), and this one gets its own cap. */
+  const begin = (toEnd: () => void): number => {
+    stopCap.current();
+    sequence.current += 1;
+    const mine = sequence.current;
+    stopCap.current = capSequence(() => {
+      if (sequence.current !== mine) return;
+      toEnd();
+      setShown(false);
+      setSkeleton(null);
+    });
+    return mine;
   };
+  const still = (mine: number) => sequence.current === mine;
   /** Another change while one runs: its steps stop where they are; what is moving keeps moving, and the next plan starts from there. */
   const endNow = () => {
-    for (const timer of timers.current) window.clearTimeout(timer);
-    timers.current = [];
+    stopCap.current();
+    sequence.current += 1;
     setShown(false);
     setSkeleton(null);
+  };
+  /** The skeleton fades once what it frames has ended; it is taken away when its own fade has. */
+  const fadeWhen = (mine: number, ended: Promise<unknown>) => {
+    void ended.then(() => {
+      if (still(mine)) setShown(false);
+    });
   };
 
   // A convert is about to land: its kind line's words are taken now, in the animator's measure, before the DOM changes.
@@ -414,18 +436,24 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
       }
       setSkeleton(measureStill(element, plan.scope ?? undefined));
       setShown(true);
-      plan.elements.forEach((el, at) => liftOut([el], { delay: plan.delays[at] }));
-      later(plan.span, () => release(current));
+      const lift = allOf(plan.elements.map((el, at) => liftOut([el], { delay: plan.delays[at] })));
+      const mine = begin(() => {
+        lift.finish();
+        release(current);
+      });
+      // The new view is drawn when the lift has ended, however long the main thread kept it: never before, never on a guess.
+      void lift.finished.then(() => {
+        if (still(mine)) release(current, mine);
+      });
       return;
     }
 
-    // Just drawn the new view after a lift: the skeleton's boxes slide to their new places, then it fades.
+    // Just drawn the new view after a lift: the skeleton's boxes slide to their new places, then it fades when the slides end.
     if (remeasure.current !== undefined && element) {
       const scope = remeasure.current;
       remeasure.current = undefined;
       setSkeleton(measureStill(element, scope ?? undefined));
-      later(SLIDE + FADE_AFTER_MS, () => setShown(false));
-      later(SLIDE + FADE_AFTER_MS + SKELETON_OUT, () => setSkeleton(null));
+      fadeWhen(sequence.current, motion.plan().slides.finished);
     }
 
     const done = work.current;
@@ -467,18 +495,19 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
       for (const key of change.movedParts) things.push(partEl(element, key));
       const targets = present(things);
       if (targets.length === 0) return;
+      const rings: MotionRun[] = [];
+      const mine = begin(() => rings.forEach((run) => run.finish()));
+      const ring = () => {
+        if (still(mine)) for (const target of targets) rings.push(outlineOnce(target));
+      };
       if (shifted) {
         setSkeleton(measureStill(element, scope));
         setShown(true);
-      }
-      const ring = () => {
-        for (const target of targets) outlineOnce(target);
-      };
-      if (shifted) later(SLIDE, ring);
-      else ring();
-      const end = (shifted ? SLIDE : 0) + OUTLINE_IN + OUTLINE_HOLD + OUTLINE_OUT;
-      later(shifted ? SLIDE + FADE_AFTER_MS : 0, () => setShown(false));
-      later(end, () => setSkeleton(null));
+        // The ring comes where it lands, once the slide has brought it there; the skeleton fades as it does.
+        const slides = motion.plan().slides.finished;
+        void slides.then(ring);
+        fadeWhen(mine, slides);
+      } else ring();
       return;
     }
 
@@ -488,20 +517,17 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
       if (plan.drops.length + plan.copies.length + plan.frames.length === 0) return;
       setSkeleton(measureStill(element, plan.scope ?? undefined));
       setShown(true);
+      // What came waits, see-through, while the gap opens (its delay, on the same clock as the slide), then drops.
       const open = plan.stagger > 0 && plan.drops.length > 1 ? SKELETON_IN : SLIDE;
-      openClip(plan.frames, { delay: SLIDE });
-      dropIn(plan.drops, { stagger: plan.stagger, delay: open });
-      for (const { copy, original } of plan.copies) copyOut(copy, original, open);
-      const count = plan.drops.length + plan.copies.length;
-      const last = open + (plan.stagger > 0 ? staggerDelay(count - 1, plan.stagger) : 0) + DROP;
-      later(last + FADE_AFTER_MS, () => setShown(false));
-      later(last + FADE_AFTER_MS + SKELETON_OUT, () => setSkeleton(null));
+      const arriving = allOf([openClip(plan.frames, { delay: SLIDE }), dropIn(plan.drops, { stagger: plan.stagger, delay: open }), ...plan.copies.map(({ copy, original }) => copyOut(copy, original, open))]);
+      const mine = begin(() => arriving.finish());
+      fadeWhen(mine, arriving.finished);
     }
   });
 
   /** The lift has ended (or there was none to make): draw the new view; whatever stood below slides up by the gap. */
-  function release(current: Frozen) {
-    if (frozen.current !== current) return;
+  function release(current: Frozen, mine?: number) {
+    if (frozen.current !== current || (mine !== undefined && !still(mine))) return;
     // The skeleton follows the slide only after a lift it was shown for.
     remeasure.current = current.label ? null : undefined;
     frozen.current = null;
@@ -509,14 +535,9 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
     redraw((value) => value + 1);
   }
 
-  useLayoutEffect(
-    () => () => {
-      for (const timer of timers.current) window.clearTimeout(timer);
-    },
-    [],
-  );
+  useLayoutEffect(() => () => stopCap.current(), []);
 
-  return { view, skeleton, shown, busy: frozen.current !== null };
+  return { view, skeleton, shown, gone: () => setSkeleton(null), busy: frozen.current !== null };
 }
 
 /** A copy slides out from under its original: it starts at the original's place, behind it, and moves to its own while fading in. */

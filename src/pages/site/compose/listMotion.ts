@@ -24,7 +24,7 @@
 
 import { Component, createContext, useContext, useRef, useState, type ReactNode, type RefObject } from "react";
 
-import { SLIDE } from "@/lib/build/buildMotion";
+import { SEQUENCE_CAP, SLIDE } from "@/lib/build/buildMotion";
 import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
 import { SLIDE_ATTR, type Box } from "./flip";
@@ -153,6 +153,44 @@ export function allOf(runs: readonly MotionRun[]): MotionRun {
     finish: () => live.forEach((run) => run.finish()),
     cancel: () => live.forEach((run) => run.cancel()),
   };
+}
+
+/* ── sequences: each step waits on the one before ── */
+
+/**
+ * A sequence's safety net: past `SEQUENCE_CAP` it is ended (`toEnd`: everything goes to its end state). Returns the way to stand it
+ * down once the sequence has ended by itself.
+ */
+export function capSequence(toEnd: () => void, ms: number = SEQUENCE_CAP): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  const timer = window.setTimeout(toEnd, ms);
+  return () => window.clearTimeout(timer);
+}
+
+/**
+ * Resolves when the window's scroll has ended: the browser's `scrollend`, or the position unchanged for two frames (a browser without
+ * `scrollend`, or a scroll that never started). Never rejects.
+ */
+export function untilScrollEnds(): Promise<void> {
+  if (typeof window === "undefined" || typeof window.requestAnimationFrame !== "function") return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    let last = window.scrollY;
+    let still = 0;
+    let frame = 0;
+    const done = () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scrollend", done);
+      resolve();
+    };
+    window.addEventListener("scrollend", done, { passive: true, once: true });
+    const tick = () => {
+      still = window.scrollY === last ? still + 1 : 0;
+      last = window.scrollY;
+      if (still >= 2) done();
+      else frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+  });
 }
 
 /* ── the one place an element is animated ── */

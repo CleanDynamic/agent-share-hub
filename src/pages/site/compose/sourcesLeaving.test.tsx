@@ -8,26 +8,24 @@ import { sandboxSourcesProps } from "@/dev/fixtures/sandbox";
 import { LIFT } from "@/lib/build/buildMotion";
 import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
 
+import { __resetMotionMediaCache } from "@/lib/theme/motion";
+
+import { SourcesPanel } from "./SourcesPanel";
+import { passes, stubAnimations, type Played } from "./motionStub";
+
 /* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
 const channel = new MotionChannel();
 const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
 const resetIntent = () => channel.reset();
-import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
-import { SourcesPanel } from "./SourcesPanel";
-
-const played: { element: Element; keyframes: Keyframe[]; options: KeyframeAnimationOptions }[] = [];
+let played: Played[] = [];
 
 beforeEach(() => {
   vi.useFakeTimers();
-  played.length = 0;
   resetIntent();
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    played.push({ element: this, keyframes, options });
-    return { id: options.id ?? "", finished: Promise.resolve(), finish: () => undefined, cancel: () => undefined } as unknown as Animation;
-  }) as never;
+  ({ played } = stubAnimations());
 });
 afterEach(() => {
   cleanup();
@@ -53,7 +51,7 @@ function mount(files: ReturnType<typeof sandboxSourcesProps>["files"], onRemoveF
 }
 
 describe("a file removed in Sources", () => {
-  it("lifts its row out in place (fades, rises 8) and lets it go after 200", () => {
+  it("lifts its row out in place (fades, rises 8) and lets it go after 200", async () => {
     const files = sandboxSourcesProps("bakery").files;
     expect(files.length).toBeGreaterThan(0);
     const { again } = mount(files, vi.fn());
@@ -64,7 +62,7 @@ describe("a file removed in Sources", () => {
     const lift = played.find((entry) => entry.keyframes.some((frame) => frame.transform === "translateY(-8px)"));
     expect(lift?.element).toBe(document.querySelector(`[data-file-id="${files[0].id}"]`));
     expect(lift?.options.duration).toBe(LIFT);
-    act(() => vi.advanceTimersByTime(LIFT));
+    await passes(LIFT);
     expect(rows()).toHaveLength(before - 1);
   });
 
