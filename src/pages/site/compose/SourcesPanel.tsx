@@ -23,7 +23,6 @@ import { LoadingBlocks } from "./LoadingBlocks";
 import { PanelFailed } from "./PanelBoundary";
 import { LIBRARY_MORE_WIDTH } from "./loadingBlocks";
 import { PLUS_OUT_MS, WORDS_IN_MS } from "@/lib/build/buildMotion";
-import { peekIntent } from "@/lib/build/motionIntent";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { fade, prefersReducedMotion } from "@/lib/theme/motion";
@@ -452,7 +451,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
   const motion = useListMotion(rootRef);
   const { items: files, leaving, releasing } = useLeaving(props.files, (file) => file.id, {
     find: (key) => rootRef.current?.querySelector<HTMLElement>(`[data-file-id="${key}"]`) ?? null,
-    enabled: peekIntent() !== null,
+    lifts: (keys) => motion.channel.peek(keys) !== null,
   });
   const reminders = (props.reminders ?? []).slice(0, REMINDER_ROWS);
   const inBuild = sessions.length + files.length;

@@ -135,6 +135,7 @@ import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar, type SelectionBarProps } from "./removePieces";
 import { useHeld } from "./buildMotion";
+import { MotionChannel, MotionChannelContext } from "./listMotion";
 import { BASE } from "@/lib/theme/motion";
 import type { Drawn } from "@/lib/build/buildSelection";
 import { ADDED, HANDLERS_THAT_CHANGE_NOTHING, HANDLERS_THAT_REMOVE, handlerSentence } from "@/lib/build/stepSentences";
@@ -195,7 +196,9 @@ function SandboxPageBody() {
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
   const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);
-  const buildHistory = useBuildHistory({ buildId, nodes, getBridge: () => bridgeHolder.current, peek: () => ({ making: (build as { making?: unknown } | null)?.making, sessions: sessions.rows }) });
+  /* SV-06 P2: where every action says how the List should move for it; the List and Sources take it from here. */
+  const [motion] = useState(() => new MotionChannel());
+  const buildHistory = useBuildHistory({ buildId, nodes, motion, getBridge: () => bridgeHolder.current, peek: () => ({ making: (build as { making?: unknown } | null)?.making, sessions: sessions.rows }) });
   const notice = buildHistory.notice;
   useEffect(() => {
     if (notice) announce(noticeWords(notice));
@@ -754,6 +757,7 @@ function SandboxPageBody() {
       else if (emptyFirst && first) key = groupKey(first);
       else {
         key = newSessionKey();
+        motion.expect({ kind: "add", keys: [key] });
         setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(part), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
         await trackWrite("making", async () => {
@@ -1513,6 +1517,7 @@ function SandboxPageBody() {
       const item = libraryRows.find((row) => row.id === importId);
       const number = nextSessionNumber(defaultWorkstream(made, workstream));
       if (item) {
+        motion.expect({ kind: "add", keys: [importId] });
         setArriving({ key: importId, kind: "chat", head: { key: importId, number, tool: item.appKnown ? item.app : NO_APP, detail: [item.model, item.date].filter(Boolean).join(" · "), prompts: [], date: item.date }, count: item.promptCount, part: workstream, status: "writing" });
         setSessionSaid(`Adding ${item.appKnown ? item.app : NO_APP} · ${item.date} as Session ${number}…`);
       }
@@ -2162,6 +2167,7 @@ function SandboxPageBody() {
     : null;
 
   return (
+    <MotionChannelContext.Provider value={motion}>
     <BuildHistoryContext.Provider value={buildHistory}>
       <ReferenceBridgeContext.Provider value={bridge}>
         <BuildActionsContext.Provider value={actions}>
@@ -2456,6 +2462,7 @@ function SandboxPageBody() {
         </BuildActionsContext.Provider>
       </ReferenceBridgeContext.Provider>
     </BuildHistoryContext.Provider>
+    </MotionChannelContext.Provider>
   );
 }
 

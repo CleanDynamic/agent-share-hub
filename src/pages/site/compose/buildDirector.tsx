@@ -1,8 +1,10 @@
 /* CA-22 P2, P3: the build page's leaving and arriving, directed from what changed.
 
    THE PAGE LEARNS WHAT CHANGED by comparing the layout it drew (`layoutOf`: which tiles, in which sessions, in which parts) with the
-   one it is now given. It learns HOW from the intent the action announced (`motionIntent.ts`). With no fresh intent nothing
-   moves: a build swapped for another, or a write from another tab, simply appears.
+   one it is now given. It learns HOW from the label the action gave (SV-06: `motion.expect({ kind, keys })`), taken by the first
+   commit that touches those keys, in a layout effect: nothing is read while rendering. With no label nothing lifts or drops: a
+   build swapped for another, or a write from another tab, is simply drawn, and what it shares with the old one slides.
+   While rendering, a removal is held from the data alone; with no label asking for a lift it is let go before it is painted.
 
    LEAVING (something went). The old view is held on screen, in place, while what went lifts out (`LIFT`: fades and rises 8). The
    skeleton of the sessions involved shows meanwhile (their lanes and sockets; the removed one's socket stays where it was). Then
@@ -24,14 +26,13 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { DROP, LIFT, SLIDE, STAGGER, STAGGER_CAP } from "@/lib/build/buildMotion";
 import { FADE_AFTER_MS, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SKELETON_IN, SKELETON_OUT } from "@/lib/build/buildMotion";
 import type { Step } from "@/lib/build/graph";
-import { peekIntent, spendIntent, type MotionIntent } from "@/lib/build/motionIntent";
 import type { Skeleton } from "@/lib/build/sortLayout";
-import { BASE as BASE_MS } from "@/lib/theme/motion";
 
 import { measureStill } from "./arrival";
 import type { BuildListProps } from "./BuildList";
 import { listRuns } from "./buildRuns";
 import { captureWords, crossfadeFrom, dropIn, liftOut, motionOn, openClip, outlineOnce, slideOut, staggerDelay, type MotionRun, type Words } from "./buildMotion";
+import type { ListMotion, MotionKind, MotionLabel } from "./listMotion";
 import type { Box } from "./flip";
 
 /* ── what is on the page ── */
@@ -138,7 +139,7 @@ export const hasMoved = (change: Change): boolean => change.movedTiles.length + 
  * always are. A step that only says it changed something is, when tiles went or a session that held tiles; a session with none
  * going (the placeholder first session of a new post, replaced by a real one) is bookkeeping, and draws at once.
  */
-export function liftsFor(kind: MotionIntent["kind"], change: Change, before: Layout): boolean {
+export function liftsFor(kind: MotionKind, change: Change, before: Layout): boolean {
   if (!hasRemoved(change) || hasAdded(change)) return false;
   if (["remove", "clear", "merge", "undo", "redo", "restore"].includes(kind)) return true;
   if (kind !== "change") return false;
@@ -183,7 +184,7 @@ export interface LiftPlan {
 }
 
 /** What lifts for a removal, from the page as it still stands. */
-export function planLift(root: HTMLElement, change: Change, before: Layout, kind: MotionIntent["kind"], stagger: number = STAGGER): LiftPlan {
+export function planLift(root: HTMLElement, change: Change, before: Layout, kind: MotionKind, stagger: number = STAGGER): LiftPlan {
   const goneParts = new Set(change.removedParts);
   const goneSessions = new Set(change.removedSessions);
   const goneTiles = new Set(change.removedTiles);
@@ -244,7 +245,7 @@ export interface DropPlan {
 }
 
 /** What drops for an arrival, from the page as it is now. */
-export function planDrop(root: HTMLElement, change: Change, after: Layout, before: Layout, kind: MotionIntent["kind"]): DropPlan {
+export function planDrop(root: HTMLElement, change: Change, after: Layout, before: Layout, kind: MotionKind): DropPlan {
   const addedSessions = new Set(change.addedSessions);
   const addedParts = new Set(change.addedParts);
   const drops: HTMLElement[] = [];
@@ -299,24 +300,38 @@ interface Frozen {
   target: BuildListProps;
   targetLayout: Layout;
   change: Change;
-  intent: MotionIntent;
   started: boolean;
+  label: MotionLabel | null;
 }
 
-export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLElement | null, getBusy: () => boolean = () => false): Director {
+/** A commit the director looks at once it is drawn: what changed, and the views either side, for the label to say how it moves. */
+interface Work {
+  change: Change;
+  before: Layout;
+  after: Layout;
+  was: BuildListProps;
+  now: BuildListProps;
+}
+
+/** Everything a change touches, as a label names it. */
+const keysOf = (change: Change): string[] => [...change.removedTiles, ...change.addedTiles, ...change.removedSessions, ...change.addedSessions, ...change.removedParts, ...change.addedParts, ...change.movedTiles, ...change.movedSessions, ...change.movedParts];
+
+const anything = (change: Change): boolean => hasRemoved(change) || hasAdded(change) || hasMoved(change);
+
+/** The kinds of step that can change a tile's words or kind without moving it. */
+const WORDS = new Set<MotionKind>(["convert", "undo", "redo"]);
+
+export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, getRoot: () => HTMLElement | null, getBusy: () => boolean = () => false): Director {
   const shownView = useRef(incoming);
   const shownLayout = useRef<Layout | null>(null);
   if (shownLayout.current === null) shownLayout.current = layoutOf(incoming);
   const frozen = useRef<Frozen | null>(null);
-  const arrive = useRef<{ change: Change; intent: MotionIntent; after: Layout; before: Layout } | null>(null);
-  const settle = useRef<{ change: Change; intent: MotionIntent; after: Layout; before: Layout; changed: string[] } | null>(null);
-  /** A tile turned into another kind: the words of its kind line as they were, to crossfade from. */
-  const converted = useRef<{ ids: string[]; words: (Words | null)[]; intent: MotionIntent } | null>(null);
+  const work = useRef<Work | null>(null);
+  /** A tile about to be converted: the words of its kind line as they were, taken before the DOM changed, to crossfade from. */
+  const words = useRef(new Map<string, Words | null>());
   const released = useRef(false);
   const remeasure = useRef<Set<string> | null | undefined>(undefined);
   const timers = useRef<number[]>([]);
-  const runs = useRef<MotionRun[]>([]);
-  const active = useRef<MotionIntent | null>(null);
   const [skeleton, setSkeleton] = useState<Skeleton | null>(null);
   const [shown, setShown] = useState(false);
   const [, redraw] = useState(0);
@@ -324,58 +339,55 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
   const later = (ms: number, run: () => void) => {
     timers.current.push(window.setTimeout(run, ms));
   };
-  /** A new intent while one runs: its steps stop where they are; what is moving keeps moving, and the next plan starts from there. */
+  /** Another change while one runs: its steps stop where they are; what is moving keeps moving, and the next plan starts from there. */
   const endNow = () => {
     for (const timer of timers.current) window.clearTimeout(timer);
     timers.current = [];
-    runs.current = [];
     setShown(false);
     setSkeleton(null);
   };
 
-  // ── decide, while rendering, which view is drawn ──
+  // A convert is about to land: its kind line's words are taken now, in the animator's measure, before the DOM changes.
+  useLayoutEffect(
+    () =>
+      motion.onMeasure(() => {
+        const label = motion.channel.waiting();
+        const root = getRoot();
+        if (label?.kind !== "convert" || !root) return;
+        for (const id of label.keys) {
+          const eyebrow = tileEl(root, id)?.querySelector<HTMLElement>('[data-testid$="-eyebrow"]');
+          words.current.set(id, eyebrow ? captureWords(eyebrow) : null);
+        }
+      }),
+    [motion, getRoot],
+  );
+
+  // ── which view is drawn, from the data alone ──
   let view = incoming;
-  const intent = peekIntent();
-  const root = getRoot();
-  const reduced = !motionOn();
-  if (frozen.current && intent && intent !== frozen.current.intent) {
+  const layout = layoutOf(incoming);
+  if (frozen.current && anything(diffLayout(frozen.current.targetLayout, layout))) {
     // Another change came while this one lifted: that one ends now, in its end state, and this one is drawn from there.
     shownView.current = frozen.current.target;
     shownLayout.current = frozen.current.targetLayout;
     frozen.current = null;
   }
   if (frozen.current) {
+    // The same change, drawn again (a selection, a fold): what it is heading for takes the new props.
+    frozen.current.target = incoming;
     view = frozen.current.held;
   } else {
-    const layout = layoutOf(incoming);
     const before = shownLayout.current as Layout;
     const change = diffLayout(before, layout);
     const skipFreeze = released.current;
     released.current = false;
     // CA-21 owns a session on its way (its own lane, sockets and fall); a session replaced by another (the first one of a new post) is not a removal.
     const mine = !incoming.arriving && !shownView.current.arriving;
-    if (intent && (reduced || !mine) && (hasRemoved(change) || hasAdded(change))) spendIntent(intent);
-    if (intent && !reduced && mine && root && !skipFreeze && liftsFor(intent.kind, change, before)) {
-      frozen.current = { held: shownView.current, layout: before, target: incoming, targetLayout: layout, change, intent, started: false };
+    if (motionOn() && mine && !skipFreeze && hasRemoved(change) && !hasAdded(change)) {
+      // Held until the layout effect knows whether a label asks for a lift; with none it is let go before it is painted.
+      frozen.current = { held: shownView.current, layout: before, target: incoming, targetLayout: layout, change, started: false, label: null };
       view = shownView.current;
     } else {
-      // (A drag, and the write after it, is CA-21's: its own skeleton, its own slide and settle.)
-      if (intent && !reduced && mine && root && !hasAdded(change) && !hasRemoved(change) && !getBusy()) {
-        // Something moved (or only its words changed): it slides, and is outlined once where it lands.
-        if (intent.kind === "convert") {
-          const ids = changedTiles(shownView.current, incoming);
-          if (ids.length > 0 && root) {
-            // The tile may be taller or shorter: what stood below slides with it (the animator's pass, as for any change).
-            converted.current = { ids, intent, words: ids.map((id) => { const eyebrow = tileEl(root, id)?.querySelector<HTMLElement>('[data-testid$="-eyebrow"]'); return eyebrow ? captureWords(eyebrow) : null; }) };
-          }
-        } else if (hasMoved(change)) settle.current = { change, intent, after: layout, before, changed: [] };
-        else if (intent.kind === "undo" || intent.kind === "redo") {
-          const changed = changedTiles(shownView.current, incoming);
-          if (changed.length > 0) settle.current = { change, intent, after: layout, before, changed };
-        }
-      }
-      if (intent && !reduced && mine && root && hasAdded(change)) arrive.current = { change, intent, after: layout, before };
-      else if (intent && skipFreeze === false && (hasRemoved(change) || hasAdded(change))) spendIntent(intent);
+      if (mine && !skipFreeze && incoming !== shownView.current) work.current = { change, before, after: layout, was: shownView.current, now: incoming };
       shownView.current = incoming;
       shownLayout.current = layout;
     }
@@ -384,121 +396,114 @@ export function useBuildDirector(incoming: BuildListProps, getRoot: () => HTMLEl
   useLayoutEffect(() => {
     const element = getRoot();
     const current = frozen.current;
-    const known = active.current;
-    if (intent && known && intent !== known && (timers.current.length > 0 || runs.current.length > 0)) endNow();
-    if (!element) return;
 
     // Leaving: lift what went, show the skeleton of the sessions involved, and draw the new view once the lift has ended.
     if (current && !current.started) {
       current.started = true;
-      active.current = current.intent;
-      const plan = planLift(element, current.change, current.layout, current.intent.kind);
+      const label = motion.take(keysOf(current.change));
+      if (!element || !label || !liftsFor(label.kind, current.change, current.layout)) {
+        release(current);
+        return;
+      }
+      endNow();
+      current.label = label;
+      const plan = planLift(element, current.change, current.layout, label.kind);
       if (plan.elements.length === 0) {
         release(current);
         return;
       }
       setSkeleton(measureStill(element, plan.scope ?? undefined));
       setShown(true);
-      plan.elements.forEach((el, at) => runs.current.push(liftOut([el], { delay: plan.delays[at] })));
+      plan.elements.forEach((el, at) => liftOut([el], { delay: plan.delays[at] }));
       later(plan.span, () => release(current));
       return;
     }
 
     // Just drawn the new view after a lift: the skeleton's boxes slide to their new places, then it fades.
-    if (remeasure.current !== undefined) {
+    if (remeasure.current !== undefined && element) {
       const scope = remeasure.current;
       remeasure.current = undefined;
-      const next = measureStill(element, scope ?? undefined);
-      setSkeleton(next);
+      setSkeleton(measureStill(element, scope ?? undefined));
       later(SLIDE + FADE_AFTER_MS, () => setShown(false));
-      later(SLIDE + FADE_AFTER_MS + SKELETON_OUT, () => {
-        setSkeleton(null);
-        const spent = active.current;
-        if (spent) spendIntent(spent);
-      });
+      later(SLIDE + FADE_AFTER_MS + SKELETON_OUT, () => setSkeleton(null));
     }
 
-    // Converted: its kind line crossfades ("Prompt" to "Agent"); the tile's new size opens down and what is below slides with it.
-    const turned = converted.current;
-    if (turned) {
-      converted.current = null;
-      turned.ids.forEach((id, at) => {
+    const done = work.current;
+    work.current = null;
+    if (!done) return;
+    const waiting = motion.channel.waiting();
+    const changed = waiting && WORDS.has(waiting.kind) ? changedTiles(done.was, done.now) : [];
+    if (!anything(done.change) && changed.length === 0) return;
+    const label = motion.take([...keysOf(done.change), ...changed]);
+    if (!label || !element || !motionOn()) return;
+    endNow();
+
+    // Converted: its kind line crossfades ("Prompt" to "Agent"); what stood below has already slid with its new size.
+    if (label.kind === "convert") {
+      for (const id of changed) {
         const eyebrow = tileEl(element, id)?.querySelector<HTMLElement>('[data-testid$="-eyebrow"]');
-        if (eyebrow) runs.current.push(crossfadeFrom(turned.words[at], eyebrow));
-      });
-      later(BASE_MS, () => spendIntent(turned.intent));
+        if (eyebrow) crossfadeFrom(words.current.get(id) ?? null, eyebrow);
+      }
+      words.current.clear();
+      return;
     }
 
+    const { change } = done;
     // Moved, or only its words changed: the skeleton of the containers involved shows while it slides, and it is outlined once.
-    const landed = settle.current;
-    if (landed) {
-      settle.current = null;
-      active.current = landed.intent;
+    if (!hasAdded(change) && !hasRemoved(change) && !getBusy()) {
+      const shifted = hasMoved(change);
+      const ringed = shifted ? [] : label.kind === "undo" || label.kind === "redo" ? changed : [];
       const scope = new Set<string>();
       const things: (HTMLElement | null)[] = [];
-      for (const id of [...landed.change.movedTiles, ...landed.changed]) {
-        scope.add(landed.after.tiles.get(id) ?? "");
-        scope.add(landed.before.tiles.get(id) ?? "");
+      for (const id of [...change.movedTiles, ...ringed]) {
+        scope.add(done.after.tiles.get(id) ?? "");
+        scope.add(done.before.tiles.get(id) ?? "");
         things.push(tileEl(element, id));
       }
-      for (const key of landed.change.movedSessions) {
+      for (const key of change.movedSessions) {
         scope.add(key);
         things.push(sessionEl(element, key));
       }
-      for (const key of landed.change.movedParts) things.push(partEl(element, key));
+      for (const key of change.movedParts) things.push(partEl(element, key));
       const targets = present(things);
-      if (targets.length === 0) {
-        spendIntent(landed.intent);
-        return;
-      }
-      const slides = landed.changed.length === 0;
-      if (slides) {
+      if (targets.length === 0) return;
+      if (shifted) {
         setSkeleton(measureStill(element, scope));
         setShown(true);
       }
       const ring = () => {
-        for (const target of targets) runs.current.push(outlineOnce(target));
+        for (const target of targets) outlineOnce(target);
       };
-      if (slides) later(SLIDE, ring);
+      if (shifted) later(SLIDE, ring);
       else ring();
-      const end = (slides ? SLIDE : 0) + OUTLINE_IN + OUTLINE_HOLD + OUTLINE_OUT;
-      later(slides ? SLIDE + FADE_AFTER_MS : 0, () => setShown(false));
-      later(end, () => {
-        setSkeleton(null);
-        spendIntent(landed.intent);
-      });
+      const end = (shifted ? SLIDE : 0) + OUTLINE_IN + OUTLINE_HOLD + OUTLINE_OUT;
+      later(shifted ? SLIDE + FADE_AFTER_MS : 0, () => setShown(false));
+      later(end, () => setSkeleton(null));
+      return;
     }
 
     // Arriving: the new view is there; what came waits, see-through, while the gap opens, then drops.
-    const coming = arrive.current;
-    if (coming) {
-      arrive.current = null;
-      active.current = coming.intent;
-      const plan = planDrop(element, coming.change, coming.after, coming.before, coming.intent.kind);
-      if (plan.drops.length + plan.copies.length + plan.frames.length === 0) {
-        spendIntent(coming.intent);
-        return;
-      }
+    if (hasAdded(change)) {
+      const plan = planDrop(element, change, done.after, done.before, label.kind);
+      if (plan.drops.length + plan.copies.length + plan.frames.length === 0) return;
       setSkeleton(measureStill(element, plan.scope ?? undefined));
       setShown(true);
       const open = plan.stagger > 0 && plan.drops.length > 1 ? SKELETON_IN : SLIDE;
-      runs.current.push(openClip(plan.frames, { delay: SLIDE }));
-      runs.current.push(dropIn(plan.drops, { stagger: plan.stagger, delay: open }));
-      for (const { copy, original } of plan.copies) runs.current.push(copyOut(copy, original, open));
+      openClip(plan.frames, { delay: SLIDE });
+      dropIn(plan.drops, { stagger: plan.stagger, delay: open });
+      for (const { copy, original } of plan.copies) copyOut(copy, original, open);
       const count = plan.drops.length + plan.copies.length;
       const last = open + (plan.stagger > 0 ? staggerDelay(count - 1, plan.stagger) : 0) + DROP;
       later(last + FADE_AFTER_MS, () => setShown(false));
-      later(last + FADE_AFTER_MS + SKELETON_OUT, () => {
-        setSkeleton(null);
-        spendIntent(coming.intent);
-      });
+      later(last + FADE_AFTER_MS + SKELETON_OUT, () => setSkeleton(null));
     }
   });
 
-  /** The lift has ended: draw the new view; whatever stood below slides up by the gap (the animator's pass round that commit). */
+  /** The lift has ended (or there was none to make): draw the new view; whatever stood below slides up by the gap. */
   function release(current: Frozen) {
     if (frozen.current !== current) return;
-    remeasure.current = null;
+    // The skeleton follows the slide only after a lift it was shown for.
+    remeasure.current = current.label ? null : undefined;
     frozen.current = null;
     released.current = true;
     redraw((value) => value + 1);

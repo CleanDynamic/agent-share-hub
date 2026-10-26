@@ -14,6 +14,11 @@
    under it, so nothing is cancelled and nothing snaps. A drop, a lift or a fade that replaces one of its own kind on an element
    starts from the values that one has reached.
 
+   LABELS, NOT TIMERS. An action says what it is about to do with `motion.expect({ kind, keys })` (the `MotionChannel`, shared by
+   the page). The animator uses the label on the first commit that touches those keys, and it is spent then, never by time: a
+   slow write still gets its motion. A newer label takes the place of one whose keys never came. A change with no label still
+   slides; it never snaps.
+
    Windowed builds: a session the browser skips (`content-visibility: auto`, `largeBuild.tsx`) is measured as one box, never tile
    by tile, because reading a skipped tile's box makes the browser lay it out. Under reduced motion nothing here plays. */
 
@@ -23,6 +28,74 @@ import { SLIDE } from "@/lib/build/buildMotion";
 import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
 import { SLIDE_ATTR, type Box } from "./flip";
+
+/* ── labels ── */
+
+/** What an action is about to do to the build. Every kind is sent by an action today (`useBuildHistory`, `useBuildActions`, MotionDemo). */
+export type MotionKind = "remove" | "clear" | "duplicate" | "convert" | "merge" | "split" | "add" | "change" | "move" | "part" | "undo" | "redo" | "restore";
+
+export interface MotionLabel {
+  kind: MotionKind;
+  /** The tiles, sessions or parts it touches. None: the first change that touches anything. */
+  keys: readonly string[];
+  /** The step's sentence, for the notice and the status line. */
+  sentence?: string;
+}
+
+/** Where the actions on a page say what is coming, and the List takes it from. */
+export class MotionChannel {
+  private label: MotionLabel | null = null;
+  /** The label just taken: still seen by `peek` until this task ends, so Sources and the List, which commit together, agree. */
+  private spent: MotionLabel | null = null;
+
+  /** Says what is about to change. The newest wins: an older label whose keys never came is dropped. */
+  expect(label: MotionLabel): MotionLabel {
+    this.label = { ...label, keys: [...label.keys] };
+    return this.label;
+  }
+
+  /** The label waiting for a change that touches any of `touched`, or null. Not spent. */
+  peek(touched: Iterable<string>): MotionLabel | null {
+    const label = this.label ?? this.spent;
+    if (!label) return null;
+    const keys = [...touched];
+    if (label.keys.length === 0) return keys.length > 0 ? label : null;
+    return keys.some((key) => label.keys.includes(key)) ? label : null;
+  }
+
+  /** The same, and spent: the change that touches those keys has used it. */
+  take(touched: Iterable<string>): MotionLabel | null {
+    const label = this.label ? this.peek(touched) : null;
+    if (label) {
+      this.label = null;
+      this.spent = label;
+      queueMicrotask(() => {
+        if (this.spent === label) this.spent = null;
+      });
+    }
+    return label;
+  }
+
+  /** The label that is waiting, whatever it touches. */
+  waiting(): MotionLabel | null {
+    return this.label;
+  }
+
+  /** Tests, and a page that is left. */
+  reset(): void {
+    this.label = null;
+    this.spent = null;
+  }
+}
+
+export const MotionChannelContext = createContext<MotionChannel | null>(null);
+
+/** The page's channel, or one of the List's own where no page gave one (a dev page, a test). */
+export function useMotionChannel(): MotionChannel {
+  const shared = useContext(MotionChannelContext);
+  const [own] = useState(() => new MotionChannel());
+  return shared ?? own;
+}
 
 /* ── a run: what a helper hands back ── */
 
@@ -362,12 +435,15 @@ function playEntry(entry: WordsEntry) {
 /* ── the animator ── */
 
 export interface ListMotion {
+  channel: MotionChannel;
   /** Reads where everything is drawn: `MotionBoundary`, before the DOM changes. */
   measure: () => Measure | null;
   /** Slides what moved since `measure`: `MotionBoundary`, after. */
   commit: (before: Measure | null, options: SlideOptions) => Plan;
   /** The plan of the last commit that slid something. */
   plan: () => Plan;
+  /** The label for a change that touches `keys`, spent. */
+  take: (keys: Iterable<string>) => MotionLabel | null;
   /** A number or a word that crossfades, measured in the same pass. */
   words: (entry: WordsEntry) => () => void;
   /** Something to read before the DOM changes, in the same pass (the words of a tile about to be converted). */
@@ -375,8 +451,10 @@ export interface ListMotion {
 }
 
 export function useListMotion(rootRef: RefObject<HTMLElement | null>): ListMotion {
+  const channel = useMotionChannel();
   const state = useRef<{ plan: Plan; count: number; words: Set<WordsEntry>; listeners: Set<() => void> }>({ plan: EMPTY_PLAN, count: 0, words: new Set(), listeners: new Set() });
   const [motion] = useState<ListMotion>(() => ({
+    channel,
     measure: () => {
       const root = rootRef.current;
       if (!root || !motionOn()) return null;
@@ -396,6 +474,7 @@ export function useListMotion(rootRef: RefObject<HTMLElement | null>): ListMotio
       return plan;
     },
     plan: () => state.current.plan,
+    take: (keys) => motion.channel.take(keys),
     words: (entry) => {
       state.current.words.add(entry);
       return () => state.current.words.delete(entry);
@@ -405,6 +484,8 @@ export function useListMotion(rootRef: RefObject<HTMLElement | null>): ListMotio
       return () => state.current.listeners.delete(listener);
     },
   }));
+  // The page's channel can be given after the List first draws.
+  motion.channel = channel;
   return motion;
 }
 

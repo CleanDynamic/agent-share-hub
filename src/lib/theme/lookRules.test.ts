@@ -1029,6 +1029,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/mapMorph.tsx",
   "src/pages/site/compose/useBuildSorting.ts",
   "src/pages/site/compose/useTwoTabs.tsx",
+  "src/pages/site/compose/labels.test.tsx",
+  "src/pages/site/compose/buildDirector.test.tsx",
+  "src/pages/site/compose/foldMotion.test.tsx",
+  "src/pages/site/compose/reducedMotion.test.tsx",
+  "src/pages/site/compose/sourcesLeaving.test.tsx",
+  "src/pages/site/compose/useBuildActions.tsx",
 ];
 
 /**

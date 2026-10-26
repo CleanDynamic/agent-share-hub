@@ -23,7 +23,7 @@ import type { BuildSessionRow } from "@/lib/build/buildSessions";
 import { currentSnapshot, deltaTarget, restoreSnapshot, snapshotOf, type BuildSnapshot } from "@/lib/build/buildSnapshot";
 import { REMOVED_COPY, restoreTarget, type RemovedEntry, type RemovedMeta } from "@/lib/build/removedLog";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
-import { announce, type MotionKind } from "@/lib/build/motionIntent";
+import type { MotionChannel, MotionKind } from "./listMotion";
 
 import { sayFailed } from "./draftStart";
 import type { ComposeNodes } from "./useComposeNodes";
@@ -45,6 +45,8 @@ export interface TrackOptions {
   removed?: RemovedMeta;
   /** CA-22: how the build page moves for this step ("duplicate": the copy slides out from under its original). Absent: from what the step did. */
   motion?: MotionKind;
+  /** SV-06: the tiles, sessions or parts the step touches; the List moves for the first change that touches them. None: the first change. */
+  keys?: readonly string[];
 }
 
 /** What CA-19's history is handed to join this one. */
@@ -107,7 +109,10 @@ export interface HeldParts {
   sessions: readonly BuildSessionRow[];
 }
 
-export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: string | undefined; nodes: ComposeNodes; peek?: () => HeldParts; getBridge?: () => ReferenceBridge | undefined }): BuildHistoryApi {
+export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { buildId: string | undefined; nodes: ComposeNodes; peek?: () => HeldParts; getBridge?: () => ReferenceBridge | undefined; motion?: MotionChannel }): BuildHistoryApi {
+  /** SV-06: where each step says how the List should move for it (`motion.expect`). */
+  const channel = useRef(motion);
+  channel.current = motion;
   const bridgeRef = useRef(getBridge);
   bridgeRef.current = getBridge;
   /** What was removed this visit, newest first; an entry is hidden while its step is undone and gone once restored. */
@@ -215,8 +220,8 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
           return result;
         })();
       }
-      // CA-22: the page moves for what this step does to the build: it reads this when the data catches up.
-      announce(options?.motion ?? (options?.removed?.kind === "build" ? "clear" : options?.removed ? "remove" : "change"), typeof sentence === "string" ? sentence : undefined);
+      // CA-22: the page moves for what this step does to the build: the List takes the label when the data catches up.
+      channel.current?.expect({ kind: options?.motion ?? (options?.removed?.kind === "build" ? "clear" : options?.removed ? "remove" : "change"), keys: options?.keys ?? [], sentence: typeof sentence === "string" ? sentence : undefined });
       const { buildId: id, nodes: queue } = live.current;
       const held = peekRef.current();
       const before: BuildSnapshot = id ? snapshotOf(queue.current(), held.making, held.sessions) : EMPTY;
@@ -265,7 +270,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
         await running.current;
         if (!canUndoStep(history.current)) return;
         const step = history.current.done.at(-1) as BuildStep;
-        announce("undo", step.sentence);
+        channel.current?.expect({ kind: "undo", keys: [], sentence: step.sentence });
         try {
           await step.undo();
         } catch (cause) {
@@ -285,7 +290,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge }: { buildId: 
         await running.current;
         if (!canRedoStep(history.current)) return;
         const step = history.current.undone.at(-1) as BuildStep;
-        announce("redo", step.sentence);
+        channel.current?.expect({ kind: "redo", keys: [], sentence: step.sentence });
         try {
           await step.redo();
         } catch (cause) {

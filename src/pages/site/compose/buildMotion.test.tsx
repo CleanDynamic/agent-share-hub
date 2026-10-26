@@ -147,7 +147,7 @@ describe("slideOut", () => {
 
 describe("useLeaving", () => {
   type Item = { id: string };
-  function List({ items, ...rest }: { items: Item[]; stagger?: number; reverse?: boolean; enabled?: boolean }) {
+  function List({ items, ...rest }: { items: Item[]; stagger?: number; reverse?: boolean; lifts?: (keys: readonly string[]) => boolean }) {
     const { items: shown, leaving } = useLeaving(items, (item) => item.id, { find: (key) => document.querySelector<HTMLElement>(`[data-key="${key}"]`), ...rest });
     return (
       <>
@@ -186,9 +186,10 @@ describe("useLeaving", () => {
     expect(ids()).toHaveLength(0);
   });
 
-  it("does nothing when not enabled, and under reduced motion removes at once", () => {
-    const off = render(<List items={[{ id: "a" }, { id: "b" }]} enabled={false} />);
-    off.rerender(<List items={[{ id: "a" }]} enabled={false} />);
+  it("does nothing when nothing asks for a lift, and under reduced motion removes at once", () => {
+    // SV-06: nothing asked for a lift (no label for these keys): they go before they are painted.
+    const off = render(<List items={[{ id: "a" }, { id: "b" }]} lifts={() => false} />);
+    off.rerender(<List items={[{ id: "a" }]} lifts={() => false} />);
     expect(ids()).toEqual(["a"]);
     cleanup();
     reduced = true;

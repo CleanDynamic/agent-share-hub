@@ -2110,7 +2110,7 @@ export function BuildList(raw: BuildListProps) {
   /* SV-06 P1: the List's one animator. It is the only thing that animates the build list; the hooks below say what is coming. */
   const [listRoot] = useState<RefObject<HTMLElement | null>>(() => ({ get current() { return rootHolder.current?.current ?? null; } }) as RefObject<HTMLElement | null>);
   const motion = useListMotion(listRoot);
-  const director = useBuildDirector(incoming, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
+  const director = useBuildDirector(incoming, motion, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
   const base = director.view;
   /* CA-22 P5: a session or part being folded keeps its tiles drawn while they rise away behind the head. */
   const partsFolded = useMemo(() => new Set((base.parts?.parts ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)), [base.parts]);
@@ -2280,7 +2280,7 @@ export function BuildList(raw: BuildListProps) {
     );
   };
   const runs = listRuns(steps, props.dividers, props.emptySessions ?? []);
-  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, onArrived: base.onArrived });
+  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, motion, onArrived: base.onArrived });
   const containerOfTile = new Map(runs.flatMap((run) => (run.head ? run.steps.map((step) => [step.id, run.head?.key ?? ""] as const) : [])));
   const numberDigits = String(runs.reduce((most, run) => Math.max(most, run.head?.number ?? 0), 0)).length;
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));

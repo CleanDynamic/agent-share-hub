@@ -14,7 +14,7 @@ import { LONG_TITLE, ca27Build, ca27Sources } from "@/dev/fixtures/ca27";
 import { sandboxSourcesProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeSource } from "@/dev/fixtures/shapes";
 import { useDesignTheme } from "@/dev/useDesignTheme";
-import { announce } from "@/lib/build/motionIntent";
+import { MotionChannel, MotionChannelContext, type MotionKind } from "@/pages/site/compose/listMotion";
 import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
 import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import { applyWrite, type MemoryBuild } from "@/lib/build/moveMemory";
@@ -80,11 +80,14 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [lens, setLens] = useState<SandboxLens>("list");
   const said = useRef("");
+  /* SV-06: each step labels its change on the page's channel, as the composer's history does; the List takes it when it draws. */
+  const [motion] = useState(() => new MotionChannel());
+  const announce = useCallback((kind: MotionKind, sentence?: string) => motion.expect({ kind, keys: [], sentence }), [motion]);
 
   const note = useCallback((sentence: string) => setNotice((current) => ({ sentence, n: (current?.n ?? 0) + 1 })), []);
   /** A step: says what it does, changes the build, and is undoable. */
   const step = useCallback(
-    (kind: Parameters<typeof announce>[0], sentence: string, change: (previous: MemoryBuild) => MemoryBuild) => {
+    (kind: MotionKind, sentence: string, change: (previous: MemoryBuild) => MemoryBuild) => {
       announce(kind, sentence);
       setBuild((previous) => {
         const next = change(previous);
@@ -96,7 +99,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
       });
       note(sentence);
     },
-    [note],
+    [note, announce],
   );
   const undo = useCallback(() => {
     const last = past.at(-1);
@@ -105,7 +108,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
     setPast((stack) => stack.slice(0, -1));
     setFuture((stack) => [...stack, { build, sentence: last.sentence }]);
     setBuild(last.build);
-  }, [past, build]);
+  }, [past, build, announce]);
   const redo = useCallback(() => {
     const next = future.at(-1);
     if (!next) return;
@@ -113,7 +116,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
     setFuture((stack) => stack.slice(0, -1));
     setPast((stack) => [...stack, { build, sentence: next.sentence }]);
     setBuild(next.build);
-  }, [future, build]);
+  }, [future, build, announce]);
 
   const steps = useMemo(() => buildSteps(build.tree), [build.tree]);
   const groups = useMemo(() => sessionGroups(steps, build.making.sessions, build.making.session_tools ?? {}, sessionsMetaOf(build.making), sessionOrderOf(build.making), storedWorkstreamsOf(build.making)), [steps, build.making]);
@@ -146,8 +149,8 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
 
   /* ── the changes ── */
   const remove = (id: string) => step("remove", `Removed ${nameOfTile(id)}`, (previous) => ({ ...previous, tree: previous.tree.filter((entry) => entry.id !== id) }));
-  const removeSession = (key: string, mode: "all" | "keep") =>
-    step("remove", `Removed Session ${Math.max(1, sessionKeys.indexOf(key) + 1)}`, (previous) => {
+  const removeSession = (key: string, mode: "all" | "keep", kind: MotionKind = "remove") =>
+    step(kind, `Removed Session ${Math.max(1, sessionKeys.indexOf(key) + 1)}`, (previous) => {
       const order = sessionOrderOf(previous.making);
       const upper = order[Math.max(0, order.indexOf(key) - 1)] === key ? order[order.indexOf(key) + 1] : order[order.indexOf(key) - 1];
       const tree = mode === "all" ? previous.tree.filter((entry) => sessionOf(entry) !== key) : previous.tree.map((entry) => (sessionOf(entry) === key ? ({ ...entry, payload: { ...(entry.payload as object), session: upper } } as NodeTree) : entry));
@@ -155,10 +158,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
       delete meta[key];
       return { tree, making: { ...previous.making, session_order: order.filter((other) => other !== key), sessions_meta: meta } as Making };
     });
-  const merge = (key: string) => {
-    announce("merge");
-    removeSession(key, "keep");
-  };
+  const merge = (key: string) => removeSession(key, "keep", "merge");
   const clear = () => step("clear", "Cleared the build", (previous) => ({ tree: [], making: { ...previous.making, session_order: [], sessions_meta: {}, workstreams: [] } as Making }));
   const addTile = (session: string) =>
     step("add", "Added a prompt", (previous) => ({ ...previous, tree: [...previous.tree, node(fresh("c22-new"), "prompt", { text: "A prompt written just now, in this session.", tool: "claude", model: "Opus 5.5", session }, Math.max(...previous.tree.map((entry) => entry.position)) + 1)] }));
@@ -303,6 +303,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
           ))}
         </div>
       )}
+      <MotionChannelContext.Provider value={motion}>
       <BuildHistoryContext.Provider value={history}>
       <SandboxView
         fit={fit}
@@ -363,6 +364,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
         selectionBar={heldBar.value ? <SelectionBar {...heldBar.value} leaving={heldBar.leaving} /> : null}
       />
       </BuildHistoryContext.Provider>
+      </MotionChannelContext.Provider>
       <ReferenceNotice notice={notice} onUndo={undo} onDone={() => setNotice(null)} phone={phone} />
     </>
   );

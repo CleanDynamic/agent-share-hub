@@ -20,6 +20,7 @@ import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } 
 import { prefersReducedMotion, scrollBehavior } from "@/lib/theme/motion";
 
 import { dropIn } from "./buildMotion";
+import type { ListMotion } from "./listMotion";
 import { SLIDE_ATTR, type Box } from "./flip";
 import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
 import { TILE_HEIGHT } from "./loadingBlocks";
@@ -104,7 +105,7 @@ function anchorOf(root: HTMLElement, part: string | undefined): HTMLElement {
 /** A head or a prompt falls from `FALL_SHIFT` above, see-through, to its place, over `FALL_MS`: a drop, through the animator. */
 const fall = (element: Element, delay: number) => dropIn([element], { delay, ms: FALL_MS, from: FALL_SHIFT });
 
-export function useArrival(input: { arriving: Arriving | null | undefined; landed: boolean; rootRef: RefObject<HTMLElement | null>; onArrived?: (key: string, status: Arriving["status"]) => void }): Arrival {
+export function useArrival(input: { arriving: Arriving | null | undefined; landed: boolean; rootRef: RefObject<HTMLElement | null>; motion?: ListMotion; onArrived?: (key: string, status: Arriving["status"]) => void }): Arrival {
   const { arriving, landed, rootRef } = input;
   const [phase, setPhase] = useState<Phase>("idle");
   const [skeleton, setSkeleton] = useState<Skeleton | null>(null);
@@ -127,9 +128,11 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
   };
   useEffect(() => clear, []);
 
-  // It begins: scrolled to first when its place is off screen, then the lane opens.
+  // It begins: scrolled to first when its place is off screen, then the lane opens. Its label (`add`, the session's key) is spent
+  // here: the arrival is this plan, and no other part of the List moves for it.
   useEffect(() => {
     if (!key) return;
+    input.motion?.take([key]);
     const root = rootRef.current;
     if (prefersReducedMotion() || !root) {
       setPhase("quiet");

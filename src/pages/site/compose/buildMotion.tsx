@@ -178,8 +178,11 @@ export interface LeavingOptions {
   stagger?: number;
   /** The last of the lifting items goes first, as when the whole build is cleared. */
   reverse?: boolean;
-  /** Only lift when told to: a build that is swapped for another, or a first load, must not lift everything. */
-  enabled?: boolean;
+  /**
+   * SV-06: whether these keys lift, asked once what went is held (a layout effect, before it is painted): a label for them on the
+   * page's channel. False lets them go at once, so a build swapped for another, or a write from elsewhere, does not lift anything.
+   */
+  lifts?: (keys: readonly string[]) => boolean;
   ms?: number;
 }
 
@@ -193,12 +196,13 @@ export interface Leaving<T> {
 }
 
 const NONE: ReadonlySet<string> = new Set();
+const ALWAYS = () => true;
 
 /**
  * Keep what was removed on screen, in place, while it lifts out; then let it go. Everything else stays where it was meanwhile, so
  * nothing jumps, and the gap closes (a slide) only once the lift has ended.
  */
-export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, { find, stagger = 0, reverse = false, enabled = true, ms = LIFT }: LeavingOptions): Leaving<T> {
+export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, { find, stagger = 0, reverse = false, lifts = ALWAYS, ms = LIFT }: LeavingOptions): Leaving<T> {
   const previous = useRef<readonly T[]>(items);
   const held = useRef(new Map<string, { item: T; after: string | null }>());
   const fresh = useRef<string[]>([]);
@@ -207,14 +211,14 @@ export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, {
   const released = useRef(release);
   const releasing = released.current !== release;
   released.current = release;
-  const options = useRef({ find, stagger, reverse, ms });
-  options.current = { find, stagger, reverse, ms };
+  const options = useRef({ find, stagger, reverse, ms, lifts });
+  options.current = { find, stagger, reverse, ms, lifts };
 
   if (previous.current !== items) {
     const now = new Set(items.map(keyOf));
     // Something that came back while it was leaving is simply there again.
     for (const key of now) if (held.current.has(key)) held.current.delete(key);
-    if (enabled && motionOn()) {
+    if (motionOn()) {
       let after: string | null = null;
       const gone: string[] = [];
       for (const item of previous.current) {
@@ -237,6 +241,12 @@ export function useLeaving<T>(items: readonly T[], keyOf: (item: T) => string, {
     const keys = fresh.current;
     fresh.current = [];
     const { find: where, stagger: step, reverse: backwards, ms: duration } = options.current;
+    if (!options.current.lifts(keys)) {
+      // Nothing asked for a lift: let them go now, in this commit's layout pass, so the held rows are never painted.
+      for (const key of keys) held.current.delete(key);
+      redraw((value) => value + 1);
+      return;
+    }
     const ordered = backwards ? [...keys].reverse() : keys;
     const elements = ordered.map((key) => where(key)).filter((element): element is HTMLElement => element !== null);
     liftOut(elements, { stagger: step, ms: duration });

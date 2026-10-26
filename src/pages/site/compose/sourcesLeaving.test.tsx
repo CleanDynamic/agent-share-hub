@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxSourcesProps } from "@/dev/fixtures/sandbox";
 import { LIFT } from "@/lib/build/buildMotion";
-import { announce, resetIntent } from "@/lib/build/motionIntent";
+import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
+
+/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
+const channel = new MotionChannel();
+const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
+const resetIntent = () => channel.reset();
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { SourcesPanel } from "./SourcesPanel";
@@ -38,7 +43,9 @@ function mount(files: ReturnType<typeof sandboxSourcesProps>["files"], onRemoveF
   const props = { ...sandboxSourcesProps("bakery"), onRemoveFile };
   const view = (list: typeof files) => (
     <MemoryRouter>
-      <SourcesPanel {...props} files={list} />
+      <MotionChannelContext.Provider value={channel}>
+        <SourcesPanel {...props} files={list} />
+      </MotionChannelContext.Provider>
     </MemoryRouter>
   );
   const first = render(view(files));

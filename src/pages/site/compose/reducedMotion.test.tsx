@@ -7,7 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildFacts, tileView } from "@/dev/fixtures/detailsKinds";
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
-import { announce, resetIntent, type MotionKind } from "@/lib/build/motionIntent";
+import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
+
+/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
+const channel = new MotionChannel();
+const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
+const resetIntent = () => channel.reset();
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { BuildList, type BuildListProps } from "./BuildList";
@@ -46,7 +51,9 @@ const heads = (props: BuildListProps) => [...props.dividers.values()].map((head)
 const mount = (props: BuildListProps) => {
   const wrap = (next: BuildListProps) => (
     <MemoryRouter>
-      <BuildList {...next} />
+      <MotionChannelContext.Provider value={channel}>
+        <BuildList {...next} />
+      </MotionChannelContext.Provider>
     </MemoryRouter>
   );
   const view = render(wrap(props));

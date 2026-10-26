@@ -7,7 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
 import { DROP, FADE_AFTER_MS, LIFT, SKELETON_IN, SKELETON_OUT, SLIDE, STAGGER } from "@/lib/build/buildMotion";
-import { announce, resetIntent } from "@/lib/build/motionIntent";
+import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
+
+/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
+const channel = new MotionChannel();
+const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
+const resetIntent = () => channel.reset();
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { BuildList, type BuildListProps } from "./BuildList";
@@ -50,13 +55,17 @@ const tile = (id: string) => document.querySelector(`[data-skel-kind="tile"][dat
 const mount = (props: BuildListProps) => {
   const view = render(
     <MemoryRouter>
-      <BuildList {...props} />
+      <MotionChannelContext.Provider value={channel}>
+        <BuildList {...props} />
+      </MotionChannelContext.Provider>
     </MemoryRouter>,
   );
   const again = (next: BuildListProps) =>
     view.rerender(
       <MemoryRouter>
-        <BuildList {...next} />
+        <MotionChannelContext.Provider value={channel}>
+          <BuildList {...next} />
+        </MotionChannelContext.Provider>
       </MemoryRouter>,
     );
   return { view, again };
@@ -365,7 +374,8 @@ describe("P5 · converting a tile", () => {
   it("crossfades the kind line over 150 (the old words fade out above the new) and starts the slide for what is below", () => {
     const props = base();
     const { again } = mount(props);
-    announce("convert", "Converted Prompt 3 to an agent");
+    // SV-06: a convert names its tile (`useBuildActions`), so its kind line is taken before the DOM changes.
+    channel.expect({ kind: "convert", keys: ["p3"], sentence: "Converted Prompt 3 to an agent" });
     again({ ...props, steps: props.steps.map((step) => (step.id === "p3" ? { ...step, title: "Now something else" } : step)) });
     const eyebrow = tile("p3")?.querySelector('[data-testid$="-eyebrow"]');
     expect(eyebrow).not.toBeNull();
