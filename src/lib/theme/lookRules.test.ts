@@ -924,6 +924,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/routing/PageChangeProvider.tsx",
   "src/lib/routing/PageLink.tsx",
   "src/lib/routing/RoutePlaceholder.tsx",
+  "src/lib/routing/ScrollKeeper.test.ts",
+  "src/lib/routing/ScrollKeeper.tsx",
   "src/lib/routing/go.test.tsx",
   "src/lib/routing/go.ts",
   "src/lib/routing/idleLoad.ts",

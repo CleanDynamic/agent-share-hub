@@ -29,6 +29,7 @@ import { QUERY_DEFAULTS } from "@/lib/query/client";
 import { CACHE_VERSION, MAX_AGE_MS, createKeptCache, shouldKeep } from "@/lib/query/persist";
 import { RouteWarmup } from "@/lib/routing/RouteWarmup";
 import { PageChangeProvider } from "@/lib/routing/PageChangeProvider";
+import { ScrollKeeper } from "@/lib/routing/ScrollKeeper";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
 import { FrameRoute } from "./components/shell/FrameRoute";
 import { ComposeRoute } from "./pages/site/compose/ComposeRoute";
@@ -244,6 +245,7 @@ const App = () => (
                 Save toast; addToCollection.ts says why it lives here. */}
             <AddToCollectionHost />
             <RouteWarmup />
+            <ScrollKeeper />
             {/* SV-04: inside the frame, the one boundary is AppShell's (the matched route's Placeholder). This one is
                 for the routes drawn without the frame (sign in, the legacy workspaces, consent, the dev pages), which
                 wait on the ground colour, as they did. */}
