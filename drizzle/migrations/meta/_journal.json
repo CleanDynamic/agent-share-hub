@@ -134,6 +134,13 @@
       "when": 1792956448732,
       "tag": "0018_sv01_function_access",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792975021715,
+      "tag": "0019_sv03_indexes_and_policies",
+      "breakpoints": true
     }
   ]
 }
