@@ -50,7 +50,7 @@ import { goalRefusal, patchMaking, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
-import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, isTypedSession, sessionOrderOf, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { defaultWorkstream, labelsOf, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamLabel, workstreamMark, workstreamsOf } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { addSessionToBuild, fillMissingTiles } from "@/lib/build/addSession";
@@ -176,6 +176,9 @@ const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [ste
 const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
 
 /** The later of two moments, either of which may be missing. */
+/** What a session that has no entry yet starts from: a typed session's tool and day, else nothing of its own. */
+const fallbackMeta = (group: Parameters<typeof groupKind>[0] & { tool?: string | null; startedAt?: string | null } | undefined, key: string): SessionMeta =>
+  groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" };
 const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
 
 /** The page, with its one announcer around it (CA-26 P4). */
@@ -763,8 +766,10 @@ function SandboxPageBody() {
         await trackWrite("making", async () => {
           await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
           await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
-          if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
-          else await patchMaking(id, { session_order: [...keys, key] });
+          // SV-07 P1: the order as it is stored when it is written: a session added meanwhile, not yet drawn here, keeps its place.
+          const withStored = (fresh: Record<string, unknown>) => [...keys, ...sessionOrderOf(fresh).filter((entry) => !keys.includes(entry) && entry !== key)];
+          if (part) await setSessionOrder(id, (fresh) => orderWithNewSession(fresh, withStored(fresh), key, part));
+          else await patchMaking(id, (fresh) => ({ session_order: [...withStored(fresh), key] }));
         });
       }
       await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
@@ -794,7 +799,7 @@ function SandboxPageBody() {
     function again(key: string, closed: boolean) {
       setCollapseOverride((previous) => ({ ...previous, [key]: closed }));
       if (!buildId) return;
-      void setCollapsed(buildId, key, closed, made)
+      void setCollapsed(buildId, key, closed)
         .then(() => Promise.all([queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }), queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) })]))
         .catch((cause) => {
           console.error("[Sandbox] collapse not saved", cause);
@@ -802,7 +807,7 @@ function SandboxPageBody() {
           sayFailed(cause, "Fold not saved", () => again(key, closed));
         });
     },
-    [buildId, queryClient, made],
+    [buildId, queryClient],
   );
 
   foldRef.current = { closed: collapsedKeys, open: (key) => onToggleCollapsed(key, false) };
@@ -831,15 +836,15 @@ function SandboxPageBody() {
         }
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before = sessionsMetaOf(made)[key] ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() };
-        await setSessionMeta(id, key, { ...before, ...change });
+        // SV-07 P1: changed on the entry as it is stored, not as this page last read it.
+        await setSessionMeta(id, key, (stored) => ({ ...(stored ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() }), ...change }));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session not saved", cause);
         sayFailed(cause, "Session not saved", () => void again(key, change));
       }
     },
-    [claim, ensureBuild, groups, made, refreshRecord],
+    [claim, ensureBuild, groups, refreshRecord],
   );
 
   /** CA-04 P6: what a session worked until; an old build's run of typed prompts is saved as a session first. */
@@ -859,16 +864,17 @@ function SandboxPageBody() {
         }
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-        const { goal: _old, ...rest } = before;
-        await setSessionMeta(id, key, goal ? { ...rest, goal } : rest);
+        await setSessionMeta(id, key, (stored) => {
+          const { goal: _old, ...rest } = stored ?? fallbackMeta(group, key);
+          return goal ? { ...rest, goal } : rest;
+        });
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] goal not saved", cause);
         sayFailed(cause, "Goal not saved", () => void again(key, goal));
       }
     },
-    [claim, ensureBuild, groups, made, refreshRecord],
+    [claim, ensureBuild, groups, refreshRecord],
   );
 
   /** CA-05: what a session carries beyond its steps (cost, background, ...), written whole; an old build's run of typed prompts is saved as a session first. */
@@ -886,15 +892,14 @@ function SandboxPageBody() {
         }
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-        await setSessionMeta(id, key, withExtras(before, extras));
+        await setSessionMeta(id, key, (stored) => withExtras(stored ?? fallbackMeta(group, key), extras));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session facts not saved", cause);
         sayFailed(cause, "Session details not saved", () => void again(key, extras));
       }
     },
-    [claim, ensureBuild, groups, made, refreshRecord],
+    [claim, ensureBuild, groups, refreshRecord],
   );
 
   /** CA-05 P5: the sessions one ran at the same time as. The pairing is written on both sides, so the Map and the List agree. */
@@ -908,8 +913,10 @@ function SandboxPageBody() {
         const changes = togetherChanges(Object.fromEntries(Object.entries(metas).map(([other, meta]) => [other, meta.parallelWith])), self, next);
         for (const [other, list] of Object.entries(changes)) {
           const group = groups.find((candidate) => groupKey(candidate) === other);
-          const before: SessionMeta = metas[other] ?? (groupKind(group ?? { sessionId: other }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-          await setSessionMeta(id, other, withExtras(before, { ...extrasOf(before), parallelWith: list }));
+          await setSessionMeta(id, other, (stored) => {
+            const before = stored ?? fallbackMeta(group, other);
+            return withExtras(before, { ...extrasOf(before), parallelWith: list });
+          });
         }
         await refreshRecord(id);
       } catch (cause) {
@@ -926,17 +933,20 @@ function SandboxPageBody() {
       try {
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-        const { colour: _old, ...rest } = before;
         // In the node queue, behind any write already going: a part's colour and its sessions' are written one after another.
-        await nodes.run(() => setSessionMeta(id, key, colour ? { ...rest, colour } : rest));
+        await nodes.run(() =>
+          setSessionMeta(id, key, (stored) => {
+            const { colour: _old, ...rest } = stored ?? fallbackMeta(group, key);
+            return colour ? { ...rest, colour } : rest;
+          }),
+        );
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session colour not saved", cause);
         sayFailed(cause, "Colour not saved", () => void again(key, colour));
       }
     },
-    [ensureBuild, groups, made, refreshRecord, nodes],
+    [ensureBuild, groups, refreshRecord, nodes],
   );
 
   /** CA-12 P3: "Pick an app" on a session made here. On a post with no draft yet, the draft and its Session 1 are made first. */
@@ -946,15 +956,14 @@ function SandboxPageBody() {
         const id = await ensureBuild();
         const real = key === FIRST_SESSION_KEY ? firstSession.current : key;
         if (!real) return;
-        const before = sessionsMetaOf(made)[real] ?? { tool: null, date: todayDay() };
-        await setSessionMeta(id, real, { ...before, tool });
+        await setSessionMeta(id, real, (stored) => ({ ...(stored ?? { tool: null, date: todayDay() }), tool }));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] app not saved", cause);
         sayFailed(cause, "App not saved", () => void again(key, tool));
       }
     },
-    [ensureBuild, firstSession, made, refreshRecord],
+    [ensureBuild, firstSession, refreshRecord],
   );
 
   const onAddPrompt = useCallback(

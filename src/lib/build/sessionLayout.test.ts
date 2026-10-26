@@ -37,10 +37,21 @@ vi.mock("./making", async () => {
   return {
     ...actual,
     readMaking: async () => making.value,
-    patchMaking: async (_id: string, patch: Record<string, unknown>) => {
-      making.patches.push(patch);
-      making.value = { ...making.value, ...patch };
+    patchMaking: async (_id: string, patch: Record<string, unknown> | ((made: Record<string, unknown>) => Record<string, unknown>)) => {
+      const change = typeof patch === "function" ? patch(making.value) : patch;
+      making.patches.push(change);
+      making.value = { ...making.value, ...change };
       return making.value;
+    },
+    // SV-07 P1: one step reads `making`, changes it and writes it.
+    makingStep: async (_id: string, _op: string, change: (now: { making: Record<string, unknown> }) => Promise<{ patch: { making?: Record<string, unknown> } | null; result: unknown }>) => {
+      const { patch, result } = await change({ making: making.value });
+      if (patch?.making) {
+        const changed = Object.fromEntries(Object.entries(patch.making).filter(([key, value]) => making.value[key] !== value));
+        making.patches.push(changed);
+        making.value = patch.making;
+      }
+      return result;
     },
   };
 });
@@ -112,7 +123,7 @@ describe("setCollapsed", () => {
   });
   it("still keeps making when the table is not there", async () => {
     buildSessions.missing = true;
-    await setCollapsed("b", "a", true, {});
+    await setCollapsed("b", "a", true);
     expect(buildSessions.collapsed).toEqual([]);
     expect(making.value.sessions_collapsed).toEqual(["a"]);
   });

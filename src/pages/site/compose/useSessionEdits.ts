@@ -15,7 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession } from "@/lib/build/buildSessions";
 import { buildSteps, groupKey, topSteps, type SessionGroup, type Step } from "@/lib/build/graph";
-import { isLegacySession, newSessionKey, patchMaking, readMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, newSessionKey, patchMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsCollapsedOf, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta } from "@/lib/build/making";
 import { reorderNodes } from "@/lib/build/nodes";
 import { droppedKey, movedKey, orderKeys, setSessionOrder, stackBySessionMoves } from "@/lib/build/sessionLayout";
 import { dayOfNode, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
@@ -240,12 +240,15 @@ export function useSessionEdits(input: SessionEditsInput) {
       if (!buildId) throw new Error("That draft is not saved yet.");
       let applied: WorkstreamChange | null = null;
       await nodes.run(async () => {
-        const fresh = await readMaking(buildId);
-        const change = plan(fresh);
+        // SV-07 P1: the change is worked out from `making` as it stands inside the write's own step.
+        let change: WorkstreamChange | null = null;
+        const next = await patchMaking(buildId, (fresh) => {
+          change = plan(fresh);
+          return change && workstreamPatch(fresh, change);
+        });
         if (!change) return;
         applied = change;
-        const next = await patchMaking(buildId, workstreamPatch(fresh, change));
-        await setSessionOrder(buildId, change.order);
+        await setSessionOrder(buildId, (change as WorkstreamChange).order);
         const laid = planLayout(nodes.current(), next, sessionsMetaOf(next), change.order);
         if (laid.moves.length > 0) {
           await reorderNodes(buildId, laid.moves);
@@ -267,10 +270,7 @@ export function useSessionEdits(input: SessionEditsInput) {
       guard(line, async () => {
         const { buildId, nodes } = latest.current;
         if (!buildId) return;
-        await nodes.run(async () => {
-          const stored = storedWorkstreamsOf(await readMaking(buildId));
-          await setWorkstreams(buildId, change(stored));
-        });
+        await nodes.run(() => setWorkstreams(buildId, change).then(() => undefined));
         await refresh(buildId);
       }),
     [guard, refresh],
@@ -395,11 +395,9 @@ export function useSessionEdits(input: SessionEditsInput) {
         track(`${on ? "Put" : "Took"} Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""} ${on ? "at the same stage as" : "off the stage of"} the session above`, async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId || isLegacySession(key)) return;
-          await nodes.run(async () => {
-            const fresh = await readMaking(buildId);
-            const { sessions_meta } = workstreamPatch(fresh, { workstreams: storedWorkstreamsOf(fresh), sessions: { [key]: { withAbove: on ? true : undefined } }, order: [] });
-            await patchMaking(buildId, { sessions_meta });
-          });
+          await nodes.run(() =>
+            patchMaking(buildId, (fresh) => ({ sessions_meta: workstreamPatch(fresh, { workstreams: storedWorkstreamsOf(fresh), sessions: { [key]: { withAbove: on ? true : undefined } }, order: [] }).sessions_meta })).then(() => undefined),
+          );
           await refresh(buildId);
         }),
       ),
@@ -458,7 +456,6 @@ export function useSessionEdits(input: SessionEditsInput) {
             const order = editableKeys();
             const leaving = new Set(removing);
             const rest = withoutKeys(order, leaving);
-            const collapsed = ((made as { sessions_collapsed?: unknown } | null)?.sessions_collapsed as string[] | undefined) ?? [];
             const sessionRefs = removing.map((key) => refTo({ kind: "session", id: key }));
             const count = tiles.length + alsoTiles.length;
             Object.assign(removedMeta, {
@@ -480,7 +477,7 @@ export function useSessionEdits(input: SessionEditsInput) {
               bridgeRef.current.release(keepRefs);
               if (alsoTiles.length > 0) await nodes.run(() => dropNodes(nodes, alsoTiles));
               await applyLayout({ order: rest, reassign: new Map(moving.map((id) => [id, target])), atEnd, meta: Object.fromEntries(removing.map((key) => [key, null])), dropKeys: removing });
-              await nodes.run(() => patchMaking(buildId, { sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) }).then(() => undefined));
+              await nodes.run(() => patchMaking(buildId, (fresh) => ({ sessions_collapsed: sessionsCollapsedOf(fresh).filter((entry) => !leaving.has(entry)) })).then(() => undefined));
               for (const key of removing) latest.current.onGone(key);
               await refreshMakingStats(buildId).catch(() => undefined);
               const offset = shown.length - order.length;
@@ -499,7 +496,7 @@ export function useSessionEdits(input: SessionEditsInput) {
                 await setSessionMeta(buildId, key, null);
                 await deleteBuildSession(buildId, key).catch(() => undefined);
               }
-              await patchMaking(buildId, { session_order: rest, sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) });
+              await patchMaking(buildId, (fresh) => ({ session_order: rest, sessions_collapsed: sessionsCollapsedOf(fresh).filter((entry) => !leaving.has(entry)) }));
             });
             await refreshMakingStats(buildId).catch(() => undefined);
             for (const key of removing) latest.current.onGone(key);

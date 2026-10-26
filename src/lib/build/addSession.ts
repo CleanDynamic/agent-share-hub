@@ -238,18 +238,22 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
       console.warn("[addSession] build_sessions is not applied; the session is in the draft by its tiles");
     }
 
-    // CA-14 P1: the order and the fold are also kept in `making`, so a draft without the table still has them.
-    const keptOrder = getSessionOrder(making, rows).filter((key) => key !== replaced && key !== importId);
-    const at = replaced ? Math.max(0, getSessionOrder(making, rows).indexOf(replaced)) : keptOrder.length;
-    keptOrder.splice(Math.min(at, keptOrder.length), 0, importId);
-    // CA-17 P3: in a part, the session stands at the end of it in the one order, and the tiles are put with their session.
-    const grouped = part ? orderWithNewSession(making, keptOrder.filter((key) => key !== importId), importId, part) : keptOrder;
+    // CA-14 P1: the order and the fold are also kept in `making`, so a draft without the table still has them. SV-07 P1: the
+    // order is worked out from the draft as it stands when it is written, not as it was read before the tiles went in, so a
+    // session added meanwhile keeps its place and its part.
+    const replacedAt = replaced ? Math.max(0, getSessionOrder(making, rows).indexOf(replaced)) : -1;
+    const orderNow = (made: unknown, rowsNow: readonly BuildSessionRow[]): string[] => {
+      const kept = getSessionOrder(made, rowsNow).filter((key) => key !== replaced && key !== importId);
+      kept.splice(Math.min(replacedAt < 0 ? kept.length : replacedAt, kept.length), 0, importId);
+      // CA-17 P3: in a part, the session stands at the end of it in the one order, and the tiles are put with their session.
+      return part ? orderWithNewSession(made, kept.filter((key) => key !== importId), importId, part) : kept;
+    };
     if (part) {
-      await setSessionOrder(buildId, grouped);
+      const grouped = await setSessionOrder(buildId, orderNow);
       const [afterTree, afterMaking] = await Promise.all([getNodeTree(buildId), readMaking(buildId)]);
       const moves = planLayout(afterTree, afterMaking, sessionsMetaOf(afterMaking), grouped).moves;
       if (moves.length > 0) await reorderNodes(buildId, moves);
-    } else await patchMaking(buildId, { session_order: keptOrder }).catch((cause) => console.warn("[addSession] order not kept in making", cause));
+    } else await patchMaking(buildId, (made) => ({ session_order: orderNow(made, rows) })).catch((cause) => console.warn("[addSession] order not kept in making", cause));
     if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => console.warn("[addSession] fold not kept in making", cause));
 
     if (isNew) {

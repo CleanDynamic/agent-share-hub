@@ -18,6 +18,8 @@ vi.mock("./sessions", () => ({
 const updateBuild = vi.fn();
 vi.mock("./builds", () => ({
   updateBuild: (...a: unknown[]) => updateBuild(...a),
+  // SV-07 P1: a write made inside a step of the build's write queue.
+  updateBuildInStep: (...a: unknown[]) => updateBuild(...a),
 }));
 
 import { addMadeWithTools, nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, setSessionTool, toolLabel, withTools } from "./making";

@@ -1047,6 +1047,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/dragFrames.test.tsx",
   "src/pages/site/compose/pageScroll.ts",
   "src/pages/site/compose/pageScroll.test.ts",
+
+  // SV-07
+  "src/pages/site/compose/sv07.replay.test.tsx",
+  "src/lib/build/making.steps.test.ts",
 ];
 
 /**
