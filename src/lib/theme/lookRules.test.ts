@@ -915,6 +915,7 @@ export const CA03_FILES: readonly string[] = [
   "src/components/shell/PageProgress.tsx",
   "src/components/shell/SiteFrame.tsx",
   "src/components/shell/SiteHeader.tsx",
+  "src/components/shell/frameChrome.ts",
   "src/components/shell/frameOutlet.test.tsx",
   "src/components/vision/SectionHead.tsx",
   "src/lib/routing/PageChangeProvider.tsx",
@@ -923,8 +924,13 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/routing/go.test.tsx",
   "src/lib/routing/go.ts",
   "src/lib/routing/idleLoad.ts",
+  "src/lib/routing/routeTable.ts",
   "src/lib/routing/useIntent.ts",
   "src/lib/routing/warm.ts",
+  "src/pages/site/compose/ComposePage.tsx",
+  "src/pages/site/compose/ComposeRoute.test.tsx",
+  "src/pages/site/compose/ComposeRoute.tsx",
+  "src/pages/site/compose/SandboxPage.tsx",
   "src/pages/site/drafts/DraftsView.tsx",
 ];
 

@@ -190,7 +190,8 @@ function SandboxPageBody() {
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
   const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate } = useComposePage({ sessionsActive: sourcesOnScreen });
-  usePageReady("composer", !buildId || Boolean(build));
+  // SV-04 P4: ready when the composer shows its content, not its skeleton (ComposePage.tsx says when that is).
+  usePageReady("composer", viewProps.status !== "loading");
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
   const bridgeHolder = useRef<ReferenceBridge | undefined>(undefined);

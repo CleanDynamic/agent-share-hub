@@ -531,6 +531,15 @@ const App = () => (
                 <Route path="/openbuilds/solvers" element={<RouteBoundary><Solvers /></RouteBoundary>} />
                 <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
                 <Route path="/import" element={<ImportPage />} />
+                {/* UI-P47 — the composer. /compose/new and /compose/:buildId are children of ONE route on purpose: the first
+                    change makes the draft and replaces the URL, and React keeps the page (and the cursor in its field)
+                    across that, which two sibling routes would not (each remounts). The parent reads the params the children
+                    match. ComposeRoute renders the new composer, or the legacy `Compose` untouched, with its own chrome, for
+                    a rebuild or a `from` parameter. SV-04 P4: inside Layout, so the composer shares the one frame. */}
+                <Route path="/compose" element={<ComposeRoute legacy={legacyCompose} />}>
+                  <Route path="new" element={null} />
+                  <Route path=":buildId" element={null} />
+                </Route>
                 {/* UI-P31 — /rebuild/:slug is a page in the site frame (the family, what changed, readiness), not a door.
                     SV-04: inside Layout, so it shares the one frame, rather than drawing a SiteFrame of its own. */}
                 <Route
@@ -567,19 +576,9 @@ const App = () => (
                   `--bg` it would be a flash of black before a luminous grey
                   room on Noon. `--bg` is the live theme's ground, so the
                   fallback is the room the route is about to paint. ── */}
-              {/* UI-P47 — the composer. /compose/new and /compose/:buildId are children
-                  of ONE route on purpose: the first change makes the draft and
-                  replaces the URL, and React keeps the page (and the cursor in its
-                  field) across that, which two sibling routes would not (each
-                  remounts). The parent reads the params the children match. ComposeRoute renders the new composer in the site
-                  frame, or the legacy `Compose` untouched, with its own chrome,
-                  for a rebuild or a `from` parameter. /compose/start is the old
-                  intake (paste a transcript, a repo) as it always was. */}
+              {/* UI-P47 — /compose/start is the old intake (paste a transcript, a repo) as it always was. The composer
+                  itself moved inside Layout (SV-04 P4). */}
               <Route path="/compose/start" element={<ComposeNew />} />
-              <Route path="/compose" element={<ComposeRoute legacy={legacyCompose} />}>
-                <Route path="new" element={null} />
-                <Route path=":buildId" element={null} />
-              </Route>
               <Route path="/convert/:contentItemId" element={<ConvertPrompt />} />
               {/* ── EX-P03 — /oauth/consent.
 

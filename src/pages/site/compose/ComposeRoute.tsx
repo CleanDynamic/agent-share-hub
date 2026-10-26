@@ -26,14 +26,19 @@
    build layer into every visitor's first download. The reads themselves are in
    composerOpen.ts, imported when they are started.
 
-   SIGNED OUT goes to /login, as the old screens do. */
+   SIGNED OUT goes to /login, as the old screens do.
 
-import { SkipToBuild } from "./buildFocus";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+   ONE FRAME (SV-04 P4). The route sits inside Layout, so the header, footer and dock are the site's own and stay put from
+   Drafts to a draft; the frame reads `wide` and "Skip to build" from the route table. Nothing here blanks the window:
+   while the session is unknown and while the rebuild check runs, the composer's skeleton stands in the page area, and the
+   page's code suspends to the frame's one boundary, whose placeholder is that same skeleton. A rebuild swaps to the legacy
+   workspace, which hides the frame's chrome (`useHideFrameChrome`) and draws its own, exactly as before. */
+
+import { lazy, useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 
-import { SiteFrame } from "@/components/shell/SiteFrame";
+import { useHideFrameChrome } from "@/components/shell/frameChrome";
 import { useAuth } from "@/contexts/AuthContext";
 import { composeBuildQueryKey } from "@/hooks/composeBuildQueryKey";
 import { fetchNodeTypes } from "@/hooks/useNodeType";
@@ -50,8 +55,6 @@ const SandboxPage = lazy(() => preloadComposer() as Promise<{ default: React.Com
 
 /** The route's own check, under its own key: it is not the composer's record any more. */
 const composeParentKey = (buildId: string | undefined) => ["build", "getBuildParent", buildId] as const;
-
-const FALLBACK = <div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />;
 
 export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const { buildId } = useParams<{ buildId: string }>();
@@ -99,27 +102,21 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     retry: 1,
   });
   const waitingForRecord = reads && record.isPending && record.fetchStatus !== "idle";
+  const checking = Boolean(buildId) && !startedNew && check.isPending && check.fetchStatus !== "idle";
+  const rebuild = Boolean(buildId) && !startedNew && Boolean(check.data?.parent_build_id);
+  const showLegacy = !loading && isLoggedIn && (hasFrom || rebuild);
+  useHideFrameChrome(showLegacy);
 
-  if (loading) return FALLBACK;
+  if (loading) return <ComposeSkeleton />;
   if (!isLoggedIn) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`} replace />;
   }
-  if (hasFrom) return <>{legacy}</>;
-  if (buildId && !startedNew) {
-    if (check.isPending && check.fetchStatus !== "idle") return FALLBACK;
-    if (check.data?.parent_build_id) return <>{legacy}</>;
-  }
+  if (showLegacy) return <>{legacy}</>;
+  if (checking) return <ComposeSkeleton />;
 
-  return (
-    <SiteFrame wide={SANDBOX_COMPOSER_ENABLED} skipLink={SANDBOX_COMPOSER_ENABLED ? <SkipToBuild /> : undefined}>
-      {/* No RouteBoundary: it is keyed by pathname, and the first change replaces
-          /compose/new with /compose/{id}, which would remount the page under the
-          creator's cursor. */}
-      <Suspense fallback={SANDBOX_COMPOSER_ENABLED ? <ComposeSkeleton /> : <div style={{ minHeight: "60vh" }} />}>
-        {waitingForRecord ? <ComposeSkeleton /> : SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />}
-      </Suspense>
-    </SiteFrame>
-  );
+  /* No RouteBoundary: it is keyed by pathname, and the first change replaces /compose/new with /compose/{id}, which would
+     remount the page under the creator's cursor. */
+  return waitingForRecord ? <ComposeSkeleton /> : SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />;
 }
 
 export default ComposeRoute;

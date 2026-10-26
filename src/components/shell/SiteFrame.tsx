@@ -90,7 +90,12 @@ export interface SiteFrameViewProps {
   wide?: boolean;
   /** CA-26 P1: replaces "Skip to content" as the first stop (the composer's "Skip to build"). */
   skipLink?: ReactNode;
+  /** SV-04 P4: false for a page that draws its own chrome (the legacy workspace). The slots go and every box steps back
+      (`display: contents`), but the page stays at the same place in the tree, so it is not mounted again. */
+  chrome?: boolean;
 }
+
+const CONTENTS: CSSProperties = { display: "contents" };
 
 const SKIP_BASE: CSSProperties = {
   position: "absolute",
@@ -158,6 +163,7 @@ export function SiteFrameView({
   children,
   wide = false,
   skipLink,
+  chrome = true,
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
   const win = useWindowSize();
@@ -179,6 +185,24 @@ export function SiteFrameView({
         <main id="main" style={{ position: "relative", zIndex: 1 }}>
           {children}
         </main>
+      </div>
+    );
+  }
+
+  if (!chrome) {
+    // The same elements at the same places as below, so the page under `<main>` keeps its state.
+    return (
+      <div data-testid="site-frame" data-variant="none" style={CONTENTS}>
+        {null}
+        {null}
+        <div style={CONTENTS}>
+          <main id="main" style={CONTENTS}>
+            {null}
+            {children}
+          </main>
+          {null}
+        </div>
+        {null}
       </div>
     );
   }
@@ -234,10 +258,12 @@ export interface SiteFrameProps {
   wide?: boolean;
   /** CA-26 P1: see `SiteFrameViewProps.skipLink`. */
   skipLink?: ReactNode;
+  /** SV-04 P4: see `SiteFrameViewProps.chrome`. */
+  chrome?: boolean;
 }
 
 /** The container: live chrome around the page. UI-P17 to UI-P19 fill the slots. */
-export function SiteFrame({ variant = "site", children, wide, skipLink }: SiteFrameProps) {
+export function SiteFrame({ variant = "site", children, wide, skipLink, chrome }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
       <ConnectorDialogProvider>
@@ -251,6 +277,7 @@ export function SiteFrame({ variant = "site", children, wide, skipLink }: SiteFr
         progress={<PageProgress />}
         wide={wide}
         skipLink={skipLink}
+        chrome={chrome}
       >
         {children}
       </SiteFrameView>
