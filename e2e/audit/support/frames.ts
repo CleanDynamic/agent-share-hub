@@ -282,3 +282,265 @@ export function measureChange(log: FrameLog, input: number): ChangeNumbers {
     shiftSources: log.shifts.filter((shift) => shift.t > input && shift.t <= end).flatMap((shift) => shift.sources.map((source) => `${shift.value.toFixed(3)} ${source}`)),
   };
 }
+
+/* ── SV-06: the motion recorder, for the motion audit ──
+
+   `installMotionTools(page)` adds a second init script, lighter than the page change sampler above (no page-area walk), that keeps
+   while it is armed:
+     - every frame's time, how many animations were running, and where each `[data-slide-id]` element in the window stood, in document
+       coordinates (so a page that scrolls does not count as the element moving);
+     - every `element.animate()` call: when, on which element, which properties;
+     - every animation cut short: cancelled, or finished early by `finish()`, before it reached its end. A cut is "continued" when
+       a new animation started on the same element in the same frame (within 20 ms either way): the motion goes on from there;
+     - long tasks (PerformanceObserver, `longtask`);
+     - the time of the input that started the moment (the pointer or click event's time), and whether the DOM changed in a frame.
+   `measureMotion` turns one armed window into the numbers the audit judges. */
+
+export interface MotionFrame {
+  t: number;
+  running: number;
+  /** Something in the document changed since the frame before: the DOM, the scroll, or an animation was started. */
+  dirty: boolean;
+  /** `data-slide-id` → [x, y] in document coordinates. */
+  at: Record<string, [number, number]>;
+}
+
+export interface MotionLog {
+  frames: MotionFrame[];
+  started: { t: number; el: number; keys: string[] }[];
+  cuts: { t: number; el: number; how: "cancel" | "finish" }[];
+  longTasks: { start: number; duration: number }[];
+  input: number;
+}
+
+declare global {
+  interface Window {
+    __motion?: {
+      log: MotionLog;
+      armed: boolean;
+      arm: () => void;
+      disarm: () => void;
+      input: (t: number) => void;
+    };
+  }
+}
+
+function motionRecorder() {
+  const log: MotionLog = {
+    frames: [],
+    started: [],
+    cuts: [],
+    longTasks: [],
+    input: -1,
+  };
+  const ids = new WeakMap<Element, number>();
+  let next = 1;
+  const idOf = (element: Element) => {
+    if (!ids.has(element)) ids.set(element, next++);
+    return ids.get(element) as number;
+  };
+  let dirty = false;
+  let lastScroll = 0;
+  const state = {
+    log,
+    armed: false,
+    arm() {
+      lastScroll = scrollY;
+      log.frames.length = 0;
+      log.started.length = 0;
+      log.cuts.length = 0;
+      log.longTasks.length = 0;
+      log.input = -1;
+      state.armed = true;
+    },
+    disarm() {
+      state.armed = false;
+    },
+    input(t: number) {
+      if (state.armed && log.input < 0) log.input = t;
+    },
+  };
+  window.__motion = state;
+
+  const animate = Element.prototype.animate;
+  Element.prototype.animate = function (this: Element, frames: Keyframe[] | PropertyIndexedKeyframes | null, options?: number | KeyframeAnimationOptions) {
+    const animation = animate.call(this, frames, options);
+    if (state.armed) {
+      dirty = true;
+      const list = Array.isArray(frames) ? frames : frames ? [frames as Keyframe] : [];
+      const keys = [...new Set(list.flatMap((frame) => Object.keys(frame)))].filter((key) => !["offset", "easing", "composite"].includes(key));
+      const el = idOf(this);
+      log.started.push({ t: performance.now(), el, keys });
+      animation.addEventListener("cancel", () => {
+        if (state.armed) log.cuts.push({ t: performance.now(), el, how: "cancel" });
+      });
+    }
+    return animation;
+  };
+  const finish = Animation.prototype.finish;
+  Animation.prototype.finish = function (this: Animation) {
+    if (state.armed && this.playState === "running") {
+      const timing = this.effect?.getComputedTiming();
+      const end = Number(timing?.endTime ?? 0);
+      const now = Number(this.currentTime ?? 0);
+      const target = (this.effect as KeyframeEffect | null)?.target;
+      if (target && now < end - 1)
+        log.cuts.push({
+          t: performance.now(),
+          el: idOf(target),
+          how: "finish",
+        });
+    }
+    return finish.call(this);
+  };
+
+  for (const type of ["pointerdown", "pointerup", "click", "keydown", "wheel"])
+    addEventListener(type, (event) => state.input(event.timeStamp), {
+      capture: true,
+      passive: true,
+    });
+
+  const watch = () => {
+    new MutationObserver(() => {
+      dirty = true;
+    }).observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      characterData: true,
+    });
+  };
+  if (document.body) watch();
+  else addEventListener("DOMContentLoaded", watch);
+
+  const sample = (t: number) => {
+    if (state.armed) {
+      const at: Record<string, [number, number]> = {};
+      const height = innerHeight;
+      for (const element of document.querySelectorAll("[data-slide-id]")) {
+        const box = element.getBoundingClientRect();
+        // Only what can be seen: a box off screen is not seen to move (the List does not slide it, on purpose).
+        if (box.bottom <= 0 || box.top >= height) continue;
+        at[element.getAttribute("data-slide-id") as string] = [Math.round((box.left + scrollX) * 10) / 10, Math.round((box.top + scrollY) * 10) / 10];
+      }
+      const running = document.getAnimations().filter((animation) => animation.playState === "running").length;
+      if (scrollY !== lastScroll) dirty = true;
+      lastScroll = scrollY;
+      log.frames.push({ t, running, dirty, at });
+      dirty = false;
+      if (log.frames.length > 5000) log.frames.splice(0, 2500);
+    }
+    requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+
+  try {
+    new PerformanceObserver((list) => {
+      if (!state.armed) return;
+      for (const entry of list.getEntries())
+        log.longTasks.push({
+          start: entry.startTime,
+          duration: entry.duration,
+        });
+    }).observe({ type: "longtask" });
+  } catch {
+    /* an engine without long tasks: the list stays empty */
+  }
+}
+
+export async function installMotionTools(page: Page): Promise<void> {
+  await page.addInitScript(motionRecorder);
+}
+
+export async function armMotion(page: Page): Promise<void> {
+  await page.evaluate(() => window.__motion?.arm());
+}
+
+export async function readMotion(page: Page): Promise<MotionLog> {
+  return page.evaluate(() => {
+    window.__motion?.disarm();
+    return JSON.parse(
+      JSON.stringify(
+        window.__motion?.log ?? {
+          frames: [],
+          started: [],
+          cuts: [],
+          longTasks: [],
+          input: -1,
+        },
+      ),
+    );
+  });
+}
+
+export interface MotionNumbers {
+  /** Frames more than 25 ms after the one before, from the input until nothing runs. */
+  frameGaps: number;
+  /** Long tasks over 50 ms that overlap the time something moved. */
+  longTasks: number;
+  longestTaskMs: number;
+  /** Animations cut short (cancelled, or finished early) with nothing continuing on that element in the same frame. */
+  cancelled: number;
+  /** The largest single-frame move of any `[data-slide-id]` element, as a share of its whole travel (0 to 1). */
+  largestJump: number;
+  /** Which element made it, for reading by eye. */
+  jumpOf: string;
+  /** From the input to the first frame where anything changed, in ms. */
+  firstFrameMs: number;
+  /** From the input to the last frame something ran or changed, in ms. */
+  settledMs: number;
+  /** Properties animated other than transform and opacity. */
+  offCompositor: string[];
+}
+
+/** Elements that travel less than this in all are not judged: a pixel of rounding is not a jump. */
+const MIN_TRAVEL = 6;
+
+export function measureMotion(log: MotionLog): MotionNumbers {
+  const input = log.input >= 0 ? log.input : (log.frames[0]?.t ?? 0);
+  const after = log.frames.filter((frame) => frame.t >= input);
+  // Moving: an animation runs, or the page scrolls (Go to it scrolls by script, not by an animation).
+  const lastRunning = [...after].reverse().find((frame) => frame.running > 0 || frame.dirty);
+  const end = lastRunning ? lastRunning.t : input;
+  const moving = after.filter((frame) => frame.t <= end + 20);
+  let gaps = 0;
+  for (let at = 1; at < moving.length; at += 1) if (moving[at].t - moving[at - 1].t > 25) gaps += 1;
+  const first = after.find((frame) => frame.dirty || frame.running > 0);
+  const tasks = log.longTasks.filter((task) => task.duration > 50 && task.start + task.duration >= input && task.start <= end);
+  const cancelled = log.cuts.filter((cut) => !log.started.some((start) => start.el === cut.el && Math.abs(start.t - cut.t) <= 20)).length;
+  // The jump: per element, each frame's move and the sum of them; only frames where it was there before and after.
+  const travel = new Map<string, { total: number; most: number }>();
+  for (let at = 1; at < after.length; at += 1) {
+    const was = after[at - 1].at;
+    const now = after[at].at;
+    for (const id of Object.keys(now)) {
+      if (!was[id]) continue;
+      const step = Math.hypot(now[id][0] - was[id][0], now[id][1] - was[id][1]);
+      const entry = travel.get(id) ?? { total: 0, most: 0 };
+      entry.total += step;
+      entry.most = Math.max(entry.most, step);
+      travel.set(id, entry);
+    }
+  }
+  let largestJump = 0;
+  let jumpOf = "";
+  for (const [id, entry] of travel) {
+    if (entry.total < MIN_TRAVEL) continue;
+    const share = entry.most / entry.total;
+    if (share > largestJump) {
+      largestJump = share;
+      jumpOf = `${id} (${Math.round(entry.most)} of ${Math.round(entry.total)} px)`;
+    }
+  }
+  return {
+    frameGaps: gaps,
+    longTasks: tasks.length,
+    longestTaskMs: Math.round(Math.max(0, ...tasks.map((task) => task.duration))),
+    cancelled,
+    largestJump: Math.round(largestJump * 100) / 100,
+    jumpOf,
+    firstFrameMs: first ? Math.round(first.t - input) : -1,
+    settledMs: Math.round(end - input),
+    offCompositor: [...new Set(log.started.flatMap((start) => start.keys).filter((key) => !["transform", "opacity", "transformOrigin"].includes(key)))],
+  };
+}

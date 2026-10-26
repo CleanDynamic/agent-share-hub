@@ -16,7 +16,8 @@
     "audit:themes": "playwright test --config=playwright.audit.config.ts theme-completeness",
     "audit:perf": "playwright test --config=playwright.audit.config.ts performance",
     "audit:pages": "vite build && playwright test --config=playwright.pages.config.ts",
-    "audit:design": "playwright test --config=playwright.audit.config.ts design-compare"
+    "audit:design": "playwright test --config=playwright.audit.config.ts design-compare",
+    "audit:motion": "playwright test --config=playwright.audit.config.ts audit/motion.spec"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

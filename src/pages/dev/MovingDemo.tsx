@@ -4,7 +4,8 @@
    step and a file); Part 2 is empty. Every move goes through the same rules as the composer (`moveBy` for Move up and Move down,
    the live order of a drag for the mouse and the keys); the "database" is this page's memory, so nothing is written anywhere.
 
-   `&select=<id>` selects a tile or a session. */
+   `&select=<id>` selects a tile or a session. `&prompts=<n>` gives the first chat in Sources n prompts (3 by default), for SV-06's
+   timing of an import of 1, 4, 8 and 18 prompts. */
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -107,7 +108,8 @@ export default function MovingDemo({ fit = "board", state = "populated" }: Desig
   const onNest = useCallback((id: string, parent: string | null, index: number) => write(parent ? { kind: "nested", id, parent, index } : null), [write]);
 
   /* Adding a session from a chat or starting an empty one: a short wait, then its prompts are in the build (CA-21 P7). */
-  const [library] = useState<SourceLibraryItem[]>(() => sandboxSourcesProps("bakery").library.map((row, at) => ({ ...row, promptCount: at === 0 ? 3 : row.promptCount, line: at === 0 ? `${row.date} · 3 prompts` : row.line })));
+  const firstCount = Number(params.get("prompts")) || 3;
+  const [library] = useState<SourceLibraryItem[]>(() => sandboxSourcesProps("bakery").library.map((row, at) => ({ ...row, promptCount: at === 0 ? firstCount : row.promptCount, line: at === 0 ? `${row.date} · ${firstCount} ${firstCount === 1 ? "prompt" : "prompts"}` : row.line })));
   const [adding, setAdding] = useState<ReadonlySet<string>>(new Set());
   const [arriving, setArriving] = useState<Arriving | null>(null);
   const added = useRef(0);

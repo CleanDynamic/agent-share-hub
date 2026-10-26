@@ -1016,6 +1016,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/sv05.numbers.test.ts",
   "src/pages/site/compose/tabRowRecipes.ts",
   "src/pages/site/compose/useComposePrompts.ts",
+
+  // SV-06
+  "e2e/audit/motion.spec.ts",
+  "e2e/audit/support/frames.ts",
 ];
 
 /**
