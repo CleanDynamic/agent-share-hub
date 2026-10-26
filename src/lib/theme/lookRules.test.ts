@@ -954,6 +954,7 @@ export const CA03_FILES: readonly string[] = [
 
   // SV-05
   "src/components/build/SessionJump.tsx",
+  "src/components/post/editor/BlockHandle.tsx",
   "src/dev/fixtures/ca21.ts",
   "src/dev/fixtures/ca22.ts",
   "src/dev/fixtures/ca27.ts",
@@ -980,6 +981,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ImportingPieces.test.tsx",
   "src/pages/site/compose/ImportingPieces.tsx",
   "src/pages/site/compose/LoadingBlocks.tsx",
+  "src/pages/site/compose/PostTab.tsx",
   "src/pages/site/compose/SandboxPage.sessionEdits.test.tsx",
   "src/pages/site/compose/SandboxPage.tsx",
   "src/pages/site/compose/SessionHead.tsx",

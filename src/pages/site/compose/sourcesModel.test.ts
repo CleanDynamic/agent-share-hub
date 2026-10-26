@@ -34,7 +34,7 @@ describe("sourceSessions", () => {
   });
 });
 
-describe("sourceSessions — a session given its tool (TF-13)", () => {
+describe("sourceSessions: a session given its tool (TF-13)", () => {
   const steps = [step({ sessionId: "a" })];
 
   it("shows the chosen tool, and offers the picker, when the client names none", () => {

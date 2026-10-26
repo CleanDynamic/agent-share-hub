@@ -110,12 +110,25 @@ describe("Sources' rows", () => {
 describe("the setup-file reminder", () => {
   const reminder = (toolId: string, name: string, file: string) => ({ toolId, line: `${name} reads ${file}`, file });
 
-  it("sits under Files in this build, and Add it opens the file picker", () => {
+  it("sits under Files in this build, and Add opens the file picker", () => {
     const props = panel({ files: fileRows(1), reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md")] });
     const files = screen.getByRole("region", { name: "Files in this build" });
     expect(within(files).getByText("Claude Code reads CLAUDE.md")).toBeTruthy();
     fireEvent.click(within(files).getByRole("button", { name: "Add CLAUDE.md" }));
     expect(props.onPick).toHaveBeenCalledTimes(1);
+  });
+
+  it("SV-05 P6: wraps its words rather than cutting the file name, and Add never wraps or shrinks", () => {
+    panel({ files: [], reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md")] });
+    const line = screen.getByTestId("reminder-line");
+    expect(line.textContent).toBe("Claude Code reads CLAUDE.md");
+    expect(line.style.whiteSpace).toBe("normal");
+    expect(line.style.textOverflow).toBe("");
+    expect(line.style.overflowWrap).toBe("normal");
+    const add = screen.getByRole("button", { name: "Add CLAUDE.md" });
+    expect(add.textContent).toBe("Add");
+    expect(add.style.whiteSpace).toBe("nowrap");
+    expect(add.style.flexShrink).toBe("0");
   });
 
   it("shows even when the build has no file yet, and caps at two rows", () => {
