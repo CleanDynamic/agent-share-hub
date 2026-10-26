@@ -1,4 +1,4 @@
-/* SV-03 — the page audit's config: the audit config, served by `vite preview` on a built bundle (`npm run audit:pages`
+/* SV-03: the page audit's config: the audit config, served by `vite preview` on a built bundle (`npm run audit:pages`
    builds first). A dev server is not the product, and the audit's times would be about Vite. */
 
 import { defineConfig } from "@playwright/test";

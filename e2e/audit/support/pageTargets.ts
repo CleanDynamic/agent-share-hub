@@ -1,4 +1,4 @@
-/* SV-03 — the pages `npm run audit:pages` measures, and what each must meet.
+/* SV-03: the pages `npm run audit:pages` measures, and what each must meet.
 
    ONE LIST, read by the spec. A page prompt (SV-08 to SV-14) adds or changes its page by editing one entry here and
    nothing in the spec.

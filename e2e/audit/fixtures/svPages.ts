@@ -1,4 +1,4 @@
-/* SV-03 — the rows `npm run audit:pages` adds to the audit harness: a draft with three sessions, a draft with nothing in
+/* SV-03: the rows `npm run audit:pages` adds to the audit harness: a draft with three sessions, a draft with nothing in
    it, and a saved build. Answered through filterRows, so a read by creator, status or id gets what PostgREST would give it. */
 
 type Row = Record<string, unknown>;

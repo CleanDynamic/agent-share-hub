@@ -1,4 +1,4 @@
-/* SV-03 — how long a page takes to show its first screen, and how many requests it takes to get there.
+/* SV-03: how long a page takes to show its first screen, and how many requests it takes to get there.
 
    RUN WITH `npm run audit:pages`, which builds the bundle and serves it with `vite preview`: a dev server serves hundreds
    of unbundled modules and says nothing about the product (performance.spec.ts explains the same).

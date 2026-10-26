@@ -39,6 +39,6 @@ describe("the SV-03 migration", () => {
   });
 
   it("has no em dash", () => {
-    expect(sql()).not.toContain("—");
+    expect(sql()).not.toContain("\u2014");
   });
 });
