@@ -13,7 +13,7 @@
 
    Motion (`buildMotion.tsx`; transform and opacity, `clip-path` for the frame; never height):
      opening  the frame grows over `BASE` with its centre held still (`resizeFrame`); `OPTIONAL_DROP_AFTER` after the press each field
-              falls 20 and fades in over 240, top first, 60 apart, the 12th and the rest together;
+              falls 20 and fades in over 240, top first, 60 apart (closer for more than 6, over 300 at most);
      closing  the fields lift out (rise 8, fade, `OPTIONAL_LIFT`, last first, `OPTIONAL_LIFT_STAGGER` apart), then the frame closes
               over `BASE`;
      pressing the row again mid-motion ends the running one at once, then starts the reverse;
@@ -27,7 +27,7 @@ import { flushSync } from "react-dom";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { DROP, DROP_FALL, LIFT_RISE, OPTIONAL_DROP_AFTER, OPTIONAL_LIFT, OPTIONAL_LIFT_STAGGER, STAGGER, STAGGER_CAP } from "@/lib/build/buildMotion";
+import { DROP, DROP_FALL, LIFT_RISE, OPTIONAL_DROP_AFTER, OPTIONAL_LIFT, OPTIONAL_LIFT_STAGGER, STAGGER } from "@/lib/build/buildMotion";
 import { useInteractive } from "@/lib/theme/interactive";
 import { BASE, move } from "@/lib/theme/motion";
 
@@ -223,7 +223,7 @@ export function OptionalSection({ children, bleed = 0 }: OptionalSectionProps) {
       const runs: MotionRun[] = [];
       const after = where?.frame.getBoundingClientRect().height ?? 0;
       if (where && Math.abs(after - todo.heightBefore) >= 1) runs.push(resizeFrame(where.frame, where.parts, todo.heightBefore, after, BASE));
-      runs.push(dropIn(fields, { delay: OPTIONAL_DROP_AFTER, stagger: STAGGER, cap: STAGGER_CAP, ms: DROP, from: DROP_FALL }));
+      runs.push(dropIn(fields, { delay: OPTIONAL_DROP_AFTER, stagger: STAGGER, ms: DROP, from: DROP_FALL }));
       const end = () => {
         for (const run of runs) run.finish();
       };

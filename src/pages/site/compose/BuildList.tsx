@@ -111,7 +111,8 @@ import { FOOT_LINK, LIST_BOX, MarkedName, listRow, NumberBadge, RESPONSE_WORD, R
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
 import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
-import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "./workstreamRecipes";
+import { WORKSTREAM_BODY, WORKSTREAM_FRAME, WORKSTREAM_GROUP } from "./workstreamRecipes";
+import { FramePieces } from "./framePieces";
 import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNest";
@@ -120,9 +121,10 @@ import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
 import { SLIDE_ATTR } from "./flip";
 import { listRuns, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
-import { useFoldMotion } from "./foldMotion";
+import { foldShut, useFoldMotion } from "./foldMotion";
 import { outlineOnce } from "./buildMotion";
-import { SLIDE } from "@/lib/build/buildMotion";
+import { FADE_AFTER_MS, FOLD } from "@/lib/build/buildMotion";
+import { ListMotionContext, MotionBoundary, NO_SLIDE, useListMotion, type SlideOptions } from "./listMotion";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 import { ArrivingBlock, useArrival, type Arriving } from "./arrival";
 import { SESSION_HEAD_COPY, SessionHead, headName, type SessionOps } from "./SessionHead";
@@ -2068,6 +2070,10 @@ const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
 };
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
+/** The gaps a folding run cancels: a session's, between its head and its tiles, and a part's, between its head and its sessions. */
+const SESSION_GAP = 4;
+const PART_GAP = 8;
+
 function SessionRun({ head, phone: _phone, first, lit = false, found = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; found?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
@@ -2102,7 +2108,12 @@ export function BuildList(raw: BuildListProps) {
   /* CA-22 P2, P3: what leaves is held on screen while it lifts out, then the new view is drawn and the rest slides; what arrives drops in. */
   const rootHolder = useRef<RefObject<HTMLDivElement | null> | null>(null);
   const busyHolder = useRef(false);
-  const director = useBuildDirector(incoming, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
+  /* SV-06 P1: the List's one animator. It is the only thing that animates the build list; the hooks below say what is coming. */
+  const [listRoot] = useState<RefObject<HTMLElement | null>>(() => ({ get current() { return rootHolder.current?.current ?? null; } }) as RefObject<HTMLElement | null>);
+  const motion = useListMotion(listRoot);
+  /** A tile moved from its menu: outlined once where it lands, when the slide that takes it there has ended. */
+  const ringAfterSlide = useRef<string | null>(null);
+  const director = useBuildDirector(incoming, motion, useCallback(() => rootHolder.current?.current ?? null, []), useCallback(() => busyHolder.current, []));
   const base = director.view;
   /* CA-22 P5: a session or part being folded keeps its tiles drawn while they rise away behind the head. */
   const partsFolded = useMemo(() => new Set((base.parts?.parts ?? []).filter((part) => part.view.collapsed).map((part) => part.view.key)), [base.parts]);
@@ -2153,6 +2164,7 @@ export function BuildList(raw: BuildListProps) {
     send: async (id, parentId) => (await base.onNest?.(id, parentId, Number.MAX_SAFE_INTEGER)) ?? false,
     sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
     say: setSaid,
+    restOf: motion.restOf,
   });
   /* CA-21 P6: Move up and Move down in the menus show the move at once, sliding; when the write does not land, they slide back. */
   const slid = (id: string, by: -1 | 1, run: (id: string, by: -1 | 1) => unknown) => {
@@ -2160,16 +2172,20 @@ export function BuildList(raw: BuildListProps) {
     const written = run(id, by);
     if (result) {
       sorting.show(result.model, "", Promise.resolve(written) as Promise<unknown>);
-      // CA-22 P4: it slides (CA-21), and is outlined once where it lands.
-      if (!prefersReducedMotion()) {
-        window.setTimeout(() => {
-          const moved = rootHolder.current?.current?.querySelector<HTMLElement>(`[data-skel-id="${id}"]`);
-          if (moved) outlineOnce(moved);
-        }, SLIDE);
-      }
+      // CA-22 P4: it slides (CA-21), and is outlined once where it lands: when that commit's slide has ended (below).
+      if (!prefersReducedMotion()) ringAfterSlide.current = id;
     }
     return written as Promise<unknown> | void;
   };
+  useLayoutEffect(() => {
+    const id = ringAfterSlide.current;
+    if (!id) return;
+    ringAfterSlide.current = null;
+    void motion.plan().slides.finished.then(() => {
+      const moved = rootHolder.current?.current?.querySelector<HTMLElement>(`[data-skel-id="${id}"]`);
+      if (moved) outlineOnce(moved);
+    });
+  });
   const shown = viewOf(base, sorting.live);
   const props: BuildListProps = {
     ...shown,
@@ -2272,7 +2288,7 @@ export function BuildList(raw: BuildListProps) {
     );
   };
   const runs = listRuns(steps, props.dividers, props.emptySessions ?? []);
-  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, onArrived: base.onArrived });
+  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, motion, onArrived: base.onArrived });
   const containerOfTile = new Map(runs.flatMap((run) => (run.head ? run.steps.map((step) => [step.id, run.head?.key ?? ""] as const) : [])));
   const numberDigits = String(runs.reduce((most, run) => Math.max(most, run.head?.number ?? 0), 0)).length;
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
@@ -2325,7 +2341,7 @@ export function BuildList(raw: BuildListProps) {
               />
             ) : null}
             {run.head ? (
-              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} skip={steps.length >= WINDOW_FROM} style={headed ? RUN : undefined}>
+              <SessionTiles id={tilesId} sessionKey={run.head.key} hidden={shut} skip={steps.length >= WINDOW_FROM} style={headed ? (closed && !shut ? { ...RUN, ...foldShut(SESSION_GAP) } : RUN) : undefined}>
                 {shut ? null : (
                   <>
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
@@ -2363,6 +2379,7 @@ export function BuildList(raw: BuildListProps) {
     const count = parts?.parts.length ?? 0;
     return (
       <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={{ ...WORKSTREAM_GROUP, ...(sorting.hidden === view.key ? { visibility: "hidden" } : null), ...(props.find?.view.current === view.key ? FOUND_RING : null) }}>
+        <FramePieces radius={WORKSTREAM_FRAME.radius} colour={WORKSTREAM_FRAME.colour} />
         <WorkstreamHead
           part={view}
           phone={props.phone}
@@ -2376,7 +2393,7 @@ export function BuildList(raw: BuildListProps) {
           onColour={parts?.onColour ? (anchor) => parts.onColour?.(view.key, anchor, part.title, view.colour ?? null) : undefined}
         />
         <MentionedLine to={refTo({ kind: "workstream", id: view.key })} phone={props.phone} />
-        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed && !folding.parts.has(view.key)} style={WORKSTREAM_BODY}>
+        <div id={bodyId} data-testid="workstream-body" hidden={view.collapsed && !folding.parts.has(view.key)} style={view.collapsed && folding.parts.has(view.key) ? { ...WORKSTREAM_BODY, ...foldShut(PART_GAP) } : WORKSTREAM_BODY}>
           {view.collapsed && !folding.parts.has(view.key) ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
             <>
               {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
@@ -2408,7 +2425,7 @@ export function BuildList(raw: BuildListProps) {
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
     <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
-      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} /> : null}
+      {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {parts ? (
@@ -2450,7 +2467,17 @@ export function BuildList(raw: BuildListProps) {
       {props.onAddPart ? <AddPartRow phone={props.phone} adding={props.addSession?.adding ?? false} onAdd={props.onAddPart} /> : null}
     </div>
   );
-  const body = <FindProvider value={props.find?.view ?? NO_FIND}>{list}</FindProvider>;
+  /* SV-06 P1: what this commit's slides take, when a hook times them: a put back, a fold, a lane opening. */
+  const slide: SlideOptions = sorting.settleMs !== null ? { ms: sorting.settleMs } : folding.moving ? { ms: FOLD } : arrival.slideMs !== null ? { ms: arrival.slideMs } : NO_SLIDE;
+  const body = (
+    <FindProvider value={props.find?.view ?? NO_FIND}>
+      <ListMotionContext.Provider value={motion}>
+        <MotionBoundary motion={motion} slide={slide}>
+          {list}
+        </MotionBoundary>
+      </ListMotionContext.Provider>
+    </FindProvider>
+  );
   const sessionOf = new Map<string, string>();
   const sessionNumbers = new Map<string, number>();
   const firstOf = new Set<string>();

@@ -95,7 +95,7 @@ export function usePostLinks({ steps, groups, refGroups, registry, lens, phone, 
     [registry, steps],
   );
 
-  /** The List: to the middle over `SCROLL_TO` when off screen, then outlined once in the link's colour. The Map's well scrolls sideways too, and keeps its way. */
+  /** The List: to the middle (`pageScroll.ts`) when not in view, then outlined once in the link's colour. The Map's well scrolls sideways too, and keeps its way. */
   const arrive = useCallback(
     (el: HTMLElement, colour: string | null) => {
       if (lens === "map" && !phone) {

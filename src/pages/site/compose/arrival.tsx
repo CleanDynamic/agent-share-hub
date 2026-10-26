@@ -7,25 +7,31 @@
                   by its height over 200 ms; the rest of the build shows its skeleton, faded in over 120 ms
      +80 ms       an empty socket for each prompt, numbered, fade in over 160 ms
      +260 ms      the session's head falls into place: from 20 above and see-through, over 240 ms
-     then         each prompt falls the same way, 110 ms after the one before (from the 9th on, with the 8th); a prompt not yet
-                  written waits in its socket, and so do the ones after it, so the order never jumps
+     then         each prompt falls the same way, 110 ms after the one before (SV-06 P5: for more than 4, closer together, so the
+                  last starts at most 330 ms after the first); a prompt not yet written waits in its socket, and so do the ones
+                  after it, so the order never jumps
      +200 ms      after the last lands, the skeleton fades over 200 ms, and the page says "Added Session 2 with 3 prompts."
 
-   A failed add closes the lane and the sockets back over 200 ms. Under reduced motion nothing moves: the session is there, complete. */
+   A failed add closes the lane and the sockets back over 200 ms. Under reduced motion nothing moves: the session is there, complete.
+   SV-06: each step waits on the one before it ending, not on a timer: the lane opens when the scroll has ended, the skeleton fades
+   when the last prompt has landed, and the arrival is over when that fade has ended; `SEQUENCE_CAP` ends anything still running. */
 
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
-import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_STEP_MS, SKELETON_OUT, STAGGERED_PROMPTS } from "@/lib/build/buildMotion";
+import { FADE_AFTER_MS, FALL_MS, FALL_SHIFT, HEAD_AFTER_MS, LANE_OPEN_MS, PROMPT_SPREAD_MAX, PROMPT_STEP_MS, staggerStep } from "@/lib/build/buildMotion";
 import { skeletonOf, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
-import { prefersReducedMotion, scrollBehavior, STANDARD } from "@/lib/theme/motion";
+import { prefersReducedMotion } from "@/lib/theme/motion";
 
-import { play, SLIDE_ATTR, snapshot, type Box } from "./flip";
+import { dropIn } from "./buildMotion";
+import { allOf, capSequence, type ListMotion } from "./listMotion";
+import { scrollToShow } from "./pageScroll";
+import { SLIDE_ATTR, type Box } from "./flip";
 import { ImportProgress, SocketBlocks, WrittenPrompt, useSlow } from "./ImportingPieces";
 import { TILE_HEIGHT } from "./loadingBlocks";
 import { SessionHead } from "./SessionHead";
 import type { SourceSession } from "./sourcesModel";
 import { RUN } from "./tileRecipes";
-import { leftEdge, naturalBox } from "./useBuildSorting";
+import { boxFrom, drawnBox, leftEdge, type BoxOf } from "./useBuildSorting";
 
 /** What the page says is arriving. */
 export interface Arriving {
@@ -62,29 +68,38 @@ export interface Arrival {
   fadeIn: ReadonlySet<string>;
   /** The lanes that open. */
   opening: ReadonlySet<string>;
+  /** While the lane opens or closes, what slides (everything below it) slides over `LANE_OPEN_MS`. */
+  slideMs: number | null;
+  /** The skeleton's fade has ended (`SkeletonLayer`'s `onGone`): the arrival is done. */
+  gone: () => void;
+  /** How long after the last prompt lands the skeleton starts to fade; a failed add closes at once. */
+  fadeAfter: number;
 }
 
 const NONE: ReadonlySet<string> = new Set();
 
 /** The median height of the prompts already on the page: what a place for a prompt not yet written is. */
 function estimate(root: HTMLElement): number {
-  const heights = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].map((element) => naturalBox(element).h).filter((h) => h > 0).sort((a, b) => a - b);
+  const heights = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].map((element) => drawnBox(element).h).filter((h) => h > 0).sort((a, b) => a - b);
   return heights.length > 0 ? Math.round(heights[Math.floor(heights.length / 2)]) : TILE_HEIGHT;
 }
 
-/** The page, as a skeleton with nothing held: every tile's socket, every session's lane, the numbers. `only` (CA-22): just these sessions. */
-export function measureStill(root: HTMLElement, only?: ReadonlySet<string>, inside = false): Skeleton {
-  const origin = naturalBox(root);
+/**
+ * The page, as a skeleton with nothing held: every tile's socket, every session's lane, the numbers. `only` (CA-22): just these sessions.
+ * Each box is where the thing stands (`boxOf`: the animator's places at rest), not where a slide has it for now.
+ */
+export function measureStill(root: HTMLElement, only?: ReadonlySet<string>, inside = false, boxOf: BoxOf = drawnBox): Skeleton {
+  const origin = drawnBox(root);
   const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
   const items: SkeletonItem[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].filter((element) => !only || only.has(element.getAttribute("data-skel-container") ?? "")).map((element) => ({
     id: element.getAttribute("data-skel-id") as string,
     container: element.getAttribute("data-skel-container") ?? "",
-    rect: rel(naturalBox(element)),
+    rect: rel(boxOf(element)),
     radius: Number.parseFloat(typeof getComputedStyle === "function" ? getComputedStyle(element.firstElementChild ?? element).borderTopLeftRadius : "") || 10,
   }));
   const containers: SkeletonContainer[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="session"]')].filter((element) => !only || only.has(element.getAttribute("data-skel-id") ?? "")).map((element) => {
     const id = element.getAttribute("data-skel-id") as string;
-    return { id, rect: rel(naturalBox(element)), items: items.filter((item) => item.container === id).map((item) => item.id), framed: false, name: element.getAttribute("data-skel-name") ?? `Session` };
+    return { id, rect: rel(boxOf(element)), items: items.filter((item) => item.container === id).map((item) => item.id), framed: false, name: element.getAttribute("data-skel-name") ?? `Session` };
   });
   const left = items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + origin.x : origin.x;
   return skeletonOf({ kind: "tile", items, containers, held: null, moved: false, room: left - leftEdge(), inside });
@@ -98,44 +113,38 @@ function anchorOf(root: HTMLElement, part: string | undefined): HTMLElement {
   return sessions[sessions.length - 1] ?? root;
 }
 
-const fall = (element: Element, delay: number): Animation | null => {
-  if (typeof (element as HTMLElement).animate !== "function") return null;
-  return (element as HTMLElement).animate(
-    [
-      { opacity: 0, transform: `translateY(-${FALL_SHIFT}px)` },
-      { opacity: 1, transform: "none" },
-    ],
-    { duration: FALL_MS, delay, easing: STANDARD, fill: "backwards" },
-  );
-};
+/** A head or a prompt falls from `FALL_SHIFT` above, see-through, to its place, over `FALL_MS`: a drop, through the animator. */
+const fall = (element: Element, delay: number) => dropIn([element], { delay, ms: FALL_MS, from: FALL_SHIFT });
 
-export function useArrival(input: { arriving: Arriving | null | undefined; landed: boolean; rootRef: RefObject<HTMLElement | null>; onArrived?: (key: string, status: Arriving["status"]) => void }): Arrival {
+export function useArrival(input: { arriving: Arriving | null | undefined; landed: boolean; rootRef: RefObject<HTMLElement | null>; motion?: ListMotion; onArrived?: (key: string, status: Arriving["status"]) => void }): Arrival {
   const { arriving, landed, rootRef } = input;
   const [phase, setPhase] = useState<Phase>("idle");
   const [skeleton, setSkeleton] = useState<Skeleton | null>(null);
   const [shown, setShown] = useState(false);
   const [tick, setTick] = useState(0);
   const [fade, setFade] = useState<ReadonlySet<string>>(NONE);
-  const before = useRef<Map<string, Box> | null>(null);
   const headAt = useRef(0);
-  const timers = useRef<number[]>([]);
+  /** SV-06 P3: each arrival counts up; a step that finds a newer one stands down. */
+  const sequence = useRef(0);
+  const stopCap = useRef<() => void>(() => undefined);
+  /** What the skeleton's fade ends: the arrival is told, and the List goes quiet. */
+  const afterFade = useRef<(() => void) | null>(null);
   const callback = useRef(input.onArrived);
   callback.current = input.onArrived;
   const key = arriving?.key ?? null;
   const status = arriving?.status ?? null;
 
   const clear = () => {
-    for (const timer of timers.current) window.clearTimeout(timer);
-    timers.current = [];
-  };
-  const later = (ms: number, run: () => void) => {
-    timers.current.push(window.setTimeout(run, ms));
+    stopCap.current();
+    sequence.current += 1;
   };
   useEffect(() => clear, []);
 
-  // It begins: scrolled to first when its place is off screen, then the lane opens.
+  // It begins: scrolled to first when its place is off screen, then the lane opens. Its label (`add`, the session's key) is spent
+  // here: the arrival is this plan, and no other part of the List moves for it.
   useEffect(() => {
     if (!key) return;
+    input.motion?.take([key]);
     const root = rootRef.current;
     if (prefersReducedMotion() || !root) {
       setPhase("quiet");
@@ -145,15 +154,19 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
     const box = anchor.getBoundingClientRect();
     const off = box.bottom < 0 || box.bottom > window.innerHeight;
     const open = () => {
-      before.current = snapshot(root);
       headAt.current = performance.now() + HEAD_AFTER_MS;
       setShown(true);
       setPhase("open");
     };
-    if (off && typeof anchor.scrollIntoView === "function") {
+    // Through the page's one scroll helper, which stops on the maker's input and waits while they scroll themselves.
+    const scroll = off ? scrollToShow(anchor, { align: "middle", edge: "bottom" }) : null;
+    if (scroll?.moved) {
       setPhase("scrolling");
-      anchor.scrollIntoView({ block: "center", behavior: scrollBehavior() });
-      later(scrollBehavior() === "smooth" ? 450 : 0, open);
+      // The lane opens when the scroll has ended, however long it took (or the maker took over): never on a guess.
+      const mine = sequence.current;
+      void scroll.finished.then(() => {
+        if (sequence.current === mine) open();
+      });
     } else open();
     return clear;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,49 +190,68 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
     const now = performance.now();
     const head = root.querySelector(`[data-session-key="${key}"] [data-testid="session-head"]`);
     const toHead = Math.max(0, headAt.current - now);
-    // The head falls when its turn comes; if the placeholder's already did, the real one is simply there.
-    if (head && toHead > 0) fall(head, toHead);
     const tiles = [...root.querySelectorAll(`[data-skel-kind="tile"][data-skel-container="${key}"]`)];
-    // The first prompt waits for its turn, 110 ms after the head, and for its row; the others follow, 110 ms apart.
+    // The first prompt waits for its turn, 110 ms after the head, and for its row; the others follow, 110 ms apart, closer for more
+    // than 4 so the spread stays the same. The head falls when its turn comes; if the placeholder's already did, it is simply there.
     const first = Math.max(0, headAt.current + PROMPT_STEP_MS - now);
-    tiles.forEach((tile, at) => fall(tile, first + PROMPT_STEP_MS * Math.min(at, STAGGERED_PROMPTS - 1)));
-    const last = tiles.length > 0 ? first + PROMPT_STEP_MS * Math.min(tiles.length - 1, STAGGERED_PROMPTS - 1) + FALL_MS : toHead + FALL_MS;
-    later(last + FADE_AFTER_MS, () => setShown(false));
-    later(last + FADE_AFTER_MS + SKELETON_OUT, () => {
+    const step = staggerStep(tiles.length, PROMPT_STEP_MS, PROMPT_SPREAD_MAX);
+    const falls = allOf([...(head && toHead > 0 ? [fall(head, toHead)] : []), ...tiles.map((tile, at) => fall(tile, first + at * step))]);
+    // When the last prompt has landed the skeleton fades (`FADE_AFTER_MS` after, its own delay); when that has ended, it is done.
+    const done = () => {
       setSkeleton(null);
       setPhase("idle");
       callback.current?.(key, "written");
+    };
+    stopCap.current();
+    sequence.current += 1;
+    const mine = sequence.current;
+    afterFade.current = done;
+    stopCap.current = capSequence(() => {
+      if (sequence.current !== mine) return;
+      falls.finish();
+      afterFade.current = null;
+      done();
+    });
+    void falls.finished.then(() => {
+      if (sequence.current === mine) setShown(false);
     });
     setTick((value) => value + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // Nothing was added: the lane and the sockets close back, and everything slides up again.
+  // Nothing was added: the lane and the sockets close back, and everything slides up again; it is over when that slide has ended.
   useLayoutEffect(() => {
     if (status !== "failed" || !key || (phase !== "open" && phase !== "scrolling")) return;
     clear();
+    const mine = sequence.current;
     setShown(false);
     setPhase("closing");
-    later(LANE_OPEN_MS, () => {
+    afterFade.current = () => setSkeleton(null);
+    const end = () => {
       setSkeleton(null);
       setPhase("idle");
       callback.current?.(key, "failed");
+    };
+    stopCap.current = capSequence(() => {
+      if (sequence.current === mine) end();
     });
+    void (input.motion?.plan().slides.finished ?? Promise.resolve()).then(() => {
+      if (sequence.current !== mine) return;
+      stopCap.current();
+      end();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, key, phase]);
 
   const block = phase === "open" && status === "writing" && !landed;
 
-  // After every change of what is drawn: slide what moved, and measure the page for the layer.
+  // After every change of what is drawn, measure the page for the layer. (What moved has slid already: the animator's pass.)
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || phase === "idle" || phase === "quiet") return;
-    if (before.current) {
-      play(root, before.current, LANE_OPEN_MS);
-      before.current = null;
-    }
     if (phase === "open" || phase === "landing") {
       // SV-05 P4: an import's numbers stand inside their sockets, so nothing hangs outside the part's frame.
-      const next = measureStill(root, undefined, true);
+      const next = measureStill(root, undefined, true, boxFrom(input.motion?.restOf));
       const same = (a: Skeleton | null) => a !== null && JSON.stringify(a) === JSON.stringify(next);
       setSkeleton((current) => (same(current) ? current : next));
       // The new session's sockets fade in with its lane.
@@ -230,7 +262,14 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
 
   void tick;
   const opening = key && (phase === "open" || phase === "landing") ? new Set([key]) : NONE;
-  return { block, active: phase === "open" || phase === "landing" || phase === "closing", skeleton, shown, fadeIn: fade, opening };
+  const gone = () => {
+    const after = afterFade.current;
+    afterFade.current = null;
+    stopCap.current();
+    if (after) after();
+    else setSkeleton(null);
+  };
+  return { block, active: phase === "open" || phase === "landing" || phase === "closing", skeleton, shown, fadeIn: fade, opening, slideMs: phase === "open" || phase === "closing" ? LANE_OPEN_MS : null, gone, fadeAfter: phase === "closing" ? 0 : FADE_AFTER_MS };
 }
 
 /** The place for the session while its prompts are on their way: its head, and an empty place for each prompt. */
@@ -239,7 +278,7 @@ export function ArrivingBlock({ arriving, rootRef, first }: { arriving: Arriving
   if (height.current === null) height.current = rootRef.current ? estimate(rootRef.current) : TILE_HEIGHT;
   const head = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
-    if (head.current && typeof head.current.animate === "function" && !prefersReducedMotion()) fall(head.current, HEAD_AFTER_MS);
+    if (head.current) fall(head.current, HEAD_AFTER_MS);
   }, []);
   /* CA-24 P4: past a second, a chat's import shows it is working: the tag, building blocks in each empty socket, and, when the import can say how far it is, the bar. */
   const slow = useSlow(arriving.kind === "chat" && arriving.status === "writing");

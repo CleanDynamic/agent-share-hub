@@ -22,7 +22,8 @@ export function runsOf(steps: readonly Step[], dividers: BuildListProps["divider
   for (const step of steps) {
     const head = dividers.get(step.number) ?? null;
     const last = runs[runs.length - 1];
-    if (head || !last || !last.head) runs.push({ key: step.id, head, steps: [step] });
+    // SV-06: a session is keyed by its own key, so removing or moving its first tile does not draw the whole session again.
+    if (head || !last || !last.head) runs.push({ key: head ? head.key : step.id, head, steps: [step] });
     else last.steps.push(step);
   }
   return runs;
@@ -33,7 +34,7 @@ export function withEmptySessions(runs: readonly Run[], empties: readonly Source
   const out = [...runs];
   for (const head of [...empties].sort((a, b) => a.number - b.number)) {
     const at = out.findIndex((run) => run.head !== null && run.head.number > head.number);
-    out.splice(at < 0 ? out.length : at, 0, { key: `empty:${head.key}`, head, steps: [] });
+    out.splice(at < 0 ? out.length : at, 0, { key: head.key, head, steps: [] });
   }
   return out;
 }

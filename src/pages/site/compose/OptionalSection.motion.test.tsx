@@ -156,11 +156,13 @@ describe("the section's motion: opening", () => {
     expect([OPTIONAL_DROP_AFTER, DROP, DROP_FALL, STAGGER]).toEqual([100, 240, 20, 60]);
   });
 
-  it("lands the 12th and any after together", async () => {
+  it("brings 14 closer together, so the last starts at most 300 after the first (SV-06 P5)", async () => {
     window_(14);
     await press();
-    const delays = fieldEls().map((field) => animationsOf(field)[0].options.delay);
-    expect(delays.slice(9)).toEqual([100 + 9 * 60, 100 + 10 * 60, 100 + 11 * 60, 100 + 11 * 60, 100 + 11 * 60]);
+    const delays = fieldEls().map((field) => Number(animationsOf(field)[0].options.delay));
+    expect(delays[0]).toBe(100);
+    expect(delays[delays.length - 1] - delays[0]).toBeLessThanOrEqual(300);
+    expect(new Set(delays.slice(1).map((delay, at) => delay - delays[at])).size).toBe(1);
   });
 
   it("does not animate the frame when it does not change height (taller than the screen: the body scrolls inside)", async () => {

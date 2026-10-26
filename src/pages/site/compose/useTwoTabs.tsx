@@ -6,7 +6,7 @@
    kept into Recently removed, with Restore.
 
    "Show changes" reads the build again and lets go of what this tab had laid over it. What moved slides to where it now stands, and
-   what the other tab changed is outlined once (CA-22's `useFlip` and `outlineOnce`; nothing slides or is outlined under reduced
+   what the other tab changed is outlined once (the List's one animator, SV-06, and `outlineOnce`; nothing slides or is outlined under reduced
    motion beyond the outline's hold). Words not yet written are kept (the post is not opened again over an unsaved edit): the write
    that follows is refused as a clash, and the window asks. A device that changed the build is heard of when the window is next
    looked at (the page is focused again), or when this tab's own write is refused. */
@@ -25,7 +25,7 @@ import type { BuildRecord } from "@/lib/build";
 import { nodeContent, same } from "@/lib/build/clash";
 import { sessionsMetaOf } from "@/lib/build/making";
 
-import { outlineOnce, type Flip } from "./buildMotion";
+import { outlineOnce } from "./buildMotion";
 import type { BuildHistoryApi } from "./useBuildHistory";
 import type { ComposeNodes } from "./useComposeNodes";
 import type { ComposeThread } from "./useComposeThread";
@@ -63,8 +63,6 @@ export interface TwoTabsInput {
   describe: (clash: RawClash) => ClashDescription;
   /** Show changes read the build again: the header's own fields (title, description) are opened on it again. */
   rehydrate?: () => void;
-  /** CA-22's slide: what moved when the build is read again slides to where it now stands. */
-  flip?: Pick<Flip, "measure">;
 }
 
 interface Open {
@@ -176,9 +174,8 @@ export function useTwoTabs(input: TwoTabsInput): TwoTabs {
     const was = queryClient.getQueryData<BuildRecord | null>(key);
     setChanged(false);
     latest.current.nodes.forget();
-    // The strip goes and the page settles; then where everything stands is measured, and what is read slides from there.
+    // The strip goes and the page settles; then what is read is drawn, and what moved slides from where it stood (the List's animator).
     await nextFrame();
-    latest.current.flip?.measure();
     await refresh();
     const record = queryClient.getQueryData<BuildRecord | null>(key);
     if (record) noteRecord(buildId, { build: record.build as unknown as Record<string, unknown>, tree: flatNodes(record.tree) }, true);

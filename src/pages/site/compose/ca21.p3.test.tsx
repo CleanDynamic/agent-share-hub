@@ -160,9 +160,11 @@ describe("where the pointer puts it", () => {
 });
 
 describe("the two half-second holds, by the pointer", () => {
+  // SV-06 P6: a move is decided on the next frame, and the hold counts from there.
   const move = (x: number, y: number) =>
     act(() => {
       fireEvent(window, new MouseEvent("pointermove", { clientX: x, clientY: y, bubbles: true }));
+      vi.advanceTimersToNextFrame();
     });
 
   it("opens a folded session held over its head for 500 ms, not before", async () => {

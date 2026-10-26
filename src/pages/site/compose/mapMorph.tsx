@@ -12,16 +12,18 @@
    TOO MANY. With more than `MAP_MORPH_MAX` (30) sessions, or when the map's boxes do not fit on screen, the new view fades in over
    `FAST` instead.
 
-   Phones are untouched (they have no Map). Under reduced motion the view simply changes. A switch while another is running ends
-   the running one at once. The copies are `fixed`, `pointer-events: none` and removed when they land: nothing in the page moves
+   SV-06: each step starts when the one before has ended (`finished`), not after its duration, and `SEQUENCE_CAP` ends a switch
+   still running at 1.2 s. Phones are untouched (they have no Map). Under reduced motion the view simply changes. A switch while another is running ends
+   the running one's copies and steps at once; what the tiles were doing carries on, through the List's animator. The copies are `fixed`, `pointer-events: none` and removed when they land: nothing in the page moves
    but by `transform`. */
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { FOLD_RISE, MAP_FOLD, MAP_LINES, MAP_LINES_BACK, MAP_MORPH, MAP_MORPH_MAX, UNFOLD_STAGGER, UNFOLD_STAGGERED } from "@/lib/build/buildMotion";
+import { FOLD_RISE, MAP_FOLD, MAP_LINES, MAP_LINES_BACK, MAP_MORPH, MAP_MORPH_MAX, UNFOLD_SPREAD_MAX, UNFOLD_STAGGER } from "@/lib/build/buildMotion";
 import { FAST, STANDARD } from "@/lib/theme/motion";
 
-import { dropIn, fadeIn, finishRunning, liftOut, motionOn, type MotionRun } from "./buildMotion";
+import { dropIn, fadeIn, liftOut, motionOn, type MotionRun } from "./buildMotion";
+import { allOf, capSequence } from "./listMotion";
 import type { SandboxLens } from "./SandboxView";
 
 interface Flight {
@@ -76,7 +78,11 @@ function fly(layer: HTMLElement, flight: Flight, to: DOMRect, fade: "out" | "in"
   return { finished: Promise.resolve(move.finished).then(() => undefined, () => undefined), finish: () => move.finish?.(), cancel: () => move.cancel?.() };
 }
 
-/** Lines draw in from their start (`stroke-dashoffset`), or retract. */
+/**
+ * Lines draw in from their start (`stroke-dashoffset`), or retract. SV-06 P4: the one animation on the build page that is not a
+ * transform or an opacity, and so repaints on the main thread: kept because the lines draw after the boxes have landed and retract
+ * before they move, when nothing else is moving.
+ */
 function drawLines(root: HTMLElement, ms: number, backwards: boolean): MotionRun[] {
   return [...root.querySelectorAll<SVGPathElement>('[data-testid="map-line-stroke"], [data-testid="map-line-halo"]')].flatMap((path) => {
     const length = typeof path.getTotalLength === "function" ? path.getTotalLength() : 0;
@@ -95,27 +101,38 @@ export interface LensMorph {
 
 export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onLens: (lens: SandboxLens) => void; getRoot: () => HTMLElement | null }): LensMorph {
   const pending = useRef<{ to: SandboxLens; flights: Flight[]; crossfade: boolean } | null>(null);
-  const timers = useRef<number[]>([]);
+  /** SV-06 P3: each switch counts up; a step that finds a newer switch stands down. Each step waits on the one before ending. */
+  const sequence = useRef(0);
+  const stopCap = useRef<() => void>(() => undefined);
+  /** The copies in flight and the lines: what a switch while one runs ends at once. The tiles' own motion is the List's. */
   const runs = useRef<MotionRun[]>([]);
   const hidden = useRef<HTMLElement[]>([]);
   const onLensRef = useRef(onLens);
   onLensRef.current = onLens;
 
   const clear = useCallback(() => {
-    for (const timer of timers.current) window.clearTimeout(timer);
-    timers.current = [];
+    stopCap.current();
+    sequence.current += 1;
     for (const run of runs.current) run.finish();
     runs.current = [];
     for (const element of hidden.current) element.style.visibility = "";
     hidden.current = [];
     document.querySelectorAll(`[data-testid="${LAYER}"]`).forEach((layer) => layer.remove());
-    const root = getRoot();
-    if (root) for (const element of root.querySelectorAll<HTMLElement>("*")) finishRunning(element);
-  }, [getRoot]);
+  }, []);
   useEffect(() => clear, [clear]);
 
-  const later = (ms: number, run: () => void) => {
-    timers.current.push(window.setTimeout(run, ms));
+  /** The next step, once `ended` has: unless another switch has started since. The whole switch is capped at `SEQUENCE_CAP`. */
+  const after = (ended: Promise<unknown>, run: () => void) => {
+    const mine = sequence.current;
+    void ended.then(() => {
+      if (sequence.current === mine) run();
+    });
+  };
+  const capped = () => {
+    const mine = sequence.current;
+    stopCap.current = capSequence(() => {
+      if (sequence.current === mine) clear();
+    });
   };
 
   const switchTo = useCallback(
@@ -137,11 +154,13 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
         }
         const flights = heads.map(({ key, element }) => ({ key, from: element.getBoundingClientRect(), html: copyOf(element) }));
         // 1. The tiles fold up behind their heads, all together.
+        const folded: MotionRun[] = [];
         for (const { element } of heads) {
           const tiles = element.closest("[data-session-key]")?.querySelector<HTMLElement>('[data-testid="session-tiles"]');
-          if (tiles) runs.current.push(liftOut([...tiles.children], { rise: FOLD_RISE, ms: MAP_FOLD }));
+          if (tiles) folded.push(liftOut([...tiles.children], { rise: FOLD_RISE, ms: MAP_FOLD }));
         }
-        later(MAP_FOLD, () => {
+        capped();
+        after(allOf(folded).finished, () => {
           pending.current = { to, flights, crossfade: false };
           onLensRef.current(to);
         });
@@ -155,8 +174,10 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
         return;
       }
       const flights = boxes.map(({ key, element }) => ({ key, from: element.getBoundingClientRect(), html: copyOf(element) }));
-      runs.current.push(...drawLines(root, MAP_LINES_BACK, true));
-      later(MAP_LINES_BACK, () => {
+      const retract = drawLines(root, MAP_LINES_BACK, true);
+      runs.current.push(...retract);
+      capped();
+      after(allOf(retract).finished, () => {
         pending.current = { to, flights, crossfade: false };
         onLensRef.current(to);
       });
@@ -173,13 +194,13 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
     const column = root.querySelector<HTMLElement>(lens === "map" ? '[data-testid="map-view"]' : '[data-testid="build-list"]');
     if (!column) return;
     if (work.crossfade) {
-      runs.current.push(fadeIn([column], { ms: FAST }));
+      fadeIn([column], { ms: FAST });
       return;
     }
     const targets = (lens === "map" ? boxesIn(root) : headsIn(root)).filter(({ key }) => work.flights.some((flight) => flight.key === key));
     const rects = new Map(targets.map(({ key, element }) => [key, element.getBoundingClientRect()]));
     if (targets.length === 0 || !targets.every(({ key }) => fits(rects.get(key) as DOMRect))) {
-      runs.current.push(fadeIn([column], { ms: FAST }));
+      fadeIn([column], { ms: FAST });
       return;
     }
     // The real view waits, unseen, while the copies fly; then it is shown.
@@ -200,16 +221,17 @@ export function useLensMorph({ lens, onLens, getRoot }: { lens: SandboxLens; onL
       if (other) flying.push(fly(layer, { key: flight.key, from: flight.from, html: copyOf(other.element) }, to, "in"));
     }
     runs.current.push(...flying);
-    later(MAP_MORPH, () => {
+    // (The switch's cap was set when it began: the morph is its second step.)
+    after(allOf(flying).finished, () => {
       layer.remove();
       column.style.visibility = "";
       hidden.current = hidden.current.filter((element) => element !== column);
       if (lens === "map") {
         runs.current.push(...drawLines(column, MAP_LINES, false));
-        runs.current.push(fadeIn([...column.querySelectorAll('[data-testid="map-part-label"], [data-testid="map-stage-label"], [data-testid="map-strip"], [data-testid="map-divider"]')], { ms: MAP_LINES }));
+        fadeIn([...column.querySelectorAll('[data-testid="map-part-label"], [data-testid="map-stage-label"], [data-testid="map-strip"], [data-testid="map-divider"]')], { ms: MAP_LINES });
       } else {
         const sessions = [...column.querySelectorAll<HTMLElement>('[data-testid="session-tiles"]')];
-        for (const container of sessions) runs.current.push(dropIn([...container.children], { stagger: UNFOLD_STAGGER, cap: UNFOLD_STAGGERED, from: FOLD_RISE }));
+        for (const container of sessions) dropIn([...container.children], { stagger: UNFOLD_STAGGER, spread: UNFOLD_SPREAD_MAX, from: FOLD_RISE });
       }
     });
   }, [lens, getRoot]);

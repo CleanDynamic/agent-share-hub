@@ -5,18 +5,20 @@
    with its ticks and numbers, and the place the held thing would land. It never changes a component's own style. It exists only
    while something is held (and while it fades out after the drop), and fades in over `SKELETON_IN`.
 
-   Where a box moves because things slid, it slides too (a translate, and a scale for a lane): `animateFrom`, `FAST`, `STANDARD`. */
+   Where a box moves because things slid, it slides too, through the List's animator (`listMotion.ts`, `slideBox`), as long as its distance asks (`slideMs`), `STANDARD`:
+   a translate, and for a lane (drawn in pieces, `FramePieces`) its bottom edge sliding and its sides growing, so no corner stretches. */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { LANE_OPEN_MS, SKELETON_IN, SKELETON_OUT, SOCKETS_AFTER_MS, SOCKETS_IN_MS } from "@/lib/build/buildMotion";
 import { EMPTY_PLACE_HEIGHT, type Lane, type Rail, type Rect, type Skeleton, type Socket, type Target } from "@/lib/build/sortLayout";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { fade, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
+import { fade, prefersReducedMotion } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { mono } from "@/lib/theme/type";
 
-import { animateFrom } from "./flip";
+import { FramePieces } from "./framePieces";
+import { animateOn, openFrame, runOf, slideBox } from "./listMotion";
 import { text } from "./refinedStyles";
 
 const place = (rect: Rect): CSSProperties => ({ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxSizing: "border-box" });
@@ -32,7 +34,7 @@ function Box({ id, rect, style, children, testId, onMount }: { id: string; rect:
   useLayoutEffect(() => {
     const before = was.current;
     was.current = rect;
-    if (before && ref.current) animateFrom(ref.current, { x: before.x, y: before.y, w: before.w, h: before.h }, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+    if (before && ref.current) slideBox(ref.current, { x: before.x, y: before.y, w: before.w, h: before.h }, { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
   }, [rect.x, rect.y, rect.w, rect.h]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div ref={ref} data-testid={testId} data-skeleton-id={id} style={{ ...place(rect), ...style }}>
@@ -46,23 +48,26 @@ const socketStyle = (radius: number, edge: string): CSSProperties => ({ border: 
 
 /** A socket that fades in with a new session's lane: 80 ms after it starts to open, over 160. */
 const fadeSocket = (element: HTMLElement) => {
-  if (prefersReducedMotion() || typeof element.animate !== "function") return;
-  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SOCKETS_IN_MS, delay: SOCKETS_AFTER_MS, easing: STANDARD, fill: "backwards" });
+  animateOn(element, "fade", [{ opacity: 0 }, { opacity: 1 }], { duration: SOCKETS_IN_MS, delay: SOCKETS_AFTER_MS, fill: "backwards" });
 };
 
-/** A lane that opens: from nothing to its height, over 200 ms (a scale from its top; nothing else of it changes). */
+/** A lane that opens, over 200 ms: its bottom edge slides down from its top and its sides grow (SV-06: no corner is scaled). */
 const openLane = (element: HTMLElement) => {
-  if (prefersReducedMotion() || typeof element.animate !== "function") return;
-  element.animate([{ transform: "scaleY(0)", transformOrigin: "0 0" }, { transform: "none", transformOrigin: "0 0" }], { duration: LANE_OPEN_MS, easing: STANDARD, fill: "backwards" });
+  openFrame(element, { ms: LANE_OPEN_MS });
 };
 
 function SocketBox({ socket, fadeIn }: { socket: Socket; fadeIn: boolean }) {
   return <Box id={socket.id} rect={socket.rect} testId="skeleton-socket" onMount={fadeIn ? fadeSocket : undefined} style={socketStyle(socket.radius, t.skeletonEdge)} />;
 }
 
+/** A lane round a container: its outline and its faint fill, in three pieces (`FramePieces`), so it changes size with nothing stretched. */
 function LaneBox({ lane, dusk, opens }: { lane: Lane; dusk: boolean; opens: boolean }) {
   if (!lane.outline) return null;
-  return <Box id={lane.id} rect={lane.rect} testId="skeleton-lane" onMount={opens ? openLane : undefined} style={{ border: `1px solid ${t.hairlineModule}`, borderRadius: lane.radius, background: tokenAlpha("text", dusk ? 0.012 : 0.015) }} />;
+  return (
+    <Box id={lane.id} rect={lane.rect} testId="skeleton-lane" onMount={opens ? openLane : undefined} style={{}}>
+      <FramePieces radius={lane.radius} colour={t.hairlineModule} fill={tokenAlpha("text", dusk ? 0.012 : 0.015)} />
+    </Box>
+  );
 }
 
 /** "Lands here", then, 8 apart, the place: "Session 2 · 2 of 3". Over its own start, a plain socket. */
@@ -111,9 +116,29 @@ function RailBox({ rail }: { rail: Rail }) {
   );
 }
 
-/** The layer. `shown` fades it in; false fades it out (it stays mounted until the page takes it away). */
-export function SkeletonLayer({ skeleton, shown, fadeIn, opening }: { skeleton: Skeleton; shown: boolean; fadeIn?: ReadonlySet<string>; opening?: ReadonlySet<string> }) {
+/**
+ * The layer. `shown` fades it in; false fades it out (it stays mounted until the page takes it away). SV-06: with `onGone`, the fade
+ * out is played by the List's animator, `fadeAfter` after `shown` turns false, and `onGone` is called when it has ended: the page
+ * takes the layer away on the animation's end, not on a timer.
+ */
+export function SkeletonLayer({ skeleton, shown, fadeIn, opening, fadeAfter = 0, onGone }: { skeleton: Skeleton; shown: boolean; fadeIn?: ReadonlySet<string>; opening?: ReadonlySet<string>; fadeAfter?: number; onGone?: () => void }) {
   const dusk = useResolvedTheme() === "dusk";
+  const layer = useRef<HTMLDivElement | null>(null);
+  const gone = useRef(onGone);
+  gone.current = onGone;
+  const played = Boolean(onGone);
+  useLayoutEffect(() => {
+    const element = layer.current;
+    if (shown || !played || !element) return;
+    let live = true;
+    const out = runOf([animateOn(element, "fade", [{ opacity: 1 }, { opacity: 0 }], { duration: SKELETON_OUT, delay: fadeAfter, fill: "backwards" })]);
+    void out.finished.then(() => {
+      if (live) gone.current?.();
+    });
+    return () => {
+      live = false;
+    };
+  }, [shown, played, fadeAfter]);
   const held = skeleton.target?.id;
   // It comes in from nothing: mounted see-through, then shown, so the fade has somewhere to start from.
   const [entered, setEntered] = useState(prefersReducedMotion());
@@ -123,10 +148,11 @@ export function SkeletonLayer({ skeleton, shown, fadeIn, opening }: { skeleton: 
   }, []);
   return (
     <div
+      ref={layer}
       data-testid="skeleton-layer"
       data-kind={skeleton.kind}
       aria-hidden="true"
-      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: shown && entered ? 1 : 0, transition: fade(shown ? SKELETON_IN : SKELETON_OUT) }}
+      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: shown && entered ? 1 : 0, transition: shown ? fade(SKELETON_IN) : played ? "none" : fade(SKELETON_OUT) }}
     >
       {skeleton.lanes.map((lane) => (
         <LaneBox key={`lane:${lane.id}`} lane={lane} dusk={dusk} opens={Boolean(opening?.has(lane.id))} />

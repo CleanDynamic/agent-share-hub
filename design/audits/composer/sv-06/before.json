@@ -1,0 +1,457 @@
+{
+  "moments": {
+    "remove-a-tile": {
+      "frameGaps": 2,
+      "longTasks": 2,
+      "longestTaskMs": 100,
+      "cancelled": 3,
+      "largestJump": 0.38,
+      "jumpOf": "tile:c22-p4 (45 of 117 px)",
+      "firstFrameMs": 4,
+      "settledMs": 656,
+      "offCompositor": [],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "2 long tasks (longest 100 ms)",
+        "3 animations cut short",
+        "a 38% jump: tile:c22-p4 (45 of 117 px)"
+      ]
+    },
+    "undo-the-removal": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 82,
+      "cancelled": 0,
+      "largestJump": 0.56,
+      "jumpOf": "tile:c22-p4 (84 of 150 px)",
+      "firstFrameMs": 5,
+      "settledMs": 641,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "1 long tasks (longest 82 ms)",
+        "a 56% jump: tile:c22-p4 (84 of 150 px)"
+      ]
+    },
+    "remove-a-session": {
+      "frameGaps": 2,
+      "longTasks": 2,
+      "longestTaskMs": 90,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 4,
+      "settledMs": 634,
+      "offCompositor": [],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "2 long tasks (longest 90 ms)"
+      ]
+    },
+    "clear-the-build": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 126,
+      "cancelled": 0,
+      "largestJump": 0.4,
+      "jumpOf": "add:part (163 of 404 px)",
+      "firstFrameMs": 10,
+      "settledMs": 888,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 126 ms)",
+        "a 40% jump: add:part (163 of 404 px)"
+      ]
+    },
+    "undo-clearing": {
+      "frameGaps": 2,
+      "longTasks": 1,
+      "longestTaskMs": 86,
+      "cancelled": 0,
+      "largestJump": 0.2,
+      "jumpOf": "tile:c22-p2 (4 of 20 px)",
+      "firstFrameMs": 9,
+      "settledMs": 1094,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "1 long tasks (longest 86 ms)"
+      ]
+    },
+    "merge": {
+      "frameGaps": 2,
+      "longTasks": 2,
+      "longestTaskMs": 89,
+      "cancelled": 1,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 9,
+      "settledMs": 842,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "2 long tasks (longest 89 ms)",
+        "1 animations cut short"
+      ]
+    },
+    "add-a-tile": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 104,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 2,
+      "settledMs": 652,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 104 ms)"
+      ]
+    },
+    "duplicate": {
+      "frameGaps": 2,
+      "longTasks": 1,
+      "longestTaskMs": 111,
+      "cancelled": 0,
+      "largestJump": 0.2,
+      "jumpOf": "tile:c22-p2-copy-1-mvpe3iiy (54 of 267 px)",
+      "firstFrameMs": 7,
+      "settledMs": 669,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "1 long tasks (longest 111 ms)"
+      ]
+    },
+    "duplicate-two": {
+      "frameGaps": 3,
+      "longTasks": 1,
+      "longestTaskMs": 113,
+      "cancelled": 0,
+      "largestJump": 0.56,
+      "jumpOf": "tile:c22-p2 (75 of 134 px)",
+      "firstFrameMs": 9,
+      "settledMs": 662,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "3 frame gaps over 25 ms",
+        "1 long tasks (longest 113 ms)",
+        "a 56% jump: tile:c22-p2 (75 of 134 px)"
+      ]
+    },
+    "split": {
+      "frameGaps": 2,
+      "longTasks": 1,
+      "longestTaskMs": 108,
+      "cancelled": 0,
+      "largestJump": 1,
+      "jumpOf": "tile:c22-p3 (30 of 30 px)",
+      "firstFrameMs": 10,
+      "settledMs": 652,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "1 long tasks (longest 108 ms)",
+        "a 100% jump: tile:c22-p3 (30 of 30 px)"
+      ]
+    },
+    "add-a-part": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 103,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 9,
+      "settledMs": 656,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "1 long tasks (longest 103 ms)"
+      ]
+    },
+    "redo": {
+      "frameGaps": 3,
+      "longTasks": 2,
+      "longestTaskMs": 81,
+      "cancelled": 3,
+      "largestJump": 0.38,
+      "jumpOf": "tile:c22-p4 (45 of 117 px)",
+      "firstFrameMs": 13,
+      "settledMs": 632,
+      "offCompositor": [],
+      "failed": [
+        "3 frame gaps over 25 ms",
+        "2 long tasks (longest 81 ms)",
+        "3 animations cut short",
+        "a 38% jump: tile:c22-p4 (45 of 117 px)"
+      ]
+    },
+    "move-to-part": {
+      "frameGaps": 2,
+      "longTasks": 1,
+      "longestTaskMs": 124,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 61,
+      "settledMs": 1235,
+      "offCompositor": [],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "1 long tasks (longest 124 ms)"
+      ]
+    },
+    "send-together": {
+      "frameGaps": 2,
+      "longTasks": 1,
+      "longestTaskMs": 55,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 63,
+      "settledMs": 317,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "2 frame gaps over 25 ms",
+        "1 long tasks (longest 55 ms)"
+      ]
+    },
+    "convert": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 84,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 14,
+      "settledMs": 255,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 84 ms)"
+      ]
+    },
+    "selection-bar": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 59,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 5,
+      "settledMs": 250,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 59 ms)"
+      ]
+    },
+    "details": {
+      "frameGaps": 0,
+      "longTasks": 1,
+      "longestTaskMs": 60,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 16,
+      "settledMs": 16,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 60 ms)"
+      ]
+    },
+    "go-to-it": {
+      "frameGaps": 0,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 26,
+      "settledMs": 2017,
+      "offCompositor": [],
+      "failed": []
+    },
+    "fold": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 57,
+      "cancelled": 0,
+      "largestJump": 0.32,
+      "jumpOf": "tile:c22-manual (32 of 102 px)",
+      "firstFrameMs": 14,
+      "settledMs": 266,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 57 ms)"
+      ]
+    },
+    "unfold": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 54,
+      "cancelled": 0,
+      "largestJump": 0.54,
+      "jumpOf": "tile:c22-agent (168 of 313 px)",
+      "firstFrameMs": 9,
+      "settledMs": 410,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "1 long tasks (longest 54 ms)",
+        "a 54% jump: tile:c22-agent (168 of 313 px)"
+      ]
+    },
+    "collapse-all": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 58,
+      "cancelled": 0,
+      "largestJump": 0.34,
+      "jumpOf": "tile:c22-p5 (73 of 212 px)",
+      "firstFrameMs": 5,
+      "settledMs": 255,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 58 ms)"
+      ]
+    },
+    "list-to-map": {
+      "frameGaps": 1,
+      "longTasks": 0,
+      "longestTaskMs": 0,
+      "cancelled": 7,
+      "largestJump": 0.27,
+      "jumpOf": "tile:c22-p3 (6 of 24 px)",
+      "firstFrameMs": 9,
+      "settledMs": 726,
+      "offCompositor": [],
+      "failed": [
+        "7 animations cut short"
+      ]
+    },
+    "map-to-list": {
+      "frameGaps": 1,
+      "longTasks": 1,
+      "longestTaskMs": 62,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 8,
+      "settledMs": 311,
+      "offCompositor": [],
+      "failed": [
+        "1 long tasks (longest 62 ms)"
+      ]
+    },
+    "remove-and-undo": {
+      "frameGaps": 7,
+      "longTasks": 3,
+      "longestTaskMs": 110,
+      "cancelled": 3,
+      "largestJump": 0.56,
+      "jumpOf": "tile:c22-p4 (150 of 267 px)",
+      "firstFrameMs": 9,
+      "settledMs": 1521,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "7 frame gaps over 25 ms",
+        "3 long tasks (longest 110 ms)",
+        "3 animations cut short",
+        "a 56% jump: tile:c22-p4 (150 of 267 px)"
+      ]
+    },
+    "tile-drag-across-sessions": {
+      "frameGaps": 34,
+      "longTasks": 7,
+      "longestTaskMs": 207,
+      "cancelled": 4,
+      "largestJump": 1,
+      "jumpOf": "tile:c21-decision (29 of 29 px)",
+      "firstFrameMs": 9,
+      "settledMs": 2357,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "34 frame gaps over 25 ms",
+        "7 long tasks (longest 207 ms)",
+        "4 animations cut short",
+        "a 100% jump: tile:c21-decision (29 of 29 px)"
+      ]
+    },
+    "session-drag-into-part": {
+      "frameGaps": 29,
+      "longTasks": 4,
+      "longestTaskMs": 224,
+      "cancelled": 0,
+      "largestJump": 0.56,
+      "jumpOf": "session:typed-0c21c21c-0000-4000-8000-0000000000a2 (46 of 82 px)",
+      "firstFrameMs": 5,
+      "settledMs": 1819,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "29 frame gaps over 25 ms",
+        "4 long tasks (longest 224 ms)",
+        "a 56% jump: session:typed-0c21c21c-0000-4000-8000-0000000000a2 (46 of 82 px)"
+      ]
+    },
+    "import-arriving": {
+      "frameGaps": 3,
+      "longTasks": 1,
+      "longestTaskMs": 170,
+      "cancelled": 0,
+      "largestJump": 1,
+      "jumpOf": "add:session (97 of 97 px)",
+      "firstFrameMs": 9,
+      "settledMs": 659,
+      "offCompositor": [
+        "clipPath"
+      ],
+      "failed": [
+        "3 frame gaps over 25 ms",
+        "1 long tasks (longest 170 ms)",
+        "a 100% jump: add:session (97 of 97 px)"
+      ]
+    },
+    "go-to-it-from-a-post-link": {
+      "frameGaps": 3,
+      "longTasks": 2,
+      "longestTaskMs": 91,
+      "cancelled": 0,
+      "largestJump": 0,
+      "jumpOf": "",
+      "firstFrameMs": 1,
+      "settledMs": 2118,
+      "offCompositor": [],
+      "failed": [
+        "3 frame gaps over 25 ms",
+        "2 long tasks (longest 91 ms)"
+      ]
+    }
+  },
+  "imports": {
+    "1": 2048,
+    "4": 2435,
+    "8": 2804,
+    "18": 2870
+  }
+}

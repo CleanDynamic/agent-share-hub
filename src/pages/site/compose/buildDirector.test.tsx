@@ -6,12 +6,19 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxListProps } from "@/dev/fixtures/sandbox";
-import { DROP, FADE_AFTER_MS, LIFT, SKELETON_IN, SKELETON_OUT, SLIDE, STAGGER } from "@/lib/build/buildMotion";
-import { announce, resetIntent } from "@/lib/build/motionIntent";
+import { DROP, FADE_AFTER_MS, LIFT, SKELETON_IN, SKELETON_OUT, SLIDE, STAGGER, STAGGER_SPREAD_MAX, staggerStep } from "@/lib/build/buildMotion";
+import { MotionChannel, MotionChannelContext, type MotionKind } from "./listMotion";
+
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { BuildList, type BuildListProps } from "./BuildList";
 import { diffLayout, layoutOf } from "./buildDirector";
+import { passes, stubAnimations } from "./motionStub";
+
+/* SV-06: the page's channel, given to the List as the composer's page gives it; a step labels its change on it. */
+const channel = new MotionChannel();
+const announce = (kind: MotionKind, sentence?: string) => channel.expect({ kind, keys: [], sentence });
+const resetIntent = () => channel.reset();
 
 interface Played {
   element: Element;
@@ -29,11 +36,7 @@ beforeEach(() => {
   resetIntent();
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: reduced && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    const entry: Played = { element: this, keyframes, options, finished: false };
-    played.push(entry);
-    return { id: options.id ?? "", finished: Promise.resolve(), finish: () => (entry.finished = true), cancel: () => undefined } as unknown as Animation;
-  }) as never;
+  ({ played } = stubAnimations());
 });
 afterEach(() => {
   cleanup();
@@ -50,13 +53,17 @@ const tile = (id: string) => document.querySelector(`[data-skel-kind="tile"][dat
 const mount = (props: BuildListProps) => {
   const view = render(
     <MemoryRouter>
-      <BuildList {...props} />
+      <MotionChannelContext.Provider value={channel}>
+        <BuildList {...props} />
+      </MotionChannelContext.Provider>
     </MemoryRouter>,
   );
   const again = (next: BuildListProps) =>
     view.rerender(
       <MemoryRouter>
-        <BuildList {...next} />
+        <MotionChannelContext.Provider value={channel}>
+          <BuildList {...next} />
+        </MotionChannelContext.Provider>
       </MemoryRouter>,
     );
   return { view, again };
@@ -75,7 +82,7 @@ describe("what changed", () => {
 });
 
 describe("removing a tile", () => {
-  it("holds it on screen while it lifts out (fades, rises 8 over 200), then lets it go", () => {
+  it("holds it on screen while it lifts out (fades, rises 8 over 200), then lets it go", async () => {
     const props = base();
     const { again } = mount(props);
     expect(tile("p2")).not.toBeNull();
@@ -86,25 +93,25 @@ describe("removing a tile", () => {
     expect(lifts()[0].element).toBe(tile("p2"));
     expect(lifts()[0].keyframes).toEqual([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-8px)" }]);
     expect(lifts()[0].options).toMatchObject({ duration: LIFT, fill: "both" });
-    act(() => vi.advanceTimersByTime(LIFT - 1));
+    await passes(LIFT - 1);
     expect(tile("p2")).not.toBeNull();
-    act(() => vi.advanceTimersByTime(1));
+    await passes(1);
     expect(tile("p2")).toBeNull();
   });
 
-  it("shows the skeleton of that tile's session while it lifts, and fades it out 200 ms after the slide", () => {
+  it("shows the skeleton of that tile's session while it lifts, and fades it out 200 ms after the slide", async () => {
     const props = base();
     const { again } = mount(props);
     announce("remove");
     again(without(props, "p2"));
     const layer = () => document.querySelector('[data-testid="skeleton-layer"]') as HTMLElement | null;
     expect(layer()).not.toBeNull();
-    act(() => vi.advanceTimersByTime(0));
-    act(() => vi.advanceTimersByTime(LIFT));
+    await passes(0);
+    await passes(LIFT);
     expect(layer()).not.toBeNull();
-    act(() => vi.advanceTimersByTime(SLIDE + FADE_AFTER_MS));
+    await passes(SLIDE + FADE_AFTER_MS);
     expect(layer()?.style.opacity).toBe("0");
-    act(() => vi.advanceTimersByTime(SKELETON_OUT));
+    await passes(SKELETON_OUT);
     expect(layer()).toBeNull();
   });
 
@@ -149,7 +156,7 @@ describe("removing a tile", () => {
 });
 
 describe("clearing the build", () => {
-  it("lifts every tile from the last to the first, 60 apart, and then the build is empty", () => {
+  it("lifts every tile from the last to the first, 60 apart (closer for more than 6), and then the build is empty", async () => {
     const props = base();
     const { again } = mount(props);
     const box = { left: 0, top: 10, width: 100, height: 40, right: 100, bottom: 50, x: 0, y: 10, toJSON: () => ({}) } as DOMRect;
@@ -162,15 +169,15 @@ describe("clearing the build", () => {
     expect(tiles).toEqual(["a5", "p4", "p3", "p2", "p1"].filter((id) => tiles.includes(id)));
     const delays = lifts().map((entry) => Number(entry.options.delay ?? 0));
     expect(delays).toEqual([...delays].sort((a, b) => a - b));
-    expect(delays[1] - delays[0]).toBe(STAGGER);
-    act(() => vi.advanceTimersByTime(Math.max(...delays) + LIFT));
+    expect(delays[1] - delays[0]).toBe(staggerStep(delays.length, STAGGER, STAGGER_SPREAD_MAX));
+    await passes(Math.max(...delays) + LIFT);
     expect(tile("p1")).toBeNull();
     Element.prototype.getBoundingClientRect = rect;
   });
 });
 
 describe("a tile coming", () => {
-  it("is drawn at once but waits, see-through, while the gap opens, then drops in over 240", () => {
+  it("is drawn at once but waits, see-through, while the gap opens, then drops in over 240", async () => {
     const props = base();
     const { again } = mount(without(props, "p2"));
     announce("add");
@@ -181,11 +188,12 @@ describe("a tile coming", () => {
     expect(drops()[0].keyframes).toEqual([{ opacity: 0, transform: "translateY(-20px)" }, { opacity: 1, transform: "none" }]);
     expect(drops()[0].options).toMatchObject({ duration: DROP, delay: SLIDE, fill: "backwards" });
     expect(document.querySelector('[data-testid="skeleton-layer"]')).not.toBeNull();
-    act(() => vi.advanceTimersByTime(SLIDE + DROP + FADE_AFTER_MS + SKELETON_OUT));
+    await passes(SLIDE + DROP);
+    await passes(FADE_AFTER_MS + SKELETON_OUT);
     expect(document.querySelector('[data-testid="skeleton-layer"]')).toBeNull();
   });
 
-  it("a whole build coming back waits for the skeleton to fade in, then drops in from the first to the last, 60 apart", () => {
+  it("a whole build coming back waits for the skeleton to fade in, then drops in from the first to the last, 60 apart (closer for more than 6)", () => {
     const props = base();
     const { again } = mount({ ...props, steps: [], dividers: new Map(), emptySessions: [] });
     announce("undo");
@@ -193,7 +201,7 @@ describe("a tile coming", () => {
     const delays = drops().map((entry) => Number(entry.options.delay ?? 0));
     expect(delays.length).toBeGreaterThan(1);
     expect(delays[0]).toBe(SKELETON_IN);
-    expect(delays[1] - delays[0]).toBe(STAGGER);
+    expect(delays[1] - delays[0]).toBe(staggerStep(delays.length, STAGGER, STAGGER_SPREAD_MAX));
   });
 
   it("a copy slides out from under its original", () => {
@@ -223,7 +231,7 @@ const sessionKeys = (props: BuildListProps) => [...props.dividers.values()].map(
 const lastLifted = () => lifts().map((entry) => entry.element);
 
 describe("removing a session", () => {
-  it("Remove all: its head and tiles lift out together, as one block", () => {
+  it("Remove all: its head and tiles lift out together, as one block", async () => {
     const props = base();
     const [first] = sessionKeys(props);
     const inFirst = props.steps.filter((step) => step.sessionId === "s1").map((step) => step.id);
@@ -234,11 +242,11 @@ describe("removing a session", () => {
     const block = document.querySelector(`[data-skel-kind="session"][data-skel-id="${first}"]`);
     expect(block).not.toBeNull();
     expect(lastLifted()).toEqual([block]);
-    act(() => vi.advanceTimersByTime(LIFT));
+    await passes(LIFT);
     expect(document.querySelector(`[data-skel-kind="session"][data-skel-id="${first}"]`)).toBeNull();
   });
 
-  it("Keep the tiles (and a merge): only the head lifts; its tiles stay and slide into the session above", () => {
+  it("Keep the tiles (and a merge): only the head lifts; its tiles stay and slide into the session above", async () => {
     const props = base();
     const [, second] = sessionKeys(props);
     const { again } = mount(props);
@@ -253,7 +261,7 @@ describe("removing a session", () => {
 });
 
 describe("the stagger cap", () => {
-  it("staggers at most 12 and sends the rest with the 12th", async () => {
+  it("staggers 20 over 300 at most, evenly, the last first (SV-06 P5)", async () => {
     const { planLift } = await import("./buildDirector");
     const root = document.createElement("div");
     for (let at = 0; at < 20; at += 1) {
@@ -267,15 +275,16 @@ describe("the stagger cap", () => {
     const before = { tiles: new Map(Array.from({ length: 20 }, (_, at) => [`t${at}`, "s"])), sessions: new Map([["s", ""]]), parts: new Set<string>(), order: new Map<string, string[]>() };
     const plan = planLift(root, { removedTiles: [...before.tiles.keys()], addedTiles: [], removedSessions: ["s"], addedSessions: [], removedParts: [], addedParts: [], movedTiles: [], movedSessions: [], movedParts: [] }, before, "clear");
     expect(plan.elements[0].getAttribute("data-skel-id")).toBe("t19");
-    expect(plan.delays.slice(0, 13)).toEqual([0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 660]);
-    expect(Math.max(...plan.delays)).toBe(660);
-    expect(plan.span).toBe(660 + LIFT);
+    const step = staggerStep(20, STAGGER, STAGGER_SPREAD_MAX);
+    expect(plan.delays).toEqual(Array.from({ length: 20 }, (_, at) => at * step));
+    expect(Math.max(...plan.delays)).toBeLessThanOrEqual(300);
+    expect(plan.span).toBe(19 * step + LIFT);
     root.remove();
   });
 });
 
 describe("adding a part", () => {
-  it("from one part to two: both heads drop in, the new frame opens from the top", () => {
+  it("from one part to two: both heads drop in, the new frame opens from the top", async () => {
     const props = base();
     const keys = sessionKeys(props);
     const view = (key: string, label: string) => ({ key, label, nameColour: "var(--text)", sessions: 1, collapsed: false });
@@ -292,11 +301,14 @@ describe("adding a part", () => {
     const { again } = mount(props);
     announce("part");
     again(two);
-    const heads = played.filter((entry) => entry.keyframes[0]?.transform === "translateY(-20px)").map((entry) => (entry.element as HTMLElement).getAttribute("data-testid"));
-    expect(heads).toEqual(["workstream-head", "workstream-head"]);
-    const clip = played.filter((entry) => entry.keyframes.some((frame) => frame.clipPath));
-    expect(clip).toHaveLength(2);
-    expect(clip[0].keyframes).toEqual([{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }]);
+    const heads = played.filter((entry) => entry.keyframes[0]?.transform === "translateY(-20px)" && (entry.element as HTMLElement).getAttribute("data-testid") === "workstream-head");
+    expect(heads).toHaveLength(2);
+    // SV-06 P4: each frame opens in pieces: its top edge falls with the head, its sides grow from nothing, its bottom edge slides down.
+    const piece = (name: string) => played.filter((entry) => (entry.element as HTMLElement).getAttribute("data-frame-piece") === name);
+    expect(piece("top").map((entry) => entry.keyframes[0])).toEqual([{ opacity: 0, transform: "translateY(-20px)" }, { opacity: 0, transform: "translateY(-20px)" }]);
+    expect(piece("sides").map((entry) => entry.keyframes[0].transform)).toEqual(["scaleY(0)", "scaleY(0)"]);
+    expect(piece("bottom")).toHaveLength(2);
+    expect(played.some((entry) => entry.keyframes.some((frame) => frame.clipPath))).toBe(false);
   });
 });
 
@@ -322,7 +334,7 @@ describe("P4 · moving and undoing", () => {
     again({ ...props, steps: swapped });
     expect(document.querySelector('[data-testid="skeleton-layer"]')).not.toBeNull();
     expect(outlines()).toHaveLength(0);
-    act(() => vi.advanceTimersByTime(SLIDE));
+    await passes(SLIDE);
     expect(outlines().length).toBeGreaterThan(0);
     const ring = played.find((entry) => (entry.element as HTMLElement).getAttribute("data-testid") === "outline-once");
     expect(ring?.keyframes.every((frame) => Object.keys(frame).every((key) => key === "opacity" || key === "offset"))).toBe(true);
@@ -365,7 +377,8 @@ describe("P5 · converting a tile", () => {
   it("crossfades the kind line over 150 (the old words fade out above the new) and starts the slide for what is below", () => {
     const props = base();
     const { again } = mount(props);
-    announce("convert", "Converted Prompt 3 to an agent");
+    // SV-06: a convert names its tile (`useBuildActions`), so its kind line is taken before the DOM changes.
+    channel.expect({ kind: "convert", keys: ["p3"], sentence: "Converted Prompt 3 to an agent" });
     again({ ...props, steps: props.steps.map((step) => (step.id === "p3" ? { ...step, title: "Now something else" } : step)) });
     const eyebrow = tile("p3")?.querySelector('[data-testid$="-eyebrow"]');
     expect(eyebrow).not.toBeNull();

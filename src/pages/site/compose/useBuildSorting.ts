@@ -1,24 +1,28 @@
 /* CA-21 P3, P4: moving by hand on the build page. The state of a drag, and what it makes of the page.
 
    While something is held, the build is drawn from a LIVE ORDER (`MoveModel`): the held thing's place moves from slot to slot as the
-   pointer's middle passes each neighbour's middle, and everything around it slides (measured, then a transform, `flip.ts`).
+   pointer's middle passes each neighbour's middle, and everything around it slides (SV-06: the List's one animator, which measures
+   round every commit; nothing here plays or cancels a slide).
    Nothing folds and nothing changes size. The held thing itself is a copy of its element in the `DragOverlay`; its own place stays
    in the page as a plain socket (its element, hidden), which the skeleton layer draws behind.
 
    The rules for where things can go are `moveRules.ts`; the geometry of the layer is `sortLayout.ts`. This file is the glue: it reads
    the pointer, decides a place, keeps the live order, measures the page for the layer, and at the drop hands the write to the page,
-   keeps the new order showing until the data says the same, and slides everything back when it does not. */
+   keeps the new order showing until the data says the same, and slides everything back when it does not.
+
+   SV-06 P6: a pointer move only stores where the pointer is; the place is decided at most once a frame. Where everything stands
+   comes from the animator's places at rest (`restOf`), kept by its pass, so a move reads no layout and a scroll needs no new measure. */
 
 import type { DragEndEvent, DragMoveEvent, DragStartEvent, KeyboardCoordinateGetter } from "@dnd-kit/core";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 
-import { DWELL_OPEN_MS, DWELL_SEND_MS, SETTLE_MS, SLIDE_MS } from "@/lib/build/buildMotion";
+import { DWELL_OPEN_MS, DWELL_SEND_MS, SETTLE_MS } from "@/lib/build/buildMotion";
 import type { Step } from "@/lib/build/graph";
 import { flatOrder, locate, moveBy, movedLine, placeNested, placePart, placeSession, placeTile, sameModel, spotOf, withoutTile, writeOf, type Move, type MoveKind, type MoveModel, type MoveNames, type Spot, type Write } from "@/lib/build/moveRules";
 import { RAIL_ROOM, skeletonOf, type HeldKind, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
-import { play, settle, snapshot, type Box } from "./flip";
+import { SLIDE_ATTR, type Box } from "./flip";
 
 /** What is held: a top-level tile, a tile among its siblings, a session, a part. */
 export type HeldType = "tile" | "nested" | "session" | "part";
@@ -106,21 +110,20 @@ const SELECTOR = {
   part: '[data-skel-kind="part"]',
 } as const;
 
-/** The translation a running slide has put on an element: what its box would be without it. */
-function slidBy(element: Element): { x: number; y: number } {
-  const value = typeof getComputedStyle === "function" ? getComputedStyle(element).transform : "";
-  const match = /^matrix\(([^)]+)\)$/.exec(value ?? "");
-  if (!match) return { x: 0, y: 0 };
-  const parts = match[1].split(",").map(Number);
-  return { x: parts[4] || 0, y: parts[5] || 0 };
-}
+/** Where an element stands: from the places the animator keeps (`restOf`), or, with none, its box as drawn. */
+export type BoxOf = (element: Element) => Box;
 
-/** A box where it stands, not where a slide has it for now. */
-export function naturalBox(element: Element): Box {
+/** An element's box as it is drawn now. */
+export const drawnBox: BoxOf = (element) => {
   const r = element.getBoundingClientRect();
-  const by = slidBy(element);
-  return { x: r.left - by.x, y: r.top - by.y, w: r.width, h: r.height };
-}
+  return { x: r.left, y: r.top, w: r.width, h: r.height };
+};
+
+/** Where an element stands from `restOf` (by its slide id), its drawn box for one the animator does not know. */
+export const boxFrom = (restOf: ((slideId: string) => Box | null) | undefined): BoxOf => (element) => {
+  const id = element.getAttribute(SLIDE_ATTR);
+  return (id && restOf?.(id)) || drawnBox(element);
+};
 
 const idOf = (element: Element) => element.getAttribute("data-skel-id") as string;
 const containerOf = (element: Element) => element.getAttribute("data-skel-container") ?? "";
@@ -153,48 +156,49 @@ function nearest<T>(boxes: readonly { item: T; box: Box }[], y: number): { item:
 }
 
 /** How many of `others` stand wholly above the pointer's line: their middle is above `y`. */
-const countAbove = (others: readonly Element[], y: number): number => others.filter((element) => {
-  const box = naturalBox(element);
+const countAbove = (others: readonly Element[], y: number, boxOf: BoxOf): number => others.filter((element) => {
+  const box = boxOf(element);
   return box.y + box.h / 2 < y;
 }).length;
 
-export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: { x: number; y: number }, options: { canTake: (id: string, parent: string) => boolean; collapsed?: ReadonlySet<string> }): Placement {
+export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: { x: number; y: number }, options: { canTake: (id: string, parent: string) => boolean; collapsed?: ReadonlySet<string>; boxOf?: BoxOf }): Placement {
   const none: Placement = { model, folded: null, sendCandidate: null };
+  const boxOf = options.boxOf ?? drawnBox;
   if (held.type === "nested") {
     const found = locate(model, held.id);
     if (!found || found.kind !== "nested") return none;
     const others = itemsOf(root, "nested", found.parent).filter((element) => idOf(element) !== held.id);
-    return { ...none, model: placeNested(model, held.id, countAbove(others, point.y)) };
+    return { ...none, model: placeNested(model, held.id, countAbove(others, point.y, boxOf)) };
   }
   if (held.type === "part") {
     const others = itemsOf(root, "part").filter((element) => idOf(element) !== held.id);
-    return { ...none, model: placePart(model, held.id, countAbove(others, point.y)) };
+    return { ...none, model: placePart(model, held.id, countAbove(others, point.y, boxOf)) };
   }
   if (held.type === "session") {
-    const parts = model.hasParts ? itemsOf(root, "part").map((element) => ({ item: idOf(element), box: naturalBox(element) })) : [{ item: "", box: { x: 0, y: Number.NEGATIVE_INFINITY, w: 0, h: Number.POSITIVE_INFINITY } as Box }];
+    const parts = model.hasParts ? itemsOf(root, "part").map((element) => ({ item: idOf(element), box: boxOf(element) })) : [{ item: "", box: { x: 0, y: Number.NEGATIVE_INFINITY, w: 0, h: Number.POSITIVE_INFINITY } as Box }];
     const target = nearest(parts, point.y);
     if (!target) return none;
     const part = model.parts.find((entry) => entry.key === target.item);
     const collapsed = Boolean(options.collapsed?.has(target.item));
     const others = itemsOf(root, "session").filter((element) => idOf(element) !== held.id && (part?.sessions ?? []).includes(idOf(element)));
-    const at = collapsed ? (part?.sessions ?? []).filter((id) => id !== held.id).length : countAbove(others, point.y);
+    const at = collapsed ? (part?.sessions ?? []).filter((id) => id !== held.id).length : countAbove(others, point.y, boxOf);
     return { ...none, model: placeSession(model, held.id, target.item, at) };
   }
   // A top-level tile: the session under the pointer, then its place among that session's tiles.
-  const sessions = itemsOf(root, "session").map((element) => ({ item: idOf(element), box: naturalBox(element) }));
+  const sessions = itemsOf(root, "session").map((element) => ({ item: idOf(element), box: boxOf(element) }));
   const target = nearest(sessions, point.y);
   if (!target) return none;
   const key = target.item;
   const closed = Boolean(options.collapsed?.has(key));
   const tiles = itemsOf(root, "tile").filter((element) => containerOf(element) === key && idOf(element) !== held.id);
-  const at = closed ? (model.tiles[key] ?? []).filter((id) => id !== held.id).length : countAbove(tiles, point.y);
+  const at = closed ? (model.tiles[key] ?? []).filter((id) => id !== held.id).length : countAbove(tiles, point.y, boxOf);
   const next = placeTile(model, held.id, key, at);
   // Over the middle third of a tile that can take it: it may become the target.
   let sendCandidate: string | null = null;
   for (const element of itemsOf(root, "tile")) {
     const id = idOf(element);
     if (id === held.id) continue;
-    const box = naturalBox(element);
+    const box = boxOf(element);
     const third = box.h / 3;
     if (point.x >= box.x && point.x <= box.x + box.w && point.y >= box.y + third && point.y <= box.y + 2 * third && options.canTake(held.id, id)) {
       sendCandidate = id;
@@ -209,8 +213,8 @@ export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: 
 
 const heldKindOf = (type: HeldType): HeldKind => (type === "session" ? "session" : type === "part" ? "part" : "tile");
 
-export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, start: MoveModel, names: MoveNames, edge: number): Skeleton {
-  const origin = naturalBox(root);
+export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, start: MoveModel, names: MoveNames, edge: number, boxOf: BoxOf = drawnBox): Skeleton {
+  const origin = drawnBox(root);
   const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
   const radiusOf = (element: Element, fallback: number) => {
     const target = element.getAttribute("data-skel-kind") === "tile" || element.getAttribute("data-skel-kind") === "nested" ? (element.firstElementChild ?? element) : element;
@@ -229,9 +233,9 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
     const found = locate(live, held.id);
     const parent = found?.kind === "nested" ? found.parent : null;
     const elements = itemsOf(root, parent ? "nested" : "tile", parent ?? undefined);
-    for (const element of elements) items.push({ id: idOf(element), container: containerOf(element), rect: rel(naturalBox(element)), radius: radiusOf(element, 12) });
+    for (const element of elements) items.push({ id: idOf(element), container: containerOf(element), rect: rel(boxOf(element)), radius: radiusOf(element, 12) });
     if (parent) {
-      const box = elements.map((element) => naturalBox(element));
+      const box = elements.map((element) => boxOf(element));
       if (box.length > 0) {
         const x = Math.min(...box.map((b) => b.x));
         const y = Math.min(...box.map((b) => b.y));
@@ -242,15 +246,15 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
     } else {
       for (const element of itemsOf(root, "session")) {
         const key = idOf(element);
-        containers.push({ id: key, rect: rel(naturalBox(element)), items: live.tiles[key] ?? [], framed: false, name: names.session(key) });
+        containers.push({ id: key, rect: rel(boxOf(element)), items: live.tiles[key] ?? [], framed: false, name: names.session(key) });
       }
     }
   } else if (held.type === "session") {
-    for (const element of itemsOf(root, "session")) items.push({ id: idOf(element), container: containerOf(element), rect: rel(naturalBox(element)), radius: 12 });
+    for (const element of itemsOf(root, "session")) items.push({ id: idOf(element), container: containerOf(element), rect: rel(boxOf(element)), radius: 12 });
     if (live.hasParts) {
       for (const element of itemsOf(root, "part")) {
         const key = idOf(element);
-        containers.push({ id: key, rect: rel(naturalBox(element)), items: live.parts.find((part) => part.key === key)?.sessions ?? [], framed: true, name: names.part(key) });
+        containers.push({ id: key, rect: rel(boxOf(element)), items: live.parts.find((part) => part.key === key)?.sessions ?? [], framed: true, name: names.part(key) });
       }
     } else {
       const boxes = items.map((item) => item.rect);
@@ -261,7 +265,7 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
       }
     }
   } else {
-    for (const element of itemsOf(root, "part")) items.push({ id: idOf(element), container: "", rect: rel(naturalBox(element)), radius: radiusOf(element, 14) });
+    for (const element of itemsOf(root, "part")) items.push({ id: idOf(element), container: "", rect: rel(boxOf(element)), radius: radiusOf(element, 14) });
     const boxes = items.map((item) => item.rect);
     if (boxes.length > 0) {
       const x = Math.min(...boxes.map((b) => b.x));
@@ -342,6 +346,8 @@ export interface SortingOptions {
   sentLine: (id: string, parentId: string) => string;
   /** The line under the build, which is also what a screen reader hears. */
   say: (line: string) => void;
+  /** Where an element stands at rest, by its slide id: the List's animator (`ListMotion.restOf`). Without it, boxes are read as drawn. */
+  restOf?: (slideId: string) => Box | null;
 }
 
 interface Drag {
@@ -378,6 +384,8 @@ export interface Sorting {
   onDragCancel: () => void;
   /** Show a move that something else writes (a menu's Move up): the new order at once, sliding, put back when the write does not land. */
   show: (model: MoveModel, line: string, run: Promise<unknown> | void) => void;
+  /** Everything is sliding back to where it was (Esc, a write that did not land): those slides take `SETTLE_MS`. Null otherwise. */
+  settleMs: number | null;
 }
 
 /** A copy of an element's markup, without what must stay unique on the page. */
@@ -414,9 +422,12 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const setSaid = (line: string) => optionsRef.current.say(line);
+  const boxOf: BoxOf = (element) => boxFrom(optionsRef.current.restOf)(element);
+  /** Where the pointer is: written by every move, read once a frame. Not state: a move draws nothing. */
   const pointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const before = useRef<Map<string, Box> | null>(null);
-  const slideMs = useRef(SLIDE_MS);
+  const frame = useRef(0);
+  /** Putting back: the slides of the commits that follow take `SETTLE_MS`, as the held copy's own drop does. */
+  const [settleMs, setSettleMs] = useState<number | null>(null);
   const timers = useRef<{ send?: number; open?: number; settle?: number; fade?: number; give?: number }>({});
   const candidate = useRef<{ send: string | null; open: string | null }>({ send: null, open: null });
 
@@ -425,59 +436,28 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     candidate.current = { send: null, open: null };
   };
 
-  /** Remember where everything is, so the next layout can slide from there. */
-  const capture = (ms: number = SLIDE_MS) => {
-    const root = rootRef.current;
-    if (!root) return;
-    before.current = snapshot(root);
-    slideMs.current = ms;
-  };
-
   const set = (next: Drag | null) => {
     dragRef.current = next;
     setDrag(next);
     setTick((value) => value + 1);
   };
 
-  // After every change of order: stop what was sliding, measure the page for the layer, then slide from where things were.
+  // After every change of order: measure the page for the layer. (What moved is already sliding: the animator's pass.)
   const live = drag?.live ?? pending?.model ?? null;
   const heldNow = drag?.held ?? pending?.held ?? null;
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    settle(root);
-    if (heldNow && live && drag) setSkeleton(measureSkeleton(root, heldNow, live, drag.start, optionsRef.current.names, leftEdge()));
+    if (heldNow && live && drag) setSkeleton(measureSkeleton(root, heldNow, live, drag.start, optionsRef.current.names, leftEdge(), boxOf));
     if (viaKeys.current && heldNow && drag && initial) {
       const own = root.querySelector<HTMLElement>(`${SELECTOR[heldNow.type]}[data-skel-id="${heldNow.id}"]`);
       if (own) {
-        const box = naturalBox(own);
+        const box = boxOf(own);
         setKeyboardAt({ x: box.x - initial.left, y: box.y - initial.top });
       }
     }
-    if (before.current) {
-      play(root, before.current, slideMs.current);
-      before.current = null;
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick]);
-
-  /* Any other change of order (a menu's Move up, Option with the arrows, Undo, a write from another tab) slides the same way: what
-     stood where is measured as the new order is drawn, and everything slides from there to where it now stands. */
-  const sig = useMemo(() => JSON.stringify([options.model.parts, options.model.tiles, options.model.nested, options.model.loose]), [options.model]);
-  const lastSig = useRef(sig);
-  const heldSnap = useRef<Map<string, Box> | null>(null);
-  if (lastSig.current !== sig) {
-    lastSig.current = sig;
-    if (!drag && !pending && rootRef.current) heldSnap.current = snapshot(rootRef.current);
-  }
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (heldSnap.current && root) {
-      settle(root);
-      play(root, heldSnap.current, SLIDE_MS);
-    }
-    heldSnap.current = null;
-  });
 
   // The held copy: the markup of its own element at its own size, taken after the page has drawn the hold.
   const copied = drag?.held.id ?? null;
@@ -494,18 +474,18 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [copied, copyDone]);
 
-  const decide = useCallback(() => {
+  /** Where the pointer puts the held thing now. Run at most once a frame; every box it reads comes from the animator's places. */
+  const decide = useEffectEvent(() => {
     const current = dragRef.current;
     const root = rootRef.current;
     if (!current || !root) return;
     const o = optionsRef.current;
-    const placement = placeAt(root, current.held, current.start, pointer.current, { canTake: o.canTake, collapsed: o.collapsed });
+    const placement = placeAt(root, current.held, current.start, pointer.current, { canTake: o.canTake, collapsed: o.collapsed, boxOf });
     // The tile that could take the held one: held over for `DWELL_SEND_MS`, it becomes the target and the place leaves.
     if (placement.sendCandidate !== candidate.current.send) {
       window.clearTimeout(timers.current.send);
       candidate.current.send = placement.sendCandidate;
       if (current.send && placement.sendCandidate !== current.send) {
-        capture();
         set({ ...current, send: null });
       }
       if (placement.sendCandidate) {
@@ -513,7 +493,6 @@ export function useBuildSorting(options: SortingOptions): Sorting {
         timers.current.send = window.setTimeout(() => {
           const now = dragRef.current;
           if (!now || candidate.current.send !== target) return;
-          capture();
           set({ ...now, send: target, live: withoutTile(now.start, now.held.id) });
           setSaid(`Send with ${optionsRef.current.names.tile(target)}`);
         }, DWELL_SEND_MS);
@@ -532,28 +511,40 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const now = dragRef.current;
     if (!now || now.send) return;
     if (!sameModel(now.live, placement.model)) {
-      capture();
       const next = { ...now, live: placement.model };
       set(next);
       setSaid(overLine(now.held, placement.model, o.names));
     }
-  }, []);
+  });
 
-  // The pointer, wherever it is on the page.
+  // The pointer, wherever it is on the page. A move or a scroll asks for one decision on the next frame; however many come in a
+  // frame, it is made once. Both listeners are passive: neither calls `preventDefault`.
+  const holding = drag !== null;
   useEffect(() => {
-    if (!drag) return;
+    if (!holding) return;
+    const ask = () => {
+      if (frame.current === 0) {
+        frame.current = window.requestAnimationFrame(() => {
+          frame.current = 0;
+          decide();
+        });
+      }
+    };
     const move = (event: PointerEvent) => {
       pointer.current = { x: event.clientX, y: event.clientY };
-      decide();
+      ask();
     };
-    const scroll = () => decide();
     window.addEventListener("pointermove", move, { passive: true });
-    window.addEventListener("scroll", scroll, { passive: true, capture: true });
+    window.addEventListener("scroll", ask, { passive: true, capture: true });
     return () => {
       window.removeEventListener("pointermove", move);
-      window.removeEventListener("scroll", scroll, { capture: true });
+      window.removeEventListener("scroll", ask, { capture: true });
+      window.cancelAnimationFrame(frame.current);
+      frame.current = 0;
     };
-  }, [drag === null, decide]); // eslint-disable-line react-hooks/exhaustive-deps
+    // `decide` is an effect event: it reads the latest of everything without being a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holding]);
 
   useEffect(
     () => () => {
@@ -581,6 +572,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     if (!held || !root) return;
     window.clearTimeout(timers.current.fade);
     window.clearTimeout(timers.current.settle);
+    setSettleMs(null);
     const from = point(event.activatorEvent as Event);
     viaKeys.current = (event.activatorEvent as Event | null)?.type === "keydown";
     setKeyboardAt(null);
@@ -602,7 +594,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   /** Slide back to where it was picked up from. */
   const putBack = (current: Drag) => {
     clearTimers();
-    capture(SETTLE_MS);
+    setSettleMs(SETTLE_MS);
     const start = current.start;
     setSaid(putBackLine(current.held, start, optionsRef.current.names));
     dragRef.current = null;
@@ -622,7 +614,6 @@ export function useBuildSorting(options: SortingOptions): Sorting {
       const result = moveBy(current.live, current.held.id, by);
       if (!result) setSaid(`${overLine(current.held, current.live, o.names)} That is the ${by === -1 ? "first" : "last"} place.`);
       else {
-        capture();
         set({ ...current, live: result.model });
         setSaid(overLine(current.held, result.model, o.names));
       }
@@ -640,7 +631,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setPending({ model, held });
     const finish = (ok: boolean) => {
       if (ok) return;
-      capture(SETTLE_MS);
+      setSettleMs(SETTLE_MS);
       setPending({ model: start, held });
       setTick((value) => value + 1);
       setSaid(failed);
@@ -657,7 +648,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
             setPending((current) => {
               if (!current || current.model !== model) return current;
               if (result === true) return null;
-              capture(SETTLE_MS);
+              setSettleMs(SETTLE_MS);
               setSaid(failed);
               setTick((value) => value + 1);
               window.setTimeout(() => setPending((now) => (now && now.model === start ? null : now)), SETTLE_MS + 50);
@@ -711,7 +702,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   };
 
   const show = (model: MoveModel, line: string, run: Promise<unknown> | void) => {
-    capture();
+    setSettleMs(null);
     const start = optionsRef.current.model;
     if (line) setSaid(line);
     setTick((value) => value + 1);
@@ -732,7 +723,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   return {
     rootRef,
     live,
-    holding: drag !== null,
+    holding,
     held: drag?.held ?? null,
     hidden,
     send: drag?.send ?? null,
@@ -747,6 +738,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     onDragEnd,
     onDragCancel,
     show,
+    settleMs: settleMs !== null && (pending !== null || drag !== null) ? settleMs : null,
   };
 }
 

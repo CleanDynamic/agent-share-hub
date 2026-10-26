@@ -117,9 +117,9 @@ describe("the same from Add a session", () => {
 });
 
 describe("a long session", () => {
-  it("lands 9 or more prompts with the 8th: the starts step by 110 ms for eight and then stop", () => {
-    expect([0, 1, 2, 3, 4, 5, 6, 7].map(promptStart)).toEqual([110, 220, 330, 440, 550, 660, 770, 880]);
-    expect([8, 9, 20, 65].map(promptStart)).toEqual([880, 880, 880, 880]);
+  it("steps by 110 ms for up to 4 prompts, and closer for more, so the last starts at most 330 ms after the first", () => {
+    expect([0, 1, 2, 3].map((n) => promptStart(n, 4))).toEqual([110, 220, 330, 440]);
+    for (const count of [8, 18, 65]) expect(promptStart(count - 1, count) - promptStart(0, count)).toBeLessThanOrEqual(330);
   });
 });
 

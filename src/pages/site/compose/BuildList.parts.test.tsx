@@ -77,9 +77,14 @@ describe("two parts", () => {
     const groups = screen.getAllByTestId("workstream-group");
     expect(groups).toHaveLength(2);
     const style = groups[0].getAttribute("style") ?? "";
-    expect(style).toContain("border-radius: 14px");
-    expect(style).toContain("padding: 10px");
+    // SV-06 P4: the outline is drawn in three pieces inside the group, and the group's padding takes the 1px the border took.
+    expect(style).toContain("padding: 11px");
     expect(style).toContain("gap: 8px");
+    const top = groups[0].querySelector(':scope > [data-frame-piece="top"]')?.getAttribute("style") ?? "";
+    const bottom = groups[0].querySelector(':scope > [data-frame-piece="bottom"]')?.getAttribute("style") ?? "";
+    expect(top).toContain("border-radius: 14px 14px 0 0");
+    expect(bottom).toContain("border-radius: 0 0 14px 14px");
+    expect(groups[0].querySelector(':scope > [data-frame-piece="sides"]')).not.toBeNull();
     expect(within(groups[0]).getAllByTestId("session-head")).toHaveLength(2);
     expect(within(groups[1]).getAllByTestId("session-head")).toHaveLength(1);
   });

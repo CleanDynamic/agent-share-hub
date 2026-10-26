@@ -36,26 +36,24 @@ export const HEAD_AFTER_MS = 260;
 /** A head or a prompt falls from this far above, fully see-through, to its place. */
 export const FALL_SHIFT = 20;
 export const FALL_MS = 240;
-/** Each prompt starts this long after the one before. */
+/** Each prompt starts this long after the one before (closer together for more than 4: `staggerStep`). */
 export const PROMPT_STEP_MS = 110;
-/** From the 9th prompt on they land together with the 8th, so any session fills in under a second. */
-export const STAGGERED_PROMPTS = 8;
 /** The skeleton fades this long after the last prompt lands. */
 export const FADE_AFTER_MS = 200;
 
-/** When prompt `n` (from 0) starts falling, counted from when the head starts to fall. */
-export const promptStart = (n: number): number => PROMPT_STEP_MS * (Math.min(n, STAGGERED_PROMPTS - 1) + 1);
+/** When prompt `n` (from 0) of `count` starts falling, counted from when the head starts to fall. */
+export const promptStart = (n: number, count: number): number => PROMPT_STEP_MS + n * staggerStep(count, PROMPT_STEP_MS, PROMPT_SPREAD_MAX);
 
 /* ── CA-22: motion across the build page ──
 
    One language for sixteen moments: sockets and lanes for structure, a slide to open or close a gap, a drop for anything arriving,
    a lift for anything leaving, a crossfade for words that change, and an outline once for what just moved or was found.
 
-   `motion.ts` keeps its three durations and its 200 ms ceiling for feedback. Three timings below are longer BECAUSE they carry
-   something to a new place and are not feedback: `DROP` (240), `MAP_MORPH` (300) and `SCROLL_TO` (450). Everything else is
-   `FAST` or `BASE`, or a pause between two of them. */
+   `motion.ts` keeps its three durations and its 200 ms ceiling for feedback. Two timings below are longer BECAUSE they carry
+   something to a new place and are not feedback: `DROP` (240) and `MAP_MORPH` (300). A scroll is the browser's own smooth scroll
+   (SV-06 P7, `pageScroll.ts`). Everything else is `FAST` or `BASE`, or a pause between two of them. */
 
-/** Opening or closing a gap, moving, undo and redo, a part or lane resizing. */
+/** Opening or closing a gap, moving, undo and redo, a part or lane resizing: the shortest, for a move of no distance (`slideMs`). */
 export const SLIDE = FAST;
 /** Anything leaving fades out and rises `LIFT_RISE`. */
 export const LIFT = BASE;
@@ -63,10 +61,8 @@ export const LIFT_RISE = 8;
 /** Anything arriving fades in and falls `DROP_FALL` from above. Longer than the ceiling: it carries the thing to its place. */
 export const DROP = FALL_MS;
 export const DROP_FALL = FALL_SHIFT;
-/** Between items when several leave or arrive together. */
+/** Between items when several leave or arrive together (closer together for more than 6: `staggerStep`). */
 export const STAGGER = 60;
-/** Items past this go together with the 12th, so nothing takes more than about a second. */
-export const STAGGER_CAP = 12;
 /** Words and labels that change, Details, counts. */
 export const CROSSFADE = FAST;
 /** The outline once: in, hold, out. */
@@ -79,9 +75,9 @@ export const GOTO_OUT = 600;
 /** Folding: the tiles rise `FOLD_RISE` behind the head. */
 export const FOLD = BASE;
 export const FOLD_RISE = 24;
-/** Between tiles coming down when a session unfolds; from the 8th on they come together. */
+/** Between tiles coming down when a session unfolds; for more than 8, closer together, so the spread stays 280. */
 export const UNFOLD_STAGGER = 40;
-export const UNFOLD_STAGGERED = 8;
+export const UNFOLD_SPREAD_MAX = UNFOLD_STAGGER * 7;
 /** The selection bar rises this far and fades in. */
 export const BAR_RISE = 16;
 /** Selection rings fade in and out. */
@@ -89,7 +85,7 @@ export const RING_IN = 100;
 export const RING_OUT = 150;
 /* ── CA-28: a window's Optional fields, on demand ──
    Opening: the frame grows over `BASE` about its fixed centre; `OPTIONAL_DROP_AFTER` after the press each field falls `DROP_FALL` and
-   fades in over `DROP`, `STAGGER` apart, the 12th and the rest together. Closing: the fields lift (`LIFT_RISE`, `OPTIONAL_LIFT`),
+   fades in over `DROP`, `STAGGER` apart, over `STAGGER_SPREAD_MAX` at most. Closing: the fields lift (`LIFT_RISE`, `OPTIONAL_LIFT`),
    last first, `OPTIONAL_LIFT_STAGGER` apart; then the frame closes over `BASE`. */
 export const OPTIONAL_LIFT = 160;
 export const OPTIONAL_LIFT_STAGGER = 40;
@@ -97,8 +93,6 @@ export const OPTIONAL_LIFT_STAGGER = 40;
 export const OPTIONAL_DROP_AFTER = 100;
 /** The notice rises this far and fades in. */
 export const NOTICE_RISE = 8;
-/** Scrolling to something off screen. Longer than the ceiling: it carries the eye to a new place. */
-export const SCROLL_TO = 450;
 /** List to Map: the tiles fold behind their heads, each head morphs into its box, the lines draw in. */
 export const MAP_FOLD = 180;
 /** Longer than the ceiling: a head travels to a new place. */
@@ -108,3 +102,27 @@ export const MAP_LINES = 200;
 export const MAP_LINES_BACK = 100;
 /** With more sessions than this, or boxes that do not fit on screen, the two views crossfade instead of morphing. */
 export const MAP_MORPH_MAX = 30;
+
+/* ── SV-06: sequences ── */
+
+/** The longest any sequence of steps runs (a lift, the slide after it, the skeleton fading): past it, everything goes to its end. */
+export const SEQUENCE_CAP = 1200;
+
+/* ── SV-06 P5: duration by distance, stagger by count ── */
+
+export const SLIDE_MIN = FAST;
+/**
+ * `motion.ts` calls 200 ms the ceiling for UI feedback. A slide goes past it because it carries something to its place rather than
+ * answering a click, as `DROP` (240) already does.
+ */
+export const SLIDE_MAX = 300;
+/** How long a slide of `distance` px takes: 150 for none, a quarter of a millisecond more per px, 300 at most. */
+export const slideMs = (distance: number) => Math.round(Math.min(SLIDE_MAX, Math.max(SLIDE_MIN, 150 + distance * 0.25)));
+
+/** The longest spread from the first prompt's start to the last's: today's spacing for up to 4 prompts. */
+export const PROMPT_SPREAD_MAX = PROMPT_STEP_MS * 3;
+/** The longest spread for a list stagger: today's spacing for up to 6 items. */
+export const STAGGER_SPREAD_MAX = STAGGER * 5;
+/** Between one of `count` items and the next: `step`, closer for a set whose spread would pass `spreadMax`, so the spread never grows. */
+export const staggerStep = (count: number, step: number, spreadMax: number) =>
+  count < 2 ? 0 : Math.min(step, Math.floor(spreadMax / (count - 1)));

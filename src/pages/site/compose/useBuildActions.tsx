@@ -147,7 +147,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
             bridge.release(refs);
             await nodes.run(() => dropNodes(nodes, tops.map((step) => step.id)));
           },
-          { notice: true, removed },
+          { notice: true, removed, keys: tops.map((step) => step.id) },
         )
         .catch((cause) => console.error("[Compose] tiles not removed", cause));
     },
@@ -173,7 +173,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
             bridge.release(refs);
             await nodes.run(() => dropFile(nodes, fileId));
           },
-          { notice: true, removed },
+          { notice: true, removed, keys: [fileId] },
         )
         .catch((cause) => console.error("[Compose] file not removed", cause));
     },
@@ -258,7 +258,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
               const plan = row ? convertRow(row, to, DEFAULT_AGENT_MODEL) : null;
               return plan?.row ? convertTiles(current, new Map([[id, plan.row]])) : current;
             }),
-          { notice: true, motion: "convert" },
+          { notice: true, motion: "convert", keys: [id] },
         )
         .catch((cause) => console.error("[Compose] not converted", cause));
     },

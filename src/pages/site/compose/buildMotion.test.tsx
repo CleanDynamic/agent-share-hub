@@ -1,15 +1,14 @@
 // CA-22 P1 - the five helpers, with fake timers and recorded animations: the order of calls, cancelling, reduced motion.
 
 import { act, cleanup, render } from "@testing-library/react";
-import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BASE, FAST } from "@/lib/theme/motion";
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
-import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, STAGGER_CAP, CROSSFADE } from "@/lib/build/buildMotion";
+import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, CROSSFADE } from "@/lib/build/buildMotion";
 
-import { SLIDE_ATTR } from "./flip";
-import { crossfade, useCrossfade, dropIn, finishRunning, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useFlip, useLeaving } from "./buildMotion";
+import { crossfade, useCrossfade, dropIn, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useLeaving } from "./buildMotion";
+import { passes, stubAnimations } from "./motionStub";
 
 interface Played {
   element: Element;
@@ -28,23 +27,7 @@ beforeEach(() => {
   played = [];
   window.matchMedia = ((query: string) => ({ matches: reduced && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined })) as never;
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    const entry: Played = { element: this, keyframes, options, finished: false, cancelled: false };
-    played.push(entry);
-    return {
-      id: options.id ?? "",
-      finished: Promise.resolve(),
-      finish: () => {
-        entry.finished = true;
-      },
-      cancel: () => {
-        entry.cancelled = true;
-      },
-    } as unknown as Animation;
-  }) as never;
-  Element.prototype.getAnimations = function (this: Element) {
-    return played.filter((entry) => entry.element === this && !entry.finished && !entry.cancelled).map((entry) => ({ id: entry.options.id ?? "", finish: () => (entry.finished = true) }) as unknown as Animation);
-  } as never;
+  ({ played } = stubAnimations());
   vi.useFakeTimers();
 });
 afterEach(() => {
@@ -60,16 +43,17 @@ const only = (keyframes: Keyframe[]) => [...new Set(keyframes.flatMap((frame) =>
 
 describe("the timings", () => {
   it("names the figures the boards give, and leaves motion.ts its three durations", () => {
-    expect([SLIDE, LIFT, LIFT_RISE, DROP, DROP_FALL, STAGGER, STAGGER_CAP, CROSSFADE, OUTLINE_IN, OUTLINE_HOLD, OUTLINE_OUT]).toEqual([FAST, BASE, 8, 240, 20, 60, 12, FAST, 150, 500, 300]);
+    expect([SLIDE, LIFT, LIFT_RISE, DROP, DROP_FALL, STAGGER, CROSSFADE, OUTLINE_IN, OUTLINE_HOLD, OUTLINE_OUT]).toEqual([FAST, BASE, 8, 240, 20, 60, FAST, 150, 500, 300]);
   });
 
-  it("staggers 60 apart and sends everything past the 12th with the 12th", () => {
-    expect(staggerDelay(0)).toBe(0);
-    expect(staggerDelay(1)).toBe(60);
-    expect(staggerDelay(11)).toBe(660);
-    expect(staggerDelay(12)).toBe(660);
-    expect(staggerDelay(40)).toBe(660);
-    expect(liftSpan(40)).toBe(660 + LIFT);
+  it("staggers 60 apart up to 6 items, and closer for more, so the spread never passes 300", () => {
+    expect(staggerDelay(0, 1)).toBe(0);
+    expect(staggerDelay(1, 2)).toBe(60);
+    expect(staggerDelay(5, 6)).toBe(300);
+    expect(staggerDelay(11, 12)).toBeLessThanOrEqual(300);
+    expect(staggerDelay(39, 40)).toBeLessThanOrEqual(300);
+    expect(liftSpan(40)).toBeLessThanOrEqual(300 + LIFT);
+    expect(liftSpan(1)).toBe(LIFT);
     expect(liftSpan(0)).toBe(0);
   });
 });
@@ -84,9 +68,12 @@ describe("dropIn", () => {
     expect(played.every((entry) => entry.options.duration === DROP && entry.options.fill === "backwards")).toBe(true);
   });
 
-  it("caps the stagger: the 13th and the rest go with the 12th", () => {
+  it("spreads 15 over 300 at most, in order, evenly", () => {
     dropIn(Array.from({ length: 15 }, div), { stagger: STAGGER });
-    expect(played.map((entry) => entry.options.delay).slice(10)).toEqual([600, 660, 660, 660, 660]);
+    const delays = played.map((entry) => Number(entry.options.delay));
+    expect(delays).toHaveLength(15);
+    expect(delays[14]).toBeLessThanOrEqual(300);
+    expect(new Set(delays.slice(1).map((delay, at) => delay - delays[at])).size).toBe(1);
   });
 
   it("animates opacity and transform and nothing else", () => {
@@ -100,15 +87,14 @@ describe("dropIn", () => {
     expect(played.every((entry) => entry.cancelled)).toBe(true);
   });
 
-  it("a change mid-animation finishes the running one at once, then starts", () => {
+  it("SV-06: a change mid-animation carries on from the running one: it is let go in the same call, never finished at once", async () => {
     const item = div();
     dropIn([item]);
     dropIn([item]);
     expect(played).toHaveLength(2);
-    expect(played[0].finished).toBe(true);
-    expect(played[1].finished).toBe(false);
-    finishRunning(item);
-    expect(played[1].finished).toBe(true);
+    expect(played[0].finished).toBe(false);
+    expect(played[0].cancelled).toBe(true);
+    expect(played[1].cancelled).toBe(false);
   });
 
   it("under reduced motion nothing moves: no animation, and it is already finished", async () => {
@@ -140,79 +126,15 @@ describe("slideOut", () => {
     const item = div();
     item.getBoundingClientRect = () => ({ left: 10, top: 110, width: 200, height: 50, right: 210, bottom: 160, x: 10, y: 110, toJSON: () => ({}) });
     slideOut(item, { x: 10, y: 10, w: 200, h: 50 });
-    expect(played[0].keyframes[0]).toMatchObject({ opacity: 0, transform: "translate(0px, -100px) scale(1, 1)" });
+    expect(played[0].keyframes[0]).toEqual({ opacity: 0, transform: "translate(0px, -100px)" });
     expect(played[0].keyframes[1]).toMatchObject({ opacity: 1, transform: "none" });
     expect(played[0].options.duration).toBe(DROP);
   });
 });
 
-describe("useFlip", () => {
-  function Boxes({ shift, onFlip }: { shift: boolean; onFlip?: (flip: ReturnType<typeof useFlip>) => void }) {
-    const ref = useRef<HTMLDivElement>(null);
-    const flip = useFlip(ref);
-    onFlip?.(flip);
-    return (
-      <div ref={ref}>
-        <div data-testid="a" {...{ [SLIDE_ATTR]: "a" }} data-top={shift ? 100 : 0} />
-        <div data-testid="b" {...{ [SLIDE_ATTR]: "b" }} data-top={0} />
-      </div>
-    );
-  }
-  const at = (element: Element) => ({ top: Number(element.getAttribute("data-top") ?? 0) });
-  const patch = () => {
-    const proto = Element.prototype as { getBoundingClientRect: () => DOMRect };
-    const was = proto.getBoundingClientRect;
-    proto.getBoundingClientRect = function (this: Element) {
-      const { top } = at(this);
-      return { left: 0, top, width: 100, height: 20, right: 100, bottom: top + 20, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
-    };
-    return () => {
-      proto.getBoundingClientRect = was;
-    };
-  };
-
-  it("measures before the change and slides from there, with transforms only", () => {
-    const restore = patch();
-    let flip: ReturnType<typeof useFlip> | undefined;
-    const view = render(<Boxes shift={false} onFlip={(f) => (flip = f)} />);
-    act(() => flip?.measure());
-    expect(flip?.pending()).toBe(true);
-    view.rerender(<Boxes shift onFlip={(f) => (flip = f)} />);
-    const slid = played.filter((entry) => entry.options.id === "slide");
-    expect(slid).toHaveLength(1);
-    expect(slid[0].keyframes[0]).toMatchObject({ transform: "translate(0px, -100px) scale(1, 1)" });
-    expect(only(slid[0].keyframes).sort()).toEqual(["transform", "transformOrigin"]);
-    expect(slid[0].options.duration).toBe(SLIDE);
-    expect(flip?.pending()).toBe(false);
-    restore();
-  });
-
-  it("a delay holds the sliding things where they were until it ends", () => {
-    const restore = patch();
-    let flip: ReturnType<typeof useFlip> | undefined;
-    const view = render(<Boxes shift={false} onFlip={(f) => (flip = f)} />);
-    act(() => flip?.measure({ delay: LIFT }));
-    view.rerender(<Boxes shift onFlip={(f) => (flip = f)} />);
-    expect(played.find((entry) => entry.options.id === "slide")?.options).toMatchObject({ delay: LIFT, fill: "backwards" });
-    restore();
-  });
-
-  it("does not slide at all under reduced motion", () => {
-    reduced = true;
-    __resetMotionMediaCache();
-    const restore = patch();
-    let flip: ReturnType<typeof useFlip> | undefined;
-    const view = render(<Boxes shift={false} onFlip={(f) => (flip = f)} />);
-    act(() => flip?.measure());
-    view.rerender(<Boxes shift onFlip={(f) => (flip = f)} />);
-    expect(played).toHaveLength(0);
-    restore();
-  });
-});
-
 describe("useLeaving", () => {
   type Item = { id: string };
-  function List({ items, ...rest }: { items: Item[]; stagger?: number; reverse?: boolean; enabled?: boolean }) {
+  function List({ items, ...rest }: { items: Item[]; stagger?: number; reverse?: boolean; lifts?: (keys: readonly string[]) => boolean }) {
     const { items: shown, leaving } = useLeaving(items, (item) => item.id, { find: (key) => document.querySelector<HTMLElement>(`[data-key="${key}"]`), ...rest });
     return (
       <>
@@ -226,7 +148,7 @@ describe("useLeaving", () => {
   }
   const ids = () => [...document.querySelectorAll("p")].map((p) => p.textContent);
 
-  it("keeps the removed element mounted, in place, for LIFT, lifting; then removes it", () => {
+  it("keeps the removed element mounted, in place, for LIFT, lifting; then removes it", async () => {
     const view = render(<List items={[{ id: "a" }, { id: "b" }, { id: "c" }]} />);
     view.rerender(<List items={[{ id: "a" }, { id: "c" }]} />);
     expect(ids()).toEqual(["a", "b", "c"]);
@@ -234,26 +156,27 @@ describe("useLeaving", () => {
     expect(played).toHaveLength(1);
     expect(played[0].element).toBe(document.querySelector('[data-key="b"]'));
     expect(played[0].options.duration).toBe(LIFT);
-    act(() => vi.advanceTimersByTime(LIFT - 1));
+    await passes(LIFT - 1);
     expect(ids()).toEqual(["a", "b", "c"]);
-    act(() => vi.advanceTimersByTime(1));
+    await passes(1);
     expect(ids()).toEqual(["a", "c"]);
   });
 
-  it("lifts from the last to the first, 60 apart, when asked, and lets go once the last has lifted", () => {
+  it("lifts from the last to the first, 60 apart, when asked, and lets go once the last has lifted", async () => {
     const view = render(<List items={[{ id: "a" }, { id: "b" }, { id: "c" }]} stagger={STAGGER} reverse />);
     view.rerender(<List items={[]} stagger={STAGGER} reverse />);
     expect(played.map((entry) => entry.element.getAttribute("data-key"))).toEqual(["c", "b", "a"]);
     expect(played.map((entry) => entry.options.delay)).toEqual([0, 60, 120]);
-    act(() => vi.advanceTimersByTime(120 + LIFT - 1));
+    await passes(120 + LIFT - 1);
     expect(ids()).toHaveLength(3);
-    act(() => vi.advanceTimersByTime(1));
+    await passes(1);
     expect(ids()).toHaveLength(0);
   });
 
-  it("does nothing when not enabled, and under reduced motion removes at once", () => {
-    const off = render(<List items={[{ id: "a" }, { id: "b" }]} enabled={false} />);
-    off.rerender(<List items={[{ id: "a" }]} enabled={false} />);
+  it("does nothing when nothing asks for a lift, and under reduced motion removes at once", () => {
+    // SV-06: nothing asked for a lift (no label for these keys): they go before they are painted.
+    const off = render(<List items={[{ id: "a" }, { id: "b" }]} lifts={() => false} />);
+    off.rerender(<List items={[{ id: "a" }]} lifts={() => false} />);
     expect(ids()).toEqual(["a"]);
     cleanup();
     reduced = true;
@@ -264,11 +187,11 @@ describe("useLeaving", () => {
     expect(played).toHaveLength(0);
   });
 
-  it("an item that comes back while it is leaving is simply there again", () => {
+  it("an item that comes back while it is leaving is simply there again", async () => {
     const view = render(<List items={[{ id: "a" }, { id: "b" }]} />);
     view.rerender(<List items={[{ id: "a" }]} />);
     view.rerender(<List items={[{ id: "a" }, { id: "b" }]} />);
-    act(() => vi.advanceTimersByTime(LIFT * 2));
+    await passes(LIFT * 2);
     expect(ids()).toEqual(["a", "b"]);
   });
 
@@ -293,7 +216,7 @@ describe("outlineOnce", () => {
     run.finish();
   });
 
-  it("takes the colour it is given, and the link's longer hold", () => {
+  it("takes the colour it is given, and the link's longer hold", async () => {
     const host = div();
     outlineOnce(host, "#7FA7D9", { hold: 800, out: 600 });
     expect((host.querySelector('[data-testid="outline-once"]') as HTMLElement).style.borderColor).toBe("#7fa7d9");
@@ -302,19 +225,19 @@ describe("outlineOnce", () => {
 
   it("removes itself when it ends", async () => {
     const host = div();
-    const run = outlineOnce(host);
-    await run.finished;
+    outlineOnce(host);
+    await passes(OUTLINE_IN + OUTLINE_HOLD + OUTLINE_OUT);
     expect(host.querySelector('[data-testid="outline-once"]')).toBeNull();
   });
 
-  it("under reduced motion shows for the hold and goes, with no fade", () => {
+  it("under reduced motion shows for the hold and goes, with no fade", async () => {
     reduced = true;
     __resetMotionMediaCache();
     const host = div();
     outlineOnce(host);
     expect(played).toHaveLength(0);
     expect((host.querySelector('[data-testid="outline-once"]') as HTMLElement).style.opacity).toBe("1");
-    act(() => vi.advanceTimersByTime(OUTLINE_HOLD));
+    await passes(OUTLINE_HOLD);
     expect(host.querySelector('[data-testid="outline-once"]')).toBeNull();
   });
 });

@@ -202,8 +202,8 @@ export function useBuildSelection({ drawn, onSelect, phone }: { drawn: Drawn; on
     const move = (event: PointerEvent) => {
       if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > SLOP) stop();
     };
-    document.addEventListener("pointerdown", down, true);
-    document.addEventListener("pointermove", move, true);
+    document.addEventListener("pointerdown", down, { capture: true, passive: true });
+    document.addEventListener("pointermove", move, { capture: true, passive: true });
     document.addEventListener("pointerup", stop, true);
     document.addEventListener("pointercancel", stop, true);
     return () => {

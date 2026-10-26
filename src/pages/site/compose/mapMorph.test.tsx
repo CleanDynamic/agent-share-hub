@@ -10,6 +10,7 @@ import { FAST, __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { useLensMorph } from "./mapMorph";
 import type { SandboxLens } from "./SandboxView";
+import { passes, stubAnimations } from "./motionStub";
 
 interface Played {
   element: Element;
@@ -29,10 +30,7 @@ beforeEach(() => {
   played = [];
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: reduced && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   __resetMotionMediaCache();
-  Element.prototype.animate = vi.fn(function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-    played.push({ element: this, keyframes, options });
-    return { id: options.id ?? "", finished: Promise.resolve(), finish: () => undefined, cancel: () => undefined } as unknown as Animation;
-  }) as never;
+  ({ played } = stubAnimations());
   Element.prototype.getBoundingClientRect = function (this: Element) {
     return rect(this.getAttribute("data-rect") ?? "0,0,0,0");
   };
@@ -100,7 +98,7 @@ describe("List to Map", () => {
     expect(lifted.every((entry) => entry.options.duration === MAP_FOLD)).toBe(true);
     expect(document.querySelector('[data-testid="map-view"]')).toBeNull();
     // 2. The map is drawn, unseen, while copies fly from each head to its box.
-    act(() => vi.advanceTimersByTime(MAP_FOLD));
+    await passes(MAP_FOLD);
     const map = document.querySelector('[data-testid="map-view"]') as HTMLElement;
     expect(map.style.visibility).toBe("hidden");
     expect(layer()).not.toBeNull();
@@ -132,16 +130,16 @@ describe("List to Map", () => {
     expect(fade?.options.duration).toBe(FAST);
   });
 
-  it("when the boxes do not fit on screen it crossfades too", () => {
+  it("when the boxes do not fit on screen it crossfades too", async () => {
     render(<Harness sessions={["a", "b"]} fitsOnScreen={false} />);
     fireEvent.click(document.querySelector('[data-testid="to-map"]') as HTMLElement);
-    act(() => vi.advanceTimersByTime(MAP_FOLD));
+    await passes(MAP_FOLD);
     expect(layer()).toBeNull();
     expect(flights()).toHaveLength(0);
     expect(played.some((entry) => entry.element === document.querySelector('[data-testid="map-view"]') && entry.options.duration === FAST)).toBe(true);
   });
 
-  it("under reduced motion the view just changes", () => {
+  it("under reduced motion the view just changes", async () => {
     reduced = true;
     __resetMotionMediaCache();
     render(<Harness sessions={["a", "b"]} />);
@@ -159,13 +157,13 @@ describe("Map to List", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(MAP_FOLD + MAP_MORPH);
     });
-    played = [];
+    played.length = 0;
     fireEvent.click(document.querySelector('[data-testid="to-list"]') as HTMLElement);
     const back = played.filter((entry) => entry.options.id === "bm:lines");
     expect(back[0].keyframes).toEqual([{ strokeDasharray: "100", strokeDashoffset: 0 }, { strokeDasharray: "100", strokeDashoffset: 100 }]);
     expect(back[0].options.duration).toBe(MAP_LINES_BACK);
     expect(document.querySelector('[data-testid="build-list"]')).toBeNull();
-    act(() => vi.advanceTimersByTime(MAP_LINES_BACK));
+    await passes(MAP_LINES_BACK);
     expect(document.querySelector('[data-testid="build-list"]')).not.toBeNull();
     expect(flights()).toHaveLength(4);
     await act(async () => {
@@ -178,10 +176,10 @@ describe("Map to List", () => {
 });
 
 describe("a second switch while one runs", () => {
-  it("ends the first at once: nothing is left half drawn", () => {
+  it("ends the first at once: nothing is left half drawn", async () => {
     render(<Harness sessions={["a", "b"]} />);
     fireEvent.click(document.querySelector('[data-testid="to-map"]') as HTMLElement);
-    act(() => vi.advanceTimersByTime(MAP_FOLD));
+    await passes(MAP_FOLD);
     expect(layer()).not.toBeNull();
     fireEvent.click(document.querySelector('[data-testid="to-list"]') as HTMLElement);
     expect(layer()).toBeNull();

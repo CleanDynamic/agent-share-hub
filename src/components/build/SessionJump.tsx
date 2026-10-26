@@ -7,14 +7,13 @@
 // sessions. Nothing here writes.
 
 import { clipTo } from "@/lib/theme/truncate";
-import { settle } from "@/pages/site/compose/largeBuild";
+import { scrollToShow } from "@/pages/site/compose/pageScroll";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Fragment, useEffect, useState } from "react";
 
 import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { scrollBehavior } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { menuItem, menuSurface, text } from "@/pages/site/compose/refinedStyles";
 import { MenuContent } from "@/pages/site/compose/ComposeMenu";
@@ -101,25 +100,15 @@ export function useCurrentSession(keys: readonly string[], find: (key: string) =
   return current;
 }
 
-/** Scroll to a session's head and focus it. */
+/**
+ * Scroll to a session's head and focus it, through the build page's one scroll helper (SV-06 P7), which stops on the maker's input.
+ * CA-27 P3: in a large build the tiles above the session were guessed at and shift as the jump passes them: once it has arrived the
+ * head is kept at the top of the page for a moment (`hold`). In a smaller build it is there already and nothing moves.
+ */
 export function jumpTo(head: HTMLElement | null): void {
   if (!head) return;
-  head.scrollIntoView?.({ block: "start", behavior: scrollBehavior() });
+  scrollToShow(head, { align: "start", hold: true });
   head.focus({ preventScroll: true });
-  /* CA-27 P3: in a large build the tiles above the session were guessed at and shift as the jump passes them: once it has arrived the
-     head is kept at the top of the page for a moment. In a smaller build it is there already and nothing moves. */
-  window.setTimeout(
-    () =>
-      settle(
-        () => {
-          const top = head.getBoundingClientRect().top;
-          return !head.isConnected || (top >= -2 && top <= 120);
-        },
-        () => head.scrollIntoView?.({ block: "start" }),
-        1400,
-      ),
-    500,
-  );
 }
 
 function Chip({ item, current, onJump }: { item: SessionJumpItem; current: boolean; onJump: () => void }) {
