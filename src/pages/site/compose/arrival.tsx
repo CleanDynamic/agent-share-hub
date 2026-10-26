@@ -30,7 +30,7 @@ import { TILE_HEIGHT } from "./loadingBlocks";
 import { SessionHead } from "./SessionHead";
 import type { SourceSession } from "./sourcesModel";
 import { RUN } from "./tileRecipes";
-import { leftEdge, naturalBox } from "./useBuildSorting";
+import { boxFrom, drawnBox, leftEdge, type BoxOf } from "./useBuildSorting";
 
 /** What the page says is arriving. */
 export interface Arriving {
@@ -79,23 +79,26 @@ const NONE: ReadonlySet<string> = new Set();
 
 /** The median height of the prompts already on the page: what a place for a prompt not yet written is. */
 function estimate(root: HTMLElement): number {
-  const heights = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].map((element) => naturalBox(element).h).filter((h) => h > 0).sort((a, b) => a - b);
+  const heights = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].map((element) => drawnBox(element).h).filter((h) => h > 0).sort((a, b) => a - b);
   return heights.length > 0 ? Math.round(heights[Math.floor(heights.length / 2)]) : TILE_HEIGHT;
 }
 
-/** The page, as a skeleton with nothing held: every tile's socket, every session's lane, the numbers. `only` (CA-22): just these sessions. */
-export function measureStill(root: HTMLElement, only?: ReadonlySet<string>, inside = false): Skeleton {
-  const origin = naturalBox(root);
+/**
+ * The page, as a skeleton with nothing held: every tile's socket, every session's lane, the numbers. `only` (CA-22): just these sessions.
+ * Each box is where the thing stands (`boxOf`: the animator's places at rest), not where a slide has it for now.
+ */
+export function measureStill(root: HTMLElement, only?: ReadonlySet<string>, inside = false, boxOf: BoxOf = drawnBox): Skeleton {
+  const origin = drawnBox(root);
   const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
   const items: SkeletonItem[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="tile"]')].filter((element) => !only || only.has(element.getAttribute("data-skel-container") ?? "")).map((element) => ({
     id: element.getAttribute("data-skel-id") as string,
     container: element.getAttribute("data-skel-container") ?? "",
-    rect: rel(naturalBox(element)),
+    rect: rel(boxOf(element)),
     radius: Number.parseFloat(typeof getComputedStyle === "function" ? getComputedStyle(element.firstElementChild ?? element).borderTopLeftRadius : "") || 10,
   }));
   const containers: SkeletonContainer[] = [...root.querySelectorAll<HTMLElement>('[data-skel-kind="session"]')].filter((element) => !only || only.has(element.getAttribute("data-skel-id") ?? "")).map((element) => {
     const id = element.getAttribute("data-skel-id") as string;
-    return { id, rect: rel(naturalBox(element)), items: items.filter((item) => item.container === id).map((item) => item.id), framed: false, name: element.getAttribute("data-skel-name") ?? `Session` };
+    return { id, rect: rel(boxOf(element)), items: items.filter((item) => item.container === id).map((item) => item.id), framed: false, name: element.getAttribute("data-skel-name") ?? `Session` };
   });
   const left = items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + origin.x : origin.x;
   return skeletonOf({ kind: "tile", items, containers, held: null, moved: false, room: left - leftEdge(), inside });
@@ -246,7 +249,7 @@ export function useArrival(input: { arriving: Arriving | null | undefined; lande
     if (!root || phase === "idle" || phase === "quiet") return;
     if (phase === "open" || phase === "landing") {
       // SV-05 P4: an import's numbers stand inside their sockets, so nothing hangs outside the part's frame.
-      const next = measureStill(root, undefined, true);
+      const next = measureStill(root, undefined, true, boxFrom(input.motion?.restOf));
       const same = (a: Skeleton | null) => a !== null && JSON.stringify(a) === JSON.stringify(next);
       setSkeleton((current) => (same(current) ? current : next));
       // The new session's sockets fade in with its lane.

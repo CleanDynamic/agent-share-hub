@@ -30,6 +30,7 @@ import type { Step } from "@/lib/build/graph";
 import type { Skeleton } from "@/lib/build/sortLayout";
 
 import { measureStill } from "./arrival";
+import { boxFrom } from "./useBuildSorting";
 import type { BuildListProps } from "./BuildList";
 import { listRuns } from "./buildRuns";
 import { captureWords, crossfadeFrom, dropIn, liftOut, motionOn, outlineOnce, slideOut, staggerDelay, type MotionRun, type Words } from "./buildMotion";
@@ -427,7 +428,7 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
         release(current);
         return;
       }
-      setSkeleton(measureStill(element, plan.scope ?? undefined));
+      setSkeleton(measureStill(element, plan.scope ?? undefined, false, boxFrom(motion.restOf)));
       setShown(true);
       const lift = allOf(plan.elements.map((el, at) => liftOut([el], { delay: plan.delays[at] })));
       const mine = begin(() => {
@@ -445,7 +446,7 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
     if (remeasure.current !== undefined && element) {
       const scope = remeasure.current;
       remeasure.current = undefined;
-      setSkeleton(measureStill(element, scope ?? undefined));
+      setSkeleton(measureStill(element, scope ?? undefined, false, boxFrom(motion.restOf)));
       fadeWhen(sequence.current, motion.plan().slides.finished);
     }
 
@@ -494,7 +495,7 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
         if (still(mine)) for (const target of targets) rings.push(outlineOnce(target));
       };
       if (shifted) {
-        setSkeleton(measureStill(element, scope));
+        setSkeleton(measureStill(element, scope, false, boxFrom(motion.restOf)));
         setShown(true);
         // The ring comes where it lands, once the slide has brought it there; the skeleton fades as it does.
         const slides = motion.plan().slides.finished;
@@ -508,7 +509,7 @@ export function useBuildDirector(incoming: BuildListProps, motion: ListMotion, g
     if (hasAdded(change)) {
       const plan = planDrop(element, change, done.after, done.before, label.kind);
       if (plan.drops.length + plan.copies.length + plan.frames.length === 0) return;
-      setSkeleton(measureStill(element, plan.scope ?? undefined));
+      setSkeleton(measureStill(element, plan.scope ?? undefined, false, boxFrom(motion.restOf)));
       setShown(true);
       // What came waits, see-through, while the gap opens (its delay, on the same clock as the slide: this commit's plan, as long
       // as its longest move), then drops.

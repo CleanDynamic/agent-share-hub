@@ -2164,6 +2164,7 @@ export function BuildList(raw: BuildListProps) {
     send: async (id, parentId) => (await base.onNest?.(id, parentId, Number.MAX_SAFE_INTEGER)) ?? false,
     sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
     say: setSaid,
+    restOf: motion.restOf,
   });
   /* CA-21 P6: Move up and Move down in the menus show the move at once, sliding; when the write does not land, they slide back. */
   const slid = (id: string, by: -1 | 1, run: (id: string, by: -1 | 1) => unknown) => {

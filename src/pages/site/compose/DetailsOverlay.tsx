@@ -96,7 +96,7 @@ export function DetailsOverlay({ selectedKey, left, touch, onEdit, children }: D
       close();
     };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPress, true);
+    document.addEventListener("pointerdown", onPress, { capture: true, passive: true });
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPress, true);

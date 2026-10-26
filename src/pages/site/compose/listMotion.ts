@@ -20,6 +20,9 @@
    slow write still gets its motion. A newer label takes the place of one whose keys never came. A change with no label still
    slides; it never snaps.
 
+   PLACES AT REST (P6). The animator knows where everything is going: from each pass's two measures it keeps where each element
+   stands once its slides end (`restOf`), so a drag asks where things are without reading the layout on every move.
+
    Windowed builds: a session the browser skips (`content-visibility: auto`, `largeBuild.tsx`) is measured as one box, never tile
    by tile, because reading a skipped tile's box makes the browser lay it out. Under reduced motion nothing here plays. */
 
@@ -597,11 +600,40 @@ export interface ListMotion {
   words: (entry: WordsEntry) => () => void;
   /** Something to read before the DOM changes, in the same pass (the words of a tile about to be converted). */
   onMeasure: (listener: () => void) => () => void;
+  /**
+   * P6: where an element stands at rest (where its slides take it), by its slide id, in the window's coordinates now; null for one
+   * that is not drawn. Taken once, then kept by each pass from what it already measures, so asking costs no layout read.
+   */
+  restOf: (slideId: string) => Box | null;
+}
+
+const scrolled = (): { x: number; y: number } => (typeof window === "undefined" ? { x: 0, y: 0 } : { x: window.scrollX || 0, y: window.scrollY || 0 });
+
+/** Where each element stands at rest, in the page's coordinates, so a scroll needs no new measure: from the window's, at `by`. */
+const onPage = (drawn: Measure, by: { x: number; y: number }): Map<string, Box> => {
+  const out = new Map<string, Box>();
+  for (const [key, box] of drawn) out.set(key, { x: box.x + by.x, y: box.y + by.y, w: box.w, h: box.h });
+  return out;
+};
+
+/**
+ * The places at rest after a commit, from the places before it and the commit's two measures (taken at one scroll): each element
+ * that was there moved by what its drawn box moved, since whatever slide was running on it is the same before and after; one that
+ * is new stands where it is drawn, as nothing runs on it yet. Reads nothing.
+ */
+export function restAfter(rest: ReadonlyMap<string, Box>, before: Measure, after: Measure, by: { x: number; y: number }): Map<string, Box> {
+  const out = new Map<string, Box>();
+  for (const [key, now] of after) {
+    const was = before.get(key);
+    const stood = rest.get(key);
+    out.set(key, was && stood ? { x: stood.x + now.x - was.x, y: stood.y + now.y - was.y, w: now.w, h: now.h } : { x: now.x + by.x, y: now.y + by.y, w: now.w, h: now.h });
+  }
+  return out;
 }
 
 export function useListMotion(rootRef: RefObject<HTMLElement | null>): ListMotion {
   const channel = useMotionChannel();
-  const state = useRef<{ plan: Plan; count: number; words: Set<WordsEntry>; listeners: Set<() => void> }>({ plan: EMPTY_PLAN, count: 0, words: new Set(), listeners: new Set() });
+  const state = useRef<{ plan: Plan; count: number; words: Set<WordsEntry>; listeners: Set<() => void>; rest: Map<string, Box> | null }>({ plan: EMPTY_PLAN, count: 0, words: new Set(), listeners: new Set(), rest: null });
   const [motion] = useState<ListMotion>(() => ({
     channel,
     measure: () => {
@@ -614,11 +646,21 @@ export function useListMotion(rootRef: RefObject<HTMLElement | null>): ListMotio
     commit: (before, options) => {
       const root = rootRef.current;
       for (const entry of state.current.words) if (entry.pending) playEntry(entry);
-      if (!root || !before) return state.current.plan;
-      const plan = planSlides(before, measureDrawn(root), options, state.current.count + 1);
+      if (!root || !before) {
+        // The page changed with nothing measured: what was kept of the places at rest is taken again when next asked.
+        state.current.rest = null;
+        return state.current.plan;
+      }
+      const after = measureDrawn(root);
+      if (state.current.rest) state.current.rest = restAfter(state.current.rest, before, after, scrolled());
+      const plan = planSlides(before, after, options, state.current.count + 1);
       if (plan.ms > 0 || plan.added.length + plan.removed.length > 0) {
         state.current.count = plan.id;
         state.current.plan = plan;
+        // When its slides have ended, everything is drawn where it stands: the places are taken again then, if asked.
+        void plan.slides.finished.then(() => {
+          if (state.current.plan === plan) state.current.rest = null;
+        });
       }
       return plan;
     },
@@ -631,6 +673,15 @@ export function useListMotion(rootRef: RefObject<HTMLElement | null>): ListMotio
     onMeasure: (listener) => {
       state.current.listeners.add(listener);
       return () => state.current.listeners.delete(listener);
+    },
+    restOf: (slideId) => {
+      const root = rootRef.current;
+      if (!root) return null;
+      state.current.rest ??= onPage(measureDrawn(root), scrolled());
+      const box = state.current.rest.get(slideId);
+      if (!box) return null;
+      const by = scrolled();
+      return { x: box.x - by.x, y: box.y - by.y, w: box.w, h: box.h };
     },
   }));
   // The page's channel can be given after the List first draws.

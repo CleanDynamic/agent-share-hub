@@ -8,10 +8,13 @@
 
    The rules for where things can go are `moveRules.ts`; the geometry of the layer is `sortLayout.ts`. This file is the glue: it reads
    the pointer, decides a place, keeps the live order, measures the page for the layer, and at the drop hands the write to the page,
-   keeps the new order showing until the data says the same, and slides everything back when it does not. */
+   keeps the new order showing until the data says the same, and slides everything back when it does not.
+
+   SV-06 P6: a pointer move only stores where the pointer is; the place is decided at most once a frame. Where everything stands
+   comes from the animator's places at rest (`restOf`), kept by its pass, so a move reads no layout and a scroll needs no new measure. */
 
 import type { DragEndEvent, DragMoveEvent, DragStartEvent, KeyboardCoordinateGetter } from "@dnd-kit/core";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { DWELL_OPEN_MS, DWELL_SEND_MS, SETTLE_MS } from "@/lib/build/buildMotion";
 import type { Step } from "@/lib/build/graph";
@@ -19,7 +22,7 @@ import { flatOrder, locate, moveBy, movedLine, placeNested, placePart, placeSess
 import { RAIL_ROOM, skeletonOf, type HeldKind, type Skeleton, type SkeletonContainer, type SkeletonItem } from "@/lib/build/sortLayout";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
-import type { Box } from "./flip";
+import { SLIDE_ATTR, type Box } from "./flip";
 
 /** What is held: a top-level tile, a tile among its siblings, a session, a part. */
 export type HeldType = "tile" | "nested" | "session" | "part";
@@ -107,21 +110,20 @@ const SELECTOR = {
   part: '[data-skel-kind="part"]',
 } as const;
 
-/** The translation a running slide has put on an element: what its box would be without it. */
-function slidBy(element: Element): { x: number; y: number } {
-  const value = typeof getComputedStyle === "function" ? getComputedStyle(element).transform : "";
-  const match = /^matrix\(([^)]+)\)$/.exec(value ?? "");
-  if (!match) return { x: 0, y: 0 };
-  const parts = match[1].split(",").map(Number);
-  return { x: parts[4] || 0, y: parts[5] || 0 };
-}
+/** Where an element stands: from the places the animator keeps (`restOf`), or, with none, its box as drawn. */
+export type BoxOf = (element: Element) => Box;
 
-/** A box where it stands, not where a slide has it for now. */
-export function naturalBox(element: Element): Box {
+/** An element's box as it is drawn now. */
+export const drawnBox: BoxOf = (element) => {
   const r = element.getBoundingClientRect();
-  const by = slidBy(element);
-  return { x: r.left - by.x, y: r.top - by.y, w: r.width, h: r.height };
-}
+  return { x: r.left, y: r.top, w: r.width, h: r.height };
+};
+
+/** Where an element stands from `restOf` (by its slide id), its drawn box for one the animator does not know. */
+export const boxFrom = (restOf: ((slideId: string) => Box | null) | undefined): BoxOf => (element) => {
+  const id = element.getAttribute(SLIDE_ATTR);
+  return (id && restOf?.(id)) || drawnBox(element);
+};
 
 const idOf = (element: Element) => element.getAttribute("data-skel-id") as string;
 const containerOf = (element: Element) => element.getAttribute("data-skel-container") ?? "";
@@ -154,48 +156,49 @@ function nearest<T>(boxes: readonly { item: T; box: Box }[], y: number): { item:
 }
 
 /** How many of `others` stand wholly above the pointer's line: their middle is above `y`. */
-const countAbove = (others: readonly Element[], y: number): number => others.filter((element) => {
-  const box = naturalBox(element);
+const countAbove = (others: readonly Element[], y: number, boxOf: BoxOf): number => others.filter((element) => {
+  const box = boxOf(element);
   return box.y + box.h / 2 < y;
 }).length;
 
-export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: { x: number; y: number }, options: { canTake: (id: string, parent: string) => boolean; collapsed?: ReadonlySet<string> }): Placement {
+export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: { x: number; y: number }, options: { canTake: (id: string, parent: string) => boolean; collapsed?: ReadonlySet<string>; boxOf?: BoxOf }): Placement {
   const none: Placement = { model, folded: null, sendCandidate: null };
+  const boxOf = options.boxOf ?? drawnBox;
   if (held.type === "nested") {
     const found = locate(model, held.id);
     if (!found || found.kind !== "nested") return none;
     const others = itemsOf(root, "nested", found.parent).filter((element) => idOf(element) !== held.id);
-    return { ...none, model: placeNested(model, held.id, countAbove(others, point.y)) };
+    return { ...none, model: placeNested(model, held.id, countAbove(others, point.y, boxOf)) };
   }
   if (held.type === "part") {
     const others = itemsOf(root, "part").filter((element) => idOf(element) !== held.id);
-    return { ...none, model: placePart(model, held.id, countAbove(others, point.y)) };
+    return { ...none, model: placePart(model, held.id, countAbove(others, point.y, boxOf)) };
   }
   if (held.type === "session") {
-    const parts = model.hasParts ? itemsOf(root, "part").map((element) => ({ item: idOf(element), box: naturalBox(element) })) : [{ item: "", box: { x: 0, y: Number.NEGATIVE_INFINITY, w: 0, h: Number.POSITIVE_INFINITY } as Box }];
+    const parts = model.hasParts ? itemsOf(root, "part").map((element) => ({ item: idOf(element), box: boxOf(element) })) : [{ item: "", box: { x: 0, y: Number.NEGATIVE_INFINITY, w: 0, h: Number.POSITIVE_INFINITY } as Box }];
     const target = nearest(parts, point.y);
     if (!target) return none;
     const part = model.parts.find((entry) => entry.key === target.item);
     const collapsed = Boolean(options.collapsed?.has(target.item));
     const others = itemsOf(root, "session").filter((element) => idOf(element) !== held.id && (part?.sessions ?? []).includes(idOf(element)));
-    const at = collapsed ? (part?.sessions ?? []).filter((id) => id !== held.id).length : countAbove(others, point.y);
+    const at = collapsed ? (part?.sessions ?? []).filter((id) => id !== held.id).length : countAbove(others, point.y, boxOf);
     return { ...none, model: placeSession(model, held.id, target.item, at) };
   }
   // A top-level tile: the session under the pointer, then its place among that session's tiles.
-  const sessions = itemsOf(root, "session").map((element) => ({ item: idOf(element), box: naturalBox(element) }));
+  const sessions = itemsOf(root, "session").map((element) => ({ item: idOf(element), box: boxOf(element) }));
   const target = nearest(sessions, point.y);
   if (!target) return none;
   const key = target.item;
   const closed = Boolean(options.collapsed?.has(key));
   const tiles = itemsOf(root, "tile").filter((element) => containerOf(element) === key && idOf(element) !== held.id);
-  const at = closed ? (model.tiles[key] ?? []).filter((id) => id !== held.id).length : countAbove(tiles, point.y);
+  const at = closed ? (model.tiles[key] ?? []).filter((id) => id !== held.id).length : countAbove(tiles, point.y, boxOf);
   const next = placeTile(model, held.id, key, at);
   // Over the middle third of a tile that can take it: it may become the target.
   let sendCandidate: string | null = null;
   for (const element of itemsOf(root, "tile")) {
     const id = idOf(element);
     if (id === held.id) continue;
-    const box = naturalBox(element);
+    const box = boxOf(element);
     const third = box.h / 3;
     if (point.x >= box.x && point.x <= box.x + box.w && point.y >= box.y + third && point.y <= box.y + 2 * third && options.canTake(held.id, id)) {
       sendCandidate = id;
@@ -210,8 +213,8 @@ export function placeAt(root: HTMLElement, held: Held, model: MoveModel, point: 
 
 const heldKindOf = (type: HeldType): HeldKind => (type === "session" ? "session" : type === "part" ? "part" : "tile");
 
-export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, start: MoveModel, names: MoveNames, edge: number): Skeleton {
-  const origin = naturalBox(root);
+export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, start: MoveModel, names: MoveNames, edge: number, boxOf: BoxOf = drawnBox): Skeleton {
+  const origin = drawnBox(root);
   const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
   const radiusOf = (element: Element, fallback: number) => {
     const target = element.getAttribute("data-skel-kind") === "tile" || element.getAttribute("data-skel-kind") === "nested" ? (element.firstElementChild ?? element) : element;
@@ -230,9 +233,9 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
     const found = locate(live, held.id);
     const parent = found?.kind === "nested" ? found.parent : null;
     const elements = itemsOf(root, parent ? "nested" : "tile", parent ?? undefined);
-    for (const element of elements) items.push({ id: idOf(element), container: containerOf(element), rect: rel(naturalBox(element)), radius: radiusOf(element, 12) });
+    for (const element of elements) items.push({ id: idOf(element), container: containerOf(element), rect: rel(boxOf(element)), radius: radiusOf(element, 12) });
     if (parent) {
-      const box = elements.map((element) => naturalBox(element));
+      const box = elements.map((element) => boxOf(element));
       if (box.length > 0) {
         const x = Math.min(...box.map((b) => b.x));
         const y = Math.min(...box.map((b) => b.y));
@@ -243,15 +246,15 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
     } else {
       for (const element of itemsOf(root, "session")) {
         const key = idOf(element);
-        containers.push({ id: key, rect: rel(naturalBox(element)), items: live.tiles[key] ?? [], framed: false, name: names.session(key) });
+        containers.push({ id: key, rect: rel(boxOf(element)), items: live.tiles[key] ?? [], framed: false, name: names.session(key) });
       }
     }
   } else if (held.type === "session") {
-    for (const element of itemsOf(root, "session")) items.push({ id: idOf(element), container: containerOf(element), rect: rel(naturalBox(element)), radius: 12 });
+    for (const element of itemsOf(root, "session")) items.push({ id: idOf(element), container: containerOf(element), rect: rel(boxOf(element)), radius: 12 });
     if (live.hasParts) {
       for (const element of itemsOf(root, "part")) {
         const key = idOf(element);
-        containers.push({ id: key, rect: rel(naturalBox(element)), items: live.parts.find((part) => part.key === key)?.sessions ?? [], framed: true, name: names.part(key) });
+        containers.push({ id: key, rect: rel(boxOf(element)), items: live.parts.find((part) => part.key === key)?.sessions ?? [], framed: true, name: names.part(key) });
       }
     } else {
       const boxes = items.map((item) => item.rect);
@@ -262,7 +265,7 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
       }
     }
   } else {
-    for (const element of itemsOf(root, "part")) items.push({ id: idOf(element), container: "", rect: rel(naturalBox(element)), radius: radiusOf(element, 14) });
+    for (const element of itemsOf(root, "part")) items.push({ id: idOf(element), container: "", rect: rel(boxOf(element)), radius: radiusOf(element, 14) });
     const boxes = items.map((item) => item.rect);
     if (boxes.length > 0) {
       const x = Math.min(...boxes.map((b) => b.x));
@@ -343,6 +346,8 @@ export interface SortingOptions {
   sentLine: (id: string, parentId: string) => string;
   /** The line under the build, which is also what a screen reader hears. */
   say: (line: string) => void;
+  /** Where an element stands at rest, by its slide id: the List's animator (`ListMotion.restOf`). Without it, boxes are read as drawn. */
+  restOf?: (slideId: string) => Box | null;
 }
 
 interface Drag {
@@ -417,7 +422,10 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const setSaid = (line: string) => optionsRef.current.say(line);
+  const boxOf: BoxOf = (element) => boxFrom(optionsRef.current.restOf)(element);
+  /** Where the pointer is: written by every move, read once a frame. Not state: a move draws nothing. */
   const pointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const frame = useRef(0);
   /** Putting back: the slides of the commits that follow take `SETTLE_MS`, as the held copy's own drop does. */
   const [settleMs, setSettleMs] = useState<number | null>(null);
   const timers = useRef<{ send?: number; open?: number; settle?: number; fade?: number; give?: number }>({});
@@ -440,11 +448,11 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    if (heldNow && live && drag) setSkeleton(measureSkeleton(root, heldNow, live, drag.start, optionsRef.current.names, leftEdge()));
+    if (heldNow && live && drag) setSkeleton(measureSkeleton(root, heldNow, live, drag.start, optionsRef.current.names, leftEdge(), boxOf));
     if (viaKeys.current && heldNow && drag && initial) {
       const own = root.querySelector<HTMLElement>(`${SELECTOR[heldNow.type]}[data-skel-id="${heldNow.id}"]`);
       if (own) {
-        const box = naturalBox(own);
+        const box = boxOf(own);
         setKeyboardAt({ x: box.x - initial.left, y: box.y - initial.top });
       }
     }
@@ -466,12 +474,13 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [copied, copyDone]);
 
-  const decide = useCallback(() => {
+  /** Where the pointer puts the held thing now. Run at most once a frame; every box it reads comes from the animator's places. */
+  const decide = useEffectEvent(() => {
     const current = dragRef.current;
     const root = rootRef.current;
     if (!current || !root) return;
     const o = optionsRef.current;
-    const placement = placeAt(root, current.held, current.start, pointer.current, { canTake: o.canTake, collapsed: o.collapsed });
+    const placement = placeAt(root, current.held, current.start, pointer.current, { canTake: o.canTake, collapsed: o.collapsed, boxOf });
     // The tile that could take the held one: held over for `DWELL_SEND_MS`, it becomes the target and the place leaves.
     if (placement.sendCandidate !== candidate.current.send) {
       window.clearTimeout(timers.current.send);
@@ -506,23 +515,36 @@ export function useBuildSorting(options: SortingOptions): Sorting {
       set(next);
       setSaid(overLine(now.held, placement.model, o.names));
     }
-  }, []);
+  });
 
-  // The pointer, wherever it is on the page.
+  // The pointer, wherever it is on the page. A move or a scroll asks for one decision on the next frame; however many come in a
+  // frame, it is made once. Both listeners are passive: neither calls `preventDefault`.
+  const holding = drag !== null;
   useEffect(() => {
-    if (!drag) return;
+    if (!holding) return;
+    const ask = () => {
+      if (frame.current === 0) {
+        frame.current = window.requestAnimationFrame(() => {
+          frame.current = 0;
+          decide();
+        });
+      }
+    };
     const move = (event: PointerEvent) => {
       pointer.current = { x: event.clientX, y: event.clientY };
-      decide();
+      ask();
     };
-    const scroll = () => decide();
     window.addEventListener("pointermove", move, { passive: true });
-    window.addEventListener("scroll", scroll, { passive: true, capture: true });
+    window.addEventListener("scroll", ask, { passive: true, capture: true });
     return () => {
       window.removeEventListener("pointermove", move);
-      window.removeEventListener("scroll", scroll, { capture: true });
+      window.removeEventListener("scroll", ask, { capture: true });
+      window.cancelAnimationFrame(frame.current);
+      frame.current = 0;
     };
-  }, [drag === null, decide]); // eslint-disable-line react-hooks/exhaustive-deps
+    // `decide` is an effect event: it reads the latest of everything without being a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holding]);
 
   useEffect(
     () => () => {
@@ -701,7 +723,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   return {
     rootRef,
     live,
-    holding: drag !== null,
+    holding,
     held: drag?.held ?? null,
     hidden,
     send: drag?.send ?? null,
