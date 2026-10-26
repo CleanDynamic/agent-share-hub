@@ -1,0 +1,34 @@
+# SV-05 · plan
+
+Branch `sv-05-numbering-and-fixes`, from `sv-04-page-transitions` (SV-04 is in pull request #397 and not merged yet; this branch carries it).
+
+## Assumptions
+
+- **`sessionGroups` (`src/lib/build/graph.ts`, line 1063).** Groups are opened from the steps in tile order, numbered as they open (`++numbered`). Typed sessions with no step are added from `meta`, at the end. The CA-12 P5 block (line 1142) then refills **only the places of sessions that have a row in `order`**, in `order`'s order, and numbers every group again. Checked:
+  - **An imported session with no tiles is not in `groups` at all.** Only a typed key (`typed-…`) with a `date` is added from `meta`. So the build line (`shownGroups(groups).length`) counts it out, while Sources' "in build" and the List (`emptySessions`, from `order`) count it in. That is fact 2 (3 sessions, 4 in build) and the root of fact 4's "No tiles yet" being unnumbered.
+  - **The numbers are not the List's order.** The List draws runs in tile order (`buildRuns.ts` › `runsOf`), each session's head at its first tile, sessions with no tiles slotted in by their number (`withEmptySessions`), and with parts each part's runs in that order (`BuildList.tsx` line 2340). The numbers follow `order` refilled into some places. When the tiles' positions and the stored order disagree (an old draft, a part moved, a session with no row), the List reads out of sequence: fact 1 (3, 1, 2, 4).
+- **Ordering.** `getSessionOrder` reads `build_sessions` rows, else `making.session_order`. `SandboxPage` passes `orderByWorkstream(getSessionOrder(...))` (grouped by part); every other caller (`readerSteps`, `buildModel`, `ComparePage`, `patternsWrite`, `useReaderPostLinks`, the dev demos) passes `sessionOrderOf(making)`, not grouped by part. `sessionGroups` never sees the parts' order (`making.workstreams`). `setSessionOrder` writes `build_sessions.position` and `making.session_order`; `stackBySessionMoves` hands the tiles' positions out again in session order.
+- **Counts and the next number (`SandboxPage.tsx`).** `order` (line 287), `counts.sessions: shownGroups(groups).length` (line 295), `emptySessions` (line 616), `nextSessionNumber` (line 730) is the largest number plus one, whatever part the new session joins (fact 3's duplicate is that number meeting a session with no tiles that has the same number). The `arriving` heads for an import (line 1517) and an empty session (line 758) take it.
+- **Parts.** `partsModel.ts` › `listPartsOf`: `sessions: part.sessions.length`, from the groups, so a session missing from `groups` is missing from its part's count too.
+- **Every place that shows a session number,** and where it reads it:
+  - session heads (`SessionHead.tsx`), the List's heads and their menus (`BuildList.tsx`: `run.head.number`, `numberByKey`, `sessionNumbers` for "Prompt n · Session m"): from `SourceSession.number`, from the groups;
+  - Sources › Sessions in this build (`SourcesPanel.tsx`), the jump tabs (`SessionJump.tsx`), the Map (`sessionMap.ts`, `SessionMap.tsx`, `SessionMapPanel.tsx`), Details (`detailsView.ts`, `detailsModel.ts` › `sessionNumberOf`), the Session window (`SessionDialog.tsx`), the prompt window (`FullPromptWindow.tsx`), the part window (`PartWindow.tsx`), the Link text panel and linked text tags (`postRefs.ts`: `S${n}`, `Session n`), the Move to and Add to menus (`partsModel.ts` › `sessionChoiceLabel`, `SandboxPage.tsx` line 1851), notices and history (`useSessionEdits.ts`, `componentMenus.ts`, `SandboxPage.tsx` lines 1111, 1518, 2066, 2304), the stage line (`sessionFacts.ts`), tile sections (`tileSections.ts`): all from `group.number`;
+  - the published build page (`src/pages/site/build/`): `readerSteps.ts`, `buildModel.ts` and `useReaderPostLinks.ts` call `sessionGroups`; `BuildSteps.tsx` reads `chat.session`.
+  - **Code that works a number out itself:** `graph.ts` (`++numbered`, the CA-12 refill), `SandboxPage.tsx` › `nextSessionNumber` (max + 1), `composeModel.ts` › `promptSourceLine` (`at + 1` over the library's sessions, for the old composer's prompt line).
+- **Imports.** An imported session's prompts are written by `onAddSession` in `SandboxPage.tsx` (through `attachSession` / the import writer); a library row's name comes from `sourcesModel.ts` (`NO_APP`, the model when there is no title). Checked in Part 3.
+- **Loading.** `ImportingPieces.tsx` (`SOCKET_BLOCK_ROWS = 3`), `LoadingBlocks.tsx` (`width="fill"` measured with a `ResizeObserver`), the CA-21 lane numbers. Checked in Part 4.
+- **Other pieces.** `BlockHandle.tsx`, `SourcesPanel.tsx` (the CLAUDE.md line), `SandboxCard.tsx`, `CardPreview.tsx`, `SessionHead.tsx`, `SandboxView.tsx`, `classify/storage.ts` › `isMissingColumn`. Checked in their parts.
+- **What SV-04 changed here.** The composer sits in the shared frame; `ComposeRoute` holds `ComposeSkeleton` until the record and the session library are in. SV-04's placeholder match test covers the composer (`page-placeholders.spec.ts`).
+
+## Plan
+
+- Part 0: before shots (`e2e/audit/composer-sv05-shots.spec.ts`, `before/`) and this plan -> verified by: the shots.
+- Part 1: one pure numbering in `src/lib/build/sessionNumbers.ts`, used by `sessionGroups` for every caller (parts in order, then each part's sessions in the List's order; sessions with no tiles included), the refill and `++numbered` removed, `nextSessionNumber` and `composeModel`'s line reading it, the jump tabs `{number} {app}` -> verified by: `sessionNumbers.test.ts` (3, 1, 2, 4 reads 1, 2, 3, 4; moves; no tiles; tiles follow; one map per order), a test importing it from the build page's model, source checks (no other numbering, no effect copying numbers), SandboxPage tests for stored positions and Undo.
+- Part 2: counts from the same groups (build line, Sources, parts, Your sessions), the next number at the end of its part -> verified by: tests on a build with an untiled session and imports.
+- Part 3: the empty import's cause, `0 of N prompts imported` with Retry, rows named by their first prompt -> verified by: tests on the import writer and `sourcesModel`.
+- Part 4: `LoadingBlocks height="fill"`, sockets filled and numbered inside the frame, `ComposeSkeleton` tiles at full height -> verified by: tests at 56, 64 and 72, SV-04's placeholder match.
+- Part 5: the post's grip only with two or more blocks, clear of the avatar -> verified by: unit tests and a Playwright box check.
+- Part 6: `Claude Code reads CLAUDE.md` with `Add`, wrapping words, never the name or the button -> verified by: a Playwright check at the narrowest Sources width.
+- Part 7: `ModalInset` around the Classification window, the not-live line removed, `isMissingColumn` by code -> verified by: unit tests.
+- Part 8: wording -> verified by: a source check and the tests that quote it.
+- Part 9: after shots (`after/`), `audit:design -- --grep composer`, `audit:contrast` -> verified by: the shots beside the before ones.
