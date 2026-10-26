@@ -120,6 +120,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { BreakageBody } from "./BreakageBody";
 import { CommentsPanel, LowerSections, WhereNextError, WhereNextPanels } from "./BuildLower";
 import { EmptyState } from "@/components/brand/EmptyState";
+import { PageArrival } from "@/components/shell/PageArrival";
 import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
 import { ClassificationSection } from "@/components/build/ClassificationSection";
 import { getClassification } from "@/lib/classify/storage";
@@ -833,12 +834,19 @@ export function BuildPage() {
 
   /* ── the states ── */
 
-  if (recordQuery.isPending && Boolean(slug)) return <BuildViewSkeleton />;
+  /* SV-04 P5: every state below goes through one arrival, so the build fades in over its skeleton when the record lands. */
+  const arrive = (node: ReactNode) => (
+    <PageArrival loading={recordQuery.isPending && Boolean(slug)} placeholder={<BuildViewSkeleton />}>
+      {node}
+    </PageArrival>
+  );
 
-  if (recordQuery.isError) return <BuildViewFailed onRetry={() => void recordQuery.refetch()} error={recordQuery.error} />;
+  if (recordQuery.isPending && Boolean(slug)) return arrive(<BuildViewSkeleton />);
+
+  if (recordQuery.isError) return arrive(<BuildViewFailed onRetry={() => void recordQuery.refetch()} error={recordQuery.error} />);
 
   if (!record || !build) {
-    return (
+    return arrive(
       <BuildViewNotice
         line="No build at this address."
         detail={`Nothing is published at /b2/${slug}. It may have been unpublished, or the link may be wrong.`}
@@ -1029,7 +1037,7 @@ export function BuildPage() {
     <CoverFallback seed={build.id} radius={0} />
   );
 
-  return (
+  return arrive(
     <GroupLabelsProvider making={build.making}>
       <SeoHead
         title={shareTitle(build.title)}

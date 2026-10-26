@@ -6,6 +6,7 @@ import { lazy, type ComponentType } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { FrameOutlet } from "@/components/shell/FrameOutlet";
 import { PageProgress } from "@/components/shell/PageProgress";
 
@@ -50,13 +51,15 @@ function app(pages: { drafts: ComponentType; library: ComponentType }) {
       <PageChangeProvider>
         <Nav />
         <PageProgress />
-        <Routes>
-          <Route element={<FrameOutlet />}>
-            <Route path="/" element={<p>the home page</p>} />
-            <Route path="/drafts" element={<pages.drafts />} />
-            <Route path="/library" element={<pages.library />} />
-          </Route>
-        </Routes>
+        <ConnectorDialogProvider>
+          <Routes>
+            <Route element={<FrameOutlet />}>
+              <Route path="/" element={<p>the home page</p>} />
+              <Route path="/drafts" element={<pages.drafts />} />
+              <Route path="/library" element={<pages.library />} />
+            </Route>
+          </Routes>
+        </ConnectorDialogProvider>
       </PageChangeProvider>
     </BrowserRouter>,
   );
@@ -131,15 +134,15 @@ describe("go()", () => {
     });
     await wait(790);
     expect(screen.getByText("the home page")).toBeTruthy();
-    expect(screen.queryByText(/Loading Drafts/)).toBeNull();
+    expect(screen.queryByText(/Loading your drafts/)).toBeNull();
     await wait(20);
-    expect(screen.getByText(/Loading Drafts/)).toBeTruthy();
+    expect(screen.getByText(/Loading your drafts/)).toBeTruthy();
     expect(screen.queryByText("the home page")).toBeNull();
     await wait(1200);
     await act(async () => drafts.release());
     await wait(0);
     expect(screen.getByText("the drafts page")).toBeTruthy();
-    expect(screen.queryByText(/Loading Drafts/)).toBeNull();
+    expect(screen.queryByText(/Loading your drafts/)).toBeNull();
   });
 
   it("lets the second click win", async () => {
@@ -195,7 +198,7 @@ describe("go()", () => {
       await vi.advanceTimersByTimeAsync(20);
     });
     expect(window.location.pathname).toBe("/drafts");
-    expect(screen.getByText(/Loading Drafts/)).toBeTruthy();
+    expect(screen.getByText(/Loading your drafts/)).toBeTruthy();
     expect(screen.queryByText("the library")).toBeNull();
     expect(link("drafts").getAttribute("aria-current")).toBe("page");
   });

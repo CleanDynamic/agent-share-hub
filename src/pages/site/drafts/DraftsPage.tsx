@@ -37,7 +37,9 @@ import { useOnScreen } from "@/hooks/useOnScreen";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession } from "@/lib/build/sessions";
+import { PageArrival } from "@/components/shell/PageArrival";
 
+import { DraftsLoadingView } from "./DraftsFrame";
 import { DraftsView } from "./DraftsView";
 import { draftTitle } from "./draftsModel";
 
@@ -132,23 +134,26 @@ export function DraftsPage() {
   return (
     <>
       <SeoHead title="Drafts — buildgallery" description="Builds in progress, and every session you have sent." path="/drafts" noIndex />
-      <DraftsView
-        now={Date.now()}
-        draftsStatus={draftsStatus}
-        draftsError={draftsQuery.isLoadingError ? draftsQuery.error : undefined}
-        onRetryDrafts={() => void draftsQuery.refetch()}
-        sessionsStatus={sessionsStatus}
-        sessionsError={library.isLoadingError ? library.error : undefined}
-        onRetrySessions={() => void library.refetch()}
-        sessionsAnchor={sessionsAnchor}
-        drafts={draftsQuery.data ?? []}
-        sessions={library.data ?? []}
-        moreSessions={library.hasMore ? { loading: library.loadingMore, onMore: library.fetchMore } : undefined}
-        onAddToNew={addToNew}
-        onAddToDraft={addToDraft}
-        onConnect={connector.open}
-        emptyDrafts={emptyQuery.data && emptyQuery.data.length > 0 ? { count: emptyQuery.data.length, onRemove: () => void removeEmpty() } : undefined}
-      />
+      {/* SV-04 P5: the drafts fade in over their loading state, the route's Placeholder, when they land. */}
+      <PageArrival loading={draftsStatus === "loading"} placeholder={<DraftsLoadingView />}>
+        <DraftsView
+          now={Date.now()}
+          draftsStatus={draftsStatus}
+          draftsError={draftsQuery.isLoadingError ? draftsQuery.error : undefined}
+          onRetryDrafts={() => void draftsQuery.refetch()}
+          sessionsStatus={sessionsStatus}
+          sessionsError={library.isLoadingError ? library.error : undefined}
+          onRetrySessions={() => void library.refetch()}
+          sessionsAnchor={sessionsAnchor}
+          drafts={draftsQuery.data ?? []}
+          sessions={library.data ?? []}
+          moreSessions={library.hasMore ? { loading: library.loadingMore, onMore: library.fetchMore } : undefined}
+          onAddToNew={addToNew}
+          onAddToDraft={addToDraft}
+          onConnect={connector.open}
+          emptyDrafts={emptyQuery.data && emptyQuery.data.length > 0 ? { count: emptyQuery.data.length, onRemove: () => void removeEmpty() } : undefined}
+        />
+      </PageArrival>
     </>
   );
 }

@@ -21,7 +21,7 @@
    confirmation, with its 30-day cooldown). Nothing here awards XP: the only writes are
    follow, the track, and a message. */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -57,6 +57,7 @@ import {
 import { getStreakDays, respecTrack, setUserTrack, type TrackId } from "@/lib/progress";
 import { getMyBadgeKeys } from "@/lib/progress/badges";
 
+import { PageArrival } from "@/components/shell/PageArrival";
 import { ProfileLoadFailed, ProfileNotice, ProfileView, ProfileViewSkeleton } from "./ProfileView";
 import type { ProfileMakerView } from "./ProfileBanner";
 import {
@@ -460,16 +461,23 @@ export function ProfilePage() {
   /* ── the states ── */
 
   /* No lookup yet is a session still arriving, or a signed-out reader on their way to /login. */
-  if (authLoading || !lookup || summaryQuery.isPending) return <ProfileViewSkeleton />;
+  /* SV-04 P5: every state below goes through one arrival, so the profile fades in over its skeleton when it lands. */
+  const waiting = authLoading || !lookup || summaryQuery.isPending;
+  const arrive = (node: ReactNode) => (
+    <PageArrival loading={waiting} placeholder={<ProfileViewSkeleton />}>
+      {node}
+    </PageArrival>
+  );
+  if (waiting) return arrive(<ProfileViewSkeleton />);
 
   /* getProfileSummary throws "Profile not found" for a handle nobody has: that is a missing page, not a failed read. */
   const missing = summaryQuery.error instanceof Error && summaryQuery.error.message.startsWith("Profile not found");
   if (summaryQuery.isError && !summary && !missing) {
-    return <ProfileLoadFailed onRetry={() => void summaryQuery.refetch()} error={summaryQuery.error} />;
+    return arrive(<ProfileLoadFailed onRetry={() => void summaryQuery.refetch()} error={summaryQuery.error} />);
   }
 
   if (!summary || !maker) {
-    return (
+    return arrive(
       <ProfileNotice
         line="Profile not found"
         detail="The handle may have changed, or the link is broken."
@@ -482,7 +490,7 @@ export function ProfilePage() {
     );
   }
 
-  return (
+  return arrive(
     <>
       <SeoHead
         title={`${summary.displayName} (@${summary.handle})`}

@@ -7,6 +7,8 @@ import { lazy, type ComponentType } from "react";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
+
 import { FrameOutlet } from "./FrameOutlet";
 
 function held() {
@@ -23,12 +25,14 @@ function held() {
 const app = (initial: string, Drafts: ComponentType) =>
   render(
     <MemoryRouter initialEntries={[initial]} future={{ v7_startTransition: true }}>
-      <Routes>
-        <Route element={<FrameOutlet />}>
-          <Route path="/" element={<Link to="/drafts">Drafts</Link>} />
-          <Route path="/drafts" element={<Drafts />} />
-        </Route>
-      </Routes>
+      <ConnectorDialogProvider>
+        <Routes>
+          <Route element={<FrameOutlet />}>
+            <Route path="/" element={<Link to="/drafts">Drafts</Link>} />
+            <Route path="/drafts" element={<Drafts />} />
+          </Route>
+        </Routes>
+      </ConnectorDialogProvider>
     </MemoryRouter>,
   );
 
@@ -40,7 +44,7 @@ describe("the frame's one boundary", () => {
       fireEvent.click(screen.getByRole("link", { name: "Drafts" }));
     });
     expect(screen.getByRole("link", { name: "Drafts" })).toBeTruthy();
-    expect(screen.queryByText(/Loading Drafts/)).toBeNull();
+    expect(screen.queryByText(/Loading your drafts/)).toBeNull();
     await act(async () => {
       drafts.release();
     });
@@ -51,7 +55,7 @@ describe("the frame's one boundary", () => {
   it("shows the page's own placeholder on the first load", async () => {
     const drafts = held();
     app("/drafts", drafts.Page);
-    expect(screen.getByText(/Loading Drafts/)).toBeTruthy();
+    expect(screen.getByText(/Loading your drafts/)).toBeTruthy();
     await act(async () => {
       drafts.release();
     });

@@ -90,7 +90,7 @@ function recorder() {
   };
   window.__frames = state;
 
-  const BLOCKS = '[data-ui="skeleton"],[data-testid="loading-blocks"]';
+  const BLOCKS = '[data-ui="skeleton"],[data-testid="loading-blocks"],[data-bg-animated]';
   const box = (element: Element | null) => {
     if (!element) return null;
     const rect = element.getBoundingClientRect();

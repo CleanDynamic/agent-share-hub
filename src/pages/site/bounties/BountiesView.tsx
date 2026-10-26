@@ -26,29 +26,33 @@ import { Button } from "@/components/brand/Button";
 import { Detail } from "@/components/brand/Detail";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
-import { Eyebrow } from "@/components/brand/Eyebrow";
-import { PageHeading } from "@/components/brand/PageHeading";
-import { Panel, PanelHead } from "@/components/brand/Panel";
+import { Panel } from "@/components/brand/Panel";
 import { RankRung, type RankTier } from "@/components/brand/RankRung";
-import { Segmented } from "@/components/brand/Segmented";
-import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VacantFrame } from "@/components/brand/VacantFrame";
 import { WallLabel } from "@/components/brand/WallLabel";
-import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
+import { type PageFit } from "@/components/shell/siteFrameFit";
+import { useIsPhone, useTierFit } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display, mono } from "@/lib/theme/type";
 
+import {
+  DesktopBountiesLayout,
+  FramesLoading,
+  framesGrid,
+  GALLERY,
+  PhoneBountiesLayout,
+  SolveLoading,
+  SolvePanelShell,
+  SolversLoading,
+  SolversPanelShell,
+  SwitchRow,
+  type BountySort,
+} from "./BountiesFrame";
+
 /* ── the view's props ── */
 
-export type BountySort = "newest" | "reward" | "closing";
-
-export const SORTS: readonly { value: BountySort; label: string }[] = [
-  { value: "newest", label: "Newest" },
-  { value: "reward", label: "Reward" },
-  { value: "closing", label: "Closing soon" },
-];
+export { SORTS, type BountySort } from "./BountiesFrame";
 
 export interface FrameView {
   id: string;
@@ -104,67 +108,7 @@ export interface BountiesViewProps {
   onNavigate: (to: string) => void;
 }
 
-const GALLERY = "/gallery";
-const SOLVERS = "/bounties/solvers";
-const SENTENCE_DESKTOP = "The build works. One part is left open on purpose, with a reward for whoever solves it.";
-const SENTENCE_PHONE = "The build works. One part is left open on purpose, with a reward.";
-
-/** The frame's height under its lamp on the board: padding, the 104px cover, the title row and the chips row. */
-const FRAME_BONE_HEIGHT = 177;
-/** On a phone the frames stack and each runs about 4px shorter. */
-const FRAME_BONE_HEIGHT_PHONE = 173;
-
-/* ── the header's two switches ── */
-
-function SwitchRow({ sort, onSortChange, phone }: Pick<BountiesViewProps, "sort" | "onSortChange"> & { phone: boolean }) {
-  const size = phone ? 36 : 34;
-  const fontSize = phone ? 13 : 12;
-  return (
-    <>
-      <Segmented<BountySort> label="Sort by" size={size} fontSize={fontSize} value={sort} onChange={onSortChange} items={SORTS} />
-      <Segmented
-        label="Board"
-        size={size}
-        fontSize={fontSize}
-        value="bounties"
-        items={[
-          { value: "bounties", label: "Bounties", href: "/bounties" },
-          { value: "solvers", label: "Solvers", href: SOLVERS },
-        ]}
-      />
-    </>
-  );
-}
-
 /* ── the frames ── */
-
-function FrameSkeleton({ phone }: { phone: boolean }) {
-  return (
-    <div aria-hidden="true" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div style={{ height: 18 }} />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          padding: 5,
-          background: t.glass,
-          borderRadius: r.card,
-          border: `1.5px dashed ${t.line}`,
-          boxShadow: t.shadowCard,
-          boxSizing: "border-box",
-          height: phone ? FRAME_BONE_HEIGHT_PHONE : FRAME_BONE_HEIGHT,
-        }}
-      >
-        <Skeleton height={104} radius={r.media} />
-        <div style={{ padding: "0 5px", display: "flex", flexDirection: "column", gap: 5 }}>
-          <Skeleton width="70%" height={18} />
-          <Skeleton width="55%" height={12} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function FramesBody({
   frames,
@@ -174,22 +118,9 @@ function FramesBody({
   columns = 3,
   onNavigate,
 }: Pick<BountiesViewProps, "frames" | "selectedId" | "onSelect" | "onNavigate"> & { phone: boolean; columns?: 2 | 3 }) {
-  const grid = {
-    display: "grid",
-    gridTemplateColumns: phone ? "minmax(0, 1fr)" : `repeat(${columns}, minmax(0, 1fr))`,
-    gap: phone ? "4px 0" : "4px 10px",
-    alignContent: "start",
-  } as const;
+  const grid = framesGrid(phone, columns);
 
-  if (frames.status === "loading") {
-    return (
-      <LoadingRegion what="the open asks" data-testid="bounties-loading" style={grid}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <FrameSkeleton key={i} phone={phone} />
-        ))}
-      </LoadingRegion>
-    );
-  }
+  if (frames.status === "loading") return <FramesLoading phone={phone} columns={columns} />;
   if (frames.status === "error") {
     return (
       <Panel padding="16px 18px">
@@ -259,13 +190,9 @@ function SolvePanel({
   onNavigate: (to: string) => void;
 }) {
   return (
-    <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
-      <PanelHead title="The ask" subtitle="One part, left open on purpose" headingLevel={2} />
+    <SolvePanelShell>
       {loading ? (
-        <LoadingRegion what="the ask" data-testid="bounties-solve-loading" style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 7 }}>
-          <Skeleton height={177} radius={r.card} />
-          <Skeleton height={76} radius={r.control} />
-        </LoadingRegion>
+        <SolveLoading />
       ) : failed || !frame ? null : (
         <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 7 }}>
           <div
@@ -322,7 +249,7 @@ function SolvePanel({
           />
         </div>
       )}
-    </Panel>
+    </SolvePanelShell>
   );
 }
 
@@ -331,24 +258,7 @@ function SolvePanel({
 const TIER: readonly RankTier[] = ["highest", "rare", "common"];
 
 function SolversBody({ solvers, phone }: { solvers: BountiesViewProps["solvers"]; phone: boolean }) {
-  if (solvers.status === "loading") {
-    return (
-      <LoadingRegion what="the top solvers" data-testid="bounties-solvers-loading" style={{ marginTop: 9 }}>
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            style={{ display: "flex", alignItems: "center", gap: 7, minHeight: phone ? 39 : 31, borderBottom: i < 2 ? `1px solid ${t.hairline}` : undefined }}
-          >
-            <Skeleton width={phone ? 32 : 28} height={phone ? 32 : 28} radius={r.chip} />
-            <Skeleton width={phone ? 32 : 24} height={phone ? 32 : 24} radius="50%" />
-            <Skeleton width="42%" height={12} />
-            <span style={{ flexGrow: 1 }} />
-            <Skeleton width={56} height={11} />
-          </div>
-        ))}
-      </LoadingRegion>
-    );
-  }
+  if (solvers.status === "loading") return <SolversLoading phone={phone} />;
   if (solvers.status === "error") {
     return <ErrorState panel="Top solvers" onRetry={solvers.onRetry} error={solvers.error} style={{ paddingTop: 9 }} data-testid="bounties-solvers-error" />;
   }
@@ -374,27 +284,9 @@ function SolversBody({ solvers, phone }: { solvers: BountiesViewProps["solvers"]
 
 function SolversPanel({ solvers, phone }: { solvers: BountiesViewProps["solvers"]; phone: boolean }) {
   return (
-    <Panel padding={phone ? "14px 16px" : "12px 16px"}>
-      <PanelHead title="Top solvers" subtitle="Solutions accepted" titleSize={14} headingLevel={2} />
+    <SolversPanelShell phone={phone}>
       <SolversBody solvers={solvers} phone={phone} />
-      <Link
-        to={SOLVERS}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          /* A link: 44 on a phone (the touch target), 32 → 26 above it. */
-          minHeight: phone ? 44 : 26,
-          marginTop: 4,
-          fontFamily: FIGTREE,
-          fontSize: 12,
-          color: t.text,
-          textDecoration: "underline",
-          textUnderlineOffset: 4,
-        }}
-      >
-        All solvers
-      </Link>
-    </Panel>
+    </SolversPanelShell>
   );
 }
 
@@ -404,56 +296,29 @@ function DesktopBounties(props: BountiesViewProps) {
   const { fit = "content", frames, solvers, selectedId, onSelect, sort, onSortChange, meToo, onNavigate } = props;
   const list = frames.status === "ready" ? frames.data : [];
   const chosen = list.find((frame) => frame.id === selectedId) ?? list[0] ?? null;
-  /* UI-P39: below 1024 the frames go to two columns and the right track stacks under them. */
-  const stacked = useWidthTier() === "stacked";
-
   return (
-    <div data-testid="bounties-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
-      <Panel surface="glass" padding="16px 20px">
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 14 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-            <Eyebrow>Bounties</Eyebrow>
-            <h1 style={{ ...display(44), margin: 0, color: t.text }}>Open asks on real builds</h1>
-            <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{SENTENCE_DESKTOP}</div>
-          </div>
-          <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-            <SwitchRow sort={sort} onSortChange={onSortChange} phone={false} />
-          </div>
-        </div>
-      </Panel>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
-          gap: 9,
-          ...boardHeight(fit, 0),
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <FramesBody frames={frames} selectedId={chosen?.id ?? null} onSelect={onSelect} phone={false} columns={stacked ? 2 : 3} onNavigate={onNavigate} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
-          {frames.status === "error" || (frames.status === "ready" && !chosen) ? null : (
-            <SolvePanel frame={chosen} meToo={meToo} loading={frames.status === "loading"} failed={false} onNavigate={onNavigate} />
-          )}
-          <SolversPanel solvers={solvers} phone={false} />
-        </div>
-      </div>
-    </div>
+    <DesktopBountiesLayout
+      fit={fit}
+      switches={<SwitchRow sort={sort} onSortChange={onSortChange} phone={false} />}
+      frames={(columns) => <FramesBody frames={frames} selectedId={chosen?.id ?? null} onSelect={onSelect} phone={false} columns={columns} onNavigate={onNavigate} />}
+      solve={
+        frames.status === "error" || (frames.status === "ready" && !chosen) ? null : (
+          <SolvePanel frame={chosen} meToo={meToo} loading={frames.status === "loading"} failed={false} onNavigate={onNavigate} />
+        )
+      }
+      solvers={<SolversPanel solvers={solvers} phone={false} />}
+    />
   );
 }
 
 function PhoneBounties(props: BountiesViewProps) {
   const { frames, solvers, sort, onSortChange, selectedId, onSelect, onNavigate } = props;
   return (
-    <div data-testid="bounties-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
-      <PageHeading eyebrow="Bounties" title="Open asks on real builds" sub={SENTENCE_PHONE} size={34} />
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <SwitchRow sort={sort} onSortChange={onSortChange} phone />
-      </div>
-      <FramesBody frames={frames} selectedId={selectedId} onSelect={onSelect} phone onNavigate={onNavigate} />
-      <SolversPanel solvers={solvers} phone />
-    </div>
+    <PhoneBountiesLayout
+      switches={<SwitchRow sort={sort} onSortChange={onSortChange} phone />}
+      frames={<FramesBody frames={frames} selectedId={selectedId} onSelect={onSelect} phone onNavigate={onNavigate} />}
+      solvers={<SolversPanel solvers={solvers} phone />}
+    />
   );
 }
 

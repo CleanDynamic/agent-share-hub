@@ -26,7 +26,7 @@
    the phone's sheet rows held at 44, the touch target. The brand pieces
    (Button, IconButton, Panel, display()) take the drawn size and map it. */
 
-import { useState, type CSSProperties, type DragEvent, type ReactNode, type Ref } from "react";
+import { useState, type CSSProperties, type DragEvent, type Ref } from "react";
 import { ChevronRight, GripVertical, Plus } from "lucide-react";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 
@@ -38,7 +38,7 @@ import { ErrorState } from "@/components/brand/ErrorState";
 import { IconButton } from "@/components/brand/IconButton";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Panel } from "@/components/brand/Panel";
-import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ConfirmDialog } from "@/pages/site/compose/referencePieces";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
@@ -56,6 +56,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
+import { DraftsLayout, ListHead, OlderDrafts, RowSkeletons, SESSION_ROW, SESSION_ROW_PHONE, SESSION_SKELETON_ROWS, StartRow, TextButton, useDropTarget } from "./DraftsFrame";
 import {
   addLabel,
   draftMeta,
@@ -101,112 +102,9 @@ export interface DraftsViewProps {
   emptyDrafts?: { count: number; onRemove: () => void };
 }
 
-/* ── shared pieces ── */
-
-const underlined: CSSProperties = {
-  fontFamily: FIGTREE,
-  fontSize: 12,
-  color: t.text2,
-  textDecoration: "underline",
-  background: "transparent",
-  border: 0,
-  padding: 0,
-  cursor: "pointer",
-};
-
-function TextButton({ onClick, style, children, disabled }: { onClick: () => void; style?: CSSProperties; children: ReactNode; disabled?: boolean }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button type="button" data-hit="" disabled={disabled} onClick={onClick} {...handlers} style={{ ...underlined, borderRadius: 6, ...ring(state.focusVisible), ...style }}>
-      {children}
-    </button>
-  );
-}
-
-function ListHead({ title, count, right }: { title: string; count: number; right?: ReactNode }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 9, padding: "9px 9px 6px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>{title}</h2>
-        <span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>{count}</span>
-      </div>
-      {right}
-    </div>
-  );
-}
-
-/** A drag that carries text is a session. Anything else (a file, a link) is not ours to answer. */
-const carriesText = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("text/plain");
-
-/** The drop target's state and handlers, shared by the start row and every draft row. */
-function useDropTarget(onDropSession: (sessionId: string) => void) {
-  const [over, setOver] = useState(false);
-  return {
-    over,
-    handlers: {
-      onDragEnter: (event: DragEvent) => {
-        if (!carriesText(event)) return;
-        event.preventDefault();
-        setOver(true);
-      },
-      onDragOver: (event: DragEvent) => {
-        if (!carriesText(event)) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-        setOver(true);
-      },
-      onDragLeave: (event: DragEvent) => {
-        // Moving onto a child of the row is not leaving it.
-        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
-        setOver(false);
-      },
-      onDrop: (event: DragEvent) => {
-        if (!carriesText(event)) return;
-        event.preventDefault();
-        setOver(false);
-        const id = event.dataTransfer.getData("text/plain");
-        if (id) onDropSession(id);
-      },
-    },
-  };
-}
+/* ── shared pieces: DraftsFrame.tsx (SV-04 P5) ── */
 
 /* ── Continue editing ── */
-
-function StartRow({ phone, onDropSession }: { phone: boolean; onDropSession: (id: string) => void }) {
-  const { over, handlers } = useDropTarget(onDropSession);
-  const { state, handlers: focus } = useInteractive<HTMLAnchorElement>();
-  return (
-    <Link
-      to="/compose/new"
-      data-testid="start-row"
-      data-over={over ? "true" : undefined}
-      {...handlers}
-      {...focus}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 9,
-        minHeight: 46,
-        padding: "0 10px",
-        marginBottom: 4,
-        borderRadius: r.control,
-        border: `1.5px dashed ${over ? t.evidence : t.line}`,
-        background: over ? t.rowHighlight : "transparent",
-        textDecoration: "none",
-        color: t.text,
-        boxSizing: "border-box",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <Plus size={16} strokeWidth={1.8} aria-hidden="true" style={{ flexShrink: 0 }} />
-      <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600 }}>Start a new build</span>
-      <span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 12, color: t.text2, textAlign: "right" }}>
-        {over ? "Drop to start a build from it" : phone ? null : "or drop a session here"}
-      </span>
-    </Link>
-  );
-}
 
 function DraftRow({
   draft,
@@ -473,21 +371,6 @@ function SessionRow({
 
 const rows: CSSProperties = { margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 };
 
-/** CA-10: the sessions skeleton's rows, as a typical list draws them. */
-const SESSION_SKELETON_ROWS = 5;
-const SESSION_ROW = 43;
-const SESSION_ROW_PHONE = 46;
-
-function RowSkeletons({ count, height, what }: { count: number; height: number; what: string }) {
-  return (
-    <LoadingRegion what={what} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {Array.from({ length: count }, (_, index) => (
-        <Skeleton key={index} height={height} radius={12} />
-      ))}
-    </LoadingRegion>
-  );
-}
-
 export function DraftsView({
   now,
   draftsStatus,
@@ -527,17 +410,6 @@ export function DraftsView({
     event.dataTransfer.effectAllowed = "copy";
     setDragging(session.id);
   };
-
-  const heading = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <h1 style={{ ...display(phone ? 32 : 44, { mobilePageHeading: phone }), margin: 0, color: t.text }}>Drafts</h1>
-      {phone ? null : (
-        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
-          Pick up a build, or start one from a session.
-        </p>
-      )}
-    </div>
-  );
 
   const continuePanel = (
     <Panel surface="plain" padding="8px" style={{ minWidth: 0 }}>
@@ -610,15 +482,7 @@ export function DraftsView({
     </Panel>
   );
 
-  const older = (
-    <Link
-      to="/drafts/posts"
-      data-hit=""
-      style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12, color: t.text2, textDecoration: "underline" }}
-    >
-      Older post drafts
-    </Link>
-  );
+  const older = <OlderDrafts />;
 
   const removeEmpty =
     emptyDrafts && emptyDrafts.count > 0 ? (
@@ -640,46 +504,19 @@ export function DraftsView({
       </>
     ) : null;
 
-  if (phone) {
-    return (
-      <div data-testid="drafts-view" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {heading}
-        {continuePanel}
-        {sessionsPanel}
-        <Button variant="secondary" size={48} fontSize={15} fullWidth onClick={onConnect}>
-          Connect a tool
-        </Button>
-        {older}
-        {removeEmpty}
-      </div>
-    );
-  }
-
   return (
-    <div data-testid="drafts-view" style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
-        {heading}
-        <Button variant="secondary" size={42} fontSize={14} onClick={onConnect}>
-          Connect a tool
-        </Button>
-      </div>
-      <div
-        style={{
-          marginTop: 17,
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)",
-          gap: 17,
-          alignItems: "start",
-        }}
-      >
-        {continuePanel}
-        {sessionsPanel}
-      </div>
-      <div style={{ marginTop: 17, display: "flex", flexDirection: "column", gap: 8 }}>
-        {older}
-        {removeEmpty}
-      </div>
-    </div>
+    <DraftsLayout
+      phone={phone}
+      onConnect={onConnect}
+      continuePanel={continuePanel}
+      sessionsPanel={sessionsPanel}
+      after={
+        <>
+          {older}
+          {removeEmpty}
+        </>
+      }
+    />
   );
 }
 
