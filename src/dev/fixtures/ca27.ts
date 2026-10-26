@@ -6,7 +6,7 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { buildSteps, sessionGroups, type SessionGroup, type Step } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 
 export const CA27_SESSIONS = 20;
@@ -103,7 +103,7 @@ export const ca27Making: Making = {
 export function ca27Build(tiles: number = CA27_TILES): { tree: NodeTree[]; steps: Step[]; groups: SessionGroup[]; making: Making } {
   const tree = ca27Tree(tiles);
   const steps = buildSteps(tree);
-  const groups = sessionGroups(steps, ca27Making.sessions, ca27Making.session_tools ?? {}, sessionsMetaOf(ca27Making), sessionOrderOf(ca27Making));
+  const groups = sessionGroups(steps, ca27Making.sessions, ca27Making.session_tools ?? {}, sessionsMetaOf(ca27Making), sessionOrderOf(ca27Making), storedWorkstreamsOf(ca27Making));
   return { tree, steps, groups, making: ca27Making };
 }
 

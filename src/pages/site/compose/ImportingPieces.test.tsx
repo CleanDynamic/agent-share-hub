@@ -70,7 +70,7 @@ describe("only an import that takes longer than a second", () => {
     expect(within(screen.getByTestId("arriving-head")).getByTestId("importing-tag")).toBeTruthy();
   });
 
-  it("puts a box of building blocks, three rows tall and inset 12, in every empty socket", () => {
+  it("SV-05 P4: puts building blocks over the whole inner area of every empty socket, inset 10, past its number on the left", () => {
     block({ count: 3 });
     act(() => {
       vi.advanceTimersByTime(SLOW_IMPORT_MS);
@@ -79,10 +79,8 @@ describe("only an import that takes longer than a second", () => {
     expect(places).toHaveLength(3);
     for (const place of places) {
       const inset = within(place).getByTestId("socket-blocks");
-      expect(inset.style.top).toBe("12px");
-      expect(inset.style.left).toBe("12px");
-      expect(inset.style.right).toBe("12px");
-      expect(within(inset).getByTestId("loading-blocks").getAttribute("data-rows")).toBe("3");
+      expect([inset.style.top, inset.style.right, inset.style.bottom, inset.style.left]).toEqual(["10px", "10px", "10px", "32px"]);
+      expect(within(inset).getByTestId("loading-blocks").style.height).toBe("100%");
     }
   });
 
@@ -172,7 +170,7 @@ describe("the bar, the count and Stop", () => {
 });
 
 describe("prompts already in", () => {
-  it("stand in their sockets, and only the sockets still empty hold blocks", () => {
+  it("stand in their sockets; their blocks fade out over them, and the sockets still empty keep theirs", () => {
     block({ count: 3, written: ["First prompt", "Second prompt"], progress: { done: 2, total: 3 } });
     act(() => {
       vi.advanceTimersByTime(SLOW_IMPORT_MS);
@@ -180,8 +178,9 @@ describe("prompts already in", () => {
     const places = screen.getAllByTestId("arriving-place");
     expect(within(places[0]).getByText("First prompt")).toBeTruthy();
     expect(within(places[1]).getByText("Second prompt")).toBeTruthy();
-    expect(within(places[0]).queryByTestId("socket-blocks")).toBeNull();
-    expect(within(places[2]).getByTestId("socket-blocks")).toBeTruthy();
+    // SV-05 P4: the blocks and the prompt overlap in the slot while the blocks fade, so the socket is never empty for a frame.
+    expect(within(within(places[0]).getByTestId("socket-blocks")).getByTestId("loading-blocks").style.opacity).toBe("0");
+    expect(within(within(places[2]).getByTestId("socket-blocks")).getByTestId("loading-blocks").style.opacity).toBe("1");
   });
 });
 

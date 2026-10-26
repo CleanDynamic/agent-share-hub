@@ -56,7 +56,8 @@ describe("the heads", () => {
     expect(title.style.whiteSpace).toBe("nowrap");
     expect(title.style.textOverflow).toBe("ellipsis");
     expect(screen.getByText("22 Oct").style.flexShrink).toBe("0");
-    const name = screen.getByText(/^Session 1/).closest("span")?.parentElement as HTMLElement;
+    // SV-05 P1: the number sits in its own slot inside "Session 1 ·".
+    const name = screen.getByTestId("session-number").parentElement?.parentElement as HTMLElement;
     expect(name.style.flex).toMatch(/none|0 0 auto/);
   });
 

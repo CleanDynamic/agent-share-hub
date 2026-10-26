@@ -660,8 +660,10 @@ export function crossfade(element: HTMLElement, change: () => void, ms: number =
 /**
  * `useCrossfade(value)`: put the ref it returns on the element that holds the words; whenever `value` changes the old words (a copy,
  * in a fixed layer in the body, for `CROSSFADE`) fade out over the new. At rest it draws nothing and adds nothing to the page.
+ * SV-05 P1: with `inPlace`, only words that stayed where they were crossfade; words that moved (a session's head sliding to
+ * its new place) are simply the new ones, so the copy never stands where the words have left.
  */
-export function useCrossfade<E extends HTMLElement = HTMLElement>(value: string | number, ms: number = CROSSFADE): RefObject<E | null> {
+export function useCrossfade<E extends HTMLElement = HTMLElement>(value: string | number, ms: number = CROSSFADE, inPlace = false): RefObject<E | null> {
   const ref = useRef<E | null>(null);
   const was = useRef(value);
   const old = useRef<Words | null>(null);
@@ -674,7 +676,12 @@ export function useCrossfade<E extends HTMLElement = HTMLElement>(value: string 
   useLayoutEffect(() => {
     const words = old.current;
     old.current = null;
-    if (words && ref.current) crossfadeFrom(words, ref.current, ms);
+    if (!words || !ref.current) return;
+    if (inPlace) {
+      const box = ref.current.getBoundingClientRect();
+      if (Math.abs(box.left - words.box.left) > 1 || Math.abs(box.top - words.box.top) > 1) return;
+    }
+    crossfadeFrom(words, ref.current, ms);
   });
   return ref;
 }

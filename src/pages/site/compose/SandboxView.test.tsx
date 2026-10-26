@@ -83,13 +83,13 @@ describe("SandboxView frame", () => {
   });
 
 
-  it("shows the Map tab only when Map is available, with the one-time line just after the tabs", () => {
+  it("shows the Map tab only when Map is available, and no line after the tabs (SV-05 P8)", () => {
     view();
     const tabs = screen.getByRole("group", { name: "Build view" });
     expect(within(tabs).getAllByRole("button").map((tab) => tab.textContent)).toEqual(["List", "Map"]);
-    expect(within(tabs).getByText("Map is now available")).toBeTruthy();
+    expect(screen.queryByText("Map is now available")).toBeNull();
     cleanup();
-    view({ mapAvailable: false, mapHint: false });
+    view({ mapAvailable: false });
     expect(screen.queryByRole("button", { name: "Map" })).toBeNull();
     expect(screen.queryByText("Map is now available")).toBeNull();
   });

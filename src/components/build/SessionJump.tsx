@@ -1,7 +1,7 @@
 // CA-14 P6: the session list, a row for jumping between sessions.
 //
-// On a computer, a slim row of chips: "1 Planning", "2 Router", "3 Agent", each the number and the session's title, else its
-// app. The chip of the session in view is the current one (`aria-current`, `--text`); the others are `--text2`. The row scrolls
+// On a computer, a slim row of chips: "1 Claude", "2 Cursor", "3 Claude · 25 Sep", each the number and the session's app,
+// with its day when two have the same app (SV-05). The chip of the session in view is the current one (`aria-current`, `--text`); the others are `--text2`. The row scrolls
 // sideways when it must. On a phone, one menu: "Session 2 of 3 · Router". Pressing a chip scrolls to that session's head and
 // focuses it. The composer shows it when the maker turns it on; the build page shows it to readers once a build has three
 // sessions. Nothing here writes.
@@ -22,10 +22,25 @@ import { MenuContent } from "@/pages/site/compose/ComposeMenu";
 export interface SessionJumpItem {
   key: string;
   number: number;
-  /** The title the maker gave it, else its app. */
+  /** Its app, with its day when another session has the same app (`jumpItemsOf`). */
   label: string;
   /** CA-17 P6: its part, "Part B · Support agent", when the build has two or more. The list then groups its items by part. */
   group?: string;
+}
+
+/**
+ * SV-05 P1: what each chip says after its number: the session's app, and its day when another session has the same app,
+ * "Claude · 25 Sep". The items keep the order given, the List's.
+ */
+export function jumpItemsOf(rows: readonly { key: string; number: number; tool: string; date?: string; group?: string }[]): SessionJumpItem[] {
+  const seen = new Map<string, number>();
+  for (const row of rows) seen.set(row.tool, (seen.get(row.tool) ?? 0) + 1);
+  return rows.map((row) => ({
+    key: row.key,
+    number: row.number,
+    label: (seen.get(row.tool) ?? 0) > 1 && row.date ? `${row.tool} · ${row.date}` : row.tool,
+    ...(row.group ? { group: row.group } : null),
+  }));
 }
 
 /** The items in runs of one part, in order: [{ group, items }]. One run with no group when none has one. */

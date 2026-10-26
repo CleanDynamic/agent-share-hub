@@ -12,7 +12,7 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { buildSteps, sessionGroups, type SessionGroup, type Step } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import type { ReferenceGroup } from "@/lib/build/referenceGroups";
 import type { ThreadDoc } from "@/lib/build/thread";
 import type { NodeTree } from "@/lib/build/types";
@@ -85,6 +85,6 @@ export const referencesPost: ThreadDoc = {
 /** The build as the composer reads it. */
 export function referencesBuild(): { tree: NodeTree[]; steps: Step[]; groups: SessionGroup[]; making: Making } {
   const steps = buildSteps(referencesTree);
-  const sessions = sessionGroups(steps, referencesMaking.sessions, referencesMaking.session_tools ?? {}, sessionsMetaOf(referencesMaking), sessionOrderOf(referencesMaking));
+  const sessions = sessionGroups(steps, referencesMaking.sessions, referencesMaking.session_tools ?? {}, sessionsMetaOf(referencesMaking), sessionOrderOf(referencesMaking), storedWorkstreamsOf(referencesMaking));
   return { tree: referencesTree, steps, groups: sessions, making: referencesMaking };
 }

@@ -13,6 +13,7 @@ import {
   parseAudience,
   parsePromptDragData,
   promptDragData,
+  importNumbers,
   promptSourceLine,
   mergeSave,
   saveState,
@@ -106,11 +107,15 @@ describe("the prompts' words", () => {
       payload: model ? { text: "x", model } : { text: "x" },
       source_ref: { source: "transcript", session_id: "p", index: 2, import_session_id: importId },
     });
-    expect(promptSourceLine(from(IMPORT_1), SESSIONS)).toBe("Session 1 · Sonnet 5.5");
+    const numberOf = importNumbers([from(IMPORT_1), from(IMPORT_2)], SESSIONS);
+    expect(promptSourceLine(from(IMPORT_1), SESSIONS, numberOf)).toBe("Session 1 · Sonnet 5.5");
     // No model yet: the client, as the session's head names it.
-    expect(promptSourceLine(from(IMPORT_2), SESSIONS)).toBe("Session 2 · Claude");
-    expect(promptSourceLine({ payload: { text: "x" }, source_ref: null }, SESSIONS)).toBe("Written by you");
-    expect(promptSourceLine(from("gone", "Opus 5.5"), SESSIONS)).toBe("From a session · Opus 5.5");
+    expect(promptSourceLine(from(IMPORT_2), SESSIONS, numberOf)).toBe("Session 2 · Claude");
+    expect(promptSourceLine({ payload: { text: "x" }, source_ref: null }, SESSIONS, numberOf)).toBe("Written by you");
+    expect(promptSourceLine(from("gone", "Opus 5.5"), SESSIONS, numberOf)).toBe("From a session · Opus 5.5");
+    // SV-05 P1: numbered where their prompts stand, not where the library lists them.
+    const swapped = importNumbers([from(IMPORT_2), from(IMPORT_1)], SESSIONS);
+    expect(promptSourceLine(from(IMPORT_1), SESSIONS, swapped)).toBe("Session 2 · Sonnet 5.5");
   });
 
   it("labels + with the first 60 characters, on one line", () => {

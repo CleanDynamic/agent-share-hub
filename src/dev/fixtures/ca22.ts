@@ -8,7 +8,7 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { buildSteps, sessionGroups, type SessionGroup, type Step } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 
 const key = (n: number) => `typed-0c22c22c-0000-4000-8000-0000000000a${n}`;
@@ -89,6 +89,6 @@ export function ca22Build(extra = 0): { tree: NodeTree[]; steps: Step[]; groups:
   const tree = [...ca22Tree, ...ca22Long(extra)];
   const making: Making = extra > 0 ? { ...ca22Making, session_order: [...CA22_S, CA22_LONG], sessions_meta: { ...ca22Making.sessions_meta, [CA22_LONG]: { tool: "claude", model: "Opus 5.5", date: "2026-10-22", title: "A long session", workstream: CA22_B } } } : ca22Making;
   const steps = buildSteps(tree);
-  const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(making), sessionOrderOf(making));
+  const groups = sessionGroups(steps, making.sessions, making.session_tools ?? {}, sessionsMetaOf(making), sessionOrderOf(making), storedWorkstreamsOf(making));
   return { tree, steps, groups, making };
 }

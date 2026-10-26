@@ -38,3 +38,14 @@ export function withEmptySessions(runs: readonly Run[], empties: readonly Source
   return out;
 }
 
+/**
+ * SV-05 P1: the runs the List draws, in the order it draws them. A session's number is its place in the List, so the
+ * sessions are drawn in number order (`sessionNumbers.ts`), whatever order their tiles were left in (an old draft's, or a
+ * move whose tiles were not stacked yet). Steps before any head stay first; sessions with no tile take their number's place.
+ */
+export function listRuns(steps: readonly Step[], dividers: BuildListProps["dividers"], empties: readonly SourceSession[]): Run[] {
+  const runs = runsOf(steps, dividers);
+  const loose = runs.filter((run) => run.head === null);
+  const headed = runs.filter((run) => run.head !== null).sort((a, b) => (a.head as SourceSession).number - (b.head as SourceSession).number);
+  return withEmptySessions([...loose, ...headed], empties);
+}

@@ -42,7 +42,7 @@ import { MadeWithLine } from "./MadeWithLine";
 import { ModalShell } from "./ModalFrame";
 import { OptionalRow, OptionalRows } from "./OptionalRows";
 import { ChosenValue } from "./classificationPieces";
-import { BlockHead, Block, FOOT_NOTE, FieldArea, FieldInput, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
+import { BlockHead, Block, FOOT_NOTE, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
 import { ReadFromBuild } from "./ReadFromBuild";
 import { text } from "./refinedStyles";
 import { type ComposeViewProps } from "./ComposeView";
@@ -99,7 +99,8 @@ export interface SandboxCardProps extends CardProps {
 
 export const CLASSIFICATION_CARD = "Classification";
 export const CARD_SUBTITLE = "How this build is described and filed in the Gallery";
-export const NOT_LIVE_LINE = "Not available yet";
+/** SV-05 P7: the footer's status when the classification did not reach the database (CA-28's error form). */
+export const NOT_SAVED_LINE = "Classification not saved";
 
 const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
 
@@ -187,7 +188,10 @@ function CardBody(props: SandboxCardProps) {
   const [summary, setSummary] = useState(props.description);
   const [details, setDetails] = useState<ComposeDetails>(props.details);
   const [draft, setDraft] = useState<ClassificationDraft>(() => draftOf(data?.stored ?? emptyClassification()));
+  /** SV-05 P7: the draft as the window opened, to tell whether the maker changed the classification itself. */
+  const [opened] = useState(() => JSON.stringify(draft));
   const [saving, setSaving] = useState(false);
+  const [notSaved, setNotSaved] = useState(false);
   const pad = useModalInset();
 
   const stored = data?.stored ?? null;
@@ -219,7 +223,13 @@ function CardBody(props: SandboxCardProps) {
         if (details[key] !== props.details[key]) props.onDetail(key, details[key]);
       }
       if (details.gapOn !== props.details.gapOn) props.onGapSwitch(details.gapOn);
-      if (data) await data.onSave(draft);
+      // SV-05 P7: a classification the maker changed that could not be written (its columns missing) keeps the window open
+      // and says so. The title, the summary and the details are saved either way.
+      const saved = data ? await data.onSave(draft) : null;
+      if (saved && saved.missing && JSON.stringify(draft) !== opened) {
+        setNotSaved(true);
+        return;
+      }
       props.onOpenChange(false);
     } finally {
       setSaving(false);
@@ -267,16 +277,11 @@ function CardBody(props: SandboxCardProps) {
       <div data-testid="card-body" style={{ flex: "1 1 auto", minHeight: 0, overflowY: phone ? "visible" : "auto", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: `0 ${pad}px 16px` }}>
           <CardPreview title={title} classification={candidate} maker={data?.maker} />
-          {data && !data.live ? (
-            <p role="status" data-testid="classification-not-live" style={{ margin: "12px 0 0", ...text(12.5, 400, t.text2) }}>
-              {NOT_LIVE_LINE}
-            </p>
-          ) : null}
         </div>
 
         <Block testId="card-title-block">
           <RefinedField id={CARD_FIELD_ID.title} label="Title" right="Required">
-            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
+            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} placeholder="Fox poster" autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
           </RefinedField>
         </Block>
 
@@ -284,7 +289,7 @@ function CardBody(props: SandboxCardProps) {
           <OptionalRows hint="Suggestions from the build" bleed={pad}>
             {row(
               "Summary",
-              "One sentence on what the build does",
+              "One sentence",
               summary,
               undefined,
               <RefinedField id={CARD_FIELD_ID.summary} label="Summary" right={`${summary.length} / ${DESCRIPTION_MAX}`}>
@@ -381,8 +386,8 @@ function CardBody(props: SandboxCardProps) {
       </div>
 
       <div data-testid="card-footer" style={footerStyle(phone)}>
-        <span data-testid="card-required" style={FOOT_NOTE}>
-          {titleOk ? "Required fields complete" : "Required: a title"}
+        <span data-testid="card-required" role="status" style={FOOT_NOTE}>
+          {notSaved ? NOT_SAVED_LINE : titleOk ? "Required fields complete" : "Required: a title"}
         </span>
         <RecipeButton phone={phone} onClick={() => props.onOpenChange(false)}>
           Cancel
@@ -398,7 +403,10 @@ function CardBody(props: SandboxCardProps) {
 export function SandboxCard(props: SandboxCardProps) {
   return (
     <ModalShell open={props.open} onOpenChange={props.onOpenChange} title={CLASSIFICATION_CARD} subtitle={CARD_SUBTITLE} width={560} testId="sandbox-card">
-      <CardBody {...props} />
+      {/* SV-05 P7: the same 20 inset as every other window's body, as ModalForm gives it (none on a phone). */}
+      <ModalInset.Provider value={props.phone ? 0 : MODAL_PAD}>
+        <CardBody {...props} />
+      </ModalInset.Provider>
     </ModalShell>
   );
 }

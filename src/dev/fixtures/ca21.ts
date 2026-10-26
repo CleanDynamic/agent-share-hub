@@ -5,7 +5,7 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { buildSteps, sessionGroups, type SessionGroup, type Step } from "@/lib/build/graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "@/lib/build/making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 
 const key = (n: number) => `typed-0c21c21c-0000-4000-8000-0000000000a${n}`;
@@ -63,6 +63,6 @@ export const ca21Tree: NodeTree[] = [
 /** The build as the composer reads it. */
 export function ca21Build(): { tree: NodeTree[]; steps: Step[]; groups: SessionGroup[]; making: Making } {
   const steps = buildSteps(ca21Tree);
-  const groups = sessionGroups(steps, ca21Making.sessions, ca21Making.session_tools ?? {}, sessionsMetaOf(ca21Making), sessionOrderOf(ca21Making));
+  const groups = sessionGroups(steps, ca21Making.sessions, ca21Making.session_tools ?? {}, sessionsMetaOf(ca21Making), sessionOrderOf(ca21Making), storedWorkstreamsOf(ca21Making));
   return { tree: ca21Tree, steps, groups, making: ca21Making };
 }

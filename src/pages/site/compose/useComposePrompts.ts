@@ -109,7 +109,7 @@ import { keptCases } from "@/pages/site/compose/CheckCasesField";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
 import type { CodeSuggestion } from "@/lib/build/sentWithSuggest";
 
-import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
+import { addedToast, importNumbers, parsePromptDragData, promptSourceLine } from "./composeModel";
 import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
 import type { ChangeRange } from "@/lib/build/changes";
 import type { RunsWhen } from "@/lib/build/decision";
@@ -927,10 +927,12 @@ export function useComposePrompts({
     }, false);
 
   const rows = useMemo<ComposePromptRow[]>(() => {
-    const saved = promptNodes(nodes.tree)
+    const prompts = promptNodes(nodes.tree);
+    const numberOf = importNumbers(prompts, sessions);
+    const saved = prompts
       .map((node) => ({ node, key: aliasOf.current.get(node.id) ?? node.id }))
       .filter(({ key }) => !hidden.has(key))
-      .map(({ node, key }) => ({ key, text: texts[key] ?? promptText(node), source: promptSourceLine(node, sessions), saved: true }));
+      .map(({ node, key }) => ({ key, text: texts[key] ?? promptText(node), source: promptSourceLine(node, sessions, numberOf), saved: true }));
     const local = drafts
       .filter((key) => !hidden.has(key))
       .map((key) => ({ key, text: texts[key] ?? "", source: "Written by you", saved: false }));

@@ -5,7 +5,7 @@
 // that finds it missing is remembered, and no more are tried this session. It is never a failure of the save that called it.
 
 import { buildSteps, sessionGroups } from "./graph";
-import { sessionOrderOf, sessionsMetaOf, type Making } from "./making";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "./making";
 import { getNodeTree } from "./nodes";
 import { buildPatterns, type Pattern } from "./patterns";
 import { updateBuild } from "./builds";
@@ -25,7 +25,7 @@ export async function patternsOfBuild(buildId: string, making: unknown): Promise
   const record = (making && typeof making === "object" && !Array.isArray(making) ? making : {}) as Making;
   const sessions = Array.isArray(record.sessions) ? record.sessions : [];
   const tools = record.session_tools && typeof record.session_tools === "object" ? (record.session_tools as Record<string, string>) : {};
-  return buildPatterns(steps, sessionGroups(steps, sessions, tools, sessionsMetaOf(record), sessionOrderOf(record)));
+  return buildPatterns(steps, sessionGroups(steps, sessions, tools, sessionsMetaOf(record), sessionOrderOf(record), storedWorkstreamsOf(record)));
 }
 
 /** Write `patterns` for a build. Resolves true once it is written; false when the column is not live yet or the write failed. */
