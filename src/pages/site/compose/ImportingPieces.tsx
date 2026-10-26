@@ -5,7 +5,7 @@
 
    THE TAG, after the app name in the session head: "Importing", 20 tall, padding 0 7, radius 5, the control recipe, the data
    face 10.5 `--text2`.
-   THE SOCKETS: every empty socket is filled with building blocks, its whole inner area inset 10 from every edge (SV-05), waving
+   THE SOCKETS: every empty socket is filled with building blocks, its whole inner area inset 10 (on the left, past its number; SV-05), waving
    with the rest of the page (`SocketBlocks`).
    THE ROW under the sockets, 8 below: a bar 4 tall (radius 2, track `--hairline`, fill `--text2`) filling to done divided by
    total; 12 apart the count in the data face 11 `--label` ("6 of 18 prompts"); 12 apart a text link "Stop" (12.5/500,
@@ -29,6 +29,8 @@ import { tileStyle } from "./tileRecipes";
 export const SLOW_IMPORT_MS = 1000;
 /** SV-05 P4: the tile's own padding: the blocks fill the socket's inner area, this far in from every edge. */
 export const SOCKET_INSET = 10;
+/** SV-05 P4: the socket's number stands 10 in from its left edge (`SOCKET_NUMBER_IN`); the blocks start past it and 8 more. */
+export const SOCKET_NUMBER_ROOM = 32;
 
 export const IMPORTING_COPY = {
   tag: "Importing",
@@ -79,10 +81,13 @@ export function ImportingTag() {
   );
 }
 
-/** SV-05 P4: the blocks that fill an empty socket, its whole inner area, 10 in from every edge. The socket is the positioned parent. */
+/**
+ * SV-05 P4: the blocks that fill an empty socket, its whole inner area: 10 in from the top, right and bottom, and on the left
+ * past the socket's number, which stands inside it. The socket is the positioned parent.
+ */
 export function SocketBlocks({ gone = false }: { gone?: boolean }) {
   return (
-    <div data-testid="socket-blocks" style={{ position: "absolute", inset: SOCKET_INSET, visibility: "visible" }}>
+    <div data-testid="socket-blocks" style={{ position: "absolute", top: SOCKET_INSET, right: SOCKET_INSET, bottom: SOCKET_INSET, left: SOCKET_NUMBER_ROOM, visibility: "visible" }}>
       <LoadingBlocks kind="box" width="fill" height="fill" gone={gone} />
     </div>
   );

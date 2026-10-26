@@ -8,7 +8,7 @@ import { skeletonOf, SOCKET_NUMBER_IN } from "@/lib/build/sortLayout";
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { ComposeSkeleton } from "./ComposeSkeleton";
-import { SOCKET_INSET } from "./ImportingPieces";
+import { SOCKET_INSET, SOCKET_NUMBER_ROOM } from "./ImportingPieces";
 import { LoadingBlocks } from "./LoadingBlocks";
 import { CELL_H, CELL_W, GLYPHS, fillOf, resetFirstShow, TILE_HEIGHT } from "./loadingBlocks";
 
@@ -37,7 +37,7 @@ function sized(width: number, height: number) {
 
 describe("SV-05 P4 · the blocks fill the socket", () => {
   it.each([56, 64, 72])("cover a socket %i tall to within one cell on every side", (tall) => {
-    const width = 600 - 2 * SOCKET_INSET;
+    const width = 600 - SOCKET_INSET - SOCKET_NUMBER_ROOM;
     const height = tall - 2 * SOCKET_INSET;
     const { cols, rows, left, top } = fillOf(width, height);
     expect(left).toBeGreaterThanOrEqual(0);
@@ -97,6 +97,8 @@ describe("SV-05 P4 · an import's numbers", () => {
       const socket = skeleton.sockets.find((entry) => entry.id === tick.id)!;
       expect(tick.numberLeft).toBe(socket.rect.x + SOCKET_NUMBER_IN);
       expect(tick.numberLeft!).toBeGreaterThan(socket.rect.x);
+      // The blocks start past the number (two figures of the 11px data face, then 8).
+      expect(SOCKET_NUMBER_IN + 14 + 8).toBeLessThanOrEqual(SOCKET_NUMBER_ROOM);
       expect(tick.y).toBe(items[at].rect.y + items[at].rect.h / 2);
     });
   });

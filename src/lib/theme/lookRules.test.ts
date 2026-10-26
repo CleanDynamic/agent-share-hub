@@ -971,6 +971,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/sessions.ts",
   "src/lib/classify/storage.test.ts",
   "src/lib/classify/storage.ts",
+  "src/pages/dev/Ca24Demo.tsx",
   "src/pages/dev/MotionDemo.tsx",
   "src/pages/dev/MovingDemo.tsx",
   "src/pages/dev/ReferencesDemo.tsx",

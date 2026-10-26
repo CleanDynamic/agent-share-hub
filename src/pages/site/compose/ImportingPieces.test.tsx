@@ -70,7 +70,7 @@ describe("only an import that takes longer than a second", () => {
     expect(within(screen.getByTestId("arriving-head")).getByTestId("importing-tag")).toBeTruthy();
   });
 
-  it("SV-05 P4: puts building blocks over the whole inner area of every empty socket, inset 10 from every edge", () => {
+  it("SV-05 P4: puts building blocks over the whole inner area of every empty socket, inset 10, past its number on the left", () => {
     block({ count: 3 });
     act(() => {
       vi.advanceTimersByTime(SLOW_IMPORT_MS);
@@ -79,7 +79,7 @@ describe("only an import that takes longer than a second", () => {
     expect(places).toHaveLength(3);
     for (const place of places) {
       const inset = within(place).getByTestId("socket-blocks");
-      expect(inset.style.inset).toBe("10px");
+      expect([inset.style.top, inset.style.right, inset.style.bottom, inset.style.left]).toEqual(["10px", "10px", "10px", "32px"]);
       expect(within(inset).getByTestId("loading-blocks").style.height).toBe("100%");
     }
   });
