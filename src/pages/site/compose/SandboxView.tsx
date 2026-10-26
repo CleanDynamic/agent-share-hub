@@ -1188,7 +1188,7 @@ function SandboxBody(props: SandboxViewProps) {
         }}
       >
         <PanelTitle>Build</PanelTitle>
-        <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
+        <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, userSelect: "none", ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
           {countsLine(props.counts)}
         </span>
         {phone ? (

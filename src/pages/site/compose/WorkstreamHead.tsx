@@ -305,7 +305,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
         ) : (
           <span style={{ flex: "1 1 0", minWidth: 0 }} />
         )}
-        <span ref={countRef} data-testid="workstream-count" style={quiet}>
+        <span ref={countRef} data-testid="workstream-count" style={{ ...quiet, userSelect: "none" }}>
           {WORKSTREAM_HEAD_COPY.count(part.sessions)}
         </span>
         {/* CA-19 P5: a part in a named group says so, just before its menu. */}

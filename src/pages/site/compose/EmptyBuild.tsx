@@ -9,7 +9,7 @@
    ROW 2 runs `onStartNew`, the page's `onStartSession`. THE DROP ZONE takes what Sources' does and goes where it goes: a
    folder is walked, a chat export goes to the intake. Without a mouse it is a button that opens the file picker. */
 
-import { useState, type DragEvent } from "react";
+import { useRef, useState, type DragEvent } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
@@ -18,6 +18,8 @@ import { t } from "@/lib/theme/tokens";
 
 import { ChatsPicker, type AddSessionRowProps } from "./AddSessionRow";
 import { holdsFolder, readDrop } from "./dropFolders";
+import { SLIDE_ATTR } from "./flip";
+import { MotionBoundary, NO_SLIDE, useListMotion } from "./listMotion";
 import {
   EMPTY_BOX,
   EMPTY_BUILD_COPY,
@@ -118,18 +120,27 @@ function DropZone({ fine, onDropFiles, onPick }: Pick<EmptyBuildProps, "fine" | 
 
 export function EmptyBuild({ phone, fine, available, addSession, onDropFiles, onPick }: EmptyBuildProps) {
   const [picking, setPicking] = useState(false);
+  /* SV-07 P6: the list of chats opens under its row, and what stands below it slides down through the List's one animator. */
+  const root = useRef<HTMLDivElement | null>(null);
+  const motion = useListMotion(root);
   return (
-    <div data-testid="empty-build" style={EMPTY_COLUMN}>
-      <h2 style={EMPTY_HEADING}>{EMPTY_BUILD_COPY.heading}</h2>
-      <div style={EMPTY_BOX}>
-        <ChatsPicker props={{ ...addSession, phone }} open={picking} onOpenChange={setPicking}>
-          <Row testId="empty-build-chats" name={EMPTY_BUILD_COPY.fromChats} detail={EMPTY_BUILD_COPY.availableOf(available)} disabled={addSession.adding} onClick={() => setPicking(true)} />
-        </ChatsPicker>
-        <div aria-hidden="true" style={EMPTY_RULE} />
-        <Row testId="empty-build-new" name={EMPTY_BUILD_COPY.startNew} disabled={addSession.adding} onClick={() => addSession.onStartNew()} />
+    <MotionBoundary motion={motion} slide={NO_SLIDE}>
+      <div ref={root} data-testid="empty-build" style={EMPTY_COLUMN}>
+        <h2 style={EMPTY_HEADING}>{EMPTY_BUILD_COPY.heading}</h2>
+        <div style={EMPTY_BOX}>
+          <ChatsPicker props={{ ...addSession, phone }} open={picking} onOpenChange={setPicking}>
+            <Row testId="empty-build-chats" name={EMPTY_BUILD_COPY.fromChats} detail={EMPTY_BUILD_COPY.availableOf(available)} disabled={addSession.adding} onClick={() => setPicking(!picking)} />
+          </ChatsPicker>
+          <div aria-hidden="true" style={EMPTY_RULE} {...{ [SLIDE_ATTR]: "empty:rule" }} />
+          <div {...{ [SLIDE_ATTR]: "empty:new" }}>
+            <Row testId="empty-build-new" name={EMPTY_BUILD_COPY.startNew} disabled={addSession.adding} onClick={() => addSession.onStartNew()} />
+          </div>
+        </div>
+        <div {...{ [SLIDE_ATTR]: "empty:drop" }}>
+          <DropZone fine={fine} onDropFiles={onDropFiles} onPick={onPick} />
+        </div>
       </div>
-      <DropZone fine={fine} onDropFiles={onDropFiles} onPick={onPick} />
-    </div>
+    </MotionBoundary>
   );
 }
 

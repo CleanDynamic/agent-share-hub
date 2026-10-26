@@ -74,7 +74,9 @@ describe("Add to", () => {
     expect(within(screen.getByTestId("add-to")).getByTestId("add-to-button").textContent).toContain("Part A · Tenant portal");
     expect(screen.getByText("An empty one at the end of Part A. Pick its app later.")).toBeTruthy();
     expect(within(screen.getByTestId("add-to")).getByTestId("add-to-button").querySelector("[data-colour-dot='#8FBFB8']")).toBeTruthy();
-    fireEvent.keyDown(document.body, { key: "Escape" });
+    // SV-07 P6: it opens under the row and takes the focus; Escape there closes it.
+    fireEvent.keyDown(within(screen.getByTestId("open-below")).getByTestId("add-to-button"), { key: "Escape" });
+    expect(screen.queryByTestId("open-below")).toBeNull();
     view.rerender(<AddSessionRow {...props} parts={PARTS} openFor={{ part: "ws-a", n: 1 }} />);
     fireEvent.click(screen.getByTestId("add-session-row"));
     expect(within(screen.getByTestId("add-to")).getByTestId("add-to-button").textContent).toContain("Part C");

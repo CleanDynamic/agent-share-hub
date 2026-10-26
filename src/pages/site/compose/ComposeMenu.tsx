@@ -13,10 +13,11 @@ export const MenuContent = forwardRef<ElementRef<typeof Menu.Content>, Component
   const collisionPadding = useMenuCollisionPadding();
   /* CA-26 P2: a menu whose item removed its own button leaves focus nowhere; it goes to the item now in that place instead. */
   const closing = useMenuFocus(onCloseAutoFocus);
-  return <Menu.Content ref={ref} collisionPadding={collisionPadding} onCloseAutoFocus={closing} {...props} />;
+  // SV-07 P6: a menu's rows are controls: clicking or dragging across them selects nothing.
+  return <Menu.Content ref={ref} collisionPadding={collisionPadding} onCloseAutoFocus={closing} {...props} style={{ userSelect: "none", ...props.style }} />;
 });
 
 export const MenuSubContent = forwardRef<ElementRef<typeof Menu.SubContent>, ComponentPropsWithoutRef<typeof Menu.SubContent>>(function MenuSubContent(props, ref) {
   const collisionPadding = useMenuCollisionPadding();
-  return <Menu.SubContent ref={ref} collisionPadding={collisionPadding} {...props} />;
+  return <Menu.SubContent ref={ref} collisionPadding={collisionPadding} {...props} style={{ userSelect: "none", ...props.style }} />;
 });

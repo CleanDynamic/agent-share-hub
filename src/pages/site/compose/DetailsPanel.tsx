@@ -740,7 +740,7 @@ export function DetailsLoading() {
 }
 
 export function DetailsPanel({ view, colour = null, build, onEdit, plan, onSelect, onOpenPrompt }: DetailsPanelProps) {
-  if (!view) return <DetailsFade view={null}><p style={EMPTY}>{DETAILS_COPY.empty}</p></DetailsFade>;
+  if (!view) return <DetailsFade view={null}><p style={{ ...EMPTY, userSelect: "none" }}>{DETAILS_COPY.empty}</p></DetailsFade>;
   /* CA-24 P1: a selection that is still loading is six lines of building blocks, scaled to Details' width. */
   if (view.kind === "session" && view.status === "loading") return <DetailsLoading />;
   return (

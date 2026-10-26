@@ -193,6 +193,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
           padding: "0 6px",
           margin: "0 -6px",
           textOverflow: "ellipsis",
+          userSelect: "text",
           ...text(15, 400, t.text),
           ...(phone ? { fontSize: 16 } : null),
         }}
@@ -341,6 +342,8 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           position: "relative",
           outline: "none",
           ...itemRing.ring,
+          // SV-07 P6: a head is a label and its controls: clicking or dragging across it selects nothing (its title field still can).
+          userSelect: "none",
           display: "flex",
           flexWrap: phone ? "wrap" : "nowrap",
           alignItems: "center",
