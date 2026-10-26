@@ -773,7 +773,10 @@ function SandboxPageBody() {
   );
   useEffect(() => {
     if (!ringedSession) return;
-    document.querySelector(`[data-session-key="${ringedSession.key}"]`)?.scrollIntoView?.({ block: "center" });
+    // SV-07 P4: only through SV-06's scroll helper, and only when the session just added is wholly off screen.
+    const session = document.querySelector<HTMLElement>(`[data-session-key="${ringedSession.key}"]`);
+    const box = session?.getBoundingClientRect();
+    if (session && box && (box.bottom < 0 || box.top > window.innerHeight)) scrollToShow(session, { align: "middle" });
     const timer = window.setTimeout(() => setRingedSession(null), ADD_FLASH_MS);
     return () => window.clearTimeout(timer);
   }, [ringedSession]);

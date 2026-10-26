@@ -186,10 +186,15 @@ export function useSessionEdits(input: SessionEditsInput) {
   const move = useCallback(
     (key: string, next: string[], from: number, to: number) =>
       guard("Session not moved", () =>
-        track(`Moved Session ${from}${to < from ? " up" : " down"}`, async () => {
-          await applyLayout({ order: next });
-          sayMoved(from, to);
-        }),
+        track(
+          `Moved Session ${from}${to < from ? " up" : " down"}`,
+          async () => {
+            await applyLayout({ order: next });
+            sayMoved(from, to);
+          },
+          // SV-07 P4: the animator is told what moves before the model changes.
+          { motion: "move", keys: [key] },
+        ),
       ),
     [applyLayout, guard, sayMoved, track],
   );
@@ -311,7 +316,7 @@ export function useSessionEdits(input: SessionEditsInput) {
           );
           key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
           if (key) latest.current.say("Added a part.");
-        }),
+        }, { motion: "part", keys: shown ? [shown.key] : [] }),
       );
     } finally {
       addingPart.current = false;
@@ -390,7 +395,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             latest.current.say(`${said}.`);
             return said;
           },
-          { notice: true, removed: removedMeta },
+          { notice: true, removed: removedMeta, keys: [key] },
         ),
       );
     },
@@ -413,6 +418,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             latest.current.say(`Session ${number} is now in ${titleOf(to)}.`);
             return `Moved Session ${number} to ${titleOf(to)}`;
           },
+          { motion: "move", keys: [key] },
         );
       }),
     [applyParts, editableKeys, guard, track],
@@ -536,7 +542,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             if (removing.length === 1 && alsoTiles.length === 0) return REMOVE_COPY.session(numberOf(removing[0]), tiles.length);
             return REMOVE_COPY.several(removing.length, tiles.length + alsoTiles.length);
           },
-          { notice: true, removed: removedMeta },
+          { notice: true, removed: removedMeta, keys: [...keys] },
         );
       }),
     [applyLayout, editableKeys, guard, refresh, track],
