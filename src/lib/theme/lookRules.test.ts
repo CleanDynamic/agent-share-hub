@@ -907,6 +907,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/dev/VisionNotBuilt.tsx",
 
   // SV-04
+  "src/components/AppShell.tsx",
+  "src/components/ProtectedRoute.tsx",
+  "src/components/shell/FrameOutlet.tsx",
+  "src/components/shell/frameOutlet.test.tsx",
   "src/components/shell/SiteFrame.tsx",
 ];
 

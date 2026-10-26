@@ -1,10 +1,10 @@
-import { Outlet } from "react-router-dom";
 import { SiteFrame } from "@/components/shell/SiteFrame";
+import { FrameOutlet } from "@/components/shell/FrameOutlet";
 
 export function AppShell() {
   return (
     <SiteFrame>
-      <Outlet />
+      <FrameOutlet />
     </SiteFrame>
   );
 }
