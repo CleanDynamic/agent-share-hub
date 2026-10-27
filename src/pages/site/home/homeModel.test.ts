@@ -1,4 +1,4 @@
-// UI-P27, SV-10 — Home's view model: the words, the feed's items, the week and the filters.
+// UI-P27, SV-10: Home's view model: the words, the feed's items, the week and the filters.
 
 import { beforeEach, describe, expect, it } from "vitest";
 

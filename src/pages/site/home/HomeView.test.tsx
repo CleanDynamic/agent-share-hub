@@ -1,4 +1,4 @@
-// SV-10 — Home as the vision board draws it, rendered with the board's sample data: the three columns, the feed's tabs
+// SV-10: Home as the vision board draws it, rendered with the board's sample data: the three columns, the feed's tabs
 // and kind filter, the "n new" pill, each kind of item, and the states.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

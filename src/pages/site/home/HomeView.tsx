@@ -1,4 +1,4 @@
-/* SV-10 — Home, as `design/reference/vision/dusk/home.html` draws it: three columns. The maker's own work on the left
+/* SV-10: Home, as `design/reference/vision/dusk/home.html` draws it: three columns. The maker's own work on the left
    (Your studio), a feed of build posts in the centre, the site's activity on the right (The room).
 
    PURE: typed props, no fetching, no `useAuth()`, no router hooks but links. `HomePage` loads and maps; the dev page

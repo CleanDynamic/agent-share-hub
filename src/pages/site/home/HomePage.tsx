@@ -1,4 +1,4 @@
-/* SV-10 — `/`: the container.
+/* SV-10: `/`, the container.
 
    Loads Home's data through `src/lib/` functions only, maps it to `HomeView`'s props and renders it. No Supabase call in
    this file. Every section loads on its own and says so in its own place when it fails.
@@ -19,6 +19,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { reportError } from "@/lib/errors/report";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import { coverMedia, feedMedia, stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
@@ -268,7 +269,7 @@ export function HomePage() {
     try {
       await toggleMeToo({ bountyId, userId });
     } catch (error) {
-      console.error("[Home] toggleMeToo failed", error);
+      reportError(error, { source: "home", context: "toggleMeToo" });
       toast.error("Couldn't save that. Try again.");
     } finally {
       void qc.invalidateQueries({ queryKey: ["bounty", "myMeToo"] });
@@ -281,7 +282,7 @@ export function HomePage() {
       const id = await attachSession(sessionId, { kind: "new" });
       toast("New build started.", { action: { label: "Open", onClick: () => navigate(`/compose/${id}`) } });
     } catch (error) {
-      console.error("[Home] attachSession (new) failed", error);
+      reportError(error, { source: "home", context: "attachSession" });
       toast.error("Couldn't start a build from that session.");
     } finally {
       void qc.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] });

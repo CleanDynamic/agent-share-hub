@@ -42,7 +42,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   /* UI-P13 — a throwaway for the page backdrop; not a board, so not in index.json. */
   /* UI-P16 — the empty frame: backdrop, empty slots, the 820px grid placeholder. */
   frame: lazy(() => import("./FrameDemo")),
-  /* UI-P27 — Home. SV-10: retired; Home is the vision board's page, `vision-home`. */
+  /* UI-P27: Home. SV-10: retired; Home is the vision board's page, `vision-home`. */
   /* UI-P28 — Gallery. */
   /* UI-P49 — the Gallery feed (no board is compared). */
   "gallery-feed": lazy(() => import("./GalleryFeedDemo")),

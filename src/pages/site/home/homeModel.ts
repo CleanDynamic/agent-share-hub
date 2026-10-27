@@ -1,4 +1,4 @@
-/* SV-10 — Home's view model: the shapes `HomeView` takes, and the pure functions that turn what the data layer returns
+/* SV-10: Home's view model: the shapes `HomeView` takes, and the pure functions that turn what the data layer returns
    into them.
 
    NOTHING HERE FETCHES. `HomePage` loads, these map, `HomeView` draws; the dev page `vision-home` builds the same shapes
