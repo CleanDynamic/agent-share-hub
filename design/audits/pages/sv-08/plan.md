@@ -17,3 +17,17 @@ Branch: `claude/eager-einstein-3mpoa9` (the session's designated branch; the pro
 - Part 1: behaviour tests against the new view (open a draft, start a new build, drop on Start, `+` on a session, drag into a draft, Show more, Remove empty drafts) -> verified by: `DraftsView.behaviour.test.tsx`, failing on the old view where the new names/structure differ.
 - Part 2: restyle `DraftsView` and `DraftsFrame` to the board with the SV-02 pieces; model naming; Connected tools tile; fixture `src/dev/fixtures/vision/drafts.ts`; dev page `vision-drafts`; Placeholder = new loading state -> verified by: view tests, `routeTable`/placeholder match test, `npm run audit:pages`.
 - Part 3: `npm run audit:design -- --grep "vision/dusk/drafts"` within 4%, then the checks.
+
+## Report (Part 3)
+
+SV-08 · Drafts: PARTIAL
+- Compared boards: `vision/dusk/drafts` 3% (35,419 px) against the 4% limit. Header masked. Remaining differences: session detail lines lead with the tool (`Claude · Haiku 4.5 · 10 Oct`, the series decision, the board omits it); the grip is the app's `grip` glyph; model marks are the real marks, not letter tiles; the app header is 48 high, the board's 56.
+- Tests: full suite 59 failed / 9335 passed. The same 13 files and 59 failures fail on main at d7c61c4 (AppShell, flat-shell.wide, noRail, siteFrame, onePrompt snapshot, retiredSurfaces, compliance, motion, ns-classes, rcStates, BuildPage, sv07.parts, sv03Migration). None come from SV-08. `tsc` clean, `npm run build` passes, lint clean on changed files.
+- Not run: `audit:pages` (timed out in this container), `audit:perf`, `audit:themes`, `audit:contrast`, e2e tier1, phone layout check. Request rounds unchanged in code (one drafts read plus sessions alongside), not measured.
+- Built beyond the board: `board` option on `SiteFrame` and the route table `frame`; `DashedSlot` passes through props.
+- Behaviour change: drafts show 12 then `Show n more`.
+- Connected tools is read from the loaded sessions only (first page of 100).
+- Branch: `claude/eager-einstein-3mpoa9`, not `sv-08-drafts`.
+- Lovable messages: none. Dead code seen: none.
+
+What Miles needs to do: merge the pull request, Publish > Publish changes. No migration.
