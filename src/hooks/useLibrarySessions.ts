@@ -23,9 +23,14 @@ import { WAITING_REFRESH_MS, type SessionsPolling } from "./useWaitingSessions";
 export const librarySessionsKey = ["build", "listLibrarySessions"] as const;
 export const unfinishedSessionsKey = ["build", "listUnfinishedSessions"] as const;
 
-export function useLibrarySessions({ active = true, withUnfinished = true }: SessionsPolling & { withUnfinished?: boolean } = {}) {
+export function useLibrarySessions({
+  active = true,
+  withUnfinished = true,
+  enabled = true,
+}: SessionsPolling & { withUnfinished?: boolean; /** SV-10: Home asks only for a signed-in reader. */ enabled?: boolean } = {}) {
   const pages = useInfiniteQuery({
     queryKey: librarySessionsKey,
+    enabled,
     queryFn: ({ pageParam }) => listLibrarySessions({ offset: pageParam }),
     initialPageParam: 0,
     getNextPageParam: (last, all) => (last.hasMore ? all.length * LIBRARY_PAGE : undefined),
@@ -38,7 +43,7 @@ export function useLibrarySessions({ active = true, withUnfinished = true }: Ses
   const unfinished = useQuery({
     queryKey: unfinishedSessionsKey,
     queryFn: () => listUnfinishedSessions(),
-    enabled: withUnfinished,
+    enabled: enabled && withUnfinished,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchInterval: active ? WAITING_REFRESH_MS : false,
