@@ -1,0 +1,252 @@
+[
+  {
+    "name": "import a one-prompt chat from the empty build panel",
+    "firstChangeMs": 261,
+    "largestFrameShare": 0.3,
+    "worstElementShare": 0.47,
+    "largestFrameWhat": [
+      "session:0e0e0e0e-0000-4000-8000-000000000100 397",
+      "session:typed-c164693e-0a1b-4df4-b812-a2add3260695 248",
+      "add:session 183",
+      "add:part 183"
+    ],
+    "scrolls": [
+      [
+        0,
+        10
+      ]
+    ],
+    "longTasks": 4,
+    "asked": [
+      "scrollIntoView DIV · at Element.scrollIntoView (<anonymous>:34:15) < at /assets/SandboxPage-B5xPWB8a.js:43:74685 < at Kc (/assets/index-DEmCezcD.js:9:91868) < at Ml (/assets/index-DEmCezcD.js:9:107018) < at jl (/assets/index-DEmCezcD.js:9:106902)"
+    ],
+    "pageScrolls": 1,
+    "shortest": 900,
+    "animated": 45
+  },
+  {
+    "name": "Add a part (first)",
+    "firstChangeMs": null,
+    "largestFrameShare": null,
+    "worstElementShare": null,
+    "largestFrameWhat": [],
+    "scrolls": [],
+    "longTasks": 0,
+    "asked": [
+      "scrollIntoView add-part-row · at Element.scrollIntoView (<anonymous>:34:15) < at HTMLDivElement.d (/assets/BottomSheet-CoQ-YaCW.js:1:9355)"
+    ],
+    "pageScrolls": 1,
+    "shortest": 910,
+    "animated": 0
+  },
+  {
+    "name": "Add a part (second)",
+    "firstChangeMs": null,
+    "largestFrameShare": null,
+    "worstElementShare": null,
+    "largestFrameWhat": [],
+    "scrolls": [],
+    "longTasks": 0,
+    "asked": [
+      "scrollIntoView add-session-row · at Element.scrollIntoView (<anonymous>:34:15) < at HTMLDivElement.d (/assets/BottomSheet-CoQ-YaCW.js:1:9355)"
+    ],
+    "pageScrolls": 1,
+    "shortest": 910,
+    "animated": 0
+  },
+  {
+    "name": "Start a new session",
+    "firstChangeMs": 57,
+    "largestFrameShare": 0.48,
+    "worstElementShare": 1,
+    "largestFrameWhat": [
+      "part:ws-9c0635cf-9e25-42fa-93e9-ff7cbc5576c4 311",
+      "session:0e0e0e0e-0000-4000-8000-000000000100 311",
+      "session:typed-b7e28087-4db1-4fe0-893a-a293787d4c1b 311",
+      "part:ws-b2776f62-26d6-4245-a038-d2388218b0f7 311",
+      "add:session 311",
+      "add:part 311"
+    ],
+    "scrolls": [
+      [
+        10,
+        321
+      ]
+    ],
+    "longTasks": 0,
+    "asked": [
+      "focus add-session-row · at HTMLElement.focus (<anonymous>:44:15) < at Object.onCloseAutoFocus [as current] (/assets/dist-BQeO1eQS.js:1:4342) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668",
+      "focus add-session-row · at HTMLElement.focus (<anonymous>:44:15) < at s (/assets/BottomSheet-CoQ-YaCW.js:1:8785) < at /assets/BottomSheet-CoQ-YaCW.js:1:9135 < at Kc (/assets/index-DEmCezcD.js:9:91868) < at Ml (/assets/index-DEmCezcD.js:9:107018)",
+      "scrollIntoView DIV · at Element.scrollIntoView (<anonymous>:34:15) < at /assets/SandboxPage-B5xPWB8a.js:43:74685 < at Kc (/assets/index-DEmCezcD.js:9:91868) < at Ml (/assets/index-DEmCezcD.js:9:107018) < at jl (/assets/index-DEmCezcD.js:9:106902)"
+    ],
+    "pageScrolls": 1,
+    "shortest": 910,
+    "animated": 11
+  },
+  {
+    "name": "a library chat into Part 2",
+    "firstChangeMs": 468,
+    "largestFrameShare": 0.55,
+    "worstElementShare": 1,
+    "largestFrameWhat": [
+      "part:ws-b2776f62-26d6-4245-a038-d2388218b0f7 364",
+      "part:ws-9c0635cf-9e25-42fa-93e9-ff7cbc5576c4 311",
+      "session:0e0e0e0e-0000-4000-8000-000000000101 289",
+      "session:0e0e0e0e-0000-4000-8000-000000000100 182",
+      "session:typed-b7e28087-4db1-4fe0-893a-a293787d4c1b 182",
+      "add:session 182"
+    ],
+    "scrolls": [
+      [
+        321,
+        503
+      ]
+    ],
+    "longTasks": 1,
+    "asked": [
+      "scrollIntoView add-session-row · at Element.scrollIntoView (<anonymous>:34:15) < at HTMLDivElement.d (/assets/BottomSheet-CoQ-YaCW.js:1:9355)",
+      "focus add-to-button · at HTMLElement.focus (<anonymous>:44:15) < at /assets/index-DEmCezcD.js:11:100309 < at Object.current (/assets/dist-BoEzfeCH.js:1:409) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668",
+      "focus add-session-row · at HTMLElement.focus (<anonymous>:44:15) < at Object.onCloseAutoFocus [as current] (/assets/dist-BQeO1eQS.js:1:4342) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668",
+      "scrollIntoView DIV · at Element.scrollIntoView (<anonymous>:34:15) < at /assets/SandboxPage-B5xPWB8a.js:43:74685 < at Kc (/assets/index-DEmCezcD.js:9:91868) < at Ml (/assets/index-DEmCezcD.js:9:107018) < at jl (/assets/index-DEmCezcD.js:9:106902)"
+    ],
+    "pageScrolls": 2,
+    "shortest": 1249,
+    "animated": 45
+  },
+  {
+    "name": "collapse Part 2",
+    "firstChangeMs": null,
+    "largestFrameShare": null,
+    "worstElementShare": null,
+    "largestFrameWhat": [],
+    "scrolls": [],
+    "longTasks": 0,
+    "asked": [
+      "scrollIntoView workstream-head · at Element.scrollIntoView (<anonymous>:34:15) < at HTMLDivElement.d (/assets/BottomSheet-CoQ-YaCW.js:1:9355)"
+    ],
+    "pageScrolls": 1,
+    "shortest": 1447,
+    "animated": 0
+  },
+  {
+    "name": "another chat into the closed Part 2",
+    "firstChangeMs": 443,
+    "largestFrameShare": 0.08,
+    "worstElementShare": 0.3,
+    "largestFrameWhat": [
+      "add:session 171",
+      "add:part 171",
+      "session:0e0e0e0e-0000-4000-8000-000000000101 93",
+      "session:0e0e0e0e-0000-4000-8000-000000000102 83",
+      "tile:0c0c0c0c-0000-4000-8000-000000000021 9"
+    ],
+    "scrolls": [
+      [
+        503,
+        319
+      ],
+      [
+        319,
+        448
+      ],
+      [
+        448,
+        319
+      ]
+    ],
+    "longTasks": 1,
+    "asked": [
+      "scrollIntoView add-session-row · at Element.scrollIntoView (<anonymous>:34:15) < at HTMLDivElement.d (/assets/BottomSheet-CoQ-YaCW.js:1:9355)",
+      "focus add-to-button · at HTMLElement.focus (<anonymous>:44:15) < at /assets/index-DEmCezcD.js:11:100309 < at Object.current (/assets/dist-BoEzfeCH.js:1:409) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668",
+      "focus add-session-row · at HTMLElement.focus (<anonymous>:44:15) < at Object.onCloseAutoFocus [as current] (/assets/dist-BQeO1eQS.js:1:4342) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668"
+    ],
+    "pageScrolls": 1,
+    "shortest": 1219,
+    "animated": 53
+  },
+  {
+    "name": "a chat into Part 3",
+    "firstChangeMs": 12159,
+    "largestFrameShare": 0.2,
+    "worstElementShare": 0.2,
+    "largestFrameWhat": [
+      "part:ws-9c0635cf-9e25-42fa-93e9-ff7cbc5576c4 129",
+      "session:0e0e0e0e-0000-4000-8000-000000000103 121",
+      "part:ws-b2776f62-26d6-4245-a038-d2388218b0f7 1",
+      "add:session 1",
+      "add:part 1"
+    ],
+    "scrolls": [],
+    "longTasks": 1,
+    "asked": [
+      "scrollIntoView add-session-row · at Element.scrollIntoView (<anonymous>:34:15) < at HTMLDivElement.d (/assets/BottomSheet-CoQ-YaCW.js:1:9355)",
+      "focus add-to-button · at HTMLElement.focus (<anonymous>:44:15) < at /assets/index-DEmCezcD.js:11:100309 < at Object.current (/assets/dist-BoEzfeCH.js:1:409) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668",
+      "focus add-session-row · at HTMLElement.focus (<anonymous>:44:15) < at Object.onCloseAutoFocus [as current] (/assets/dist-BQeO1eQS.js:1:4342) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668"
+    ],
+    "pageScrolls": 1,
+    "shortest": 1219,
+    "animated": 10,
+    "note": "Part 3 was not there; added to the last part"
+  },
+  {
+    "name": "another into Part 3 straight after",
+    "firstChangeMs": 12373,
+    "largestFrameShare": 0.2,
+    "worstElementShare": 0.18,
+    "largestFrameWhat": [
+      "part:ws-9c0635cf-9e25-42fa-93e9-ff7cbc5576c4 129",
+      "session:0e0e0e0e-0000-4000-8000-000000000104 121"
+    ],
+    "scrolls": [],
+    "longTasks": 0,
+    "asked": [
+      "scrollIntoView add-session-row · at Element.scrollIntoView (<anonymous>:34:15) < at HTMLDivElement.d (/assets/BottomSheet-CoQ-YaCW.js:1:9355)",
+      "focus add-to-button · at HTMLElement.focus (<anonymous>:44:15) < at /assets/index-DEmCezcD.js:11:100309 < at Object.current (/assets/dist-BoEzfeCH.js:1:409) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668",
+      "focus add-session-row · at HTMLElement.focus (<anonymous>:44:15) < at Object.onCloseAutoFocus [as current] (/assets/dist-BQeO1eQS.js:1:4342) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668"
+    ],
+    "pageScrolls": 1,
+    "shortest": 1219,
+    "animated": 10,
+    "note": "Part 3 was not there; added to the last part"
+  },
+  {
+    "name": "maker: View › Session list, and Part 2 closed again",
+    "firstChangeMs": 12,
+    "largestFrameShare": 0.4,
+    "worstElementShare": 0.43,
+    "largestFrameWhat": [
+      "tile:0c0c0c0c-0000-4000-8000-000000000018 45",
+      "part:ws-9c0635cf-9e25-42fa-93e9-ff7cbc5576c4 23",
+      "session:0e0e0e0e-0000-4000-8000-000000000100 23",
+      "session:typed-b7e28087-4db1-4fe0-893a-a293787d4c1b 23",
+      "part:ws-b2776f62-26d6-4245-a038-d2388218b0f7 23",
+      "add:session 23"
+    ],
+    "scrolls": [
+      [
+        319,
+        307
+      ]
+    ],
+    "longTasks": 0,
+    "asked": [
+      "focus sandbox-view · at HTMLElement.focus (<anonymous>:44:15) < at /assets/index-DEmCezcD.js:11:100309 < at Object.current (/assets/dist-BoEzfeCH.js:1:409) < at HTMLDivElement.<anonymous> (/assets/dist-DKGyu7bt.js:1:161) < at /assets/dist-D_J2YePA.js:1:1668"
+    ],
+    "pageScrolls": 0,
+    "shortest": 1219,
+    "animated": 5
+  },
+  {
+    "name": "a jump tab for a session in the closed Part 2",
+    "firstChangeMs": null,
+    "largestFrameShare": null,
+    "worstElementShare": null,
+    "largestFrameWhat": [],
+    "scrolls": [],
+    "longTasks": 0,
+    "asked": [],
+    "pageScrolls": 0,
+    "shortest": 1261,
+    "animated": 0
+  }
+]

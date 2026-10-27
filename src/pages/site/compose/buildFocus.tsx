@@ -12,6 +12,7 @@ import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { useFoundRing } from "@/components/build/FindHit";
 import { jumpToEdge } from "./largeBuild";
+import { scrollToShow } from "./pageScroll";
 import { text } from "./refinedStyles";
 
 import { takesKeys } from "./useBuildSelection";
@@ -78,7 +79,10 @@ export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect
       last.current = { key: itemKey(item), index: Math.max(items.indexOf(item), 0) };
       lastEl.current = item;
       apply();
-      item.scrollIntoView?.({ block: "nearest" });
+      // SV-07 P4: kept in view for the keyboard (the arrows move focus off screen), through SV-06's one scroll helper. A focus a
+      // press made, or one a menu hands back to its button, is not a reason for the page to move.
+      const target = event.target as HTMLElement;
+      if (target.matches?.(":focus-visible")) scrollToShow(item, { align: "nearest" });
     };
 
     const move = (items: HTMLElement[], to: HTMLElement | undefined) => {

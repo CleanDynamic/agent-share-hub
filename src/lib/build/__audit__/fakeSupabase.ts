@@ -23,7 +23,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const AUDIT_URL = "https://ca08audit.supabase.co";
 const ANON_KEY = "ca08-audit-anon-placeholder";
-const ACCESS_TOKEN = "ca08-audit-access-placeholder";
+export const ACCESS_TOKEN = "ca08-audit-access-placeholder";
 const STORAGE_KEY = "sb-ca08audit-auth-token";
 /** The signed-in maker. Made up. */
 export const MAKER_ID = "0b0b0b0b-0000-4000-8000-000000000001";

@@ -1063,6 +1063,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/sv07.imports.test.tsx",
   "src/lib/build/publish.ts",
   "src/hooks/useComposeBuild.publish.test.tsx",
+  "src/pages/site/compose/sv07Backend.ts",
+  "e2e/audit/composer-sv07.spec.ts",
 ];
 
 /**
