@@ -77,7 +77,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
      builds-classification, SV-09 library, SV-18 composer-add-from-library, SV-08 drafts. */
   "vision-home": lazy(() => import("./VisionHome")),
   "vision-openbuilds": lazy(() => import("./VisionNotBuilt")),
-  "vision-builds-table": lazy(() => import("./VisionNotBuilt")),
+  "vision-builds-table": lazy(() => import("./VisionBuildsTable")),
   "vision-builds-maps": lazy(() => import("./VisionNotBuilt")),
   "vision-builds-classification": lazy(() => import("./VisionNotBuilt")),
   "vision-library": lazy(() => import("./VisionLibrary")),
