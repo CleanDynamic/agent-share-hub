@@ -26,11 +26,16 @@ test.describe("SV-04 P6: scroll", () => {
     await page.waitForTimeout(500);
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" as ScrollBehavior }));
     await page.waitForTimeout(300);
+    // SV-11: the Table is shorter than the filter column, so its links are above the fold at the foot of the page. The
+    // link is brought into view first, so the position read is the one the page is left from.
+    const link = page.locator("#main").locator('a[href^="/b2/"]').last();
+    await link.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
     const left = await page.evaluate(() => Math.round(window.scrollY));
     expect(left).toBeGreaterThan(100);
 
     await resetFrames(page, "builds", "build");
-    await page.locator("#main").locator('a[href^="/b2/"]').first().click();
+    await link.click();
     await ready(page, "build");
     let log = await readFrames(page);
     const opened = log.frames.filter((frame) => frame.t > log.lastClick && frame.kind !== "old");

@@ -104,15 +104,35 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     key: "gallery",
     pattern: SITE_NAV.gallery,
     signedIn: false,
-    load: () => import("@/pages/site/gallery/GalleryPage"),
+    load: () => import("@/pages/site/builds/BuildsPage"),
+    /* SV-11: the first screen's one round: the Table's first page, the stats, the lens counts and the facets. Same keys and
+       functions as BuildsPage. On /builds itself (the route warming up) the list follows the address's filters; from a
+       link elsewhere, the resting Table, which is what a link to /builds opens. */
     prefetch: async (_params, queryClient) => {
-      const { getClassificationFacets, getGalleryFacets } = await import("@/lib/build/gallery");
+      const here = window.location.pathname === SITE_NAV.gallery ? window.location.search : "";
+      const [gallery, { parseGalleryParams }, { listParamsOf, nextTableOffset }] = await Promise.all([
+        import("@/lib/build/gallery"),
+        import("@/lib/build/galleryParams"),
+        import("@/pages/site/builds/buildsModel"),
+      ]);
+      const listParams = listParamsOf(parseGalleryParams(new URLSearchParams(here)));
       await Promise.all([
-        queryClient.prefetchQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: SLOW_STALE_MS }),
-        queryClient.prefetchQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchInfiniteQuery({
+          queryKey: ["build", "listBuildsTable", listParams],
+          initialPageParam: 0,
+          queryFn: ({ pageParam }) => gallery.listBuildsTable({ ...listParams, offset: pageParam }),
+          getNextPageParam: nextTableOffset,
+          staleTime: LIST_STALE_MS,
+          pages: 1,
+        }),
+        queryClient.prefetchQuery({ queryKey: ["build", "getGalleryStats"], queryFn: gallery.getGalleryStats, staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({ queryKey: ["build", "countGalleryLenses"], queryFn: gallery.countGalleryLenses, staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: gallery.getClassificationFacets, staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: gallery.getGalleryFacets, staleTime: SLOW_STALE_MS }),
       ]);
     },
     Placeholder: BuildsPlaceholder,
+    frame: { board: true },
   },
   bounties: {
     key: "bounties",

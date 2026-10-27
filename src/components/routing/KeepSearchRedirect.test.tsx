@@ -46,7 +46,7 @@ describe("KeepSearchRedirect", () => {
       </MemoryRouter>,
     );
     await act(async () => undefined);
-    expect(screen.getByText(/Loading the gallery/)).toBeTruthy();
+    expect(screen.getByText(/Loading builds/)).toBeTruthy();
     expect(screen.queryByText("the boundary's fallback")).toBeNull();
   });
 });

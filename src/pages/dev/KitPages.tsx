@@ -43,11 +43,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   /* UI-P16 — the empty frame: backdrop, empty slots, the 820px grid placeholder. */
   frame: lazy(() => import("./FrameDemo")),
   /* UI-P27: Home. SV-10: retired; Home is the vision board's page, `vision-home`. */
-  /* UI-P28 — Gallery. */
-  /* UI-P49 — the Gallery feed (no board is compared). */
-  "gallery-feed": lazy(() => import("./GalleryFeedDemo")),
-  /* UI-P50 — the Gallery dashboard (no board is compared). */
-  "gallery-dashboard": lazy(() => import("./GalleryDashboardDemo")),
+  /* UI-P28, UI-P49, UI-P50: the Gallery's feed and dashboard. SV-11: retired; Builds is the vision board's page,
+     `vision-builds-table`. */
   /* UI-P29 — the Build page's first screen. */
   build: lazy(() => import("./BuildDemo")),
   /* UI-P73 — the build page with the steps drawn (no board image is compared). */
@@ -65,7 +62,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   compose: lazy(() => import("./ComposeDemo")),
   /* UI-P63 — the new composer's frame (no board image is compared). */
   sandbox: lazy(() => import("./SandboxDemo")),
-  /* CA-16 — the Classification Card, and the Gallery with the classification filters (no board is compared). */
+  /* CA-16: the Classification Card (no board is compared). */
   classification: lazy(() => import("./ClassificationDemo")),
   /* CA-15b: each tile modal open on its own, and a List with every kind of tile (no board image is in the repo). */
   modals: lazy(() => import("./ModalsDemo")),
@@ -80,7 +77,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
      builds-classification, SV-09 library, SV-18 composer-add-from-library, SV-08 drafts. */
   "vision-home": lazy(() => import("./VisionHome")),
   "vision-openbuilds": lazy(() => import("./VisionNotBuilt")),
-  "vision-builds-table": lazy(() => import("./VisionNotBuilt")),
+  "vision-builds-table": lazy(() => import("./VisionBuildsTable")),
   "vision-builds-maps": lazy(() => import("./VisionNotBuilt")),
   "vision-builds-classification": lazy(() => import("./VisionNotBuilt")),
   "vision-library": lazy(() => import("./VisionLibrary")),
@@ -111,10 +108,7 @@ const TRAILS: Record<string, readonly Crumb[]> = {
     { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
     { label: "Lineage" },
   ],
-  /* UI-P56: the Gallery board draws Home / Gallery, not the default trail's sample build. */
-  "gallery-feed": [{ label: "Home", href: "/" }, { label: "Gallery" }],
-  classification: [{ label: "Home", href: "/" }, { label: "Gallery" }],
-  "gallery-dashboard": [{ label: "Home", href: "/" }, { label: "Gallery" }],
+  classification: [{ label: "Home", href: "/" }, { label: "Builds" }],
   profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
   activity: [{ label: "Home", href: "/" }, { label: "Activity" }],
   drafts: [{ label: "Home", href: "/" }, { label: "Drafts" }],

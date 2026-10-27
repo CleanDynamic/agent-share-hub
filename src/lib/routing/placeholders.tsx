@@ -13,7 +13,7 @@ import { BuildViewSkeleton } from "@/pages/site/build/BuildViewSkeleton";
 import { ComposeSkeleton } from "@/pages/site/compose/ComposeSkeleton";
 import { DraftsLoadingView } from "@/pages/site/drafts/DraftsFrame";
 import { HomeLoadingView } from "@/pages/site/home/HomeFrame";
-import { GalleryLoadingView } from "@/pages/site/gallery/galleryFrame";
+import { BuildsLoadingView } from "@/pages/site/builds/BuildsFrame";
 
 const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, minHeight: "60vh", paddingTop: 24 };
 
@@ -30,7 +30,7 @@ function ListPlaceholder({ what, rows = 6, rowHeight = 52, title = true }: { wha
 
 // SV-10: the page's own loading state, from its small frame module.
 export const HomePlaceholder = HomeLoadingView;
-export const BuildsPlaceholder = GalleryLoadingView;
+export const BuildsPlaceholder = BuildsLoadingView;
 export const OpenBuildsPlaceholder = BountiesLoadingView;
 export const LibraryPlaceholder = LibraryLoadingView;
 // SV-04 P5: the page's own loading state, from its small frame module (no page code in the first download).

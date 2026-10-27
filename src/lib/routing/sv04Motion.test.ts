@@ -20,7 +20,7 @@ const ADDED = [
   "src/pages/site/bounties/BountiesFrame.tsx",
   "src/pages/site/build/BuildViewSkeleton.tsx",
   "src/pages/site/drafts/DraftsFrame.tsx",
-  "src/pages/site/gallery/galleryFrame.tsx",
+  "src/pages/site/builds/BuildsFrame.tsx",
 ];
 
 const code = (path: string) => readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");

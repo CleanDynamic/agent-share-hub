@@ -22,13 +22,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
 import { MODEL_VERSIONS, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
-import { TOOLS } from "@/lib/tools/registry";
+import { TOOLS, toolFor } from "@/lib/tools/registry";
 import { isPattern, type Pattern } from "./patterns";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import type { ThreadDoc } from "./thread";
 import { normaliseQuery, searchBuildIds } from "./search";
-import { findAcross, isKnown, type Facet } from "@/lib/classify/taxonomy";
+import { findAcross, isKnown, valueOf, type Facet } from "@/lib/classify/taxonomy";
 import { hasClassification, readClassification } from "@/lib/classify/facets";
 import type { Classification } from "@/lib/classify/types";
 import {
@@ -821,53 +821,6 @@ export async function getClassificationFacets(): Promise<ClassificationFacets> {
 }
 
 /**
- * CA-16 P6: the classification of the builds on the page, by build id. Asked for only once `classification_facets` answered, so the
- * column exists. A build with nothing in it is left out, so its card shows nothing new.
- */
-export async function getBuildClassifications(ids: readonly string[]): Promise<Record<string, Classification>> {
-  if (ids.length === 0) return {};
-  const { data, error } = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { in: (column: string, values: string[]) => PromiseLike<{ data: { id: string; classification: unknown }[] | null; error: unknown }> } } })
-    .from("builds")
-    .select("id, classification")
-    .in("id", [...ids]);
-  if (error || !data) return {};
-  const out: Record<string, Classification> = {};
-  for (const row of data) {
-    const read = readClassification(row.classification);
-    if (hasClassification(read)) out[row.id] = read;
-  }
-  return out;
-}
-
-/** CA-16b: how many people tried a build and how many got it working. */
-export interface BuildTries {
-  tried: number;
-  worked: number;
-}
-
-/**
- * CA-16b: for each build id, how many reproductions were reported and how many of them worked, for the proof line
- * ("3 of 4 people got it working"). One limited read of `build_reproductions`; a build nobody has tried is absent.
- */
-export async function getBuildTries(ids: readonly string[]): Promise<Record<string, BuildTries>> {
-  if (ids.length === 0) return {};
-  const { data, error } = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { in: (column: string, values: string[]) => { limit: (count: number) => PromiseLike<{ data: { build_id: string; worked: boolean | null }[] | null; error: unknown }> } } } })
-    .from("build_reproductions")
-    .select("build_id, worked")
-    .in("build_id", [...ids])
-    .limit(2000);
-  if (error || !data) return {};
-  const out: Record<string, BuildTries> = {};
-  for (const row of data) {
-    const entry = out[row.build_id] ?? { tried: 0, worked: 0 };
-    entry.tried += 1;
-    if (row.worked === true) entry.worked += 1;
-    out[row.build_id] = entry;
-  }
-  return out;
-}
-
-/**
  * How many gallery builds carry an open bounty (NS-P52).
  *
  * ONE HEAD REQUEST, no rows. `head: true` asks PostgREST for the count and
@@ -1158,95 +1111,17 @@ function cleanShapes(values: string[] | undefined): BuildShape[] {
 }
 
 // =============================================================================
-// The Gallery feed (UI-P44b)
+// The feed's reads (UI-P44b)
 // =============================================================================
 //
-// Model-aware proof per build. listGallery is untouched; this is its own read,
-// on the same shared select (gallerySelect) and withCardEmbeds, so a card is
-// the same card.
+// The Gallery feed was retired by SV-11. What stays is what Home's posts and the Builds table read: the search, the
+// filters and the order the feed wrote, and the posts by id.
 
-export const FEED_PAGE_SIZE = GALLERY_PAGE_SIZE;
-
-/** Builds the model view and the counts rank in the app. Past this a view or RPC takes over. */
-const FEED_POPULATION_CAP = 500;
-/** Worked reproductions read to find the builds reproduced on one model. */
-const FEED_REPRODUCTION_ROWS_CAP = 500;
 /** Handles matched by a handle-shaped query. */
 const FEED_HANDLE_LIMIT = 20;
 const FEED_ID_CHUNK = 100;
 
 export type GalleryFeedSort = "newest" | "reproduced" | "confirmed" | "rebuilt";
-
-export interface GalleryFeedParams {
-  /** A ModelVersion id. An id the registry does not name is ignored. */
-  model?: string;
-  /** A made_for value. */
-  audience?: string;
-  /** A tool id from the registry (TF-14). An id it does not name is ignored. */
-  tool?: string;
-  /** CA-13 P12. One of the three patterns. Only ever sent once the facets carried `patterns`, so the column exists. */
-  pattern?: Pattern;
-  /**
-   * CA-16 P6. Classification facet keys (`field:ai-ml`, `skill:no-coding`): an OR within a facet and an AND across facets,
-   * matched with `facets && ARRAY[...]`. Only ever sent once `classification_facets` answered, so the column exists.
-   */
-  facets?: readonly string[];
-  /** CA-16 P6. The `facets` column exists, so a search also finds builds classified by a term ("NLP", "RAG", "Stata"). */
-  classified?: boolean;
-  sort: GalleryFeedSort;
-  q?: string;
-  /** Zero-based. With a model it pages both lists. */
-  page: number;
-}
-
-/** One feed row: the gallery's card data plus what the feed adds. */
-export interface GalleryFeedRow extends GalleryBuild {
-  models_used: string[];
-  /** profiles.username; null when the profile has none or was not found. */
-  creatorHandle: string | null;
-  /** profiles.display_name; null when the profile has none or was not found. */
-  creatorName: string | null;
-  /** profiles.avatar_url; null when the profile has none or was not found. */
-  creatorAvatar: string | null;
-  /** Reproductions by model, most worked first. */
-  proof: ModelProof[];
-  /**
-   * builds.like_count and comment_count, read with the cards so the feed's action row has its numbers without a
-   * request of its own. Absent when the read did not carry them.
-   */
-  engagement?: { likes: number; comments: number };
-}
-
-export interface GalleryFeedCounts {
-  all: number;
-  /** ModelVersion id → gallery builds with a worked reproduction on it. */
-  byModel: Record<string, number>;
-}
-
-export type GalleryFeed =
-  | {
-      kind: "all";
-      model: null;
-      rows: GalleryFeedRow[];
-      hasMore: boolean;
-      counts: GalleryFeedCounts;
-      /** UI-P49: builds matching the audience and the search (an exact count on the page's own read); null if unknown. */
-      total: number | null;
-    }
-  | {
-      kind: "model";
-      model: ModelVersion;
-      /** Builds with a worked reproduction on the model, sorted by that model's figures. */
-      reproducedOn: GalleryFeedRow[];
-      /** Every other gallery build, in the sort's overall order. */
-      notYet: GalleryFeedRow[];
-      hasMoreReproducedOn: boolean;
-      hasMoreNotYet: boolean;
-      counts: GalleryFeedCounts;
-      /** UI-P49: how many builds each list holds under the audience and the search (within the 500 cap). */
-      totalReproducedOn: number;
-      totalNotYet: number;
-    };
 
 /** The builder methods the feed calls on a builds query. */
 interface FeedQuery extends PromiseLike<{ data: unknown; error: unknown; count?: number | null }> {
@@ -1268,16 +1143,6 @@ interface FeedFrom {
 
 function feedTable(table: string): FeedFrom {
   return (supabase as unknown as { from: (name: string) => FeedFrom }).from(table);
-}
-
-const FEED_LIGHT_COLUMNS = "id, published_at, rebuild_count, reproduction_count, last_confirmed_at";
-
-interface LightRow {
-  id: string;
-  published_at: string | null;
-  rebuild_count: number | null;
-  reproduction_count: number | null;
-  last_confirmed_at: string | null;
 }
 
 /**
@@ -1341,47 +1206,6 @@ async function feedSearchClause(raw: string | undefined, classified = false): Pr
   return clauses.join(",");
 }
 
-/**
- * CA-13 P12: the patterns of the builds on the page, by build id. Asked for only once the facets carried `patterns` (the column
- * is live), and never part of the card query, so a Gallery without the migration is exactly the Gallery it was. A failed read
- * is an empty map: the marks are an offer, and a Gallery that failed to load for a mark would be the wrong trade.
- */
-export async function getBuildPatterns(ids: readonly string[]): Promise<Record<string, Pattern[]>> {
-  const unique = [...new Set(ids)].slice(0, 200);
-  if (unique.length === 0) return {};
-  const { data, error } = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { in: (column: string, values: string[]) => PromiseLike<{ data: { id: string; patterns: unknown }[] | null; error: unknown }> } } })
-    .from("builds")
-    .select("id, patterns")
-    .in("id", unique);
-  if (error || !data) return {};
-  return Object.fromEntries(data.flatMap((row) => (Array.isArray(row.patterns) ? [[row.id, row.patterns.filter(isPattern)] as const] : [])));
-}
-
-/** The gallery's membership rule plus the feed's audience and search. */
-function feedBase(
-  columns: string,
-  audience: string | undefined,
-  search: string | null,
-  withCount = false,
-  madeWith: readonly string[] = [],
-  pattern?: Pattern,
-  facets: readonly string[] = [],
-): FeedQuery {
-  let query = feedTable("builds")
-    .select(columns, withCount ? { count: "exact" } : undefined)
-    .in("status", ["published", "gallery"])
-    // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
-    .or(galleryPredicate());
-  if (audience) query = query.overlaps("made_for", [audience]);
-  if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
-  // CA-13 P12: only when a pattern was chosen, which the page offers only once the column is live.
-  if (pattern) query = query.contains("patterns", [pattern]);
-  // CA-16 P6: one `facets && ARRAY[...]` per facet, so values in one facet are an OR and facets are an AND.
-  for (const values of facetGroups(facets).values()) query = query.overlaps("facets", values);
-  if (search) query = query.or(search);
-  return query;
-}
-
 /** CA-16 P6: the keys grouped by facet, unknown keys dropped: `{ field: [...], skill: [...] }` as a map. */
 export function facetGroups(keys: readonly string[]): Map<string, string[]> {
   const out = new Map<string, string[]>();
@@ -1416,94 +1240,12 @@ function feedOrder(query: FeedQuery, sort: GalleryFeedSort): FeedQuery {
   return q.order("published_at", desc).order("id", { ascending: true });
 }
 
-const time = (iso: string | null): number => (iso ? Date.parse(iso) || 0 : 0);
-
-/** What the feed shows of a maker: their profile's handle, name and picture. Each null when the profile has none. */
-export interface CreatorProfile {
-  handle: string | null;
-  name: string | null;
-  avatar: string | null;
-}
-
-/** Creator id → profile: one profiles lookup per 100 ids (a feed page is one). */
-async function creatorProfiles(creatorIds: string[]): Promise<Map<string, CreatorProfile>> {
-  const ids = [...new Set(creatorIds)];
-  const out = new Map<string, CreatorProfile>();
-  for (let i = 0; i < ids.length; i += FEED_ID_CHUNK) {
-    const chunk = ids.slice(i, i + FEED_ID_CHUNK);
-    const { data, error } = await feedTable("profiles")
-      .select("id, username, display_name, avatar_url")
-      .in("id", chunk)
-      .limit(chunk.length);
-    if (error) throw buildLayerError("listGalleryFeed", error);
-    for (const row of (data ?? []) as {
-      id: string;
-      username: string | null;
-      display_name?: string | null;
-      avatar_url?: string | null;
-    }[]) {
-      out.set(row.id, {
-        handle: row.username ?? null,
-        name: row.display_name?.trim() || null,
-        avatar: row.avatar_url ?? null,
-      });
-    }
-  }
-  return out;
-}
-
-/** The three fields a feed row carries about its maker, null where the profile was not found. */
-function makerOf(profiles: Map<string, CreatorProfile>, creatorId: string) {
-  const profile = profiles.get(creatorId);
-  return {
-    creatorHandle: profile?.handle ?? null,
-    creatorName: profile?.name ?? null,
-    creatorAvatar: profile?.avatar ?? null,
-  };
-}
-
 type EngagementColumns = { like_count?: number | null; comment_count?: number | null };
 
-/** The counts a feed read carried, or undefined when it carried none. */
-function engagementOf(row: EngagementColumns): GalleryFeedRow["engagement"] {
+/** The counts a read carried, or undefined when it carried none. */
+function engagementOf(row: EngagementColumns): GalleryPostBuild["engagement"] {
   if (row.like_count === undefined && row.comment_count === undefined) return undefined;
   return { likes: Math.max(0, row.like_count ?? 0), comments: Math.max(0, row.comment_count ?? 0) };
-}
-
-/** The card data for these ids, in the order given. One request (ids are at most two pages). */
-async function feedRows(
-  ids: string[],
-  known: Record<string, ModelProof[]>
-): Promise<GalleryFeedRow[]> {
-  if (ids.length === 0) return [];
-
-  const query = withFeedEmbeds(
-    feedTable("builds").select(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`).in("id", ids)
-  ).limit(ids.length);
-  const { data, error } = await query;
-  if (error) throw buildLayerError("listGalleryFeed", error);
-
-  const byId = new Map(
-    ((data ?? []) as unknown as (GalleryRow & { models_used: string[] | null } & EngagementColumns)[]).map((row) => [row.id, row])
-  );
-  const found = ids.filter((id) => byId.has(id));
-
-  const missing = found.filter((id) => !(id in known));
-  const [profiles, fetched] = await Promise.all([
-    creatorProfiles(found.map((id) => byId.get(id)!.creator_id)),
-    missing.length > 0 ? getReproductionsByModel(missing) : Promise.resolve({} as Record<string, ModelProof[]>),
-  ]);
-
-  return found.map((id) => {
-    const row = byId.get(id)!;
-    return {
-      ...toGalleryBuild(row),
-      models_used: row.models_used ?? [],
-      ...makerOf(profiles, row.creator_id),
-      proof: known[id] ?? fetched[id] ?? [],
-      engagement: engagementOf(row),
-    };
-  });
 }
 
 /** SV-10: a build post as Home's feed draws it: the card with its post, and what the feed row does not carry. */
@@ -1537,508 +1279,169 @@ export async function getGalleryBuildsByIds(ids: readonly string[]): Promise<Gal
   });
 }
 
-/**
- * The Model menu's numbers: how many gallery builds are reproduced on each
- * version, and how many there are.
- *
- * ONE GROUPED READ of getReproductionsByModel over the gallery's build ids,
- * CAPPED AT 500 BUILDS (newest first). `all` is the true total; byModel counts
- * within the 500. When the gallery passes that, a view or an RPC replaces this.
- * Unfiltered on purpose: the menu says what exists, not what the search found.
- */
-async function feedCounts(): Promise<GalleryFeedCounts> {
-  const { data, error, count } = await feedBase("id", undefined, null, true)
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .limit(FEED_POPULATION_CAP);
-  if (error) throw buildLayerError("listGalleryFeed", error);
+// =============================================================================
+// The Builds table (SV-11)
+// =============================================================================
 
-  const ids = ((data ?? []) as { id: string }[]).map((row) => row.id);
-  const proofs = await getReproductionsByModel(ids);
-
-  const byModel: Record<string, number> = {};
-  for (const id of ids) {
-    for (const proof of proofs[id] ?? []) {
-      if (proof.modelId && proof.worked > 0) byModel[proof.modelId] = (byModel[proof.modelId] ?? 0) + 1;
-    }
-  }
-  return { all: count ?? ids.length, byModel };
-}
-
-/** The aliases to look for in build_reproductions.model_used, as one `or`. */
-function aliasClause(version: ModelVersion): string {
-  const spellings = [version.id, version.name, ...version.aliases].map((s) => s.toLowerCase());
-  return [...new Set(spellings)].map((alias) => `model_used.ilike.%${alias}%`).join(",");
-}
+/** SV-11: the Table's first page; more come a page at a time. */
+export const BUILDS_TABLE_PAGE_SIZE = 50;
 
 /**
- * The ids of builds with a worked reproduction on this version.
- *
- * Asks build_reproductions for worked rows whose model_used contains any alias
- * (newest 500), then CONFIRMS each with normaliseModel: ilike over-matches
- * ("claude-opus-5" is inside "claude-opus-5-5"), the registry is the judge.
+ * SV-11: what a Table row reads, and nothing else: no nodes, no pictures, no `post_doc`. The maker comes embedded (one
+ * request), the classification gives What was built, Field and Cost to run, and the open asks give the Open column.
  */
-async function reproducedOnIds(version: ModelVersion): Promise<string[]> {
-  const { data, error } = await feedTable("build_reproductions")
-    .select("build_id, model_used")
-    .eq("worked", true)
-    .or(aliasClause(version))
-    .order("confirmed_at", { ascending: false })
-    .limit(FEED_REPRODUCTION_ROWS_CAP);
-  if (error) throw buildLayerError("listGalleryFeed", error);
+const BUILDS_TABLE_COLUMNS =
+  "id, slug, title, shape, made_with, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, rebuild_count, classification, " +
+  "maker:profiles!builds_creator_id_fkey(username, display_name)";
 
-  const ids = new Set<string>();
-  for (const row of (data ?? []) as { build_id: string; model_used: string | null }[]) {
-    if (normaliseModel(row.model_used)?.id === version.id) ids.add(row.build_id);
-  }
-  return [...ids];
+/** One row of the Builds table. */
+export interface BuildsTableBuild {
+  id: string;
+  slug: string;
+  title: string;
+  shape: string;
+  madeWith: string[];
+  reproductionCount: number;
+  lastConfirmedAt: string | null;
+  lastConfirmedModel: string | null;
+  publishedAt: string | null;
+  rebuildCount: number;
+  /** Absent when the build is not classified. */
+  classifiedAs?: Classification;
+  /** profiles.username and display_name; null when the profile was not found. */
+  maker: { handle: string | null; name: string | null } | null;
+  /** The open requests on the build: how many (up to BOUNTIES_PER_BUILD) and the largest reward offered. */
+  open: { count: number; reward: number | null };
 }
 
-/**
- * One page of the Gallery feed.
- *
- * WITHOUT A MODEL: one list, ordered in the database by the sort — newest by
- * published_at; reproduced by reproduction_count (the builds' own worked
- * figure); confirmed by last_confirmed_at; rebuilt by rebuild_count — and paged
- * with a range. One request for the cards, plus one profiles lookup and one
- * proof read per page.
- *
- * WITH A MODEL: { reproducedOn, notYet }. reproducedOn is the builds with a
- * worked reproduction on that version, sorted IN THE APP by that model's own
- * figures (its worked count, its newest confirmation). notYet is the rest of
- * the gallery in the sort's overall order. Both come from at most 500 builds
- * (see feedCounts) and page separately off params.page.
- */
-export async function listGalleryFeed(params: GalleryFeedParams): Promise<GalleryFeed> {
-  const page = Math.max(0, Math.floor(params.page) || 0);
-  const start = page * FEED_PAGE_SIZE;
-  const end = start + FEED_PAGE_SIZE;
-  const audience = params.audience?.trim() || undefined;
-  const version = params.model ? MODEL_VERSIONS.find((v) => v.id === params.model) ?? null : null;
-  const madeWith = madeWithSpellings(params.tool);
+export interface BuildsTableOptions {
+  lens?: GalleryLens;
+  /**
+   * Classification facet keys (`field:ai-ml`): an OR within a facet and an AND across facets. Tools and stack keys also
+   * match a build whose `made_with` names the same tool, so a build made before it was classified is still found.
+   */
+  facets?: readonly string[];
+  /** A tool id from the registry: `made_with` holds one of its spellings. */
+  tool?: string;
+  shapes?: readonly string[];
+  pattern?: Pattern;
+  /** Only builds with an open request. The Open requests lens is the same filter. */
+  openBounties?: boolean;
+  query?: string;
+  sort?: GalleryFeedSort;
+  offset?: number;
+  limit?: number;
+}
 
-  const [search, counts] = await Promise.all([feedSearchClause(params.q, params.classified === true), feedCounts()]);
-  const facets = params.facets ?? [];
+export interface BuildsTablePage {
+  builds: BuildsTableBuild[];
+  /** Every build matching the filters (exact: the page shows it in full); null when the count did not come back. */
+  total: number | null;
+}
 
-  if (version === null) {
-    const query = withFeedEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`, audience, search, true, madeWith, params.pattern, facets), params.sort)
-    ).range(start, end);
-    const { data, error, count } = await query;
-    if (error) throw buildLayerError("listGalleryFeed", error);
+/** The builder methods the Table's read calls; every PostgREST filter builder has them. */
+interface TableQuery extends PromiseLike<{ data: unknown; error: unknown; count?: number | null }> {
+  in(column: string, values: readonly unknown[]): TableQuery;
+  or(filters: string): TableQuery;
+  eq(column: string, value: unknown): TableQuery;
+  gte(column: string, value: string | number): TableQuery;
+  contains(column: string, values: readonly unknown[]): TableQuery;
+  overlaps(column: string, values: readonly unknown[]): TableQuery;
+  order(column: string, options: { ascending: boolean; nullsFirst?: boolean }): TableQuery;
+  limit(count: number, options?: { referencedTable: string }): TableQuery;
+  range(from: number, to: number): TableQuery;
+}
 
-    const all = (data ?? []) as unknown as (GalleryRow & { models_used: string[] | null } & EngagementColumns)[];
-    const pageRows = all.slice(0, FEED_PAGE_SIZE);
-    const [profiles, proofs] = await Promise.all([
-      creatorProfiles(pageRows.map((row) => row.creator_id)),
-      getReproductionsByModel(pageRows.map((row) => row.id)),
-    ]);
-    const rows: GalleryFeedRow[] = pageRows.map((row) => ({
-      ...toGalleryBuild(row),
-      models_used: row.models_used ?? [],
-      ...makerOf(profiles, row.creator_id),
-      proof: proofs[row.id] ?? [],
-      engagement: engagementOf(row),
-    }));
-    return {
-      kind: "all",
-      model: null,
-      rows,
-      hasMore: all.length > FEED_PAGE_SIZE,
-      counts,
-      total: typeof count === "number" ? count : null,
-    };
+/** A `made_with` value spelt for an `or` clause: quoted, with the characters that would end the clause removed. */
+const quoted = (value: string): string => `"${value.replace(/[,()"\\{}]/g, " ").trim()}"`;
+
+/** SV-11: the Tools and stack keys as one clause: the build carries one of the keys, or `made_with` names one of the tools. */
+export function stackClause(keys: readonly string[]): string {
+  const spellings = new Set<string>();
+  for (const key of keys) {
+    const id = key.slice(key.indexOf(":") + 1);
+    const tool = toolFor(valueOf("stack", id)?.label ?? null);
+    if (tool) for (const spelling of [tool.name, ...tool.aliases]) spellings.add(spelling);
   }
+  const clauses = [`facets.ov.{${keys.map(quoted).join(",")}}`];
+  if (spellings.size > 0) clauses.push(`made_with.ov.{${[...spellings].map(quoted).join(",")}}`);
+  return clauses.join(",");
+}
 
-  // reproducedOn: candidates from the reproductions, then the gallery's rule on them.
-  const candidates = await reproducedOnIds(version);
-  const light: LightRow[] = [];
-  for (let i = 0; i < candidates.length; i += FEED_ID_CHUNK) {
-    const chunk = candidates.slice(i, i + FEED_ID_CHUNK);
-    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search, false, madeWith, params.pattern, facets)
-      .in("id", chunk)
-      .limit(chunk.length);
-    if (error) throw buildLayerError("listGalleryFeed", error);
-    light.push(...((data ?? []) as unknown as LightRow[]));
-  }
+interface BuildsTableRow {
+  id: string;
+  slug: string;
+  title: string | null;
+  shape: string | null;
+  made_with: string[] | null;
+  reproduction_count: number | null;
+  last_confirmed_at: string | null;
+  last_confirmed_model: string | null;
+  published_at: string | null;
+  rebuild_count: number | null;
+  classification?: unknown;
+  maker: { username: string | null; display_name: string | null } | null;
+  bounties: { reward_gbp: number | null }[] | null;
+}
 
-  const proofs = await getReproductionsByModel(light.map((row) => row.id));
-  const figure = (id: string): ModelProof | undefined => proofs[id]?.find((p) => p.modelId === version.id);
-
-  const reproduced = light
-    .filter((row) => (figure(row.id)?.worked ?? 0) > 0)
-    .sort((a, b) => {
-      const fa = figure(a.id);
-      const fb = figure(b.id);
-      const byPublished = time(b.published_at) - time(a.published_at);
-      let primary = 0;
-      if (params.sort === "reproduced") primary = (fb?.worked ?? 0) - (fa?.worked ?? 0);
-      else if (params.sort === "confirmed") primary = time(fb?.lastConfirmedAt ?? null) - time(fa?.lastConfirmedAt ?? null);
-      else if (params.sort === "rebuilt") primary = (b.rebuild_count ?? 0) - (a.rebuild_count ?? 0);
-      return primary || byPublished || a.id.localeCompare(b.id);
-    });
-  const reproducedIds = new Set(reproduced.map((row) => row.id));
-
-  // notYet: the rest of the (capped) gallery, in the sort's overall order.
-  const { data: populationData, error: populationError } = await feedOrder(
-    feedBase("id", audience, search, false, madeWith, params.pattern, facets),
-    params.sort
-  ).limit(FEED_POPULATION_CAP);
-  if (populationError) throw buildLayerError("listGalleryFeed", populationError);
-  const notYet = ((populationData ?? []) as { id: string }[])
-    .map((row) => row.id)
-    .filter((id) => !reproducedIds.has(id));
-
-  const onIds = reproduced.slice(start, end).map((row) => row.id);
-  const notIds = notYet.slice(start, end);
-  const rows = await feedRows([...onIds, ...notIds], proofs);
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  const pick = (ids: string[]) => ids.map((id) => byId.get(id)).filter((r): r is GalleryFeedRow => !!r);
-
+function toBuildsTableBuild(row: BuildsTableRow): BuildsTableBuild {
+  const read = readClassification(row.classification);
+  const rewards = (row.bounties ?? []).map((bounty) => bounty.reward_gbp).filter((reward): reward is number => typeof reward === "number" && reward > 0);
   return {
-    kind: "model",
-    model: version,
-    reproducedOn: pick(onIds),
-    notYet: pick(notIds),
-    hasMoreReproducedOn: reproduced.length > end,
-    hasMoreNotYet: notYet.length > end,
-    counts,
-    totalReproducedOn: reproduced.length,
-    totalNotYet: notYet.length,
+    id: row.id,
+    slug: row.slug,
+    title: row.title ?? "",
+    shape: row.shape ?? "",
+    madeWith: row.made_with ?? [],
+    reproductionCount: Math.max(0, row.reproduction_count ?? 0),
+    lastConfirmedAt: row.last_confirmed_at,
+    lastConfirmedModel: row.last_confirmed_model,
+    publishedAt: row.published_at,
+    rebuildCount: Math.max(0, row.rebuild_count ?? 0),
+    ...(hasClassification(read) ? { classifiedAs: read } : null),
+    maker: row.maker ? { handle: row.maker.username ?? null, name: row.maker.display_name?.trim() || null } : null,
+    open: { count: (row.bounties ?? []).length, reward: rewards.length > 0 ? Math.max(...rewards) : null },
   };
 }
 
-// =============================================================================
-// The Gallery dashboard (UI-P44c)
-// =============================================================================
-
 /**
- * The builds columns the dashboard selects: one row per build, how it was made
- * and what people did with it.
- *
- * ONLY COLUMNS UI-P42 FOUND ON LIVE (docs/proposals/UI-P42-sessions-and-making.md
- * §2, Q3). A column missing live fails the whole query, so it is left out and
- * counts as 0: `comment_count` and `save_count` are NOT live, so they are not
- * here and engagement.comments and engagement.saves are 0 until they are.
- * `reproduction_count` and `rebuild_count` are live. session_count,
- * prompt_count, ai_turn_count, models_used and making are the five columns the
- * UI-P42 migration adds (supabase/migrations/20261001280000_sessions_and_making.sql,
- * UI-P43a); the dashboard needs them, so that migration must be applied.
+ * SV-11: one page of the Builds table, in ONE REQUEST: the gallery's membership rule, the lens, the filters, the search
+ * and the sort, with the maker and the open requests embedded. The search is the feed's (`feedSearchClause`), which
+ * works without `search_build_ids`; a query shaped like a handle looks its makers up first.
  */
-export const DASHBOARD_BUILD_COLUMNS =
-  "id, creator_id, slug, title, outcome, shape, status, made_for, completeness, " +
-  "reproduction_count, rebuild_count, last_confirmed_at, last_confirmed_model, published_at, " +
-  "session_count, prompt_count, ai_turn_count, models_used, making";
+export async function listBuildsTable(options: BuildsTableOptions = {}): Promise<BuildsTablePage> {
+  const limit = Math.max(1, Math.min(options.limit ?? BUILDS_TABLE_PAGE_SIZE, 100));
+  const offset = Math.max(0, options.offset ?? 0);
+  const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens) ? (options.lens as GalleryLens) : "all";
+  const openBounties = options.openBounties === true || lens === "unsolved";
+  const bounties = openBounties
+    ? "bounties!bounties_build_id_fkey!inner(reward_gbp, status)"
+    : "bounties!bounties_build_id_fkey(reward_gbp, status)";
+  const search = await feedSearchClause(options.query, true);
 
-/**
- * At most this many gallery builds. THE CAP EXISTS SO SORTING CAN HAPPEN IN THE
- * APP: engagement.total is a sum of figures from four places, so the dashboard
- * sorts it over these rows without a view. Past this a view replaces it.
- */
-export const DASHBOARD_ROW_LIMIT = 200;
+  let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact" }) => TableQuery } })
+    .from("builds")
+    .select(`${BUILDS_TABLE_COLUMNS}, ${bounties}`, { count: "exact" })
+    .in("status", ["published", "gallery"])
+    .or(galleryPredicate())
+    .eq("bounties.status", "open");
 
-export interface DashboardSession {
-  client: string | null;
-  model: string | null;
-  prompts: number;
-  turns: number;
-}
-
-export interface DashboardEngagement {
-  runs: number;
-  rebuilds: number;
-  comments: number;
-  saves: number;
-  total: number;
-}
-
-export interface DashboardRow {
-  id: string;
-  slug: string;
-  title: string;
-  /** handle is "" when the profile has no username. */
-  creator: { id: string; handle: string };
-  outcome: string | null;
-  madeFor: string[];
-  modelsUsed: string[];
-  sessionCount: number;
-  promptCount: number;
-  aiTurnCount: number;
-  making: { sessions: DashboardSession[] };
-  // for the plaque and the gallery rule:
-  reproduction_count: number;
-  last_confirmed_at: string | null;
-  last_confirmed_model: string | null;
-  published_at: string | null;
-  status: string;
-  shape: string;
-  completeness: number;
-  engagement: DashboardEngagement;
-  /** at is "" only for a build with no published_at and nothing else on record. */
-  lastActivity: { at: string; what: string };
-  /** 14 weekly values, oldest first. */
-  series: number[];
-  proof: ModelProof[];
-}
-
-export interface GalleryDashboardParams {
-  /** A ModelVersion id; matched on the version's NAME in models_used. */
-  model?: string;
-  lab?: Lab;
-  audience?: string;
-  activeWithinDays?: 7 | 30 | 90;
-  report?: "month" | "multi";
-  q?: string;
-}
-
-interface DashboardBuildRow {
-  id: string;
-  creator_id: string;
-  slug: string;
-  title: string;
-  outcome: string | null;
-  shape: string;
-  status: string;
-  made_for: string[] | null;
-  completeness: number | null;
-  reproduction_count: number | null;
-  rebuild_count: number | null;
-  last_confirmed_at: string | null;
-  last_confirmed_model: string | null;
-  published_at: string | null;
-  session_count: number | null;
-  prompt_count: number | null;
-  ai_turn_count: number | null;
-  models_used: string[] | null;
-  making: unknown;
-}
-
-const WEEK_MS = 7 * 86_400_000;
-const SERIES_ROWS_PER_CHUNK = 5000;
-const REBUILD_ROWS_PER_CHUNK = 1000;
-export const ENGAGEMENT_WEEKS = 14;
-
-const count = (value: number | null | undefined): number =>
-  typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
-
-/** builds.making is jsonb the maker can write: keep only what has the shape. */
-function dashboardSessions(making: unknown): DashboardSession[] {
-  const list = (making as { sessions?: unknown } | null)?.sessions;
-  if (!Array.isArray(list)) return [];
-  return list
-    .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === "object")
-    .map((entry) => ({
-      client: typeof entry.client === "string" ? entry.client : null,
-      model: typeof entry.model === "string" ? entry.model : null,
-      prompts: count(entry.prompts as number),
-      turns: count(entry.turns as number),
-    }));
-}
-
-/** The week bucket of a timestamp, 0 = oldest of `weeks`, or -1 outside the window. */
-function weekBucket(iso: string | null, thisWeek: number, weeks: number): number {
-  const at = iso ? Date.parse(iso) : NaN;
-  if (Number.isNaN(at)) return -1;
-  const ago = Math.floor((thisWeek - weekStartUtc(new Date(at)).getTime()) / WEEK_MS);
-  const index = weeks - 1 - ago;
-  return index >= 0 && index < weeks ? index : -1;
-}
-
-/**
- * Per build, a count per ISO week (Monday to Sunday, UTC), oldest first, the
- * last being the week that holds `now`: reproductions of any outcome (by
- * confirmed_at) plus published rebuilds (by published_at).
- *
- * COMMENTS AND SAVES ARE LEFT OUT until their tables exist on live (UI-P42:
- * comment_count and save_count are not there); add them here when they are.
- * Every id asked for is a key; a quiet build is all zeros.
- */
-export async function getEngagementSeries(
-  buildIds: string[],
-  weeks: number = ENGAGEMENT_WEEKS,
-  now: Date = new Date()
-): Promise<Record<string, number[]>> {
-  const span = Math.max(1, Math.min(Math.floor(weeks) || ENGAGEMENT_WEEKS, 52));
-  const ids = [...new Set(buildIds)];
-  const out: Record<string, number[]> = {};
-  for (const id of ids) out[id] = new Array<number>(span).fill(0);
-
-  const thisWeek = weekStartUtc(now).getTime();
-  const since = new Date(thisWeek - (span - 1) * WEEK_MS).toISOString();
-
-  for (let i = 0; i < ids.length; i += FEED_ID_CHUNK) {
-    const chunk = ids.slice(i, i + FEED_ID_CHUNK);
-
-    const reproductions = await feedTable("build_reproductions")
-      .select("build_id, confirmed_at")
-      .in("build_id", chunk)
-      .gte("confirmed_at", since)
-      .limit(SERIES_ROWS_PER_CHUNK);
-    if (reproductions.error) throw buildLayerError("getEngagementSeries", reproductions.error);
-    for (const row of (reproductions.data ?? []) as { build_id: string; confirmed_at: string | null }[]) {
-      const bucket = weekBucket(row.confirmed_at, thisWeek, span);
-      if (bucket >= 0 && out[row.build_id]) out[row.build_id][bucket] += 1;
-    }
-
-    const rebuilds = await feedTable("builds")
-      .select("parent_build_id, published_at")
-      .in("parent_build_id", chunk)
-      .in("status", ["published", "gallery"])
-      .gte("published_at", since)
-      .limit(SERIES_ROWS_PER_CHUNK);
-    if (rebuilds.error) throw buildLayerError("getEngagementSeries", rebuilds.error);
-    for (const row of (rebuilds.data ?? []) as { parent_build_id: string; published_at: string | null }[]) {
-      const bucket = weekBucket(row.published_at, thisWeek, span);
-      if (bucket >= 0 && out[row.parent_build_id]) out[row.parent_build_id][bucket] += 1;
-    }
+  const madeWith = madeWithSpellings(options.tool);
+  if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
+  const shapes = cleanShapes(options.shapes ? [...options.shapes] : undefined);
+  if (shapes.length > 0) query = query.in("shape", shapes);
+  if (options.pattern) query = query.contains("patterns", [options.pattern]);
+  // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
+  for (const [facet, keys] of facetGroups(options.facets ?? [])) {
+    query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
   }
-  return out;
-}
+  if (search) query = query.or(search);
+  query = applyLensFilters(query, lens);
 
-/** The newest published rebuild of each build, with who made it. */
-async function latestRebuilds(
-  buildIds: string[]
-): Promise<Map<string, { creatorId: string; at: string }>> {
-  const out = new Map<string, { creatorId: string; at: string }>();
-  for (let i = 0; i < buildIds.length; i += FEED_ID_CHUNK) {
-    const chunk = buildIds.slice(i, i + FEED_ID_CHUNK);
-    const { data, error } = await feedTable("builds")
-      .select("parent_build_id, creator_id, published_at")
-      .in("parent_build_id", chunk)
-      .in("status", ["published", "gallery"])
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .limit(REBUILD_ROWS_PER_CHUNK);
-    if (error) throw buildLayerError("listGalleryDashboard", error);
-    for (const row of (data ?? []) as { parent_build_id: string; creator_id: string; published_at: string | null }[]) {
-      // Newest first, so the first row seen for a parent is its latest.
-      if (row.published_at && !out.has(row.parent_build_id)) {
-        out.set(row.parent_build_id, { creatorId: row.creator_id, at: row.published_at });
-      }
-    }
-  }
-  return out;
-}
+  const { data, error, count } = await (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
+    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })
+    .range(offset, offset + limit - 1);
+  if (error) throw buildLayerError("listBuildsTable", error);
 
-/** The newest of the latest reproduction, the latest rebuild and publication. */
-function newestActivity(
-  proof: ModelProof[],
-  rebuild: { handle: string; at: string } | null,
-  publishedAt: string | null
-): { at: string; what: string } {
-  // Reproductions that worked: a failed attempt is not "reproduced on".
-  const reproduced = proof
-    .filter((entry) => entry.lastConfirmedAt)
-    .sort((a, b) => time(b.lastConfirmedAt) - time(a.lastConfirmedAt))[0];
-
-  // Listed in tie-break order: a reproduction beats a rebuild beats publication.
-  const events: { at: string; what: string }[] = [];
-  if (reproduced?.lastConfirmedAt) {
-    events.push({ at: reproduced.lastConfirmedAt, what: `Reproduced on ${reproduced.modelName}` });
-  }
-  if (rebuild) events.push({ at: rebuild.at, what: `Rebuilt by @${rebuild.handle}` });
-  if (publishedAt) events.push({ at: publishedAt, what: "Published" });
-
-  return events.reduce((best, event) => (time(event.at) > time(best.at) ? event : best), events[0] ?? { at: "", what: "Published" });
-}
-
-/**
- * Up to DASHBOARD_ROW_LIMIT gallery builds, one row each, newest activity first.
- *
- * The database narrows by the cheap filters (audience, model name, lab,
- * multi-session) BEFORE the cap, so the 200 are the 200 that match; the ones
- * that need computed figures (activeWithinDays, report "month", q) are applied
- * here, over the rows. q therefore searches within those rows.
- */
-export async function listGalleryDashboard(
-  params: GalleryDashboardParams = {}
-): Promise<DashboardRow[]> {
-  const version = params.model ? MODEL_VERSIONS.find((v) => v.id === params.model) ?? null : null;
-  // A lab is its text models, legacy and retired included, so a build made on an older one still counts.
-  const labNames = params.lab ? MODEL_VERSIONS.filter((v) => v.lab === params.lab && v.modality === "text").map((v) => v.name) : [];
-  const audience = params.audience?.trim() || undefined;
-
-  let query = feedBase(DASHBOARD_BUILD_COLUMNS, audience, null);
-  if (version) query = query.contains("models_used", [version.name]);
-  if (params.lab) query = query.overlaps("models_used", labNames);
-  if (params.report === "multi") query = query.gte("session_count", 3);
-
-  const { data, error } = await query
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .order("id", { ascending: true })
-    .limit(DASHBOARD_ROW_LIMIT);
-  if (error) throw buildLayerError("listGalleryDashboard", error);
-
-  const builds = (data ?? []) as unknown as DashboardBuildRow[];
-  const ids = builds.map((row) => row.id);
-
-  const rebuilt = ids.length
-    ? await latestRebuilds(builds.filter((row) => count(row.rebuild_count) > 0).map((row) => row.id))
-    : new Map<string, { creatorId: string; at: string }>();
-
-  const [profiles, proofs, series] = await Promise.all([
-    creatorProfiles([...builds.map((row) => row.creator_id), ...[...rebuilt.values()].map((r) => r.creatorId)]),
-    getReproductionsByModel(ids),
-    getEngagementSeries(ids, ENGAGEMENT_WEEKS),
-  ]);
-
-  const rows: DashboardRow[] = builds.map((row) => {
-    const proof = proofs[row.id] ?? [];
-    const rebuild = rebuilt.get(row.id);
-    const rebuildHandle = rebuild ? (profiles.get(rebuild.creatorId)?.handle ?? null) : null;
-    const runs = count(row.reproduction_count);
-    const rebuilds = count(row.rebuild_count);
-    // comment_count and save_count are not on live (see DASHBOARD_BUILD_COLUMNS).
-    const engagement = { runs, rebuilds, comments: 0, saves: 0, total: runs + rebuilds };
-
-    return {
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      creator: { id: row.creator_id, handle: profiles.get(row.creator_id)?.handle ?? "" },
-      outcome: row.outcome ?? null,
-      madeFor: row.made_for ?? [],
-      modelsUsed: row.models_used ?? [],
-      sessionCount: count(row.session_count),
-      promptCount: count(row.prompt_count),
-      aiTurnCount: count(row.ai_turn_count),
-      making: { sessions: dashboardSessions(row.making) },
-      reproduction_count: runs,
-      last_confirmed_at: row.last_confirmed_at ?? null,
-      last_confirmed_model: row.last_confirmed_model ?? null,
-      published_at: row.published_at ?? null,
-      status: row.status,
-      shape: row.shape,
-      completeness: row.completeness ?? 0,
-      engagement,
-      lastActivity: newestActivity(
-        proof,
-        rebuild && rebuildHandle ? { handle: rebuildHandle, at: rebuild.at } : null,
-        row.published_at ?? null
-      ),
-      series: series[row.id] ?? new Array<number>(ENGAGEMENT_WEEKS).fill(0),
-      proof,
-    };
-  });
-
-  // The filters the database could not apply, and a confirmation of the ones it did.
-  const windows = [params.activeWithinDays, params.report === "month" ? 30 : undefined].filter(
-    (days): days is number => typeof days === "number"
-  );
-  const within = windows.length ? Math.min(...windows) : null;
-  const cutoff = within === null ? 0 : Date.now() - within * 86_400_000;
-  const needle = normaliseQuery(params.q)?.toLowerCase() ?? null;
-
-  return rows
-    .filter((row) => !version || row.modelsUsed.some((name) => normaliseModel(name)?.id === version.id))
-    .filter((row) => !params.lab || row.modelsUsed.some((name) => normaliseModel(name)?.lab === params.lab))
-    .filter((row) => !audience || row.madeFor.includes(audience))
-    .filter((row) => params.report !== "multi" || row.sessionCount >= 3)
-    .filter((row) => within === null || time(row.lastActivity.at) >= cutoff)
-    .filter(
-      (row) =>
-        needle === null ||
-        [row.title, row.creator.handle, ...row.madeFor, ...row.modelsUsed].some((text) =>
-          text.toLowerCase().includes(needle)
-        )
-    )
-    .sort((a, b) => time(b.lastActivity.at) - time(a.lastActivity.at) || a.id.localeCompare(b.id));
+  return { builds: ((data ?? []) as BuildsTableRow[]).map(toBuildsTableBuild), total: typeof count === "number" ? count : null };
 }
