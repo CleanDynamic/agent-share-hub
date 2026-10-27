@@ -66,14 +66,49 @@ export function sessionSource(session: Pick<SessionSummary, "modelName" | "clien
   return session.modelName || CLIENT_LABEL[session.client ?? ""] || "No app chosen";
 }
 
-/** "{modelName} · {date}", ending " · for {draft}" when the connector was aimed at one. */
+/**
+ * SV-08: a session's detail line, "<tool> · <model> · <date>", then "for <draft>" when the connector was aimed at one, then
+ * "in n drafts". A part that is not known is left out; with no tool the line starts "No app chosen".
+ */
 export function sessionMeta(session: SessionSummary, drafts: readonly DraftListItem[], now: number): string {
-  const parts = [sessionSource(session), sessionDate(session.createdAt, now)].filter(Boolean);
+  const parts = [sessionApp(session) ?? "No app chosen", session.modelName, sessionDate(session.createdAt, now)].filter(Boolean) as string[];
   const target = session.targetBuildId ? drafts.find((d) => d.id === session.targetBuildId) : undefined;
   if (target) parts.push(`for ${draftTitle(target.title)}`);
   const inDrafts = (session.draftIds ?? (session.buildId ? [session.buildId] : [])).length;
-  if (inDrafts > 0) parts.push(`In ${inDrafts} ${inDrafts === 1 ? "draft" : "drafts"}`);
+  if (inDrafts > 0) parts.push(`in ${inDrafts} ${inDrafts === 1 ? "draft" : "drafts"}`);
   return parts.join(" · ");
+}
+
+/** SV-08: the drafts shown before "Show n more". */
+export const DRAFTS_SHOWN = 12;
+
+/** The first line under Continue editing: "28 drafts · latest first". */
+export function draftsMeta(count: number): string {
+  return `${count} ${count === 1 ? "draft" : "drafts"} · latest first`;
+}
+
+/** The first line under Sessions: "8 imported · drag one into a draft" (no drag on touch). */
+export function sessionsMeta(count: number, canDrag: boolean): string {
+  return `${count} imported${canDrag ? " · drag one into a draft" : ""}`;
+}
+
+export interface ConnectedTool {
+  client: string;
+  name: string;
+  lastImport: string;
+}
+
+/** SV-08: the tools the sessions came from, newest first, each with the date of its latest session ("10 Oct"). Unknown tools are not listed. */
+export function connectedTools(sessions: readonly Pick<SessionSummary, "client" | "createdAt">[], now: number): ConnectedTool[] {
+  const latest = new Map<string, string>();
+  for (const s of sessions) {
+    if (!s.client || s.client === "web" || !CLIENT_LABEL[s.client] || Number.isNaN(new Date(s.createdAt).getTime())) continue;
+    const seen = latest.get(s.client);
+    if (!seen || s.createdAt > seen) latest.set(s.client, s.createdAt);
+  }
+  return [...latest.entries()]
+    .sort((a, b) => (a[1] < b[1] ? 1 : -1))
+    .map(([client, at]) => ({ client, name: CLIENT_LABEL[client], lastImport: sessionDate(at, now) }));
 }
 
 export function promptLine(session: Pick<SessionSummary, "firstPrompt">): string {
