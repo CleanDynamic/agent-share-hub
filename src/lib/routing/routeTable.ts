@@ -44,8 +44,9 @@ export interface RouteEntry {
   load: () => Promise<{ default: ComponentType<never> }>;
   prefetch: (params: RouteParams, queryClient: QueryClient, context: RouteContext) => Promise<void> | void;
   Placeholder: ComponentType;
-  /** SV-04 P4: what the one frame does for this page. `wide`: no 1428 cap and no side padding; `SkipLink`: the first stop. */
-  frame?: { wide: boolean; SkipLink?: ComponentType };
+  /** SV-04 P4: what the one frame does for this page. `wide`: no 1428 cap and no side padding; `SkipLink`: the first stop.
+      SV-08 `board`: the vision boards' page area (no breadcrumb, the board's padding). */
+  frame?: { wide?: boolean; board?: boolean; SkipLink?: ComponentType };
 }
 
 
@@ -132,6 +133,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       });
     },
     Placeholder: DraftsPlaceholder,
+    frame: { board: true },
   },
   create: {
     key: "create",

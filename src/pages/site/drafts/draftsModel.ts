@@ -36,12 +36,21 @@ export function draftTitle(title: string | null | undefined): string {
   return isUntitled(title) ? UNTITLED : (title as string).trim();
 }
 
+/** "2 sessions", "1 session", "No sessions". */
+export function draftSessions(draft: Pick<DraftListItem, "sessionCount">): string {
+  const n = draft.sessionCount;
+  return n === 0 ? "No sessions" : `${n} session${n === 1 ? "" : "s"}`;
+}
+
+/** "edited 17m ago", "edited just now"; empty when the time is not known. */
+export function draftEdited(draft: Pick<DraftListItem, "updatedAt">, now: number): string {
+  const ago = shortAgo(draft.updatedAt, now);
+  return ago === "" ? "" : ago === "now" ? "edited just now" : `edited ${ago} ago`;
+}
+
 /** "2 sessions · edited 17m ago", "No sessions · edited just now". */
 export function draftMeta(draft: Pick<DraftListItem, "sessionCount" | "updatedAt">, now: number): string {
-  const ago = shortAgo(draft.updatedAt, now);
-  const edited = ago === "" ? "" : ago === "now" ? " · edited just now" : ` · edited ${ago} ago`;
-  const n = draft.sessionCount;
-  return `${n === 0 ? "No sessions" : `${n} session${n === 1 ? "" : "s"}`}${edited}`;
+  return [draftSessions(draft), draftEdited(draft, now)].filter(Boolean).join(" · ");
 }
 
 /** "Today", "Yesterday", or "3 Oct". */

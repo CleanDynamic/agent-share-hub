@@ -16,7 +16,7 @@ export function AppShell() {
   const SkipLink = frame?.SkipLink;
   return (
     <FrameChromeContext.Provider value={setChromeHidden}>
-      <SiteFrame wide={frame?.wide} skipLink={SkipLink ? <SkipLink /> : undefined} chrome={!chromeHidden}>
+      <SiteFrame wide={frame?.wide} board={frame?.board} skipLink={SkipLink ? <SkipLink /> : undefined} chrome={!chromeHidden}>
         <FrameOutlet />
       </SiteFrame>
     </FrameChromeContext.Provider>

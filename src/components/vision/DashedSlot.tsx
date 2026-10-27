@@ -12,11 +12,14 @@ export interface DashedSlotProps {
   as?: ElementType;
   style?: CSSProperties;
   children?: ReactNode;
+  /** SV-08: whatever the element it is drawn as takes (`to`, `href`, `data-*`, drag handlers). */
+  [attribute: string]: unknown;
 }
 
-export function DashedSlot({ wide = false, as: Tag = "div", style, children }: DashedSlotProps) {
+export function DashedSlot({ wide = false, as: Tag = "div", style, children, ...rest }: DashedSlotProps) {
   return (
     <Tag
+      {...rest}
       data-ui="dashed-slot"
       style={{
         boxSizing: "border-box",
