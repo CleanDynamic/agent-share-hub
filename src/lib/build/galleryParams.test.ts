@@ -99,29 +99,40 @@ describe("shapes (UI-P28)", () => {
 });
 
 
-describe("UI-P49 — the feed's parameters", () => {
+describe("SV-11 — the view, open and the resting sort", () => {
   it("reads view, model and sort, and writes them back in their places", () => {
-    const params = parse("q=inbox&sort=reproduced&model=sonnet-5-5&for=lawyers&view=dashboard");
-    expect(params).toMatchObject({ view: "dashboard", model: "sonnet-5-5", sort: "reproduced", madeFor: ["lawyers"], query: "inbox" });
-    expect(galleryHref(params)).toBe("/builds?view=dashboard&for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox");
+    const params = parse("q=inbox&sort=newest&model=sonnet-5-5&for=lawyers&view=maps");
+    expect(params).toMatchObject({ view: "maps", model: "sonnet-5-5", sort: "newest", madeFor: ["lawyers"], query: "inbox" });
+    expect(galleryHref(params)).toBe("/builds?view=maps&for=lawyers&model=sonnet-5-5&sort=newest&q=inbox");
   });
 
-  it("leaves the defaults out: the feed, any model, newest", () => {
-    expect(parse("view=feed&sort=newest")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
-    expect(galleryHref({ view: "feed", sort: "newest" })).toBe("/builds");
+  it("leaves the defaults out: the Table, any model, most reproduced", () => {
+    expect(parse("view=table&sort=reproduced")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(galleryHref({ sort: "reproduced" })).toBe("/builds");
   });
 
-  it("drops a model the registry does not name and a sort it does not know", () => {
-    expect(parse("model=gpt-9&sort=trending")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+  it("drops the retired views, a model the registry does not name and a sort it does not know", () => {
+    expect(parse("view=dashboard&model=gpt-9&sort=trending")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(parse("view=feed").view).toBeUndefined();
     expect(galleryHref({ model: "gpt-9", sort: "trending" as never })).toBe("/builds");
+  });
+
+  it("reads open=1 as the Open requests filter and writes it after f", () => {
+    expect(parse("open=1").open).toBe(true);
+    expect(parse("open=yes").open).toBeUndefined();
+    expect(galleryHref({ facets: ["field:education"], open: true, sort: "newest" })).toBe("/builds?f=field%3Aeducation&open=1&sort=newest");
+  });
+
+  it("drops the dashboard's parameters", () => {
+    expect(parse("tab=makers&lab=Google&report=multi&active=30&dsort=prompts&build=x&by=field")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
   });
 });
 
 describe("TF-14 — the tool parameter", () => {
   it("reads tool as an id, writes it after model and before sort, and reads a name as its id", () => {
-    const params = parse("sort=reproduced&tool=lovable&model=sonnet-5-5");
-    expect(params).toMatchObject({ tool: "lovable", model: "sonnet-5-5", sort: "reproduced" });
-    expect(galleryHref(params)).toBe("/builds?model=sonnet-5-5&tool=lovable&sort=reproduced");
+    const params = parse("sort=rebuilt&tool=lovable&model=sonnet-5-5");
+    expect(params).toMatchObject({ tool: "lovable", model: "sonnet-5-5", sort: "rebuilt" });
+    expect(galleryHref(params)).toBe("/builds?model=sonnet-5-5&tool=lovable&sort=rebuilt");
     expect(parse("tool=Claude%20Code").tool).toBe("claude-code");
   });
 
@@ -138,55 +149,11 @@ describe("TF-14 — the tool parameter", () => {
   });
 });
 
-describe("the dashboard's parameters (UI-P50)", () => {
-  it("reads tab, lab, report, active and dsort, and drops what it does not know", () => {
-    expect(parse("view=dashboard&tab=makers&lab=Google&report=multi&active=30&dsort=prompts")).toEqual({
-      lens: "all",
-      madeFor: [],
-      madeWith: [],
-      query: null,
-      view: "dashboard",
-      tab: "makers",
-      lab: "Google",
-      report: "multi",
-      active: 30,
-      dsort: "prompts",
-    });
-    const junk = parse("tab=builds&lab=Mistral&report=week&active=14&dsort=engagement");
-    expect(junk).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
-  });
-
-  it("writes them after sort and before q, and leaves the resting values out", () => {
-    expect(
-      galleryHref({ view: "dashboard", model: "opus-5-5", tab: "models", lab: "Google", report: "month", active: 7, dsort: "name", query: "cv" }),
-    ).toBe("/builds?view=dashboard&model=opus-5-5&tab=models&lab=Google&report=month&active=7&dsort=name&q=cv");
-    expect(galleryHref({ view: "dashboard", dsort: "engagement" as never })).toBe("/builds?view=dashboard");
-  });
-
-  it("round-trips", () => {
-    const href = "/builds?view=dashboard&lab=OpenAI&report=multi&active=90&dsort=turns";
-    const once = parse(href.split("?")[1]);
-    expect(galleryHref(once)).toBe(href);
-  });
-});
-
-describe("the detail sheet's parameter (UI-P51)", () => {
-  it("reads build, writes it after dsort and before q, and drops anything that is not an id", () => {
-    const id = "00000000-0000-4000-8000-000000000203";
-    expect(parse(`view=dashboard&build=${id}`).build).toBe(id);
-    expect(galleryHref({ view: "dashboard", dsort: "name", build: id, query: "cv" })).toBe(
-      `/builds?view=dashboard&dsort=name&build=${id}&q=cv`,
-    );
-    expect(parse("build=a%20b%3Cx").build).toBeUndefined();
-    expect(galleryHref({ build: "a b" })).toBe("/builds");
-  });
-});
-
 describe("CA-13 P12 — the pattern parameter", () => {
   it("reads one of the three, writes it after tool and before sort, and drops anything else", () => {
-    const params = parse("sort=reproduced&pattern=router&tool=lovable");
+    const params = parse("sort=confirmed&pattern=router&tool=lovable");
     expect(params).toMatchObject({ pattern: "router", tool: "lovable" });
-    expect(galleryHref(params)).toBe("/builds?tool=lovable&pattern=router&sort=reproduced");
+    expect(galleryHref(params)).toBe("/builds?tool=lovable&pattern=router&sort=confirmed");
     expect(parse("pattern=nonsense")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
     expect(galleryHref(parse("pattern=structured-output"))).toBe("/builds?pattern=structured-output");
   });

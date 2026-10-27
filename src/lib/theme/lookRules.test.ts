@@ -399,7 +399,6 @@ export const CA03_FILES: readonly string[] = [
   "src/components/build/FullPromptWindow.tsx",
   // CA-13 P11, P12
   "src/components/gallery/PatternMarks.tsx",
-  "src/pages/site/gallery/GalleryPatterns.test.tsx",
   // CA-14 P5 to P8
   "src/lib/build/patternsWrite.ts",
   "src/pages/site/build/useReaderPostLinks.ts",
@@ -446,14 +445,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/sourcesModel.ts",
   // CA-16b
   "src/components/classify/ClassificationBits.tsx",
-  "src/components/gallery/ClassificationFilters.tsx",
   "src/pages/site/compose/CardPreview.tsx",
   "src/pages/site/compose/ClassificationPicker.tsx",
   "src/pages/site/compose/ReadFromBuild.tsx",
   "src/pages/site/compose/SandboxCard.tsx",
   "src/pages/site/compose/classificationPieces.tsx",
-  "src/pages/site/gallery/GalleryBoard.tsx",
-  "src/pages/site/gallery/GalleryBoardGroups.tsx",
   // CA-15b P1 (the token files hold raw values by design and are held by css-parity and contrast instead)
   "src/pages/site/compose/ChoiceGrid.tsx",
   "src/pages/site/compose/ModalFrame.tsx",
@@ -951,8 +947,6 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/drafts/DraftsFrame.tsx",
   "src/pages/site/drafts/DraftsPage.tsx",
   "src/pages/site/drafts/DraftsView.tsx",
-  "src/pages/site/gallery/GalleryPage.tsx",
-  "src/pages/site/gallery/galleryFrame.tsx",
   "src/pages/site/profile/ProfilePage.tsx",
 
   // SV-05
@@ -1099,6 +1093,19 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/home/HomeView.tsx",
   "src/pages/site/home/homeModel.test.ts",
   "src/pages/site/home/homeModel.ts",
+
+  // SV-11
+  "e2e/audit/design-compare.spec.ts",
+  "src/lib/build/galleryParams.ts",
+  "src/pages/dev/ClassificationDemo.tsx",
+  "src/pages/site/builds/BuildsClassificationView.tsx",
+  "src/pages/site/builds/BuildsFrame.tsx",
+  "src/pages/site/builds/BuildsMapsView.tsx",
+  "src/pages/site/builds/BuildsPage.test.tsx",
+  "src/pages/site/builds/BuildsPage.tsx",
+  "src/pages/site/builds/buildsModel.ts",
+  "src/pages/site/builds/buildsOther.ts",
+  "src/pages/site/builds/buildsViews.ts",
 ];
 
 /**
@@ -1363,6 +1370,11 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "spacing 56 is not in SPACE_REFINED",
+    text: `columnGap: 56,`,
+    why: "SV-11: the Builds board puts its filters and its table 56 apart (series README, Visual grammar 7).",
+  },
   {
     rule: "spacing 28 is not in SPACE_REFINED",
     text: `<aside aria-label="Your studio" style={{ padding: "8px 28px 48px 4px",`,

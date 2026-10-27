@@ -17,7 +17,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { GALLERY_THRESHOLD, getBuildClassifications, getClassificationFacets, NO_CLASSIFICATION_FACETS } from "@/lib/build/gallery";
+import { GALLERY_THRESHOLD, getClassificationFacets, NO_CLASSIFICATION_FACETS } from "@/lib/build/gallery";
 
 beforeEach(() => {
   rpc.mockClear();
@@ -41,29 +41,5 @@ describe("getClassificationFacets", () => {
     await expect(getClassificationFacets()).resolves.toEqual(NO_CLASSIFICATION_FACETS);
     rpcAnswer = { data: { not: "an array" }, error: null };
     await expect(getClassificationFacets()).resolves.toEqual(NO_CLASSIFICATION_FACETS);
-  });
-});
-
-describe("getBuildClassifications", () => {
-  it("reads the classification of the given builds and leaves out a build with nothing in it", async () => {
-    rowsAnswer = {
-      data: [
-        { id: "a", classification: { declared: { age: "all-ages" } } },
-        { id: "b", classification: {} },
-        { id: "c", classification: null },
-      ],
-      error: null,
-    };
-    const got = await getBuildClassifications(["a", "b", "c"]);
-    expect(Object.keys(got)).toEqual(["a"]);
-    expect(got.a.declared.age).toBe("all-ages");
-    expect(inFn).toHaveBeenCalledWith("id", ["a", "b", "c"]);
-  });
-
-  it("asks nothing for no ids, and gives nothing on an error", async () => {
-    await expect(getBuildClassifications([])).resolves.toEqual({});
-    expect(inFn).not.toHaveBeenCalled();
-    rowsAnswer = { data: null, error: { code: "42703" } };
-    await expect(getBuildClassifications(["a"])).resolves.toEqual({});
   });
 });

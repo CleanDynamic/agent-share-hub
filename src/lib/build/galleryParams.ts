@@ -21,13 +21,9 @@
 // the feed's three others. lens, with and shape are still read and written here
 // so existing links keep parsing; the feed page itself ignores them.
 //
-// UI-P50 — THE DASHBOARD ADDS tab (models | makers; builds is the resting tab),
-// lab, report (month | multi), active (7 | 30 | 90) and dsort (the dashboard's
-// own sort; engagement is the resting one). They sit after sort and before q,
-// so the feed's addresses are unchanged. A dashboard view can be shared.
-//
-// UI-P51 — build (a build's id) opens the dashboard's detail sheet. It sits
-// after dsort and before q, so a build can be linked.
+// SV-11 — BUILDS. view is table (the resting view, never written), maps or classification; the feed and the dashboard
+// are retired, and the dashboard's parameters (tab, lab, report, active, dsort, build) and the board's tab (by) with
+// them. open=1 is the Open requests filter, after f. sort rests on reproduced, the Table's order.
 //
 // TF-14 — THE FEED ADDS tool (a tool id from the registry, /gallery?tool=lovable). It sits after model and before
 // sort. An id the registry does not name is dropped. `with` keeps its meaning and is still ignored by the feed.
@@ -38,7 +34,7 @@
 // name for, an unknown parameter, a query shorter than SEARCH_MIN — is dropped
 // on the way through, so parse followed by write is also a tidy.
 
-import { MODEL_VERSIONS, TEXT_LABS, type Lab } from "@/lib/models/registry";
+import { MODEL_VERSIONS } from "@/lib/models/registry";
 
 import { GALLERY_LENSES, GALLERY_SHAPES, type GalleryFeedSort, type GalleryLens } from "./gallery";
 import { toolFor } from "@/lib/tools/registry";
@@ -47,41 +43,15 @@ import { isKnown, type Facet } from "@/lib/classify/taxonomy";
 
 import { normaliseQuery } from "./search";
 
-/** UI-P49 — the gallery's two views of the same builds. */
-export type GalleryViewMode = "feed" | "dashboard";
+/** SV-11: the three views of the same builds; the Table is the resting one. */
+export type GalleryViewMode = "table" | "maps" | "classification";
+export const GALLERY_VIEWS: readonly GalleryViewMode[] = ["table", "maps", "classification"];
 
-/** The feed's sorts, default first. */
 export const GALLERY_FEED_SORTS: readonly GalleryFeedSort[] = ["newest", "reproduced", "confirmed", "rebuilt"];
 
-/** UI-P50 — the dashboard's tabs, builds first (the resting tab, never written). */
-export type DashboardTab = "builds" | "models" | "makers";
-export const DASHBOARD_TABS: readonly DashboardTab[] = ["builds", "models", "makers"];
+/** SV-11: the Table's resting order, the board's "Sort Reproductions". */
+export const DEFAULT_GALLERY_SORT: GalleryFeedSort = "reproduced";
 
-/** UI-P50 — the dashboard's sorts, engagement first (the resting sort, never written). */
-export type DashboardSort = "engagement" | "prompts" | "sessions" | "turns" | "models" | "activity" | "name";
-export const DASHBOARD_SORTS: readonly DashboardSort[] = [
-  "engagement",
-  "prompts",
-  "sessions",
-  "turns",
-  "models",
-  "activity",
-  "name",
-];
-
-/** UI-P50 — "Active within" windows, in days. */
-export type DashboardActive = 7 | 30 | 90;
-export const DASHBOARD_ACTIVE: readonly DashboardActive[] = [7, 30, 90];
-
-/** UI-P50 — the two reporting toggles. */
-export type DashboardReport = "month" | "multi";
-
-/** CA-16b P3: the tabs after "All builds": the builds grouped by a facet's top-level values. */
-export type GalleryBy = "field" | "task" | "built" | "technique";
-export const GALLERY_BY: readonly GalleryBy[] = ["field", "task", "built", "technique"];
-const isBy = (value: string | null | undefined): value is GalleryBy => typeof value === "string" && (GALLERY_BY as readonly string[]).includes(value);
-
-/** Where the gallery lives. */
 const GALLERY_PATH = "/builds";
 
 /** What the gallery's address says. */
@@ -98,8 +68,8 @@ export interface GalleryParams {
   shapes?: string[];
   /** The tidied query, or null for none. */
   query: string | null;
-  /** UI-P49. Present only when it is the dashboard: the feed is the resting view. */
-  view?: GalleryViewMode;
+  /** SV-11. Present only when it is not the Table, the resting view. */
+  view?: Exclude<GalleryViewMode, "table">;
   /** UI-P49. A ModelVersion id; absent is "Any model". */
   model?: string;
   /** TF-14. A tool id from the registry; absent is "Any tool". */
@@ -108,22 +78,10 @@ export interface GalleryParams {
   pattern?: Pattern;
   /** CA-16 P6. Classification facet keys (`field:ai-ml`); present only when at least one is set. An OR within a facet, an AND across facets. */
   facets?: string[];
-  /** CA-16b P3. The Gallery's tab: absent is "All builds". */
-  by?: GalleryBy;
-  /** UI-P49. Present only when it is not newest. */
+  /** SV-11. Only builds with an open request. */
+  open?: true;
+  /** UI-P49. Present only when it is not the resting sort (SV-11: reproduced). */
   sort?: GalleryFeedSort;
-  /** UI-P50. The dashboard's tab; present only when it is not Builds. */
-  tab?: Exclude<DashboardTab, "builds">;
-  /** UI-P50. A lab from the registry; chosen, it clears model. */
-  lab?: Lab;
-  /** UI-P50. "Active this month" or "Built over 3+ sessions". */
-  report?: DashboardReport;
-  /** UI-P50. Last activity within this many days. */
-  active?: DashboardActive;
-  /** UI-P50. The dashboard's sort; present only when it is not engagement. */
-  dsort?: Exclude<DashboardSort, "engagement">;
-  /** UI-P51. The build open in the dashboard's detail sheet; an id or a dev alias. */
-  build?: string;
 }
 
 /** Trimmed, empty entries dropped, first occurrence kept. */
@@ -157,32 +115,6 @@ function isSort(value: string | null | undefined): value is GalleryFeedSort {
   return typeof value === "string" && (GALLERY_FEED_SORTS as readonly string[]).includes(value);
 }
 
-function isTab(value: string | null | undefined): value is Exclude<DashboardTab, "builds"> {
-  return value === "models" || value === "makers";
-}
-
-function isLab(value: string | null | undefined): value is Lab {
-  return typeof value === "string" && (TEXT_LABS as readonly string[]).includes(value);
-}
-
-function isReport(value: string | null | undefined): value is DashboardReport {
-  return value === "month" || value === "multi";
-}
-
-function toActive(value: string | number | null | undefined): DashboardActive | null {
-  const days = Number(value);
-  return (DASHBOARD_ACTIVE as readonly number[]).includes(days) ? (days as DashboardActive) : null;
-}
-
-function isDashboardSort(value: string | null | undefined): value is Exclude<DashboardSort, "engagement"> {
-  return typeof value === "string" && value !== "engagement" && (DASHBOARD_SORTS as readonly string[]).includes(value);
-}
-
-/** UI-P51 — a build id (or the dev page's short alias): word characters and hyphens only. */
-function isBuildRef(value: string | null | undefined): value is string {
-  return typeof value === "string" && /^[\w-]{1,64}$/.test(value);
-}
-
 function isLens(value: string | null): value is GalleryLens {
   return value !== null && (GALLERY_LENSES as readonly string[]).includes(value);
 }
@@ -198,44 +130,32 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const tool = toolFor(search.get("tool"))?.id;
   const pattern = search.get("pattern");
   const facets = cleanFacetKeys(search.getAll("f"));
-  const by = search.get("by");
+  const view = search.get("view");
   const sort = search.get("sort");
-  const tab = search.get("tab");
-  const lab = search.get("lab");
-  const report = search.get("report");
-  const active = toActive(search.get("active"));
-  const dsort = search.get("dsort");
-  const build = search.get("build");
   return {
     lens: isLens(lens) ? lens : "all",
     madeFor: cleanValues(search.getAll("for")),
     madeWith: cleanValues(search.getAll("with")),
     ...(shapes.length > 0 ? { shapes } : {}),
     query: normaliseQuery(search.get("q")),
-    ...(search.get("view") === "dashboard" ? { view: "dashboard" as const } : {}),
+    ...(view === "maps" || view === "classification" ? { view } : {}),
     ...(isModel(model) ? { model } : {}),
     ...(tool ? { tool } : {}),
     ...(isPattern(pattern) ? { pattern } : {}),
     ...(facets.length > 0 ? { facets } : {}),
-    ...(isBy(by) ? { by } : {}),
-    ...(isSort(sort) && sort !== "newest" ? { sort } : {}),
-    ...(isTab(tab) ? { tab } : {}),
-    ...(isLab(lab) ? { lab } : {}),
-    ...(isReport(report) ? { report } : {}),
-    ...(active ? { active } : {}),
-    ...(isDashboardSort(dsort) ? { dsort } : {}),
-    ...(isBuildRef(build) ? { build } : {}),
+    ...(search.get("open") === "1" ? { open: true as const } : {}),
+    ...(isSort(sort) && sort !== DEFAULT_GALLERY_SORT ? { sort } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), sort, tab, lab, report, active, dsort, build, q.
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, sort, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
 
-  if (params.view === "dashboard") out.set("view", "dashboard");
+  if (params.view === "maps" || params.view === "classification") out.set("view", params.view);
   if (params.lens && isLens(params.lens) && params.lens !== "all") out.set("lens", params.lens);
   for (const value of cleanValues(params.madeFor)) out.append("for", value);
   for (const value of cleanValues(params.madeWith)) out.append("with", value);
@@ -245,15 +165,8 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   if (tool) out.set("tool", tool);
   if (isPattern(params.pattern)) out.set("pattern", params.pattern);
   for (const key of cleanFacetKeys(params.facets)) out.append("f", key);
-  if (isBy(params.by)) out.set("by", params.by);
-  if (isSort(params.sort) && params.sort !== "newest") out.set("sort", params.sort);
-  if (isTab(params.tab)) out.set("tab", params.tab);
-  if (isLab(params.lab)) out.set("lab", params.lab);
-  if (isReport(params.report)) out.set("report", params.report);
-  const active = toActive(params.active);
-  if (active) out.set("active", String(active));
-  if (isDashboardSort(params.dsort)) out.set("dsort", params.dsort);
-  if (isBuildRef(params.build)) out.set("build", params.build);
+  if (params.open === true) out.set("open", "1");
+  if (isSort(params.sort) && params.sort !== DEFAULT_GALLERY_SORT) out.set("sort", params.sort);
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);

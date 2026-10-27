@@ -27,7 +27,7 @@ interface Case {
    (sv-04-after.md). SV-10: Home's loading state is its own small frame module (HomeFrame), so Home is here. */
 const CASES: Case[] = [
   { page: "Home", path: "/", chunk: "HomePage" },
-  { page: "Builds", path: "/builds", chunk: "GalleryPage" },
+  { page: "Builds", path: "/builds", chunk: "BuildsPage" },
   { page: "OpenBuilds", path: "/openbuilds", chunk: "Bounties" },
   { page: "Library", path: "/library", chunk: "LibraryPage" },
   { page: "Drafts", path: "/drafts", chunk: "DraftsPage" },
