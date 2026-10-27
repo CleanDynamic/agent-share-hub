@@ -313,8 +313,9 @@ export default function LibraryPage() {
         path={base}
         noIndex
       />
+      {/* While the first screen loads the page is its loading state, the route's Placeholder; the page fades in over it. */}
       <PageArrival loading={loading} placeholder={<LibraryLoadingView />}>
-        {page}
+        {loading ? <LibraryLoadingView /> : page}
       </PageArrival>
       {naming === "new" ? (
         <NameCollectionDialog

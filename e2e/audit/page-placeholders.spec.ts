@@ -28,7 +28,7 @@ interface Case {
 const CASES: Case[] = [
   { page: "Builds", path: "/builds", chunk: "GalleryPage" },
   { page: "OpenBuilds", path: "/openbuilds", chunk: "Bounties" },
-  { page: "Library", path: "/library", chunk: "Library" },
+  { page: "Library", path: "/library", chunk: "LibraryPage" },
   { page: "Drafts", path: "/drafts", chunk: "DraftsPage" },
   { page: "Build", path: `/b2/${BUILD_SLUG}`, chunk: "BuildPage" },
   { page: "Composer", path: `/compose/${SV_DRAFT_ID}`, chunk: "SandboxPage" },
