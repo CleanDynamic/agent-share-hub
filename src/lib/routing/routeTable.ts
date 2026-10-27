@@ -104,19 +104,28 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     key: "library",
     pattern: SITE_NAV.library,
     signedIn: true,
-    load: () => import("@/pages/Library"),
+    load: () => import("@/pages/site/library/LibraryPage"),
+    /* SV-09: the first screen is the saves (with their count) and the collections, started together. */
     prefetch: async (_params, queryClient, { userId }) => {
       if (!userId) return;
-      const [{ listMySavedBuilds }, { LIBRARY_SAVED_KEY }] = await Promise.all([import("@/lib/social"), import("@/components/library/addToCollection")]);
-      await queryClient.prefetchInfiniteQuery({
-        queryKey: [LIBRARY_SAVED_KEY],
-        initialPageParam: undefined as string | undefined,
-        queryFn: ({ pageParam }) => listMySavedBuilds({ before: pageParam }),
-        getNextPageParam: (last) => last.nextBefore ?? undefined,
-        pages: 1,
-      });
+      const [{ listMySavedBuilds }, { listCollections }, { LIBRARY_SAVED_KEY, LIBRARY_COLLECTIONS_KEY }] = await Promise.all([
+        import("@/lib/social"),
+        import("@/lib/library"),
+        import("@/components/library/addToCollection"),
+      ]);
+      await Promise.all([
+        queryClient.prefetchInfiniteQuery({
+          queryKey: [LIBRARY_SAVED_KEY],
+          initialPageParam: undefined as string | undefined,
+          queryFn: ({ pageParam }) => listMySavedBuilds({ before: pageParam }),
+          getNextPageParam: (last) => last.nextBefore ?? undefined,
+          pages: 1,
+        }),
+        queryClient.prefetchQuery({ queryKey: [LIBRARY_COLLECTIONS_KEY, "mine"], queryFn: () => listCollections() }),
+      ]);
     },
     Placeholder: LibraryPlaceholder,
+    frame: { board: true },
   },
   drafts: {
     key: "drafts",

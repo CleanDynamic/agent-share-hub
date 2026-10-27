@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 const ADDED = [
   "src/components/brand/coverHeight.ts",
   "src/components/gallery/GalleryCardSkeleton.tsx",
-  "src/components/library/libraryLoading.tsx",
+  "src/pages/site/library/LibraryFrame.tsx",
   "src/components/shell/FrameOutlet.tsx",
   "src/components/shell/PageArrival.tsx",
   "src/components/shell/PageProgress.tsx",

@@ -2,7 +2,7 @@
 
    The number is 20/500, -0.015em, line-height 1.2; `size="room"` (Home) is 32/500, -0.02em, 1.1. The meta line is 13 in
    `--text2`, built from parts: each plain, or toned by meaning, `evidence` for worked or growth, `breakage` for failed,
-   `lit` for not tested or edited. The README allows at most two toned clauses in a line. Numbers are tabular. */
+   `lit` for not tested or edited. It sits 4 under the number at the boards' 20px line (SV-09). The README allows at most two toned clauses in a line. Numbers are tabular. */
 
 import { Fragment, type ReactNode } from "react";
 
@@ -42,7 +42,7 @@ export function PageFigure({ figure, parts = [], size = "page", separator = " ·
         {figure}
       </div>
       {parts.length > 0 ? (
-        <div style={{ fontSize: 13, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
+        <div style={{ marginTop: 4, fontSize: 13, fontWeight: 400, lineHeight: "20px", color: t.text2 }}>
           {parts.map((part, index) => (
             <Fragment key={index}>
               {index > 0 ? separator : null}

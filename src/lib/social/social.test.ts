@@ -214,6 +214,19 @@ describe("listMySavedBuilds", () => {
     expect(page.nextBefore).toBe("2026-09-01T00:00:00.000Z");
   });
 
+  it("counts the reader's saves, exactly, in the same request on the first page only (SV-09)", async () => {
+    answer = () => ({ data: [], error: null, status: 200, count: 18 });
+    const first = await listMySavedBuilds();
+    expect(requests()).toHaveLength(1);
+    expect(callOf("select")?.args[1]).toEqual({ count: "exact" });
+    expect(first.total).toBe(18);
+
+    calls = [];
+    const later = await listMySavedBuilds({ before: "2026-09-01T00:00:00.000Z" });
+    expect(callOf("select")?.args[1]).toBeUndefined();
+    expect(later.total).toBeNull();
+  });
+
   it("reads nothing for a reader who is signed out", async () => {
     session = null;
     await expect(listMySavedBuilds()).rejects.toBeInstanceOf(SocialError);

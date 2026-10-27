@@ -8,7 +8,7 @@ import type { CSSProperties } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BountiesLoadingView } from "@/pages/site/bounties/BountiesFrame";
-import { LibraryLoadingView } from "@/components/library/libraryLoading";
+import { LibraryLoadingView } from "@/pages/site/library/LibraryFrame";
 import { BuildViewSkeleton } from "@/pages/site/build/BuildViewSkeleton";
 import { ComposeSkeleton } from "@/pages/site/compose/ComposeSkeleton";
 import { DraftsLoadingView } from "@/pages/site/drafts/DraftsFrame";

@@ -1,7 +1,7 @@
 /* SV-02: the grey mono type chip (`STEP`, `PROMPT`): the only chip that sits in a row (series README, Visual grammar 6).
 
    Geist Mono 10.5, line-height 18, padding `0 6px`, radius 4, `--control` fill, `--text2` text, upper case. A tone
-   changes the text colour only. Plain text, so a screen reader reads the word as it is written. */
+   changes the text colour only (SV-09: `text`, the Library's ANSWER chip). Plain text, so a screen reader reads the word as it is written. */
 
 import type { ReactNode } from "react";
 
@@ -9,9 +9,9 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
-export type ChipTone = "evidence" | "breakage" | "lit";
+export type ChipTone = "evidence" | "breakage" | "lit" | "text";
 
-const TONE: Record<ChipTone, string> = { evidence: t.evidence, breakage: t.catBreakage, lit: t.lit };
+const TONE: Record<ChipTone, string> = { evidence: t.evidence, breakage: t.catBreakage, lit: t.lit, text: t.text };
 
 export function TypeChip({ children, tone }: { children: ReactNode; tone?: ChipTone }) {
   return (

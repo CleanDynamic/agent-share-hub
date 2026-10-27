@@ -120,7 +120,8 @@ async function fakeBackend(page: Page, { empty = false }: { empty?: boolean } = 
     if (route.request().method() !== "GET") return route.fulfill({ status: 201, contentType: "application/json", body: "" });
     const url = decodeURIComponent(route.request().url());
     if (empty) return json(route, []);
-    if (url.includes("created_at")) return json(route, SAVED);
+    // SV-03 P5: Saved is one request, each save with its build embedded.
+    if (url.includes("created_at")) return json(route, SAVED.map((row) => ({ ...row, build: BUILDS.find((build) => build.id === row.build_id) })));
     return json(route, SAVED.map((row) => ({ build_id: row.build_id })));
   });
   await page.route(/\/rest\/v1\/collections\?/, (route) => {
@@ -160,7 +161,7 @@ async function fakeBackend(page: Page, { empty = false }: { empty?: boolean } = 
   return backend;
 }
 
-const cards = (page: Page) => page.getByTestId("library-card");
+const rows = (page: Page) => page.getByTestId("library-row");
 
 async function openTheDialogFromTheGallery(page: Page) {
   await page.goto("/gallery");
@@ -176,14 +177,29 @@ async function openTheDialogFromTheGallery(page: Page) {
   return dialog;
 }
 
-test("saved builds render as the gallery's cards, newest save first", async ({ page }) => {
+test("saved builds are the table, newest save first, and Saved still loads (SV-09)", async ({ page }) => {
   await fakeBackend(page);
   await page.goto("/library");
 
-  await expect(cards(page)).toHaveCount(3);
-  await expect(cards(page).locator('[data-visual-slot="gallery-card"]')).toHaveCount(3);
-  await expect(cards(page).nth(0)).toContainText(TITLES[2]);
-  await expect(cards(page).nth(2)).toContainText(TITLES[0]);
+  await expect(rows(page)).toHaveCount(3);
+  await expect(rows(page).nth(0)).toContainText(TITLES[2]);
+  await expect(rows(page).nth(2)).toContainText(TITLES[0]);
+  await expect(page.getByTestId("library-selected")).toContainText(TITLES[2]);
+});
+
+test("a failed saved read says Builds didn't load, and Retry loads it (SV-09)", async ({ page }) => {
+  await fakeBackend(page);
+  // Down until the page has said so (the app's own retries included), then back.
+  let down = true;
+  await page.route(/\/rest\/v1\/build_saves\?.*created_at/, (route) =>
+    down ? route.fulfill({ status: 500, contentType: "application/json", body: '{"message":"boom"}' }) : route.fallback(),
+  );
+  await page.goto("/library");
+
+  await expect(page.getByText("Builds didn't load.")).toBeVisible({ timeout: 15_000 });
+  down = false;
+  await page.getByRole("button", { name: "Retry" }).first().click();
+  await expect(rows(page)).toHaveCount(3);
 });
 
 test("adding a saved build to a collection sends it as a build", async ({ page }) => {
@@ -235,43 +251,28 @@ test("the dialog shows seven collections before its list scrolls", async ({ page
   expect(list.scroll).toBeGreaterThan(list.client);
 });
 
-test("collections list the one used last first, and one opens as cards", async ({ page }) => {
+test("collections list the one used last first, and one opens in the table", async ({ page }) => {
   await fakeBackend(page);
-  await page.goto("/library?tab=collections");
+  await page.goto("/library");
 
-  const rows = page.getByTestId("library-collection");
-  await expect(rows).toHaveCount(9);
-  await expect(rows.first()).toContainText("Invoices");
-  await rows.first().click();
+  const collections = page.getByTestId("library-collection");
+  await expect(collections).toHaveCount(9);
+  await expect(collections.first()).toContainText("Invoices");
+  await collections.first().click();
 
-  await expect(page).toHaveURL(/tab=collections&collection=/);
-  await expect(cards(page)).toHaveCount(2);
-  await expect(cards(page).first()).toContainText(TITLES[3]);
+  await expect(page).toHaveURL(/\?collection=/);
+  await expect(rows(page)).toHaveCount(2);
+  await expect(rows(page).first()).toContainText(TITLES[3]);
 });
 
-test("both empty sentences, each with its one action", async ({ page }) => {
+test("both empty lines, each with its one action", async ({ page }) => {
   await fakeBackend(page, { empty: true });
 
   await page.goto("/library");
-  const saved = page.getByTestId("library-saved-empty");
+  const saved = page.getByTestId("library-empty");
   await expect(saved).toContainText("Save a build and it waits for you here.");
-  await expect(saved.getByRole("link", { name: "Browse the gallery" })).toHaveAttribute("href", "/gallery");
+  await expect(saved.getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
 
-  await page.getByRole("button", { name: "Collections", exact: true }).click();
-  const collections = page.getByTestId("library-collections-empty");
-  await expect(collections).toContainText("Group builds you want to keep together.");
-  await expect(collections.getByRole("button", { name: "New collection" })).toBeVisible();
-});
-
-test("a short tab starts under its tabs, with no empty band above it", async ({ page }) => {
-  await fakeBackend(page, { empty: true });
-  await page.goto("/library?tab=collections");
-
-  const empty = page.getByTestId("library-collections-empty");
-  await expect(empty).toBeVisible();
-  const tabs = await page.getByRole("button", { name: "Collections", exact: true }).boundingBox();
-  const tab = await empty.boundingBox();
-  // The frame grows every child of the page body. The page is one child, so
-  // only its own spacing sits between the tabs and what they open (RC-P20b).
-  expect(tab!.y - (tabs!.y + tabs!.height)).toBeLessThanOrEqual(64);
+  await expect(page.getByTestId("library-collections-empty")).toHaveText("No collections yet.");
+  await expect(page.getByRole("button", { name: "New collection" })).toBeVisible();
 });
