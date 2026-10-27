@@ -1955,8 +1955,9 @@ function SandboxPageBody() {
     if (part && storedWorkstreamsOf(made).some((entry) => entry.key === part && entry.collapsed)) flushSync(() => void onPartFold(part, false).catch(() => undefined));
     const head = headOf(key);
     if (!head) return;
-    const run = scrollToShow(head, { align: "start", hold: true, offset: HEADER_HEIGHT + JUMP_GAP });
+    // Focus first: a keyboard focus asks the roving list to show the head ("nearest"), and the jump's scroll must have the last word.
     head.focus({ preventScroll: true });
+    const run = scrollToShow(head, { align: "start", hold: true, offset: HEADER_HEIGHT + JUMP_GAP });
     void run.finished.then(() => {
       const session = head.closest<HTMLElement>("[data-session-key]");
       if (session) outlineOnce(session);
