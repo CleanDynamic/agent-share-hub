@@ -120,7 +120,8 @@ async function fakeBackend(page: Page, { empty = false }: { empty?: boolean } = 
     if (route.request().method() !== "GET") return route.fulfill({ status: 201, contentType: "application/json", body: "" });
     const url = decodeURIComponent(route.request().url());
     if (empty) return json(route, []);
-    if (url.includes("created_at")) return json(route, SAVED);
+    // SV-03 P5: Saved is one request, each save with its build embedded.
+    if (url.includes("created_at")) return json(route, SAVED.map((row) => ({ ...row, build: BUILDS.find((build) => build.id === row.build_id) })));
     return json(route, SAVED.map((row) => ({ build_id: row.build_id })));
   });
   await page.route(/\/rest\/v1\/collections\?/, (route) => {
