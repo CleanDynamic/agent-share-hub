@@ -78,6 +78,13 @@ Request rounds and requests for the page, before → after (npm run audit:pages,
 Placeholder match (SV-04 P5): Library desktop and phone pass within 2 px. The test's chunk name moved from
   `Library` to `LibraryPage` with the file.
 Web Vitals against the last after numbers: audit:perf not run in this container (see Parts not done).
+Other checks: tsc clean; lint clean on changed files (4 fast-refresh warnings, the pattern DraftsFrame.tsx has);
+  vite build passes; theme guard tests pass but for the baseline failures. audit:themes: no leak on Library (the
+  failures are the ca15 to ca25 composer dev pages, as on main). audit:contrast: Library's one finding is the header
+  search box's focus ring, which fails the same way on every route.
+  e2e tier1, desktop and mobile: 301 passed, 93 failed, 4 skipped, none on Library. The same specs on origin/main
+  (afa23ee) fail 93 too (the backdrop, site-frame, post-thread, wide-layout specs, and the profile "not there" test,
+  confirmed failing on main by itself); "with ?redirect=/gallery" flips between runs.
 Built but not live yet:
   - Parts, Sessions, Steps, Requests, Filter sets kinds; Used in; Your note; saved-by counts; Start a build from this
     collection (SV-17)
@@ -96,7 +103,7 @@ Motion cut back after watching: none (no motion added).
 Dead code seen: none beyond what this prompt removed (src/pages/Library.tsx, LibraryBuilds.tsx, libraryLoading.tsx and
   their tests).
 Lovable messages needed: none.
-Parts not done: audit:perf, e2e/tier1 (see the PR). Three tests in e2e/tier3/library-builds.spec.ts (the Add to a
+Parts not done: audit:perf (not run: each audit here takes 10 to 20 minutes and perf covers every page). Three tests in e2e/tier3/library-builds.spec.ts (the Add to a
   collection dialog, opened from /gallery) fail on main because `gallery-grid` no longer exists; not this page's.
 Questions for Miles:
   - On a phone the table scrolls inside its own box. Should the phone drop Type and Used in instead?
