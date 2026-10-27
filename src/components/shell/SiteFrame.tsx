@@ -90,6 +90,9 @@ export interface SiteFrameViewProps {
   wide?: boolean;
   /** CA-26 P1: replaces "Skip to content" as the first stop (the composer's "Skip to build"). */
   skipLink?: ReactNode;
+  /** SV-08: the vision boards' page area (series README, Visual grammar 1): no breadcrumb, and `<main>` padded
+      `40px clamp(16px, 5vw, 76px) 0` so the page starts where the board's does. Desktop only; the phone keeps its own. */
+  board?: boolean;
   /** SV-04 P4: false for a page that draws its own chrome (the legacy workspace). The slots go and every box steps back
       (`display: contents`), but the page stays at the same place in the tree, so it is not mounted again. */
   chrome?: boolean;
@@ -162,6 +165,7 @@ export function SiteFrameView({
   progress,
   children,
   wide = false,
+  board = false,
   skipLink,
   chrome = true,
 }: SiteFrameViewProps) {
@@ -232,12 +236,14 @@ export function SiteFrameView({
               ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
               : wide
                 ? "0 0 48px"
-                : "24px clamp(16px, 4.6vw, 64px) 48px",
+                : board
+                  ? "40px clamp(16px, 5vw, 76px) 0"
+                  : "24px clamp(16px, 4.6vw, 64px) 48px",
             boxSizing: "border-box",
             minWidth: 0,
           }}
         >
-          {phone ? null : <div data-slot="breadcrumb" style={wide ? { padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` } : undefined}>{breadcrumb}</div>}
+          {phone || board ? null : <div data-slot="breadcrumb" style={wide ? { padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` } : undefined}>{breadcrumb}</div>}
           {children}
         </main>
         {phone ? null : (
@@ -258,12 +264,14 @@ export interface SiteFrameProps {
   wide?: boolean;
   /** CA-26 P1: see `SiteFrameViewProps.skipLink`. */
   skipLink?: ReactNode;
+  /** SV-08: see `SiteFrameViewProps.board`. */
+  board?: boolean;
   /** SV-04 P4: see `SiteFrameViewProps.chrome`. */
   chrome?: boolean;
 }
 
 /** The container: live chrome around the page. UI-P17 to UI-P19 fill the slots. */
-export function SiteFrame({ variant = "site", children, wide, skipLink, chrome }: SiteFrameProps) {
+export function SiteFrame({ variant = "site", children, wide, board, skipLink, chrome }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
       <ConnectorDialogProvider>
@@ -276,6 +284,7 @@ export function SiteFrame({ variant = "site", children, wide, skipLink, chrome }
         dock={<Dock />}
         progress={<PageProgress />}
         wide={wide}
+        board={board}
         skipLink={skipLink}
         chrome={chrome}
       >

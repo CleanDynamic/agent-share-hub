@@ -249,6 +249,11 @@ export const CA03_FILES: readonly string[] = [
   "src/App.tsx",
   "src/components/brand/ErrorState.tsx",
   "src/dev/fixtures/drafts.ts",
+  // SV-08
+  "src/dev/fixtures/vision/drafts.ts",
+  "src/pages/dev/VisionDrafts.tsx",
+  "src/pages/site/drafts/DraftsView.behaviour.test.tsx",
+  "src/pages/site/drafts/draftsModel.ts",
   "src/hooks/useLibrarySessions.ts",
   "src/hooks/useWaitingSessions.test.tsx",
   "src/hooks/useWaitingSessions.ts",
@@ -1350,6 +1355,26 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
   },
   {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `columnGap: 10,`,
+    why: "SV-08: the Drafts board's session row is a grid of grip, mark, text and button 10 apart.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<ul style={{ margin: "10px 0 0", padding: 0 }}>`,
+    why: "SV-08: the Connected tools tile (Drafts board) starts its rows 10 below its head.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `gap: 10, fontWeight: 500 }}>`,
+    why: "SV-08: the Drafts board's Start a new build slot puts its plus and label 10 apart.",
+  },
+  {
+    rule: "spacing 72 is not in SPACE_REFINED",
+    text: `columnGap: 72,`,
+    why: "SV-08: the Drafts board's two columns are 72 apart (series README, Visual grammar 7).",
+  },
+  {
     rule: "spacing 14 is not in SPACE_REFINED",
     text: `padding: "14px 16px",`,
     why: "SV-02: the boards' one boxed tile (InnerTile) is padded 14px 16px.",
@@ -1611,16 +1636,6 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "spacing 9 is not in SPACE_REFINED",
-    text: "justifyContent: \"space-between\", gap: 9, padding: \"9px 9px 6px\"",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "spacing 9, 9 is not in SPACE_REFINED",
-    text: "justifyContent: \"space-between\", gap: 9, padding: \"9px 9px 6px\"",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "spacing 9 is not in SPACE_REFINED",
     text: "gap: 9,",
     why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
   },
@@ -1645,53 +1660,8 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
   },
   {
-    rule: "spacing 10, 7 is not in SPACE_REFINED",
-    text: "padding: phone ? \"4px 4px 4px 10px\" : \"4px 4px 4px 7px\",",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "spacing 7 is not in SPACE_REFINED",
-    text: "justifyContent: \"flex-end\", gap: 7 }}>",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "spacing 9, 9 is not in SPACE_REFINED",
-    text: "<div style={{ padding: \"6px 9px 9px\" }}>",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "spacing 9 is not in SPACE_REFINED",
-    text: "style={{ margin: \"4px 9px 6px\", display: \"block\" }}>",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "spacing 17 is not in SPACE_REFINED",
-    text: "marginTop: 17,",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
     rule: "spacing 17 is not in SPACE_REFINED",
     text: "gap: 17,",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "spacing 17 is not in SPACE_REFINED",
-    text: "<div style={{ marginTop: 17, display: \"flex\" }}>{older}</div>",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "the lucide icon ChevronRight drawn on its own",
-    text: "<ChevronRight size={16} strokeWidth={1.6} color=\"var(--text2)\"",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "the lucide icon GripVertical drawn on its own",
-    text: "<GripVertical size={14} strokeWidth={1.6} color=\"var(--text2)\"",
-    why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
-  },
-  {
-    rule: "the lucide icon Plus drawn on its own",
-    text: "<Plus size={16} strokeWidth={1.8} aria-hidden=\"true\" style={{ flexShrink: 0 }} />",
     why: "The Drafts page (UI-P46, UI-P52 density), there before CA-10, which only gives each panel its own status. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
   },
   {

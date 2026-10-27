@@ -66,9 +66,9 @@ describe("DraftsView", () => {
     expect(titles[0].textContent).toBe("Photo renamer by date taken");
     expect(titles[1].textContent).toBe("Untitled build");
     const markup = html();
-    expect(markup).toContain('data-testid="draft-title" style="font-family:');
-    expect(markup).toMatch(/font-weight:600;color:var\(--text\);white-space:nowrap[^>]*>Photo renamer by date taken/);
-    expect(markup).toMatch(/font-weight:600;color:var\(--text2\);white-space:nowrap[^>]*>Untitled build/);
+    expect(markup).toContain('data-testid="draft-title" style="display:block;font-weight:500');
+    expect(markup).toMatch(/font-weight:500;color:var\(--text\);white-space:nowrap[^>]*>Photo renamer by date taken/);
+    expect(markup).toMatch(/font-weight:500;color:var\(--text2\);white-space:nowrap[^>]*>Untitled build/);
   });
 
   it("an empty title reads as Untitled build too", () => {
@@ -95,7 +95,8 @@ describe("DraftsView", () => {
   it("a draft row is a drop target that says so, and adds the session to that draft", () => {
     const p = view();
     const row = screen.getAllByTestId("draft-row")[0];
-    expect(row.textContent).toContain("2 sessions · edited 17m ago");
+    expect(row.textContent).toContain("2 sessions");
+    expect(row.textContent).toContain("edited 17m ago");
     dragWith(row, "dragOver");
     expect(row.getAttribute("data-over")).toBe("true");
     expect(row.textContent).toContain("Drop to add this session");
@@ -125,7 +126,7 @@ describe("DraftsView", () => {
 
   it("the + menu offers a new build and up to eight drafts, and never removes a session", async () => {
     const p = view();
-    const add = screen.getAllByRole("button", { name: /^Add “Every morning at 7/ })[0];
+    const add = screen.getAllByRole("button", { name: "Start a build from this session" })[0];
     fireEvent.pointerDown(add, { button: 0, ctrlKey: false });
     fireEvent.keyDown(add, { key: "Enter" });
     const menu = await screen.findByRole("menu");
@@ -144,7 +145,7 @@ describe("DraftsView", () => {
     narrow = true;
     view();
     expect(screen.getAllByTestId("session-row")[0].getAttribute("draggable")).toBeNull();
-    fireEvent.click(screen.getAllByRole("button", { name: /^Add “Every morning at 7/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start a build from this session" })[0]);
     const sheet = await screen.findByRole("dialog", { name: "Add to a build" });
     expect(within(sheet).getAllByRole("button").map((b) => b.textContent)).toEqual(
       expect.arrayContaining(["Start a new build", "Add to Photo renamer by date taken"]),
@@ -154,9 +155,9 @@ describe("DraftsView", () => {
   it("CA-12: a session already in a draft is listed with the others, says so, and offers Open for that draft and Add to for the rest", async () => {
     view();
     const row = screen.getAllByTestId("session-row").find((li) => li.textContent?.includes("Rename every photo"));
-    expect(row?.textContent).toContain("In 1 draft");
+    expect(row?.textContent).toContain("in 1 draft");
     expect(screen.queryByRole("button", { name: /already in a build/ })).toBeNull();
-    fireEvent.keyDown(within(row as HTMLElement).getByRole("button", { name: /Rename every photo/ }), { key: "Enter" });
+    fireEvent.keyDown(within(row as HTMLElement).getByRole("button", { name: "Start a build from this session" }), { key: "Enter" });
     const open = await screen.findByRole("menuitem", { name: "Open Photo renamer by date taken" });
     expect(open.getAttribute("href")).toBe("/compose/d1");
     expect(screen.queryByRole("menuitem", { name: "Add to Photo renamer by date taken" })).toBeNull();
@@ -227,7 +228,7 @@ describe("draftsModel", () => {
 
   it("a session aimed at a draft ends its meta with it and leads its menu with it", () => {
     const aimed = { ...sessionsFixture[0], targetBuildId: "d3" };
-    expect(sessionMeta(aimed, draftsFixture, now)).toBe("GPT-6 Astra · 2 Oct · for Inbox triage v2");
+    expect(sessionMeta(aimed, draftsFixture, now)).toBe("Claude · GPT-6 Astra · 2 Oct · for Inbox triage v2");
     expect(menuItems(aimed, draftsFixture)[0]).toMatchObject({ kind: "target", label: "Add to Inbox triage v2" });
   });
 

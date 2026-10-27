@@ -9,7 +9,7 @@
 // CA-10 FLIPPED THE EXPECTATIONS to the fixed behaviour: each panel has its own status, so a failing sessions read
 // leaves the drafts on screen and says so in the Sessions panel only, with its code, and every failure is logged.
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
@@ -78,6 +78,9 @@ describe("CA-09 · the Drafts page on tonight's schema", () => {
   it("control: with post_doc and colour_swatches live, the fifteen drafts and the waiting session load", async () => {
     const logged = mount();
     expect(await screen.findByText("Draft 1")).toBeTruthy();
+    /* SV-08: twelve rows, then "Show 3 more", which shows the rest. */
+    expect(screen.getByText("Draft 12")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show 3 more" }));
     expect(screen.getByText("Draft 15")).toBeTruthy();
     expect(screen.queryByText("That didn't load.")).toBeNull();
     expect(sent(DRAFTS)).toEqual(["200"]);

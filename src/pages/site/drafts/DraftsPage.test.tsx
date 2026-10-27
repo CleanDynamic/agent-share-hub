@@ -71,7 +71,9 @@ describe("CA-10 · the Drafts page, one status per panel", () => {
     await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(1), { timeout: 5_000 });
     expect(within(panel("Sessions")).getByText("Code 57014")).toBeTruthy();
     expect(screen.queryByRole("status", { name: "Continue editing" })).toBeNull();
-    expect(screen.getByText("Draft 15")).toBeTruthy();
+    /* SV-08: twelve rows, then "Show 3 more". */
+    expect(screen.getByText("Draft 12")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Show 3 more" })).toBeTruthy();
     expect(lines(logged)).toEqual(["[Drafts] sessions read failed 57014 listLibrarySessions failed: canceling statement due to statement timeout"]);
   });
 

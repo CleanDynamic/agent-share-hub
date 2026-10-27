@@ -86,7 +86,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   "vision-builds-classification": lazy(() => import("./VisionNotBuilt")),
   "vision-library": lazy(() => import("./VisionNotBuilt")),
   "vision-composer-add-from-library": lazy(() => import("./VisionNotBuilt")),
-  "vision-drafts": lazy(() => import("./VisionNotBuilt")),
+  "vision-drafts": lazy(() => import("./VisionDrafts")),
 };
 
 /** A vision page draws its own frame and its own `data-design-ready`, so the wrapper below stays out of its way. */
