@@ -1,221 +1,191 @@
-// UI-P88 — Home in the refined look, rendered with the dev fixture: the same parts, names, copy and handlers as
-// `HomeView`, drawn as the refined board draws them.
-//
-// Styles are asserted through SSR markup (jsdom's cssstyle drops var() values); roles and names on the rendered tree.
+// SV-10 — Home as the vision board draws it, rendered with the board's sample data: the three columns, the feed's tabs
+// and kind filter, the "n new" pill, each kind of item, and the states.
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { homeFixture } from "@/dev/fixtures/home";
+import { visionHomeProps } from "@/dev/fixtures/vision/home";
 
 import type { HomeViewProps } from "./HomeView";
 import { HomeView } from "./HomeView";
 
-const REFINED = "/dev/kit/pages/home";
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: null, isLoggedIn: false, loading: false }) }));
 
-const view = (over: Partial<HomeViewProps> = {}) => (
-  <MemoryRouter initialEntries={[REFINED]}>
-    <HomeView fit="content" {...homeFixture()} {...over} />
-  </MemoryRouter>
-);
-const mount = (over: Partial<HomeViewProps> = {}) => render(view(over));
-const markup = (over: Partial<HomeViewProps> = {}) => renderToStaticMarkup(view(over));
+const mount = (over: Partial<HomeViewProps> = {}, state: Parameters<typeof visionHomeProps>[0] = "populated") =>
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <HomeView {...visionHomeProps(state)} {...over} />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 
-function phone(on: boolean) {
-  window.matchMedia = ((query: string) => ({
-    matches: on && query.includes("max-width"),
-    media: query,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-  })) as unknown as typeof window.matchMedia;
+/** A window narrower than `px`: every `(min-width: n)` query at or above it is false. */
+function narrow(px: number) {
+  vi.stubGlobal("matchMedia", (query: string) => {
+    const min = /min-width:\s*(\d+)/.exec(query);
+    const max = /max-width:\s*(\d+)/.exec(query);
+    const matches = min ? px >= Number(min[1]) : max ? px <= Number(max[1]) : false;
+    return { matches, media: query, addEventListener: () => undefined, removeEventListener: () => undefined };
+  });
 }
 
-afterEach(() => {
-  delete (window as { matchMedia?: unknown }).matchMedia;
-});
+// The board's window, unless a test narrows it.
+beforeEach(() => narrow(1440));
+afterEach(() => vi.unstubAllGlobals());
 
-describe("HomeView on a desktop", () => {
-  it("keeps one h1 with the tagline's sentence, the lit line and both hero actions", () => {
+describe("HomeView · the three columns", () => {
+  it("draws the studio, the feed and the room, each section under its own heading", () => {
     mount();
-    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole("heading", { level: 1, name: "Every AI build, hung with its proof." })).toBeTruthy();
-    expect(screen.getByText("702 builds lit today")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Enter the gallery" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "How proof works" })).toBeTruthy();
-  });
-
-  it("sends the hero's buttons where they say and binds the scope control", () => {
-    const onNavigate = vi.fn();
-    const onScopeChange = vi.fn();
-    mount({ onNavigate, onScopeChange });
-    fireEvent.click(screen.getByRole("button", { name: "Enter the gallery" }));
-    fireEvent.click(screen.getByRole("button", { name: "How proof works" }));
-    expect(onNavigate.mock.calls).toEqual([["/gallery"], ["/about"]]);
-    const scope = screen.getByRole("group", { name: "Whose builds" });
-    expect(within(scope).getByRole("button", { name: "Everyone" }).getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(within(scope).getByRole("button", { name: "Following" }));
-    expect(onScopeChange).toHaveBeenCalledWith("following");
-  });
-
-  it("draws the parts in today's order: hero, book, then counts, challenges, streak, where next", () => {
-    mount();
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
-      "The visitors’ book",
-      "This week’s challenges",
-      "12-day streak",
-      "Where next",
-    ]);
-  });
-
-  it("hangs six works on the wall, and lights the centre one while builds were lit today", () => {
-    mount();
-    const wall = screen.getByTestId("home-wall");
-    expect(wall.querySelectorAll('[data-ui="framed-work"]')).toHaveLength(6);
-    expect(wall.querySelectorAll('[data-ui="framed-work"][data-lit]')).toHaveLength(1);
-    expect(wall.hasAttribute("data-lit")).toBe(true);
-  });
-
-  it("leaves the wall unlit when nothing was lit today", () => {
-    mount({ litToday: 0 });
-    const wall = screen.getByTestId("home-wall");
-    expect(wall.hasAttribute("data-lit")).toBe(false);
-    expect(wall.querySelectorAll('[data-ui="framed-work"][data-lit]')).toHaveLength(0);
-  });
-
-  it("draws a book row per item on the board's grid, kind as a pill, a framed thumbnail and the time", () => {
-    mount();
-    const rows = screen.getAllByTestId("home-row");
-    expect(rows).toHaveLength(5);
-    expect(rows[0].getAttribute("href")).toBe("/b2/invoice-triage-agent");
-    expect(within(rows[0]).getByText("BUILD").getAttribute("data-ui")).toBe("pill");
-    expect(within(rows[0]).getByText("2m")).toBeTruthy();
-    expect(within(rows[3]).getByText("BOUNTY")).toBeTruthy();
-    for (const row of rows) expect(row.querySelector('[data-ui="framed-work"]')).not.toBeNull();
-
-    const html = markup();
-    expect(html).toContain("grid-template-columns:96px 24px minmax(0, 1fr) 56px 32px");
-    expect(html).toContain("min-height:60px");
-  });
-
-  it("gives the newest row since the last visit the tile fill and a lit thumbnail, and no other row", () => {
-    mount();
-    const rows = screen.getAllByTestId("home-row");
-    expect(rows.map((row) => row.getAttribute("data-highlight"))).toEqual(["true", null, null, null, null]);
-    expect(rows.map((row) => row.querySelector('[data-ui="framed-work"]')?.hasAttribute("data-lit"))).toEqual([
-      true,
-      false,
-      false,
-      false,
-      false,
-    ]);
-    const html = markup();
-    expect(html).toContain("background:var(--tile);border-radius:6px;margin:0 -12px;padding:0 12px");
-  });
-
-  it("filters the loaded rows on kind", () => {
-    mount();
-    const filters = screen.getByRole("group", { name: "Show" });
-    fireEvent.click(within(filters).getByRole("button", { name: "Rebuilds" }));
-    expect(screen.getAllByTestId("home-row").map((row) => row.getAttribute("data-kind"))).toEqual(["rebuild"]);
-    fireEvent.click(within(filters).getByRole("button", { name: "All" }));
-    expect(screen.getAllByTestId("home-row")).toHaveLength(5);
-  });
-
-  it("draws the run counts as two figures, not orbs", () => {
-    mount();
-    const counts = screen.getByTestId("home-run-counts");
-    expect(counts.querySelectorAll('[data-ui="figure"]')).toHaveLength(2);
-    expect(within(counts).getByText("48")).toBeTruthy();
-    expect(within(counts).getByText("312")).toBeTruthy();
-    expect(within(counts).getByText("runs reported")).toBeTruthy();
-    expect(markup()).not.toContain('data-ui="orb');
-  });
-
-  it("draws the challenges, the streak week and where next from props", () => {
-    mount();
-    expect(screen.getAllByTestId("weekly-challenge")).toHaveLength(3);
-    expect(screen.getByText("1 / 3 · +90 xp")).toBeTruthy();
-    expect(screen.getByText("1 / 1 · done")).toBeTruthy();
-    expect(screen.getAllByRole("progressbar")).toHaveLength(3);
-    expect(screen.getByText("one frozen day used")).toBeTruthy();
-    const week = within(screen.getByTestId("home-streak-week")).getAllByRole("listitem");
-    expect(week).toHaveLength(7);
-    expect(week[0].getAttribute("data-ui")).toBe("streak-day");
-    expect(screen.getAllByTestId("home-where-next-row")).toHaveLength(3);
-    expect(screen.getByText("SAME TOOL · SONNET-4.5")).toBeTruthy();
-  });
-
-  it("opens this week from the boxed button, and omits it when there is no page for it", () => {
-    const onNavigate = vi.fn();
-    const { unmount } = mount({ onNavigate });
-    fireEvent.click(screen.getByRole("button", { name: "Open this week" }));
-    expect(onNavigate).toHaveBeenCalledWith("/analytics");
-    unmount();
-    mount({ thisWeekHref: undefined });
-    expect(screen.queryByRole("button", { name: "Open this week" })).toBeNull();
-  });
-
-  it("says what to do in each personal part when signed out", () => {
-    mount({ challenges: { status: "signed-out" }, streak: { status: "signed-out" }, whereNext: { status: "signed-out" } });
-    expect(screen.getByTestId("home-challenges-signed-out")).toBeTruthy();
-    expect(screen.getByTestId("home-streak-empty")).toBeTruthy();
-    expect(screen.getByTestId("home-where-next-empty")).toBeTruthy();
-  });
-
-  it("holds each part in place while it loads, and says which failed", () => {
-    const { unmount } = mount({
-      reproducedToday: null,
-      runsThisWeek: null,
-      feed: { ...homeFixture().feed, status: "loading", rows: [] },
-      challenges: { status: "loading" },
-      streak: { status: "loading" },
-      whereNext: { status: "loading" },
-    });
-    expect(screen.getByTestId("home-feed-loading")).toBeTruthy();
-    expect(screen.getByTestId("home-challenges-loading")).toBeTruthy();
-    expect(screen.getByTestId("home-streak-loading")).toBeTruthy();
-    expect(screen.getByTestId("home-where-next-loading")).toBeTruthy();
-    unmount();
-
-    const failure = { onRetry: vi.fn() };
-    mount({
-      orbsError: failure,
-      feed: { ...homeFixture().feed, status: "error", rows: [] },
-      challenges: { status: "error", ...failure },
-      streak: { status: "error", ...failure },
-      whereNext: { status: "error", ...failure },
-    });
-    for (const id of ["home-orbs-error", "home-feed-error", "home-challenges-error", "home-streak-error", "home-where-next-error"]) {
-      expect(screen.getByTestId(id)).toBeTruthy();
+    for (const name of ["Since you were last here", "Continue editing", "Your sessions", "Your week", "Open requests", "Most run this week", "Where next"]) {
+      expect(screen.getByRole("heading", { level: 2, name })).toBeTruthy();
     }
+    expect(screen.getByRole("complementary", { name: "Your studio" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Feed" })).toBeTruthy();
+    expect(screen.getByRole("complementary", { name: "The room" })).toBeTruthy();
   });
 
-  it("draws no serif, no glass and no blur", () => {
-    const html = markup();
-    expect(html).not.toContain("Sentient");
-    expect(html).not.toContain("backdrop-filter");
-    expect(html).not.toContain("var(--glass");
+  it("leaves Since you were last here out when it has no data (the live page until SV-15)", () => {
+    mount({ since: null });
+    expect(screen.queryByRole("heading", { name: "Since you were last here" })).toBeNull();
+  });
+
+  it("links the section chevrons to their pages", () => {
+    mount();
+    expect(screen.getByRole("link", { name: "Open drafts" }).getAttribute("href")).toBe("/drafts");
+    expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds");
+    expect(screen.getByRole("link", { name: "Open activity" }).getAttribute("href")).toBe("/notifications");
+  });
+
+  it("names the week's bars in words and hides them from screen readers", () => {
+    mount();
+    const days = screen.getByRole("img", { name: "Active 3 of 7 days" });
+    expect(days.querySelectorAll('[aria-hidden="true"]')).toHaveLength(7);
+    expect(screen.getByText("3 day streak · resets Monday 00:00 UTC")).toBeTruthy();
+    expect(screen.getAllByRole("progressbar")).toHaveLength(3);
+  });
+
+  it("adds a session to a new build", () => {
+    const onAddSession = vi.fn();
+    mount({ onAddSession });
+    fireEvent.click(screen.getAllByRole("button", { name: "Add to a new build" })[0]);
+    expect(onAddSession).toHaveBeenCalledWith("vs1");
+  });
+
+  it("asks a signed-out reader to sign in where the studio would be", () => {
+    mount({ drafts: { status: "signed-out" }, sessions: { status: "signed-out" }, week: { status: "signed-out" }, whereNext: { status: "signed-out" } });
+    const studio = screen.getByRole("complementary", { name: "Your studio" });
+    expect(within(studio).getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login?redirect=/");
+    expect(screen.queryByRole("heading", { name: "Where next" })).toBeNull();
   });
 });
 
-describe("HomeView on a phone", () => {
-  it("keeps today's order: scope and lit line, hero, counts, challenges, the book, the streak, and no where next", () => {
-    phone(true);
-    mount();
-    expect(screen.getByTestId("home-view").getAttribute("data-viewport")).toBe("mobile");
-    expect(screen.getByText("702 lit today")).toBeTruthy();
-    expect(screen.getByText("1/3")).toBeTruthy();
-    expect(screen.queryByText("Where next")).toBeNull();
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
-      "This week’s challenges",
-      "The visitors’ book",
-      "12-day streak",
-    ]);
+describe("HomeView · the feed", () => {
+  it("binds the tabs and the kind filter, which change at once", () => {
+    const onScopeChange = vi.fn();
+    const onFilterChange = vi.fn();
+    mount({ onScopeChange, onFilterChange });
+    expect(screen.getByRole("tab", { name: "Everyone" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Following" }));
+    expect(onScopeChange).toHaveBeenCalledWith("following");
+    const kind = screen.getByRole("group", { name: "Kind" });
+    expect(within(kind).getByRole("button", { name: "All" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(within(kind).getByRole("button", { name: "Notes" }));
+    expect(onFilterChange).toHaveBeenCalledWith("notes");
+  });
 
-    const chips = screen.getByRole("group", { name: "Show" });
-    fireEvent.click(within(chips).getByRole("button", { name: "Notes" }));
-    expect(screen.getAllByTestId("home-row").map((row) => row.getAttribute("data-kind"))).toEqual(["repro_note"]);
+  it("shows only the chosen kind", () => {
+    mount({ filter: "notes" });
+    const kinds = screen.getAllByTestId("home-feed-item").map((item) => item.getAttribute("data-kind"));
+    expect(kinds).toEqual(["repro_note", "repro_note"]);
+  });
+
+  it("draws every kind of item the board draws, in order", () => {
+    mount();
+    const kinds = screen.getAllByTestId("home-feed-item").map((item) => item.getAttribute("data-kind"));
+    expect(kinds).toEqual(["build", "repro_note", "rebuild", "repro_note", "bounty", "build"]);
+    expect(screen.getByText(", and it worked on opus-5.5")).toBeTruthy();
+    expect(screen.getByText(", and it didn’t work")).toBeTruthy();
+    expect(screen.getByText("Rebuilt from")).toBeTruthy();
+    expect(screen.getByText(/1 solution · closes in 5 days/)).toBeTruthy();
+  });
+
+  it("keeps an off-screen item out of the renderer's way with an intrinsic size", () => {
+    mount();
+    const first = screen.getAllByTestId("home-feed-item")[0] as HTMLElement;
+    expect(first.style.getPropertyValue("content-visibility") || (first.style as unknown as Record<string, string>).contentVisibility).toBe("auto");
+  });
+
+  it("offers the new items in a pill only when there are some", () => {
+    const onShowNew = vi.fn();
+    const { unmount } = mount({ onShowNew });
+    fireEvent.click(screen.getByRole("button", { name: "3 new since you looked" }));
+    expect(onShowNew).toHaveBeenCalled();
+    unmount();
+    mount({ newCount: 0 });
+    expect(screen.queryByTestId("home-new-pill")).toBeNull();
+  });
+
+  it("solves an ask by its own page and marks Me too", () => {
+    const onMeToo = vi.fn();
+    mount({ onMeToo });
+    expect(screen.getByRole("link", { name: "Solve it" }).getAttribute("href")).toBe("/bounties/b-paywalled/solve");
+    const meToo = screen.getByRole("button", { name: "Me too · 4" });
+    expect(meToo.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(meToo);
+    expect(onMeToo).toHaveBeenCalledWith("b-paywalled");
+  });
+
+  it("ends with You're up to date and two builds, or Show more while there is more", () => {
+    const { unmount } = mount();
+    expect(within(screen.getByTestId("home-feed-end")).getByRole("link", { name: "More builds" }).getAttribute("href")).toBe("/builds");
+    unmount();
+    const onMore = vi.fn();
+    mount({ feed: { ...visionHomeProps().feed, hasMore: true, onMore } });
+    expect(screen.queryByTestId("home-feed-end")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+    expect(onMore).toHaveBeenCalled();
+  });
+});
+
+describe("HomeView · states", () => {
+  it("draws the loading state while the feed loads", () => {
+    mount({}, "loading");
+    expect(screen.getByTestId("home-feed-loading")).toBeTruthy();
+  });
+
+  it("says a section failed in one sentence with Try again", () => {
+    const onRetry = vi.fn();
+    mount({ feed: { ...visionHomeProps("error").feed, onRetry } }, "error");
+    fireEvent.click(within(screen.getByTestId("home-feed-error")).getByRole("button", { name: /try again/i }));
+    expect(onRetry).toHaveBeenCalled();
+  });
+
+  it("says an empty feed in one line", () => {
+    mount({}, "empty");
+    expect(screen.getByTestId("home-feed-empty")).toBeTruthy();
+  });
+});
+
+describe("HomeView · narrower windows", () => {
+  it("hides the studio below 1100", () => {
+    narrow(1000);
+    mount();
+    expect(screen.queryByRole("complementary", { name: "Your studio" })).toBeNull();
+    expect(screen.getByTestId("home-view").getAttribute("data-layout")).toBe("two");
+  });
+
+  it("is one column below 760: the Drafts line, the feed, then the room", () => {
+    narrow(390);
+    mount();
+    const view = screen.getByTestId("home-view");
+    expect(view.getAttribute("data-layout")).toBe("one");
+    const line = screen.getByTestId("home-drafts-line");
+    expect(line.textContent).toContain("28 drafts in progress · 8 sessions");
+    expect(line.getAttribute("href")).toBe("/drafts");
+    const order = [line, screen.getByRole("region", { name: "Feed" }), screen.getByRole("complementary", { name: "The room" })];
+    for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

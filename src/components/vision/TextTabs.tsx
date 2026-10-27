@@ -2,7 +2,8 @@
    the selected one `--text` with a 1px `--text` underline that sits on the row's hairline.
 
    The prompt calls this `UnderlineTabs`; that name is `components/brand/UnderlineTabs.tsx` (40 high, 24 apart, 2px edge),
-   which other pages use and which keeps its look, so this one is `TextTabs`. `role="tablist"`; the arrows, Home and End
+   which other pages use and which keeps its look, so this one is `TextTabs`. SV-10: Home's tabs are 40 high and 24 apart
+   (`height`, `gap`), on a row that draws its own hairline (`rule={false}`). `role="tablist"`; the arrows, Home and End
    move between tabs, and a selected tab changes at once. */
 
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
@@ -28,15 +29,22 @@ export interface TextTabsProps<V extends string = string> {
   onChange: (value: V) => void;
   /** The tablist's accessible name. */
   label: string;
+  /** SV-10: Home's board draws its tabs 40 high and 24 apart. */
+  height?: 36 | 40;
+  gap?: 20 | 24;
+  /** The hairline under the tabs. Off where the row around them draws it (Home). */
+  rule?: boolean;
 }
 
 function Tab({
   current,
   tab,
+  height,
   onSelect,
   onKeyDown,
 }: {
   current: boolean;
+  height: number;
   tab: TextTab;
   onSelect: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -55,7 +63,7 @@ function Tab({
       {...handlers}
       style={{
         boxSizing: "border-box",
-        height: 36,
+        height,
         margin: "0 0 -1px",
         padding: 0,
         background: "none",
@@ -79,7 +87,7 @@ function Tab({
   );
 }
 
-export function TextTabs<V extends string = string>({ tabs, value, onChange, label }: TextTabsProps<V>) {
+export function TextTabs<V extends string = string>({ tabs, value, onChange, label, height = 36, gap = 20, rule = true }: TextTabsProps<V>) {
   const list = useRef<HTMLDivElement>(null);
 
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -102,13 +110,14 @@ export function TextTabs<V extends string = string>({ tabs, value, onChange, lab
       data-ui="text-tabs"
       role="tablist"
       aria-label={label}
-      style={{ display: "flex", gap: 20, borderBottom: `1px solid ${t.hairline}` }}
+      style={{ display: "flex", gap, borderBottom: rule ? `1px solid ${t.hairline}` : undefined }}
     >
       {tabs.map((tab, index) => (
         <Tab
           key={tab.value}
           tab={tab}
           current={tab.value === value}
+          height={height}
           onSelect={() => onChange(tab.value)}
           onKeyDown={(event) => move(event, index)}
         />

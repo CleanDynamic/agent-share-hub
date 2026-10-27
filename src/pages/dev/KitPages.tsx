@@ -42,8 +42,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   /* UI-P13 — a throwaway for the page backdrop; not a board, so not in index.json. */
   /* UI-P16 — the empty frame: backdrop, empty slots, the 820px grid placeholder. */
   frame: lazy(() => import("./FrameDemo")),
-  /* UI-P27 — Home. */
-  home: lazy(() => import("./HomeDemo")),
+  /* UI-P27 — Home. SV-10: retired; Home is the vision board's page, `vision-home`. */
   /* UI-P28 — Gallery. */
   /* UI-P49 — the Gallery feed (no board is compared). */
   "gallery-feed": lazy(() => import("./GalleryFeedDemo")),
@@ -79,7 +78,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   /* SV-02: the vision boards (`design/reference/vision/index.json`). Each says "Not built yet" until its page prompt
      replaces the entry: SV-10 home, SV-14 openbuilds, SV-11 builds-table, SV-12 builds-maps, SV-13
      builds-classification, SV-09 library, SV-18 composer-add-from-library, SV-08 drafts. */
-  "vision-home": lazy(() => import("./VisionNotBuilt")),
+  "vision-home": lazy(() => import("./VisionHome")),
   "vision-openbuilds": lazy(() => import("./VisionNotBuilt")),
   "vision-builds-table": lazy(() => import("./VisionNotBuilt")),
   "vision-builds-maps": lazy(() => import("./VisionNotBuilt")),
@@ -112,8 +111,6 @@ const TRAILS: Record<string, readonly Crumb[]> = {
     { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
     { label: "Lineage" },
   ],
-  /* UI-P57: the Home board draws Home alone. */
-  home: [{ label: "Home" }],
   /* UI-P56: the Gallery board draws Home / Gallery, not the default trail's sample build. */
   "gallery-feed": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   classification: [{ label: "Home", href: "/" }, { label: "Gallery" }],
@@ -127,8 +124,6 @@ const TRAILS: Record<string, readonly Crumb[]> = {
 
 /** Where a board lights a different nav item than the default (the Gallery's): the Profile board lights Home in the header and on the dock; the Activity board lights no link, the bell, and the dock's Activity tile. */
 const CHROME: Record<string, Partial<DevChromeOptions>> = {
-  /* UI-P57: the Home board lights Home in the header and on the dock, not the Gallery. */
-  home: { current: "home", dockCurrent: "home" },
   frame: { current: "home", dockCurrent: "home" },
   profile: { current: "home", dockCurrent: "home" },
   activity: { current: null, activityCurrent: true, dockCurrent: "activity" },

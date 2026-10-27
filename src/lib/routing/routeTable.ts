@@ -46,7 +46,7 @@ export interface RouteEntry {
   Placeholder: ComponentType;
   /** SV-04 P4: what the one frame does for this page. `wide`: no 1428 cap and no side padding; `SkipLink`: the first stop.
       SV-08 `board`: the vision boards' page area (no breadcrumb, the board's padding). */
-  frame?: { wide?: boolean; board?: boolean; SkipLink?: ComponentType };
+  frame?: { wide?: boolean; board?: boolean | "home"; SkipLink?: ComponentType };
 }
 
 
@@ -68,6 +68,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       });
     },
     Placeholder: HomePlaceholder,
+    frame: { board: "home" },
   },
   gallery: {
     key: "gallery",

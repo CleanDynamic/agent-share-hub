@@ -91,8 +91,9 @@ export interface SiteFrameViewProps {
   /** CA-26 P1: replaces "Skip to content" as the first stop (the composer's "Skip to build"). */
   skipLink?: ReactNode;
   /** SV-08: the vision boards' page area (series README, Visual grammar 1): no breadcrumb, and `<main>` padded
-      `40px clamp(16px, 5vw, 76px) 0` so the page starts where the board's does. Desktop only; the phone keeps its own. */
-  board?: boolean;
+      `40px clamp(16px, 5vw, 76px) 0` so the page starts where the board's does. Desktop only; the phone keeps its own.
+      SV-10 `"home"`: Home's board pads its surface `24px clamp(16px, 2.2vw, 32px) 0`. */
+  board?: boolean | "home";
   /** SV-04 P4: false for a page that draws its own chrome (the legacy workspace). The slots go and every box steps back
       (`display: contents`), but the page stays at the same place in the tree, so it is not mounted again. */
   chrome?: boolean;
@@ -236,7 +237,9 @@ export function SiteFrameView({
               ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
               : wide
                 ? "0 0 48px"
-                : board
+                : board === "home"
+                  ? "24px clamp(16px, 2.2vw, 32px) 0"
+                  : board
                   ? "40px clamp(16px, 5vw, 76px) 0"
                   : "24px clamp(16px, 4.6vw, 64px) 48px",
             boxSizing: "border-box",
@@ -265,7 +268,7 @@ export interface SiteFrameProps {
   /** CA-26 P1: see `SiteFrameViewProps.skipLink`. */
   skipLink?: ReactNode;
   /** SV-08: see `SiteFrameViewProps.board`. */
-  board?: boolean;
+  board?: boolean | "home";
   /** SV-04 P4: see `SiteFrameViewProps.chrome`. */
   chrome?: boolean;
 }
