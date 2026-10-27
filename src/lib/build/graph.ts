@@ -51,6 +51,7 @@ import {
 } from "./sourceTiles";
 import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
+import { isSummaryPayload, SUMMARY_COPY } from "./summaryTurn";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -117,6 +118,8 @@ export interface Step {
   session?: string | null;
   /** The tool a prompt written by hand, or a manual step, names. */
   tool: string | null;
+  /** SV-07 P7, a prompt only: Claude Code's summary of an earlier session, drawn as a Summary tile and counted as no prompt. */
+  summary?: true;
   runs: Runs | null;
   uses: Use[];
   /** Suggestions the maker dismissed, as "<kind>:<node_id>". */
@@ -831,8 +834,10 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
                   ? (stringOf(payload.description) ?? "")
                   : (stringOf(payload.text) ?? "");
   // CA-12 P6: named from what it holds, never by repeating its number.
-  // A prompt is called by its place on the build until its maker names it: "Prompt 3".
-  const defaultTitle = kind === "prompt" ? `Prompt ${number}` : defaultTitleFor(kind, payload);
+  // A prompt is called by its place on the build until its maker names it: "Prompt 3". SV-07 P7: Claude Code's summary of an
+  // earlier session is a Summary tile, "Summary of an earlier chat".
+  const summary = kind === "prompt" && isSummaryPayload(payload);
+  const defaultTitle = summary ? SUMMARY_COPY.title : kind === "prompt" ? `Prompt ${number}` : defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = kind === "tool" ? stringOf(payload.service) : stringOf(payload.tool);
   const where = kind === "manual" ? manualWhereOf(payload) : null;
@@ -853,6 +858,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     uses: usesOf(node),
     dismissed: dismissedOf(payload),
     children,
+    ...(summary ? { summary: true as const } : null),
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id), lines: manualLinesOf(text), ...(where ? { where } : null) } : null),
     ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
     ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
@@ -1008,7 +1014,7 @@ export function buildSteps(tree: readonly NodeTree[]): Step[] {
 function withReach(steps: Step[]): Step[] {
   const all = flattenSteps(steps);
   if (!all.some((step) => step.kind === "system_prompt")) return steps;
-  const prompts = all.filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions"));
+  const prompts = all.filter((step) => step.kind === "prompt" && !step.summary && !step.id.endsWith(":instructions"));
   const reach = (step: Step): number => {
     const scope = step.systemPrompt?.scope;
     if (!scope || scope.kind === "all") return prompts.length;

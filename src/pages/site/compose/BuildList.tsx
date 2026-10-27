@@ -54,6 +54,8 @@ import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
 import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { GlyphButton } from "./ModalFrame";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { SUMMARY_COPY } from "@/lib/build/summaryTurn";
 import { useAnnounce } from "./BuildAnnouncer";
 import { PREVIEW } from "@/lib/theme/truncate";
 import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
@@ -141,7 +143,7 @@ import {
   tnum,
   wellField,
 } from "./refinedStyles";
-import { NO_APP, type SourceSession } from "./sourcesModel";
+import { NO_APP, REPEAT_COPY, repeatedTiles, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { canMove as canMoveIn, locate, moveBy, moveModelOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
@@ -252,6 +254,8 @@ export interface BuildListProps {
   onDropWorkstream?: (workstreamKey: string, over: string) => Promise<unknown> | void;
   /** CA-17 P2: "Add a part", the row under "Add a session". Resolves once the part is made. Absent: no row. */
   onAddPart?: () => void;
+  /** SV-07 P3: a part is being written: "Add a part" is disabled until it lands. */
+  addingPart?: boolean;
   /** CA-14 P5: the "+ Add tile" row at the end of a session, drawn by the page (it holds the Add items). */
   addToSession?: (sessionKey: string) => ReactNode;
   /** CA-14 P5: the session whose prompt box is open. An empty draft has Session 1's open without it. */
@@ -410,6 +414,8 @@ interface ListRefs {
   sessionOf?: ReadonlyMap<string, string>;
   /** The number of the session each top-level tile is in, for a prompt's name ("Prompt 3 · Session 2"). */
   sessionNumbers?: ReadonlyMap<string, number>;
+  /** SV-07 P7: the prompt tiles of a repeated chat, to the number of the session they are also in. */
+  alsoIn?: ReadonlyMap<string, number>;
   firstOf?: ReadonlySet<string>;
   onMoveToSession?: BuildListProps["onMoveToSession"];
   onSplitHere?: BuildListProps["onSplitHere"];
@@ -1117,8 +1123,11 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const selected = selectedId === step.id || picked;
   const title = stepTitle(step);
   const isDefault = step.title === null;
-  const sessionNumber = useContext(ListRefsContext).sessionNumbers?.get(step.id);
-  const place = promptPlace(step.number, sessionNumber);
+  const { sessionNumbers, alsoIn: repeated } = useContext(ListRefsContext);
+  const sessionNumber = sessionNumbers?.get(step.id);
+  const alsoIn = repeated?.get(step.id);
+  // SV-07 P7: a Summary tile is called what it is, never by a prompt's place.
+  const place = step.summary ? SUMMARY_COPY.title : promptPlace(step.number, sessionNumber);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [over, setOver] = useState(false);
@@ -1155,9 +1164,9 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     <div
       ref={cardRef}
       role="group"
-      aria-label={`Prompt ${step.number}: ${step.title ?? "untitled"}`}
+      aria-label={step.summary ? `${SUMMARY_COPY.title}: ${step.title ?? "untitled"}` : `Prompt ${step.number}: ${step.title ?? "untitled"}`}
       data-testid="step-card"
-      data-kind="prompt"
+      data-kind={step.summary ? "summary" : "prompt"}
       data-selected={selected ? "true" : undefined}
       tabIndex={0}
       {...focus.bind}
@@ -1191,7 +1200,19 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         step={step}
         nest={nest}
         phone={phone}
-        typeLine={typeLineOf(step)}
+        typeLine={
+          alsoIn ? (
+            <>
+              {typeLineOf(step)}
+              {/* SV-07 P7: a tile of the same chat imported again, under its kind line. */}
+              <span data-testid="also-in" style={{ display: "block" }}>
+                {REPEAT_COPY.alsoIn(alsoIn)}
+              </span>
+            </>
+          ) : (
+            typeLineOf(step)
+          )
+        }
         typeTestId="prompt-eyebrow"
         title={
           renaming ? (
@@ -2347,7 +2368,8 @@ export function BuildList(raw: BuildListProps) {
                     <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} />
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
-                    {run.steps.length === 0 && !promptHere ? (sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part") || (arrival.active && base.arriving?.kind === "empty" && key === base.arriving.key) ? <EmptyPlace words="Drop a tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {/* SV-07 P6: an empty session looks one way, "No tiles yet" and "+ Add tile"; the dashed place shows only while a tile is dragged. */}
+                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}
@@ -2443,13 +2465,15 @@ export function BuildList(raw: BuildListProps) {
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.phone ? undefined : props.onEditTile} />
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
+      {/* SV-07 P5: what the List says is heard through the page's one announcer, and the notice is the one thing seen. These
+          two keep the last sentence as a record only: never drawn, and hidden from screen readers so nothing is said twice. */}
       {nestOn || said ? (
-        <div data-testid="nest-said">
-          {said ? <Quiet>{said}</Quiet> : null}
+        <div data-testid="nest-said" aria-hidden="true" style={VISUALLY_HIDDEN}>
+          {said}
         </div>
       ) : null}
-      <div data-testid="sessions-said" style={props.said ? undefined : { display: "none" }}>
-        {props.said ? <Quiet>{props.said}</Quiet> : null}
+      <div data-testid="sessions-said" aria-hidden="true" style={VISUALLY_HIDDEN}>
+        {props.said}
       </div>
       {/* CA-14 P5: with session heads the prompt box stands in its session; an old draft with none keeps it at the foot, as it was. */}
       {headed ? null : (
@@ -2464,7 +2488,7 @@ export function BuildList(raw: BuildListProps) {
         />
       )}
       {props.addSession ? <AddSessionRow phone={props.phone} {...props.addSession} openFor={addFor} /> : null}
-      {props.onAddPart ? <AddPartRow phone={props.phone} adding={props.addSession?.adding ?? false} onAdd={props.onAddPart} /> : null}
+      {props.onAddPart ? <AddPartRow phone={props.phone} adding={(props.addSession?.adding ?? false) || Boolean(props.addingPart)} onAdd={props.onAddPart} /> : null}
     </div>
   );
   /* SV-06 P1: what this commit's slides take, when a hook times them: a put back, a fold, a lane opening. */
@@ -2497,6 +2521,7 @@ export function BuildList(raw: BuildListProps) {
     sessions: runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [{ key: run.head.key, label: [headName(run.head), run.head.title].filter(Boolean).join(" · ") }] : [])),
     sessionOf,
     sessionNumbers,
+    alsoIn: repeatedTiles(runs),
     firstOf,
     onMoveToSession: props.onMoveToSession,
     onSplitHere: props.onSplitHere,

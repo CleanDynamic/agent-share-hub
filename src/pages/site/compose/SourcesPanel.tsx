@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 
 import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { IconButton } from "@/components/brand/IconButton";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LoadingBlocks } from "./LoadingBlocks";
@@ -41,7 +42,7 @@ import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { fullText } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
-import { libraryName, REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
+import { libraryName, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
@@ -56,6 +57,7 @@ export const SOURCES_COPY = {
   didntFinish: "Didn't finish",
   inThisDraft: "In this draft",
   addThisTo: "Add this session to",
+  lastPart: ", chosen last",
   showMoreSessions: "Show more sessions",
   drop: "Drop sessions or files",
   noSessions: "No sessions yet.",
@@ -86,6 +88,8 @@ export interface SourcesPanelProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onAddSession: (id: string, part?: string) => void;
+  /** SV-07 P3: the part a session was last added to, marked in "Add this session to". */
+  lastPart?: string;
   /** CA-17 P3: the build's parts when it has two or more. "Add session" then asks which part first. */
   parts?: readonly AddToPart[];
   /** Files dropped on the zone; CA-04 P4: with where each sat when a folder was dropped. */
@@ -302,7 +306,7 @@ function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; ph
 }
 
 /** CA-17 P3: "Add session" with two or more parts: a small menu, "Add this session to", one row for each part. */
-function AddToMenu({ item, parts, phone, onAdd }: { item: SourceLibraryItem; parts: readonly AddToPart[]; phone: boolean; onAdd: (id: string, part: string) => void }) {
+function AddToMenu({ item, parts, phone, onAdd, lastPart }: { item: SourceLibraryItem; parts: readonly AddToPart[]; phone: boolean; onAdd: (id: string, part: string) => void; lastPart?: string }) {
   return (
     <Menu.Root modal={false}>
       <Menu.Trigger asChild>
@@ -312,9 +316,18 @@ function AddToMenu({ item, parts, phone, onAdd }: { item: SourceLibraryItem; par
         <MenuContent align="end" sideOffset={4} style={menuSurface()}>
           <Menu.Label style={{ ...text(11.5, 500, t.label), padding: "6px 12px 4px" }}>{SOURCES_COPY.addThisTo}</Menu.Label>
           {parts.map((part) => (
-            <Menu.Item key={part.key} onSelect={() => onAdd(item.id, part.key)} style={{ ...menuItem(true, phone), gap: 8 }}>
+            <Menu.Item key={part.key} onSelect={() => onAdd(item.id, part.key)} data-last={part.key === lastPart || undefined} style={{ ...menuItem(true, phone), gap: 8 }}>
               <ColourDot colour={part.colour} />
-              {part.title}
+              <span style={{ flexGrow: 1, minWidth: 0 }}>{part.title}</span>
+              {/* SV-07 P3: the part a session was last added to, marked as the View menu marks its choices. */}
+              {part.key === lastPart ? (
+                <span style={{ display: "inline-flex" }}>
+                  <span aria-hidden="true" style={{ display: "inline-flex" }}>
+                    <Glyph name="check" size={16} />
+                  </span>
+                  <span style={VISUALLY_HIDDEN}>{SOURCES_COPY.lastPart}</span>
+                </span>
+              ) : null}
             </Menu.Item>
           ))}
         </MenuContent>
@@ -323,7 +336,7 @@ function AddToMenu({ item, parts, phone, onAdd }: { item: SourceLibraryItem; par
   );
 }
 
-function LibraryRow({ item, phone, onAdd, parts }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string, part?: string) => void; parts?: readonly AddToPart[] }) {
+function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string, part?: string) => void; parts?: readonly AddToPart[]; lastPart?: string }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
       {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
@@ -332,13 +345,14 @@ function LibraryRow({ item, phone, onAdd, parts }: { item: SourceLibraryItem; ph
         <span {...fullText(libraryName(item))} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{libraryName(item)}</span>
         <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
         {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
+        {item.sameAs ? <span data-testid="same-prompts" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{REPEAT_COPY.sameAs(item.sameAs)}</span> : null}
       </span>
       {item.inThisDraft ? (
         <span style={{ ...text(11.5, 400, t.label), flexShrink: 0 }}>{SOURCES_COPY.inThisDraft}</span>
       ) : item.adding ? (
         <PlusToWords />
       ) : parts && parts.length >= 2 ? (
-        <AddToMenu item={item} parts={parts} phone={phone} onAdd={onAdd} />
+        <AddToMenu item={item} parts={parts} phone={phone} onAdd={onAdd} lastPart={lastPart} />
       ) : (
         <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
       )}
@@ -513,7 +527,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
         {library.length > 0 ? (
           <section aria-label={SOURCES_COPY.yourSessions} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.yourSessions}` }} style={group}>
             <GroupHead name={SOURCES_COPY.yourSessions} count={library.length} hollow />
-            <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} />} />
+            <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} lastPart={props.lastPart} />} />
             {props.libraryHasMore ? (
               <div style={{ ...rowLine, paddingTop: 8 }}>
                 {props.libraryLoadingMore ? (

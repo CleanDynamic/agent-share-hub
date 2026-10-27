@@ -145,15 +145,25 @@ export function flatNodes(tree: readonly (BuildNode & { children?: unknown })[])
 /** The handler of a watched build, if there is one. */
 export const clashHandler = (buildId: string): ClashHandler | null => watched.get(buildId)?.handler ?? null;
 
+/** SV-07 P1: the queue of a build that is not watched. Gone once its last step has settled. */
+const loose = new Map<string, Promise<unknown>>();
+
 /**
  * Writes to the build's own row go one at a time in this tab, each with the stamp the one before left, so a tab does not refuse
- * itself. Not watched: the write just runs.
+ * itself. A build that is not watched queues too (SV-07 P1): a step that reads `making`, changes it and writes it must not start
+ * from a copy the step before it is still writing.
  */
 export function serial<T>(buildId: string, task: () => Promise<T>): Promise<T> {
   const entry = watched.get(buildId);
-  if (!entry) return task();
-  const next = entry.chain.then(task, task);
-  entry.chain = next.catch(() => undefined);
+  const next = (entry ? entry.chain : (loose.get(buildId) ?? Promise.resolve())).then(task, task);
+  const settled = next.catch(() => undefined);
+  if (entry) entry.chain = settled;
+  else {
+    loose.set(buildId, settled);
+    void settled.then(() => {
+      if (loose.get(buildId) === settled) loose.delete(buildId);
+    });
+  }
   return next;
 }
 

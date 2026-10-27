@@ -15,7 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession } from "@/lib/build/buildSessions";
 import { buildSteps, groupKey, topSteps, type SessionGroup, type Step } from "@/lib/build/graph";
-import { isLegacySession, newSessionKey, patchMaking, readMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, newSessionKey, newWorkstreamKey, patchMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsCollapsedOf, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta, type Workstream } from "@/lib/build/making";
 import { reorderNodes } from "@/lib/build/nodes";
 import { droppedKey, movedKey, orderKeys, setSessionOrder, stackBySessionMoves } from "@/lib/build/sessionLayout";
 import { dayOfNode, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
@@ -67,6 +67,8 @@ export interface SessionEditsInput {
   bridge?: ReferenceBridge;
   /** CA-21 P1: where every tile, session and part stands, so Move up and Move down always have somewhere to go. Absent: a session swaps with the one next to it in its part. */
   moveModel?: MoveModel;
+  /** SV-07 P3: the parts as Add a part will write them, drawn from the click until the write lands; null when it has. */
+  showParts?: (workstreams: readonly Workstream[] | null) => void;
 }
 
 const findTop = (tree: readonly NodeTree[], id: string): NodeTree | undefined => tree.find((node) => node.id === id);
@@ -184,10 +186,15 @@ export function useSessionEdits(input: SessionEditsInput) {
   const move = useCallback(
     (key: string, next: string[], from: number, to: number) =>
       guard("Session not moved", () =>
-        track(`Moved Session ${from}${to < from ? " up" : " down"}`, async () => {
-          await applyLayout({ order: next });
-          sayMoved(from, to);
-        }),
+        track(
+          `Moved Session ${from}${to < from ? " up" : " down"}`,
+          async () => {
+            await applyLayout({ order: next });
+            sayMoved(from, to);
+          },
+          // SV-07 P4: the animator is told what moves before the model changes.
+          { motion: "move", keys: [key] },
+        ),
       ),
     [applyLayout, guard, sayMoved, track],
   );
@@ -235,17 +242,20 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   /** Write a change to the parts: the parts, the sessions' entries, the one order, then the tiles' places. Resolves what was written, or null. */
   const applyParts = useCallback(
-    async (plan: (making: unknown) => WorkstreamChange | null): Promise<WorkstreamChange | null> => {
+    async (plan: (making: unknown) => WorkstreamChange | null, onWritten?: () => void): Promise<WorkstreamChange | null> => {
       const { buildId, nodes } = latest.current;
       if (!buildId) throw new Error("That draft is not saved yet.");
       let applied: WorkstreamChange | null = null;
       await nodes.run(async () => {
-        const fresh = await readMaking(buildId);
-        const change = plan(fresh);
+        // SV-07 P1: the change is worked out from `making` as it stands inside the write's own step.
+        let change: WorkstreamChange | null = null;
+        const next = await patchMaking(buildId, (fresh) => {
+          change = plan(fresh);
+          return change && workstreamPatch(fresh, change);
+        });
         if (!change) return;
         applied = change;
-        const next = await patchMaking(buildId, workstreamPatch(fresh, change));
-        await setSessionOrder(buildId, change.order);
+        await setSessionOrder(buildId, (change as WorkstreamChange).order);
         const laid = planLayout(nodes.current(), next, sessionsMetaOf(next), change.order);
         if (laid.moves.length > 0) {
           await reorderNodes(buildId, laid.moves);
@@ -255,6 +265,8 @@ export function useSessionEdits(input: SessionEditsInput) {
           }
         }
       });
+      // SV-07 P3: what waits on the write (Add a part's disabled row) lets go here, not after the refetch.
+      onWritten?.();
       await refresh(buildId);
       return applied;
     },
@@ -267,10 +279,7 @@ export function useSessionEdits(input: SessionEditsInput) {
       guard(line, async () => {
         const { buildId, nodes } = latest.current;
         if (!buildId) return;
-        await nodes.run(async () => {
-          const stored = storedWorkstreamsOf(await readMaking(buildId));
-          await setWorkstreams(buildId, change(stored));
-        });
+        await nodes.run(() => setWorkstreams(buildId, change).then(() => undefined));
         await refresh(buildId);
       }),
     [guard, refresh],
@@ -278,21 +287,48 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   const titleOf = (key: string): string => latest.current.parts?.titles.get(key) ?? "that part";
 
-  /** "Add a part". Resolves the new part's key. */
+  /** SV-07 P3: a part is being added: a second click makes no second part. */
+  const addingPart = useRef(false);
+  /**
+   * "Add a part". SV-07 P3: the parts show at once, as they will be written (the same keys), and stay until the write lands.
+   * Resolves the new part's key.
+   */
   const onAddPart = useCallback(async (): Promise<string | null> => {
+    if (addingPart.current) return null;
+    addingPart.current = true;
+    const fresh = [newWorkstreamKey(), newWorkstreamKey()];
+    const keysOf = () => {
+      let at = 0;
+      return () => fresh[at++] ?? newWorkstreamKey();
+    };
+    const shown = addWorkstream(latest.current.made, editableKeys(), keysOf());
+    if (shown) latest.current.showParts?.(shown.workstreams);
     let key: string | null = null;
-    await guard("Part not added", () =>
-      track("Added a part", async () => {
-        const change = await applyParts((making) => addWorkstream(making, editableKeys()));
-        key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
-        if (key) latest.current.say("Added a part.");
-      }),
-    );
+    try {
+      await guard("Part not added", () =>
+        track("Added a part", async () => {
+          const change = await applyParts(
+            (making) => addWorkstream(making, editableKeys(), keysOf()),
+            () => {
+              addingPart.current = false;
+              latest.current.showParts?.(null);
+            },
+          );
+          key = change && "key" in change ? (change as WorkstreamChange & { key: string }).key : null;
+          if (key) latest.current.say("Added a part.");
+          // SV-07 P5: the notice is the one visible confirmation, now that the List prints no line.
+        }, { notice: true, motion: "part", keys: shown ? [shown.key] : [] }),
+      );
+    } finally {
+      addingPart.current = false;
+      latest.current.showParts?.(null);
+    }
     return key;
   }, [applyParts, editableKeys, guard, track]);
 
   const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Name not saved", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
-  const onPartFold = useCallback((key: string, collapsed: boolean) => void editPart("Fold not saved", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
+  /** SV-07 P3: resolves when the fold is written, so the page's at-once fold can let go then. */
+  const onPartFold = useCallback((key: string, collapsed: boolean): Promise<void> => editPart("Fold not saved", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
   const onPartColour = useCallback((key: string, colour: string | null) => editPart("Colour not saved", (stored) => withWorkstream(stored, key, { colour: colour ?? undefined })), [editPart]);
   const onPartStartsAfter = useCallback(
     (key: string, session: string | null) =>
@@ -340,6 +376,8 @@ export function useSessionEdits(input: SessionEditsInput) {
           (said: string | null) => said ?? "",
           async () => {
             const title = titleOf(key);
+            // The parts' titles as they stand before the part goes: the page has the change as soon as it is written.
+            const titles = latest.current.parts?.titles;
             let joins = "";
             // Let go of what points at the part first, so the size rule has run before the part is gone.
             if (storedWorkstreamsOf(latest.current.made).some((part) => part.key === key)) {
@@ -353,12 +391,12 @@ export function useSessionEdits(input: SessionEditsInput) {
               return change;
             });
             if (!done) return null;
-            const into = latest.current.parts?.titles.get(joins);
+            const into = titles?.get(joins);
             const said = into ? REMOVE_COPY.part(title, into) : REMOVE_COPY.partAlone(title);
             latest.current.say(`${said}.`);
             return said;
           },
-          { notice: true, removed: removedMeta },
+          { notice: true, removed: removedMeta, keys: [key] },
         ),
       );
     },
@@ -381,6 +419,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             latest.current.say(`Session ${number} is now in ${titleOf(to)}.`);
             return `Moved Session ${number} to ${titleOf(to)}`;
           },
+          { motion: "move", keys: [key] },
         );
       }),
     [applyParts, editableKeys, guard, track],
@@ -395,11 +434,9 @@ export function useSessionEdits(input: SessionEditsInput) {
         track(`${on ? "Put" : "Took"} Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""} ${on ? "at the same stage as" : "off the stage of"} the session above`, async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId || isLegacySession(key)) return;
-          await nodes.run(async () => {
-            const fresh = await readMaking(buildId);
-            const { sessions_meta } = workstreamPatch(fresh, { workstreams: storedWorkstreamsOf(fresh), sessions: { [key]: { withAbove: on ? true : undefined } }, order: [] });
-            await patchMaking(buildId, { sessions_meta });
-          });
+          await nodes.run(() =>
+            patchMaking(buildId, (fresh) => ({ sessions_meta: workstreamPatch(fresh, { workstreams: storedWorkstreamsOf(fresh), sessions: { [key]: { withAbove: on ? true : undefined } }, order: [] }).sessions_meta })).then(() => undefined),
+          );
           await refresh(buildId);
         }),
       ),
@@ -458,7 +495,6 @@ export function useSessionEdits(input: SessionEditsInput) {
             const order = editableKeys();
             const leaving = new Set(removing);
             const rest = withoutKeys(order, leaving);
-            const collapsed = ((made as { sessions_collapsed?: unknown } | null)?.sessions_collapsed as string[] | undefined) ?? [];
             const sessionRefs = removing.map((key) => refTo({ kind: "session", id: key }));
             const count = tiles.length + alsoTiles.length;
             Object.assign(removedMeta, {
@@ -480,7 +516,7 @@ export function useSessionEdits(input: SessionEditsInput) {
               bridgeRef.current.release(keepRefs);
               if (alsoTiles.length > 0) await nodes.run(() => dropNodes(nodes, alsoTiles));
               await applyLayout({ order: rest, reassign: new Map(moving.map((id) => [id, target])), atEnd, meta: Object.fromEntries(removing.map((key) => [key, null])), dropKeys: removing });
-              await nodes.run(() => patchMaking(buildId, { sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) }).then(() => undefined));
+              await nodes.run(() => patchMaking(buildId, (fresh) => ({ sessions_collapsed: sessionsCollapsedOf(fresh).filter((entry) => !leaving.has(entry)) })).then(() => undefined));
               for (const key of removing) latest.current.onGone(key);
               await refreshMakingStats(buildId).catch(() => undefined);
               const offset = shown.length - order.length;
@@ -499,7 +535,7 @@ export function useSessionEdits(input: SessionEditsInput) {
                 await setSessionMeta(buildId, key, null);
                 await deleteBuildSession(buildId, key).catch(() => undefined);
               }
-              await patchMaking(buildId, { session_order: rest, sessions_collapsed: collapsed.filter((entry) => !leaving.has(entry)) });
+              await patchMaking(buildId, (fresh) => ({ session_order: rest, sessions_collapsed: sessionsCollapsedOf(fresh).filter((entry) => !leaving.has(entry)) }));
             });
             await refreshMakingStats(buildId).catch(() => undefined);
             for (const key of removing) latest.current.onGone(key);
@@ -507,7 +543,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             if (removing.length === 1 && alsoTiles.length === 0) return REMOVE_COPY.session(numberOf(removing[0]), tiles.length);
             return REMOVE_COPY.several(removing.length, tiles.length + alsoTiles.length);
           },
-          { notice: true, removed: removedMeta },
+          { notice: true, removed: removedMeta, keys: [...keys] },
         );
       }),
     [applyLayout, editableKeys, guard, refresh, track],

@@ -50,20 +50,22 @@ import { goalRefusal, patchMaking, type SessionGoal } from "@/lib/build/making";
 import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
-import { isLegacySession, isTypedSession, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
+import { isLegacySession, isTypedSession, sessionOrderOf, sessionsMetaOf, sessionToolsOf, setSessionMeta, storedWorkstreamsOf, todayDay, newSessionKey, type MakingSession, type SessionMeta, type Workstream } from "@/lib/build/making";
 import { defaultWorkstream, labelsOf, orderByWorkstream, orderWithNewSession, workstreamKeyOf, workstreamLabel, workstreamMark, workstreamsOf } from "@/lib/build/workstreams";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
-import { addSessionToBuild, fillMissingTiles } from "@/lib/build/addSession";
+import { addSessionCopy, addSessionToBuild, fillMissingTiles, hasSession, type SessionCopy } from "@/lib/build/addSession";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buildSessions";
 import { nextSessionNumber as nextNumber } from "@/lib/build/sessionNumbers";
 import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessionOrder, orderKeys } from "@/lib/build/sessionLayout";
-import { SessionJump, jumpItemsOf, jumpTo, useCurrentSession } from "@/components/build/SessionJump";
+import { SessionJump, jumpItemsOf, useCurrentSession } from "@/components/build/SessionJump";
+import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
 import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } from "@/lib/build/moveRules";
 import { listPartsOf } from "./partsModel";
 import type { Arriving } from "./arrival";
+import { numberedWithArriving, replacedBy, withArrivingPart, withPartFolds, withParts, withoutSession } from "./sessionModel";
 import { useNodeType } from "@/hooks/useNodeType";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
@@ -107,13 +109,13 @@ import { SessionMapPanel } from "./SessionMapPanel";
 import { makerMapOf, type MapSettings } from "@/lib/build/making";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
+import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, repeatsOf, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { makingWithGroupColours, previewGroupColour, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
-import { ReferenceNotice } from "./referencePieces";
+import { NOTICE_ROOM, ReferenceNotice } from "./referencePieces";
 import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
 import { useLeaveGuard } from "./useLeaveGuard";
@@ -134,7 +136,8 @@ import { useBuildFind } from "./useBuildFind";
 import { useBuildShortcuts } from "./useBuildShortcuts";
 import { BuildSelectionContext, useBuildSelection } from "./useBuildSelection";
 import { SelectionBar, type SelectionBarProps } from "./removePieces";
-import { useHeld } from "./buildMotion";
+import { outlineOnce, useHeld } from "./buildMotion";
+import { scrollToShow } from "./pageScroll";
 import { MotionChannel, MotionChannelContext } from "./listMotion";
 import { BASE } from "@/lib/theme/motion";
 import type { Drawn } from "@/lib/build/buildSelection";
@@ -176,6 +179,18 @@ const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [ste
 const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
 
 /** The later of two moments, either of which may be missing. */
+/** SV-07 P3: where a jump tab puts a session's head: this far below the sticky header. */
+const JUMP_GAP = 24;
+
+/** SV-07 P2: what `insertSession` adds: a chat imported, an empty session started here, or a ready-made copy. */
+type SessionSource =
+  | { kind: "import"; importId: string; head: { tool: string; detail: string; date: string }; count: number }
+  | { kind: "empty" }
+  | { kind: "copy"; copy: SessionCopy; head: { tool: string; detail: string; date: string } };
+
+/** What a session that has no entry yet starts from: a typed session's tool and day, else nothing of its own. */
+const fallbackMeta = (group: Parameters<typeof groupKind>[0] & { tool?: string | null; startedAt?: string | null } | undefined, key: string): SessionMeta =>
+  groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" };
 const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
 
 /** The page, with its one announcer around it (CA-26 P4). */
@@ -281,23 +296,35 @@ function SandboxPageBody() {
   const [lens, setLens] = useState<SandboxLens>("list");
   const onLens = useCallback((next: SandboxLens) => setLens(next), []);
 
-  const made = (build as { making?: unknown } | null)?.making;
+  /* CA-21 P7: the session on its way, for the List to open a lane for and fill; it lets go when its animation is over. */
+  const [arriving, setArriving] = useState<Arriving | null>(null);
+  const storedMade = (build as { making?: unknown } | null)?.making;
+  /* SV-07 P2: one model from the click to the saved row. An import that replaces the empty Session 1 is drawn in its place from the
+     click: that session is left out of what is drawn, so the two are never drawn side by side. */
+  const replaced = useMemo(() => replacedBy(storedMade, getSessionOrder(storedMade, sessions.rows), (key) => hasSession(tree, key), arriving), [storedMade, sessions.rows, tree, arriving]);
+  /* SV-07 P3: the parts Add a part is writing, drawn from the click until the stored parts have them. */
+  const [shownParts, setShownParts] = useState<readonly Workstream[] | null>(null);
+  /* SV-07 P3: a part folded or opened shows it at once, as a session does, until the write lands. */
+  const [partFolds, setPartFolds] = useState<Readonly<Record<string, boolean>>>({});
+  const made = useMemo(() => withArrivingPart(withPartFolds(withParts(withoutSession(storedMade, replaced), shownParts), partFolds), arriving), [storedMade, replaced, shownParts, partFolds, arriving]);
   /* CA-12 P5: sessions are numbered by `build_sessions.position`; a draft with no rows is numbered by its steps, as before. */
-  const order = useMemo(() => orderByWorkstream(getSessionOrder(made, sessions.rows), sessionsMetaOf(made), storedWorkstreamsOf(made)), [made, sessions.rows]);
+  const order = useMemo(() => orderByWorkstream(getSessionOrder(made, sessions.rows).filter((key) => key !== replaced), sessionsMetaOf(made), storedWorkstreamsOf(made)), [made, sessions.rows, replaced]);
   /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
   const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
   const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
     const steps = buildSteps(tree);
     // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
-    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made), order, storedWorkstreamsOf(made));
+    // SV-07 P2: the session on its way already has its number, and the ones after it have theirs.
+    const groups = numberedWithArriving(sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made), order, storedWorkstreamsOf(made)), arriving, (group) => groupKey(group));
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
-      prompts: all.filter((step) => step.kind === "prompt").length,
+      // SV-07 P7: a Summary tile is no prompt.
+      prompts: all.filter((step) => step.kind === "prompt" && !step.summary).length,
       files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
-  }, [tree, made, order]);
+  }, [tree, made, order, arriving]);
   /* CA-17 P5: the sessions of a part, for its picker's "Also colour its sessions that have no colour", and the parts with the previewed colour on. */
   const sessionsOfPart = useCallback((workstream: string): readonly string[] => workstreamsOf(made, orderKeys(savedGroups)).find((part) => part.key === workstream)?.sessions ?? [], [made, savedGroups]);
   /* CA-19: single colours and reference groups, the one history of colour and link steps, and what is written but not yet saved. */
@@ -615,9 +642,10 @@ function SandboxPageBody() {
     const withTiles = new Set(shown.filter((group) => group.stepNumbers.length > 0).map((group) => groupKey(group)));
     // CA-14 P1: a session in the order with no tile is drawn, imported or made here.
     const empties = sourceSessionRows.filter((row) => !withTiles.has(row.key) && (isTypedSession(row.key) || order.includes(row.key)));
-    if (empties.length === 0 && !buildId && shown.length === 0) return [{ key: FIRST_SESSION_KEY, number: 1, tool: NO_APP, detail: "", prompts: [] }];
+    // SV-07 P2: the empty Session 1 of a post with no draft is drawn only while nothing is on its way.
+    if (empties.length === 0 && !buildId && shown.length === 0 && !arriving) return [{ key: FIRST_SESSION_KEY, number: 1, tool: NO_APP, detail: "", prompts: [] }];
     return empties;
-  }, [shown, sourceSessionRows, buildId, order]);
+  }, [shown, sourceSessionRows, buildId, order, arriving]);
   const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
 
   /** An old build's run of typed prompts, saved as a session made here so it can change. Resolves its new key. */
@@ -653,10 +681,24 @@ function SandboxPageBody() {
     () => moveModelOf({ steps, heads: dividerRows, empties: emptySessions, parts: partsModel?.list.map((part) => ({ key: part.view.key, sessions: part.sessions })) }),
     [steps, dividerRows, emptySessions, partsModel],
   );
-  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, moveModel, parts: partsModel ?? undefined, history: buildHistory, bridge, onGone: (key) => {
+  const edits = useSessionEdits({ buildId, made, nodes, steps, groups, claim, say: setSessionSaid, moveModel, parts: partsModel ?? undefined, history: buildHistory, bridge, showParts: setShownParts, onGone: (key) => {
     if (chosenRef.current === key) setChosenSession(null);
     setPromptSession((current) => (current === key ? null : current));
   } });
+  /** SV-07 P3: fold or open a part, shown at once; the at-once fold lets go when the write has landed (or failed). */
+  const onPartFold = useCallback(
+    (key: string, collapsed: boolean): Promise<void> => {
+      setPartFolds((previous) => ({ ...previous, [key]: collapsed }));
+      return edits.onPartFold(key, collapsed).finally(() =>
+        setPartFolds((previous) => {
+          if (previous[key] !== collapsed) return previous;
+          const { [key]: _done, ...rest } = previous;
+          return rest;
+        }),
+      );
+    },
+    [edits],
+  );
   /* CA-20: removing (and, later, selecting, duplicating, converting and grouping) in one place, for the menus, the keys and the bars. */
   const { actions, dialogs: actionDialogs } = useBuildActions({
     buildId,
@@ -723,8 +765,8 @@ function SandboxPageBody() {
   /* CA-12 P4/P5: the session just added is scrolled to and outlined once; the row says "Adding…" until the write lands. */
   const [ringedSession, setRingedSession] = useState<{ key: string; n: number } | null>(null);
   const [startingSession, setStartingSession] = useState(false);
-  /* CA-21 P7: the session on its way, for the List to open a lane for and fill; it lets go when its animation is over. */
-  const [arriving, setArriving] = useState<Arriving | null>(null);
+  /** SV-07 P3: the part a session was last added to, marked in Your sessions' "Add this session to". */
+  const [lastPart, setLastPart] = useState<string | undefined>(undefined);
   /* SV-05 P2: a new session's number is the next place at the end of its part, from the one numbering. */
   const nextSessionNumber = useCallback(
     (part?: string) => nextNumber(shownGroups(groups).map(groupKey), { meta: sessionsMetaOf(made), workstreams: storedWorkstreamsOf(made) }, part),
@@ -732,10 +774,65 @@ function SandboxPageBody() {
   );
   useEffect(() => {
     if (!ringedSession) return;
-    document.querySelector(`[data-session-key="${ringedSession.key}"]`)?.scrollIntoView?.({ block: "center" });
+    // SV-07 P4: only through SV-06's scroll helper, and only when the session just added is wholly off screen.
+    const session = document.querySelector<HTMLElement>(`[data-session-key="${ringedSession.key}"]`);
+    const box = session?.getBoundingClientRect();
+    if (session && box && (box.bottom < 0 || box.top > window.innerHeight)) scrollToShow(session, { align: "middle" });
     const timer = window.setTimeout(() => setRingedSession(null), ADD_FLASH_MS);
     return () => window.clearTimeout(timer);
   }, [ringedSession]);
+
+  /**
+   * SV-07 P2: the one way a session is added: a chat imported, an empty one started here, or a ready-made copy (SV-18, SV-21).
+   * The pending entry is drawn at once, in its final part and place, with its number; the animator is told first; the saved
+   * session then takes its place in the same frame (`arriving`, below the List). Resolves the new keys, for `motion.expect`.
+   */
+  const insertSession = useCallback(
+    async (source: SessionSource, workstream?: string): Promise<string[]> => {
+      const part = buildId ? defaultWorkstream(made, workstream) : undefined;
+      const key = source.kind === "import" ? source.importId : source.kind === "copy" ? source.copy.key : newSessionKey();
+      const number = nextSessionNumber(part);
+      const head = source.kind === "empty" ? { tool: NO_APP, detail: "", date: shortDate(new Date().toISOString()) } : source.head;
+      // SV-07 P3: a closed part is opened first (the animator's unfold), and the session then arrives in it.
+      if (part && storedWorkstreamsOf(made).some((entry) => entry.key === part && entry.collapsed)) void onPartFold(part, false).catch(() => undefined);
+      if (workstream) setLastPart(workstream);
+      motion.expect({ kind: "add", keys: [key] });
+      setArriving({ key, kind: source.kind === "empty" ? "empty" : "chat", head: { key, number, prompts: [], ...head }, count: source.kind === "import" ? source.count : source.kind === "copy" ? source.copy.tiles.length : 0, part, status: "writing" });
+      if (source.kind === "import") setSessionSaid(`Adding ${head.tool} · ${head.date} as Session ${number}…`);
+      try {
+        const id = await ensureBuild();
+        if (source.kind === "import") {
+          // SV-05 P4: the progress row follows the tiles as each batch is written. Stop is not offered: a session is never half-added.
+          await addSessionToBuild(source.importId, { kind: "existing", buildId: id, workstream }, (progress) => setArriving((current) => (current && current.key === key ? { ...current, progress } : current)));
+        } else if (source.kind === "copy") await addSessionCopy(id, source.copy, workstream);
+        else {
+          const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
+          await trackWrite("making", async () => {
+            await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
+            await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
+            // SV-07 P1: the order as it is stored when it is written: a session added meanwhile, not yet drawn here, keeps its place.
+            const withStored = (fresh: Record<string, unknown>) => [...keys, ...sessionOrderOf(fresh).filter((entry) => !keys.includes(entry) && entry !== key)];
+            if (part) await setSessionOrder(id, (fresh) => orderWithNewSession(fresh, withStored(fresh), key, part));
+            else await patchMaking(id, (fresh) => ({ session_order: [...withStored(fresh), key] }));
+          });
+        }
+        await Promise.all([
+          refreshRecord(id),
+          queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
+          ...(source.kind === "empty" ? [] : [queryClient.invalidateQueries({ queryKey: ["build", "getMadeWith"] })]),
+          ...(source.kind === "import" ? [queryClient.invalidateQueries({ queryKey: librarySessionsKey })] : []),
+        ]);
+        setChosenSession(key);
+        setArriving((current) => (current && current.key === key ? { ...current, status: "written" } : current));
+        setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
+        return [key];
+      } catch (cause) {
+        setArriving((current) => (current && current.key === key ? { ...current, status: "failed" } : current));
+        throw cause;
+      }
+    },
+    [buildId, made, nextSessionNumber, ensureBuild, groups, sessions.rows, refreshRecord, queryClient, setChosenSession, onPartFold],
+  );
 
   /**
    * CA-14 P5: "Start a new session": an empty session at the end, "No app chosen", at once. Its app is picked later in
@@ -747,38 +844,27 @@ function SandboxPageBody() {
     setStartingSession(true);
     try {
       const fresh = !buildId;
-      const id = await ensureBuild();
       const first = shown[0];
       // CA-17 P3: with parts the session joins the chosen one (else the last); an empty Session 1 is used only when it is in that part.
       const part = fresh ? undefined : defaultWorkstream(made, workstream);
       const emptyFirst = Boolean(first && groupKind(first) === "typed" && !first.tool && first.stepNumbers.length === 0 && (!part || workstreamKeyOf(sessionsMetaOf(made)[groupKey(first)], storedWorkstreamsOf(made)) === part));
-      let key: string;
-      if (fresh && firstSession.current) key = firstSession.current;
-      else if (emptyFirst && first) key = groupKey(first);
-      else {
-        key = newSessionKey();
-        motion.expect({ kind: "add", keys: [key] });
-        setArriving({ key, kind: "empty", head: { key, number: nextSessionNumber(part), tool: NO_APP, detail: "", prompts: [], date: shortDate(new Date().toISOString()) }, count: 0, part, status: "writing" });
-        const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry));
-        await trackWrite("making", async () => {
-          await setSessionMeta(id, key, { tool: null, date: todayDay(), ...(part ? { workstream: part } : null) });
-          await insertBuildSessionIfTable({ buildId: id, sessionKey: key, importId: null, position: nextSessionPosition(sessions.rows) });
-          if (part) await setSessionOrder(id, orderWithNewSession(made, keys, key, part));
-          else await patchMaking(id, { session_order: [...keys, key] });
-        });
-      }
-      await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
-      setChosenSession(key);
-      setArriving((current) => (current && current.key === key ? { ...current, status: "written" } : current));
-      setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
+      if (fresh || (emptyFirst && first)) {
+        // Nothing new is made: a new post's Session 1, or the empty one there is, is the one to use.
+        const id = await ensureBuild();
+        const key = fresh ? firstSession.current : groupKey(first);
+        await Promise.all([refreshRecord(id), queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] })]);
+        if (key) {
+          setChosenSession(key);
+          setRingedSession((current) => ({ key, n: (current?.n ?? 0) + 1 }));
+        }
+      } else await insertSession({ kind: "empty" }, workstream);
     } catch (cause) {
-      setArriving((current) => (current ? { ...current, status: "failed" } : current));
       console.error("[Sandbox] session not made", cause);
       sayFailed(cause, "Session not made", () => void again(workstream));
     } finally {
       setStartingSession(false);
     }
-  }, [ensureBuild, buildId, shown, groups, made, sessions.rows, firstSession, refreshRecord, queryClient, setChosenSession, nextSessionNumber]);
+  }, [ensureBuild, buildId, shown, made, firstSession, refreshRecord, queryClient, setChosenSession, insertSession]);
 
   /** CA-12 P5: opening or closing a long session, kept; it shows at once and the server's answer follows. */
   const [collapseOverride, setCollapseOverride] = useState<Readonly<Record<string, boolean>>>({});
@@ -794,7 +880,7 @@ function SandboxPageBody() {
     function again(key: string, closed: boolean) {
       setCollapseOverride((previous) => ({ ...previous, [key]: closed }));
       if (!buildId) return;
-      void setCollapsed(buildId, key, closed, made)
+      void setCollapsed(buildId, key, closed)
         .then(() => Promise.all([queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }), queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) })]))
         .catch((cause) => {
           console.error("[Sandbox] collapse not saved", cause);
@@ -802,7 +888,7 @@ function SandboxPageBody() {
           sayFailed(cause, "Fold not saved", () => again(key, closed));
         });
     },
-    [buildId, queryClient, made],
+    [buildId, queryClient],
   );
 
   foldRef.current = { closed: collapsedKeys, open: (key) => onToggleCollapsed(key, false) };
@@ -817,10 +903,10 @@ function SandboxPageBody() {
       anyOpen,
       run: (closed: boolean) => {
         for (const key of keys) if (collapsedKeys.has(key) !== closed) onToggleCollapsed(key, closed);
-        for (const part of parts) if (Boolean(part.collapsed) !== closed) edits.onPartFold(part.key, closed);
+        for (const part of parts) if (Boolean(part.collapsed) !== closed) void onPartFold(part.key, closed);
       },
     };
-  }, [groups, made, collapsedKeys, onToggleCollapsed, edits]);
+  }, [groups, made, collapsedKeys, onToggleCollapsed, onPartFold]);
 
   const onSessionMeta = useCallback(
     async function again(key: string, change: { tool?: string | null; date?: string }): Promise<void> {
@@ -831,15 +917,15 @@ function SandboxPageBody() {
         }
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before = sessionsMetaOf(made)[key] ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() };
-        await setSessionMeta(id, key, { ...before, ...change });
+        // SV-07 P1: changed on the entry as it is stored, not as this page last read it.
+        await setSessionMeta(id, key, (stored) => ({ ...(stored ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() }), ...change }));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session not saved", cause);
         sayFailed(cause, "Session not saved", () => void again(key, change));
       }
     },
-    [claim, ensureBuild, groups, made, refreshRecord],
+    [claim, ensureBuild, groups, refreshRecord],
   );
 
   /** CA-04 P6: what a session worked until; an old build's run of typed prompts is saved as a session first. */
@@ -859,16 +945,17 @@ function SandboxPageBody() {
         }
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-        const { goal: _old, ...rest } = before;
-        await setSessionMeta(id, key, goal ? { ...rest, goal } : rest);
+        await setSessionMeta(id, key, (stored) => {
+          const { goal: _old, ...rest } = stored ?? fallbackMeta(group, key);
+          return goal ? { ...rest, goal } : rest;
+        });
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] goal not saved", cause);
         sayFailed(cause, "Goal not saved", () => void again(key, goal));
       }
     },
-    [claim, ensureBuild, groups, made, refreshRecord],
+    [claim, ensureBuild, groups, refreshRecord],
   );
 
   /** CA-05: what a session carries beyond its steps (cost, background, ...), written whole; an old build's run of typed prompts is saved as a session first. */
@@ -886,15 +973,14 @@ function SandboxPageBody() {
         }
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-        await setSessionMeta(id, key, withExtras(before, extras));
+        await setSessionMeta(id, key, (stored) => withExtras(stored ?? fallbackMeta(group, key), extras));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session facts not saved", cause);
         sayFailed(cause, "Session details not saved", () => void again(key, extras));
       }
     },
-    [claim, ensureBuild, groups, made, refreshRecord],
+    [claim, ensureBuild, groups, refreshRecord],
   );
 
   /** CA-05 P5: the sessions one ran at the same time as. The pairing is written on both sides, so the Map and the List agree. */
@@ -908,8 +994,10 @@ function SandboxPageBody() {
         const changes = togetherChanges(Object.fromEntries(Object.entries(metas).map(([other, meta]) => [other, meta.parallelWith])), self, next);
         for (const [other, list] of Object.entries(changes)) {
           const group = groups.find((candidate) => groupKey(candidate) === other);
-          const before: SessionMeta = metas[other] ?? (groupKind(group ?? { sessionId: other }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-          await setSessionMeta(id, other, withExtras(before, { ...extrasOf(before), parallelWith: list }));
+          await setSessionMeta(id, other, (stored) => {
+            const before = stored ?? fallbackMeta(group, other);
+            return withExtras(before, { ...extrasOf(before), parallelWith: list });
+          });
         }
         await refreshRecord(id);
       } catch (cause) {
@@ -926,17 +1014,20 @@ function SandboxPageBody() {
       try {
         const id = await ensureBuild();
         const group = groups.find((candidate) => groupKey(candidate) === key);
-        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
-        const { colour: _old, ...rest } = before;
         // In the node queue, behind any write already going: a part's colour and its sessions' are written one after another.
-        await nodes.run(() => setSessionMeta(id, key, colour ? { ...rest, colour } : rest));
+        await nodes.run(() =>
+          setSessionMeta(id, key, (stored) => {
+            const { colour: _old, ...rest } = stored ?? fallbackMeta(group, key);
+            return colour ? { ...rest, colour } : rest;
+          }),
+        );
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] session colour not saved", cause);
         sayFailed(cause, "Colour not saved", () => void again(key, colour));
       }
     },
-    [ensureBuild, groups, made, refreshRecord, nodes],
+    [ensureBuild, groups, refreshRecord, nodes],
   );
 
   /** CA-12 P3: "Pick an app" on a session made here. On a post with no draft yet, the draft and its Session 1 are made first. */
@@ -946,15 +1037,14 @@ function SandboxPageBody() {
         const id = await ensureBuild();
         const real = key === FIRST_SESSION_KEY ? firstSession.current : key;
         if (!real) return;
-        const before = sessionsMetaOf(made)[real] ?? { tool: null, date: todayDay() };
-        await setSessionMeta(id, real, { ...before, tool });
+        await setSessionMeta(id, real, (stored) => ({ ...(stored ?? { tool: null, date: todayDay() }), tool }));
         await refreshRecord(id);
       } catch (cause) {
         console.error("[Sandbox] app not saved", cause);
         sayFailed(cause, "App not saved", () => void again(key, tool));
       }
     },
-    [ensureBuild, firstSession, made, refreshRecord],
+    [ensureBuild, firstSession, refreshRecord],
   );
 
   const onAddPrompt = useCallback(
@@ -968,7 +1058,9 @@ function SandboxPageBody() {
     [prompts, sessionToWrite],
   );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
-  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now(), buildId ?? null), [sessions.library, adding, buildId]);
+  /* SV-07 P7: the same chat imported again says which session it repeats. */
+  const repeats = useMemo(() => repeatsOf(sessions.sessions, groups), [sessions.sessions, groups]);
+  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now(), buildId ?? null, repeats), [sessions.library, adding, buildId, repeats]);
   const unfinishedRows = useMemo(() => unfinishedSources(sessions.unfinished, Date.now()), [sessions.unfinished]);
 
   /* ── Details (UI-P66) ── */
@@ -1515,29 +1607,10 @@ function SandboxPageBody() {
       setAdding((previous) => new Set(previous).add(importId));
       // CA-21 P7: the lane opens as soon as it is pressed; the count is all it needs of the chat to make a place for each prompt.
       const item = libraryRows.find((row) => row.id === importId);
-      const number = nextSessionNumber(defaultWorkstream(made, workstream));
-      if (item) {
-        motion.expect({ kind: "add", keys: [importId] });
-        setArriving({ key: importId, kind: "chat", head: { key: importId, number, tool: item.appKnown ? item.app : NO_APP, detail: [item.model, item.date].filter(Boolean).join(" · "), prompts: [], date: item.date }, count: item.promptCount, part: workstream, status: "writing" });
-        setSessionSaid(`Adding ${item.appKnown ? item.app : NO_APP} · ${item.date} as Session ${number}…`);
-      }
+      const head = { tool: item?.appKnown ? item.app : NO_APP, detail: item ? [item.model, item.date].filter(Boolean).join(" · ") : "", date: item?.date ?? "" };
       try {
-        const id = await ensureBuild();
-        // SV-05 P4: the progress row follows the tiles as each batch is written. Stop is not offered: a session is never half-added.
-        const added = await addSessionToBuild(importId, { kind: "existing", buildId: id, workstream }, (progress) =>
-          setArriving((current) => (current && current.key === importId ? { ...current, progress } : current)),
-        );
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }),
-          queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
-          queryClient.invalidateQueries({ queryKey: ["build", "getMadeWith"] }),
-          queryClient.invalidateQueries({ queryKey: librarySessionsKey }),
-        ]);
-        setChosenSession(added.sessionKey);
-        setArriving((current) => (current && current.key === importId ? { ...current, status: "written" } : current));
-        setRingedSession((current) => ({ key: added.sessionKey, n: (current?.n ?? 0) + 1 }));
+        await insertSession({ kind: "import", importId, head, count: item?.promptCount ?? 0 }, workstream);
       } catch (cause) {
-        setArriving((current) => (current && current.key === importId ? { ...current, status: "failed" } : current));
         console.error("[Sandbox] session not added", cause);
         sayFailed(cause, "Session not added", () => void again(importId, workstream));
       } finally {
@@ -1548,7 +1621,7 @@ function SandboxPageBody() {
         });
       }
     },
-    [ensureBuild, queryClient, libraryRows, nextSessionNumber, made],
+    [libraryRows, insertSession],
   );
 
   /** SV-05 P3: Retry on a session that came in short: its missing prompts are imported again, and the head's line goes. */
@@ -1873,7 +1946,23 @@ function SandboxPageBody() {
     headOf,
     viewOptions.sessionList,
   );
-  const sessionList = viewOptions.sessionList && jumpItems.length >= 2 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null;
+  /**
+   * SV-07 P3: a jump tab opens the session's part first when it is closed, then the scroll helper brings the head to 24 below the
+   * sticky header, and the session is outlined once.
+   */
+  const onJump = (key: string) => {
+    const part = partsModel?.partOf.get(key);
+    if (part && storedWorkstreamsOf(made).some((entry) => entry.key === part && entry.collapsed)) flushSync(() => void onPartFold(part, false).catch(() => undefined));
+    const head = headOf(key);
+    if (!head) return;
+    const run = scrollToShow(head, { align: "start", hold: true, offset: HEADER_HEIGHT + JUMP_GAP });
+    head.focus({ preventScroll: true });
+    void run.finished.then(() => {
+      const session = head.closest<HTMLElement>("[data-session-key]");
+      if (session) outlineOnce(session);
+    });
+  };
+  const sessionList = viewOptions.sessionList && jumpItems.length >= 2 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={onJump} /> : null;
   const addTargets = {
     sessions: sourceSessionRows.map((row) => ({ key: row.key, label: [`Session ${row.number} · ${row.tool}`, row.title].filter(Boolean).join(" · ") })),
     session: currentSession,
@@ -2202,6 +2291,7 @@ function SandboxPageBody() {
       <DetailsReferencesProvider value={detailsRefs}>
       <SandboxView
         {...viewProps}
+        noticeRoom={buildHistory.notice ? NOTICE_ROOM : undefined}
         classification={classification}
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}
@@ -2302,7 +2392,7 @@ function SandboxPageBody() {
                 ? {
                     parts: partsModel.list,
                     withAbove: partsModel.withAbove,
-                    onToggle: edits.onPartFold,
+                    onToggle: (key, closed) => void onPartFold(key, closed),
                     onColour: (key, anchor, what, colour) => onColour(refTo({ kind: "workstream", id: key }), anchor, what, colour),
                     ops: { onName: edits.onPartName, onMove: edits.onPartMove, onRemove: edits.onPartRemove, onStartsAfter: edits.onPartStartsAfter },
                   }
@@ -2311,6 +2401,7 @@ function SandboxPageBody() {
             onDropOnWorkstream={partsModel ? edits.onDropOnPart : undefined}
             onDropWorkstream={partsModel ? edits.onDropPart : undefined}
             onAddPart={buildId ? () => void edits.onAddPart() : undefined}
+            addingPart={shownParts !== null}
             onSplitHere={edits.onSplitHere}
             promptIn={promptSession}
             said={sessionSaid}
@@ -2355,6 +2446,7 @@ function SandboxPageBody() {
             onSelect={setSelectedId}
             onAddSession={(id, part) => void stepOf.session(id, part)}
             parts={addToParts}
+            lastPart={lastPart}
             onDropFiles={(files, paths) => void stepOf.dropped(files, paths)}
             onPick={pick}
             connectHref="/connect"
@@ -2395,7 +2487,7 @@ function SandboxPageBody() {
       <AddSystemPromptDialog
         open={addSystemPromptOpen}
         onOpenChange={setAddSystemPromptOpen}
-        prompts={flatten(steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions")).map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }))}
+        prompts={flatten(steps).filter((step) => step.kind === "prompt" && !step.summary && !step.id.endsWith(":instructions")).map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }))}
         session={currentSession}
         onAdd={(input) => void stepOf.sourceTile(ADDED.systemPrompt)((session) => prompts.addSystemPromptTile({ ...input, session }))}
       />

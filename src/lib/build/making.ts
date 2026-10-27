@@ -12,9 +12,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normaliseHex } from "@/lib/theme/partColour";
 import { TOOLS, toolFor, toolName } from "@/lib/tools/registry";
-import { updateBuild } from "./builds";
+import { updateBuildInStep } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
 import { extrasOf, extrasRefusal, type SessionExtras } from "./sessionFacts";
+import { serial } from "./staleWrites";
 import { buildLayerError, type BuildPatch } from "./types";
 
 /** The order `TOOL_CLIENTS` lists the clients in. */
@@ -397,52 +398,56 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
   const sessions: SessionSummary[] = await listBuildSessions(buildId);
 
   try {
-    const { data, error } = await buildsMaking()
-      .select("made_with, making")
-      .eq("id", buildId)
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) throw new Error("build not readable");
+    // SV-07 P1: read and written in one step of the build's write queue, so a save made meanwhile is not written over.
+    const making = await serial(buildId, async () => {
+      const { data, error } = await buildsMaking()
+        .select("made_with, making")
+        .eq("id", buildId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("build not readable");
 
-    const excluded = excludedModels(data.making);
-    const isExcluded = (name: string) => has(excluded, name);
+      const excluded = excludedModels(data.making);
+      const isExcluded = (name: string) => has(excluded, name);
 
-    const modelsUsed: string[] = [];
-    const madeWith = asStrings(data.made_with);
+      const modelsUsed: string[] = [];
+      const madeWith = asStrings(data.made_with);
 
-    for (const session of sessions) {
-      const tool = session.client ? TOOL_LABELS[session.client] : undefined;
-      if (tool && !has(madeWith, tool)) madeWith.push(tool);
+      for (const session of sessions) {
+        const tool = session.client ? TOOL_LABELS[session.client] : undefined;
+        if (tool && !has(madeWith, tool)) madeWith.push(tool);
 
-      const model = session.modelName;
-      if (model && !isExcluded(model)) {
-        if (!has(modelsUsed, model)) modelsUsed.push(model);
-        if (!has(madeWith, model)) madeWith.push(model);
+        const model = session.modelName;
+        if (model && !isExcluded(model)) {
+          if (!has(modelsUsed, model)) modelsUsed.push(model);
+          if (!has(madeWith, model)) madeWith.push(model);
+        }
       }
-    }
 
-    const making: Making = {
-      // Keys this function does not own (session_tools) are kept as they are.
-      ...asObject(data.making),
-      sessions: sessions.map((session) => ({
-        id: session.id,
-        started_at: session.createdAt,
-        client: session.client,
-        model: session.modelName,
-        prompts: session.promptCount,
-        turns: session.turnCount,
-      })),
-      excluded_models: excluded,
-    };
+      const making: Making = {
+        // Keys this function does not own (session_tools) are kept as they are.
+        ...asObject(data.making),
+        sessions: sessions.map((session) => ({
+          id: session.id,
+          started_at: session.createdAt,
+          client: session.client,
+          model: session.modelName,
+          prompts: session.promptCount,
+          turns: session.turnCount,
+        })),
+        excluded_models: excluded,
+      };
 
-    await updateBuild(buildId, {
-      session_count: sessions.length,
-      prompt_count: sessions.reduce((sum, session) => sum + session.promptCount, 0),
-      ai_turn_count: sessions.reduce((sum, session) => sum + session.turnCount, 0),
-      models_used: modelsUsed,
-      making,
-      made_with: madeWith,
-    } as unknown as BuildPatch);
+      await updateBuildInStep(buildId, {
+        session_count: sessions.length,
+        prompt_count: sessions.reduce((sum, session) => sum + session.promptCount, 0),
+        ai_turn_count: sessions.reduce((sum, session) => sum + session.turnCount, 0),
+        models_used: modelsUsed,
+        making,
+        made_with: madeWith,
+      } as unknown as BuildPatch);
+      return making;
+    });
     // CA-13 P11: the patterns the build uses follow it. A failure here never fails the save that called this.
     void import("./patternsWrite").then((module) => module.refreshPatterns(buildId, making)).catch(() => undefined);
   } catch (error) {
@@ -471,6 +476,30 @@ async function readMadeWith(operation: string, buildId: string): Promise<{ state
   if (error) throw buildLayerError(operation, error);
   if (!data) throw buildLayerError(operation, new Error("That build is no longer available."));
   return { state: { madeWith: asStrings(data.made_with), excluded: excludedModels(data.making) }, making: data.making };
+}
+
+/** What a step of `makingStep` writes (null: nothing) and what it resolves with. */
+export interface MakingWrite<T> {
+  patch: BuildPatch | null;
+  result: T;
+}
+
+/**
+ * SV-07 P1: read `made_with` and `making`, change them and write them in ONE step of the build's write queue (`serial`), so two
+ * saves close together can't both start from the same old copy and the second write the first away. `change` sees the build as
+ * it stands at the start of the step and changes only its own path of it.
+ */
+export function makingStep<T>(
+  buildId: string,
+  operation: string,
+  change: (now: { making: Record<string, unknown>; state: MadeWithState }) => MakingWrite<T> | Promise<MakingWrite<T>>,
+): Promise<T> {
+  return serial(buildId, async () => {
+    const { state, making } = await readMadeWith(operation, buildId);
+    const { patch, result } = await change({ making: asObject(making), state });
+    if (patch) await updateBuildInStep(buildId, patch);
+    return result;
+  });
 }
 
 /** builds.made_with and builds.making.excluded_models, as the composer's Made with line reads them. */
@@ -504,12 +533,10 @@ export function nextMadeWith(state: MadeWithState, name: string, on: boolean, ki
  * added included.
  */
 export async function setMadeWithModel(buildId: string, model: string, on: boolean): Promise<MadeWithState> {
-  const { state, making } = await readMadeWith("setMadeWithModel", buildId);
-  const next = nextMadeWith(state, model, on, "model");
-  await updateBuild(buildId, {
-    made_with: next.madeWith,
-    making: { ...asObject(making), excluded_models: next.excluded },
-  } as unknown as BuildPatch);
+  await makingStep(buildId, "setMadeWithModel", ({ state, making }) => {
+    const next = nextMadeWith(state, model, on, "model");
+    return { patch: { made_with: next.madeWith, making: { ...making, excluded_models: next.excluded } } as unknown as BuildPatch, result: next };
+  });
   // The choice is written; the stats only summarise it, and the next refresh repairs them.
   await refreshMakingStats(buildId).catch(() => console.warn("[setMadeWithModel] making stats not refreshed", { buildId }));
   return getMadeWith(buildId);
@@ -535,12 +562,12 @@ export function withTools(madeWith: readonly string[], names: readonly string[])
  * unticking under Made with is still the only way out. Resolves with Made with
  * as it stands.
  */
-export async function addMadeWithTools(buildId: string, names: readonly string[]): Promise<MadeWithState> {
-  const { state } = await readMadeWith("addMadeWithTools", buildId);
-  const madeWith = withTools(state.madeWith, names);
-  if (madeWith === state.madeWith) return state;
-  await updateBuild(buildId, { made_with: madeWith });
-  return { madeWith, excluded: state.excluded };
+export function addMadeWithTools(buildId: string, names: readonly string[]): Promise<MadeWithState> {
+  return makingStep(buildId, "addMadeWithTools", ({ state }) => {
+    const madeWith = withTools(state.madeWith, names);
+    if (madeWith === state.madeWith) return { patch: null, result: state };
+    return { patch: { made_with: madeWith }, result: { madeWith, excluded: state.excluded } };
+  });
 }
 
 /**
@@ -549,13 +576,12 @@ export async function addMadeWithTools(buildId: string, names: readonly string[]
  * "Lovable"), so its chip draws the tool's logo. Taking one out uses the name
  * as the chip shows it, so an entry saved before this still goes.
  */
-export async function setMadeWithEntry(buildId: string, entry: string, on: boolean): Promise<MadeWithState> {
-  const { state } = await readMadeWith("setMadeWithEntry", buildId);
-  const next = nextMadeWith(state, on ? (toolName(entry) ?? entry) : entry, on, "entry");
-  const unchanged = next.madeWith.length === state.madeWith.length && next.madeWith.every((name, i) => name === state.madeWith[i]);
-  if (unchanged) return state;
-  await updateBuild(buildId, { made_with: next.madeWith });
-  return next;
+export function setMadeWithEntry(buildId: string, entry: string, on: boolean): Promise<MadeWithState> {
+  return makingStep(buildId, "setMadeWithEntry", ({ state }) => {
+    const next = nextMadeWith(state, on ? (toolName(entry) ?? entry) : entry, on, "entry");
+    const unchanged = next.madeWith.length === state.madeWith.length && next.madeWith.every((name, i) => name === state.madeWith[i]);
+    return unchanged ? { patch: null, result: state } : { patch: { made_with: next.madeWith }, result: next };
+  });
 }
 
 /** The longest tool name a maker can type for a session (the tool picker's own limit). */
@@ -576,11 +602,12 @@ export async function setSessionTool(buildId: string, sessionId: string, tool: s
   const inBuild = (await listBuildSessions(buildId)).some((session) => session.id === sessionId);
   if (!inBuild) throw buildLayerError("setSessionTool", new Error("That session is not in this build."));
 
-  const { state, making } = await readMadeWith("setSessionTool", buildId);
-  const tools = { ...sessionToolsOf(making) };
-  if (value) tools[sessionId] = value;
-  else delete tools[sessionId];
-  await updateBuild(buildId, { making: { ...asObject(making), session_tools: tools } } as unknown as BuildPatch);
+  const state = await makingStep(buildId, "setSessionTool", ({ state, making }) => {
+    const tools = { ...sessionToolsOf(making) };
+    if (value) tools[sessionId] = value;
+    else delete tools[sessionId];
+    return { patch: { making: { ...making, session_tools: tools } } as unknown as BuildPatch, result: state };
+  });
   return value ? addMadeWithTools(buildId, [toolName(value) ?? value]) : state;
 }
 
@@ -602,23 +629,37 @@ export function sessionMetaRefusal(key: string, meta: SessionMeta): string | nul
 /**
  * Write what one session carries (`making.sessions_meta[key]`), or take it away (null). Only that key changes; the
  * rest of `making` is kept as it is. A named tool joins Made with, as a session's tool does. Resolves with the
- * session's entries as they stand.
+ * session's entries as they stand. SV-07 P1: a change to the entry is given as a function of the entry as it is stored
+ * when the write's step starts, so a part or a fact saved meanwhile is never put back as the page last saw it.
  */
-export async function setSessionMeta(buildId: string, key: string, meta: SessionMeta | null): Promise<Record<string, SessionMeta>> {
-  if (meta) {
-    const why = sessionMetaRefusal(key, meta);
-    if (why) throw buildLayerError("setSessionMeta", new Error(why));
-  } else if (!key) throw buildLayerError("setSessionMeta", new Error("That session is not saved yet."));
-  const { making } = await readMadeWith("setSessionMeta", buildId);
-  const entries = { ...sessionsMetaOf(making) };
-  if (meta) {
-    const tool = meta.tool?.trim() || null;
-    const { title: _title, ...rest } = meta;
-    const title = cleanSessionTitle(meta.title);
-    entries[key] = { ...rest, tool: tool ? (toolFor(tool)?.id ?? tool) : null, ...(title ? { title } : null) };
-  } else delete entries[key];
-  await updateBuild(buildId, { making: { ...asObject(making), sessions_meta: entries } } as unknown as BuildPatch);
-  const tool = meta?.tool?.trim();
+export async function setSessionMeta(
+  buildId: string,
+  key: string,
+  meta: SessionMeta | null | ((current: SessionMeta | undefined) => SessionMeta | null),
+): Promise<Record<string, SessionMeta>> {
+  const refuse = (value: SessionMeta | null) => {
+    if (value) {
+      const why = sessionMetaRefusal(key, value);
+      if (why) throw buildLayerError("setSessionMeta", new Error(why));
+    } else if (!key) throw buildLayerError("setSessionMeta", new Error("That session is not saved yet."));
+  };
+  if (typeof meta !== "function") refuse(meta);
+  // Only this session's entry changes, on `making` as it stands when the step starts.
+  let written: SessionMeta | null = null;
+  const entries = await makingStep(buildId, "setSessionMeta", ({ making }) => {
+    const entries = { ...sessionsMetaOf(making) };
+    const value = typeof meta === "function" ? meta(entries[key]) : meta;
+    if (typeof meta === "function") refuse(value);
+    written = value;
+    if (value) {
+      const tool = value.tool?.trim() || null;
+      const { title: _title, ...rest } = value;
+      const title = cleanSessionTitle(value.title);
+      entries[key] = { ...rest, tool: tool ? (toolFor(tool)?.id ?? tool) : null, ...(title ? { title } : null) };
+    } else delete entries[key];
+    return { patch: { making: { ...making, sessions_meta: entries } } as unknown as BuildPatch, result: entries };
+  });
+  const tool = (written as SessionMeta | null)?.tool?.trim();
   if (tool) await addMadeWithTools(buildId, [toolName(tool) ?? tool]).catch(() => console.warn("[setSessionMeta] Made with not updated", { buildId }));
   return entries;
 }
@@ -638,19 +679,34 @@ export async function readMaking(buildId: string): Promise<unknown> {
   return (await readMadeWith("readMaking", buildId)).making;
 }
 
-/** CA-14 P1: change some keys of `making` and keep the rest as it is. Resolves with the whole `making` as written. */
-export async function patchMaking(buildId: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const { making } = await readMadeWith("patchMaking", buildId);
-  const next = { ...asObject(making), ...patch };
-  await updateBuild(buildId, { making: next } as unknown as BuildPatch);
-  return next;
+/**
+ * CA-14 P1: change some keys of `making` and keep the rest as it is. Resolves with the whole `making` as written. SV-07 P1: a
+ * patch worked out from `making` is given as a function of it, so it is worked out from `making` as it stands inside the step;
+ * a function that answers null writes nothing.
+ */
+export function patchMaking(
+  buildId: string,
+  patch: Record<string, unknown> | ((making: Record<string, unknown>) => Record<string, unknown> | null),
+): Promise<Record<string, unknown>> {
+  return makingStep(buildId, "patchMaking", ({ making }) => {
+    const change = typeof patch === "function" ? patch(making) : patch;
+    if (!change) return { patch: null, result: making };
+    const next = { ...making, ...change };
+    return { patch: { making: next } as unknown as BuildPatch, result: next };
+  });
 }
 
-/** CA-17 P1: save the build's parts (all of them, in order). Refused with a plain message when they do not read. */
-export async function setWorkstreams(buildId: string, list: readonly Workstream[]): Promise<Record<string, unknown>> {
-  const why = workstreamsRefusal(list);
-  if (why) throw buildLayerError("setWorkstreams", new Error(why));
-  return patchMaking(buildId, { workstreams: list.map((part) => ({ ...part })) });
+/**
+ * CA-17 P1: save the build's parts (all of them, in order). Refused with a plain message when they do not read. SV-07 P1: a
+ * change to the parts as they are stored is given as a function of them, and made on them as they stand inside the step.
+ */
+export async function setWorkstreams(buildId: string, list: readonly Workstream[] | ((stored: Workstream[]) => readonly Workstream[])): Promise<Record<string, unknown>> {
+  return patchMaking(buildId, (making) => {
+    const next = typeof list === "function" ? list(storedWorkstreamsOf(making)) : list;
+    const why = workstreamsRefusal(next);
+    if (why) throw buildLayerError("setWorkstreams", new Error(why));
+    return { workstreams: next.map((part) => ({ ...part })) };
+  });
 }
 
 /** CA-17 P1: number or letter the parts, for the whole build. */

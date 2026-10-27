@@ -9,6 +9,7 @@ import type { BuildSnapshot } from "./buildSnapshot";
 import { AGENT_TYPE, FILE_TYPE, MANUAL_LINES_MAX, MANUAL_STEP_TYPE, MANUAL_TEXT_MAX, MANUAL_TOOL_MAX, SYSTEM_PROMPT_TYPE } from "./graph";
 import { PROMPT_TYPE } from "./composePrompts";
 import type { BuildNode } from "./types";
+import { isSummaryPayload } from "./summaryTurn";
 
 export const DUPLICATE_COPY = {
   one: (name: string): string => `Duplicated ${name}`,
@@ -88,8 +89,9 @@ const SOURCE_KIND: Record<string, ConvertTo | "system"> = { [PROMPT_TYPE]: "prom
 /** Whether a tile can be converted at all. */
 export const canConvert = (row: Pick<BuildNode, "type">): boolean => row.type in SOURCE_KIND;
 
-/** The targets a row can go to: every other of the three. */
-export const targetsOf = (row: Pick<BuildNode, "type">): ConvertTo[] => (["prompt", "agent", "manual"] as const).filter((to) => TYPE_OF[to] !== row.type);
+/** The targets a row can go to: every other of the three. SV-07 P7: a Summary tile, a prompt row, can also become a prompt. */
+export const targetsOf = (row: Pick<BuildNode, "type"> & { payload?: unknown }): ConvertTo[] =>
+  (["prompt", "agent", "manual"] as const).filter((to) => TYPE_OF[to] !== row.type || (to === "prompt" && isSummaryPayload(row.payload)));
 
 /** What the words and the tool of a tile are, whatever it is. */
 function partsOf(row: BuildNode): { words: string; tool: string; lost: string[] } {
@@ -127,6 +129,8 @@ export interface ConvertPlan {
 export function convertRow(row: BuildNode, to: ConvertTo, model: string): ConvertPlan {
   const { words, tool, lost: dropped } = partsOf(row);
   const p = payloadOf(row);
+  // SV-07 P7: a Summary tile made a prompt keeps everything it holds, and is read as a prompt from now on.
+  if (to === "prompt" && row.type === TYPE_OF.prompt && isSummaryPayload(p)) return { refusal: null, lost: [], row: { ...row, payload: { ...p, as_prompt: true } as Json } };
   const kept: Payload = {};
   for (const key of ["session", "colour", "uses"]) if (key in p && p[key] !== undefined) kept[key] = p[key];
   let payload: Payload;

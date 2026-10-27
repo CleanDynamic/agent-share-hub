@@ -1047,6 +1047,24 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/dragFrames.test.tsx",
   "src/pages/site/compose/pageScroll.ts",
   "src/pages/site/compose/pageScroll.test.ts",
+
+  // SV-07
+  "src/pages/site/compose/sv07.replay.test.tsx",
+  "src/lib/build/making.steps.test.ts",
+  "src/lib/build/addSession.copy.test.ts",
+  "src/pages/site/compose/sessionModel.ts",
+  "src/pages/site/compose/sv07.model.test.tsx",
+  "src/pages/site/compose/sv07Harness.tsx",
+  "src/pages/site/compose/sv07.parts.test.tsx",
+  "src/pages/site/compose/sv07.motion.test.tsx",
+  "src/pages/site/compose/sv07.notice.test.tsx",
+  "src/pages/site/compose/sv07.small.test.tsx",
+  "src/lib/build/summaryTurn.ts",
+  "src/pages/site/compose/sv07.imports.test.tsx",
+  "src/lib/build/publish.ts",
+  "src/hooks/useComposeBuild.publish.test.tsx",
+  "src/pages/site/compose/sv07Backend.ts",
+  "e2e/audit/composer-sv07.spec.ts",
 ];
 
 /**

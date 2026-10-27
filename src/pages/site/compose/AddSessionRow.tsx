@@ -1,7 +1,7 @@
 /* CA-12 P4, CA-14 P5 — "Add a session", the full-width row under the last session.
 
-   A text button, 36 tall, with a + in `--text2`; no dashed outline. It opens a popover on a computer and CA-10's BottomSheet
-   on a phone, with two choices at the top:
+   A text button, 36 tall, with a + in `--text2`; no dashed outline. It opens under itself on a computer (SV-07 P6: in the flow,
+   at the column's width) and CA-10's BottomSheet on a phone, with two choices at the top:
    - "Start a new session": an empty session at the end, at once, "No app chosen"; the app is picked later in its head.
    - "Add from your connected chats": the list of every finished chat, newest first, under Today, This week and Earlier.
      Each row is a fixed 64 tall, so nothing runs into the row below: the app's mark and name, then the first prompt's
@@ -9,8 +9,7 @@
    A session already in this draft cannot be added twice. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import * as Popover from "@radix-ui/react-popover";
-import { useEffect, useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
@@ -20,17 +19,17 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
+import { dropIn } from "./buildMotion";
 import { TextButton } from "./composeControls";
 import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
-import { draftNote, groupLibrary, openingWords, type SourceLibraryItem } from "./sourcesModel";
+import { draftNote, groupLibrary, openingWords, REPEAT_COPY, type SourceLibraryItem } from "./sourcesModel";
 import { FLOATING_Z } from "./ToolPicker";
 
 export const ADD_SESSION_COPY = {
   row: "Add a session",
   addPart: "Add a part",
-  adding: "Adding…",
   title: "Add a session",
   startNew: "Start a new session",
   startNewLine: "An empty one at the end. Pick its app later.",
@@ -118,7 +117,8 @@ function Choice({ title, line, onPick, phone, forward = false }: { title: string
 function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: boolean; onPick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const here = item.inThisDraft;
-  const note = draftNote(item);
+  // SV-07 P7: the same chat imported again says which session it repeats.
+  const note = item.sameAs && !here ? REPEAT_COPY.sameAs(item.sameAs) : draftNote(item);
   const opening = openingWords(item.firstPrompt);
   const second = [item.appKnown ? null : item.model, item.date, `${item.promptCount} ${item.promptCount === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · ");
   return (
@@ -302,11 +302,49 @@ export function AddPartRow({ phone: _phone, adding, onAdd }: { phone: boolean; a
 }
 
 /**
+ * SV-07 P6: what opens under a row on a computer: in the flow, at the column's width, so what stands below it moves down (the
+ * List's animator slides it) rather than being covered. It drops in, and takes the focus. Escape closes it and gives the focus
+ * back to the row.
+ */
+function OpenBelow({ id, label, onClose, back, children }: { id: string; label: string; onClose: () => void; back: () => HTMLElement | null; children: ReactNode }) {
+  const box = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (!box.current) return;
+    dropIn([box.current]);
+    box.current.querySelector<HTMLElement>("input, button:not([disabled])")?.focus({ preventScroll: true });
+  }, []);
+  return (
+    <div
+      ref={box}
+      id={id}
+      role="region"
+      aria-label={label}
+      data-testid="open-below"
+      onKeyDown={(event) => {
+        // A menu opened from inside (Add to) closes itself; only a key pressed in here closes this.
+        if (event.key !== "Escape" || !box.current?.contains(event.target as Node)) return;
+        event.stopPropagation();
+        onClose();
+        back()?.focus();
+      }}
+      style={OPEN_BELOW}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** The panel's look: a menu's surface, at the column's width, in the flow. */
+const OPEN_BELOW: CSSProperties = { boxSizing: "border-box", width: "100%", minWidth: 0, padding: 8, borderRadius: 8, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow, color: t.text };
+
+/**
  * CA-24 P2: the list of connected chats, opened straight onto its list (Add a session, then Add from your connected chats),
- * anchored to whatever is passed as `children`. The empty build's "Import from connected chats" row opens it.
+ * under whatever is passed as `children`. The empty build's "Import from connected chats" row opens it.
  */
 export function ChatsPicker({ props, open, onOpenChange, children }: { props: AddSessionRowProps; open: boolean; onOpenChange: (open: boolean) => void; children: ReactNode }) {
   const close = () => onOpenChange(false);
+  const id = useId();
+  const anchor = useRef<HTMLDivElement | null>(null);
   const body = open ? <ChatList props={props} close={close} back={close} /> : null;
   if (props.phone) {
     return (
@@ -319,16 +357,14 @@ export function ChatsPicker({ props, open, onOpenChange, children }: { props: Ad
     );
   }
   return (
-    <Popover.Root open={open} onOpenChange={onOpenChange}>
-      <Popover.Anchor asChild>
-        <div>{children}</div>
-      </Popover.Anchor>
-      <Popover.Portal>
-        <Popover.Content aria-label={ADD_SESSION_COPY.yours} align="start" sideOffset={6} collisionPadding={16} style={{ ...menuSurface(380), zIndex: FLOATING_Z, padding: 8, maxHeight: "min(560px, var(--radix-popover-content-available-height))" }}>
+    <>
+      <div ref={anchor}>{children}</div>
+      {open ? (
+        <OpenBelow id={id} label={ADD_SESSION_COPY.yours} onClose={close} back={() => anchor.current?.querySelector<HTMLElement>("button") ?? null}>
           {body}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </OpenBelow>
+      ) : null}
+    </>
   );
 }
 
@@ -336,6 +372,8 @@ export function AddSessionRow(props: AddSessionRowProps) {
   const { phone, adding } = props;
   const [open, setOpen] = useState(false);
   const trigger = useInteractive<HTMLButtonElement>();
+  const button = useRef<HTMLButtonElement | null>(null);
+  const id = useId();
   /* CA-17 P3: the part the picker starts on: the one whose "+ Add a session to this part" opened it, else the last. */
   const [startOn, setStartOn] = useState<string | undefined>(undefined);
   const openN = props.openFor?.n;
@@ -347,15 +385,13 @@ export function AddSessionRow(props: AddSessionRowProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openN]);
   const triggerStyle: CSSProperties = addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding);
-  const label = adding ? ADD_SESSION_COPY.adding : ADD_SESSION_COPY.row;
+  // SV-07 P5: no "Adding…": the disabled row and the session arriving in the List show that it is working.
   const content = (
     <>
-      {adding ? null : (
-        <span aria-hidden="true" style={{ display: "inline-flex" }}>
-          <Glyph name="plus" size={16} />
-        </span>
-      )}
-      {label}
+      <span aria-hidden="true" style={{ display: "inline-flex" }}>
+        <Glyph name="plus" size={16} />
+      </span>
+      {ADD_SESSION_COPY.row}
     </>
   );
 
@@ -386,24 +422,31 @@ export function AddSessionRow(props: AddSessionRowProps) {
     );
   }
   return (
-    <Popover.Root
-      open={open}
-      onOpenChange={(next) => {
-        if (next) setStartOn(undefined);
-        setOpen(next);
-      }}
-    >
-      <Popover.Trigger asChild>
-        <button type="button" data-testid="add-session-row" {...{ [SLIDE_ATTR]: "add:session" }} data-hit="" disabled={adding} aria-haspopup="dialog" {...trigger.handlers} style={triggerStyle}>
-          {content}
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content aria-label={ADD_SESSION_COPY.title} align="start" sideOffset={6} collisionPadding={16} style={{ ...menuSurface(380), zIndex: FLOATING_Z, padding: 8, maxHeight: "min(560px, var(--radix-popover-content-available-height))" }}>
+    <>
+      <button
+        ref={button}
+        type="button"
+        data-testid="add-session-row"
+        {...{ [SLIDE_ATTR]: "add:session" }}
+        data-hit=""
+        disabled={adding}
+        aria-expanded={open}
+        aria-controls={open ? id : undefined}
+        onClick={() => {
+          if (!open) setStartOn(undefined);
+          setOpen(!open);
+        }}
+        {...trigger.handlers}
+        style={triggerStyle}
+      >
+        {content}
+      </button>
+      {open ? (
+        <OpenBelow id={id} label={ADD_SESSION_COPY.title} onClose={() => setOpen(false)} back={() => button.current}>
           <PickerBody props={props} close={() => setOpen(false)} initial={startOn} />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </OpenBelow>
+      ) : null}
+    </>
   );
 }
 

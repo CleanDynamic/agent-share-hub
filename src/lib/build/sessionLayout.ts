@@ -11,9 +11,9 @@
 
 import { insertBuildSession, isMissingTable, listBuildSessionRows, nextSessionPosition, reorderBuildSessions, setSessionCollapsed, orderOf, type BuildSessionRow } from "./buildSessions";
 import { groupKey, topSteps, type SessionGroup, type Step } from "./graph";
-import { isLegacySession, isTypedSession, patchMaking, readMaking, sessionOrderOf, sessionsCollapsedOf } from "./making";
+import { isLegacySession, isTypedSession, makingStep, patchMaking, sessionOrderOf, sessionsCollapsedOf } from "./making";
 import type { NodeMove } from "./nodes";
-import type { BuildNode } from "./types";
+import type { BuildNode, BuildPatch } from "./types";
 
 type RowLike = Pick<BuildSessionRow, "sessionKey" | "position" | "collapsed">;
 
@@ -39,41 +39,47 @@ export function collapsedKeys(made: unknown, rows: readonly RowLike[], keys: rea
 
 /**
  * Save the sessions' order. Rows the table lacks for these keys are added first (a session made while the table was not
- * there), then the table is reordered, then `making` is written. A table that is not there is not an error.
+ * there), then the table is reordered, then `making` is written. A table that is not there is not an error. SV-07 P1: all of
+ * it is one step of the build's write queue, and an order worked out from the draft is given as a function of `making` and
+ * the table's rows as they stand inside that step. Resolves with the order written.
  */
-export async function setSessionOrder(buildId: string, keys: readonly string[]): Promise<void> {
-  try {
-    const rows = await listBuildSessionRows(buildId);
-    // The table answers with nothing both when it is not there and when the draft has no rows. Only a draft that has rows
-    // is reordered there; adding rows for an old draft is left to the first session added the CA-12 way.
-    if (rows.length > 0) {
-      const have = new Set(rows.map((row) => row.sessionKey));
-      let next = nextSessionPosition(rows);
-      for (const key of keys) {
-        if (have.has(key)) continue;
-        // An imported session's key is its import's id, so a row put back for one keeps the link to its import.
-        await insertBuildSession({ buildId, sessionKey: key, importId: isTypedSession(key) || isLegacySession(key) ? null : key, position: next++ });
+export function setSessionOrder(
+  buildId: string,
+  order: readonly string[] | ((making: Record<string, unknown>, rows: readonly BuildSessionRow[]) => string[]),
+): Promise<string[]> {
+  return makingStep(buildId, "setSessionOrder", async ({ making }) => {
+    let keys = typeof order === "function" ? null : [...order];
+    try {
+      const rows = await listBuildSessionRows(buildId);
+      keys ??= (order as (making: Record<string, unknown>, rows: readonly BuildSessionRow[]) => string[])(making, rows);
+      // The table answers with nothing both when it is not there and when the draft has no rows. Only a draft that has rows
+      // is reordered there; adding rows for an old draft is left to the first session added the CA-12 way.
+      if (rows.length > 0) {
+        const have = new Set(rows.map((row) => row.sessionKey));
+        let next = nextSessionPosition(rows);
+        for (const key of keys) {
+          if (have.has(key)) continue;
+          // An imported session's key is its import's id, so a row put back for one keeps the link to its import.
+          await insertBuildSession({ buildId, sessionKey: key, importId: isTypedSession(key) || isLegacySession(key) ? null : key, position: next++ });
+        }
+        await reorderBuildSessions(buildId, keys);
       }
-      await reorderBuildSessions(buildId, keys);
+    } catch (cause) {
+      if (!isMissingTable(causeOf(cause))) throw cause;
     }
-  } catch (cause) {
-    if (!isMissingTable(causeOf(cause))) throw cause;
-  }
-  await patchMaking(buildId, { session_order: [...keys] });
+    keys ??= (order as (making: Record<string, unknown>, rows: readonly BuildSessionRow[]) => string[])(making, []);
+    return { patch: { making: { ...making, session_order: keys } } as unknown as BuildPatch, result: keys };
+  });
 }
 
 /** Fold or open a session: the table's `collapsed` when it is there, and `making.sessions_collapsed` always. */
-export async function setCollapsed(buildId: string, key: string, value: boolean, made?: unknown): Promise<void> {
+export async function setCollapsed(buildId: string, key: string, value: boolean): Promise<void> {
   await setSessionCollapsed(buildId, key, value);
-  const current = made === undefined ? undefined : sessionsCollapsedOf(made);
-  if (current) {
-    const next = value ? [...new Set([...current, key])] : current.filter((entry) => entry !== key);
-    await patchMaking(buildId, { sessions_collapsed: next });
-    return;
-  }
-  // The caller has no `making` at hand: read it first.
-  const list = sessionsCollapsedOf(await readMaking(buildId));
-  await patchMaking(buildId, { sessions_collapsed: value ? [...new Set([...list, key])] : list.filter((entry) => entry !== key) });
+  // SV-07 P1: the list is changed as it stands inside the write's step, never as the caller last saw it.
+  await patchMaking(buildId, (making) => {
+    const list = sessionsCollapsedOf(making);
+    return { sessions_collapsed: value ? [...new Set([...list, key])] : list.filter((entry) => entry !== key) };
+  });
 }
 
 /**

@@ -23,7 +23,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const AUDIT_URL = "https://ca08audit.supabase.co";
 const ANON_KEY = "ca08-audit-anon-placeholder";
-const ACCESS_TOKEN = "ca08-audit-access-placeholder";
+export const ACCESS_TOKEN = "ca08-audit-access-placeholder";
 const STORAGE_KEY = "sb-ca08audit-auth-token";
 /** The signed-in maker. Made up. */
 export const MAKER_ID = "0b0b0b0b-0000-4000-8000-000000000001";
@@ -118,6 +118,8 @@ export interface Delay {
   method?: string;
   path: RegExp;
   delayMs: number;
+  /** SV-07 P0: the answer is read when the request arrives and handed over after the delay, so it can be older than a write made meanwhile. */
+  stale?: boolean;
 }
 
 /** PostgREST's error bodies, word for word as it sends them. */
@@ -621,6 +623,9 @@ function auth(path: string, headers: Headers): Response {
   return json(400, { code: 400, error_code: "validation_failed", msg: "not modelled by the CA-08 audit fake" });
 }
 
+/** SV-07 P0: set for the one call a stale delay makes to answer at once. */
+let answeringNow = false;
+
 /** The fetch supabase-js is given. */
 export async function answer(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
   const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
@@ -628,7 +633,16 @@ export async function answer(input: RequestInfo | URL, init: RequestInit = {}): 
   const headers = new Headers(init.headers);
   const shown = `${url.pathname}${url.search ? `?${decodeURIComponent(url.searchParams.toString())}` : ""}`;
 
-  const delay = backend.delays.find((candidate) => (!candidate.method || candidate.method === method) && candidate.path.test(shown));
+  const delay = answeringNow ? undefined : backend.delays.find((candidate) => (!candidate.method || candidate.method === method) && candidate.path.test(shown));
+  answeringNow = false;
+  if (delay?.stale) {
+    const wait = delay.delayMs;
+    // Read until its first wait synchronously, so the flag is only ever seen by this one call.
+    answeringNow = true;
+    const early = await answer(input, init);
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    return early;
+  }
   if (delay) await new Promise((resolve) => setTimeout(resolve, delay.delayMs));
 
   const fault = backend.faults.find((candidate) => (!candidate.method || candidate.method === method) && candidate.path.test(shown) && (candidate.times === undefined || candidate.times > 0));

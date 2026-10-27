@@ -60,10 +60,13 @@ export function __resetPageScroll(): void {
 
 const viewHeight = () => window.innerHeight || 0;
 
-/** How far the window must scroll to show `box` as `align` asks; 0 when it is in view already. */
-export function scrollNeeded(box: { top: number; bottom: number; height: number }, align: Align, height: number = viewHeight()): number {
+/**
+ * How far the window must scroll to show `box` as `align` asks; 0 when it is in view already. SV-07 P3: `offset` is where "start"
+ * puts the top, below what is sticky at the top of the window.
+ */
+export function scrollNeeded(box: { top: number; bottom: number; height: number }, align: Align, height: number = viewHeight(), offset = 0): number {
   const whole = box.top >= 0 && box.bottom <= height;
-  if (align === "start") return box.top >= -2 && box.top <= 120 ? 0 : box.top;
+  if (align === "start") return box.top >= offset - 2 && box.top <= offset + 120 ? 0 : box.top - offset;
   if (whole) return 0;
   if (align === "middle") return box.height > height ? box.top : box.top - (height - box.height) / 2;
   if (box.height > height || box.top < 0) return box.top;
@@ -79,17 +82,17 @@ const boxOf = (element: HTMLElement, edge: Edge): { top: number; bottom: number;
 };
 
 /** Whether the target still stands where `align` sent it: a held jump puts it back when not. */
-const stillThere = (element: HTMLElement, align: Align): boolean => {
+const stillThere = (element: HTMLElement, align: Align, offset = 0): boolean => {
   if (!element.isConnected) return true;
   const box = element.getBoundingClientRect();
   const height = viewHeight();
   if (box.height > height) return true;
   if (align === "middle") return Math.abs((box.top + box.bottom) / 2 - height / 2) < 24;
-  return scrollNeeded(box, align, height) === 0;
+  return scrollNeeded(box, align, height, offset) === 0;
 };
 
-const jumpTo = (element: HTMLElement, align: Align) => {
-  const by = scrollNeeded(element.getBoundingClientRect(), align);
+const jumpTo = (element: HTMLElement, align: Align, offset = 0) => {
+  const by = scrollNeeded(element.getBoundingClientRect(), align, viewHeight(), offset);
   if (Math.abs(by) >= 1) window.scrollTo?.({ top: Math.max(0, window.scrollY + by), behavior: "instant" });
 };
 
@@ -97,10 +100,10 @@ const jumpTo = (element: HTMLElement, align: Align) => {
  * Scrolls the window so `element` shows as `align` asks, over the browser's smooth scroll. Not at all when it is in view, or when
  * the maker is scrolling. Stops on the maker's input. With `hold`, keeps it there for a moment afterwards (a windowed build).
  */
-export function scrollToShow(element: HTMLElement, { align = "nearest", hold = false, edge = "whole" }: { align?: Align; hold?: boolean; edge?: Edge } = {}): ScrollRun {
+export function scrollToShow(element: HTMLElement, { align = "nearest", hold = false, edge = "whole", offset = 0 }: { align?: Align; hold?: boolean; edge?: Edge; offset?: number } = {}): ScrollRun {
   if (typeof window === "undefined") return NOWHERE;
   watchMaker();
-  const by = scrollNeeded(boxOf(element, edge), align);
+  const by = scrollNeeded(boxOf(element, edge), align, viewHeight(), offset);
   if (Math.abs(by) < 1 || makerScrolling()) return NOWHERE;
   const top = Math.max(0, window.scrollY + by);
   const reduced = prefersReducedMotion();
@@ -127,7 +130,7 @@ export function scrollToShow(element: HTMLElement, { align = "nearest", hold = f
   const finished = (reduced ? Promise.resolve() : Promise.race([untilScrollEnds(), stopped$])).then(() => {
     const byHand = stopped;
     stop();
-    if (hold && !byHand) unhold = settle(() => stillThere(element, align), () => jumpTo(element, align));
+    if (hold && !byHand) unhold = settle(() => stillThere(element, align, offset), () => jumpTo(element, align, offset));
   });
   return {
     finished,

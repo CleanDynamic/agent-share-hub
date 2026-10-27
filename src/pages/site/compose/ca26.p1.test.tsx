@@ -83,12 +83,17 @@ describe("the build list is one Tab stop", () => {
     expect(tile.style.outlineStyle).toBe("");
   });
 
-  it("a focused item is scrolled into view", () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+  it("a focused item off screen is scrolled into view, through the one scroll helper (SV-07 P4)", () => {
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
     mountList({ parts: partsOf() });
-    act(() => items()[2].focus());
-    expect(scroll).toHaveBeenCalled();
+    const item = items()[2];
+    vi.spyOn(item, "getBoundingClientRect").mockReturnValue({ x: 0, y: 2000, top: 2000, left: 0, right: 400, bottom: 2040, width: 400, height: 40, toJSON: () => ({}) } as DOMRect);
+    // jsdom counts a focus from script as one from the keyboard (`:focus-visible`), which is the focus this is for.
+    act(() => item.focus());
+    expect(scrollTo).toHaveBeenCalled();
+    expect(into).not.toHaveBeenCalled();
   });
 });
 

@@ -22,9 +22,11 @@ import { REPLY_MAX } from "./composePrompts";
 import { nextTopPosition } from "./composeCover";
 import { loadImportProposal } from "./imports";
 import type { TranscriptProposal, TranscriptSourceRef } from "./intake";
-import { isTypedSession, patchMaking, refreshMakingStats, sessionsMetaOf, setSessionMeta } from "./making";
+import { isTypedSession, patchMaking, refreshMakingStats, sessionsMetaOf, setSessionMeta, type SessionMeta } from "./making";
 import { reorderNodes } from "./nodes";
 import { planLayout } from "./sessionEdit";
+import { isSessionSummary } from "./summaryTurn";
+import { firstWords } from "./graph";
 import { defaultWorkstream, orderWithNewSession, workstreamKeyOf } from "./workstreams";
 import { storedWorkstreamsOf } from "./making";
 import { getSessionOrder, setCollapsed, setSessionOrder } from "./sessionLayout";
@@ -67,10 +69,21 @@ export function promptsOfProposal(proposal: TranscriptProposal): PromptTile[] {
     .map((event) => ({ text: event.payload.text, reply: event.payload.response_summary?.trim() || null, sourceRef: event.source_ref }));
 }
 
+/**
+ * SV-07 P7: a new draft's title: the one the parser proposed, unless that is Claude Code's summary of an earlier session, which
+ * names nothing; then the first real prompt's opening words. "Untitled build" when there are none.
+ */
+export function draftTitleOf(proposed: string | null | undefined, prompts: readonly Pick<PromptTile, "text">[]): string {
+  const given = proposed?.trim();
+  if (given && !isSessionSummary(given)) return given;
+  const first = prompts.find((prompt) => prompt.text.trim() && !isSessionSummary(prompt.text));
+  return first ? firstWords(first.text, 8) || UNTITLED : UNTITLED;
+}
+
 /** A session with more prompts than `COLLAPSE_OVER` is added collapsed. */
 export const startsCollapsed = (promptCount: number): boolean => promptCount > COLLAPSE_OVER;
 
-const hasSession = (tree: readonly NodeTree[], key: string): boolean =>
+export const hasSession = (tree: readonly NodeTree[], key: string): boolean =>
   tree.some((node) => {
     const payload = (node.payload ?? {}) as { session?: unknown };
     const ref = (node.source_ref ?? {}) as { import_session_id?: unknown };
@@ -182,7 +195,7 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
 
   const isNew = target.kind === "new";
   const buildId = isNew
-    ? (await createBuild({ title: proposal.summary.proposed_title?.value?.trim() || UNTITLED })).id
+    ? (await createBuild({ title: draftTitleOf(proposal.summary.proposed_title?.value, prompts) })).id
     : await verifyDraft(target.buildId);
 
   const written: string[] = [];
@@ -238,18 +251,22 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
       console.warn("[addSession] build_sessions is not applied; the session is in the draft by its tiles");
     }
 
-    // CA-14 P1: the order and the fold are also kept in `making`, so a draft without the table still has them.
-    const keptOrder = getSessionOrder(making, rows).filter((key) => key !== replaced && key !== importId);
-    const at = replaced ? Math.max(0, getSessionOrder(making, rows).indexOf(replaced)) : keptOrder.length;
-    keptOrder.splice(Math.min(at, keptOrder.length), 0, importId);
-    // CA-17 P3: in a part, the session stands at the end of it in the one order, and the tiles are put with their session.
-    const grouped = part ? orderWithNewSession(making, keptOrder.filter((key) => key !== importId), importId, part) : keptOrder;
+    // CA-14 P1: the order and the fold are also kept in `making`, so a draft without the table still has them. SV-07 P1: the
+    // order is worked out from the draft as it stands when it is written, not as it was read before the tiles went in, so a
+    // session added meanwhile keeps its place and its part.
+    const replacedAt = replaced ? Math.max(0, getSessionOrder(making, rows).indexOf(replaced)) : -1;
+    const orderNow = (made: unknown, rowsNow: readonly BuildSessionRow[]): string[] => {
+      const kept = getSessionOrder(made, rowsNow).filter((key) => key !== replaced && key !== importId);
+      kept.splice(Math.min(replacedAt < 0 ? kept.length : replacedAt, kept.length), 0, importId);
+      // CA-17 P3: in a part, the session stands at the end of it in the one order, and the tiles are put with their session.
+      return part ? orderWithNewSession(made, kept.filter((key) => key !== importId), importId, part) : kept;
+    };
     if (part) {
-      await setSessionOrder(buildId, grouped);
+      const grouped = await setSessionOrder(buildId, orderNow);
       const [afterTree, afterMaking] = await Promise.all([getNodeTree(buildId), readMaking(buildId)]);
       const moves = planLayout(afterTree, afterMaking, sessionsMetaOf(afterMaking), grouped).moves;
       if (moves.length > 0) await reorderNodes(buildId, moves);
-    } else await patchMaking(buildId, { session_order: keptOrder }).catch((cause) => console.warn("[addSession] order not kept in making", cause));
+    } else await patchMaking(buildId, (made) => ({ session_order: orderNow(made, rows) })).catch((cause) => console.warn("[addSession] order not kept in making", cause));
     if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => console.warn("[addSession] fold not kept in making", cause));
 
     if (isNew) {
@@ -314,6 +331,63 @@ export async function fillMissingTiles(importId: string, buildId: string): Promi
   if (moves.length > 0) await reorderNodes(buildId, moves);
   await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
   return missing.length;
+}
+
+/** SV-07 P2: a ready-made session to add (SV-18's Add from Library, SV-21's offered sessions): its key, its entry and its tiles. */
+export interface SessionCopy {
+  /** The key it will have in the draft: a session made here (`typed-…`). */
+  key: string;
+  meta: SessionMeta;
+  /** Its top-level tiles, in order. Where they stand and which session they are in is set here. */
+  tiles: readonly Pick<BuildNodeInsert, "type" | "title" | "note" | "payload" | "source_ref">[];
+}
+
+/**
+ * SV-07 P2: add a ready-made session to a draft, the way an import is added: its tiles at the end, its entry (in the part it
+ * joins), its row and its place in the one order, the tiles then put with it. Refuses a key that is already in the draft. A
+ * failure part way takes back what was written. Resolves with where it went.
+ */
+export async function addSessionCopy(buildId: string, copy: SessionCopy, workstream?: string): Promise<AddSessionResult> {
+  if (!isTypedSession(copy.key)) throw buildLayerError("addSessionCopy", new Error("A copied session is a session made here."));
+  const [rows, tree, making] = await Promise.all([listBuildSessionRows(buildId), getNodeTree(buildId), readMaking(buildId)]);
+  if (rows.some((existing) => existing.sessionKey === copy.key) || hasSession(tree, copy.key)) {
+    throw buildLayerError("addSessionCopy", new Error("That session is already in this draft."));
+  }
+  const part = defaultWorkstream(making, workstream);
+  const from = nextTopPosition(tree);
+  const ids = await insertTiles(
+    copy.tiles.map((tile, at) => ({
+      ...tile,
+      build_id: buildId,
+      parent_id: null,
+      position: from + at,
+      payload: { ...((tile.payload ?? {}) as Record<string, Json>), session: copy.key } as Json,
+    })),
+  ).catch((cause) => {
+    throw buildLayerError("addSessionCopy (tiles)", cause);
+  });
+  try {
+    await setSessionMeta(buildId, copy.key, { ...copy.meta, ...(part ? { workstream: part } : null) });
+    try {
+      await insertBuildSession({ buildId, sessionKey: copy.key, importId: null, position: nextSessionPosition(await listBuildSessionRows(buildId)) });
+    } catch (cause) {
+      if (!isMissingTable((cause as { cause?: unknown } | null)?.cause ?? cause)) throw cause;
+    }
+    const order = await setSessionOrder(buildId, (made, rowsNow) => {
+      const kept = getSessionOrder(made, rowsNow).filter((key) => key !== copy.key);
+      return part ? orderWithNewSession(made, kept, copy.key, part) : [...kept, copy.key];
+    });
+    const [afterTree, afterMaking] = await Promise.all([getNodeTree(buildId), readMaking(buildId)]);
+    const moves = planLayout(afterTree, afterMaking, sessionsMetaOf(afterMaking), order).moves;
+    if (moves.length > 0) await reorderNodes(buildId, moves);
+  } catch (cause) {
+    await removeTiles(ids);
+    await setSessionMeta(buildId, copy.key, null).catch(() => undefined);
+    await deleteBuildSession(buildId, copy.key).catch(() => undefined);
+    throw cause;
+  }
+  await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
+  return { buildId, sessionKey: copy.key, tiles: ids.length, collapsed: false, replaced: null };
 }
 
 /**

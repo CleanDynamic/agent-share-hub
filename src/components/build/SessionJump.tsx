@@ -172,7 +172,7 @@ export function SessionJump({ items, current, phone, onJump }: { items: readonly
     );
   }
   return (
-    <nav aria-label="Sessions" data-testid="session-list" style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto", minWidth: 0, paddingBottom: 2 }}>
+    <nav aria-label="Sessions" data-testid="session-list" style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto", minWidth: 0, paddingBottom: 2, userSelect: "none" }}>
       {jumpGroups(items).map((run, at) => (
         <Fragment key={`${run.group ?? "none"}:${at}`}>
           {run.group ? (

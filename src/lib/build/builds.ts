@@ -235,6 +235,15 @@ async function composeRecord(build: Build, loadNodeTypes: () => Promise<NodeType
   return { build, tree, tray, events, nodeTypes };
 }
 
+/** SV-07 P2: who hears of the build's row as each of this tab's writes leaves it, so what the page draws moves on at once. */
+const rowListeners = new Set<(row: Build) => void>();
+
+/** Hear of every build row this tab writes. Returns the way to stop. */
+export function onBuildWritten(listener: (row: Build) => void): () => void {
+  rowListeners.add(listener);
+  return () => void rowListeners.delete(listener);
+}
+
 /** The patch as a plain write, guarded by `updated_at` when a stamp is given: a stale write changes no rows (CA-23 P4). */
 async function updateBuildOnce(id: string, patch: BuildPatch, stamp?: string | null): Promise<Build> {
   let query = supabase.from("builds").update(patch).eq("id", id);
@@ -246,6 +255,7 @@ async function updateBuildOnce(id: string, patch: BuildPatch, stamp?: string | n
     if (stamp && isZeroRows(error)) throw new StaleWriteError("builds", id);
     throw buildLayerError("updateBuild", { code: error.code, details: error.details, hint: error.hint, message: error.message, status });
   }
+  for (const listener of rowListeners) listener(data as unknown as Build);
   return data as unknown as Build;
 }
 
@@ -257,6 +267,14 @@ export async function updateBuild(
   // Not open in the composer: nobody else's change to look out for, and the write is as it always was.
   if (!isWatched(id)) return updateBuildOnce(id, patch);
   return serial(id, () => updateBuildChecked(id, patch));
+}
+
+/**
+ * SV-07 P1: the same write, for a caller already inside a step of the build's write queue (`serial`), which reads what it
+ * changes in that step. Queued again it would wait on the step it is in.
+ */
+export function updateBuildInStep(id: string, patch: BuildPatch): Promise<Build> {
+  return isWatched(id) ? updateBuildChecked(id, patch) : updateBuildOnce(id, patch);
 }
 
 /** A write made offline and kept across a reload, whose edit may collide with what was changed meanwhile: settled as any stale write is (CA-23 P4). */

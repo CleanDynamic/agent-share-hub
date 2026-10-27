@@ -4,7 +4,7 @@ import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildFacts, tileView } from "@/dev/fixtures/detailsKinds";
-import { BAR_RISE, CROSSFADE, GOTO_HOLD, GOTO_OUT, NOTICE_RISE } from "@/lib/build/buildMotion";
+import { BAR_RISE, CROSSFADE, DROP, DROP_FALL, GOTO_HOLD, GOTO_OUT, LIFT, LIFT_RISE } from "@/lib/build/buildMotion";
 import { BASE, FAST, __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { goToIt, useHeld } from "./buildMotion";
@@ -98,25 +98,27 @@ describe("the notice", () => {
   const notice = (n: number, sentence = "Removed Prompt 2") => ({ sentence, n });
   const box = () => document.querySelector('[data-testid="reference-notice"]');
 
-  it("rises 8 and fades in over FAST, keeping its centring; a new notice crossfades its words and does not rise again", () => {
+  it("arrives as a drop (SV-07 P5), centred by its margins; a new notice crossfades its words in place and does not drop again", () => {
     const view = render(<ReferenceNotice notice={notice(1)} onUndo={() => undefined} onDone={() => undefined} />);
     const rises = () => played.filter((entry) => entry.element === box());
     expect(rises()).toHaveLength(1);
-    expect(rises()[0].keyframes).toEqual([{ opacity: 0, transform: `translateX(-50%) translateY(${NOTICE_RISE}px)` }, { opacity: 1, transform: "translateX(-50%)" }]);
-    expect(rises()[0].options.duration).toBe(FAST);
+    expect(rises()[0].keyframes).toEqual([{ opacity: 0, transform: `translateY(-${DROP_FALL}px)` }, { opacity: 1, transform: "none" }]);
+    expect(rises()[0].options.duration).toBe(DROP);
     view.rerender(<ReferenceNotice notice={notice(2, "Duplicated Prompt 2")} onUndo={() => undefined} onDone={() => undefined} />);
     expect(rises()).toHaveLength(1);
     expect(document.querySelector('[data-testid="crossfade-old"]')?.textContent).toBe("Removed Prompt 2");
     expect(box()?.textContent).toContain("Duplicated Prompt 2");
   });
 
-  it("fades out over FAST before it is gone", async () => {
+  it("leaves as a lift, with no delay and quicker than it arrived, before it is gone (SV-07 P5)", async () => {
     const view = render(<ReferenceNotice notice={notice(1)} onUndo={() => undefined} onDone={() => undefined} />);
     view.rerender(<ReferenceNotice notice={null} onUndo={() => undefined} onDone={() => undefined} />);
     expect(box()).not.toBeNull();
-    const fall = played.filter((entry) => entry.element === box()).at(-1);
-    expect(fall?.keyframes[1]).toEqual({ opacity: 0, transform: `translateX(-50%) translateY(${NOTICE_RISE}px)` });
-    await passes(FAST);
+    const lift = played.filter((entry) => entry.element === box()).at(-1);
+    expect(lift?.keyframes[1]).toEqual({ opacity: 0, transform: `translateY(-${LIFT_RISE}px)` });
+    expect(lift?.options).toMatchObject({ duration: LIFT, delay: 0 });
+    expect(LIFT).toBeLessThan(DROP);
+    await passes(LIFT);
     expect(box()).toBeNull();
   });
 });

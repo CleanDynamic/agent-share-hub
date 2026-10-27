@@ -22,6 +22,7 @@ import { draftsOfImports, listBuildSessionRows } from "./buildSessions";
 import { discardImport, loadImportProposal } from "./imports";
 import type { TranscriptSourceRef } from "./intake";
 import { refreshMakingStats } from "./making";
+import { isSessionSummary } from "./summaryTurn";
 import { buildLayerError } from "./types";
 
 /** The characters of the first prompt a list keeps. */
@@ -69,6 +70,8 @@ export interface SessionSummary {
   status?: string | null;
   /** CA-12: the drafts this session is in (`build_sessions`, and the one an old claim named). Absent when the read did not ask. */
   draftIds?: string[];
+  /** SV-07 P7: the hash of the transcript it was imported from (`content_hash`): the same chat imported twice has the same one. */
+  contentHash?: string;
 }
 
 /** CA-12: an import that did not finish arriving, or did not parse. */
@@ -104,7 +107,9 @@ const SESSION_COLUMNS =
   "first_prompt:proposal->events->0->payload->>text, " +
   "second_prompt:proposal->events->1->payload->>text, " +
   "user_turns:proposal->summary->user_turn_count, " +
-  "assistant_turns:proposal->summary->assistant_turn_count";
+  "assistant_turns:proposal->summary->assistant_turn_count, " +
+  // SV-07 P7: the hash of the transcript it came from: two imports of one chat share it.
+  "content_hash";
 
 interface SessionRow {
   id: string;
@@ -119,6 +124,7 @@ interface SessionRow {
   user_turns: unknown;
   assistant_turns: unknown;
   status?: string | null;
+  content_hash?: unknown;
 }
 
 interface StatusRow {
@@ -153,8 +159,8 @@ function sessionsTable(): SessionsTable {
   return (supabase as unknown as { from: (table: string) => SessionsTable }).from("import_sessions");
 }
 
-/** SV-05 P3: the turn Claude Code opens a continued session with, its summary of the one before. */
-export const isSessionSummary = (text: string): boolean => /^\s*This session is being continued from a previous conversation/.test(text);
+/** SV-05 P3: the turn Claude Code opens a continued session with, its summary of the one before (SV-07 P7: now in `summaryTurn.ts`). */
+export { isSessionSummary };
 
 function asCount(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -178,6 +184,7 @@ function toSummary(row: SessionRow): SessionSummary {
     createdAt: row.created_at,
     buildId: row.build_id ?? null,
     ...(typeof row.status === "string" ? { status: row.status } : null),
+    ...(typeof row.content_hash === "string" && row.content_hash ? { contentHash: row.content_hash } : null),
   };
 }
 

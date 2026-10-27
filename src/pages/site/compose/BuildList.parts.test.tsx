@@ -127,7 +127,8 @@ describe("two parts", () => {
     expect(empty.textContent).toContain("No sessions yet");
     fireEvent.click(within(empty).getByRole("button", { name: WORKSTREAM_HEAD_COPY.addHere }));
     expect(onAddSession).toHaveBeenCalledWith("ws-c");
-    expect(screen.getByRole("dialog", { name: "Add a session" })).toBeTruthy();
+    // SV-07 P6: it opens under its row, in the flow.
+    expect(screen.getByRole("region", { name: "Add a session" })).toBeTruthy();
   });
 });
 

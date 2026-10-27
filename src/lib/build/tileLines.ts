@@ -20,6 +20,7 @@ import { CONNECTION_LABEL, checkDay, manualWhereLabel, resultTypeLabel, type Res
 import { formatSize } from "./readerSteps";
 import { AGENT_PATTERN_LABEL, variableNamesIn } from "./tileExtras";
 import { DATASET_USE_LABEL, REPO_OWNERSHIP_LABEL, licenceLine } from "./sourceTiles";
+import { SUMMARY_COPY } from "./summaryTurn";
 
 /** "3 test cases", "1 variable": a count with its noun, or nothing at all for none. */
 export const counted = (n: number | null | undefined, one: string, many: string = `${one}s`): string | null => (typeof n === "number" && n > 0 ? `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}` : null);
@@ -45,7 +46,8 @@ const lastRun = (day: string | null | undefined): string | null => (day ? `Last 
 export function typeLineOf(step: Step): string {
   switch (step.kind) {
     case "prompt":
-      return "Prompt";
+      // SV-07 P7: a Summary tile says so, with its length.
+      return step.summary ? dotted(SUMMARY_COPY.kind, counted(step.words, "word")) : "Prompt";
     case "agent":
       return dotted("Agent", step.model ? modelRunLine(modelLabel(step.model), step.modelRun) : null);
     case "team":

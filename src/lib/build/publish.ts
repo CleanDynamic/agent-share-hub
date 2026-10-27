@@ -37,6 +37,18 @@ import type {
   NodeType,
 } from "./types";
 
+/** SV-07 P8: the title a new draft is given until its maker names it. A build with it, or with none, is not published. */
+export const UNTITLED_TITLE = "Untitled build";
+
+/** SV-07 P8: what every publish path says when the build has no title. */
+export const NO_TITLE = "Give the build a title before you publish it.";
+
+/** SV-07 P8: whether a build has a title of its own: not empty, and not the one a new draft is given. */
+export const hasTitle = (title: string | null | undefined): boolean => {
+  const trimmed = (title ?? "").trim();
+  return trimmed !== "" && trimmed !== UNTITLED_TITLE;
+};
+
 /** The columns publishReadiness reads, so a caller can pass a stub. */
 export type PublishSource = CompletenessSource;
 
@@ -115,7 +127,8 @@ function publishReason(blocking: MissingItem[]): string {
 }
 
 /** The columns publishBuild reads before it decides what to write. */
-export type PublishTarget = Pick<Build, "id" | "status" | "published_at">;
+/** SV-07 P8: with the title the caller holds, when it holds one; without it, the stored title is read. */
+export type PublishTarget = Pick<Build, "id" | "status" | "published_at"> & { title?: string | null };
 
 /**
  * The columns publishing writes, and only those.
@@ -163,6 +176,9 @@ export function publishPatch(build: PublishTarget): BuildPatch {
  * but an id.
  */
 export async function publishBuild(build: PublishTarget): Promise<Build> {
+  // SV-07 P8: a build with no title is not published, whoever asks: the title the caller holds, else the one stored.
+  const title = build.title !== undefined ? build.title : (await getBuildHeader(build.id))?.title;
+  if (!hasTitle(title)) throw new Error(NO_TITLE);
   const patch = publishPatch(build);
 
   // Already published, already dated: nothing to write, and an empty PATCH is
