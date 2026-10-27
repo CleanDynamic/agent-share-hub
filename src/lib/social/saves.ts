@@ -9,7 +9,9 @@
 // references/data-pagination.md⟧, each build as the gallery's own card reads
 // it — gallerySelect(false) with withCardEmbeds, as where next reads its rows —
 // so a saved build looks the same in the Library as in the Gallery. One
-// request a page (SV-03 P5): the saves, each with its build embedded.
+// request a page (SV-03 P5): the saves, each with its build embedded. The first
+// page also counts the reader's saves (SV-09: "n saved"), exactly, in the same
+// request: one reader's saves are few, and the count is shown in full.
 
 import { gallerySelect, toGalleryBuild, withCardEmbeds, type GalleryRow } from "@/lib/build/gallery";
 import {
@@ -90,7 +92,7 @@ export async function listMySavedBuilds(options: ListMySavedBuildsOptions = {}):
   let savesQuery = withCardEmbeds(
     db
       .from("build_saves")
-      .select(`created_at, build:builds!build_saves_build_id_fkey(${gallerySelect(false)})`)
+      .select(`created_at, build:builds!build_saves_build_id_fkey(${gallerySelect(false)})`, options.before ? undefined : { count: "exact" })
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(limit),
@@ -109,5 +111,5 @@ export async function listMySavedBuilds(options: ListMySavedBuildsOptions = {}):
     return build ? [{ savedAt: row.created_at, build: toGalleryBuild(build) }] : [];
   });
 
-  return { items, nextBefore };
+  return { items, nextBefore, total: options.before ? null : (saves.count ?? null) };
 }

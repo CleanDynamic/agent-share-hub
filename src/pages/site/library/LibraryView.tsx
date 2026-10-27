@@ -395,8 +395,10 @@ export function LibraryItems(props: LibraryItemsProps) {
   else if (status === "error") body = <PanelError what={what} onRetry={onRetry} />;
   else if (rows.length === 0) body = <PanelEmpty empty={empty} testId="library-empty" />;
   else {
+    /* A phone scrolls the table inside its own box, never the page sideways. */
     body = (
-      <table data-testid="library-table" style={{ width: "100%", marginTop: chips?.length || sameAsBuilds ? 16 : 0, borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 12.5, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ overflowX: "auto", marginTop: chips?.length || sameAsBuilds ? 16 : 0 }}>
+      <table data-testid="library-table" style={{ width: "100%", borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 12.5, fontVariantNumeric: "tabular-nums" }}>
         <thead>
           <tr style={{ fontSize: 11.5, color: t.label }}>
             <th scope="col" style={th}>{itemColumn}</th>
@@ -414,6 +416,7 @@ export function LibraryItems(props: LibraryItemsProps) {
           ))}
         </tbody>
       </table>
+      </div>
     );
   }
   return (

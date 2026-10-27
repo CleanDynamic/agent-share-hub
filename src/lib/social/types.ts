@@ -142,6 +142,8 @@ export interface SavedBuildsPage {
   items: SavedBuild[];
   /** The savedAt to pass as `before` for the next page, or null at the end. */
   nextBefore: string | null;
+  /** SV-09: every save the reader has, counted on the first page only; null on later pages or when not counted. */
+  total?: number | null;
 }
 
 // =============================================================================

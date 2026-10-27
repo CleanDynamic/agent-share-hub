@@ -123,13 +123,13 @@ export function LibraryPrimary({ onClick, href, children }: { onClick?: () => vo
   const style: CSSProperties = { ...controlBase, ...PRIMARY, flexGrow: 1, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontSize: 12.5, fontWeight: 500, ...ring(state.focusVisible) };
   if (href) {
     return (
-      <Link to={href} {...handlers} style={style}>
+      <Link to={href} data-visual-slot="btn-primary" {...handlers} style={style}>
         {children}
       </Link>
     );
   }
   return (
-    <button type="button" onClick={onClick} {...handlers} style={style}>
+    <button type="button" data-visual-slot="btn-primary" onClick={onClick} {...handlers} style={style}>
       {children}
     </button>
   );
@@ -153,8 +153,8 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
 
 /* ── the head ── */
 
-export const headTitle: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, lineHeight: 1.2, letterSpacing: "-0.015em", color: t.text };
-export const headMeta: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" };
+const headTitle: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, lineHeight: 1.2, letterSpacing: "-0.015em", color: t.text };
+const headMeta: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" };
 
 /** "Library" and its count line. */
 export function LibraryHead({ title, meta }: { title: string; meta: ReactNode }) {

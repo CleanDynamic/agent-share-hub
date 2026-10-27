@@ -1,9 +1,8 @@
 // RC-P18 — the Library's budgets, counted in the rendered DOM
 // ⟦hicks-law › Enforcing It in the Code⟧.
 //
-// Exactly two tabs; at most one filled button in any view of either tab
-// (STATES.md row 19: an empty view's one way out is primary, a populated view
-// has none) ⟦von-restorff-effect⟧; the add-to-collection dialog shows at most
+// At most one filled button in any view (SV-09: one primary per view, the
+// selected item's Open) ⟦von-restorff-effect⟧; the add-to-collection dialog shows at most
 // seven collections before its list scrolls ⟦hicks-law › Budgets⟧; and the
 // page and its data layer read nothing legacy. A failing budget means the
 // change is wrong, not the test.
@@ -51,7 +50,7 @@ import {
   COLLECTIONS_VISIBLE,
   COLLECTION_ROW_HEIGHT,
 } from "@/components/library/AddToCollectionDialog";
-import LibraryPage, { LIBRARY_TABS } from "@/pages/Library";
+import LibraryPage from "@/pages/site/library/LibraryPage";
 import type { GalleryBuild } from "@/lib/build";
 
 const CARD = {
@@ -116,44 +115,30 @@ beforeEach(() => {
 });
 
 describe("the Library's budgets", () => {
-  it("has exactly two tabs, Saved then Collections", async () => {
-    withProviders(<LibraryPage />, "/library");
-    expect(LIBRARY_TABS.map((tab) => tab.label)).toEqual(["Saved", "Collections"]);
-
-    const saved = await screen.findByRole("button", { name: "Saved" });
-    const row = saved.parentElement as HTMLElement;
-    expect([...row.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Saved", "Collections"]);
-  });
-
   const views: Array<{ name: string; path: string; arrange: () => void; ready: string }> = [
     {
-      name: "Saved, with builds",
+      name: "saved builds",
       path: "/library",
       arrange: () => listMySavedBuilds.mockResolvedValue({ items: [{ savedAt: "2026-09-28T10:00:00.000Z", build: CARD }], nextBefore: "x" }),
-      ready: "library-card",
+      ready: "library-row",
     },
-    { name: "Saved, empty", path: "/library", arrange: () => undefined, ready: "library-saved-empty" },
-    {
-      name: "Collections, listed",
-      path: "/library?tab=collections",
-      arrange: () => listCollections.mockResolvedValue([COLLECTION]),
-      ready: "library-collection",
-    },
-    { name: "Collections, empty", path: "/library?tab=collections", arrange: () => undefined, ready: "library-collections-empty" },
+    { name: "nothing saved", path: "/library", arrange: () => undefined, ready: "library-empty" },
+    { name: "collections listed", path: "/library", arrange: () => listCollections.mockResolvedValue([COLLECTION]), ready: "library-collection" },
+    { name: "no collections", path: "/library", arrange: () => undefined, ready: "library-collections-empty" },
     {
       name: "a collection, open",
-      path: "/library?tab=collections&collection=col-1",
+      path: "/library?collection=col-1",
       arrange: () => {
-        getCollection.mockResolvedValue(COLLECTION);
+        listCollections.mockResolvedValue([COLLECTION]);
         listCollectionBuilds.mockResolvedValue({ items: [{ addedAt: "2026-09-28T10:00:00.000Z", build: CARD }], nextBefore: null });
       },
-      ready: "library-card",
+      ready: "library-row",
     },
     {
       name: "a collection, open and empty",
-      path: "/library?tab=collections&collection=col-1",
-      arrange: () => getCollection.mockResolvedValue(COLLECTION),
-      ready: "library-collection-empty",
+      path: "/library?collection=col-1",
+      arrange: () => listCollections.mockResolvedValue([COLLECTION]),
+      ready: "library-empty",
     },
   ];
 
@@ -190,8 +175,8 @@ describe("the Library's budgets", () => {
     const root = resolve(__dirname, "../../..");
     const libraryDir = resolve(root, "src/lib/library");
     const files = [
-      resolve(root, "src/pages/Library.tsx"),
-      resolve(root, "src/components/library/LibraryBuilds.tsx"),
+      resolve(root, "src/pages/site/library/LibraryPage.tsx"),
+      resolve(root, "src/components/library/CollectionDialogs.tsx"),
       resolve(root, "src/components/library/AddToCollectionDialog.tsx"),
       ...readdirSync(libraryDir)
         .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
