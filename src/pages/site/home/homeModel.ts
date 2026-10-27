@@ -386,6 +386,20 @@ export function newerThan(items: readonly Pick<FeedItem, "at">[], seen: number |
   }).length;
 }
 
+/** The items shown: all of them, or, while the pill holds the new ones back, those no newer than the last visit. */
+export function shownItems<T extends Pick<FeedItem, "at">>(items: readonly T[], seen: number | null, revealed: boolean): T[] {
+  if (revealed || newerThan(items, seen) === 0) return [...items];
+  return items.filter((item) => Date.parse(item.at) <= (seen ?? 0));
+}
+
+/** The build posts read with the first screen: at 1440 × 900 two or three posts fill it. */
+export const FIRST_SCREEN_POSTS = 3;
+
+/** The ids of the first screen's build posts, in order. */
+export function firstScreenPosts(items: readonly FeedItem[]): string[] {
+  return items.filter((item) => item.kind === "build").slice(0, FIRST_SCREEN_POSTS).map((item) => item.build.id);
+}
+
 /* ── your week ── */
 
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);

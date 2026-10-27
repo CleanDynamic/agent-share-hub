@@ -22,10 +22,11 @@ interface Case {
   chunk: string;
 }
 
-/* Home and Profile are not here: their loading states are most of their views (Home's hero and wall, Profile's stats
-   wall and tabs), and a light copy would put about 31 KB of script into every visitor's first download. They keep the
-   list placeholder until SV-10 (Home) and a later prompt decide (sv-04-after.md). */
+/* Profile is not here: its loading state is most of its view (the stats wall and tabs), and a light copy would put about
+   31 KB of script into every visitor's first download. It keeps the list placeholder until a later prompt decides
+   (sv-04-after.md). SV-10: Home's loading state is its own small frame module (HomeFrame), so Home is here. */
 const CASES: Case[] = [
+  { page: "Home", path: "/", chunk: "HomePage" },
   { page: "Builds", path: "/builds", chunk: "GalleryPage" },
   { page: "OpenBuilds", path: "/openbuilds", chunk: "Bounties" },
   { page: "Library", path: "/library", chunk: "LibraryPage" },

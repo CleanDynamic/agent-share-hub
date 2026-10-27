@@ -282,21 +282,24 @@ function RightBones() {
   );
 }
 
-/** The page while the feed loads: the route table's Placeholder for `/`. */
+/** The page while the feed loads: the route table's Placeholder for `/`. It holds a screen's height, so the footer is
+    not drawn up the page and then pushed away when the content arrives. */
 export function HomeLoadingView() {
   const layout = useHomeLayout();
   return (
-    <HomeColumns
-      layout={layout}
-      top={layout === "one" ? <Skeleton height={44} radius={6} /> : undefined}
-      left={<LeftBones />}
-      centre={
-        <>
-          <TabsBones />
-          <FeedBones />
-        </>
-      }
-      right={<RightBones />}
-    />
+    <div style={{ minHeight: "100vh" }}>
+      <HomeColumns
+        layout={layout}
+        top={layout === "one" ? <Skeleton height={44} radius={6} /> : undefined}
+        left={<LeftBones />}
+        centre={
+          <>
+            <TabsBones />
+            <FeedBones />
+          </>
+        }
+        right={<RightBones />}
+      />
+    </div>
   );
 }

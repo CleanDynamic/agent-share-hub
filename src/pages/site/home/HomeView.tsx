@@ -40,6 +40,7 @@ import {
   FeedBones,
   HomeColumns,
   HomeControl,
+  HomeLoadingView,
   HomePrimary,
   Rule,
   SectionBones,
@@ -900,6 +901,8 @@ function Room(props: HomeViewProps) {
 
 export function HomeView(props: HomeViewProps) {
   const layout = useHomeLayout();
+  // While the feed loads the page is its loading state, the route's Placeholder, block for block (SV-04 P5).
+  if (props.feed.status === "loading") return <HomeLoadingView />;
   return (
     <HomeColumns
       layout={layout}

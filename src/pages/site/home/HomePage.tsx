@@ -44,11 +44,13 @@ import { HomeLoadingView } from "./HomeFrame";
 import { HomeView, type HomeScope, type Loadable } from "./HomeView";
 import {
   filterOf,
+  firstScreenPosts,
   homeItemOf,
   homeWeek,
   newerThan,
   readHomeSeen,
   runRows,
+  shownItems,
   timeLeft,
   whereNextRows,
   writeHomeSeen,
@@ -64,8 +66,6 @@ const COUNT_STALE_MS = SLOW_STALE_MS;
 const STREAK_LOOKBACK_DAYS = 400;
 /** Every thumbnail on Home is signed at the smallest slot width the read path has. */
 const THUMB_WIDTH = MEDIA_WIDTH.variant;
-/** The posts read with the first screen: at 1440 × 900 two or three posts fill it. */
-export const FIRST_SCREEN_POSTS = 3;
 
 const SIGN_IN = "/login?redirect=/";
 
@@ -85,6 +85,13 @@ function publicLoadable<T, U>(query: { isLoading: boolean; error: unknown; data:
   if (query.error) return { status: "error", onRetry: () => void query.refetch(), error: query.error };
   return { status: "loading" };
 }
+
+/** One batch of build posts, read with their post_doc. */
+const postsQuery = (ids: string[]) => ({
+  queryKey: ["build", "getGalleryBuildsByIds", ids.join(",")],
+  queryFn: () => getGalleryBuildsByIds(ids),
+  staleTime: STALE_MS,
+});
 
 /** The ids of a feed's build posts, in order. */
 const postIds = (items: readonly FeedItem[]) => items.filter((item) => item.kind === "build").map((item) => item.build.id);
@@ -117,11 +124,21 @@ export function HomePage() {
 
   /* ── round 1: the feed ── */
 
+  /* New since you looked: the previous visit, read once; this one is recorded when the first page has arrived. The items
+     newer than it are held back until the pill is chosen. */
+  const [seenAt] = useState(readHomeSeen);
+  const [revealed, setRevealed] = useState(false);
+
   const feedQuery = useInfiniteQuery({
     queryKey: ["feed", "getBuildFeed", scope, userId],
     enabled: !authLoading,
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) => getBuildFeed({ before: pageParam, onlyFollowing: scope === "following" }),
+    queryFn: async ({ pageParam }) => {
+      const page = await getBuildFeed({ before: pageParam, onlyFollowing: scope === "following" });
+      // The first screen's posts are asked for the moment the first page answers, not a render later: round 2 at once.
+      if (!pageParam) void qc.prefetchQuery(postsQuery(firstScreenPosts(shownItems(page.items, seenAt, revealed))));
+      return page;
+    },
     getNextPageParam: (last) => last.nextBefore ?? undefined,
     staleTime: STALE_MS,
     // Everyone to Following keeps the first list on screen until the second arrives.
@@ -134,10 +151,6 @@ export function HomePage() {
     return [...byKey.values()];
   }, [feedQuery.data]);
 
-  /* New since you looked: the previous visit, read once; this one is recorded when the first page has arrived. The items
-     newer than it are held back until the pill is chosen. */
-  const [seenAt] = useState(readHomeSeen);
-  const [revealed, setRevealed] = useState(false);
   const recorded = useRef(false);
   useEffect(() => {
     if (feedQuery.isSuccess && !recorded.current) {
@@ -146,7 +159,7 @@ export function HomePage() {
     }
   }, [feedQuery.isSuccess]);
   const newCount = revealed ? 0 : newerThan(items, seenAt);
-  const shown = newCount === 0 ? items : items.filter((item) => Date.parse(item.at) <= (seenAt ?? 0));
+  const shown = shownItems(items, seenAt, revealed);
 
   /* ── round 1: the columns ── */
 
@@ -196,7 +209,9 @@ export function HomePage() {
 
   /* ── round 2: the posts near the screen ── */
 
-  const firstBatch = useMemo(() => postIds(shown).slice(0, FIRST_SCREEN_POSTS), [shown]);
+  // Held by its ids, so the near-screen observers are not set up again on every render.
+  const firstKey = firstScreenPosts(shown).join(",");
+  const firstBatch = useMemo(() => (firstKey ? firstKey.split(",") : []), [firstKey]);
   const [nearBatches, setNearBatches] = useState<string[][]>([]);
   const pending = useRef<Set<string>>(new Set());
   const asked = useMemo(() => new Set([...firstBatch, ...nearBatches.flat()]), [firstBatch, nearBatches]);
@@ -219,13 +234,7 @@ export function HomePage() {
     [asked, postKinds],
   );
   const batches = [firstBatch, ...nearBatches].filter((batch) => batch.length > 0);
-  const postReads = useQueries({
-    queries: batches.map((batch) => ({
-      queryKey: ["build", "getGalleryBuildsByIds", batch.join(",")],
-      queryFn: () => getGalleryBuildsByIds(batch),
-      staleTime: STALE_MS,
-    })),
-  });
+  const postReads = useQueries({ queries: batches.map(postsQuery) });
   const details = new Map<string, HomePostDetail>();
   for (const read of postReads) {
     for (const row of read.data ?? []) details.set(row.id, { build: row, modelsUsed: row.models_used, classification: row.classifiedAs ?? null });
@@ -309,11 +318,18 @@ export function HomePage() {
   const context = {
     details,
     asks,
-    engagement: (buildId: string) => (engagement.counts[buildId] ? engagementFor(engagement, buildId) : undefined),
+    // Drawn from the start, its counts filling in when they come, so the row does not push the feed down.
+    engagement: (buildId: string) => engagementFor(engagement, buildId),
     meTooPressed: meToo.data ?? new Set<string>(),
   };
 
-  const feedStatus = feedQuery.isError && items.length === 0 ? "error" : feedQuery.isPending ? "loading" : "ready";
+  /* The page arrives once, with the feed's first page; it never goes back to its loading state after that (a new tab
+     keeps the old items instead). Holding it for the first screen's posts as well was measured: no shift as a post takes
+     its shape, but the arrival fade then lands on the largest element and LCP is about 150 ms later. The page-ready mark
+     still waits for those posts: that is when the first screen is real. */
+  const arrived = useRef(false);
+  if (!feedQuery.isPending) arrived.current = true;
+  const feedStatus = feedQuery.isError && items.length === 0 ? "error" : arrived.current ? "ready" : "loading";
   usePageReady("home", feedStatus !== "loading" && firstScreenSettled);
 
   const countsFailed = (reproduced.isError && reproduced.data === undefined) || (runsWeek.isError && runsWeek.data === undefined);
