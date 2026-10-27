@@ -141,6 +141,13 @@
       "when": 1792975021715,
       "tag": "0019_sv03_indexes_and_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793083213575,
+      "tag": "0020_sv07_publish_needs_title",
+      "breakpoints": true
     }
   ]
 }
