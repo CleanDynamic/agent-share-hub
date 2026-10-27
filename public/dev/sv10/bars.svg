@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="266" height="240" viewBox="0 0 266 240">
+  <!-- SV-10 dev picture: the Home board's second post picture (a bar chart), Dusk. -->
+  <rect width="266" height="240" fill="#141416"/>
+  <rect x="18" y="160" width="33" height="62" rx="2" fill="#2E2E33"/>
+  <rect x="57" y="129" width="33" height="93" rx="2" fill="#2E2E33"/>
+  <rect x="96" y="139" width="33" height="83" rx="2" fill="#2E2E33"/>
+  <rect x="135" y="93" width="33" height="129" rx="2" fill="#2E2E33"/>
+  <rect x="174" y="66" width="33" height="156" rx="2" fill="#A0A0A6"/>
+  <rect x="213" y="31" width="35" height="191" rx="2" fill="#EDEDEF"/>
+</svg>

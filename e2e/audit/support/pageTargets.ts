@@ -18,7 +18,7 @@ export interface PageTarget {
 }
 
 export const PAGE_TARGETS: PageTarget[] = [
-  { key: "home", path: "/", readyMark: "home", auth: true, maxRounds: null },
+  { key: "home", path: "/", readyMark: "home", auth: true, maxRounds: 2 },
   { key: "builds", path: "/builds", readyMark: "builds", auth: true, maxRounds: null },
   { key: "openbuilds", path: "/openbuilds", readyMark: "openbuilds", auth: true, maxRounds: null },
   { key: "library-saved", path: "/library", readyMark: "library", auth: true, maxRounds: 1 },

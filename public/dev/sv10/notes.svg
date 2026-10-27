@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="266" height="240" viewBox="0 0 266 240">
+  <!-- SV-10 dev picture: the Home board's first post picture (a summary in Notion), Dusk. -->
+  <defs><pattern id="d" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="0.5" cy="0.5" r="0.6" fill="rgba(255,255,255,.055)"/></pattern></defs>
+  <rect width="266" height="240" fill="#141416"/><rect width="266" height="240" fill="url(#d)"/>
+  <rect x="18" y="18" width="104" height="8" rx="2" fill="#34343A"/>
+  <rect x="18.5" y="34.5" width="229" height="59" rx="6" fill="#1E1E21" stroke="#29292D"/>
+  <rect x="29" y="45" width="146" height="6" rx="2" fill="#A0A0A6"/>
+  <rect x="29" y="57" width="188" height="5" rx="2" fill="#34343A"/>
+  <rect x="29" y="68" width="167" height="5" rx="2" fill="#34343A"/>
+  <rect x="18.5" y="101.5" width="229" height="48" rx="6" fill="#1E1E21" stroke="#29292D"/>
+  <rect x="29" y="112" width="104" height="6" rx="2" fill="#86D193"/>
+  <rect x="29" y="124" width="177" height="5" rx="2" fill="#34343A"/>
+</svg>

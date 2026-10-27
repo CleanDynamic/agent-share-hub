@@ -1,4 +1,4 @@
-// UI-P27 — Home's view model: the words, the week, the streak and the filters.
+// UI-P27, SV-10: Home's view model: the words, the feed's items, the week and the filters.
 
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -6,18 +6,23 @@ import { toFeedItem, type BuildFeedRow } from "@/lib/feed/getBuildFeed";
 
 import {
   HOME_SEEN_KEY,
-  frozenLabel,
-  homeRowOf,
-  isNewerThanSeen,
+  closesIn,
+  filterOf,
+  homeItemOf,
+  homeWeek,
   matchesFilter,
+  newerThan,
   readHomeSeen,
   reasonLabel,
+  runRows,
   shortAgo,
-  sparkValues,
-  streakOf,
+  streakLength,
+  timeLeft,
   weekDays,
-  whoLine,
+  weekMeta,
+  weekSummary,
   writeHomeSeen,
+  type HomeItemContext,
 } from "./homeModel";
 
 const NOW = Date.parse("2026-09-30T12:00:00Z"); // a Wednesday
@@ -80,50 +85,6 @@ describe("shortAgo", () => {
   });
 });
 
-describe("whoLine", () => {
-  it("says who hung a build", () => {
-    expect(whoLine(toFeedItem(row()))).toBe("@maya hung");
-  });
-
-  it("names the build a rebuild came from", () => {
-    const item = toFeedItem(row({ item_kind: "rebuild", parent_build_id: "b0", source_title_at_fork: "Call notes" }));
-    expect(whoLine(item)).toBe("@maya rebuilt Call notes →");
-  });
-
-  it("gives a note its reproducer, model and words — and leaves out what was not said", () => {
-    const base = { item_kind: "repro_note" as const, repro_user_username: "ada", title: "Research digest" };
-    expect(whoLine(toFeedItem(row({ ...base, repro_model: "haiku-4.5", repro_note: "worked first try" })))).toBe(
-      "@ada ran Research digest on haiku-4.5 — “worked first try”",
-    );
-    expect(whoLine(toFeedItem(row({ ...base, repro_model: null, repro_note: "fine" })))).toBe(
-      "@ada ran Research digest — “fine”",
-    );
-  });
-
-  it("states an ask with its part and reward, and drops what it does not have", () => {
-    const base = { item_kind: "bounty" as const, bounty_id: "x" };
-    expect(whoLine(toFeedItem(row({ ...base, bounty_gap_title: "currency tolerance", bounty_reward_gbp: 150 })))).toBe(
-      "@maya opened an ask · currency tolerance · £150",
-    );
-    expect(whoLine(toFeedItem(row({ ...base })))).toBe("@maya opened an ask");
-  });
-
-  it("falls back to the display name when the maker has no handle", () => {
-    expect(whoLine(toFeedItem(row({ creator_username: null })))).toBe("Maya Okafor hung");
-  });
-});
-
-describe("homeRowOf", () => {
-  it("links every kind to its build, and gives a note the reproducer as its actor", () => {
-    const note = homeRowOf(toFeedItem(row({ item_kind: "repro_note", repro_user_username: "ada", repro_note: "ok" })), null);
-    expect(note).toMatchObject({ kind: "repro_note", href: "/b2/invoice-triage", actor: { id: "ada", name: "ada" } });
-
-    const ask = homeRowOf(toFeedItem(row({ item_kind: "bounty", bounty_id: "x" })), "https://img/1");
-    expect(ask).toMatchObject({ kind: "bounty", href: "/b2/invoice-triage", cover: { src: "https://img/1", seed: "b1" } });
-    expect(ask.plaque.reproduction_count).toBe(41);
-  });
-});
-
 describe("matchesFilter", () => {
   it("filters on kind and nothing else", () => {
     expect(matchesFilter("rebuild", "all")).toBe(true);
@@ -135,7 +96,80 @@ describe("matchesFilter", () => {
   });
 });
 
-describe("the streak", () => {
+const DAY = 86_400_000;
+const none: HomeItemContext = { details: new Map(), asks: new Map(), engagement: () => undefined, meTooPressed: new Set() };
+
+describe("the feed's items", () => {
+  it("draws a note's runner, its model, and whether it worked; a model not said is left out", () => {
+    const item = homeItemOf(toFeedItem(row({ item_kind: "repro_note", repro_user_username: "kit", repro_model: " ", repro_note: "Worked first time.", repro_worked: true })), none);
+    expect(item).toMatchObject({ kind: "repro_note", runner: { handle: "kit" }, model: null, note: "Worked first time.", worked: true, href: "/b2/invoice-triage" });
+  });
+
+  it("gives a build post its read post when the batch has it, and the feed row's build until then", () => {
+    const feed = toFeedItem(row());
+    const before = homeItemOf(feed, none);
+    expect(before.kind === "build" && before.build.post_doc).toBeFalsy();
+    const doc = { type: "doc" as const, content: [] };
+    const detail = { build: { ...feed.build, post_doc: doc }, modelsUsed: ["claude"], classification: null };
+    const after = homeItemOf(feed, { ...none, details: new Map([["b1", detail]]) });
+    expect(after).toMatchObject({ kind: "build", modelsUsed: ["claude"], maker: { handle: "maya", name: "Maya Okafor" } });
+    expect(after.kind === "build" && after.build.post_doc).toBe(doc);
+  });
+
+  it("names a rebuild's source from the frozen fork columns", () => {
+    const item = homeItemOf(toFeedItem(row({ item_kind: "rebuild", source_title_at_fork: "Call notes", source_handle_at_fork: "maya", rebuild_note: "Local model.\nMore." })), none);
+    expect(item).toMatchObject({ kind: "rebuild", note: "Local model.", source: { title: "Call notes", handle: "maya" } });
+  });
+
+  it("gives an ask its gap, reward and, when the open requests know it, its solutions, deadline and Me too", () => {
+    const feed = toFeedItem(row({ item_kind: "bounty", bounty_id: "q1", bounty_reward_gbp: 40, bounty_gap_title: "Handle paywalls" }));
+    expect(homeItemOf(feed, none)).toMatchObject({ kind: "bounty", title: "Handle paywalls", reward: "£40", solutions: null, closesAt: null, meToo: { count: null, pressed: false } });
+    const known = homeItemOf(feed, { ...none, asks: new Map([["q1", { solutions: 1, closesAt: "2026-10-05T12:00:00Z", meTooCount: 4 }]]), meTooPressed: new Set(["q1"]) });
+    expect(known).toMatchObject({ solutions: 1, closesAt: "2026-10-05T12:00:00Z", meToo: { count: 4, pressed: true } });
+  });
+
+  it("falls back to the build's title for an ask that names no gap", () => {
+    expect(homeItemOf(toFeedItem(row({ item_kind: "bounty", bounty_id: "q1" })), none)).toMatchObject({ title: "Invoice triage agent", reward: null });
+  });
+
+  it("takes the latest runs from the feed's notes, newest first, at most three", () => {
+    const notes = [1, 2, 3, 4].map((n) => toFeedItem(row({ item_kind: "repro_note", build_id: `b${n}`, item_at: `2026-09-30T1${n}:00:00Z`, repro_user_username: "kit", repro_worked: n !== 2 })));
+    const runs = runRows([toFeedItem(row()), ...notes]);
+    expect(runs.map((run) => [run.buildTitle, run.worked])).toEqual([
+      ["Invoice triage agent", true],
+      ["Invoice triage agent", false],
+      ["Invoice triage agent", true],
+    ]);
+  });
+
+  it("counts the loaded items newer than the last visit, and none on a first visit", () => {
+    const items = [{ at: "2026-09-30T11:58:00Z" }, { at: "2026-09-30T10:00:00Z" }, { at: "junk" }];
+    expect(newerThan(items, Date.parse("2026-09-30T11:00:00Z"))).toBe(1);
+    expect(newerThan(items, null)).toBe(0);
+  });
+});
+
+describe("the filter from the address", () => {
+  it("reads a known kind and treats anything else as All", () => {
+    expect(filterOf("notes")).toBe("notes");
+    expect(filterOf("junk")).toBe("all");
+    expect(filterOf(null)).toBe("all");
+  });
+});
+
+describe("deadlines", () => {
+  it("says how long an ask stays open, and nothing for one past or unknown", () => {
+    expect(closesIn(new Date(NOW + 5.5 * DAY).toISOString(), NOW)).toBe("closes in 5 days");
+    expect(closesIn(new Date(NOW + 1.2 * DAY).toISOString(), NOW)).toBe("closes tomorrow");
+    expect(closesIn(new Date(NOW - DAY).toISOString(), NOW)).toBe("");
+    expect(closesIn(null, NOW)).toBe("");
+    expect(timeLeft(new Date(NOW + 9.5 * DAY).toISOString(), NOW)).toBe("9 days left");
+    expect(timeLeft(new Date(NOW + 15 * DAY).toISOString(), NOW)).toBe("2 weeks left");
+    expect(timeLeft(new Date(NOW + 1.5 * DAY).toISOString(), NOW)).toBe("1 day left");
+  });
+});
+
+describe("your week", () => {
   const days = (entries: Record<string, "active" | "frozen">) =>
     Object.entries(entries).map(([date, kind]) => ({ date, kind }));
   const now = new Date(NOW);
@@ -153,23 +187,21 @@ describe("the streak", () => {
       "2026-09-27": "active",
       "2026-09-25": "active", // a gap on the 26th ends it
     });
-    expect(streakOf(rows, now)).toMatchObject({ count: 3, frozenUsed: 1 });
+    expect(streakLength(rows, now)).toBe(3);
   });
 
-  it("keeps yesterday's streak alive while today is still open", () => {
-    const rows = days({ "2026-09-29": "active", "2026-09-28": "active" });
-    expect(streakOf(rows, now).count).toBe(2);
+  it("keeps yesterday's streak alive while today is still open, and is zero after a gap", () => {
+    expect(streakLength(days({ "2026-09-29": "active", "2026-09-28": "active" }), now)).toBe(2);
+    expect(streakLength(days({ "2026-09-20": "active" }), now)).toBe(0);
   });
 
-  it("is zero when yesterday and today are both empty", () => {
-    expect(streakOf(days({ "2026-09-20": "active" }), now).count).toBe(0);
-    expect(streakOf([], now).count).toBe(0);
-  });
-
-  it("says how many frozen days were used", () => {
-    expect(frozenLabel(0)).toBe("no frozen days used");
-    expect(frozenLabel(1)).toBe("one frozen day used");
-    expect(frozenLabel(3)).toBe("3 frozen days used");
+  it("knows today, and says the week in words", () => {
+    const week = homeWeek(days({ "2026-09-28": "active", "2026-09-29": "active" }), [], now);
+    expect(week.today).toBe(2);
+    expect(week.streak).toBe(2);
+    expect(weekMeta(week.streak)).toBe("2 day streak · resets Monday 00:00 UTC");
+    expect(weekMeta(0)).toBe("Resets Monday 00:00 UTC");
+    expect(weekSummary(week.days)).toBe("Active 2 of 7 days");
   });
 });
 
@@ -179,14 +211,9 @@ describe("where next", () => {
     expect(reasonLabel({ reason: "rebuilt_from_one_you_ran", reasonDetail: "Call notes" })).toBe("REBUILT FROM ONE YOU RAN");
     expect(reasonLabel({ reason: "more_from_maker", reasonDetail: "@ines" })).toBe("MORE FROM @INES");
   });
-
-  it("scales a sparkline to its own peak, and a quiet week to a flat line", () => {
-    expect(sparkValues([0, 2, 4])).toEqual([0, 0.5, 1]);
-    expect(sparkValues([0, 0, 0])).toEqual([0, 0, 0]);
-  });
 });
 
-describe("since you were last here", () => {
+describe("new since you looked", () => {
   beforeEach(() => window.localStorage.clear());
 
   it("reads and writes the timestamp under bg-home-seen", () => {
@@ -199,12 +226,5 @@ describe("since you were last here", () => {
   it("treats junk as no previous visit", () => {
     window.localStorage.setItem(HOME_SEEN_KEY, "yesterday");
     expect(readHomeSeen()).toBeNull();
-  });
-
-  it("highlights only a row newer than the previous visit — never on a first visit", () => {
-    expect(isNewerThanSeen("2026-09-30T11:58:00Z", Date.parse("2026-09-30T11:00:00Z"))).toBe(true);
-    expect(isNewerThanSeen("2026-09-30T10:00:00Z", Date.parse("2026-09-30T11:00:00Z"))).toBe(false);
-    expect(isNewerThanSeen("2026-09-30T11:58:00Z", null)).toBe(false);
-    expect(isNewerThanSeen(undefined, 5)).toBe(false);
   });
 });

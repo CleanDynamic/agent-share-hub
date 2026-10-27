@@ -1084,6 +1084,21 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/library/LibraryView.test.tsx",
   "src/pages/site/library/LibraryView.tsx",
   "src/pages/site/library/libraryModel.ts",
+
+  // SV-10
+  "src/components/shell/SiteFrame.tsx",
+  "src/components/vision/TextTabs.tsx",
+  "src/dev/fixtures/vision/home.ts",
+  "src/hooks/useLibrarySessions.ts",
+  "src/lib/build/gallery.ts",
+  "src/pages/dev/KitPages.tsx",
+  "src/pages/dev/VisionHome.tsx",
+  "src/pages/site/home/HomeFrame.tsx",
+  "src/pages/site/home/HomePage.tsx",
+  "src/pages/site/home/HomeView.test.tsx",
+  "src/pages/site/home/HomeView.tsx",
+  "src/pages/site/home/homeModel.test.ts",
+  "src/pages/site/home/homeModel.ts",
 ];
 
 /**
@@ -1348,6 +1363,71 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<aside aria-label="Your studio" style={{ padding: "8px 28px 48px 4px",`,
+    why: "SV-10: the Home board: the left column is padded 8 28 48 4.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<aside aria-label="The room" style={{ padding: "8px 4px 48px 28px",`,
+    why: "SV-10: the Home board: the right column is padded 8 4 48 28.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `columnGap: 10, paddingBottom: last ? 0 : 14,`,
+    why: "SV-10: the Home board: Since you were last here: a timeline line every 14, its dot and text 10 apart.",
+  },
+  {
+    rule: "spacing 5 is not in SPACE_REFINED",
+    text: `<span aria-hidden="true" style={{ marginTop: 5, width: 9, height: 9,`,
+    why: "SV-10: the Home board: the timeline's 9px dot sits 5 down, centred on the first line.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `<div style={{ marginBottom: 14 }}>`,
+    why: "SV-10: the Home board: Your week's head sits 14 above the day bars.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `alignItems: "start", padding: "14px 20px" }}>`,
+    why: "SV-10: the Home board: a reproduction note is padded 14 20.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `columnGap: 12, marginTop: 12, padding: 10, background: t.module,`,
+    why: "SV-10: the Home board: a rebuild's quote box is padded 10.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `<div style={{ padding: 14, background: t.module,`,
+    why: "SV-10: the Home board: an ask's box is padded 14.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<div style={{ padding: "28px 20px 8px", textAlign: "center" }}>`,
+    why: "SV-10: the Home board: \"You're up to date\" sits 28 below the last item.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<Link key={card.id} to={card.href} style={{ display: "block", padding: 10,`,
+    why: "SV-10: the Home board: an end-of-feed card is padded 10.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<span style={{ display: "block", marginTop: 10, fontWeight: 500, ...ellipsis }}>{card.title}</span>`,
+    why: "SV-10: the Home board: an end-of-feed card's title sits 10 under its cover.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 14 }} data-testid="home-latest-runs">`,
+    why: "SV-10: the Home board: the latest runs start 14 under the two tiles.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: `if (!node || !onNear || typeof IntersectionObserver === "undefined") return;`,
+    why: "SV-10: Home reads a post's post_doc as it comes within a screen of view. Nothing is shown or moved by it.",
+  },
   {
     rule: "upper case outside the Details eyebrow",
     text: `export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: 11,`,

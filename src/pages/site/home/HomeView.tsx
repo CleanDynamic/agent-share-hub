@@ -1,75 +1,86 @@
-/* UI-P88 — Home in the refined look, as `design/reference/refined/{dusk,noon}/home.html` draws it.
+/* SV-10: Home, as `design/reference/vision/dusk/home.html` draws it: three columns. The maker's own work on the left
+   (Your studio), a feed of build posts in the centre, the site's activity on the right (The room).
 
-   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `HomeView` stays the current look; this is the same page with the same props (imported from
-   it, not copied), the same data, handlers, copy, accessible names and order of parts. `HomePage` and the dev page
-   choose between the two with `useLook()`.
+   PURE: typed props, no fetching, no `useAuth()`, no router hooks but links. `HomePage` loads and maps; the dev page
+   `vision-home` renders the same props from the board's sample data. Every section is its own component.
 
-   DESKTOP: the frame draws the breadcrumb; this is a wrapping row, gap 48 — the main column (`flex: 999 1 640px`,
-   gap 40: the hero, then the visitors' book) and the aside (`flex: 1 1 300px`, max 340, a hairline on its left, gap
-   24: the run counts as two figures, the week's challenges, the streak, where next). There is no card on the page:
-   the frame's one surface is the ground, and parts are told apart by hairlines.
+   THE FEED. A build is `FeedPost` as it is (the post as the composer previews it), a rebuild and an ask are drawn here
+   from the feed row, and a reproduction note is one line. Items are told apart by hairlines. An item off screen is
+   `content-visibility: auto` with an intrinsic size near its real height. A build post tells the page when it comes
+   within a screen of view (`onPostsNear`), so its post is read before it is seen.
 
-   PHONE: one column in today's order — scope and the lit line, the hero, the run counts, the challenges, the book,
-   the streak — and, as today, no where next.
+   NOTHING MOVES. Tabs and the kind filter change at once; the "n new" pill appears in place and choosing it adds the new
+   items at the top at once. */
 
-   THE WALL. The hero's picture is a 400×232 well with the dot grid, a rail 16 from its top and six framed works at
-   the board's positions. The centre one is lit, with the picture light's cone over it, while any build was lit today
-   (`litToday`), so the wall is lit from data and not as decoration. The orbs are not drawn under refined.
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
-   LIT IN THE BOOK. A row's thumbnail is lit when it is the row newer than the previous visit, the same record that
-   gives it the tile fill. */
-
-import { useState, type CSSProperties, type ReactNode } from "react";
-import { Maximize2 } from "lucide-react";
-
-import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { Avatar } from "@/components/brand/Avatar";
-import { Button } from "@/components/brand/Button";
-import { CardHead } from "@/components/brand/CardHead";
-import { CoverFallback } from "@/components/brand/CoverFallback";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
-import { Figure } from "@/components/brand/Figure";
-import { FilterChip } from "@/components/brand/FilterChip";
-import { FramedWork, PICTURE_LIGHT_CONE } from "@/components/brand/FramedWork";
-import { IconButton } from "@/components/brand/IconButton";
+import { Glyph } from "@/components/brand/Glyph";
 import { LampBar } from "@/components/brand/LampDot";
-import { Mark } from "@/components/brand/Mark";
-import { Pill } from "@/components/brand/Pill";
+import { ModelMark } from "@/components/brand/ModelMark";
 import { Plaque } from "@/components/brand/Plaque";
-import { Segmented } from "@/components/brand/Segmented";
-import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { StreakDay, StreakWeek } from "@/components/brand/StreakDay";
-import { StripedBar } from "@/components/brand/StripedBar";
-import { Well } from "@/components/brand/Tile";
-import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
-import { Sparkline } from "@/components/brand/charts";
-import { FrameLink } from "@/components/shell/FrameLink";
-import { ScrollRow } from "@/components/shell/ScrollRow";
-import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
-import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
+import { FeedPost } from "@/components/gallery/FeedPost";
+import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { EngagementRow } from "@/components/social/EngagementRow";
+import { InnerTile } from "@/components/vision/InnerTile";
+import { PageFigure } from "@/components/vision/PageFigure";
+import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
+import { TextTabs } from "@/components/vision/TextTabs";
+import { PageLink as Link } from "@/lib/routing/PageLink";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO } from "@/lib/theme/type";
 
 import {
+  FeedBones,
+  HomeColumns,
+  HomeControl,
+  HomeLoadingView,
+  HomePrimary,
+  Rule,
+  SectionBones,
+  SquareButton,
+  ellipsis,
+  text,
+  useHomeLayout,
+} from "./HomeFrame";
+import {
   HOME_FILTERS,
-  KIND_LABEL,
-  frozenLabel,
-  isNewerThanSeen,
+  atHandle,
+  closesIn,
   matchesFilter,
+  runsLabel,
   shortAgo,
-  type HomeChallengeRow,
+  solutionsLabel,
+  weekMeta,
+  weekSummary,
+  type HomeAskPost,
+  type HomeBuildPost,
   type HomeCover,
-  type HomeFeedRow,
+  type HomeDraftRow,
+  type HomeEndCard,
+  type HomeFeedItem,
   type HomeFilter,
-  type HomeStreak,
+  type HomeMostRunRow,
+  type HomeRebuildPost,
+  type HomeReproNote,
+  type HomeRequestRow,
+  type HomeRunRow,
+  type HomeSessionRow,
+  type HomeSinceRow,
+  type HomeSinceTone,
+  type HomeWeek,
   type HomeWhereNextRow,
 } from "./homeModel";
-import { type PageFit } from "@/components/shell/siteFrameFit";
 
 export type HomeScope = "following" | "everyone";
 
-/** What a panel that loads on its own shows. `signed-out` is a state, not an error. */
+/** What a section that loads on its own shows. `signed-out` is a state, not an error. */
 export type Loadable<T> =
   | { status: "signed-out" }
   | { status: "loading" }
@@ -78,7 +89,8 @@ export type Loadable<T> =
 
 export interface HomeFeedProps {
   status: "loading" | "error" | "ready";
-  rows: readonly HomeFeedRow[];
+  /** What is shown: the items held back as new are not here. */
+  items: readonly HomeFeedItem[];
   hasMore: boolean;
   loadingMore: boolean;
   onMore: () => void;
@@ -87,798 +99,819 @@ export interface HomeFeedProps {
   error?: unknown;
 }
 
-export interface HomeViewProps {
-  fit?: PageFit;
-  /** The clock the times and the plaques read. The compare page freezes it. */
-  now: number;
-  scope: HomeScope;
-  onScopeChange: (scope: HomeScope) => void;
-  /** Builds confirmed in the last day; null until known. */
-  litToday: number | null;
+export interface HomeRoom {
   reproducedToday: number | null;
+  litToday: number | null;
   runsThisWeek: number | null;
-  /** The two run counts could not be read: the orbs' panel says so, in place of the orbs. */
-  orbsError?: PanelFailure;
-  feed: HomeFeedProps;
-  /** When this browser last loaded Home (epoch ms), or null on a first visit. */
-  seenAt: number | null;
-  challenges: Loadable<readonly HomeChallengeRow[]>;
-  /** Where the challenges panel's expand button goes. Omitted when no page shows the full view. */
-  thisWeekHref?: string;
-  streak: Loadable<HomeStreak>;
-  whereNext: Loadable<readonly HomeWhereNextRow[]>;
-  /** Navigation from a button (links are links). */
-  onNavigate: (to: string) => void;
+  /** The counts could not be read: the section says so in their place. */
+  failure?: PanelFailure;
+  /** The latest runs: the feed's own notes. */
+  runs: readonly HomeRunRow[];
 }
 
-const GALLERY = "/gallery";
-const HOW_PROOF_WORKS = "/about";
+export interface HomeViewProps {
+  /** The clock the ages and the plaques read. The dev page freezes it. */
+  now: number;
+
+  /* Your studio */
+  /** Since you were last here. Null: not drawn (the live page until SV-15). */
+  since: { meta: string; rows: readonly HomeSinceRow[] } | null;
+  drafts: Loadable<{ rows: readonly HomeDraftRow[]; total: number }>;
+  sessions: Loadable<{ rows: readonly HomeSessionRow[]; total: number }>;
+  onAddSession: (sessionId: string) => void;
+  week: Loadable<HomeWeek>;
+
+  /* the feed */
+  scope: HomeScope;
+  onScopeChange: (scope: HomeScope) => void;
+  filter: HomeFilter;
+  onFilterChange: (filter: HomeFilter) => void;
+  feed: HomeFeedProps;
+  /** Items newer than the last visit, held back until the pill is chosen. */
+  newCount: number;
+  onShowNew: () => void;
+  /** Signed once for the page: the posts' pictures and covers. */
+  srcByPath: MediaSrcMap;
+  /** Build ids whose post came within a screen of view. */
+  onPostsNear?: (buildIds: string[]) => void;
+  onMeToo: (bountyId: string) => void;
+  /** Two builds from Builds, under "You're up to date". */
+  endCards: readonly HomeEndCard[];
+
+  /* The room */
+  room: HomeRoom;
+  requests: Loadable<readonly HomeRequestRow[]>;
+  mostRun: Loadable<readonly HomeMostRunRow[]>;
+  whereNext: Loadable<readonly HomeWhereNextRow[]>;
+}
+
+const DRAFTS = "/drafts";
+const BUILDS = "/builds";
+const OPENBUILDS = "/openbuilds";
+const ACTIVITY = "/notifications";
 const SIGN_IN = "/login?redirect=/";
 
-const TAGLINE = ["Every AI build,", "hung with", "its proof."] as const;
-const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
-const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
+const mono = (px: number, color: string, extra: CSSProperties = {}): CSSProperties => ({ fontFamily: DM_MONO, fontSize: px, fontWeight: 400, lineHeight: "16px", color, ...extra });
 
-/* ── type ── */
-
-const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
-  fontFamily: FIGTREE,
-  fontSize: px,
-  fontWeight: weight,
-  lineHeight: "normal",
-  color,
+/** A row of a side column: a link, with a hairline under all but the last. */
+const rowLink = (last: boolean, extra: CSSProperties = {}): CSSProperties => ({
+  boxSizing: "border-box",
+  borderBottom: last ? "none" : `1px solid ${t.hairline}`,
+  color: t.text,
+  textDecoration: "none",
   ...extra,
 });
 
-const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
-
-/** A part of the aside: its rows, and a hairline under it when another follows. */
-const asidePart = (gap: number, below: number | null): CSSProperties => ({
-  display: "flex",
-  flexDirection: "column",
-  gap,
-  minWidth: 0,
-  ...(below === null ? null : { paddingBottom: below, borderBottom: `1px solid ${t.hairline}` }),
-});
-
-/** The picture in a frame: the signed cover, or the refined fallback sketch. */
-function Picture({ cover }: { cover: HomeCover }) {
-  return cover.src ? (
-    <img
-      src={cover.src}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-    />
-  ) : (
-    <CoverFallback seed={cover.seed} radius={2} sky={cover.sky} />
-  );
-}
-
-/* ── the hero ── */
-
-function ScopeControl({ scope, onChange }: { scope: HomeScope; onChange: (scope: HomeScope) => void }) {
+/** A link in the board's plain style: `--text`, `--text2` on a fine pointer's hover, ringed on focus. */
+function PlainLink({ to, style, children, ...rest }: { to: string; style?: CSSProperties; children: ReactNode; "aria-label"?: string; "data-testid"?: string }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <Segmented<HomeScope>
-      label="Whose builds"
-      size={28}
-      fontSize={12}
-      value={scope}
-      onChange={onChange}
-      items={[
-        { value: "following", label: "Following" },
-        { value: "everyone", label: "Everyone" },
-      ]}
-    />
+    <Link to={to} {...rest} {...handlers} style={{ color: state.hovered ? t.text2 : t.text, textDecoration: "none", borderRadius: r.chip, ...ring(state.focusVisible), ...style }}>
+      {children}
+    </Link>
   );
 }
 
-/** The lit count: a plain line with a 10×3 lamp bar before it, not a badge. */
-function LitLine({ litToday, phone }: { litToday: number | null; phone: boolean }) {
-  if (litToday === null) return null;
+/** The dot-grid well that stands where a cover has not arrived, or where there is none. */
+function Cover({ cover, height, width, eager = false }: { cover: HomeCover; height: number; width?: number; eager?: boolean }) {
+  const box: CSSProperties = {
+    display: "block",
+    boxSizing: "border-box",
+    width: width ?? "100%",
+    height,
+    borderRadius: r.control,
+    overflow: "hidden",
+    background: t.well,
+    backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
+    backgroundSize: "16px 16px",
+    border: `1px solid ${t.wellBorder}`,
+    flexShrink: 0,
+  };
+  return (
+    <span aria-hidden="true" style={box}>
+      {cover.src ? (
+        <img src={cover.src} alt="" loading={eager ? "eager" : "lazy"} decoding="async" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : null}
+    </span>
+  );
+}
+
+/* ═════════ your studio ═════════ */
+
+const SINCE_DOT: Record<HomeSinceTone, string> = { worked: t.evidence, failed: t.catBreakage, rebuild: t.text2, answer: t.text };
+
+export function SinceSection({ meta, rows, now }: { meta: string; rows: readonly HomeSinceRow[]; now: number }) {
+  return (
+    <section aria-label="Since you were last here">
+      <div style={{ marginBottom: 16 }}>
+        <SectionHead title="Since you were last here" meta={meta} headingLevel={2} />
+      </div>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
+        {rows.map((row, index) => {
+          const last = index === rows.length - 1;
+          return (
+            <li key={row.key} style={{ display: "grid", gridTemplateColumns: "16px 1fr auto", columnGap: 10, paddingBottom: last ? 0 : 14, position: "relative" }}>
+              {last ? null : <span aria-hidden="true" style={{ position: "absolute", left: 7, top: 14, bottom: 0, width: 1, background: t.hairline }} />}
+              <span aria-hidden="true" style={{ marginTop: 5, width: 9, height: 9, borderRadius: 5, background: SINCE_DOT[row.tone], boxShadow: last ? undefined : `0 0 0 3px ${t.surface}`, position: "relative" }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 500 }}>{row.title}</div>
+                <div style={text(12, 400, t.label)}>{row.detail}</div>
+              </div>
+              <span style={text(11.5, 400, t.label)}>{shortAgo(row.at, now)}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+function SectionFailure({ panel, failure }: { panel: string; failure: PanelFailure }) {
+  return <ErrorState panel={panel} onRetry={failure.onRetry} error={failure.error} />;
+}
+
+export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] }) {
+  if (drafts.status === "loading") return <SectionBones rows={3} height={48} what="your drafts" />;
+  const meta = drafts.status === "ready" ? `${drafts.data.total} ${drafts.data.total === 1 ? "draft" : "drafts"} · latest first` : undefined;
+  return (
+    <section aria-label="Continue editing">
+      <div style={{ marginBottom: 8 }}>
+        <SectionHead title="Continue editing" meta={meta} to={DRAFTS} openName="drafts" headingLevel={2} />
+      </div>
+      {drafts.status === "error" ? (
+        <SectionFailure panel="Continue editing" failure={drafts} />
+      ) : drafts.status === "ready" && drafts.data.rows.length > 0 ? (
+        drafts.data.rows.map((row, index) => (
+          <Link key={row.id} to={`/compose/${row.id}`} data-testid="home-draft-row" style={rowLink(index === drafts.data.rows.length - 1, { display: "flex", alignItems: "center", minHeight: 48 })}>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontWeight: 500, color: row.untitled ? t.text2 : t.text, ...ellipsis }}>{row.title}</span>
+              <span style={mono(10.5, t.label)}>{row.meta}</span>
+            </span>
+          </Link>
+        ))
+      ) : (
+        <EmptyState line="No drafts in progress." action={undefined} />
+      )}
+    </section>
+  );
+}
+
+export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["sessions"]; onAdd: (id: string) => void }) {
+  const phone = useIsPhone();
+  if (sessions.status === "loading") return <SectionBones rows={2} height={52} what="your sessions" />;
+  const meta = sessions.status === "ready" ? `${sessions.data.total} imported · newest first` : undefined;
+  return (
+    <section aria-label="Your sessions">
+      <div style={{ marginBottom: 8 }}>
+        <SectionHead title="Your sessions" meta={meta} to={DRAFTS} openName="sessions" headingLevel={2} />
+      </div>
+      {sessions.status === "error" ? (
+        <SectionFailure panel="Your sessions" failure={sessions} />
+      ) : sessions.status === "ready" && sessions.data.rows.length > 0 ? (
+        sessions.data.rows.map((row, index) => (
+          <div
+            key={row.id}
+            data-testid="home-session-row"
+            style={{ display: "grid", gridTemplateColumns: "20px 1fr 28px", columnGap: 10, alignItems: "center", minHeight: 52, borderBottom: index === sessions.data.rows.length - 1 ? "none" : `1px solid ${t.hairline}` }}
+          >
+            <span style={{ display: "inline-flex", color: t.text }}>
+              <ModelMark tool={row.model ? null : row.client} model={row.model} size={18} />
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", ...ellipsis }}>{row.title}</span>
+              <span style={{ display: "block", ...mono(10.5, t.label) }}>{row.meta}</span>
+            </span>
+            <SquareButton label="Add to a new build" onClick={() => onAdd(row.id)} phone={phone}>
+              <Glyph name="plus" size={12} />
+            </SquareButton>
+          </div>
+        ))
+      ) : (
+        <EmptyState line="No sessions yet." action={undefined} />
+      )}
+    </section>
+  );
+}
+
+const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
+
+function dayBar(state: HomeWeek["days"][number], today: boolean): CSSProperties {
+  const base: CSSProperties = { display: "block", width: "100%", height: 6, borderRadius: 2, boxSizing: "border-box" };
+  if (state === "active") return { ...base, background: t.text };
+  if (state === "frozen") return { ...base, background: t.text2 };
+  if (today) return { ...base, background: t.well, border: `1px dashed ${t.line}` };
+  return { ...base, background: t.control };
+}
+
+function ChallengeBar({ done, target, title }: { done: number; target: number; title: string }) {
+  const share = Math.max(0, Math.min(1, done / Math.max(1, target)));
   return (
     <span
-      data-testid="home-lit-badge"
-      style={{ ...text(12, 400, t.text2), ...tnum, display: "inline-flex", alignItems: "center", gap: 8 }}
+      role="progressbar"
+      aria-label={title}
+      aria-valuemin={0}
+      aria-valuemax={target}
+      aria-valuenow={Math.min(done, target)}
+      aria-valuetext={`${done} of ${target}`}
+      style={{ display: "block", marginTop: 8, height: 4, borderRadius: 2, background: t.control }}
     >
-      <LampBar width={10} />
-      {`${litToday.toLocaleString("en-GB")} ${phone ? "lit today" : "builds lit today"}`}
+      {share > 0 ? <span style={{ display: "block", width: `${Math.round(share * 100)}%`, height: 4, borderRadius: 2, background: done >= target ? t.text : t.evidence }} /> : null}
     </span>
   );
 }
 
-/** The tagline: one sentence for assistive technology, three indented lines on screen, the mark after "hung with". */
-function Tagline({ phone }: { phone: boolean }) {
-  /* UI-P97: a phone's hero is the mobile hero size, 32 (`--type-hero-size` at 767 and below). */
-  const size = phone ? 32 : 44;
+export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
+  if (week.status === "loading") return <SectionBones rows={3} height={40} what="your week" />;
+  if (week.status === "signed-out") return null;
   return (
-    <h1
-      style={{
-        margin: 0,
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: FIGTREE,
-        fontSize: size,
-        fontWeight: 500,
-        letterSpacing: "-0.04em",
-        lineHeight: 1.04,
-        color: t.text,
-      }}
-    >
-      <VisuallyHidden>{TAGLINE.join(" ")}</VisuallyHidden>
-      <span aria-hidden="true">{TAGLINE[0]}</span>
-      <span aria-hidden="true" style={{ paddingLeft: 48, display: "inline-flex", alignItems: "center", gap: 12 }}>
-        {TAGLINE[1]}
-        <Mark size={phone ? 26 : 30} />
-      </span>
-      <span aria-hidden="true" style={{ paddingLeft: 24 }}>
-        {TAGLINE[2]}
-      </span>
-    </h1>
-  );
-}
-
-/** The six works on the wall, where the board hangs them. The second is the one under the light. */
-const WALL: readonly { left: number; top: number; width: number; height: number }[] = [
-  { left: 24, top: 56, width: 92, height: 60 },
-  { left: 140, top: 40, width: 118, height: 80 },
-  { left: 278, top: 60, width: 92, height: 58 },
-  { left: 52, top: 144, width: 70, height: 54 },
-  { left: 156, top: 148, width: 100, height: 56 },
-  { left: 282, top: 140, width: 68, height: 66 },
-];
-const LIT_WORK = 1;
-const WALL_WIDTH = 400;
-/** A distance across the wall, as a share of its inside (the width less its 1px edges): at full width it is the board's
-    px, and on a narrower phone the works keep their places. */
-const across = (px: number) => `${(px / (WALL_WIDTH - 2)) * 100}%`;
-
-/** The hero's wall: brand artwork, never a build. Lit while any build was lit today. */
-function Wall({ lit }: { lit: boolean }) {
-  const room = useResolvedTheme();
-  return (
-    <Well
-      dots
-      style={{ position: "relative", width: WALL_WIDTH, maxWidth: "100%", height: 232, flexShrink: 0, overflow: "hidden" }}
-    >
-      <span aria-hidden="true" data-testid="home-wall" data-lit={lit ? "" : undefined} style={{ position: "absolute", inset: 0 }}>
-        <span style={{ position: "absolute", left: 12, right: 12, top: 16, height: 1, background: t.line }} />
-        {lit ? (
-          <span
-            style={{
-              position: "absolute",
-              left: across(132),
-              top: 32,
-              width: across(134),
-              height: 110,
-              clipPath: "polygon(40% 0, 60% 0, 100% 100%, 0 100%)",
-              background: PICTURE_LIGHT_CONE[room],
-            }}
-          />
-        ) : null}
-        {WALL.map((work, index) => (
-          <span key={index} style={{ position: "absolute", left: across(work.left), top: work.top, width: across(work.width) }}>
-            <FramedWork lit={lit && index === LIT_WORK} height={work.height}>
-              <CoverFallback seed={`home-wall-${index}`} radius={2} />
-            </FramedWork>
-          </span>
-        ))}
-      </span>
-    </Well>
-  );
-}
-
-function Hero({
-  scope,
-  onScopeChange,
-  litToday,
-  phone,
-  onNavigate,
-}: Pick<HomeViewProps, "scope" | "onScopeChange" | "litToday" | "onNavigate"> & { phone: boolean }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <ScopeControl scope={scope} onChange={onScopeChange} />
-        <span style={{ flexGrow: 1 }} />
-        <LitLine litToday={litToday} phone={phone} />
+    <section aria-label="Your week">
+      <div style={{ marginBottom: 14 }}>
+        <SectionHead title="Your week" meta={week.status === "ready" ? weekMeta(week.data.streak) : undefined} headingLevel={2} />
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 32 }}>
-        <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
-          <Tagline phone={phone} />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <Button size={32} fontSize={13} onClick={() => onNavigate(GALLERY)}>
-              Enter the gallery
-            </Button>
-            {phone ? null : (
-              <Button variant="secondary" size={32} fontSize={13} onClick={() => onNavigate(HOW_PROOF_WORKS)}>
-                How proof works
-              </Button>
-            )}
+      {week.status === "error" ? (
+        <SectionFailure panel="Your week" failure={week} />
+      ) : (
+        <>
+          <div role="img" aria-label={weekSummary(week.data.days)} data-testid="home-week-days" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, marginBottom: 16 }}>
+            {week.data.days.map((state, index) => {
+              const today = index === week.data.today;
+              return (
+                <div key={index} aria-hidden="true" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <span style={dayBar(state, today)} />
+                  <span style={text(10.5, today ? 500 : 400, today ? t.text : t.label)}>{DAY_LETTERS[index]}</span>
+                </div>
+              );
+            })}
           </div>
-        </div>
-        <Wall lit={(litToday ?? 0) > 0} />
-      </div>
-    </div>
+          {week.data.challenges.map((row, index) => (
+            <div key={row.slug} data-testid="weekly-challenge" style={{ padding: index === week.data.challenges.length - 1 ? "10px 0 0" : "10px 0", borderTop: `1px solid ${t.hairline}` }}>
+              <span style={{ display: "flex", justifyContent: "space-between", gap: 8, ...text(12.5, 500, t.text) }}>
+                <span>{row.title}</span>
+                <span style={{ color: t.label, fontWeight: 400, whiteSpace: "nowrap" }}>{`${row.done} / ${row.target}`}</span>
+              </span>
+              <ChallengeBar done={row.done} target={row.target} title={row.title} />
+            </div>
+          ))}
+        </>
+      )}
+    </section>
   );
 }
 
-/* ── the visitors' book ── */
-
-/** The kind's ink, on the pill's own fill: amber ink for a build, the agents hue, evidence, breakage. */
-const KIND_INK: Record<HomeFeedRow["kind"], string> = {
-  build: t.litInk,
-  rebuild: t.catAgents,
-  repro_note: t.evidence,
-  bounty: t.breakage,
-};
-
-function KindPill({ kind }: { kind: HomeFeedRow["kind"] }) {
-  return <Pill style={{ color: KIND_INK[kind] }}>{KIND_LABEL[kind]}</Pill>;
-}
-
-const DESKTOP_COLUMNS = "96px 24px minmax(0, 1fr) 56px 32px";
-
-/** A row of the book: hairline-separated; the newest since the last visit takes the tile fill instead. */
-const rowFrame = (highlight: boolean): CSSProperties => ({
-  minHeight: 60,
-  boxSizing: "border-box",
-  borderBottom: `1px solid ${highlight ? "transparent" : t.hairline}`,
-  textDecoration: "none",
-  color: "inherit",
-  ...(highlight ? { background: t.tile, borderRadius: 6, margin: "0 -12px", padding: "0 12px" } : null),
-});
-
-function Thumb({ row, highlight, width, height }: { row: HomeFeedRow; highlight: boolean; width: number; height: number }) {
+function StudioSignedOut() {
   return (
-    <FramedWork lit={highlight} width={width} height={height}>
-      <Picture cover={row.cover} />
-    </FramedWork>
-  );
-}
-
-function TitleLine({ row, now }: { row: HomeFeedRow; now: number }) {
-  return (
-    <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 8, rowGap: 4, minWidth: 0 }}>
-      <span style={text(13, 500, t.text, { whiteSpace: "nowrap" })}>{row.title}</span>
-      <Plaque build={row.plaque} size="row" now={now} />
-    </span>
-  );
-}
-
-function DesktopRow({ row, highlight, now }: { row: HomeFeedRow; highlight: boolean; now: number }) {
-  return (
-    <FrameLink
-      to={row.href}
-      data-testid="home-row"
-      data-kind={row.kind}
-      data-highlight={highlight ? "true" : undefined}
-      style={{
-        ...rowFrame(highlight),
-        display: "grid",
-        gridTemplateColumns: DESKTOP_COLUMNS,
-        alignItems: "center",
-        gap: 12,
-      }}
-    >
-      <span>
-        <KindPill kind={row.kind} />
-      </span>
-      <Avatar size={24} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, padding: "8px 0" }}>
-        <span style={text(12.5, 400, t.text2, ellipsis)}>{row.who}</span>
-        <TitleLine row={row} now={now} />
+    <section aria-label="Your studio">
+      <EmptyState line="Sign in to see your drafts, sessions and week." action={undefined} />
+      <div style={{ marginTop: 12 }}>
+        <HomePrimary href={SIGN_IN}>Sign in</HomePrimary>
       </div>
-      <Thumb row={row} highlight={highlight} width={56} height={36} />
-      <span style={text(11.5, 400, t.label, { ...tnum, textAlign: "right" })}>{shortAgo(row.at, now)}</span>
-    </FrameLink>
+    </section>
   );
 }
 
-function PhoneRow({ row, highlight, now }: { row: HomeFeedRow; highlight: boolean; now: number }) {
-  return (
-    <FrameLink
-      to={row.href}
-      data-testid="home-row"
-      data-kind={row.kind}
-      data-highlight={highlight ? "true" : undefined}
-      style={{
-        ...rowFrame(highlight),
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) 72px",
-        alignItems: "center",
-        gap: 12,
-        paddingTop: 12,
-        paddingBottom: 12,
-      }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Avatar size={24} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
-          <KindPill kind={row.kind} />
-          <span style={text(11.5, 400, t.label, tnum)}>· {shortAgo(row.at, now)}</span>
-        </div>
-        <span style={text(12.5, 400, t.text2, ellipsis)}>{row.who}</span>
-        <TitleLine row={row} now={now} />
-      </div>
-      <Thumb row={row} highlight={highlight} width={72} height={52} />
-    </FrameLink>
-  );
-}
-
-/** A book row before it has arrived: the same grid and height, bones where the content goes. */
-function RowSkeleton({ phone }: { phone: boolean }) {
-  if (phone) {
-    return (
-      <div
-        style={{
-          ...rowFrame(false),
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 72px",
-          alignItems: "center",
-          gap: 12,
-          padding: "12px 0",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Skeleton width={24} height={24} radius="50%" />
-            <Skeleton width={56} height={18} radius={4} />
-          </div>
-          <Skeleton width="55%" height={12} />
-          <Skeleton width="80%" height={14} />
-        </div>
-        <Skeleton width={72} height={52} radius={4} />
-      </div>
-    );
-  }
-  return (
-    <div style={{ ...rowFrame(false), display: "grid", gridTemplateColumns: DESKTOP_COLUMNS, alignItems: "center", gap: 12, height: 60 }}>
-      <Skeleton width={56} height={18} radius={4} />
-      <Skeleton width={24} height={24} radius="50%" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <Skeleton width="38%" height={12} />
-        <Skeleton width="62%" height={14} />
-      </div>
-      <Skeleton width={56} height={36} radius={4} />
-      <Skeleton width={22} height={10} style={{ justifySelf: "end" }} />
-    </div>
-  );
-}
-
-function BookBody({
-  feed,
-  filter,
-  seenAt,
-  now,
-  phone,
-  onNavigate,
-}: {
-  feed: HomeFeedProps;
-  filter: HomeFilter;
-  seenAt: number | null;
-  now: number;
-  phone: boolean;
-  onNavigate: (to: string) => void;
-}) {
-  const Row = phone ? PhoneRow : DesktopRow;
-  const list: CSSProperties = { display: "flex", flexDirection: "column", borderTop: `1px solid ${t.hairline}` };
-
-  if (feed.status === "loading") {
-    return (
-      <LoadingRegion what="the visitors’ book" data-testid="home-feed-loading" style={list}>
-        {Array.from({ length: phone ? 4 : 5 }, (_, i) => (
-          <RowSkeleton key={i} phone={phone} />
-        ))}
-      </LoadingRegion>
-    );
-  }
-
-  if (feed.status === "error") {
-    return <ErrorState panel="The visitors’ book" onRetry={feed.onRetry} error={feed.error} data-testid="home-feed-error" />;
-  }
-
-  if (feed.rows.length === 0) {
-    return <EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick: () => onNavigate(GALLERY) }} data-testid="home-feed-empty" />;
-  }
-
-  const visible = feed.rows.filter((row) => matchesFilter(row.kind, filter));
-  const highlightKey = isNewerThanSeen(visible[0]?.at, seenAt) ? visible[0]?.key : undefined;
-
+function Studio(props: HomeViewProps) {
+  if (props.drafts.status === "signed-out") return <StudioSignedOut />;
+  const parts: ReactNode[] = [];
+  if (props.since) parts.push(<SinceSection key="since" meta={props.since.meta} rows={props.since.rows} now={props.now} />);
+  parts.push(<ContinueSection key="drafts" drafts={props.drafts} />);
+  parts.push(<SessionsSection key="sessions" sessions={props.sessions} onAdd={props.onAddSession} />);
+  parts.push(<WeekSection key="week" week={props.week} />);
   return (
     <>
-      <div data-testid="home-feed" style={list}>
-        {visible.map((row) => (
-          <Row key={row.key} row={row} highlight={row.key === highlightKey} now={now} />
+      {parts.flatMap((part, index) => (index === 0 ? [part] : [<Rule key={`rule-${index}`} />, part]))}
+    </>
+  );
+}
+
+/** One column: the line above the feed that stands for the studio. */
+function DraftsLine({ drafts, sessions }: Pick<HomeViewProps, "drafts" | "sessions">) {
+  if (drafts.status !== "ready") return null;
+  const parts = [`${drafts.data.total} ${drafts.data.total === 1 ? "draft" : "drafts"} in progress`];
+  if (sessions.status === "ready") parts.push(`${sessions.data.total} ${sessions.data.total === 1 ? "session" : "sessions"}`);
+  return (
+    <Link
+      to={DRAFTS}
+      data-testid="home-drafts-line"
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 44, padding: "0 12px", boxSizing: "border-box", background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, color: t.text, textDecoration: "none" }}
+    >
+      <span>{parts.join(" · ")}</span>
+      <Glyph name="chev" size={12} />
+    </Link>
+  );
+}
+
+/* ═════════ the feed ═════════ */
+
+function KindButton({ label, pressed, onClick }: { label: string; pressed: boolean; onClick: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      {...handlers}
+      style={{
+        boxSizing: "border-box",
+        height: 24,
+        padding: "0 8px",
+        background: pressed ? t.control : "transparent",
+        border: pressed ? `1px solid ${t.controlBorder}` : "1px solid transparent",
+        borderRadius: r.chip,
+        ...text(12, 400, pressed || state.hovered ? t.text : t.text2, { lineHeight: "normal" }),
+        cursor: "pointer",
+        ...ring(state.focusVisible),
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<HomeViewProps, "scope" | "onScopeChange" | "filter" | "onFilterChange">) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", columnGap: 12, padding: "0 20px", borderBottom: `1px solid ${t.hairline}` }}>
+      <TextTabs<HomeScope>
+        label="Feed scope"
+        height={40}
+        gap={24}
+        rule={false}
+        value={scope}
+        onChange={onScopeChange}
+        tabs={[
+          { value: "following", label: "Following" },
+          { value: "everyone", label: "Everyone" },
+        ]}
+      />
+      <div role="group" aria-label="Kind" style={{ display: "flex", gap: 2, marginBottom: 6, padding: 2, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: r.control }}>
+        {HOME_FILTERS.map((item) => (
+          <KindButton key={item.value} label={item.label} pressed={filter === item.value} onClick={() => onFilterChange(item.value)} />
         ))}
       </div>
+    </div>
+  );
+}
+
+export function NewPill({ count, onShow }: { count: number; onShow: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  if (count <= 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 20px 0" }}>
+      <button
+        type="button"
+        data-testid="home-new-pill"
+        onClick={onShow}
+        {...handlers}
+        style={{ height: 28, padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
+      >
+        {`${count} new since you looked`}
+      </button>
+    </div>
+  );
+}
+
+/** An item of the feed: a hairline under it, and skipped by the renderer while it is off screen. */
+function FeedItemFrame({ height, children, ...rest }: { height: number; children: ReactNode; "data-kind": string; "data-testid"?: string }) {
+  return (
+    <div {...rest} style={{ borderBottom: `1px solid ${t.hairline}`, contentVisibility: "auto", containIntrinsicSize: `auto ${height}px` }}>
+      {children}
+    </div>
+  );
+}
+
+/** Calls `onNear` once, when the element comes within a screen of view. */
+function useNear<E extends Element>(id: string, onNear?: (ids: string[]) => void) {
+  const ref = useRef<E>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || !onNear || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          onNear([id]);
+        }
+      },
+      { rootMargin: "100% 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [id, onNear]);
+  return ref;
+}
+
+/** The author row of a rebuild or an ask: name, then "@handle <what> · age". */
+function AuthorRow({ name, line }: { name: string; line: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 24, marginBottom: 4, whiteSpace: "nowrap", minWidth: 0 }}>
+      <span style={text(15, 500, t.text, { fontWeight: 600, lineHeight: 1.4 })}>{name}</span>
+      <span style={{ ...text(14, 400, t.label, { lineHeight: 1.4 }), ...ellipsis, minWidth: 0 }}>{line}</span>
+    </div>
+  );
+}
+
+export function BuildItem({ item, srcByPath, now, onNear }: { item: HomeBuildPost; srcByPath: MediaSrcMap; now: number; onNear?: (ids: string[]) => void }) {
+  const ref = useNear<HTMLDivElement>(item.build.id, onNear);
+  return (
+    <FeedItemFrame height={640} data-kind="build" data-testid="home-feed-item">
+      <div ref={ref} style={{ padding: "0 20px" }}>
+        <FeedPost
+          build={item.build}
+          srcByPath={srcByPath}
+          makerHandle={item.maker.handle}
+          makerName={item.maker.name}
+          makerAvatar={item.maker.avatarUrl ?? null}
+          modelsUsed={item.modelsUsed}
+          plaqueBuild={item.plaque}
+          classification={item.classification}
+          engagement={item.engagement}
+          now={now}
+        />
+      </div>
+    </FeedItemFrame>
+  );
+}
+
+export function NoteItem({ item, now }: { item: HomeReproNote; now: number }) {
+  const handle = atHandle(item.runner.handle) ?? "Someone";
+  return (
+    <FeedItemFrame height={80} data-kind="repro_note" data-testid="home-feed-item">
+      <div style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr) auto", columnGap: 12, alignItems: "start", padding: "14px 20px" }}>
+        <span style={{ justifySelf: "center", display: "inline-flex" }}>
+          <Avatar size={28} userId={item.runner.id} name={item.runner.name} hue={item.runner.hue} src={item.runner.avatarUrl} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div>
+            <span style={{ fontWeight: 500 }}>{handle}</span> <span style={{ color: t.text2 }}>ran</span>{" "}
+            <PlainLink to={item.href} style={{ fontWeight: 500 }}>
+              {item.buildTitle}
+            </PlainLink>
+            {item.worked ? (
+              <span style={{ color: t.text2 }}>{`, and it worked${item.model ? ` on ${item.model}` : ""}`}</span>
+            ) : (
+              <>
+                <span style={{ color: t.catBreakage }}>, and it didn&rsquo;t work</span>
+                {item.model ? <span style={{ color: t.text2 }}>{` on ${item.model}`}</span> : null}
+              </>
+            )}
+          </div>
+          {item.note ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, ...text(12, 400, t.text2) }}>
+              {item.worked ? <LampBar width={8} /> : null}
+              {`"${item.note}"`}
+            </div>
+          ) : null}
+        </div>
+        <span style={text(11.5, 400, t.label)}>{shortAgo(item.at, now)}</span>
+      </div>
+    </FeedItemFrame>
+  );
+}
+
+/** The build line under a rebuild: its title and its Plaque. */
+function BuildLine({ title, href, plaque, now }: { title: string; href: string; plaque: HomeRebuildPost["plaque"]; now: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 6, marginTop: 12 }}>
+      <PlainLink to={href} style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>
+        {title}
+      </PlainLink>
+      <Plaque build={plaque} size="card" now={now} />
+    </div>
+  );
+}
+
+export function RebuildItem({ item, now, onNear }: { item: HomeRebuildPost; now: number; onNear?: (ids: string[]) => void }) {
+  const ref = useNear<HTMLDivElement>(item.build.id, onNear);
+  const source = atHandle(item.source.handle);
+  const handle = atHandle(item.maker.handle);
+  const age = shortAgo(item.at, now);
+  return (
+    <FeedItemFrame height={320} data-kind="rebuild" data-testid="home-feed-item">
+      <article ref={ref} aria-label={item.build.title} style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 20px 16px" }}>
+        <Avatar size={40} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
+        <div style={{ minWidth: 0 }}>
+          <AuthorRow name={item.maker.name} line={`${handle ? `${handle} ` : ""}rebuilt${age ? ` · ${age}` : ""}`} />
+          {item.note ? <p style={text(16, 400, t.text, { margin: 0, lineHeight: 1.55 })}>{item.note}</p> : null}
+          <div style={{ display: "grid", gridTemplateColumns: "88px minmax(0, 1fr)", columnGap: 12, marginTop: 12, padding: 10, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card }}>
+            <Cover cover={{ src: null }} height={58} />
+            <span style={{ minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2 }}>
+              <span style={text(11.5, 400, t.label)}>Rebuilt from</span>
+              <span style={{ fontWeight: 500, ...ellipsis }}>{item.source.title}</span>
+              {source ? <span style={text(12, 400, t.label)}>{source}</span> : null}
+            </span>
+          </div>
+          <BuildLine title={item.build.title} href={`/b2/${item.build.slug}`} plaque={item.plaque} now={now} />
+          {item.engagement ? (
+            <EngagementRow
+              variant="card"
+              withRebuild
+              build={{ id: item.build.id, slug: item.build.slug, title: item.build.title, rebuild_count: item.build.rebuild_count }}
+              counts={item.engagement.counts}
+              liked={item.engagement.liked}
+              saved={item.engagement.saved}
+              style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between" }}
+            />
+          ) : null}
+        </div>
+      </article>
+    </FeedItemFrame>
+  );
+}
+
+export function AskItem({ item, now, onMeToo }: { item: HomeAskPost; now: number; onMeToo: (bountyId: string) => void }) {
+  const handle = atHandle(item.maker.handle);
+  const age = shortAgo(item.at, now);
+  const facts = [item.solutions === null ? null : solutionsLabel(item.solutions), closesIn(item.closesAt, now) || null].filter(Boolean) as string[];
+  return (
+    <FeedItemFrame height={220} data-kind="bounty" data-testid="home-feed-item">
+      <article aria-label={item.title} style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 20px 16px" }}>
+        <Avatar size={40} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
+        <div style={{ minWidth: 0 }}>
+          <AuthorRow name={item.maker.name} line={`${handle ? `${handle} ` : ""}opened a step request${age ? ` · ${age}` : ""}`} />
+          <div style={{ padding: 14, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <span style={text(14, 500, t.text)}>{item.title}</span>
+              {item.reward ? <span style={text(20, 500, t.text, { letterSpacing: "-0.015em" })}>{item.reward}</span> : null}
+            </div>
+            <div style={{ marginTop: 2, ...text(12, 400, t.label) }}>
+              on{" "}
+              <PlainLink to={item.buildHref} style={{ color: t.text2 }}>
+                {item.buildTitle}
+              </PlainLink>
+              {facts.map((fact) => ` · ${fact}`).join("")}
+            </div>
+            <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+              <HomePrimary href={`/bounties/${item.bountyId}/solve`}>Solve it</HomePrimary>
+              {item.meToo ? (
+                <HomeControl pressed={item.meToo.pressed} onClick={() => onMeToo(item.bountyId)}>
+                  {item.meToo.count === null ? "Me too" : `Me too · ${item.meToo.count}`}
+                </HomeControl>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </article>
+    </FeedItemFrame>
+  );
+}
+
+export function FeedEnd({ cards, now }: { cards: readonly HomeEndCard[]; now: number }) {
+  return (
+    <div data-testid="home-feed-end">
+      <div style={{ padding: "28px 20px 8px", textAlign: "center" }}>
+        <div style={{ fontWeight: 500 }}>You&rsquo;re up to date</div>
+        <PlainLink to={BUILDS} style={{ ...text(12, 400, t.label), textDecoration: "none" }}>
+          More builds
+        </PlainLink>
+      </div>
+      {cards.length > 0 ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, padding: "12px 20px 0" }}>
+          {cards.map((card) => (
+            <Link key={card.id} to={card.href} style={{ display: "block", padding: 10, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, color: t.text, textDecoration: "none" }}>
+              <Cover cover={card.cover} height={110} />
+              <span style={{ display: "block", marginTop: 10, fontWeight: 500, ...ellipsis }}>{card.title}</span>
+              <span style={{ display: "flex", marginTop: 4 }}>
+                <Plaque build={card.plaque} size="card" now={now} />
+              </span>
+            </Link>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function FeedBody(props: HomeViewProps) {
+  const { feed, filter, now, srcByPath, onPostsNear, onMeToo, scope, onScopeChange } = props;
+  if (feed.status === "loading") return <FeedBones />;
+  if (feed.status === "error") return <ErrorState panel="The feed" onRetry={feed.onRetry} error={feed.error} data-testid="home-feed-error" style={{ padding: "16px 20px" }} />;
+  if (feed.items.length === 0 && props.newCount === 0) {
+    return (
+      <EmptyState
+        style={{ padding: "16px 20px" }}
+        line={scope === "following" ? "Nobody you follow has posted yet." : "Nothing has been posted yet."}
+        action={scope === "following" ? { label: "See everyone", onClick: () => onScopeChange("everyone") } : undefined}
+        data-testid="home-feed-empty"
+      />
+    );
+  }
+  const visible = feed.items.filter((item) => matchesFilter(item.kind, filter));
+  return (
+    <>
+      <div data-testid="home-feed">
+        {visible.map((item) =>
+          item.kind === "build" ? (
+            <BuildItem key={item.key} item={item} srcByPath={srcByPath} now={now} onNear={onPostsNear} />
+          ) : item.kind === "rebuild" ? (
+            <RebuildItem key={item.key} item={item} now={now} onNear={onPostsNear} />
+          ) : item.kind === "bounty" ? (
+            <AskItem key={item.key} item={item} now={now} onMeToo={onMeToo} />
+          ) : (
+            <NoteItem key={item.key} item={item} now={now} />
+          ),
+        )}
+      </div>
       {visible.length === 0 ? (
-        <p style={text(12, 400, t.text2, { margin: "12px 0 0" })}>
+        <p style={text(12, 400, t.text2, { margin: 0, padding: "16px 20px 0" })}>
           None of these among the latest.{feed.hasMore ? " Show more to look further back." : ""}
         </p>
       ) : null}
       {feed.hasMore ? (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
-          <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} disabled={feed.loadingMore} onClick={feed.onMore}>
-            {feed.loadingMore ? "Loading…" : "Show more"}
-          </Button>
+        <div style={{ display: "flex", justifyContent: "center", padding: "16px 20px 0" }}>
+          <HomeControl disabled={feed.loadingMore} onClick={feed.onMore}>
+            {feed.loadingMore ? "Loading" : "Show more"}
+          </HomeControl>
+        </div>
+      ) : (
+        <FeedEnd cards={props.endCards} now={now} />
+      )}
+    </>
+  );
+}
+
+function Feed(props: HomeViewProps) {
+  return (
+    <>
+      <FeedHead scope={props.scope} onScopeChange={props.onScopeChange} filter={props.filter} onFilterChange={props.onFilterChange} />
+      <NewPill count={props.newCount} onShow={props.onShowNew} />
+      <FeedBody {...props} />
+    </>
+  );
+}
+
+/* ═════════ the room ═════════ */
+
+function Figure({ value, lamp = false }: { value: number | null; lamp?: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, ...text(24, 500, t.text, { lineHeight: 1.1, letterSpacing: "-0.02em" }) }}>
+      {lamp ? <LampBar width={10} /> : null}
+      {value === null ? " " : value.toLocaleString("en-GB")}
+    </div>
+  );
+}
+
+const runChip = (worked: boolean): CSSProperties => ({
+  ...text(11.5, 400, worked ? t.evidence : t.catBreakage, { lineHeight: "18px" }),
+  padding: "0 6px",
+  borderRadius: r.chip,
+  background: worked ? t.evidenceFill : t.catBreakageFill,
+  whiteSpace: "nowrap",
+});
+
+export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
+  return (
+    <section aria-label="Today">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <PageFigure size="room" figure={room.reproducedToday === null ? " " : runsLabel(room.reproducedToday)} parts={[{ text: "Reproduced today" }]} />
+        <SectionChevron to={ACTIVITY} name="activity" />
+      </div>
+      {room.failure ? (
+        <div style={{ marginTop: 16 }}>
+          <SectionFailure panel="Run counts" failure={room.failure} />
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 16 }}>
+          <InnerTile style={{ padding: 12 }}>
+            <Figure value={room.litToday} lamp />
+            <div style={{ marginTop: 4, ...text(12, 400, t.label) }}>builds lit today</div>
+          </InnerTile>
+          <InnerTile style={{ padding: 12 }}>
+            <Figure value={room.runsThisWeek} />
+            <div style={{ marginTop: 4, ...text(12, 400, t.label) }}>runs this week</div>
+          </InnerTile>
+        </div>
+      )}
+      {room.runs.length > 0 ? (
+        <div style={{ marginTop: 14 }} data-testid="home-latest-runs">
+          {room.runs.map((run) => (
+            <Link
+              key={run.key}
+              to={run.href}
+              style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 36, borderTop: `1px solid ${t.hairline}`, color: t.text, textDecoration: "none" }}
+            >
+              <span style={runChip(run.worked)}>{run.worked ? "Worked" : "Didn’t"}</span>
+              <span style={{ minWidth: 0, ...ellipsis, ...text(12.5, 400, t.text) }}>
+                <span style={{ fontWeight: 500 }}>{run.buildTitle}</span>
+                {run.handle ? <span style={{ color: t.label }}>{` · ${atHandle(run.handle)}`}</span> : null}
+              </span>
+              <span style={text(11.5, 400, t.label)}>{shortAgo(run.at, now)}</span>
+            </Link>
+          ))}
         </div>
       ) : null}
-    </>
+    </section>
   );
 }
 
-function Book({
-  feed,
-  seenAt,
-  now,
-  phone,
-  onNavigate,
-}: Pick<HomeViewProps, "feed" | "seenAt" | "now" | "onNavigate"> & { phone: boolean }) {
-  const [filter, setFilter] = useState<HomeFilter>("all");
+export function RequestsSection({ requests }: { requests: HomeViewProps["requests"] }) {
+  if (requests.status === "loading") return <SectionBones rows={3} height={48} what="open requests" />;
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      {phone ? (
-        <>
-          <CardHead title="The visitors’ book" subtitle="Newest first" headingLevel={2} />
-          <ScrollRow gap={6} label="Show">
-            {HOME_FILTERS.map((item) => (
-              <FilterChip key={item.value} label={item.label} on={filter === item.value} onClick={() => setFilter(item.value)} />
-            ))}
-          </ScrollRow>
-        </>
-      ) : (
-        <CardHead
-          title="The visitors’ book"
-          subtitle="Builds, rebuilds, reproduction notes and asks — newest first"
-          headingLevel={2}
-          action={<Segmented<HomeFilter> label="Show" size={28} fontSize={12} value={filter} onChange={setFilter} items={HOME_FILTERS} />}
-        />
-      )}
-      <div style={{ marginTop: 8 }}>
-        <BookBody feed={feed} filter={filter} seenAt={seenAt} now={now} phone={phone} onNavigate={onNavigate} />
+    <section aria-label="Open requests">
+      <div style={{ marginBottom: 8 }}>
+        <SectionHead title="Open requests" meta="Most needed first" to={OPENBUILDS} openName="OpenBuilds" headingLevel={2} />
       </div>
-    </section>
-  );
-}
-
-/* ── the run counts ── */
-
-const runsUnit = (n: number) => (n === 1 ? "run" : "runs");
-
-function RunCounts({
-  reproducedToday,
-  runsThisWeek,
-  failure,
-}: {
-  reproducedToday: number | null;
-  runsThisWeek: number | null;
-  failure?: PanelFailure;
-}) {
-  const part = asidePart(0, 24);
-  if (failure) {
-    return (
-      <div style={part}>
-        <ErrorState panel="Run counts" onRetry={failure.onRetry} error={failure.error} data-testid="home-orbs-error" />
-      </div>
-    );
-  }
-
-  const grid: CSSProperties = { ...part, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 };
-  const bone = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <Skeleton width="70%" height={12} />
-      <Skeleton width={48} height={26} />
-    </div>
-  );
-  const figures = (
-    <>
-      {reproducedToday === null ? (
-        bone
-      ) : (
-        <Figure lamp label="Reproduced today" value={reproducedToday.toLocaleString("en-GB")} unit={runsUnit(reproducedToday)} />
-      )}
-      {runsThisWeek === null ? bone : <Figure label="This week" value={runsThisWeek.toLocaleString("en-GB")} unit="runs reported" />}
-    </>
-  );
-  if (reproducedToday === null || runsThisWeek === null) {
-    return (
-      <LoadingRegion what="the run counts" style={grid}>
-        {figures}
-      </LoadingRegion>
-    );
-  }
-  return (
-    <div data-testid="home-run-counts" style={grid}>
-      {figures}
-    </div>
-  );
-}
-
-/* ── challenges ── */
-
-/** Done is evidence; under way is the lamp's colour, whatever the challenge measures. */
-const barTone = (row: HomeChallengeRow) => (row.done >= row.target ? t.evidence : t.lit);
-
-function countText(row: HomeChallengeRow, phone: boolean): string {
-  if (phone) return `${row.done}/${row.target}`;
-  const done = row.done >= row.target;
-  const tail = done ? " · done" : row.xp ? ` · +${row.xp} xp` : "";
-  return `${row.done} / ${row.target}${tail}`;
-}
-
-const challengeRow = (first: boolean): CSSProperties => ({
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-  padding: "12px 0",
-  borderTop: first ? undefined : `1px solid ${t.hairline}`,
-});
-
-function ChallengeList({ rows, phone }: { rows: readonly HomeChallengeRow[]; phone: boolean }) {
-  return (
-    <div data-testid="home-challenges">
-      {rows.map((row, index) => (
-        <div key={row.slug} data-testid="weekly-challenge" style={challengeRow(index === 0)}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={text(12.5, 500, t.text, { flexGrow: 1, minWidth: 0 })}>{row.title}</span>
-            <span style={text(11.5, 400, t.label, { ...tnum, whiteSpace: "nowrap" })}>{countText(row, phone)}</span>
-          </div>
-          <StripedBar
-            value={(row.done / Math.max(1, row.target)) * 100}
-            colour={barTone(row)}
-            height={4}
-            label={row.title}
-            valueText={`${row.done} of ${row.target}`}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChallengesBody({
-  challenges,
-  phone,
-  onNavigate,
-}: {
-  challenges: HomeViewProps["challenges"];
-  phone: boolean;
-  onNavigate: (to: string) => void;
-}) {
-  if (challenges.status === "signed-out") {
-    return (
-      <EmptyState
-        line="Sign in to take this week's challenges."
-        action={{ label: "Sign in", onClick: () => onNavigate(SIGN_IN) }}
-        data-testid="home-challenges-signed-out"
-      />
-    );
-  }
-  if (challenges.status === "loading") {
-    return (
-      <LoadingRegion what="this week’s challenges" data-testid="home-challenges-loading">
-        {[0, 1, 2].map((i) => (
-          <div key={i} style={challengeRow(i === 0)}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, height: 15 }}>
-              <Skeleton width="58%" height={12} />
-              <Skeleton width={phone ? 28 : 72} height={11} />
-            </div>
-            <Skeleton height={4} radius={1} />
-          </div>
-        ))}
-      </LoadingRegion>
-    );
-  }
-  if (challenges.status === "error") {
-    return (
-      <ErrorState
-        panel="This week’s challenges"
-        onRetry={challenges.onRetry}
-        error={challenges.error}
-        style={{ paddingTop: 8 }}
-        data-testid="home-challenges-error"
-      />
-    );
-  }
-  return <ChallengeList rows={challenges.data} phone={phone} />;
-}
-
-function Challenges({
-  challenges,
-  thisWeekHref,
-  phone,
-  onNavigate,
-}: Pick<HomeViewProps, "challenges" | "thisWeekHref" | "onNavigate"> & { phone: boolean }) {
-  const expand =
-    !phone && thisWeekHref && challenges.status !== "signed-out" ? (
-      <IconButton icon={Maximize2} glyph="chev" label="Open this week" size={28} onClick={() => onNavigate(thisWeekHref)} />
-    ) : undefined;
-  return (
-    <section style={asidePart(8, 12)}>
-      <CardHead title="This week’s challenges" subtitle="Resets Monday 00:00 UTC" headingLevel={2} action={expand} />
-      <ChallengesBody challenges={challenges} phone={phone} onNavigate={onNavigate} />
-    </section>
-  );
-}
-
-/* ── the streak ── */
-
-function Streak({ streak, last, onNavigate }: { streak: HomeViewProps["streak"]; last: boolean; onNavigate: (to: string) => void }) {
-  const part = asidePart(16, last ? null : 24);
-
-  if (streak.status === "ready" && streak.data.count > 0) {
-    const { count, frozenUsed, week } = streak.data;
-    return (
-      <section style={part}>
-        <CardHead title={`${count}-day streak`} subtitle={frozenLabel(frozenUsed)} headingLevel={2} />
-        <StreakWeek data-testid="home-streak-week">
-          {week.map((state, index) => (
-            <StreakDay key={index} state={state} dayName={DAY_NAMES[index]} letter={DAY_LETTERS[index]} />
-          ))}
-        </StreakWeek>
-      </section>
-    );
-  }
-
-  if (streak.status === "loading") {
-    return (
-      <section style={part}>
-        <LoadingRegion what="your streak" data-testid="home-streak-loading" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <CardHead title="Streak" subtitle={" "} headingLevel={2} />
-          <div style={{ display: "flex", gap: 6 }}>
-            {DAY_LETTERS.map((_, index) => (
-              <div key={index} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <Skeleton width="100%" height={32} radius={6} />
-                <Skeleton width={8} height={11} radius={2} />
-              </div>
-            ))}
-          </div>
-        </LoadingRegion>
-      </section>
-    );
-  }
-
-  return (
-    <section style={part}>
-      <CardHead title="Streak" headingLevel={2} />
-      {streak.status === "error" ? (
-        <ErrorState panel="Streak" onRetry={streak.onRetry} error={streak.error} data-testid="home-streak-error" />
-      ) : (
-        <EmptyState
-          line="Run a build today to start a streak."
-          action={streak.status === "signed-out" ? { label: "Sign in", onClick: () => onNavigate(SIGN_IN) } : undefined}
-          data-testid="home-streak-empty"
-        />
-      )}
-    </section>
-  );
-}
-
-/* ── where next ── */
-
-const nextRow = (first: boolean): CSSProperties => ({
-  display: "flex",
-  alignItems: "center",
-  gap: 12,
-  minHeight: 52,
-  boxSizing: "border-box",
-  borderTop: first ? undefined : `1px solid ${t.hairline}`,
-  textDecoration: "none",
-  color: "inherit",
-});
-
-function WhereNext({ whereNext, onNavigate }: Pick<HomeViewProps, "whereNext" | "onNavigate">) {
-  let body: ReactNode;
-  if (whereNext.status === "loading") {
-    body = (
-      <LoadingRegion what="suggestions" data-testid="home-where-next-loading">
-        {[0, 1, 2].map((i) => (
-          <div key={i} style={nextRow(i === 0)}>
-            <div style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-              <Skeleton width="62%" height={13} />
-              <Skeleton width="40%" height={10} />
-            </div>
-            <Skeleton width={56} height={16} radius={2} />
-          </div>
-        ))}
-      </LoadingRegion>
-    );
-  } else if (whereNext.status === "error") {
-    body = <ErrorState panel="Where next" onRetry={whereNext.onRetry} error={whereNext.error} data-testid="home-where-next-error" />;
-  } else if (whereNext.status === "signed-out" || whereNext.data.length === 0) {
-    body = (
-      <EmptyState
-        line="Run a build this week and suggestions appear here."
-        action={
-          whereNext.status === "signed-out"
-            ? { label: "Sign in", onClick: () => onNavigate(SIGN_IN) }
-            : { label: "Enter the gallery", onClick: () => onNavigate(GALLERY) }
-        }
-        data-testid="home-where-next-empty"
-      />
-    );
-  } else {
-    body = (
-      <div data-testid="home-where-next">
-        {whereNext.data.map((row, index) => (
-          <FrameLink key={row.id} to={row.href} data-testid="home-where-next-row" style={nextRow(index === 0)}>
-            <span style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={text(12.5, 500, t.text, ellipsis)}>{row.title}</span>
-              <span style={text(10.5, 500, t.label, { ...ellipsis, letterSpacing: ".04em" })}>{row.reason}</span>
+      {requests.status === "error" ? (
+        <SectionFailure panel="Open requests" failure={requests} />
+      ) : requests.status === "ready" && requests.data.length > 0 ? (
+        requests.data.map((row, index) => (
+          <Link key={row.id} to={row.href} data-testid="home-request-row" style={rowLink(index === requests.data.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 48 })}>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontWeight: 500, ...ellipsis }}>{row.title}</span>
+              <span style={{ display: "block", ...text(12, 400, t.label), ...ellipsis }}>{row.detail}</span>
             </span>
-            <Sparkline values={row.spark} width={56} height={16} tone={t.text2} />
-          </FrameLink>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <section style={asidePart(8, null)}>
-      <CardHead title="Where next" subtitle="From what you ran this week" headingLevel={2} />
-      {body}
+            {row.reward ? <span style={{ fontWeight: 500 }}>{row.reward}</span> : null}
+          </Link>
+        ))
+      ) : (
+        <EmptyState line="No open requests right now." action={undefined} />
+      )}
     </section>
   );
 }
 
-/* ── the two layouts ── */
+const MOST_RUN_ROW: CSSProperties = { display: "grid", gridTemplateColumns: "16px 28px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 48 };
 
-function DesktopHome(props: HomeViewProps) {
-  const { now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, thisWeekHref, streak, whereNext, onNavigate } = props;
-  const stacked = !useMinWidth(BETWEEN.stack);
+export function MostRunSection({ mostRun }: { mostRun: HomeViewProps["mostRun"] }) {
+  if (mostRun.status === "loading") return <SectionBones rows={3} height={48} what="the most run builds" />;
   return (
-    <div
-      data-testid="home-view"
-      data-viewport="desktop"
-      style={trackRow(stacked, 48)}
-    >
-      <div style={mainStyle(stacked, { flex: "999 1 640px", minWidth: 0, display: "flex", flexDirection: "column", gap: 40 })}>
-        <Hero scope={scope} onScopeChange={onScopeChange} litToday={litToday} phone={false} onNavigate={onNavigate} />
-        <Book feed={feed} seenAt={seenAt} now={now} phone={false} onNavigate={onNavigate} />
+    <section aria-label="Most run this week">
+      <div style={{ marginBottom: 8 }}>
+        <SectionHead title="Most run this week" meta="By people who reproduced them" headingLevel={2} />
       </div>
-      <aside
-        style={asideStyle(stacked, {
-          flex: "1 0 300px",
-          maxWidth: 340,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-          paddingLeft: 32,
-          borderLeft: `1px solid ${t.hairline}`,
-        })}
-      >
-        <RunCounts reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} />
-        <Challenges challenges={challenges} thisWeekHref={thisWeekHref} phone={false} onNavigate={onNavigate} />
-        <Streak streak={streak} last={false} onNavigate={onNavigate} />
-        <WhereNext whereNext={whereNext} onNavigate={onNavigate} />
-      </aside>
-    </div>
+      {mostRun.status === "error" ? (
+        <SectionFailure panel="Most run this week" failure={mostRun} />
+      ) : mostRun.status === "ready" && mostRun.data.length > 0 ? (
+        mostRun.data.map((row, index) => (
+          <Link key={row.buildId} to={row.href} data-testid="home-most-run-row" style={rowLink(index === mostRun.data.length - 1, MOST_RUN_ROW)}>
+            <span style={mono(10.5, t.label)}>{index + 1}</span>
+            <Avatar size={28} userId={row.maker.id} name={row.maker.name} hue={row.maker.hue} src={row.maker.avatarUrl} />
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontWeight: 500, ...ellipsis }}>{row.title}</span>
+              {row.maker.handle ? <span style={text(12, 400, t.label)}>{atHandle(row.maker.handle)}</span> : null}
+            </span>
+            <span style={{ fontWeight: 500 }}>{row.count.toLocaleString("en-GB")}</span>
+          </Link>
+        ))
+      ) : (
+        <EmptyState line="Nothing run yet this week." action={undefined} />
+      )}
+    </section>
   );
 }
 
-function PhoneHome(props: HomeViewProps) {
-  const { now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, streak, onNavigate } = props;
+const WHERE_NEXT_ROW: CSSProperties = { display: "grid", gridTemplateColumns: "56px 1fr", columnGap: 10, alignItems: "center", minHeight: 56 };
+
+export function WhereNextSection({ whereNext }: { whereNext: HomeViewProps["whereNext"] }) {
+  if (whereNext.status === "signed-out") return null;
+  if (whereNext.status === "loading") return <SectionBones rows={2} height={56} what="suggestions" />;
   return (
-    <div
-      data-testid="home-view"
-      data-viewport="mobile"
-      style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}
-    >
-      <Hero scope={scope} onScopeChange={onScopeChange} litToday={litToday} phone onNavigate={onNavigate} />
-      <RunCounts reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} />
-      <Challenges challenges={challenges} phone onNavigate={onNavigate} />
-      <Book feed={feed} seenAt={seenAt} now={now} phone onNavigate={onNavigate} />
-      <Streak streak={streak} last onNavigate={onNavigate} />
-    </div>
+    <section aria-label="Where next">
+      <div style={{ marginBottom: 8 }}>
+        <SectionHead title="Where next" meta="From what you ran this week" headingLevel={2} />
+      </div>
+      {whereNext.status === "error" ? (
+        <SectionFailure panel="Where next" failure={whereNext} />
+      ) : whereNext.data.length > 0 ? (
+        whereNext.data.map((row, index) => (
+          <Link key={row.id} to={row.href} data-testid="home-where-next-row" style={rowLink(index === whereNext.data.length - 1, WHERE_NEXT_ROW)}>
+            <Cover cover={row.cover} height={40} />
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontWeight: 500, ...ellipsis }}>{row.title}</span>
+              <span style={{ display: "block", ...mono(10.5, t.label), ...ellipsis }}>{row.reason}</span>
+            </span>
+          </Link>
+        ))
+      ) : (
+        <EmptyState line="Run a build this week and suggestions appear here." action={undefined} />
+      )}
+    </section>
   );
 }
+
+function Room(props: HomeViewProps) {
+  const parts: ReactNode[] = [
+    <RoomSection key="room" room={props.room} now={props.now} />,
+    <RequestsSection key="requests" requests={props.requests} />,
+    <MostRunSection key="most" mostRun={props.mostRun} />,
+  ];
+  if (props.whereNext.status !== "signed-out") parts.push(<WhereNextSection key="next" whereNext={props.whereNext} />);
+  return <>{parts.flatMap((part, index) => (index === 0 ? [part] : [<Rule key={`rule-${index}`} />, part]))}</>;
+}
+
+/* ═════════ the page ═════════ */
 
 export function HomeView(props: HomeViewProps) {
-  const phone = useIsPhone();
-  return phone ? <PhoneHome {...props} /> : <DesktopHome {...props} />;
+  const layout = useHomeLayout();
+  // While the feed loads the page is its loading state, the route's Placeholder, block for block (SV-04 P5).
+  if (props.feed.status === "loading") return <HomeLoadingView />;
+  return (
+    <HomeColumns
+      layout={layout}
+      top={layout === "one" ? <DraftsLine drafts={props.drafts} sessions={props.sessions} /> : undefined}
+      left={<Studio {...props} />}
+      centre={<Feed {...props} />}
+      right={<Room {...props} />}
+    />
+  );
 }
 
 export default HomeView;

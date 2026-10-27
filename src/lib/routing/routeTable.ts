@@ -46,7 +46,7 @@ export interface RouteEntry {
   Placeholder: ComponentType;
   /** SV-04 P4: what the one frame does for this page. `wide`: no 1428 cap and no side padding; `SkipLink`: the first stop.
       SV-08 `board`: the vision boards' page area (no breadcrumb, the board's padding). */
-  frame?: { wide?: boolean; board?: boolean; SkipLink?: ComponentType };
+  frame?: { wide?: boolean; board?: boolean | "home"; SkipLink?: ComponentType };
 }
 
 
@@ -56,18 +56,49 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     pattern: SITE_NAV.home,
     signedIn: false,
     load: () => import("@/pages/site/home/HomePage"),
+    /* SV-10: the first screen's reads that need nothing else: the Everyone feed, the room's counts and lists, and a
+       signed-in reader's drafts. Same keys and functions as HomePage. */
     prefetch: async (_params, queryClient, { userId }) => {
-      const { getBuildFeed } = await import("@/lib/feed/getBuildFeed");
-      await queryClient.prefetchInfiniteQuery({
-        queryKey: ["feed", "getBuildFeed", "everyone", userId],
-        initialPageParam: undefined as string | undefined,
-        queryFn: ({ pageParam }) => getBuildFeed({ before: pageParam, onlyFollowing: false }),
-        getNextPageParam: (last) => last.nextBefore ?? undefined,
-        staleTime: LIST_STALE_MS,
-        pages: 1,
-      });
+      const [{ getBuildFeed }, signals, { listOpenBountyCards, OPEN_BOUNTIES_PAGE_SIZE }, { listDraftsWithSessions }, { weekStartUtc }] = await Promise.all([
+        import("@/lib/feed/getBuildFeed"),
+        import("@/lib/build/signals"),
+        import("@/lib/bounty"),
+        import("@/lib/build/drafts"),
+        import("@/lib/progress/weekly"),
+      ]);
+      const weekStart = weekStartUtc(new Date()).toISOString();
+      await Promise.all([
+        queryClient.prefetchInfiniteQuery({
+          queryKey: ["feed", "getBuildFeed", "everyone", userId],
+          initialPageParam: undefined as string | undefined,
+          queryFn: ({ pageParam }) => getBuildFeed({ before: pageParam, onlyFollowing: false }),
+          getNextPageParam: (last) => last.nextBefore ?? undefined,
+          staleTime: LIST_STALE_MS,
+          pages: 1,
+        }),
+        queryClient.prefetchQuery({ queryKey: ["build", "countLitToday"], queryFn: signals.countLitToday, staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({ queryKey: ["build", "countReproducedToday"], queryFn: () => signals.countReproducedToday(), staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({ queryKey: ["build", "countRunsThisWeek"], queryFn: () => signals.countRunsThisWeek(), staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({
+          queryKey: ["build", "listMostReproduced", weekStart],
+          queryFn: () => signals.listMostReproduced({ since: new Date(weekStart), limit: 3 }),
+          staleTime: SLOW_STALE_MS,
+        }),
+        queryClient.prefetchInfiniteQuery({
+          queryKey: ["bounty-board"],
+          initialPageParam: null as string | null,
+          queryFn: ({ pageParam }) => listOpenBountyCards({ limit: OPEN_BOUNTIES_PAGE_SIZE, before: pageParam }),
+          getNextPageParam: (last) => last.nextCursor ?? undefined,
+          staleTime: LIST_STALE_MS,
+          pages: 1,
+        }),
+        userId
+          ? queryClient.prefetchQuery({ queryKey: ["build", "listDraftsWithSessions", userId], queryFn: () => listDraftsWithSessions(userId), staleTime: LIST_STALE_MS })
+          : undefined,
+      ]);
     },
     Placeholder: HomePlaceholder,
+    frame: { board: "home" },
   },
   gallery: {
     key: "gallery",

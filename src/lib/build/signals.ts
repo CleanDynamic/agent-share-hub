@@ -395,6 +395,79 @@ export async function countRunsLastWeek(now: Date = new Date()): Promise<number>
   return countReproductionsSince("countRunsLastWeek", lastMonday, thisMonday);
 }
 
+/** SV-10: how many reproduction rows one window reads at most, to count runs per build. */
+export const MOST_REPRODUCED_ROWS_CAP = 1000;
+
+export interface MostReproduced {
+  buildId: string;
+  slug: string;
+  title: string;
+  creatorId: string;
+  maker: { handle: string | null; name: string | null; avatarUrl: string | null };
+  /** Reproductions recorded in the window. */
+  count: number;
+}
+
+/**
+ * SV-10: the builds run most since `since` (Home's "Most run this week"), most first, at most `limit`.
+ *
+ * TWO REQUESTS, NO SCHEMA CHANGE: the window's reproduction rows (`build_id` only, newest first, capped at
+ * MOST_REPRODUCED_ROWS_CAP) are counted here by build, then the top builds are read with their makers in one request.
+ * Only published and gallery builds are kept, as the other counts do. Counted on `created_at`, as countRunsThisWeek is:
+ * a re-run moves `confirmed_at`, not `created_at`.
+ *
+ * The plan to check (no index on `created_at` exists, so it is expected to be a sequential scan of the table, filtered;
+ * fine while the table is small, and the reason for the cap):
+ *
+ *   EXPLAIN (ANALYZE, BUFFERS)
+ *   SELECT build_id FROM public.build_reproductions
+ *   WHERE created_at >= date_trunc('week', now() AT TIME ZONE 'utc')
+ *   ORDER BY created_at DESC
+ *   LIMIT 1000;
+ */
+export async function listMostReproduced({ since, limit = 3 }: { since: Date; limit?: number }): Promise<MostReproduced[]> {
+  const { data, error } = await supabase
+    .from("build_reproductions")
+    .select("build_id")
+    .gte("created_at", since.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(MOST_REPRODUCED_ROWS_CAP);
+  if (error) throw buildLayerError("listMostReproduced", error);
+
+  const counts = new Map<string, number>();
+  for (const row of (data ?? []) as { build_id: string }[]) counts.set(row.build_id, (counts.get(row.build_id) ?? 0) + 1);
+  // A few more than asked for, so a draft among the leaders does not leave the list short.
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, Math.max(1, limit) * 2);
+  if (ranked.length === 0) return [];
+
+  const ids = ranked.map(([id]) => id);
+  const builds = await supabase
+    .from("builds")
+    .select("id, slug, title, creator_id, maker:profiles!builds_creator_id_fkey(username, display_name, avatar_url)")
+    .in("id", ids)
+    .in("status", SIGNAL_STATUSES)
+    .limit(ids.length);
+  if (builds.error) throw buildLayerError("listMostReproduced (builds)", builds.error);
+
+  type Row = { id: string; slug: string; title: string; creator_id: string; maker: { username: string | null; display_name: string | null; avatar_url: string | null } | null };
+  const byId = new Map(((builds.data ?? []) as unknown as Row[]).map((row) => [row.id, row]));
+  const out: MostReproduced[] = [];
+  for (const [id, count] of ranked) {
+    const row = byId.get(id);
+    if (!row) continue;
+    out.push({
+      buildId: id,
+      slug: row.slug,
+      title: row.title,
+      creatorId: row.creator_id,
+      maker: { handle: row.maker?.username ?? null, name: row.maker?.display_name ?? null, avatarUrl: row.maker?.avatar_url ?? null },
+      count,
+    });
+    if (out.length === limit) break;
+  }
+  return out;
+}
+
 /** 00:00 UTC of the day that holds `now`. */
 function startOfUtcDay(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));

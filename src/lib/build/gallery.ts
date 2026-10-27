@@ -1506,6 +1506,37 @@ async function feedRows(
   });
 }
 
+/** SV-10: a build post as Home's feed draws it: the card with its post, and what the feed row does not carry. */
+export interface GalleryPostBuild extends GalleryBuild {
+  models_used: string[];
+  /** builds.like_count and comment_count, so the post's action row has its numbers without a request of its own. */
+  engagement?: { likes: number; comments: number };
+}
+
+/**
+ * SV-10: the builds Home's feed shows as posts, by id: each with its `post_doc`, its first pictures in thread order, its
+ * classification and its counts. ONE REQUEST per call, in the order of the ids given; a build the reader cannot read, or
+ * that has gone, is left out. Home asks for the posts near the screen in batches, so `post_doc` is read only where it
+ * is about to be seen.
+ */
+export async function getGalleryBuildsByIds(ids: readonly string[]): Promise<GalleryPostBuild[]> {
+  const wanted = [...new Set(ids)].slice(0, FEED_ID_CHUNK);
+  if (wanted.length === 0) return [];
+
+  const { data, error } = await withFeedEmbeds(
+    feedTable("builds").select(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`).in("id", wanted),
+  ).limit(wanted.length);
+  if (error) throw buildLayerError("getGalleryBuildsByIds", error);
+
+  const byId = new Map(
+    ((data ?? []) as unknown as (GalleryRow & { models_used: string[] | null } & EngagementColumns)[]).map((row) => [row.id, row]),
+  );
+  return wanted.flatMap((id) => {
+    const row = byId.get(id);
+    return row ? [{ ...toGalleryBuild(row), models_used: row.models_used ?? [], engagement: engagementOf(row) }] : [];
+  });
+}
+
 /**
  * The Model menu's numbers: how many gallery builds are reproduced on each
  * version, and how many there are.
