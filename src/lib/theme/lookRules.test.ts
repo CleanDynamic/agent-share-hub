@@ -1070,6 +1070,18 @@ export const CA03_FILES: readonly string[] = [
   "src/hooks/useComposeBuild.publish.test.tsx",
   "src/pages/site/compose/sv07Backend.ts",
   "e2e/audit/composer-sv07.spec.ts",
+
+  // SV-09
+  "src/components/vision/PageFigure.tsx",
+  "src/components/vision/SectionHead.tsx",
+  "src/components/vision/TypeChip.tsx",
+  "src/dev/fixtures/vision/library.ts",
+  "src/lib/routing/placeholders.tsx",
+  "src/pages/dev/VisionLibrary.tsx",
+  "src/pages/site/library/LibraryFrame.tsx",
+  "src/pages/site/library/LibraryView.test.tsx",
+  "src/pages/site/library/LibraryView.tsx",
+  "src/pages/site/library/libraryModel.ts",
 ];
 
 /**
@@ -1368,6 +1380,36 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 10 is not in SPACE_REFINED",
     text: `gap: 10, fontWeight: 500 }}>`,
     why: "SV-08: the Drafts board's Start a new build slot puts its plus and label 10 apart.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<nav aria-label="Kinds" style={{ marginTop: 28 }}>`,
+    why: "SV-09: the Library board starts its kinds 28 below the page head.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<p style={{ ...small, margin: "10px 0 0" }}>Ordered by your last use</p>`,
+    why: "SV-09: the Library board's \"Ordered by your last use\" sits 10 under the collections.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `const th: CSSProperties = { fontWeight: 400, padding: "0 12px 10px 0"`,
+    why: "SV-09: the Library board's table heads sit 10 above their hairline.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `style={{ ...th, padding: "0 0 10px", textAlign: "right"`,
+    why: "SV-09: the Library board's table heads sit 10 above their hairline.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<h2 style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 14`,
+    why: "SV-09: the Library board's selected item puts its title 10 under its chip.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `marginTop: 6, padding: "8px 10px", ...WELL`,
+    why: "SV-09: the Library board's note field is padded 8px 10px.",
   },
   {
     rule: "spacing 72 is not in SPACE_REFINED",

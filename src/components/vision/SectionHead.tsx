@@ -30,7 +30,8 @@ export interface SectionHeadProps {
   headingLevel?: 1 | 2 | 3 | 4;
 }
 
-function Chevron({ to, name }: { to: string; name: string }) {
+/** The chevron alone, for a head drawn another way (SV-09: the Library's changes figure). */
+export function SectionChevron({ to, name }: { to: string; name: string }) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
@@ -85,7 +86,7 @@ export function SectionHead({ title, meta, to, openName, headingLevel }: Section
           <div style={{ marginTop: 2, fontSize: 12, fontWeight: 400, lineHeight: "normal", color: t.label }}>{meta}</div>
         ) : null}
       </div>
-      {to ? <Chevron to={to} name={name} /> : null}
+      {to ? <SectionChevron to={to} name={name} /> : null}
     </div>
   );
 }
