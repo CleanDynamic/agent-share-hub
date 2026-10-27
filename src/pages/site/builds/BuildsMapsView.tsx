@@ -259,7 +259,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
         </span>
       </div>
 
-      {open && panel ? <div style={{ marginTop: 24 }}>{panel}</div> : null}
+      {open && panel ? <div style={{ marginTop: 24, maxWidth: 256 }}>{panel}</div> : null}
 
       {notice ? <div style={{ marginTop: 24 }}>{notice}</div> : null}
 

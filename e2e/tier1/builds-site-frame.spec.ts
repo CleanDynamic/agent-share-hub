@@ -60,3 +60,38 @@ test.describe("no horizontal scroll", () => {
     }
   }
 });
+
+/* SV-12: the Maps view is its own page shape (the board draws no filter column): the head, one row of controls, the
+   grid. It needs no data either: cards, nothing or a refused read all leave the frame and the head. */
+test.describe("/builds?view=maps in the site frame", () => {
+  async function openMaps(page: Page, viewport?: number, theme: (typeof THEMES)[number] = "noon") {
+    await page.addInitScript((choice) => {
+      try {
+        window.localStorage.setItem("bg-theme", choice);
+      } catch {
+        /* private window: the default theme is a fine fallback for a layout check */
+      }
+    }, theme);
+    if (viewport) await page.setViewportSize({ width: viewport, height: 900 });
+    await page.goto("/builds?frame=site&view=maps");
+    await expect(page.getByTestId("site-frame")).toBeVisible();
+    // The page, or its loading state while the read is out: both draw the head and the switch.
+    await expect(page.locator('main#main [data-testid="builds-maps"], main#main [data-testid="builds-loading"]').first()).toBeVisible();
+  }
+
+  test("draws one h1, the view switch with Maps current, and no filter column", async ({ page }) => {
+    await openMaps(page);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    const views = page.getByRole("navigation", { name: "View" });
+    await expect(views.getByRole("link", { name: "Maps" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("complementary", { name: "Filters" })).toHaveCount(0);
+  });
+
+  for (const viewport of SWEEP) {
+    test(`does not move sideways at ${viewport}px`, async ({ page }) => {
+      await openMaps(page, viewport, "dusk");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+    });
+  }
+});

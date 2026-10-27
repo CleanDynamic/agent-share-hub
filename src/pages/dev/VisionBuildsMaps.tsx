@@ -6,8 +6,10 @@
 import { useEffect, useState } from "react";
 
 import { visionBuildsMapsProps } from "@/dev/fixtures/vision/builds-maps";
+import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { SiteFrameView } from "@/components/shell/SiteFrame";
+import { BuildsFiltersView } from "@/pages/site/builds/BuildsFiltersView";
 import BuildsMapsView, { type MapsDirection } from "@/pages/site/builds/BuildsMapsView";
 
 import { devChrome } from "./frameChrome";
@@ -37,7 +39,7 @@ export default function VisionBuildsMaps({ viewport = "desktop", state = "popula
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
       <SiteFrameView viewport={viewport} fit="board" board {...devChrome({ theme, current: "gallery", trail: [{ label: "Home", href: "/" }, { label: "Builds" }], dockCurrent: null })}>
-        <BuildsMapsView {...visionBuildsMapsProps({ direction, onDirection: setDirection })} />
+        <BuildsMapsView {...visionBuildsMapsProps({ direction, onDirection: setDirection, panel: <BuildsFiltersView {...visionBuildsTableProps().filters} collapsed={false} /> })} />
       </SiteFrameView>
     </div>
   );
