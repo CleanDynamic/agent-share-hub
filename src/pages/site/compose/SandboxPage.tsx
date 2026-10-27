@@ -109,7 +109,7 @@ import { SessionMapPanel } from "./SessionMapPanel";
 import { makerMapOf, type MapSettings } from "@/lib/build/making";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
+import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, repeatsOf, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { refGroups, refLookup } from "@/lib/build/postRefs";
@@ -319,7 +319,8 @@ function SandboxPageBody() {
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
-      prompts: all.filter((step) => step.kind === "prompt").length,
+      // SV-07 P7: a Summary tile is no prompt.
+      prompts: all.filter((step) => step.kind === "prompt" && !step.summary).length,
       files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
@@ -1057,7 +1058,9 @@ function SandboxPageBody() {
     [prompts, sessionToWrite],
   );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
-  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now(), buildId ?? null), [sessions.library, adding, buildId]);
+  /* SV-07 P7: the same chat imported again says which session it repeats. */
+  const repeats = useMemo(() => repeatsOf(sessions.sessions, groups), [sessions.sessions, groups]);
+  const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now(), buildId ?? null, repeats), [sessions.library, adding, buildId, repeats]);
   const unfinishedRows = useMemo(() => unfinishedSources(sessions.unfinished, Date.now()), [sessions.unfinished]);
 
   /* ── Details (UI-P66) ── */
@@ -2484,7 +2487,7 @@ function SandboxPageBody() {
       <AddSystemPromptDialog
         open={addSystemPromptOpen}
         onOpenChange={setAddSystemPromptOpen}
-        prompts={flatten(steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions")).map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }))}
+        prompts={flatten(steps).filter((step) => step.kind === "prompt" && !step.summary && !step.id.endsWith(":instructions")).map((step) => ({ id: step.id, label: `${step.number} · ${step.title ?? step.defaultTitle}` }))}
         session={currentSession}
         onAdd={(input) => void stepOf.sourceTile(ADDED.systemPrompt)((session) => prompts.addSystemPromptTile({ ...input, session }))}
       />

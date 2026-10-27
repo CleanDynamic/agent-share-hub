@@ -94,6 +94,47 @@ export interface SourceLibraryItem {
   createdAt: string;
   /** CA-14 P5: how many drafts hold it, this one included. */
   draftCount: number;
+  /** SV-07 P7: the session of this build it has the same prompts as (the same chat imported again), when it has. */
+  sameAs?: number;
+}
+
+/** SV-07 P7: what a repeated chat's row and its tiles say. */
+export const REPEAT_COPY = {
+  sameAs: (number: number) => `Same prompts as Session ${number}`,
+  alsoIn: (number: number) => `Also in Session ${number}`,
+} as const;
+
+/**
+ * SV-07 P7: the build's imported sessions by the transcript each came from, to its number: one Map, built once per change of
+ * the build, so a library row is told it repeats a session by one lookup, never by comparing it with every session.
+ */
+export function repeatsOf(inBuild: readonly Pick<SessionSummary, "id" | "contentHash">[], groups: readonly SessionGroup[]): Map<string, number> {
+  const numbers = new Map(groups.map((group) => [groupKey(group), group.number]));
+  const out = new Map<string, number>();
+  for (const session of inBuild) {
+    const number = numbers.get(session.id);
+    if (session.contentHash && number && !out.has(session.contentHash)) out.set(session.contentHash, number);
+  }
+  return out;
+}
+
+/**
+ * SV-07 P7: the tiles of a session whose prompts, joined, are the same as an earlier session's, to that session's number. One
+ * Map from a session's joined prompt text to its number.
+ */
+export function repeatedTiles(runs: readonly { head: { key: string; number: number } | null; steps: readonly Pick<Step, "id" | "kind" | "text">[] }[]): Map<string, number> {
+  const first = new Map<string, number>();
+  const out = new Map<string, number>();
+  for (const run of runs) {
+    if (!run.head) continue;
+    const prompts = run.steps.filter((step) => step.kind === "prompt");
+    if (prompts.length === 0) continue;
+    const joined = prompts.map((step) => step.text.trim()).join("\n\u0000\n");
+    const earlier = first.get(joined);
+    if (earlier === undefined) first.set(joined, run.head.number);
+    else for (const step of prompts) out.set(step.id, earlier);
+  }
+  return out;
 }
 
 const NO_SESSION_PARTS = { meta: {}, workstreams: [] };
@@ -196,12 +237,14 @@ export function sourceSessions(
   };
   const pickTool = (id: string): SourceSession["pickTool"] =>
     toolLabel(clients.get(id)) ? undefined : { value: sessionTools[id] ?? null };
-  const prompts = flatten(steps).filter((step) => step.kind === "prompt");
+  // SV-07 P7: a Summary tile is listed and counted as no prompt, but it is one of the session's turns that came in.
+  const turns = flatten(steps).filter((step) => step.kind === "prompt");
   // CA-04 P1: an old build's implicit group (its steps before any session) has no row.
   const grouped = shownGroups(groups).map((group) => {
     const key = groupKey(group);
     const kind = groupKind(group);
-    const mine = prompts.filter((step) => group.stepNumbers.includes(step.number) || (kind === "import" && step.sessionId === group.sessionId));
+    const came = turns.filter((step) => group.stepNumbers.includes(step.number) || (kind === "import" && step.sessionId === group.sessionId));
+    const mine = came.filter((step) => !step.summary);
     // `sessionGroups` has already turned the client and the model into their labels.
     const model = group.model;
     const when = kind === "legacy" ? "" : shortDate(group.startedAt);
@@ -212,7 +255,7 @@ export function sourceSessions(
       detail: [model, when].filter(Boolean).join(" · "),
       date: when,
       ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
-      ...(kind === "import" && group.sessionId ? short(group.sessionId, mine.length) : null),
+      ...(kind === "import" && group.sessionId ? short(group.sessionId, came.length) : null),
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
       ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
       ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
@@ -305,7 +348,7 @@ export function alsoInLine(draftIds: readonly string[], buildId: string | null |
  * ones marked expired. None is hidden and "expired" is never shown. One already in this draft says so; one in other
  * drafts keeps its + button and says where else it is.
  */
-export function librarySources(library: readonly SessionSummary[], adding: ReadonlySet<string>, now: number, buildId: string | null = null): SourceLibraryItem[] {
+export function librarySources(library: readonly SessionSummary[], adding: ReadonlySet<string>, now: number, buildId: string | null = null, repeats: ReadonlyMap<string, number> = new Map()): SourceLibraryItem[] {
   return library.map((session) => {
     const ids = session.draftIds ?? (session.buildId ? [session.buildId] : []);
     const date = shortDate(session.createdAt) || sessionDate(session.createdAt, now);
@@ -326,6 +369,7 @@ export function librarySources(library: readonly SessionSummary[], adding: Reado
       model: session.modelName,
       createdAt: session.createdAt,
       draftCount: ids.length,
+      ...(session.contentHash && repeats.has(session.contentHash) && !(buildId !== null && ids.includes(buildId)) ? { sameAs: repeats.get(session.contentHash) as number } : null),
     };
   });
 }

@@ -42,7 +42,7 @@ import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { fullText } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
-import { libraryName, REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
+import { libraryName, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
@@ -345,6 +345,7 @@ function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibra
         <span {...fullText(libraryName(item))} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{libraryName(item)}</span>
         <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
         {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
+        {item.sameAs ? <span data-testid="same-prompts" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{REPEAT_COPY.sameAs(item.sameAs)}</span> : null}
       </span>
       {item.inThisDraft ? (
         <span style={{ ...text(11.5, 400, t.label), flexShrink: 0 }}>{SOURCES_COPY.inThisDraft}</span>

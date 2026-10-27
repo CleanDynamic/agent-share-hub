@@ -252,7 +252,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
 function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
   const group = ctx.groups.find((candidate) => groupKey(candidate) === source.key);
   const real = !source.key.startsWith("typed-");
-  const mine = flatten(ctx.steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions") && (real ? step.sessionId === source.key : source.prompts.some((p) => p.id === step.id)));
+  const mine = flatten(ctx.steps).filter((step) => step.kind === "prompt" && !step.summary && !step.id.endsWith(":instructions") && (real ? step.sessionId === source.key : source.prompts.some((p) => p.id === step.id)));
 
   let checklist: ChecklistRow[];
   let total: number | null;
@@ -416,7 +416,7 @@ function sourceView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
   };
   if (step.kind === "system_prompt") {
-    const prompts = flatten(ctx.steps).filter((candidate) => candidate.kind === "prompt" && !candidate.id.endsWith(":instructions") && !candidate.inside);
+    const prompts = flatten(ctx.steps).filter((candidate) => candidate.kind === "prompt" && !candidate.summary && !candidate.id.endsWith(":instructions") && !candidate.inside);
     return { ...base, kind: "system_prompt", appliesTo: step.systemPrompt?.appliesTo ?? 0, prompts: prompts.map((prompt) => ({ id: prompt.id, label: `${prompt.number} ${stepTitle(prompt)}` })), session: step.session ?? null };
   }
   return { ...base, kind: step.kind === "dataset" ? "dataset" : "repo" } as DatasetView | RepoView;

@@ -25,6 +25,8 @@ import type { TranscriptProposal, TranscriptSourceRef } from "./intake";
 import { isTypedSession, patchMaking, refreshMakingStats, sessionsMetaOf, setSessionMeta, type SessionMeta } from "./making";
 import { reorderNodes } from "./nodes";
 import { planLayout } from "./sessionEdit";
+import { isSessionSummary } from "./summaryTurn";
+import { firstWords } from "./graph";
 import { defaultWorkstream, orderWithNewSession, workstreamKeyOf } from "./workstreams";
 import { storedWorkstreamsOf } from "./making";
 import { getSessionOrder, setCollapsed, setSessionOrder } from "./sessionLayout";
@@ -65,6 +67,17 @@ export function promptsOfProposal(proposal: TranscriptProposal): PromptTile[] {
     .filter((event) => event.kind === "prompt")
     .sort((a, b) => a.ordinal - b.ordinal)
     .map((event) => ({ text: event.payload.text, reply: event.payload.response_summary?.trim() || null, sourceRef: event.source_ref }));
+}
+
+/**
+ * SV-07 P7: a new draft's title: the one the parser proposed, unless that is Claude Code's summary of an earlier session, which
+ * names nothing; then the first real prompt's opening words. "Untitled build" when there are none.
+ */
+export function draftTitleOf(proposed: string | null | undefined, prompts: readonly Pick<PromptTile, "text">[]): string {
+  const given = proposed?.trim();
+  if (given && !isSessionSummary(given)) return given;
+  const first = prompts.find((prompt) => prompt.text.trim() && !isSessionSummary(prompt.text));
+  return first ? firstWords(first.text, 8) || UNTITLED : UNTITLED;
 }
 
 /** A session with more prompts than `COLLAPSE_OVER` is added collapsed. */
@@ -182,7 +195,7 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
 
   const isNew = target.kind === "new";
   const buildId = isNew
-    ? (await createBuild({ title: proposal.summary.proposed_title?.value?.trim() || UNTITLED })).id
+    ? (await createBuild({ title: draftTitleOf(proposal.summary.proposed_title?.value, prompts) })).id
     : await verifyDraft(target.buildId);
 
   const written: string[] = [];

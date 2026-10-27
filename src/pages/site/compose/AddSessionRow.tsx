@@ -24,7 +24,7 @@ import { TextButton } from "./composeControls";
 import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
-import { draftNote, groupLibrary, openingWords, type SourceLibraryItem } from "./sourcesModel";
+import { draftNote, groupLibrary, openingWords, REPEAT_COPY, type SourceLibraryItem } from "./sourcesModel";
 import { FLOATING_Z } from "./ToolPicker";
 
 export const ADD_SESSION_COPY = {
@@ -117,7 +117,8 @@ function Choice({ title, line, onPick, phone, forward = false }: { title: string
 function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: boolean; onPick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const here = item.inThisDraft;
-  const note = draftNote(item);
+  // SV-07 P7: the same chat imported again says which session it repeats.
+  const note = item.sameAs && !here ? REPEAT_COPY.sameAs(item.sameAs) : draftNote(item);
   const opening = openingWords(item.firstPrompt);
   const second = [item.appKnown ? null : item.model, item.date, `${item.promptCount} ${item.promptCount === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · ");
   return (

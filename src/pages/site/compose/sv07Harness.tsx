@@ -102,15 +102,20 @@ export function slowBackend(): Delay[] {
   ];
 }
 
+/** SV-07 P7: the first chat imported a second time: the same transcript (its hash), a day older, so it lists after it. */
+export const TWIN = { id: "0e0e0e0e-0000-4000-8000-000000000199", of: CHATS[0] };
+
 export function seed(rows: Record<string, Row[]>) {
   const template = rows.import_sessions[0];
-  for (const chat of CHATS) {
+  const chat = (id: string, name: string, created: string) => {
     const proposal = JSON.parse(JSON.stringify(template.proposal)) as { events: { payload: { text: string }; source_ref: { session_id: string } }[]; summary: { session_id: string } };
-    proposal.events[0].payload.text = `Make the ${chat.name.toLowerCase()} for the bakery.`;
-    proposal.events[0].source_ref.session_id = chat.id;
-    proposal.summary.session_id = chat.id;
-    rows.import_sessions.push({ ...template, id: chat.id, client: "claude", status: "parsed", proposal, created_at: "2026-10-10T10:00:00Z" });
-  }
+    proposal.events[0].payload.text = `Make the ${name.toLowerCase()} for the bakery.`;
+    proposal.events[0].source_ref.session_id = id;
+    proposal.summary.session_id = id;
+    rows.import_sessions.push({ ...template, id, client: "claude", status: "parsed", proposal, created_at: created, content_hash: `hash-${name.toLowerCase()}` });
+  };
+  for (const { id, name } of CHATS) chat(id, name, "2026-10-10T10:00:00Z");
+  chat(TWIN.id, TWIN.of.name, "2026-10-09T10:00:00Z");
 }
 
 export const samples: Sample[] = [];
