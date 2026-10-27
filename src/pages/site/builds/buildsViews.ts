@@ -20,6 +20,8 @@ export const BuildsClassificationView = lazy(LOAD.classification);
 export function prefetchView(view: GalleryViewMode): void {
   if (view === "table") return;
   void LOAD[view]().catch(() => undefined);
+  // SV-12: the Maps are read by their own chunk of the data layer; it comes with the view.
+  if (view === "maps") void import("@/lib/build/buildsMaps").catch(() => undefined);
 }
 
 export type { BuildsOtherViewProps };

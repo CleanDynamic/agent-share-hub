@@ -113,6 +113,8 @@ export interface BuildsMapsViewProps {
   onMore?: () => void;
   loadingMore?: boolean;
   empty?: ReactNode;
+  /** One sentence and Retry, above the grid, when the Maps did not load. */
+  notice?: ReactNode;
 }
 
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
@@ -220,7 +222,7 @@ export function useMapColumns(): 1 | 2 | 3 {
 }
 
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
-  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty } = props;
+  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice } = props;
   const [open, setOpen] = useState(false);
   const columns = useMapColumns();
   const shown = chips.slice(0, 4);
@@ -258,6 +260,8 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
       </div>
 
       {open && panel ? <div style={{ marginTop: 24 }}>{panel}</div> : null}
+
+      {notice ? <div style={{ marginTop: 24 }}>{notice}</div> : null}
 
       {cards.length === 0 && empty ? (
         <div style={{ marginTop: 32 }}>{empty}</div>

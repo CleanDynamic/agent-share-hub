@@ -16,7 +16,7 @@
    calculation (SV-24). */
 
 import { Suspense, useEffect, useState } from "react";
-import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -34,6 +34,7 @@ import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
   LIVE_COLUMNS,
+  MAPS_PAGE,
   SORT_COLUMN,
   SORT_OPTIONS,
   activeChips,
@@ -61,6 +62,16 @@ function TableError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+/** One sentence and Retry: the Maps did not load (the builds did). */
+function MapsError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
+      <p style={{ ...text(13, 400, t.text), margin: 0 }}>Maps didn't load.</p>
+      <BuildsControl onClick={onRetry}>Retry</BuildsControl>
+    </div>
+  );
+}
+
 export default function BuildsPage() {
   const [search] = useSearchParams();
   const navigate = useNavigate();
@@ -76,6 +87,8 @@ export default function BuildsPage() {
   const [orders, setOrders] = useState<Record<string, PanelOrder>>({});
   /* Maps: which way the Map is drawn, kept for the visit. */
   const [direction, setDirection] = useState<MapsDirection>("horizontal");
+  /* Maps: how many of the loaded builds are drawn; each 24 are one read. */
+  const [mapsShown, setMapsShown] = useState(MAPS_PAGE);
 
   /* ── one round: the list, the stats, the lens counts and the facets start together ── */
 
@@ -98,10 +111,29 @@ export default function BuildsPage() {
 
   const now = Date.now();
   const builds = list.data?.pages.flatMap((page) => page.builds) ?? [];
+
+  /* MAPS: one read for each 24 builds drawn, started the moment the list has answered (the ids come from it). The data
+     layer is a chunk of its own, brought on pointing at the Maps segment or here. */
+  const mapBuilds = view === "maps" ? builds.slice(0, mapsShown) : [];
+  const mapChunks = Array.from({ length: Math.ceil(mapBuilds.length / MAPS_PAGE) }, (_, at) => mapBuilds.slice(at * MAPS_PAGE, (at + 1) * MAPS_PAGE).map((build) => build.id));
+  const maps = useQueries({
+    queries: mapChunks.map((ids) => ({
+      queryKey: ["build", "listBuildMaps", ids],
+      queryFn: async () => (await import("@/lib/build/buildsMaps")).listBuildMaps(ids),
+      staleTime: SLOW_STALE_MS,
+    })),
+  });
+  const mapsFailed = maps.some((entry) => entry.isError);
+  const mapsSettled = maps.every((entry) => !entry.isPending);
+  useEffect(() => {
+    const failure = maps.find((entry) => entry.error)?.error;
+    if (failure) reportError(failure, { source: "query", context: "listBuildMaps" });
+  }, [maps]);
+
   const total = list.data?.pages[0]?.total ?? null;
   const rows = builds.map((build) => tableRow(build, now));
   const loading = list.isLoading;
-  usePageReady("builds", !loading);
+  usePageReady("builds", !loading && (view !== "maps" || mapsSettled));
 
   const classified = classification.data?.live === true;
   const patternsLive = facets.data?.patternsLive === true;
@@ -129,6 +161,12 @@ export default function BuildsPage() {
       onOpenClosed: (sectionId) => setOpened((current) => new Set([...current, sectionId])),
   };
 
+  const onMoreMaps = () => {
+    const next = mapsShown + MAPS_PAGE;
+    setMapsShown(next);
+    if (next > builds.length && list.hasNextPage) void list.fetchNextPage();
+  };
+
   const mapsPage =
     view === "maps" ? (
       list.error && !list.data ? (
@@ -146,8 +184,10 @@ export default function BuildsPage() {
             direction={direction}
             onDirection={setDirection}
             buildsLabel={`${count} ${count === 1 ? "build" : "builds"}`}
-            builds={builds}
-            maps={undefined}
+            builds={mapBuilds}
+            maps={maps.flatMap((entry) => entry.data ?? [])}
+            failed={mapsFailed}
+            notice={mapsFailed ? <MapsError onRetry={() => maps.forEach((entry) => entry.isError && void entry.refetch())} /> : undefined}
             now={now}
             empty={
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
@@ -155,7 +195,7 @@ export default function BuildsPage() {
                 <BuildsControl onClick={() => go({ lens: "all", madeFor: [], madeWith: [], query: null, view: params.view })}>Clear all</BuildsControl>
               </div>
             }
-            onMore={list.hasNextPage ? () => void list.fetchNextPage() : undefined}
+            onMore={mapsShown < builds.length || list.hasNextPage ? onMoreMaps : undefined}
             loadingMore={list.isFetchingNextPage}
           />
         </Suspense>

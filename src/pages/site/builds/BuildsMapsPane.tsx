@@ -12,12 +12,14 @@ export interface BuildsMapsPaneProps extends Omit<BuildsMapsViewProps, "cards" |
   builds: readonly BuildsTableBuild[];
   /** The Maps read for these builds; undefined while the read is on its way. */
   maps: readonly BuildMap[] | undefined;
+  /** A read failed: the builds without a Map say so instead of waiting for one. */
+  failed?: boolean;
   now: number;
 }
 
-export default function BuildsMapsPane({ builds, maps, now, ...view }: BuildsMapsPaneProps) {
+export default function BuildsMapsPane({ builds, maps, failed, now, ...view }: BuildsMapsPaneProps) {
   const byId = new Map((maps ?? []).map((map) => [map.buildId, map]));
-  const cards = builds.map((build) => cardOf(build, byId.get(build.id), now));
-  const withMap = maps ? cards.filter((card) => card.sessions >= 2).length : null;
+  const cards = builds.map((build) => cardOf(build, byId.get(build.id), now, failed));
+  const withMap = maps && !failed ? cards.filter((card) => card.sessions >= 2).length : null;
   return <BuildsMapsView {...view} cards={cards} withMap={withMap} />;
 }

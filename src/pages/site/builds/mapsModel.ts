@@ -166,11 +166,13 @@ export const mapSummary = (model: SessionMapModel | null): string => {
 };
 
 /** One card from the Table's build and its Map (null while it is still being read, or when it has none). */
-export function cardOf(build: BuildsTableBuild, map: BuildMap | undefined, now: number): MapCardView {
+export function cardOf(build: BuildsTableBuild, map: BuildMap | undefined, now: number, failed = false): MapCardView {
   const row = tableRow(build, now);
   const model = map?.model ?? null;
   const drawings = !map
-    ? null
+    ? failed
+      ? { horizontal: EMPTY, vertical: EMPTY }
+      : null
     : model
       ? { horizontal: drawingOf(model, layoutSessionMap(model, "horizontal")), vertical: drawingOf(model, layoutSessionMap(model, "vertical")) }
       : { horizontal: EMPTY, vertical: EMPTY };
@@ -179,11 +181,11 @@ export function cardOf(build: BuildsTableBuild, map: BuildMap | undefined, now: 
     href: row.href,
     title: row.title,
     maker: build.maker?.handle ?? null,
-    summary: mapSummary(model),
+    summary: !map && failed ? "Map not loaded" : mapSummary(model),
     reproduced: `${row.reproductions} reproduced`,
     lit: row.lit,
     sessions: model?.sessions.length ?? 0,
-    words: mapWords(row.title, model),
+    words: !map && failed ? `${row.title}: the Map did not load.` : mapWords(row.title, model),
     drawings,
   };
 }

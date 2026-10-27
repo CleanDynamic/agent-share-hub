@@ -1116,6 +1116,9 @@ export const CA03_FILES: readonly string[] = [
 
   // SV-12
   "src/dev/fixtures/vision/builds-maps.ts",
+  "src/lib/build/buildsMaps.ts",
+  "src/lib/build/buildsMaps.test.ts",
+  "src/lib/build/buildsMapsTestSupport.ts",
   "src/pages/dev/VisionBuildsMaps.tsx",
   "src/pages/site/builds/BuildsMapsPane.tsx",
   "src/pages/site/builds/BuildsMapsView.test.tsx",
