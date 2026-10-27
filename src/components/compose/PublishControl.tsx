@@ -81,6 +81,7 @@ import type { RebuildCreditSource } from "@/components/build/rebuildCredit";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
 import type { BuildBounties } from "@/hooks/useBuildBounties";
 import { createBountyForGap, type Bounty } from "@/lib/bounty";
+import { hasTitle, NO_TITLE } from "@/lib/build/publish";
 import {
   NO_CHANGES_REASON,
   collectGaps,
@@ -381,7 +382,9 @@ export function PublishControl({
    * Refusing to open it would hide the checklist from exactly the builds it was
    * written for.
    */
-  const canPublish = (readiness.ready || isLive) && !isPublishing;
+  // SV-07 P8: and a title. This composer's readiness never asked for one, which is how a build went live as "Untitled build".
+  const titled = hasTitle(build.title);
+  const canPublish = (readiness.ready || isLive) && titled && !isPublishing;
 
   /**
    * The one extra thing a rebuild is asked, from rebuild.ts.
@@ -414,10 +417,12 @@ export function PublishControl({
    * live, and rebuildGate is consulted only for the rule it alone knows —
    * recognised by the reason it is exported with rather than re-derived here.
    */
-  const sheetReadiness =
+  const gated =
     readiness.ready && rebuildGate?.reason === NO_CHANGES_REASON
       ? rebuildGate
       : readiness;
+  // SV-07 P8: the sheet's Publish waits for a title too, and says so.
+  const sheetReadiness = titled ? gated : { ...gated, ready: false, reason: NO_TITLE };
 
   /**
    * Frozen at the fork, and handed to the section as the SOURCE rather than as
@@ -442,7 +447,9 @@ export function PublishControl({
 
   const explanation = publishError
     ? publishError.message
-    : readiness.reason
+    : !titled
+      ? NO_TITLE
+      : readiness.reason
       ? readiness.reason
       : isLive
         ? "Live. Open the link, and see what would put it in the gallery."

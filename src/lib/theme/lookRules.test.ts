@@ -1061,6 +1061,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/sv07.small.test.tsx",
   "src/lib/build/summaryTurn.ts",
   "src/pages/site/compose/sv07.imports.test.tsx",
+  "src/lib/build/publish.ts",
+  "src/hooks/useComposeBuild.publish.test.tsx",
 ];
 
 /**

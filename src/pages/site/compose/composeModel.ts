@@ -19,6 +19,7 @@ import { nestNodes } from "@/lib/build/nodes";
 import type { BuildNode, NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
+import { hasTitle } from "@/lib/build/publish";
 
 export const UNTITLED = "Untitled build";
 
@@ -41,10 +42,8 @@ export const PUBLISH_WORDS: Record<PublishKey, string> = {
   instruction_or_artefact: "a prompt",
 };
 
-export const isUntitled = (title: string | null | undefined): boolean => {
-  const trimmed = (title ?? "").trim();
-  return trimmed === "" || trimmed === UNTITLED;
-};
+/** SV-07 P8: the one rule every publish path uses (`hasTitle`): empty, or the title a new draft is given. */
+export const isUntitled = (title: string | null | undefined): boolean => !hasTitle(title);
 
 /**
  * What the build still needs before it can be published, in the canvas's order.

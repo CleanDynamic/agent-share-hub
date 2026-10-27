@@ -43,6 +43,7 @@ import type {
   NodeType,
 } from "@/lib/build";
 import { onBuildWritten } from "@/lib/build/builds";
+import { hasTitle, NO_TITLE } from "@/lib/build/publish";
 import { connection, isNetworkFailure } from "@/lib/build/connection";
 import { pendingWrites } from "@/lib/build/pendingWrites";
 import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
@@ -427,6 +428,8 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     if (!isOwnerRef.current) {
       throw new Error("Only a build's creator can publish it.");
     }
+    // SV-07 P8: a build with no title is not published, from either composer. `current` carries what the maker has typed.
+    if (!hasTitle(current.title)) throw new Error(NO_TITLE);
 
     setIsPublishing(true);
     try {
@@ -475,7 +478,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
           // typed a second ago is not lost to publishRebuild's ordering.
           if (Object.keys(pending).length > 0) await updateBuild(id, pending);
           row = await publishRebuild(
-            { id, status: current.status, published_at: current.published_at },
+            { id, status: current.status, published_at: current.published_at, title: current.title },
             rebuildNote ?? null
           );
         } else {
