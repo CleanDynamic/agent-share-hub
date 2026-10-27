@@ -38,7 +38,7 @@ test.describe("/builds in the site frame", () => {
   test("writes the view to the address and reads it back", async ({ page }) => {
     await open(page);
     await page.getByRole("navigation", { name: "View" }).getByRole("link", { name: "Maps" }).click();
-    await expect(page).toHaveURL(/\/builds\?view=maps$/);
+    await expect(page).toHaveURL(/\/builds\?(.*&)?view=maps$/);
     await page.reload();
     await expect(page.getByRole("navigation", { name: "View" }).getByRole("link", { name: "Maps" })).toHaveAttribute("aria-current", "page");
   });

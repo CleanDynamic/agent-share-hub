@@ -204,7 +204,7 @@ function OrderPair({ order, onOrder }: { order: "az" | "count"; onOrder?: (order
       <BuildsTextButton aria-pressed={order === "az"} color={order === "az" ? t.text : t.label} onClick={() => onOrder?.("az")}>
         A–Z
       </BuildsTextButton>
-      <span aria-hidden="true" style={{ color: t.line }}> · </span>
+      <span aria-hidden="true" style={{ color: t.label }}> · </span>
       <BuildsTextButton aria-pressed={order === "count"} color={order === "count" ? t.text : t.label} onClick={() => onOrder?.("count")}>
         Count
       </BuildsTextButton>
