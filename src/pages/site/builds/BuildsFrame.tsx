@@ -152,6 +152,20 @@ export function BuildsHead({ figure, parts, switcher }: { figure: ReactNode; par
   );
 }
 
+/** SV-12: the Maps page's head: "Builds" 20/500, the sentence in `--text2`, and the view switch. (The board differs from
+    the Table's head here, and the board wins.) */
+export function MapsHead({ switcher }: { switcher: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
+      <div>
+        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em" }}>Builds</h1>
+        <p style={{ margin: "4px 0 0", ...text(13, 400, t.text2) }}>Each build's Map: one box per session, one line where a tile in one session uses something from another.</p>
+      </div>
+      {switcher}
+    </div>
+  );
+}
+
 /* ── controls ── */
 
 /** A control at the board's 28 (44 on a phone): Add, Sort, Columns. Takes a ref and the rest of a button's props, so a
@@ -271,6 +285,7 @@ export function BuildsLoadingView() {
   const { pathname, search } = useLocation();
   const view = viewOfSearch(search);
   const hrefFor = (next: GalleryViewMode) => viewHref(pathname, search, next);
+  if (view === "maps") return <MapsLoadingView hrefFor={hrefFor} />;
   return (
     <LoadingRegion what="builds" announce>
       <BuildsColumns
@@ -287,6 +302,35 @@ export function BuildsLoadingView() {
           </>
         }
       />
+    </LoadingRegion>
+  );
+}
+
+/** SV-12: the Maps page as it stands before its list arrives: the head, the row's height and the cards with their wells,
+    at the grid's columns. */
+export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) => string }) {
+  const wide = useMinWidth(1101);
+  const middle = useMinWidth(761);
+  const columns = wide ? 3 : middle ? 2 : 1;
+  return (
+    <LoadingRegion what="builds" announce>
+      <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
+        <MapsHead switcher={<ViewSwitch view="maps" hrefFor={hrefFor} />} />
+        <div style={{ height: 28, marginTop: 16 }} />
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, marginTop: 32 }} aria-hidden="true">
+          {Array.from({ length: columns * 2 }, (_, index) => (
+            <div key={index} style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
+              <Skeleton width="100%" height={220} radius={6} />
+              <div style={{ marginTop: 10 }}>
+                <Skeleton width="55%" height={12} radius={4} />
+                <div style={{ marginTop: 6 }}>
+                  <Skeleton width="30%" height={10} radius={4} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </LoadingRegion>
   );
 }

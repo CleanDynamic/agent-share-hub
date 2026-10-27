@@ -28,7 +28,8 @@ import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsControl, BuildsLoadingView, TableRowSkeletons, text } from "./BuildsFrame";
+import { BuildsControl, BuildsLoadingView, MapsLoadingView, TableRowSkeletons, text } from "./BuildsFrame";
+import { BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
@@ -47,7 +48,8 @@ import {
   withoutChip,
   type PanelOrder,
 } from "./buildsModel";
-import { BuildsClassificationView, BuildsMapsView, prefetchView } from "./buildsViews";
+import { BuildsClassificationView, BuildsMapsPane, prefetchView } from "./buildsViews";
+import type { MapsDirection } from "./BuildsMapsView";
 
 /** One sentence and Retry (CA-28's wording). */
 function TableError({ onRetry }: { onRetry: () => void }) {
@@ -72,6 +74,8 @@ export default function BuildsPage() {
   /* The panel's own: which filters were opened on this visit, and how each checklist is ordered. */
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
   const [orders, setOrders] = useState<Record<string, PanelOrder>>({});
+  /* Maps: which way the Map is drawn, kept for the visit. */
+  const [direction, setDirection] = useState<MapsDirection>("horizontal");
 
   /* ── one round: the list, the stats, the lens counts and the facets start together ── */
 
@@ -113,8 +117,50 @@ export default function BuildsPage() {
   });
   const count = total ?? builds.length;
 
-  const other =
-    view === "maps" ? <BuildsMapsView builds={builds} /> : view === "classification" ? <BuildsClassificationView builds={builds} /> : null;
+  const other = view === "classification" ? <BuildsClassificationView builds={builds} /> : null;
+
+  const filters: BuildsFiltersViewProps = {
+      activeCount: activeCount(params),
+      sections,
+      catalogue: { total: liveCatalogue(classified, patternsLive).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive) },
+      onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
+      onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
+      onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
+      onOpenClosed: (sectionId) => setOpened((current) => new Set([...current, sectionId])),
+  };
+
+  const mapsPage =
+    view === "maps" ? (
+      list.error && !list.data ? (
+        <TableError onRetry={() => void list.refetch()} />
+      ) : (
+        <Suspense fallback={<MapsLoadingView hrefFor={hrefFor} />}>
+          <BuildsMapsPane
+            view={view}
+            hrefFor={hrefFor}
+            onViewIntent={prefetchView}
+            activeCount={activeCount(params)}
+            chips={activeChips(params)}
+            onRemoveChip={(key) => go(withoutChip(params, key))}
+            panel={<BuildsFiltersView {...filters} collapsed={false} />}
+            direction={direction}
+            onDirection={setDirection}
+            buildsLabel={`${count} ${count === 1 ? "build" : "builds"}`}
+            builds={builds}
+            maps={undefined}
+            now={now}
+            empty={
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
+                <p style={{ ...text(13, 400, t.text2), margin: 0 }}>No builds match these filters.</p>
+                <BuildsControl onClick={() => go({ lens: "all", madeFor: [], madeWith: [], query: null, view: params.view })}>Clear all</BuildsControl>
+              </div>
+            }
+            onMore={list.hasNextPage ? () => void list.fetchNextPage() : undefined}
+            loadingMore={list.isFetchingNextPage}
+          />
+        </Suspense>
+      )
+    ) : null;
 
   const page = (
     <BuildsView
@@ -123,15 +169,7 @@ export default function BuildsPage() {
       view={view}
       hrefFor={hrefFor}
       onViewIntent={prefetchView}
-      filters={{
-        activeCount: activeCount(params),
-        sections,
-        catalogue: { total: liveCatalogue(classified, patternsLive).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive) },
-        onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
-        onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
-        onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
-        onOpenClosed: (sectionId) => setOpened((current) => new Set([...current, sectionId])),
-      }}
+      filters={filters}
       table={
         view === "table" && !(list.error && !list.data)
           ? {
@@ -173,7 +211,7 @@ export default function BuildsPage() {
       <SeoHead title="Builds · buildgallery" description="Things people built with AI, and the exact model versions other people got them working on." path="/builds" />
       {/* While the first screen loads the page is its loading state, the route's Placeholder; the page fades in over it. */}
       <PageArrival loading={loading} placeholder={<BuildsLoadingView />}>
-        {loading ? <BuildsLoadingView /> : page}
+        {loading ? <BuildsLoadingView /> : view === "maps" ? mapsPage : page}
       </PageArrival>
     </>
   );
