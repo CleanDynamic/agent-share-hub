@@ -1098,6 +1098,7 @@ export const CA03_FILES: readonly string[] = [
   "e2e/audit/design-compare.spec.ts",
   "src/lib/build/galleryParams.ts",
   "src/pages/dev/ClassificationDemo.tsx",
+  "src/lib/build/buildsTable.test.ts",
   "src/pages/site/builds/BuildsClassificationView.tsx",
   "src/dev/fixtures/vision/builds-table.ts",
   "src/pages/dev/VisionBuildsTable.tsx",
