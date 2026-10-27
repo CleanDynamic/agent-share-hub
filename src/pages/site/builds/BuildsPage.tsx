@@ -29,7 +29,7 @@ import { usePageReady } from "@/lib/routing/pageReady";
 import { t } from "@/lib/theme/tokens";
 
 import { BuildsControl, BuildsLoadingView, TableRowSkeletons, text } from "./BuildsFrame";
-import { BuildsView } from "./BuildsView";
+import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
   LIVE_COLUMNS,
@@ -41,7 +41,6 @@ import {
   liveCatalogue,
   nextTableOffset,
   panelSections,
-  statParts,
   tableFooter,
   tableRow,
   toggled,
@@ -120,7 +119,7 @@ export default function BuildsPage() {
   const page = (
     <BuildsView
       figure={`${count} ${count === 1 ? "build" : "builds"}`}
-      parts={stats.data ? statParts(stats.data) : [{ text: " " }]}
+      parts={stats.data ? statParts({ published: stats.data.inGallery, runsThisWeek: stats.data.reproducedThisWeek, freshPct: stats.data.freshPct }) : [{ text: " " }]}
       view={view}
       hrefFor={hrefFor}
       onViewIntent={prefetchView}

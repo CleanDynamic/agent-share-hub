@@ -216,7 +216,7 @@ function ToolMarks({ tools }: { tools: readonly TableTool[] }) {
   return (
     <span style={{ display: "inline-flex", gap: 4, verticalAlign: "middle" }}>
       {tools.map((tool) => (
-        <span key={tool.id} title={tool.name} style={{ width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center" }}>
+        <span key={tool.id} title={tool.name} style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center" }}>
           <ModelMark tool={tool.id} size={14} />
           <VisuallyHidden>{tool.name}</VisuallyHidden>
         </span>

@@ -21,7 +21,7 @@
 // the feed's three others. lens, with and shape are still read and written here
 // so existing links keep parsing; the feed page itself ignores them.
 //
-// SV-11 — BUILDS. view is table (the resting view, never written), maps or classification; the feed and the dashboard
+// SV-11: BUILDS. view is table (the resting view, never written), maps or classification; the feed and the dashboard
 // are retired, and the dashboard's parameters (tab, lab, report, active, dsort, build) and the board's tab (by) with
 // them. open=1 is the Open requests filter, after f. sort rests on reproduced, the Table's order.
 //

@@ -1,10 +1,9 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import type { FigurePart } from "@/components/vision/PageFigure";
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens, type GalleryStats } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { DEFAULT_GALLERY_SORT, type GalleryParams } from "@/lib/build/galleryParams";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
-import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
+import { isStale } from "@/lib/build/signals";
 import { shownValues } from "@/lib/classify/facets";
 import { labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, TAXONOMY, valueOf, type Facet } from "@/lib/classify/taxonomy";
@@ -272,14 +271,3 @@ export const SORT_OPTIONS: readonly { value: GalleryFeedSort; label: string }[] 
 
 /** The column each sort draws its arrow on; Newest has none. */
 export const SORT_COLUMN: Partial<Record<GalleryFeedSort, ColumnId>> = { reproduced: "reproductions", confirmed: "confirmed", rebuilt: "rebuilds" };
-
-/** "Of 120 published · 214 reproductions this week · 78% confirmed in the last 120 days". */
-export function statParts(stats: GalleryStats): FigurePart[] {
-  const runs = stats.reproducedThisWeek;
-  return [
-    { text: `Of ${stats.inGallery} published` },
-    { text: `${runs} ${runs === 1 ? "reproduction" : "reproductions"}`, tone: "evidence" },
-    { text: "this week" },
-    { text: `${stats.freshPct}% confirmed in the last ${STALE_AFTER_DAYS} days` },
-  ];
-}

@@ -62,7 +62,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   compose: lazy(() => import("./ComposeDemo")),
   /* UI-P63 — the new composer's frame (no board image is compared). */
   sandbox: lazy(() => import("./SandboxDemo")),
-  /* CA-16 — the Classification Card (no board is compared). */
+  /* CA-16: the Classification Card (no board is compared). */
   classification: lazy(() => import("./ClassificationDemo")),
   /* CA-15b: each tile modal open on its own, and a List with every kind of tile (no board image is in the repo). */
   modals: lazy(() => import("./ModalsDemo")),

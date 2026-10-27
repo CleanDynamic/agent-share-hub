@@ -6,10 +6,33 @@ import { useState, type ReactNode } from "react";
 
 import type { FigurePart } from "@/components/vision/PageFigure";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
+import { STALE_AFTER_DAYS } from "@/lib/build/signals";
+import { t } from "@/lib/theme/tokens";
 
 import { BuildsColumns, BuildsControl, BuildsHead, ViewSwitch, useBuildsTwoColumns } from "./BuildsFrame";
 import { BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsTableView, type BuildsTableViewProps } from "./BuildsTableView";
+
+export interface BuildsStats {
+  published: number;
+  runsThisWeek: number;
+  freshPct: number;
+}
+
+/** "Of 120 published · 214 reproductions this week · 78% confirmed in the last 120 days", the runs in `--evidence`. */
+export function statParts({ published, runsThisWeek, freshPct }: BuildsStats): FigurePart[] {
+  return [
+    { text: `Of ${published} published` },
+    {
+      text: (
+        <>
+          <span style={{ color: t.evidence }}>{`${runsThisWeek} ${runsThisWeek === 1 ? "reproduction" : "reproductions"}`}</span> this week
+        </>
+      ),
+    },
+    { text: `${freshPct}% confirmed in the last ${STALE_AFTER_DAYS} days` },
+  ];
+}
 
 export interface BuildsViewProps {
   figure: ReactNode;

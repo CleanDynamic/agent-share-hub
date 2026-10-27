@@ -99,7 +99,7 @@ describe("shapes (UI-P28)", () => {
 });
 
 
-describe("SV-11 — the view, open and the resting sort", () => {
+describe("SV-11: the view, open and the resting sort", () => {
   it("reads view, model and sort, and writes them back in their places", () => {
     const params = parse("q=inbox&sort=newest&model=sonnet-5-5&for=lawyers&view=maps");
     expect(params).toMatchObject({ view: "maps", model: "sonnet-5-5", sort: "newest", madeFor: ["lawyers"], query: "inbox" });

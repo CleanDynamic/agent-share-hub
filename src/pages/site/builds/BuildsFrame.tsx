@@ -95,27 +95,35 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
       onFocus={() => onIntent?.(view)}
       {...handlers}
       style={{
-        boxSizing: "border-box",
-        height,
+        // On a phone the hit area reaches 44 with a matching negative margin; the drawn segment inside keeps its 28.
         display: "flex",
         alignItems: "center",
-        padding: "0 12px",
-        // On a phone the hit area reaches 44 with a matching negative margin, so the switch keeps its look.
-        ...(phone ? { paddingBlock: (TOUCH_MIN - height) / 2, marginBlock: (height - TOUCH_MIN) / 2, height: TOUCH_MIN } : null),
+        ...(phone ? { paddingBlock: (TOUCH_MIN - height) / 2, marginBlock: (height - TOUCH_MIN) / 2 } : null),
         borderRadius: r.chip,
-        border: `1px solid ${current ? t.controlBorder : "transparent"}`,
-        background: current ? t.control : "transparent",
-        fontFamily: FIGTREE,
-        fontSize: 12.5,
-        fontWeight: current ? 500 : 400,
-        lineHeight: "normal",
-        color: current || state.hovered ? t.text : t.text2,
         textDecoration: "none",
-        whiteSpace: "nowrap",
         ...ring(state.focusVisible),
       }}
     >
-      {VIEW_LABEL[view]}
+      <span
+        style={{
+          boxSizing: "border-box",
+          height,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 12px",
+          borderRadius: r.chip,
+          border: `1px solid ${current ? t.controlBorder : "transparent"}`,
+          background: current ? t.control : "transparent",
+          fontFamily: FIGTREE,
+          fontSize: 12.5,
+          fontWeight: current ? 500 : 400,
+          lineHeight: "normal",
+          color: current || state.hovered ? t.text : t.text2,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {VIEW_LABEL[view]}
+      </span>
     </Link>
   );
 }

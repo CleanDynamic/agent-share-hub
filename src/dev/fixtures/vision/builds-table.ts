@@ -4,7 +4,7 @@
    dev page `vision-builds-table` and the views' tests). Every name, number and sentence is sample content. The board's
    letter tiles are the real marks of the tools they stand for. */
 
-import type { BuildsViewProps } from "@/pages/site/builds/BuildsView";
+import { statParts, type BuildsViewProps } from "@/pages/site/builds/BuildsView";
 import type { CatalogueGroup, FilterSection, WordOption } from "@/pages/site/builds/BuildsFiltersView";
 import { COLUMN_ORDER, type TableRowView } from "@/pages/site/builds/BuildsTableView";
 
@@ -126,7 +126,7 @@ export const visionBuildsRows: TableRowView[] = DATA.map((d, index) => ({
 export function visionBuildsTableProps(): BuildsViewProps {
   return {
     figure: "18 builds",
-    parts: [{ text: "Of 120 published" }, { text: "214 reproductions", tone: "evidence" }, { text: "this week" }, { text: "78% confirmed in the last 120 days" }],
+    parts: statParts({ published: 120, runsThisWeek: 214, freshPct: 78 }),
     view: "table",
     hrefFor: () => "#",
     filters: {

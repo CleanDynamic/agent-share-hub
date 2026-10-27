@@ -100,7 +100,7 @@ function OldLineageRedirect() {
   return <Navigate to={`/b2/${slug}/lineage`} replace />;
 }
 const HomePage = lazy(ROUTE_TABLE.home.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P28 — the Gallery in the site frame; its own chunk, picked by `FrameRoute`. SV-11: it is Builds.
+// UI-P28: the Gallery in the site frame; its own chunk, picked by `FrameRoute`. SV-11: it is Builds.
 const BuildsPage = lazy(ROUTE_TABLE.gallery.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P29 — the Build page in the site frame; its own chunk, picked by `FrameRoute`.
 const BuildSitePage = lazy(ROUTE_TABLE.build.load as () => Promise<{ default: React.ComponentType }>);
