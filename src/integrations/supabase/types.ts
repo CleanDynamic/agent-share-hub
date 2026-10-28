@@ -1327,6 +1327,7 @@ export type Database = {
           item_kind: string | null
           note: string | null
           position: number
+          saved_item_id: string | null
         }
         Insert: {
           added_at?: string
@@ -1339,6 +1340,7 @@ export type Database = {
           item_kind?: string | null
           note?: string | null
           position: number
+          saved_item_id?: string | null
         }
         Update: {
           added_at?: string
@@ -1351,6 +1353,7 @@ export type Database = {
           item_kind?: string | null
           note?: string | null
           position?: number
+          saved_item_id?: string | null
         }
         Relationships: [
           {
@@ -1379,6 +1382,13 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_saved_item_id_fkey"
+            columns: ["saved_item_id"]
+            isOneToOne: false
+            referencedRelation: "saved_items"
             referencedColumns: ["id"]
           },
         ]
@@ -4756,6 +4766,67 @@ export type Database = {
           },
         ]
       }
+      saved_items: {
+        Row: {
+          build_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          last_used_at: string
+          note: string | null
+          ref: string | null
+          snapshot: Json
+          source_version: string | null
+          user_id: string
+        }
+        Insert: {
+          build_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          last_used_at?: string
+          note?: string | null
+          ref?: string | null
+          snapshot?: Json
+          source_version?: string | null
+          user_id: string
+        }
+        Update: {
+          build_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          last_used_at?: string
+          note?: string | null
+          ref?: string | null
+          snapshot?: Json
+          source_version?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_items_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "saved_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_enquiries: {
         Row: {
           created_at: string
@@ -5667,6 +5738,13 @@ export type Database = {
       }
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
       classification_facets: { Args: { thresholds?: Json }; Returns: Json }
+      collection_saved_by_count: {
+        Args: { _collection_ids: string[] }
+        Returns: {
+          collection_id: string
+          saved_by: number
+        }[]
+      }
       expire_import_sessions: { Args: never; Returns: number }
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       gallery_facets_base: { Args: { thresholds?: Json }; Returns: Json }
@@ -5759,6 +5837,13 @@ export type Database = {
       }
       record_daily_activity: { Args: never; Returns: Json }
       respec_track: { Args: { _track: string }; Returns: string }
+      saved_items_used_in: {
+        Args: never
+        Returns: {
+          builds: number
+          saved_item_id: string
+        }[]
+      }
       semantic_search: {
         Args: { match_count: number; query_embedding: string }
         Returns: {
