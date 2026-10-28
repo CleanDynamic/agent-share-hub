@@ -127,12 +127,16 @@ export default function LibraryPage() {
     refetchOnWindowFocus: false,
   });
 
-  /* The changes on the saved builds: the same events Home reads, started with the saves and the collections. */
+  const loading = visiting ? owner.isLoading || collections.isLoading : openId ? collectionBuilds.isLoading : saved.isLoading;
+  const firstScreen = !loading && !collections.isLoading;
+
+  /* The changes on the saved builds: the same events Home reads, saved builds only. Started once the first screen is up:
+     its three hops would otherwise sit inside the page's one round and over SV-03's request budget. */
   const sinceMs = Math.floor((now - CHANGES_WINDOW_DAYS * 86_400_000) / 3_600_000) * 3_600_000;
   const activity = useQuery({
-    queryKey: ["feed", "listActivityFor", viewerId, sinceMs],
-    queryFn: () => listActivityFor({ userId: viewerId as string, since: sinceMs, limit: 50 }),
-    enabled: !visiting && viewerId !== null,
+    queryKey: ["feed", "listActivityFor", viewerId, sinceMs, "saved"],
+    queryFn: () => listActivityFor({ userId: viewerId as string, since: sinceMs, limit: 50, savedOnly: true }),
+    enabled: !visiting && viewerId !== null && firstScreen,
     refetchOnWindowFocus: false,
   });
   const changeRows = libraryChanges(activity.data ?? [], now).slice(0, 6);
@@ -201,8 +205,7 @@ export default function LibraryPage() {
 
   /* ── the page's first screen ── */
 
-  const loading = visiting ? owner.isLoading || collections.isLoading : openId ? collectionBuilds.isLoading : saved.isLoading;
-  usePageReady("library", !loading && !collections.isLoading);
+  usePageReady("library", firstScreen);
 
   const total = saved.data?.pages[0]?.total ?? entries.length;
   const ownerName = owner.data?.displayName?.trim() || (owner.data?.username ? `@${owner.data.username}` : (handle ?? ""));

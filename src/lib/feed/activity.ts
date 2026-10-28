@@ -17,7 +17,8 @@
 // THE INDEXES each read relies on:
 //   builds by creator            idx_builds_creator_status_updated (SV-03)
 //   build_saves by user          idx_build_saves_user_created
-//   bounties by author           idx_bounties_author_created (SV-15; the migration says how to check it)
+//   bounties by author           idx_bounties_author (already live; SV-15's migration adds idx_bounties_author_created only
+//                                where no index leads with author_id)
 //   reproductions by build       idx_build_reproductions_build_confirmed
 //   rebuilds by parent           idx_builds_parent_build
 //   solutions by bounty          idx_solutions_bounty_slot_status
@@ -85,6 +86,8 @@ export interface ListActivityArgs {
   /** The start of the window: an ISO string or a time in ms. Events at or before it are not returned. */
   since: string | number;
   limit?: number;
+  /** Only the events on builds the reader saved: their own builds and requests are not read. The Library's changes. */
+  savedOnly?: boolean;
 }
 
 /** Each read is capped; the reader's own builds and saves are few, and the events on them are cut to `limit` at the end. */
@@ -93,12 +96,13 @@ const EVENT_LIMIT = 100;
 const DEFAULT_LIMIT = 20;
 const MS_PER_DAY = 86_400_000;
 
-const BUILD_COLUMNS = "id, slug, title, status, last_confirmed_at, published_at";
+const BUILD_COLUMNS = "id, slug, title, creator_id, status, last_confirmed_at, published_at";
 
 interface OwnedBuild {
   id: string;
   slug: string;
   title: string;
+  creator_id: string;
   status: string | null;
   last_confirmed_at: string | null;
   published_at: string | null;
@@ -136,6 +140,8 @@ interface ProfileRow {
   display_name: string | null;
 }
 
+const NONE = { data: [], error: null };
+
 const toMs = (since: string | number): number => (typeof since === "number" ? since : Date.parse(since));
 
 function first<T>(value: T | T[] | null | undefined): T | null {
@@ -148,29 +154,29 @@ function rows<T>(response: { data: unknown; error: unknown }): T[] {
   return (response.data ?? []) as T[];
 }
 
-export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT }: ListActivityArgs): Promise<ActivityEvent[]> {
+export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, savedOnly = false }: ListActivityArgs): Promise<ActivityEvent[]> {
   const sinceMs = toMs(since);
   const sinceIso = new Date(sinceMs).toISOString();
   const now = Date.now();
 
   /* ── hop 1: what the reader owns ── */
   const [mine, saves, bounties] = await Promise.all([
-    db.from("builds").select(BUILD_COLUMNS).eq("creator_id", userId).neq("status", "draft").limit(OWN_LIMIT),
+    savedOnly ? NONE : db.from("builds").select(BUILD_COLUMNS).eq("creator_id", userId).neq("status", "draft").limit(OWN_LIMIT),
     db
       .from("build_saves")
       .select(`build:builds!build_saves_build_id_fkey(${BUILD_COLUMNS})`)
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(OWN_LIMIT),
-    db.from("bounties").select("id, build_id").eq("author_id", userId).limit(OWN_LIMIT),
+    savedOnly ? NONE : db.from("bounties").select("id, build_id").eq("author_id", userId).limit(OWN_LIMIT),
   ]);
 
-  // A build the reader both made and saved is theirs as its maker. Keyed by id ⟦js-set-map-lookups⟧.
+  // A build the reader both made and saved is theirs as its maker, so savedOnly leaves it out. Keyed by id ⟦js-set-map-lookups⟧.
   const owned = new Map<string, { build: OwnedBuild; role: ActivityRole }>();
   for (const build of rows<OwnedBuild>(mine)) owned.set(build.id, { build, role: "maker" });
   for (const save of rows<{ build: OwnedBuild | OwnedBuild[] | null }>(saves)) {
     const build = first(save.build);
-    if (build && !owned.has(build.id)) owned.set(build.id, { build, role: "saver" });
+    if (build && !owned.has(build.id) && build.creator_id !== userId) owned.set(build.id, { build, role: "saver" });
   }
   const bountyRows = rows<{ id: string; build_id: string | null }>(bounties);
   const buildIds = [...owned.keys()];
@@ -180,7 +186,7 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT }: 
   /* ── hop 2: what others did to them, one query per kind ── */
   const [runs, rebuilds, answers] = await Promise.all([
     buildIds.length === 0
-      ? { data: [], error: null }
+      ? NONE
       : db
           .from("build_reproductions")
           .select("id, build_id, user_id, confirmed_at, model_used, worked, note")
@@ -190,7 +196,7 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT }: 
           .order("confirmed_at", { ascending: false })
           .limit(EVENT_LIMIT),
     buildIds.length === 0
-      ? { data: [], error: null }
+      ? NONE
       : db
           .from("builds")
           .select("id, slug, title, creator_id, parent_build_id, published_at")
@@ -201,7 +207,7 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT }: 
           .order("published_at", { ascending: false })
           .limit(EVENT_LIMIT),
     bountyIds.length === 0
-      ? { data: [], error: null }
+      ? NONE
       : db
           .from("solutions")
           .select("id, bounty_id, solver_id, submitted_at")
