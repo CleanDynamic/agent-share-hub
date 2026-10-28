@@ -63,11 +63,25 @@ export interface ListStepRequestsOptions {
   viewerId?: string | null;
 }
 
+/** The builder methods these reads call. Narrow on purpose, as gallery.ts's feed reads are: supabase-js's own types parse
+    every select at the type level, and the type check of the whole app sits at the edge of Node's default heap. */
+interface Query extends PromiseLike<{ data: unknown; error: unknown; count?: number | null }> {
+  eq(column: string, value: unknown): Query;
+  neq(column: string, value: unknown): Query;
+  in(column: string, values: readonly unknown[]): Query;
+  not(column: string, operator: string, value: unknown): Query;
+  or(filters: string): Query;
+  order(column: string, options: { ascending: boolean; nullsFirst?: boolean }): Query;
+  range(from: number, to: number): Query;
+  limit(count: number): Query;
+}
+
+const table = (name: string) => (supabase as unknown as { from: (name: string) => { select: (columns: string, options?: { count: "exact"; head: true }) => Query } }).from(name);
+
 /** A build with more top-level steps than this draws its strip from the first of them. */
 const STRIP_ROWS_PER_BUILD = 200;
 
-// Typed as a plain string: as a literal, PostgREST's type-level parser walks the whole embed and the type check runs out of memory.
-const REQUESTS_SELECT: string =
+const REQUESTS_SELECT =
   `${BOUNTY_COLUMNS}, builds!bounties_build_id_fkey!inner(id, slug, title, creator_id), build_nodes!bounties_gap_node_id_fkey(title)`;
 
 /** The strip's columns: the step's own, and three payload keys by path (never the payload whole), and the gap's problem. */
@@ -90,16 +104,15 @@ interface StripRow extends Omit<StepStripNode, "payload"> {
 async function listStepStrips(buildIds: readonly string[], gapIds: readonly string[]): Promise<StripRow[]> {
   if (buildIds.length === 0) return [];
   const gaps = gapIds.length > 0 ? `,id.in.(${gapIds.join(",")})` : "";
-  const { data, error } = await (supabase
-    .from("build_nodes")
-    .select(STRIP_SELECT as "id")
+  const { data, error } = await table("build_nodes")
+    .select(STRIP_SELECT)
     .in("build_id", [...buildIds])
     .or(`parent_id.is.null${gaps}`)
     .order("build_id", { ascending: true })
     .order("position", { ascending: true })
-    .limit(STRIP_ROWS_PER_BUILD * buildIds.length) as unknown as Promise<{ data: StripRow[] | null; error: unknown }>);
+    .limit(STRIP_ROWS_PER_BUILD * buildIds.length);
   if (error) throw bountyLayerError("listStepStrips", error);
-  return data ?? [];
+  return (data ?? []) as StripRow[];
 }
 
 /**
@@ -109,8 +122,7 @@ async function listStepStrips(buildIds: readonly string[], gapIds: readonly stri
 export async function listStepRequests({ sort = "needed", offset = 0, limit = OPEN_BOUNTIES_PAGE_SIZE, viewerId = null }: ListStepRequestsOptions = {}): Promise<StepRequestsPage> {
   const size = Math.min(Math.max(1, limit), 100);
 
-  let query = supabase
-    .from("bounties")
+  let query = table("bounties")
     .select(REQUESTS_SELECT)
     .eq("status", "open")
     .not("build_id", "is", null)
@@ -124,8 +136,9 @@ export async function listStepRequests({ sort = "needed", offset = 0, limit = OP
     .range(offset, offset + size);
   if (error) throw bountyLayerError("listStepRequests", error);
 
-  const rows = ((data ?? []) as unknown as RequestRow[]).slice(0, size).filter((row) => Boolean(row.builds));
-  const more = (data ?? []).length > size;
+  const all = (data ?? []) as RequestRow[];
+  const rows = all.slice(0, size).filter((row) => Boolean(row.builds));
+  const more = all.length > size;
   const ids = rows.map((row) => row.id);
   const buildIds = [...new Set(rows.map((row) => row.builds!.id))];
   const gapIds = [...new Set(rows.flatMap((row) => (row.gap_node_id ? [row.gap_node_id] : [])))];
@@ -135,7 +148,7 @@ export async function listStepRequests({ sort = "needed", offset = 0, limit = OP
     countSolutionsByBounty(ids),
     makerIds.length === 0
       ? Promise.resolve({ data: [], error: null })
-      : supabase.from("profiles").select("id, username, avatar_url").in("id", makerIds).limit(makerIds.length),
+      : table("profiles").select("id, username, avatar_url").in("id", makerIds).limit(makerIds.length),
     listStepStrips(buildIds, gapIds),
     viewerId && ids.length > 0 ? myMeToo(ids, viewerId) : Promise.resolve(new Set<string>()),
   ]);
@@ -189,20 +202,19 @@ const MY_ANSWERS_LIMIT = 100;
  * first, grouped by bounty. Two requests: the answers with their bounties embedded, then their solvers' handles.
  */
 export async function listMyOpenRequests(userId: string): Promise<MyOpenRequest[]> {
-  const { data, error } = await (supabase
-    .from("solutions")
+  const { data, error } = await table("solutions")
     .select(
-      "id, bounty_id, solver_id, bounties!solutions_bounty_id_fkey!inner(id, status, builds!bounties_build_id_fkey!inner(slug, title, creator_id), build_nodes!bounties_gap_node_id_fkey(title))" as "id",
+      "id, bounty_id, solver_id, bounties!solutions_bounty_id_fkey!inner(id, status, builds!bounties_build_id_fkey!inner(slug, title, creator_id), build_nodes!bounties_gap_node_id_fkey(title))",
     )
     .eq("status", "submitted")
     .eq("bounties.status", "open")
     .eq("bounties.builds.creator_id", userId)
     .order("submitted_at", { ascending: false })
-    .limit(MY_ANSWERS_LIMIT) as unknown as Promise<{ data: MySolutionRow[] | null; error: unknown }>);
+    .limit(MY_ANSWERS_LIMIT);
   if (error) throw bountyLayerError("listMyOpenRequests", error);
 
   const byBounty = new Map<string, { row: MySolutionRow; answers: number }>();
-  for (const row of data ?? []) {
+  for (const row of (data ?? []) as MySolutionRow[]) {
     if (!row.bounties?.builds) continue;
     const held = byBounty.get(row.bounty_id);
     if (held) held.answers += 1;
@@ -230,12 +242,11 @@ export interface MyRecord {
 /** Two counts, together, shown in full: so exact. */
 export async function getMyRecord(userId: string): Promise<MyRecord> {
   const [reproduced, accepted] = await Promise.all([
-    supabase
-      .from("build_reproductions")
+    table("build_reproductions")
       .select("id, builds!build_reproductions_build_id_fkey!inner(creator_id)", { count: "exact", head: true })
       .eq("user_id", userId)
       .neq("builds.creator_id", userId),
-    supabase.from("solutions").select("id", { count: "exact", head: true }).eq("solver_id", userId).eq("status", "accepted"),
+    table("solutions").select("id", { count: "exact", head: true }).eq("solver_id", userId).eq("status", "accepted"),
   ]);
   if (reproduced.error) throw bountyLayerError("getMyRecord (reproduced)", reproduced.error);
   if (accepted.error) throw bountyLayerError("getMyRecord (accepted)", accepted.error);
