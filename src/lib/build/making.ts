@@ -67,6 +67,8 @@ export interface SessionMeta extends SessionExtras {
   workstream?: string;
   /** CA-17 P1: in the same stage as the session above it in its part. */
   withAbove?: boolean;
+  /** SV-16: the profile id of the person whose session this is, when not the build's maker. Absent: the maker. */
+  contributor_id?: string;
 }
 
 /** CA-14 P1: the longest session title. */
@@ -307,6 +309,7 @@ export function newSessionKey(): string {
 export const todayDay = (now: Date = new Date()): string => now.toISOString().slice(0, 10);
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** builds.making.sessions_meta, read defensively: entries without a day are skipped, and only the known keys are kept. */
 export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
@@ -332,6 +335,8 @@ export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
     // CA-17 P1: the part it is in and whether it shares the stage above; read as they are, resolved where they are used.
     if (typeof entry.workstream === "string" && entry.workstream.trim()) meta.workstream = entry.workstream.trim();
     if (entry.withAbove === true) meta.withAbove = true;
+    // SV-16: kept only as a uuid; anything else is left where it is, never shown.
+    if (typeof entry.contributor_id === "string" && UUID.test(entry.contributor_id)) meta.contributor_id = entry.contributor_id;
     // CA-05: cost, tokens, background, started with, at the same time as, own copy.
     Object.assign(meta, extrasOf(entry));
     out[key] = meta;
@@ -623,6 +628,7 @@ export function sessionMetaRefusal(key: string, meta: SessionMeta): string | nul
   if (meta.title !== undefined && meta.title.trim().length > SESSION_TITLE_MAX) return `Session title: ${SESSION_TITLE_MAX} characters max`;
   if (meta.workstream !== undefined && (typeof meta.workstream !== "string" || !meta.workstream.trim())) return "A session's part is a part of this build.";
   if (meta.withAbove !== undefined && typeof meta.withAbove !== "boolean") return "Same stage as the session above is on or off.";
+  if (meta.contributor_id !== undefined && !UUID.test(meta.contributor_id)) return "A session's contributor is a person.";
   return extrasRefusal(meta);
 }
 

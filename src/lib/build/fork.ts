@@ -47,6 +47,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { BUILD_COLUMNS, deleteBuild, getBuildHeader, slugifyTitle, updateBuild } from "./builds";
+import { contributorColumnMissing, creditColumn, creditForInsert, noteMissingContributorColumn, withoutCredit } from "./contributors";
 import { getEvents } from "./events";
 import { getNodeTree } from "./nodes";
 import { getNodeTypes } from "./nodeTypes";
@@ -154,12 +155,17 @@ export async function forkBuild({
       source_ref: node.source_ref,
       event_id: null,
       is_gap: node.is_gap,
+      // SV-16: credit is method, so it travels with the tile. A tile with no contributor was its source's maker's; the copy
+      // keeps that (null when the forker is the maker). Left out entirely while the column is not there yet.
+      ...creditColumn(creditForInsert(node, source.creator_id, forkerId)),
     }));
 
     // CA-13 P16: a ready-made check for each Decision that carries the original's answer (only where the check type is live).
     const checkRows = typesByKey.has("eval_run") ? readyChecks(nodeRows, newId).map((row) => ({ ...row, build_id: build.id, parent_id: null, note: null, source_ref: null, event_id: null, is_gap: false, payload: row.payload as Json })) : [];
     if (nodeRows.length > 0) {
-      const { error } = await supabase.from("build_nodes").insert([...nodeRows, ...checkRows]);
+      let { error } = await supabase.from("build_nodes").insert([...nodeRows, ...checkRows]);
+      // SV-16: a database without the column refuses the credit; the copy is written without it.
+      if (error && noteMissingContributorColumn(error)) ({ error } = await supabase.from("build_nodes").insert(withoutCredit([...nodeRows, ...checkRows])));
       if (error) throw buildLayerError("forkBuild (nodes)", error);
     }
 
@@ -200,7 +206,7 @@ export async function forkBuild({
     if (linked.length > 0) {
       const { error } = await supabase
         .from("build_nodes")
-        .upsert(linked, { onConflict: "id" });
+        .upsert((contributorColumnMissing() ? withoutCredit(linked) : linked) as never[], { onConflict: "id" });
       if (error) throw buildLayerError("forkBuild (node events)", error);
     }
 
