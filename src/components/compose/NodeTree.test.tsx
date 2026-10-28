@@ -51,6 +51,7 @@ function node(
   return {
     id,
     build_id: BUILD_ID,
+    contributor_id: null,
     parent_id: parentId,
     position,
     type: "note",

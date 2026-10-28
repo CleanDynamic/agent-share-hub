@@ -736,6 +736,7 @@ export type Database = {
       build_nodes: {
         Row: {
           build_id: string
+          contributor_id: string | null
           created_at: string
           event_id: string | null
           id: string
@@ -750,6 +751,7 @@ export type Database = {
         }
         Insert: {
           build_id: string
+          contributor_id?: string | null
           created_at?: string
           event_id?: string | null
           id?: string
@@ -764,6 +766,7 @@ export type Database = {
         }
         Update: {
           build_id?: string
+          contributor_id?: string | null
           created_at?: string
           event_id?: string | null
           id?: string
@@ -782,6 +785,20 @@ export type Database = {
             columns: ["build_id"]
             isOneToOne: false
             referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_nodes_contributor_id_fkey"
+            columns: ["contributor_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "build_nodes_contributor_id_fkey"
+            columns: ["contributor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

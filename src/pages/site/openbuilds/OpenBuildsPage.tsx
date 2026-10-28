@@ -68,7 +68,7 @@ export default function OpenBuildsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const viewerId = user?.id ?? null;
   const address = readAddress(params);
   const now = Date.now();
@@ -83,6 +83,8 @@ export default function OpenBuildsPage() {
     queryFn: ({ pageParam }) => listStepRequests({ sort: address.sort, size, offset: pageParam, viewerId }),
     getNextPageParam: (last) => last.nextOffset ?? undefined,
     placeholderData: keepPreviousData,
+    // The key carries the reader (their Me too marks): asked once the session is known, never once as nobody first.
+    enabled: !authLoading,
   });
   const mine = useQuery({ queryKey: ["bounty", "listMyOpenRequests", viewerId], queryFn: () => listMyOpenRequests(viewerId as string), enabled: viewerId !== null });
   const record = useQuery({ queryKey: ["bounty", "getMyRecord", viewerId], queryFn: () => getMyRecord(viewerId as string), enabled: viewerId !== null });
@@ -162,8 +164,9 @@ export default function OpenBuildsPage() {
   return (
     <>
       <SeoHead title="OpenBuilds · buildgallery" description="Published builds that take contributions: open steps to answer, with rewards." path="/openbuilds" />
+      {/* Until the requests arrive the page draws the route's Placeholder itself, so the two are one shape whoever reads. */}
       <PageArrival loading={requests.isPending} placeholder={<OpenBuildsLoadingView />}>
-        <OpenBuildsView
+        {requests.isPending ? <OpenBuildsLoadingView /> : <OpenBuildsView
           requests={{
             tabs: TABS,
             tab: address.tab,
@@ -202,6 +205,7 @@ export default function OpenBuildsPage() {
                     { label: "Builds reproduced", value: String(record.data?.reproduced ?? 0) },
                     ...((record.data?.tried ?? 0) > 0 ? [{ label: "Tried, didn't work", value: String(record.data?.tried) }] : []),
                     { label: "Answers accepted", value: String(record.data?.accepted ?? 0) },
+                    ...(record.data?.contributed === undefined ? [] : [{ label: "Builds contributed to", value: String(record.data.contributed) }]),
                   ],
                 }
               : undefined
@@ -219,7 +223,7 @@ export default function OpenBuildsPage() {
               to: solver.username ? `/profile/${solver.username}` : "/openbuilds/solvers",
             })),
           }}
-        />
+        />}
       </PageArrival>
     </>
   );

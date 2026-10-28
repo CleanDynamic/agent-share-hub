@@ -322,6 +322,25 @@ describe("sessions made in the composer (CA-04 P1)", () => {
     expect(making.sessions_meta).toEqual({ "typed-a": { tool: "claude", date: "2026-10-01" }, "typed-b": { tool: "claude-code", date: "2026-10-20" } });
   });
 
+  it("writes a session's contributor to its own entry and to no other", async () => {
+    const { setSessionMeta } = await import("./making");
+    const KIT = "0c0c0c0c-0000-4000-8000-000000000001";
+    build(["Claude"], { sessions_meta: { "typed-a": { tool: "claude", date: "2026-10-01" }, "typed-b": { tool: "claude", date: "2026-10-02" } } });
+    await setSessionMeta(BUILD_ID, "typed-b", (current) => ({ ...(current as object), tool: "claude", date: "2026-10-02", contributor_id: KIT }));
+    const meta = (patch().making as { sessions_meta: Record<string, Record<string, unknown>> }).sessions_meta;
+    expect(meta["typed-b"].contributor_id).toBe(KIT);
+    expect(meta["typed-a"]).toEqual({ tool: "claude", date: "2026-10-01" });
+  });
+
+  it("reads a contributor only when it is a uuid, and refuses to write one that is not", async () => {
+    const { sessionsMetaOf, sessionMetaRefusal } = await import("./making");
+    const KIT = "0c0c0c0c-0000-4000-8000-000000000001";
+    const read = sessionsMetaOf({ sessions_meta: { "typed-a": { tool: null, date: "2026-10-01", contributor_id: KIT }, "typed-b": { tool: null, date: "2026-10-01", contributor_id: "kit" } } });
+    expect(read["typed-a"].contributor_id).toBe(KIT);
+    expect(read["typed-b"].contributor_id).toBeUndefined();
+    expect(sessionMetaRefusal("typed-a", { tool: null, date: "2026-10-01", contributor_id: "kit" })).toMatch(/contributor/);
+  });
+
   it("refuses a key that is only ever read (typed-legacy) and a day that is not one, before reading anything", async () => {
     const { setSessionMeta } = await import("./making");
     await expect(setSessionMeta(BUILD_ID, "typed-legacy-1", { tool: null, date: "2026-10-20" })).rejects.toThrow(/not saved yet/);

@@ -21,7 +21,7 @@ vi.mock("@/lib/bounty", () => ({
   listTopSolvers: (options: unknown) => listTopSolvers(options),
   toggleMeToo: (input: unknown) => toggleMeToo(input),
 }));
-vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user }) }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user, loading: false }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));

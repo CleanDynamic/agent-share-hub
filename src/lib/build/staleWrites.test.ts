@@ -28,7 +28,7 @@ function open(seed?: (rows: Record<string, Row[]>) => void) {
       const draft = rows.builds.find((row) => row.id === DRAFT) as Row;
       draft.making = { sessions_meta: { s1: session("Alpha"), s2: session("Two") }, workstreams: [{ key: "ws-a", name: "A" }], session_order: ["s1", "s2"] };
       draft.post_doc = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Base post" }] }] };
-      rows.build_nodes.push({ id: NODE, build_id: DRAFT, parent_id: null, position: 0, type: "prompt", title: null, note: null, payload: { text: "base text", session: "s1" }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-24T19:00:00Z" });
+      rows.build_nodes.push({ id: NODE, build_id: DRAFT, contributor_id: null, parent_id: null, position: 0, type: "prompt", title: null, note: null, payload: { text: "base text", session: "s1" }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-24T19:00:00Z" });
       seed?.(rows);
     },
   });
@@ -264,7 +264,7 @@ describe("a tile: no updated_at, so the row is read inside the write", () => {
   it("checks nothing for a tile this tab never knew (a new one)", async () => {
     open();
     await read();
-    const fresh = { id: "0a0a0a0a-0000-4000-8000-000000000099", build_id: DRAFT, parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "new" }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-24T19:00:00Z" } as BuildNode;
+    const fresh = { id: "0a0a0a0a-0000-4000-8000-000000000099", build_id: DRAFT, contributor_id: null, parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "new" }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-24T19:00:00Z" } as BuildNode;
     await writeNodeRows([fresh]);
     expect(requests().some((request) => request.method === "GET" && request.path.includes("id=in."))).toBe(false);
   });

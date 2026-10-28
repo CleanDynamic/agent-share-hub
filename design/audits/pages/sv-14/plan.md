@@ -45,3 +45,9 @@ Branch `sv-14-openbuilds`, from `origin/main` at db55291 (SV-13 merged).
 - Part 1: `OpenBuildsFrame.tsx` (columns, controls, loading view), `OpenBuildsView.tsx` (every section, every request kind, each its own component), `openBuildsModel.ts` (strip window, words), fixture `src/dev/fixtures/vision/openbuilds.ts`, dev page `vision-openbuilds`; the route's Placeholder becomes `OpenBuildsLoadingView` -> verified by: `OpenBuildsView.test.tsx`, `openBuildsModel.test.ts`, the placeholder match test.
 - Part 2: `src/lib/bounty/openBuilds.ts` (`listStepRequests`, `listStepStrips`, `listMyOpenRequests`, `getMyRecord`), `listTopSolvers({ sinceDays })`, `OpenBuildsPage.tsx`, route table load, prefetch and frame, `audit:pages` target `maxRounds: 2`; the old board removed -> verified by: `openBuilds.test.ts`, `OpenBuildsPage.test.tsx`, `npm run audit:pages`.
 - Part 3: `npm run audit:design -- --grep "vision/dusk/openbuilds"` within 4%, then the checks.
+
+## Decided after Part 2 (28 Oct)
+
+- Whole-build requests (gap_node_id null) stay, as request size Whole build: one row for the build in place of the strip,
+  listed in All; SV-21 gives them a tab.
+- Builds reproduced counts worked runs on others' builds; Tried, didn't work the failed ones, shown above 0.

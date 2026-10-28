@@ -3,6 +3,7 @@
 // and which answer lands where.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetContributorColumn } from "@/lib/build/contributors";
 
 interface Recorded {
   table: string;
@@ -70,6 +71,7 @@ function ask(n: number, extra: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
+  resetContributorColumn();
   calls = [];
   started = [];
   answered = 0;
@@ -188,12 +190,32 @@ describe("listMyOpenRequests", () => {
   });
 });
 
+describe("getMyRecord, builds contributed to (SV-16)", () => {
+  it("counts the distinct builds by others that hold a tile credited to the reader", async () => {
+    answers.build_reproductions = { data: null, error: null, count: 0 };
+    answers.solutions = { data: null, error: null, count: 0 };
+    answers.build_nodes = { data: [{ build_id: "b1" }, { build_id: "b1" }, { build_id: "b2" }], error: null };
+    expect((await getMyRecord("me")).contributed).toBe(2);
+    expect(of("build_nodes", "eq")).toEqual([["contributor_id", "me"]]);
+    expect(of("build_nodes", "neq")).toEqual([["builds.creator_id", "me"]]);
+  });
+
+  it("leaves the figure out until the column is live, by the error's code", async () => {
+    answers.build_reproductions = { data: null, error: null, count: 1 };
+    answers.solutions = { data: null, error: null, count: 1 };
+    answers.build_nodes = { data: null, error: { code: "42703", message: "x" } };
+    const record = await getMyRecord("me");
+    expect(record).toEqual({ reproduced: 1, tried: 1, accepted: 1 });
+    expect("contributed" in record).toBe(false);
+  });
+});
+
 describe("getMyRecord", () => {
   it("counts the reader's worked and failed runs of others' builds and accepted answers, together and exactly", async () => {
     answers.build_reproductions = (own) => ({ data: null, error: null, count: own.some((call) => call.method === "eq" && call.args[0] === "worked" && call.args[1] === true) ? 40 : 3 });
     answers.solutions = { data: null, error: null, count: 6 };
-    expect(await getMyRecord("me")).toEqual({ reproduced: 40, tried: 3, accepted: 6 });
-    expect(started).toHaveLength(3);
+    expect(await getMyRecord("me")).toEqual({ reproduced: 40, tried: 3, accepted: 6, contributed: 0 });
+    expect(started).toHaveLength(4);
     expect(started.every((request) => request.answeredBefore === 0)).toBe(true);
     expect(of("build_reproductions", "select")[0]).toEqual(["id, builds!build_reproductions_build_id_fkey!inner(creator_id)", { count: "exact", head: true }]);
     expect(of("build_reproductions", "eq")).toEqual([
