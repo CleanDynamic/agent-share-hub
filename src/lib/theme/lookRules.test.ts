@@ -935,7 +935,6 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/routing/sv04Motion.test.ts",
   "src/lib/routing/useIntent.ts",
   "src/lib/routing/warm.ts",
-  "src/pages/Bounties.tsx",
   "src/pages/site/build/BuildPage.tsx",
   "src/pages/site/build/BuildView.tsx",
   "src/pages/site/build/BuildViewSkeleton.tsx",
@@ -1139,6 +1138,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/openbuilds/OpenBuildsView.test.tsx",
   "src/pages/site/openbuilds/openBuildsModel.ts",
   "src/pages/site/openbuilds/openBuildsModel.test.ts",
+  "src/pages/site/openbuilds/OpenBuildsPage.tsx",
+  "src/pages/site/openbuilds/OpenBuildsPage.test.tsx",
+  "src/lib/bounty/openBuilds.ts",
+  "src/lib/bounty/openBuilds.test.ts",
 ];
 
 /**

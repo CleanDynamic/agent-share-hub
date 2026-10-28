@@ -40,6 +40,8 @@ export interface Solver {
 export interface ListTopSolversOptions {
   /** At most this many solvers; 25 by default, as the board shows. */
   limit?: number;
+  /** SV-14: only solves accepted within this many days (top_solvers' since_days). All time when absent. */
+  sinceDays?: number;
 }
 
 /** One row of top_solvers, exactly as the migration's RETURNS TABLE declares it. */
@@ -73,13 +75,14 @@ function toNumber(value: number | string | null): number | null {
  */
 export async function listTopSolvers({
   limit = TOP_SOLVERS_LIMIT,
+  sinceDays,
 }: ListTopSolversOptions = {}): Promise<Solver[]> {
   const { data, error } = await (
     supabase.rpc as unknown as (
       fn: string,
       params: Record<string, unknown>,
     ) => Promise<{ data: TopSolversRow[] | null; error: unknown }>
-  )("top_solvers", { max_results: limit });
+  )("top_solvers", sinceDays === undefined ? { max_results: limit } : { max_results: limit, since_days: sinceDays });
   if (error) throw bountyLayerError("listTopSolvers", error);
 
   const rows = data ?? [];

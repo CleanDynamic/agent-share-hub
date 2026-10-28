@@ -138,18 +138,37 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     key: "bounties",
     pattern: SITE_NAV.bounties,
     signedIn: false,
-    load: () => import("@/pages/Bounties"),
-    prefetch: async (_params, queryClient) => {
-      const { listOpenBountyCards, OPEN_BOUNTIES_PAGE_SIZE } = await import("@/lib/bounty");
-      await queryClient.prefetchInfiniteQuery({
-        queryKey: ["bounty-board"],
-        initialPageParam: null as string | null,
-        queryFn: ({ pageParam }) => listOpenBountyCards({ limit: OPEN_BOUNTIES_PAGE_SIZE, before: pageParam }),
-        getNextPageParam: (last) => last.nextCursor ?? undefined,
-        pages: 1,
-      });
+    load: () => import("@/pages/site/openbuilds/OpenBuildsPage"),
+    /* SV-14: the first screen's one round: the step requests in the address's sort (their own second round is inside the
+       read), the top contributors, and a signed-in reader's requests and record. Same keys and functions as
+       OpenBuildsPage. On /openbuilds itself the sort follows the address; from a link elsewhere, Most needed. */
+    prefetch: async (_params, queryClient, { userId }) => {
+      const here = window.location.pathname === SITE_NAV.bounties ? window.location.search : "";
+      const [bounty, { readAddress, stepRequestsKey, contributorsKey, CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS }] = await Promise.all([
+        import("@/lib/bounty"),
+        import("@/pages/site/openbuilds/openBuildsModel"),
+      ]);
+      const { sort } = readAddress(new URLSearchParams(here));
+      await Promise.all([
+        queryClient.prefetchInfiniteQuery({
+          queryKey: stepRequestsKey(sort, userId),
+          initialPageParam: 0,
+          queryFn: ({ pageParam }) => bounty.listStepRequests({ sort, offset: pageParam, viewerId: userId }),
+          getNextPageParam: (last) => last.nextOffset ?? undefined,
+          staleTime: LIST_STALE_MS,
+          pages: 1,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: contributorsKey,
+          queryFn: () => bounty.listTopSolvers({ limit: CONTRIBUTORS_SHOWN, sinceDays: CONTRIBUTORS_DAYS }),
+          staleTime: SLOW_STALE_MS,
+        }),
+        userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "listMyOpenRequests", userId], queryFn: () => bounty.listMyOpenRequests(userId), staleTime: LIST_STALE_MS }) : undefined,
+        userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "getMyRecord", userId], queryFn: () => bounty.getMyRecord(userId), staleTime: SLOW_STALE_MS }) : undefined,
+      ]);
     },
     Placeholder: OpenBuildsPlaceholder,
+    frame: { board: true },
   },
   library: {
     key: "library",

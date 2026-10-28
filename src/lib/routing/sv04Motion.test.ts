@@ -17,7 +17,7 @@ const ADDED = [
   "src/lib/routing/PageLink.tsx",
   "src/lib/routing/ScrollKeeper.tsx",
   "src/lib/routing/go.ts",
-  "src/pages/site/bounties/BountiesFrame.tsx",
+  "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
   "src/pages/site/build/BuildViewSkeleton.tsx",
   "src/pages/site/drafts/DraftsFrame.tsx",
   "src/pages/site/builds/BuildsFrame.tsx",

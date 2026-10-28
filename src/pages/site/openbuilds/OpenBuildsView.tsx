@@ -142,7 +142,8 @@ export interface SideListProps {
   status: PanelStatus;
   onRetry: () => void;
   meta: string;
-  to: string;
+  /** The section's own page, for its chevron. None: no chevron. */
+  to?: string;
   rows: readonly SideRow[];
 }
 

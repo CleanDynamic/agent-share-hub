@@ -7,7 +7,9 @@
 
 import { REF_KIND } from "@/lib/build/postRefs";
 import { kindOfNode, topSteps, type StepKind } from "@/lib/build/graph";
-import type { BuildNode } from "@/lib/build/types";
+import { rewardLabel } from "@/components/bounty/bountyDisplay";
+import type { StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
+import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
 
 /* ── the address ── */
 
@@ -59,6 +61,15 @@ export function addressSearch(params: URLSearchParams, next: Partial<OpenBuildsA
   return out;
 }
 
+/* ── the reads' keys, shared by the page and the route table's prefetch ── */
+
+/** How many top contributors the side column shows, and over how many days. */
+export const CONTRIBUTORS_SHOWN = 3;
+export const CONTRIBUTORS_DAYS = 30;
+
+export const stepRequestsKey = (sort: OpenBuildsSort, viewerId: string | null) => ["bounty", "listStepRequests", sort, viewerId] as const;
+export const contributorsKey = ["bounty", "listTopSolvers", CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS] as const;
+
 /* ── words ── */
 
 /** "1 answer", "3 answers". */
@@ -72,10 +83,8 @@ export const toReviewWords = (n: number) => (n === 0 ? "Nothing to review" : `${
 /** The most tiles a strip draws. */
 export const STRIP_SIZE = 5;
 
-/** A node as the strips read returns it: the step's columns and the three payload keys that decide whether it is a step. */
-export type StripNode = Pick<BuildNode, "id" | "build_id" | "parent_id" | "type" | "title" | "position" | "is_gap"> & {
-  payload: { tested?: unknown; setup?: unknown; step?: unknown };
-};
+/** A node as the strips read returns it (`listStepRequests`). */
+export type StripNode = StepStripNode;
 
 export interface StripTile {
   id: string;
@@ -133,4 +142,32 @@ export function stripsFor(rows: readonly StripNode[], gaps: readonly { key: stri
     else byBuild.set(row.build_id, [row]);
   }
   return new Map(gaps.map((gap) => [gap.key, stripFor(byBuild.get(gap.buildId) ?? [], gap.gapId, gap.gapTitle)]));
+}
+
+/* ── a step request as the view draws it ── */
+
+export interface StepRequestWords {
+  id: string;
+  title: string;
+  reward: { text: string; muted?: boolean };
+  meta: string[];
+  problem: string | null;
+  /** "2 days left", "1 answer": the facts before Me too. */
+  facts: string[];
+  answerTo: string;
+}
+
+/** "Step 4 · <gap>" when the strip placed it, else the gap's title; "£40" or "No reward"; "<build> · @maker · <age>". */
+export function stepRequestWords(request: StepRequestRecord, strip: StepStrip, now: number): StepRequestWords {
+  const gap = request.gapTitle ?? "Open request";
+  const reward = rewardLabel(request.bounty.reward_gbp);
+  return {
+    id: request.bounty.id,
+    title: strip.number ? `Step ${strip.number} · ${gap}` : gap,
+    reward: reward ? { text: reward } : { text: "No reward", muted: true },
+    meta: [request.build.title, atHandle(request.maker?.username), shortAgo(request.bounty.created_at, now)].filter((part): part is string => Boolean(part)),
+    problem: request.problem || null,
+    facts: [timeLeft(request.bounty.closes_at, now), answersWords(request.solutions)].filter(Boolean),
+    answerTo: `/openbuilds/${request.bounty.id}/solve`,
+  };
 }
