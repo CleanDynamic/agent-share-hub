@@ -8,7 +8,7 @@
 import { REF_KIND } from "@/lib/build/postRefs";
 import { kindOfNode, topSteps, type StepKind } from "@/lib/build/graph";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
-import type { StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
+import type { RequestSize, StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
 import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
 
 /* ── the address ── */
@@ -26,8 +26,12 @@ export const OPEN_BUILDS_TABS: readonly { value: OpenBuildsTab; label: string }[
   { value: "reviews", label: "Reviews" },
 ];
 
-/** The tabs with at least one live request type. Sessions and Parts arrive with SV-21; Briefs, Model tests and Reviews with SV-22. */
+/** The tabs with at least one live request type. Sessions and Parts arrive with SV-21; Briefs, Model tests and Reviews with SV-22.
+    Whole-build requests are listed in All only; SV-21, which adds request sizes, gives Whole build its own tab. */
 export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps"];
+
+/** The request sizes a tab reads. */
+export const sizeOfTab = (tab: OpenBuildsTab): RequestSize => (tab === "steps" ? "step" : "all");
 
 export const OPEN_BUILDS_SORTS: readonly { value: OpenBuildsSort; label: string }[] = [
   { value: "needed", label: "Most needed" },
@@ -67,7 +71,7 @@ export function addressSearch(params: URLSearchParams, next: Partial<OpenBuildsA
 export const CONTRIBUTORS_SHOWN = 3;
 export const CONTRIBUTORS_DAYS = 30;
 
-export const stepRequestsKey = (sort: OpenBuildsSort, viewerId: string | null) => ["bounty", "listStepRequests", sort, viewerId] as const;
+export const stepRequestsKey = (sort: OpenBuildsSort, size: RequestSize, viewerId: string | null) => ["bounty", "listStepRequests", sort, size, viewerId] as const;
 export const contributorsKey = ["bounty", "listTopSolvers", CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS] as const;
 
 /* ── words ── */
@@ -133,16 +137,28 @@ export function stripFor(nodes: readonly StripNode[], gapId: string | null, gapT
   return { number: String(at + 1), tiles };
 }
 
-/** The strips of many gaps from one read: the rows grouped by build once, then each gap's strip from its build's rows. */
-export function stripsFor(rows: readonly StripNode[], gaps: readonly { key: string; buildId: string; gapId: string | null; gapTitle: string | null }[]): Map<string, StepStrip> {
+/** One read's rows grouped by build, once. */
+export function rowsByBuild(rows: readonly StripNode[]): Map<string, StripNode[]> {
   const byBuild = new Map<string, StripNode[]>();
   for (const row of rows) {
     const list = byBuild.get(row.build_id);
     if (list) list.push(row);
     else byBuild.set(row.build_id, [row]);
   }
+  return byBuild;
+}
+
+/** The strips of many gaps from one read: each gap's strip from its build's rows. */
+export function stripsFor(rows: readonly StripNode[], gaps: readonly { key: string; buildId: string; gapId: string | null; gapTitle: string | null }[]): Map<string, StepStrip> {
+  const byBuild = rowsByBuild(rows);
   return new Map(gaps.map((gap) => [gap.key, stripFor(byBuild.get(gap.buildId) ?? [], gap.gapId, gap.gapTitle)]));
 }
+
+/** A build's step count: its top-level steps, the numbered ones. */
+export const stepCountOf = (rows: readonly StripNode[]): number => topSteps(rows.filter((node) => node.parent_id === null)).length;
+
+/** "1 step", "6 steps". */
+export const stepsWords = (n: number) => `${n} ${n === 1 ? "step" : "steps"}`;
 
 /* ── a step request as the view draws it ── */
 
@@ -157,16 +173,21 @@ export interface StepRequestWords {
   answerTo: string;
 }
 
-/** "Step 4 · <gap>" when the strip placed it, else the gap's title; "£40" or "No reward"; "<build> · @maker · <age>". */
+/** A whole-build request's title while the bounty has no words of its own: `gap_problem` lives on a gap node, and a
+    whole-build request has none. */
+export const WHOLE_BUILD_TITLE = "Open request on the whole build";
+
+/** "Step 4 · <gap>" when the strip placed it, else the gap's title; a whole-build request's own title; "£40" or "No
+    reward"; "<build> · @maker · <age>", so the build's title sits under a whole-build request's. */
 export function stepRequestWords(request: StepRequestRecord, strip: StepStrip, now: number): StepRequestWords {
-  const gap = request.gapTitle ?? "Open request";
+  const gap = request.bounty.gap_node_id === null ? (request.problem || WHOLE_BUILD_TITLE) : (request.gapTitle ?? "Open request");
   const reward = rewardLabel(request.bounty.reward_gbp);
   return {
     id: request.bounty.id,
     title: strip.number ? `Step ${strip.number} · ${gap}` : gap,
     reward: reward ? { text: reward } : { text: "No reward", muted: true },
     meta: [request.build.title, atHandle(request.maker?.username), shortAgo(request.bounty.created_at, now)].filter((part): part is string => Boolean(part)),
-    problem: request.problem || null,
+    problem: request.bounty.gap_node_id === null ? null : request.problem || null,
     facts: [timeLeft(request.bounty.closes_at, now), answersWords(request.solutions)].filter(Boolean),
     answerTo: `/openbuilds/${request.bounty.id}/solve`,
   };

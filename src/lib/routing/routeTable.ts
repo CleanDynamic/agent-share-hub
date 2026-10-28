@@ -144,16 +144,17 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
        OpenBuildsPage. On /openbuilds itself the sort follows the address; from a link elsewhere, Most needed. */
     prefetch: async (_params, queryClient, { userId }) => {
       const here = window.location.pathname === SITE_NAV.bounties ? window.location.search : "";
-      const [bounty, { readAddress, stepRequestsKey, contributorsKey, CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS }] = await Promise.all([
+      const [bounty, { readAddress, sizeOfTab, stepRequestsKey, contributorsKey, CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS }] = await Promise.all([
         import("@/lib/bounty"),
         import("@/pages/site/openbuilds/openBuildsModel"),
       ]);
-      const { sort } = readAddress(new URLSearchParams(here));
+      const { sort, tab } = readAddress(new URLSearchParams(here));
+      const size = sizeOfTab(tab);
       await Promise.all([
         queryClient.prefetchInfiniteQuery({
-          queryKey: stepRequestsKey(sort, userId),
+          queryKey: stepRequestsKey(sort, size, userId),
           initialPageParam: 0,
-          queryFn: ({ pageParam }) => bounty.listStepRequests({ sort, offset: pageParam, viewerId: userId }),
+          queryFn: ({ pageParam }) => bounty.listStepRequests({ sort, size, offset: pageParam, viewerId: userId }),
           getNextPageParam: (last) => last.nextOffset ?? undefined,
           staleTime: LIST_STALE_MS,
           pages: 1,

@@ -70,6 +70,12 @@ export interface StepRequest extends RequestBase {
   strip: readonly StripTile[];
 }
 
+/** A request on the whole build (a bounty naming no gap node): one row for the build in place of a strip. */
+export interface BuildRequest extends RequestBase {
+  kind: "build";
+  build: { title: string; maker: string | null; steps: string };
+}
+
 export interface SessionRequest extends RequestBase {
   kind: "session";
   sessions: readonly { key: string; label: string; detail: string; open?: boolean }[];
@@ -101,7 +107,7 @@ export interface ReviewRequest extends RequestBase {
   kind: "review";
 }
 
-export type RequestItem = StepRequest | SessionRequest | BriefRequest | ModelTestRequest | ReviewRequest;
+export type RequestItem = StepRequest | BuildRequest | SessionRequest | BriefRequest | ModelTestRequest | ReviewRequest;
 
 export interface ReleaseCheckProps {
   model: string;
@@ -304,6 +310,16 @@ export function StepStripTiles({ tiles }: { tiles: readonly StripTile[] }) {
   );
 }
 
+/** The build a whole-build request is on: its title, then its maker and step count. */
+function BuildRow({ build }: Pick<BuildRequest, "build">) {
+  return (
+    <div style={{ ...tileBox, marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <span style={{ minWidth: 0, fontSize: 12.5, overflowWrap: "anywhere" }}>{build.title}</span>
+      <span style={{ flexShrink: 0, fontSize: 11.5, color: t.label }}>{[build.maker, build.steps].filter(Boolean).join(" · ")}</span>
+    </div>
+  );
+}
+
 function SessionTiles({ sessions }: { sessions: SessionRequest["sessions"] }) {
   const phone = useIsPhone();
   return (
@@ -385,7 +401,7 @@ function ModelRows({ models }: Pick<ModelTestRequest, "models">) {
   );
 }
 
-const CHIP: Record<RequestItem["kind"], string> = { step: "STEP", session: "SESSION", brief: "BRIEF", "model-test": "MODEL TEST", review: "REVIEW" };
+const CHIP: Record<RequestItem["kind"], string> = { step: "STEP", build: "WHOLE BUILD", session: "SESSION", brief: "BRIEF", "model-test": "MODEL TEST", review: "REVIEW" };
 
 /** One request: its head, its meta line, its body, and a facts line ending in its one control. */
 export function RequestArticle({ item, last }: { item: RequestItem; last: boolean }) {
@@ -400,6 +416,7 @@ export function RequestArticle({ item, last }: { item: RequestItem; last: boolea
       <p style={{ margin: "4px 0 0", fontSize: 12, color: t.label }}>{item.meta.join(" · ")}</p>
       {item.kind === "step" && item.problem ? <p style={{ margin: "12px 0 0", color: t.text2 }}>{item.problem}</p> : null}
       {item.kind === "step" ? <StepStripTiles tiles={item.strip} /> : null}
+      {item.kind === "build" ? <BuildRow build={item.build} /> : null}
       {item.kind === "session" ? <SessionTiles sessions={item.sessions} /> : null}
       {item.kind === "brief" ? <BriefAnswers answersLine={item.answersLine} compareTo={item.compareTo} answers={item.answers} /> : null}
       {item.kind === "model-test" ? <ModelRows models={item.models} /> : null}

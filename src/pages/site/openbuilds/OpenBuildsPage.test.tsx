@@ -83,7 +83,7 @@ beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   listStepRequests.mockReset().mockResolvedValue(page());
   listMyOpenRequests.mockReset().mockResolvedValue([{ bountyId: "q9", build: { slug: "gbngd", title: "gbngd" }, gapTitle: "Step two", answers: 2, latestSolver: "kit" }]);
-  getMyRecord.mockReset().mockResolvedValue({ reproduced: 40, accepted: 6 });
+  getMyRecord.mockReset().mockResolvedValue({ reproduced: 40, tried: 0, accepted: 6 });
   listTopSolvers.mockReset().mockResolvedValue([{ id: "u1", username: "kit", display_name: null, avatar_url: null, solved: 9, rewardTotalGbp: null, lastSolvedAt: null }]);
   toggleMeToo.mockReset();
 });
@@ -110,7 +110,7 @@ describe("OpenBuildsPage", () => {
   it("starts every read at once, the requests in the address's sort, with the reader's marks", async () => {
     mount("/openbuilds?sort=closing");
     await screen.findByTestId("openbuilds-request");
-    expect(listStepRequests).toHaveBeenCalledWith({ sort: "closing", offset: 0, viewerId: "me" });
+    expect(listStepRequests).toHaveBeenCalledWith({ sort: "closing", size: "all", offset: 0, viewerId: "me" });
     expect(listMyOpenRequests).toHaveBeenCalledWith("me");
     expect(getMyRecord).toHaveBeenCalledWith("me");
     expect(listTopSolvers).toHaveBeenCalledWith({ limit: 3, sinceDays: 30 });
@@ -125,7 +125,29 @@ describe("OpenBuildsPage", () => {
     fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Most needed" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Reward" }));
     expect(where).toBe("?type=steps&sort=reward");
-    await waitFor(() => expect(listStepRequests).toHaveBeenCalledWith({ sort: "reward", offset: 0, viewerId: "me" }));
+    await waitFor(() => expect(listStepRequests).toHaveBeenCalledWith({ sort: "reward", size: "step", offset: 0, viewerId: "me" }));
+  });
+
+  it("draws a whole-build request with one row for its build in place of a strip", async () => {
+    const whole = page();
+    whole.requests = [{ ...whole.requests[0], bounty: { ...whole.requests[0].bounty, id: "q2", gap_node_id: null }, gapTitle: null, problem: "" }];
+    listStepRequests.mockResolvedValue(whole);
+    mount();
+    const request = await screen.findByTestId("openbuilds-request");
+    expect(request.dataset.kind).toBe("build");
+    expect(within(request).getByText("WHOLE BUILD")).toBeInTheDocument();
+    expect(within(request).getByRole("heading", { name: "Open request on the whole build" })).toBeInTheDocument();
+    expect(within(request).getByText("Research brief agent · @mira · 6h")).toBeInTheDocument();
+    expect(within(request).queryByRole("list", { name: "Steps" })).toBeNull();
+    expect(within(request).getByText("@mira · 5 steps")).toBeInTheDocument();
+    expect(within(request).getByRole("link", { name: "Answer" })).toHaveAttribute("href", "/openbuilds/q2/solve");
+  });
+
+  it("shows Tried, didn't work only when there is one", async () => {
+    getMyRecord.mockResolvedValue({ reproduced: 40, tried: 2, accepted: 6 });
+    mount();
+    expect(await screen.findByText("Tried, didn't work")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
   });
 
   it("presses Me too at once and keeps the count the database returns", async () => {
@@ -154,6 +176,7 @@ describe("OpenBuildsPage", () => {
     expect(screen.getByText("2 answers to review")).toBeInTheDocument();
     expect(screen.getByText("2 answers")).toBeInTheDocument();
     expect(await screen.findByText("40")).toBeInTheDocument();
+    expect(screen.queryByText("Tried, didn't work")).toBeNull();
     expect(screen.getByText("Accepted answers, last 30 days")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /@kit/ })).toHaveAttribute("href", "/profile/kit");
   });
@@ -173,7 +196,7 @@ describe("OpenBuildsPage", () => {
     await screen.findByTestId("openbuilds-request");
     expect(listMyOpenRequests).not.toHaveBeenCalled();
     expect(getMyRecord).not.toHaveBeenCalled();
-    expect(listStepRequests).toHaveBeenCalledWith({ sort: "needed", offset: 0, viewerId: null });
+    expect(listStepRequests).toHaveBeenCalledWith({ sort: "needed", size: "all", offset: 0, viewerId: null });
     expect(screen.queryByRole("heading", { name: "Your requests" })).toBeNull();
     expect(screen.getByRole("heading", { name: "Top contributors" })).toBeInTheDocument();
   });

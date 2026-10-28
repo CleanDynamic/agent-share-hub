@@ -6,8 +6,8 @@
 // listOpenBountyCards would answer round 1 and the first two of round 2, but it awaits them before it returns, so a strips
 // read after it would be a third round.
 //
-// A STEP REQUEST is an open bounty on a published build. One that names no gap node (a build-level ask) is still listed,
-// as the open bounties board lists it, with no strip.
+// A REQUEST is an open bounty on a published build. Its SIZE is Step when it names a gap node, Whole build when it names
+// none (gap_node_id null). A whole-build request has no strip; the build's step count comes from the same strips read.
 //
 // ORDER IS THE SERVER'S, so every sort pages the same way: by offset, read one row long to learn whether there is another
 // page. Keyset paging (listOpenBountyCards) only works for one order, and the board has four.
@@ -19,6 +19,9 @@ import { myMeToo } from "./meToo";
 import { bountyLayerError, type Bounty } from "./types";
 
 export type StepRequestSort = "needed" | "newest" | "closing" | "reward";
+
+/** Which requests: every size, or steps only (a named gap node). */
+export type RequestSize = "all" | "step";
 
 /** A node as the strips read returns it: the step's columns, and of its payload only the three keys that decide whether it is a step (`isStepNode`, graph.ts). */
 export interface StepStripNode {
@@ -57,6 +60,7 @@ export interface StepRequestsPage {
 
 export interface ListStepRequestsOptions {
   sort?: StepRequestSort;
+  size?: RequestSize;
   offset?: number;
   limit?: number;
   /** The signed-in reader, for their Me too marks. */
@@ -119,7 +123,7 @@ async function listStepStrips(buildIds: readonly string[], gapIds: readonly stri
  * One page of step requests in the order asked for: Most needed (`me_too_count`), Newest, Closing soon (no deadline last),
  * Reward (dearest first, none last); ties newest first, then by id, so offset pages never overlap.
  */
-export async function listStepRequests({ sort = "needed", offset = 0, limit = OPEN_BOUNTIES_PAGE_SIZE, viewerId = null }: ListStepRequestsOptions = {}): Promise<StepRequestsPage> {
+export async function listStepRequests({ sort = "needed", size: wanted = "all", offset = 0, limit = OPEN_BOUNTIES_PAGE_SIZE, viewerId = null }: ListStepRequestsOptions = {}): Promise<StepRequestsPage> {
   const size = Math.min(Math.max(1, limit), 100);
 
   let query = table("bounties")
@@ -127,6 +131,7 @@ export async function listStepRequests({ sort = "needed", offset = 0, limit = OP
     .eq("status", "open")
     .not("build_id", "is", null)
     .in("builds.status", ["published", "gallery"]);
+  if (wanted === "step") query = query.not("gap_node_id", "is", null);
   if (sort === "needed") query = query.order("me_too_count", { ascending: false });
   if (sort === "closing") query = query.order("closes_at", { ascending: true, nullsFirst: false });
   if (sort === "reward") query = query.order("reward_gbp", { ascending: false, nullsFirst: false });
@@ -233,22 +238,31 @@ export async function listMyOpenRequests(userId: string): Promise<MyOpenRequest[
 /* ── the reader's record ── */
 
 export interface MyRecord {
-  /** The reader's runs of builds other people made (build_reproductions rows). */
+  /** Builds other people made that the reader ran and got working. One row per person per build (UNIQUE (build_id, user_id)), so rows are builds. */
   reproduced: number;
+  /** Builds other people made that the reader ran and did not get working. */
+  tried: number;
   /** The reader's accepted solutions. */
   accepted: number;
 }
 
-/** Two counts, together, shown in full: so exact. */
+/** The reader's runs of others' builds that worked (or did not), counted exactly. */
+const runsOnOthers = (userId: string, worked: boolean) =>
+  table("build_reproductions")
+    .select("id, builds!build_reproductions_build_id_fkey!inner(creator_id)", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("worked", worked)
+    .neq("builds.creator_id", userId);
+
+/** Three counts, together, shown in full: so exact. */
 export async function getMyRecord(userId: string): Promise<MyRecord> {
-  const [reproduced, accepted] = await Promise.all([
-    table("build_reproductions")
-      .select("id, builds!build_reproductions_build_id_fkey!inner(creator_id)", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .neq("builds.creator_id", userId),
+  const [reproduced, tried, accepted] = await Promise.all([
+    runsOnOthers(userId, true),
+    runsOnOthers(userId, false),
     table("solutions").select("id", { count: "exact", head: true }).eq("solver_id", userId).eq("status", "accepted"),
   ]);
   if (reproduced.error) throw bountyLayerError("getMyRecord (reproduced)", reproduced.error);
+  if (tried.error) throw bountyLayerError("getMyRecord (tried)", tried.error);
   if (accepted.error) throw bountyLayerError("getMyRecord (accepted)", accepted.error);
-  return { reproduced: reproduced.count ?? 0, accepted: accepted.count ?? 0 };
+  return { reproduced: reproduced.count ?? 0, tried: tried.count ?? 0, accepted: accepted.count ?? 0 };
 }

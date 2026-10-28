@@ -114,6 +114,7 @@ export {
   type ListStepRequestsOptions,
   type MyOpenRequest,
   type MyRecord,
+  type RequestSize,
   type StepRequestRecord,
   type StepRequestSort,
   type StepRequestsPage,

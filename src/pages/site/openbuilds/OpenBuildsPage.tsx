@@ -8,6 +8,10 @@
    WHERE THE READER IS lives in the address (`?type=`, `?sort=`). Changing either is the same page with new parameters:
    the old requests stay until the new arrive, with no fade.
 
+   REQUEST SIZES: a bounty naming a gap node is a Step request; one naming none is a Whole build request, drawn with one row
+   for its build (title, maker, step count). All lists both; Steps lists steps only (read on the server). Whole build gets
+   its own tab when SV-21 adds request sizes.
+
    ME TOO is shown at once: the count and the pressed state change in the cache, the write follows, and a refusal puts
    both back and says so.
 
@@ -39,8 +43,12 @@ import {
   answersWords,
   contributorsKey,
   readAddress,
+  rowsByBuild,
+  sizeOfTab,
+  stepCountOf,
   stepRequestWords,
   stepRequestsKey,
+  stepsWords,
   stripsFor,
   toReviewWords,
 } from "./openBuildsModel";
@@ -67,11 +75,12 @@ export default function OpenBuildsPage() {
 
   /* ── round 1: everything that needs nothing else ── */
 
-  const key = stepRequestsKey(address.sort, viewerId);
+  const size = sizeOfTab(address.tab);
+  const key = stepRequestsKey(address.sort, size, viewerId);
   const requests = useInfiniteQuery({
     queryKey: key,
     initialPageParam: 0,
-    queryFn: ({ pageParam }) => listStepRequests({ sort: address.sort, offset: pageParam, viewerId }),
+    queryFn: ({ pageParam }) => listStepRequests({ sort: address.sort, size, offset: pageParam, viewerId }),
     getNextPageParam: (last) => last.nextOffset ?? undefined,
     placeholderData: keepPreviousData,
   });
@@ -118,26 +127,32 @@ export default function OpenBuildsPage() {
 
   const pages = requests.data?.pages ?? [];
   const records = pages.flatMap((page) => page.requests);
+  const stripRows = pages.flatMap((page) => page.strips);
+  const byBuild = rowsByBuild(stripRows);
   const strips = stripsFor(
-    pages.flatMap((page) => page.strips),
+    stripRows,
     records.map((request) => ({ key: request.bounty.id, buildId: request.build.id, gapId: request.bounty.gap_node_id, gapTitle: request.gapTitle })),
   );
   const items: RequestItem[] = records.map((request) => {
     const strip = strips.get(request.bounty.id) ?? { number: null, tiles: [] };
     const words = stepRequestWords(request, strip, now);
     const count = request.bounty.me_too_count ?? 0;
-    return {
-      kind: "step",
+    const shared = {
       id: words.id,
       title: words.title,
       reward: words.reward,
       meta: words.meta,
-      problem: words.problem,
-      strip: strip.tiles,
-      facts: [...words.facts.map((text) => ({ parts: [{ text }] })), { meToo: true }],
+      facts: [...words.facts.map((text) => ({ parts: [{ text }] })), { meToo: true as const }],
       meToo: { count, pressed: request.meToo, onToggle: () => onMeToo(request.bounty.id, request.meToo, count) },
       action: { label: "Answer", to: words.answerTo },
     };
+    return request.bounty.gap_node_id === null
+      ? {
+          ...shared,
+          kind: "build",
+          build: { title: request.build.title, maker: request.maker?.username ? `@${request.maker.username}` : null, steps: stepsWords(stepCountOf(byBuild.get(request.build.id) ?? [])) },
+        }
+      : { ...shared, kind: "step", problem: words.problem, strip: strip.tiles };
   });
 
   const move = (next: Parameters<typeof addressSearch>[1]) => setParams(addressSearch(params, next), { replace: true });
@@ -185,6 +200,7 @@ export default function OpenBuildsPage() {
                   to: "/profile",
                   rows: [
                     { label: "Builds reproduced", value: String(record.data?.reproduced ?? 0) },
+                    ...((record.data?.tried ?? 0) > 0 ? [{ label: "Tried, didn't work", value: String(record.data?.tried) }] : []),
                     { label: "Answers accepted", value: String(record.data?.accepted ?? 0) },
                   ],
                 }

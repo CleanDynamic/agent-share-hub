@@ -14,13 +14,17 @@ let calls: Recorded[] = [];
 /** Each awaited request, in order, with the number of requests already answered when it started. */
 let started: { table: string; answeredBefore: number }[] = [];
 let answered = 0;
-let answers: Record<string, { data: unknown; error: unknown; count?: number }> = {};
+type Answer = { data: unknown; error: unknown; count?: number };
+/** A table's answer, or one worked out from that request's own calls. */
+let answers: Record<string, Answer | ((own: Recorded[]) => Answer)> = {};
 
 function builder(table: string) {
   const self: Record<string, unknown> = {};
+  const own: Recorded[] = [];
   for (const method of ["select", "eq", "neq", "in", "not", "or", "order", "range", "limit"]) {
     self[method] = (...args: unknown[]) => {
       calls.push({ table, method, args });
+      own.push({ table, method, args });
       return self;
     };
   }
@@ -29,7 +33,8 @@ function builder(table: string) {
     return Promise.resolve()
       .then(() => {
         answered += 1;
-        return answers[table] ?? { data: [], error: null };
+        const answer = answers[table];
+        return typeof answer === "function" ? answer(own) : (answer ?? { data: [], error: null });
       })
       .then(resolve, reject);
   };
@@ -134,10 +139,26 @@ describe("listStepRequests", () => {
     expect(page.nextOffset).toBe(6);
   });
 
-  it("lists only open asks on published builds", async () => {
+  it("lists only open asks on published builds, of every size", async () => {
     await listStepRequests();
     expect(of("bounties", "eq")).toEqual([["status", "open"]]);
     expect(of("bounties", "in")).toEqual([["builds.status", ["published", "gallery"]]]);
+    expect(of("bounties", "not")).toEqual([["build_id", "is", null]]);
+  });
+
+  it("reads steps only when asked: asks that name a gap node", async () => {
+    await listStepRequests({ size: "step" });
+    expect(of("bounties", "not")).toEqual([
+      ["build_id", "is", null],
+      ["gap_node_id", "is", null],
+    ]);
+  });
+
+  it("reads a whole-build ask's build steps for its step count, with no gap to name", async () => {
+    answers.bounties = { data: [ask(1, { gap_node_id: null, build_nodes: null })], error: null };
+    const page = await listStepRequests();
+    expect(of("build_nodes", "or")[0]).toEqual(["parent_id.is.null"]);
+    expect(page.requests[0]).toMatchObject({ gapTitle: null, problem: "" });
   });
 });
 
@@ -168,13 +189,23 @@ describe("listMyOpenRequests", () => {
 });
 
 describe("getMyRecord", () => {
-  it("counts the reader's runs of others' builds and accepted answers, together and exactly", async () => {
-    answers.build_reproductions = { data: null, error: null, count: 40 };
+  it("counts the reader's worked and failed runs of others' builds and accepted answers, together and exactly", async () => {
+    answers.build_reproductions = (own) => ({ data: null, error: null, count: own.some((call) => call.method === "eq" && call.args[0] === "worked" && call.args[1] === true) ? 40 : 3 });
     answers.solutions = { data: null, error: null, count: 6 };
-    expect(await getMyRecord("me")).toEqual({ reproduced: 40, accepted: 6 });
+    expect(await getMyRecord("me")).toEqual({ reproduced: 40, tried: 3, accepted: 6 });
+    expect(started).toHaveLength(3);
     expect(started.every((request) => request.answeredBefore === 0)).toBe(true);
     expect(of("build_reproductions", "select")[0]).toEqual(["id, builds!build_reproductions_build_id_fkey!inner(creator_id)", { count: "exact", head: true }]);
-    expect(of("build_reproductions", "neq")[0]).toEqual(["builds.creator_id", "me"]);
+    expect(of("build_reproductions", "eq")).toEqual([
+      ["user_id", "me"],
+      ["worked", true],
+      ["user_id", "me"],
+      ["worked", false],
+    ]);
+    expect(of("build_reproductions", "neq")).toEqual([
+      ["builds.creator_id", "me"],
+      ["builds.creator_id", "me"],
+    ]);
     expect(of("solutions", "eq")).toEqual([
       ["solver_id", "me"],
       ["status", "accepted"],
