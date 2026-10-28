@@ -6,8 +6,9 @@
 -- PRIVATE TO THE SAVER. saved_items has an owner-only policy for every command and no grant for anon, so nobody else reads a
 -- row, the source's maker included.
 --
--- GRANTS ARE EXPLICIT. The table is revoked from anon and authenticated, then authenticated is granted exactly the four
--- verbs its policies serve, as 20260917120000 does; nothing relies on the platform's default privileges.
+-- GRANTS ARE EXPLICIT, AND COME BEFORE THE POLICIES. The table is revoked from anon, authenticated and service_role, then
+-- authenticated is granted exactly the four verbs its policies serve and service_role is granted ALL, as build_nodes is
+-- (20260823120000); nothing relies on the platform's default privileges.
 --
 -- user_id REFERENCES public.profiles(id), as builds.creator_id and collections.owner_id do, not the auth schema. A profile
 -- is made for every account (handle_new_user) and cascades from it, so a deleted account still removes its saved items. The one thing others may see is a count of how many readers kept a public collection,
@@ -75,6 +76,10 @@ CREATE INDEX IF NOT EXISTS idx_saved_items_build
 
 ALTER TABLE public.saved_items ENABLE ROW LEVEL SECURITY;
 
+REVOKE ALL ON public.saved_items FROM anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.saved_items TO authenticated;
+GRANT ALL ON public.saved_items TO service_role;
+
 DROP POLICY IF EXISTS "Readers read their own saved items" ON public.saved_items;
 CREATE POLICY "Readers read their own saved items"
   ON public.saved_items FOR SELECT
@@ -106,9 +111,6 @@ CREATE POLICY "Readers remove their own saved items"
   ON public.saved_items FOR DELETE
   TO authenticated
   USING (user_id = (select auth.uid()));
-
-REVOKE ALL ON public.saved_items FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.saved_items TO authenticated;
 
 COMMENT ON TABLE public.saved_items IS
   'SV-17. A part, session, step, request, filter set or public collection a reader kept, as a snapshot. Private: only the reader reads, writes and removes their own. Builds are in build_saves.';
