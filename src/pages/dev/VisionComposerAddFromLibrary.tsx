@@ -22,7 +22,7 @@ function ComposerStill() {
       <div style={{ height: 56, display: "flex", alignItems: "center", gap: 16, padding: "0 20px", fontWeight: 600, fontSize: 14 }}>
         buildgallery <span style={{ fontWeight: 400, color: t.label }}>/ Drafts / Invoice chaser</span>
       </div>
-      <div style={{ height: 838, background: t.surface, border: `1px solid ${t.surfaceBorder}`, borderRadius: 10, padding: "32px 76px", boxSizing: "border-box" }}>
+      <div style={{ height: 838, background: t.surface, border: `1px solid ${t.surfaceBorder}`, borderRadius: 10, padding: "32px clamp(16px, 5.3vw, 76px)", boxSizing: "border-box" }}>
         <div style={{ fontSize: 20, fontWeight: 500 }}>Invoice chaser</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16, marginTop: 32 }}>
           <div style={column(false)}><div style={{ fontWeight: 500 }}>Session 1</div></div>

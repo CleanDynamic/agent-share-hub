@@ -70,7 +70,7 @@ describe("Add › From Library", () => {
     openAdd();
     const item = await screen.findByRole("menuitem", { name: /From Library/ });
     expect(item.getAttribute("aria-disabled")).not.toBe("true");
-    expect(item.textContent).toContain("Saved steps and sessions");
+    expect(item.textContent).toContain("Steps and collections you saved");
   });
 
   it("lists the saved steps and sessions that fit the session, and no request, filter set or collection", async () => {

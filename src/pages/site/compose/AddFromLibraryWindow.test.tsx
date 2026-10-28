@@ -159,12 +159,12 @@ describe("search", () => {
 describe("states", () => {
   it("loading", () => {
     show({ status: "loading", rows: [] });
-    expect(screen.getByRole("status")).toHaveTextContent(LIBRARY_WINDOW_COPY.loading);
+    expect(screen.getByTestId("library-status")).toHaveTextContent(LIBRARY_WINDOW_COPY.loading);
   });
 
   it("error says one sentence and offers Retry", () => {
     const props = show({ status: "error", rows: [] });
-    expect(screen.getByRole("alert")).toHaveTextContent(LIBRARY_WINDOW_COPY.error);
+    expect(screen.getByTestId("library-error")).toHaveTextContent(LIBRARY_WINDOW_COPY.error);
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(props.onRetry).toHaveBeenCalled();
   });

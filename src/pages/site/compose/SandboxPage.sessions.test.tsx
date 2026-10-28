@@ -146,7 +146,7 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     await field();
     fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
     const items = (await screen.findAllByRole("menuitem")).map((item) => item.textContent ?? "");
-    expect(items).toHaveLength(12);
+    expect(items).toHaveLength(13);
     expect(items.join(" ")).not.toMatch(/session/i);
   });
 

@@ -229,11 +229,11 @@ function Body(props: AddFromLibraryWindowProps) {
 
       <div style={{ padding: "8px 20px 0", overflowY: "auto", minHeight: 0, flex: "1 1 auto" }}>
         {status === "loading" ? (
-          <p role="status" style={{ ...line(12.5, 400, t.label, 18), margin: "12px 0" }}>
+          <p data-testid="library-status" style={{ ...line(12.5, 400, t.label, 18), margin: "12px 0" }}>
             {copy.loading}
           </p>
         ) : status === "error" ? (
-          <div role="alert" style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0", ...line(12.5, 400, t.text2, 18) }}>
+          <div data-testid="library-error" style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0", ...line(12.5, 400, t.text2, 18) }}>
             <span>{copy.error}</span>
             {onRetry ? (
               <RecipeButton small phone={phone} onClick={onRetry}>
@@ -272,7 +272,7 @@ function Body(props: AddFromLibraryWindowProps) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, padding: "16px 20px", borderTop: `1px solid ${t.hairline}`, flexWrap: phone ? "wrap" : "nowrap" }}>
-        <p aria-live="polite" style={{ ...line(12, 400, t.label, 17), margin: 0, flex: 1, minWidth: 0 }}>
+        <p style={{ ...line(12, 400, t.label, 17), margin: 0, flex: 1, minWidth: 0 }}>
           {selectedShown ? footer : ""}
         </p>
         <RecipeButton phone={phone} onClick={onClose}>

@@ -250,7 +250,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "check", name: "Check", line: "Test of part of the build", ready: true },
   { key: "result", name: "Result", line: "Output the build produced", ready: true },
   /* SV-18: saved steps and sessions, copied in with their source. Listed after the twelve; it opens its own window. */
-  { key: "library", name: "From Library", line: "Saved steps and sessions", ready: true },
+  { key: "library", name: "From Library", line: "Steps and collections you saved", ready: true },
 ];
 
 /** CA-03 P5: the Add menu's own words. */
