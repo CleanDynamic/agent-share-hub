@@ -25,14 +25,14 @@ describe("worked until", () => {
   });
 
   it("puts a saved goal on its session's group", () => {
-    const tree = [{ id: "p", build_id: "b", parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "x", session: "typed-a" }, source_ref: null, event_id: null, is_gap: false, created_at: "", children: [] } as NodeTree];
+    const tree = [{ id: "p", build_id: "b", contributor_id: null, parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "x", session: "typed-a" }, source_ref: null, event_id: null, is_gap: false, created_at: "", children: [] } as NodeTree];
     const [group] = sessionGroups(buildSteps(tree), [], {}, { "typed-a": { tool: null, date: "2026-10-12", goal: { condition: "tests pass", reached: "reached", turns: 12 } } });
     expect(group.goal).toEqual({ condition: "tests pass", reached: "reached", turns: 12 });
   });
 });
 
 describe("the two new ways it ran", () => {
-  const agent = { id: "a", build_id: "b", parent_id: null, position: 1, type: "agent_config", title: null, note: null, payload: { system_prompt: "x", model: "m" }, source_ref: null, event_id: null, is_gap: false } as unknown as BuildNode;
+  const agent = { id: "a", build_id: "b", contributor_id: null, parent_id: null, position: 1, type: "agent_config", title: null, note: null, payload: { system_prompt: "x", model: "m" }, source_ref: null, event_id: null, is_gap: false } as unknown as BuildNode;
 
   it("round trips goal and script, and keeps every value it had", async () => {
     const goal = (await setRuns(agent, { how: "goal", detail: "ignored" })) as BuildNode;
