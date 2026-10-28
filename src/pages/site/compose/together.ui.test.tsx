@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 const prompt = (id: string, position: number, session: string): NodeTree =>
-  ({ id, build_id: "b", parent_id: null, position, type: "prompt", title: null, note: null, payload: { text: `Do ${id}.`, session }, source_ref: null, event_id: null, is_gap: false, created_at: "", children: [] }) as NodeTree;
+  ({ id, build_id: "b", contributor_id: null, parent_id: null, position, type: "prompt", title: null, note: null, payload: { text: `Do ${id}.`, session }, source_ref: null, event_id: null, is_gap: false, created_at: "", children: [] }) as NodeTree;
 const tree = [prompt("p1", 1, "typed-a"), prompt("p2", 2, "typed-b"), prompt("p3", 3, "typed-c")];
 const meta = {
   "typed-a": { tool: "claude-code", date: "2026-10-12" },
