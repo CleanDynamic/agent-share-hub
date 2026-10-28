@@ -10,6 +10,7 @@ import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import type { WhereNextItem } from "@/lib/build/whereNext";
 import type { Classification } from "@/lib/classify/types";
+import type { ActivityEvent } from "@/lib/feed/activity";
 import type { FeedItem, FeedItemKind } from "@/lib/feed/getBuildFeed";
 import type { StreakDayRow } from "@/lib/progress";
 import { weekStartUtc, type ChallengeProgress } from "@/lib/progress/weekly";
@@ -118,7 +119,7 @@ export type HomeFeedItem = HomeBuildPost | HomeReproNote | HomeRebuildPost | Hom
 
 /* ── the columns' rows ── */
 
-export type HomeSinceTone = "worked" | "failed" | "rebuild" | "answer";
+export type HomeSinceTone = "worked" | "failed" | "rebuild" | "answer" | "stale";
 
 export interface HomeSinceRow {
   key: string;
@@ -126,6 +127,8 @@ export interface HomeSinceRow {
   title: string;
   detail: string;
   at: string;
+  /** The canonical page the event is about; absent on the dev page. */
+  href?: string;
 }
 
 export interface HomeDraftRow {
@@ -210,6 +213,37 @@ export interface HomeEndCard {
   href: string;
   plaque: PlaqueBuild;
   cover: HomeCover;
+}
+
+/* ── since you were last here (SV-15) ── */
+
+/** An activity event as Home's timeline row. The person is "@handle", or their name when they have no handle. */
+export function sinceRowOf(event: ActivityEvent): HomeSinceRow {
+  const base = { key: event.id, at: event.at, href: `/b2/${event.buildSlug}` };
+  switch (event.kind) {
+    case "run": {
+      const who = atHandle(event.runner.handle) ?? event.runner.name;
+      const on = event.model ? ` on ${event.model}` : "";
+      return { ...base, tone: event.worked ? "worked" : "failed", title: `${who} ran ${event.buildTitle}`, detail: event.worked ? `It worked${on}` : `It didn't work${on}` };
+    }
+    case "rebuild": {
+      const who = atHandle(event.rebuilder.handle) ?? event.rebuilder.name;
+      return { ...base, tone: "rebuild", title: `${who} rebuilt ${event.buildTitle}`, detail: `"${event.rebuildTitle}"`, href: `/b2/${event.rebuildSlug}` };
+    }
+    case "answer": {
+      const who = atHandle(event.solver.handle) ?? event.solver.name;
+      return { ...base, tone: "answer", title: "An answer to your request", detail: `${who} · ${event.buildTitle}`, href: `/bounties/${event.bountyId}/solve` };
+    }
+    case "stale":
+      return { ...base, tone: "stale", title: `${event.buildTitle} is out of date`, detail: "Not confirmed in a while" };
+  }
+}
+
+/** The section's meta, "2d ago · what others did with your builds". Null when there is nothing to show: the section is left out. */
+export function sinceSection(events: readonly ActivityEvent[], seenAt: number, now: number): { meta: string; rows: HomeSinceRow[] } | null {
+  if (events.length === 0) return null;
+  const age = shortAgo(new Date(seenAt).toISOString(), now);
+  return { meta: `${age === "now" ? "Just now" : `${age} ago`} · what others did with your builds`, rows: events.map(sinceRowOf) };
 }
 
 /* ── words ── */

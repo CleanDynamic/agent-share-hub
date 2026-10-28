@@ -228,3 +228,37 @@ describe("new since you looked", () => {
     expect(readHomeSeen()).toBeNull();
   });
 });
+
+/* ── SV-15: since you were last here ── */
+
+describe("sinceSection", () => {
+  const person = { id: "u2", handle: "kit", name: "Kit" };
+  const base = { buildId: "b1", buildSlug: "call-notes", buildTitle: "Call notes", role: "maker" as const, at: "2026-10-28T11:00:00.000Z" };
+  const now = Date.parse("2026-10-28T12:00:00.000Z");
+
+  it("is left out when there are no events", async () => {
+    const { sinceSection } = await import("./homeModel");
+    expect(sinceSection([], now - 2 * 86_400_000, now)).toBeNull();
+  });
+
+  it("words each kind and links to the page it is about", async () => {
+    const { sinceSection } = await import("./homeModel");
+    const section = sinceSection(
+      [
+        { ...base, id: "run:1", kind: "run", runner: person, worked: false, model: "gpt-5", note: null },
+        { ...base, id: "rebuild:2", kind: "rebuild", rebuildId: "b2", rebuildSlug: "call-notes-2", rebuildTitle: "On a local model", rebuilder: person },
+        { ...base, id: "answer:3", kind: "answer", bountyId: "q1", solutionId: "s1", solver: person },
+        { ...base, id: "stale:b1", kind: "stale" },
+      ],
+      now - 2 * 86_400_000,
+      now,
+    );
+    expect(section?.meta).toBe("2d ago · what others did with your builds");
+    expect(section?.rows.map((row) => [row.tone, row.title, row.detail, row.href])).toEqual([
+      ["failed", "@kit ran Call notes", "It didn't work on gpt-5", "/b2/call-notes"],
+      ["rebuild", "@kit rebuilt Call notes", '"On a local model"', "/b2/call-notes-2"],
+      ["answer", "An answer to your request", "@kit · Call notes", "/bounties/q1/solve"],
+      ["stale", "Call notes is out of date", "Not confirmed in a while", "/b2/call-notes"],
+    ]);
+  });
+});

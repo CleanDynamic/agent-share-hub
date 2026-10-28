@@ -34,6 +34,7 @@ import { getGalleryBuildsByIds, listGallery, type GalleryBuild, type GalleryMedi
 import { attachSession } from "@/lib/build/sessions";
 import { countLitToday, countReproducedToday, countRunsThisWeek, listMostReproduced } from "@/lib/build/signals";
 import { getWhereNextForViewer } from "@/lib/build/whereNext";
+import { listActivityFor } from "@/lib/feed/activity";
 import { getBuildFeed, type FeedItem } from "@/lib/feed/getBuildFeed";
 import { getStreakDays } from "@/lib/progress";
 import { weekStartUtc, weeklyProgress } from "@/lib/progress/weekly";
@@ -52,6 +53,7 @@ import {
   readHomeSeen,
   runRows,
   shownItems,
+  sinceSection,
   timeLeft,
   whereNextRows,
   writeHomeSeen,
@@ -173,6 +175,15 @@ export function HomePage() {
     queryKey: ["build", "listMostReproduced", weekStart],
     queryFn: () => listMostReproduced({ since: new Date(weekStart), limit: 3 }),
     staleTime: COUNT_STALE_MS,
+  });
+
+  /* Since you were last here: what others did with the reader's builds and saves since the previous visit. `seenAt` is
+     read once above, so the window does not move when this visit is recorded. No earlier visit: nothing to say. */
+  const activity = useQuery({
+    queryKey: ["feed", "listActivityFor", userId, seenAt],
+    queryFn: () => listActivityFor({ userId: userId!, since: seenAt!, limit: 5 }),
+    enabled: userId !== null && seenAt !== null,
+    staleTime: STALE_MS,
   });
 
   /* The OpenBuilds board's own first page, on its own key: "Most needed first" is its asks by Me too. */
@@ -347,7 +358,7 @@ export function HomePage() {
       <PageArrival loading={feedStatus === "loading"} placeholder={<HomeLoadingView />}>
         <HomeView
           now={now}
-          since={null}
+          since={seenAt !== null && activity.data ? sinceSection(activity.data, seenAt, now) : null}
           drafts={loadable(signedIn, drafts, (rows) => ({
             total: rows.length,
             rows: rows

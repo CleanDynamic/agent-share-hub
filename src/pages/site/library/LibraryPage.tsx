@@ -10,7 +10,7 @@
 
    NOT LIVE YET (drawn on the dev page only): the Parts, Sessions, Steps, Requests and Filter sets kinds, Used in, notes,
    saved-by counts and Start a build from a collection (SV-17); the version switch and Edited (SV-19); the changes list
-   (SV-15); In collections (SV-25); the Filters and Sort controls (SV-24). */
+   (SV-15, live for saved builds: runs, rebuilds, answers and out-of-date); In collections (SV-25); the Filters and Sort controls (SV-24). */
 
 import { useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -44,10 +44,11 @@ import { modelLabel } from "@/lib/models/registry";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { listMySavedBuilds } from "@/lib/social";
 import { isStale } from "@/lib/build/signals";
+import { listActivityFor } from "@/lib/feed/activity";
 
 import { LibraryLoadingView } from "./LibraryFrame";
 import { LibraryView, type LibraryPreviewProps, type LibrarySelected, type PanelStatus } from "./LibraryView";
-import { LIBRARY_KINDS, LIVE_KINDS, addressSearch, ageWords, countWords, kindTabs, privacyWord, readAddress, savedBuildRow, type LibraryAddress } from "./libraryModel";
+import { CHANGES_WINDOW_DAYS, LIBRARY_KINDS, LIVE_KINDS, addressSearch, ageWords, changesFigure, countWords, kindTabs, libraryChanges, privacyWord, readAddress, savedBuildRow, type LibraryAddress } from "./libraryModel";
 
 const statusOf = (query: { isLoading: boolean; isError: boolean }): PanelStatus => (query.isLoading ? "loading" : query.isError ? "error" : "ready");
 
@@ -126,6 +127,17 @@ export default function LibraryPage() {
     refetchOnWindowFocus: false,
   });
 
+  /* The changes on the saved builds: the same events Home reads, started with the saves and the collections. */
+  const sinceMs = Math.floor((now - CHANGES_WINDOW_DAYS * 86_400_000) / 3_600_000) * 3_600_000;
+  const activity = useQuery({
+    queryKey: ["feed", "listActivityFor", viewerId, sinceMs],
+    queryFn: () => listActivityFor({ userId: viewerId as string, since: sinceMs, limit: 50 }),
+    enabled: !visiting && viewerId !== null,
+    refetchOnWindowFocus: false,
+  });
+  const changeRows = libraryChanges(activity.data ?? [], now).slice(0, 6);
+
+  useReported(activity.error, "library-activity");
   useReported(saved.error, "library-saved");
   useReported(collections.error, "library-collections");
   useReported(collectionBuilds.error, "library-collection-builds");
@@ -261,6 +273,7 @@ export default function LibraryPage() {
                 onChange: (next) => move({ kind: next }),
               }
         }
+        changes={!visiting && changeRows.length > 0 ? { ...changesFigure(changeRows), rows: changeRows } : undefined}
         collections={{
           status: statusOf(collections),
           items: list.map((item) => ({ id: item.id, name: item.name, meta: privacyWord(item.isPrivate), count: item.itemCount })),

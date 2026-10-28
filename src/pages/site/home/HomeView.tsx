@@ -114,7 +114,7 @@ export interface HomeViewProps {
   now: number;
 
   /* Your studio */
-  /** Since you were last here. Null: not drawn (the live page until SV-15). */
+  /** Since you were last here. Null: not drawn (no events since the last visit). */
   since: { meta: string; rows: readonly HomeSinceRow[] } | null;
   drafts: Loadable<{ rows: readonly HomeDraftRow[]; total: number }>;
   sessions: Loadable<{ rows: readonly HomeSessionRow[]; total: number }>;
@@ -198,7 +198,7 @@ function Cover({ cover, height, width, eager = false }: { cover: HomeCover; heig
 
 /* ═════════ your studio ═════════ */
 
-const SINCE_DOT: Record<HomeSinceTone, string> = { worked: t.evidence, failed: t.catBreakage, rebuild: t.text2, answer: t.text };
+const SINCE_DOT: Record<HomeSinceTone, string> = { worked: t.evidence, failed: t.catBreakage, rebuild: t.text2, answer: t.text, stale: t.lit };
 
 export function SinceSection({ meta, rows, now }: { meta: string; rows: readonly HomeSinceRow[]; now: number }) {
   return (
@@ -214,7 +214,7 @@ export function SinceSection({ meta, rows, now }: { meta: string; rows: readonly
               {last ? null : <span aria-hidden="true" style={{ position: "absolute", left: 7, top: 14, bottom: 0, width: 1, background: t.hairline }} />}
               <span aria-hidden="true" style={{ marginTop: 5, width: 9, height: 9, borderRadius: 5, background: SINCE_DOT[row.tone], boxShadow: last ? undefined : `0 0 0 3px ${t.surface}`, position: "relative" }} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 500 }}>{row.title}</div>
+                <div style={{ fontWeight: 500 }}>{row.href ? <PlainLink to={row.href}>{row.title}</PlainLink> : row.title}</div>
                 <div style={text(12, 400, t.label)}>{row.detail}</div>
               </div>
               <span style={text(11.5, 400, t.label)}>{shortAgo(row.at, now)}</span>
