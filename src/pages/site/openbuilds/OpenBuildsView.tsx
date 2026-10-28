@@ -444,6 +444,7 @@ function SortMenu({ sorts, sort, onSort }: Pick<RequestsProps, "sorts" | "sort" 
 }
 
 export function Requests({ tabs, tab, onTab, sorts, sort, onSort, status, onRetry, items, more }: RequestsProps) {
+  const phone = useIsPhone();
   let body: ReactNode;
   if (status === "loading") body = <RequestSkeletons />;
   else if (status === "error") body = <PanelError what="Requests didn't load." onRetry={onRetry} />;
@@ -470,7 +471,10 @@ export function Requests({ tabs, tab, onTab, sorts, sort, onSort, status, onRetr
   return (
     <section aria-label="Requests">
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
-        <TextTabs tabs={tabs} value={tab} onChange={onTab} label="Request type" rule={false} />
+        {/* On a phone the seven tabs are wider than the page: the row scrolls sideways rather than the page. */}
+        <div style={phone ? { minWidth: 0, maxWidth: "100%", overflowX: "auto" } : undefined}>
+          <TextTabs tabs={tabs} value={tab} onChange={onTab} label="Request type" rule={false} />
+        </div>
         <SortMenu sorts={sorts} sort={sort} onSort={onSort} />
       </div>
       <div role="tabpanel" aria-label={tabs.find((entry) => entry.value === tab)?.label ?? "All"}>
