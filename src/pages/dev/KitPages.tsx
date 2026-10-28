@@ -80,7 +80,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   "vision-builds-maps": lazy(() => import("./VisionBuildsMaps")),
   "vision-builds-classification": lazy(() => import("./VisionBuildsClassification")),
   "vision-library": lazy(() => import("./VisionLibrary")),
-  "vision-composer-add-from-library": lazy(() => import("./VisionNotBuilt")),
+  "vision-composer-add-from-library": lazy(() => import("./VisionComposerAddFromLibrary")),
   "vision-drafts": lazy(() => import("./VisionDrafts")),
 };
 
