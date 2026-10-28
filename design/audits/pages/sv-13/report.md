@@ -8,7 +8,7 @@ Facts in this prompt that were wrong on disk:
   - The Classification view had no filter column on its board (like Maps), so it is its own page shape (head, one row, grid), not BuildsView's column; BuildsView's `other` now carries only the Table's error.
   - `shownValues` folds a correction into "stated"; the board tells "stated" and "corrected" apart, so the model reads `disputes` itself.
   - The board's sample words are not all taxonomy labels ("Sales" is a Field area, "Marketing and sales"; "Sales outreach" is the value under it). The fixture uses the lists' ids where a label matches and the maker's own words where not.
-Baseline → end: tests 9416 → 9446 (30 new: 9 model, 12 view, 2 page, plus the lookRules entries). Failing: 58 on main, the same 58 on the branch (AppShell, noRail,
+Baseline → end: tests 9416 → 9446 (30 new: 9 model, 11 view, 2 page, and 8 lookRules per-file checks). Failing: 58 on main, the same 58 on the branch (AppShell, noRail,
   flat-shell, siteFrame, retiredSurfaces, onePrompt snapshot, BuildPage, sv03Migration, theme compliance/motion/ns-classes/rcStates).
   Tier 1: 306 passed, 96 failed, 4 skipped on this machine. The builds spec file passes whole (50 of 50, 12 of them new: /builds?view=classification).
   The 96 are wide-layout, backdrop, Home, Build, profile, rebuild, post-thread and auth-entry specs; the 11 I re-ran on main fail the same way there.
