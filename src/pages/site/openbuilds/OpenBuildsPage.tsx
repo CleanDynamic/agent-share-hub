@@ -202,6 +202,7 @@ export default function OpenBuildsPage() {
                     { label: "Builds reproduced", value: String(record.data?.reproduced ?? 0) },
                     ...((record.data?.tried ?? 0) > 0 ? [{ label: "Tried, didn't work", value: String(record.data?.tried) }] : []),
                     { label: "Answers accepted", value: String(record.data?.accepted ?? 0) },
+                    ...(record.data?.contributed === undefined ? [] : [{ label: "Builds contributed to", value: String(record.data.contributed) }]),
                   ],
                 }
               : undefined

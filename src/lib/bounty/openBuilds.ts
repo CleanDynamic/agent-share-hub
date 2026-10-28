@@ -13,6 +13,7 @@
 // page. Keyset paging (listOpenBountyCards) only works for one order, and the board has four.
 
 import { supabase } from "@/integrations/supabase/client";
+import { contributorColumnMissing, noteMissingContributorColumn } from "@/lib/build/contributors";
 import { listSolverHandles, countSolutionsByBounty } from "./solutions";
 import { BOUNTY_COLUMNS, OPEN_BOUNTIES_PAGE_SIZE } from "./bounties";
 import { myMeToo } from "./meToo";
@@ -244,6 +245,26 @@ export interface MyRecord {
   tried: number;
   /** The reader's accepted solutions. */
   accepted: number;
+  /** SV-16: distinct builds by other people with a tile credited to the reader. Absent until the contributor column is live. */
+  contributed?: number;
+}
+
+/** Most tiles read to find the distinct builds: a reader past this has contributed to more builds than a record line needs. */
+const CONTRIBUTED_TILE_LIMIT = 1000;
+
+/** SV-16: builds by others that hold a tile the reader made, counted from their tiles. Undefined when the column is not there yet. */
+async function buildsContributedTo(userId: string): Promise<number | undefined> {
+  const { data, error } = await (supabase as unknown as { from: (name: string) => { select: (columns: string) => Query } })
+    .from("build_nodes")
+    .select("build_id, builds!build_nodes_build_id_fkey!inner(creator_id)")
+    .eq("contributor_id", userId)
+    .neq("builds.creator_id", userId)
+    .limit(CONTRIBUTED_TILE_LIMIT);
+  if (error) {
+    if (noteMissingContributorColumn(error)) return undefined;
+    throw bountyLayerError("getMyRecord (contributed)", error);
+  }
+  return new Set((data as { build_id: string }[] | null ?? []).map((row) => row.build_id)).size;
 }
 
 /** The reader's runs of others' builds that worked (or did not), counted exactly. */
@@ -256,13 +277,14 @@ const runsOnOthers = (userId: string, worked: boolean) =>
 
 /** Three counts, together, shown in full: so exact. */
 export async function getMyRecord(userId: string): Promise<MyRecord> {
-  const [reproduced, tried, accepted] = await Promise.all([
+  const [reproduced, tried, accepted, contributed] = await Promise.all([
     runsOnOthers(userId, true),
     runsOnOthers(userId, false),
     table("solutions").select("id", { count: "exact", head: true }).eq("solver_id", userId).eq("status", "accepted"),
+    contributorColumnMissing() ? Promise.resolve(undefined) : buildsContributedTo(userId),
   ]);
   if (reproduced.error) throw bountyLayerError("getMyRecord (reproduced)", reproduced.error);
   if (tried.error) throw bountyLayerError("getMyRecord (tried)", tried.error);
   if (accepted.error) throw bountyLayerError("getMyRecord (accepted)", accepted.error);
-  return { reproduced: reproduced.count ?? 0, tried: tried.count ?? 0, accepted: accepted.count ?? 0 };
+  return { reproduced: reproduced.count ?? 0, tried: tried.count ?? 0, accepted: accepted.count ?? 0, ...(contributed === undefined ? null : { contributed }) };
 }
