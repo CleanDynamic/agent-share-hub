@@ -11,8 +11,9 @@
    SV-17: the Parts, Sessions, Steps, Requests and Filter sets kinds are live (saved_items), with Used in, notes and the
    saved-by count on a public collection. All saved lists the builds and the kept items together, newest first.
 
-   SV-18: Start a build from this collection is live. NOT LIVE YET (drawn on the dev page only): Use in a build; the version switch
-   and Edited (SV-19); the changes list for kept items (SV-15 is live for saved builds: runs, rebuilds, answers and out-of-date);
+   SV-18: Start a build from this collection is live. SV-19: Edited and Removed on kept steps, parts and sessions, the saved and
+   current versions of an edited step or part, and the two kinds in the changes list. NOT LIVE YET (drawn on the dev page only):
+   Use in a build; the Changed and Removed tabs;
    In collections (SV-25); the Filters and Sort controls (SV-24). */
 
 import { useEffect, useState } from "react";
@@ -58,6 +59,7 @@ import {
 import type { GalleryBuild } from "@/lib/build/gallery";
 import { listMySavedBuilds } from "@/lib/social";
 import { isStale } from "@/lib/build/signals";
+import { currentLines, diffLines, listSourceStates, savedLines } from "@/lib/library/sourceVersions";
 import { listActivityFor } from "@/lib/feed/activity";
 
 import { LibraryLoadingView } from "./LibraryFrame";
@@ -248,12 +250,22 @@ export default function LibraryPage() {
   const buildShown: Shown[] = openId
     ? (collectionBuilds.data?.pages.flatMap((page) => page.items.map((item) => ({ id: item.build.id, at: item.addedAt, build: item.build }))) ?? [])
     : (saved.data?.pages.flatMap((page) => page.items.map((item) => ({ id: item.build.id, at: item.savedAt, build: item.build }))) ?? []);
+  /* Whether each kept step, part and session's source was edited or is gone: one request for all of them, once they are listed. */
+  const keptKey = keptItems.map((item) => `${item.id}:${item.sourceVersion ?? ""}`).join(",");
+  const sources = useQuery({
+    queryKey: ["library", "listSourceStates", viewerId, keptKey],
+    queryFn: () => listSourceStates(keptItems),
+    enabled: !visiting && viewerId !== null && keptItems.length > 0 && firstScreen,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
+  useReported(sources.error, "library-source-states");
   const itemShown: Shown[] = keptItems.map((item) => ({ id: item.id, at: item.lastUsedAt, item }));
   /* An open collection and Builds list builds; a kept kind lists its items; All saved lists both, newest first. */
   const shown: Shown[] =
     openId || kind === "builds" ? buildShown : itemKind ? itemShown : [...buildShown, ...itemShown].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
   const rows = shown.map((entry) =>
-    entry.item ? savedItemRow(entry.item, usedIn.data ?? new Map(), now) : savedBuildRow({ savedAt: entry.at, build: entry.build as GalleryBuild }, now),
+    entry.item ? savedItemRow(entry.item, usedIn.data ?? new Map(), now, sources.data) : savedBuildRow({ savedAt: entry.at, build: entry.build as GalleryBuild }, now),
   );
 
   /* All saved shows the builds even when the kept items fail to load (reported by their own context). */
@@ -285,6 +297,18 @@ export default function LibraryPage() {
   const [busy, setBusy] = useState(false);
   /* A note being typed, by saved item; saved when the reader leaves the field. */
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  /* The version shown for the chosen step or part whose source was edited (SV-19): the saved snapshot until the reader switches.
+     The current content is read only when it is asked for, one request, and the switch changes the content at once. */
+  const [versionChoice, setVersionChoice] = useState<{ id: string; value: "saved" | "current" } | null>(null);
+  const editedItem = chosen?.item && (chosen.item.kind === "step" || chosen.item.kind === "part") && sources.data?.get(chosen.item.id)?.state === "edited" ? chosen.item : null;
+  const currentContent = useQuery({
+    queryKey: ["library", "currentLines", editedItem?.id, sources.data?.get(editedItem?.id ?? "")?.version],
+    queryFn: () => currentLines(editedItem as LibrarySavedItem),
+    enabled: editedItem !== null,
+    refetchOnWindowFocus: false,
+  });
+  useReported(currentContent.error, "library-current-version");
 
   const refreshKept = () => {
     void qc.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
@@ -376,11 +400,28 @@ export default function LibraryPage() {
   const selectedItem = (item: LibrarySavedItem): LibrarySelected => {
     const source = (item.snapshot.source ?? {}) as { buildTitle?: string | null; buildSlug?: string | null };
     const used = usedIn.data?.get(item.id);
+    const status = sources.data?.get(item.id);
+    const lines = status?.state === "edited" && currentContent.data ? diffLines(savedLines(item), currentContent.data) : null;
+    const value = versionChoice?.id === item.id ? versionChoice.value : "saved";
     return {
       kind: "step",
       id: item.id,
       chip: itemType(item).toUpperCase(),
-      state: { text: `Saved ${ageWords(item.savedAt, now)}` },
+      state:
+        status?.state === "edited"
+          ? { text: `Edited ${ageWords(status.version ?? "", now)}`, tone: "lit" }
+          : status?.state === "removed"
+            ? { text: "Removed", tone: "breakage" }
+            : { text: `Saved ${ageWords(item.savedAt, now)}` },
+      versions: lines
+        ? {
+            value,
+            onChange: (next) => setVersionChoice({ id: item.id, value: next }),
+            saved: lines.saved,
+            current: lines.current,
+            changed: `Edited ${ageWords(status?.version ?? "", now)}. Your saved copy is unchanged and still works.`,
+          }
+        : undefined,
       title: itemTitle(item),
       source: itemDetail(item),
       rows: [

@@ -236,6 +236,10 @@ export function sinceRowOf(event: ActivityEvent): HomeSinceRow {
     }
     case "stale":
       return { ...base, tone: "stale", title: `${event.buildTitle} is out of date`, detail: "Not confirmed in a while" };
+    case "edited":
+    case "removed":
+      // Only the Library's changes (savedOnly) carry these; Home does not ask for them.
+      return { ...base, tone: "stale", title: `${event.buildTitle} changed`, detail: event.kind === "edited" ? "Edited since you saved it" : "No longer there" };
   }
 }
 

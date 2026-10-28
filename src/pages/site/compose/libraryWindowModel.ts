@@ -7,6 +7,7 @@ import { fitWords, fitsPlace, copyNoun, makerIdOf, missingKindWords, type Librar
 import { shortDate } from "@/lib/build/readerSteps";
 import { modelLabel } from "@/lib/models/registry";
 import type { LibrarySavedItem } from "@/lib/library/savedItems";
+import type { SourceStatus } from "@/lib/library/sourceVersions";
 
 import type { LibraryTab, LibraryWindowRow } from "./AddFromLibraryWindow";
 
@@ -40,6 +41,8 @@ export interface RowFacts {
   usedIn: ReadonlyMap<string, number>;
   /** Maker id → handle, without the @. */
   handles: ReadonlyMap<string, string>;
+  /** Item id → what became of its source (SV-19). Absent while it loads or for a kind with no tile source: reads as Same. */
+  sources?: ReadonlyMap<string, SourceStatus>;
 }
 
 /** "Prompt · Call notes that write themselves · @maya · Opus 5.5 · used in 4 builds". */
@@ -61,7 +64,15 @@ export function rowsFor(items: readonly LibrarySavedItem[], place: LibraryPlace,
   for (const item of items) {
     if (!fitsPlace(place, item)) continue;
     byId.set(item.id, item);
-    rows.push({ id: item.id, title: savedTitle(item), state: "same", detail: detailOf(item, facts), savedOn: shortDate(item.savedAt) ?? "", currentOn: null });
+    const source = facts.sources?.get(item.id);
+    rows.push({
+      id: item.id,
+      title: savedTitle(item),
+      state: source?.state ?? "same",
+      detail: detailOf(item, facts),
+      savedOn: shortDate(item.savedAt) ?? "",
+      currentOn: source?.state === "edited" ? shortDate(source.version) : null,
+    });
   }
   return { rows, byId };
 }

@@ -5,6 +5,7 @@
    into state (`rerender-derived-state-no-effect`). */
 
 import type { LibrarySavedItem, SavedKind } from "@/lib/library/savedItems";
+import type { SourceStatus } from "@/lib/library/sourceVersions";
 import type { SavedBuild } from "@/lib/social";
 import { isStale } from "@/lib/build/signals";
 import type { ActivityEvent } from "@/lib/feed/activity";
@@ -126,7 +127,7 @@ const asRecord = (value: unknown): Record<string, unknown> => (value && typeof v
 const text = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
 /** The words a saved item is called by: its title, else the first of its text. */
-export function itemTitle(item: LibrarySavedItem): string {
+export function itemTitle(item: Pick<LibrarySavedItem, "kind" | "snapshot">): string {
   const snap = item.snapshot;
   const prompts = Array.isArray(snap.prompts) ? (snap.prompts as { text?: unknown }[]) : [];
   const gap = asRecord(snap.gap);
@@ -159,14 +160,14 @@ export function itemDetail(item: LibrarySavedItem): string | null {
 }
 
 /** A saved item as a table row. Used in is the count of builds with a tile from it; absent for kinds that are not put in a build. */
-export function savedItemRow(item: LibrarySavedItem, usedIn: ReadonlyMap<string, number>, now: number): LibraryRow {
+export function savedItemRow(item: LibrarySavedItem, usedIn: ReadonlyMap<string, number>, now: number, sources: ReadonlyMap<string, SourceStatus> = new Map()): LibraryRow {
   const counted = item.kind === "part" || item.kind === "step" || item.kind === "session";
   return {
     id: item.id,
     title: itemTitle(item),
     detail: itemDetail(item),
     type: itemType(item),
-    state: "same",
+    state: sources.get(item.id)?.state ?? "same",
     ...(counted ? { usedIn: usedIn.get(item.id) ?? 0 } : null),
     lastUsed: ageWords(item.lastUsedAt, now),
   };
@@ -251,6 +252,10 @@ export function libraryChanges(events: readonly ActivityEvent[], now: number): L
           return { id: event.id, tag: "ANSWER", item: event.buildTitle, detail: `${handleOf(event.solver)} answered your saved request`, age };
         case "stale":
           return { id: event.id, tag: "STALE", item: event.buildTitle, detail: "not confirmed in a while", age };
+        case "edited":
+          return { id: event.id, tag: "EDITED", item: itemTitle(event.item), detail: "its source was edited after you saved it", age };
+        case "removed":
+          return { id: event.id, tag: "REMOVED", item: itemTitle(event.item), detail: "its source is gone; your saved copy still works", age };
       }
     });
 }

@@ -101,6 +101,34 @@ describe("listActivityFor", () => {
     expect(calls.find((c) => c.table === "builds")?.filters).not.toContainEqual(["eq", "creator_id", "u1"]);
   });
 
+  it("savedOnly reports a saved step whose source was edited since it was saved, and one whose source is gone (SV-19)", async () => {
+    tables.builds = [];
+    tables.saved_items = [
+      { id: "s1", kind: "step", build_id: "b9", ref: "n1", snapshot: { title: "Triage", source: { buildSlug: "support", buildTitle: "Support bot" } }, source_version: ago(10) },
+      { id: "s2", kind: "step", build_id: "b9", ref: "n2", snapshot: { title: "Gone" }, source_version: ago(10) },
+      { id: "s3", kind: "step", build_id: "b9", ref: "n3", snapshot: { title: "Untouched" }, source_version: ago(10) },
+    ];
+    tables.build_nodes = [
+      { id: "n1", build_id: "b9", parent_id: null, type: "agent", updated_at: ago(1), session: null, import_session: null },
+      { id: "n3", build_id: "b9", parent_id: null, type: "agent", updated_at: ago(10), session: null, import_session: null },
+    ];
+    const events = await listActivityFor({ userId: "u1", since: SINCE, savedOnly: true });
+    expect(events.map((e) => [e.id, e.kind, e.role])).toEqual([
+      ["removed:s2", "removed", "saver"],
+      ["edited:s1", "edited", "saver"],
+    ]);
+    expect(events.find((e) => e.kind === "edited")).toMatchObject({ at: ago(1), buildSlug: "support", item: { id: "s1" } });
+  });
+
+  it("an edit from before the window is not reported, and Home (not savedOnly) never reads saved items", async () => {
+    tables.saved_items = [{ id: "s1", kind: "step", build_id: "b9", ref: "n1", snapshot: {}, source_version: ago(30) }];
+    tables.build_nodes = [{ id: "n1", build_id: "b9", parent_id: null, type: "agent", updated_at: ago(20), session: null, import_session: null }];
+    expect((await listActivityFor({ userId: "u1", since: SINCE, savedOnly: true })).some((e) => e.kind === "edited")).toBe(false);
+    calls.length = 0;
+    await listActivityFor({ userId: "u1", since: SINCE });
+    expect(calls.some((c) => c.table === "saved_items" || c.table === "build_nodes")).toBe(false);
+  });
+
   it("orders newest first and cuts to the limit", async () => {
     tables.build_reproductions = [
       { id: "r1", build_id: "b1", user_id: "u2", confirmed_at: ago(1.5), model_used: null, worked: true, note: null },
