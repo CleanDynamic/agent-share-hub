@@ -1113,6 +1113,16 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/builds/buildsModel.ts",
   "src/pages/site/builds/buildsOther.ts",
   "src/pages/site/builds/buildsViews.ts",
+
+  // SV-12
+  "src/dev/fixtures/vision/builds-maps.ts",
+  "src/lib/build/buildsMaps.ts",
+  "src/lib/build/buildsMaps.test.ts",
+  "src/lib/build/buildsMapsTestSupport.ts",
+  "src/pages/dev/VisionBuildsMaps.tsx",
+  "src/pages/site/builds/BuildsMapsPane.tsx",
+  "src/pages/site/builds/BuildsMapsView.test.tsx",
+  "src/pages/site/builds/mapsModel.ts",
 ];
 
 /**
@@ -1381,6 +1391,21 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 10 is not in SPACE_REFINED",
     text: `<div role="group" aria-label={\`\${section.name} values\`} style={{ marginTop: 10 }}>`,
     why: "SV-11: the Builds board starts a checklist 10 under its head.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 10 }}>`,
+    why: "SV-12: the Maps page's loading card puts the title row 10 under the well, as the card does.",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: `width: pct(BOX_W, w), height: BOX_H, boxSizing: "border-box"`,
+    why: "SV-12: the Maps board pads a session box 4 7.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `alignItems: "flex-start", gap: 8, marginTop: 10 }}>`,
+    why: "SV-12: the Maps board puts a card's title row 10 under its well.",
   },
   {
     rule: "spacing 14 is not in SPACE_REFINED",

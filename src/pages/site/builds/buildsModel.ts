@@ -194,6 +194,9 @@ export function toggled(params: GalleryParams, sectionId: string, key: string): 
 /** How many values the filters hold, for "n active". */
 export const activeCount = (params: GalleryParams): number => activeChips(params).filter((chip) => chip.key !== "q").length;
 
+/** SV-12: the Maps view draws this many builds at a time, and reads their Maps in one request. */
+export const MAPS_PAGE = 24;
+
 /* ── the rows ── */
 
 /** A build as a row of the Table. */

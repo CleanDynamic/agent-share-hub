@@ -174,6 +174,8 @@ export interface MapSession {
   number: number;
   /** The app's name ("Claude"); null when none is chosen. */
   app: string | null;
+  /** SV-12: the model the session ran on, as the session holds it ("claude-opus-5-5"); absent when it names none. */
+  model?: string;
   /** The maker's title; absent when none. */
   title?: string;
   /** The maker's colour for the session. */
@@ -261,7 +263,7 @@ export function sessionMapFor(input: { groups: readonly SessionGroup[]; steps: r
   const sessions: MapSession[] = shown.map((group) => {
     const key = groupKey(group);
     const day = group.startedAt && ISO_DAY.test(group.startedAt) ? group.startedAt.slice(0, 10) : undefined;
-    return { key, number: group.number, app: group.tool ?? null, title: group.title, colour: group.colour, part: partOf.get(key) ?? parts[0].key, day, tiles: group.stepNumbers.length };
+    return { key, number: group.number, app: group.tool ?? null, ...(group.model ? { model: group.model } : null), title: group.title, colour: group.colour, part: partOf.get(key) ?? parts[0].key, day, tiles: group.stepNumbers.length };
   });
 
   const sessionOf = sessionOfTiles(input.steps, (top) => {

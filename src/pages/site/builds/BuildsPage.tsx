@@ -16,7 +16,7 @@
    calculation (SV-24). */
 
 import { Suspense, useEffect, useState } from "react";
-import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -28,11 +28,13 @@ import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsControl, BuildsLoadingView, TableRowSkeletons, text } from "./BuildsFrame";
+import { BuildsControl, BuildsLoadingView, MapsLoadingView, TableRowSkeletons, text } from "./BuildsFrame";
+import { BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
   LIVE_COLUMNS,
+  MAPS_PAGE,
   SORT_COLUMN,
   SORT_OPTIONS,
   activeChips,
@@ -47,13 +49,24 @@ import {
   withoutChip,
   type PanelOrder,
 } from "./buildsModel";
-import { BuildsClassificationView, BuildsMapsView, prefetchView } from "./buildsViews";
+import { BuildsClassificationView, BuildsMapsPane, prefetchView } from "./buildsViews";
+import type { MapsDirection } from "./BuildsMapsView";
 
 /** One sentence and Retry (CA-28's wording). */
 function TableError({ onRetry }: { onRetry: () => void }) {
   return (
     <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
       <p style={{ ...text(13, 400, t.text), margin: 0 }}>Builds didn't load.</p>
+      <BuildsControl onClick={onRetry}>Retry</BuildsControl>
+    </div>
+  );
+}
+
+/** One sentence and Retry: the Maps did not load (the builds did). */
+function MapsError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
+      <p style={{ ...text(13, 400, t.text), margin: 0 }}>Maps didn't load.</p>
       <BuildsControl onClick={onRetry}>Retry</BuildsControl>
     </div>
   );
@@ -72,6 +85,10 @@ export default function BuildsPage() {
   /* The panel's own: which filters were opened on this visit, and how each checklist is ordered. */
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
   const [orders, setOrders] = useState<Record<string, PanelOrder>>({});
+  /* Maps: which way the Map is drawn, kept for the visit. */
+  const [direction, setDirection] = useState<MapsDirection>("horizontal");
+  /* Maps: how many of the loaded builds are drawn; each 24 are one read. */
+  const [mapsShown, setMapsShown] = useState(MAPS_PAGE);
 
   /* ── one round: the list, the stats, the lens counts and the facets start together ── */
 
@@ -94,10 +111,29 @@ export default function BuildsPage() {
 
   const now = Date.now();
   const builds = list.data?.pages.flatMap((page) => page.builds) ?? [];
+
+  /* MAPS: one read for each 24 builds drawn, started the moment the list has answered (the ids come from it). The data
+     layer is a chunk of its own, brought on pointing at the Maps segment or here. */
+  const mapBuilds = view === "maps" ? builds.slice(0, mapsShown) : [];
+  const mapChunks = Array.from({ length: Math.ceil(mapBuilds.length / MAPS_PAGE) }, (_, at) => mapBuilds.slice(at * MAPS_PAGE, (at + 1) * MAPS_PAGE).map((build) => build.id));
+  const maps = useQueries({
+    queries: mapChunks.map((ids) => ({
+      queryKey: ["build", "listBuildMaps", ids],
+      queryFn: async () => (await import("@/lib/build/buildsMaps")).listBuildMaps(ids),
+      staleTime: SLOW_STALE_MS,
+    })),
+  });
+  const mapsFailed = maps.some((entry) => entry.isError);
+  const mapsSettled = maps.every((entry) => !entry.isPending);
+  useEffect(() => {
+    const failure = maps.find((entry) => entry.error)?.error;
+    if (failure) reportError(failure, { source: "query", context: "listBuildMaps" });
+  }, [maps]);
+
   const total = list.data?.pages[0]?.total ?? null;
   const rows = builds.map((build) => tableRow(build, now));
   const loading = list.isLoading;
-  usePageReady("builds", !loading);
+  usePageReady("builds", !loading && (view !== "maps" || mapsSettled));
 
   const classified = classification.data?.live === true;
   const patternsLive = facets.data?.patternsLive === true;
@@ -113,8 +149,58 @@ export default function BuildsPage() {
   });
   const count = total ?? builds.length;
 
-  const other =
-    view === "maps" ? <BuildsMapsView builds={builds} /> : view === "classification" ? <BuildsClassificationView builds={builds} /> : null;
+  const other = view === "classification" ? <BuildsClassificationView builds={builds} /> : null;
+
+  const filters: BuildsFiltersViewProps = {
+      activeCount: activeCount(params),
+      sections,
+      catalogue: { total: liveCatalogue(classified, patternsLive).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive) },
+      onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
+      onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
+      onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
+      onOpenClosed: (sectionId) => setOpened((current) => new Set([...current, sectionId])),
+  };
+
+  const onMoreMaps = () => {
+    const next = mapsShown + MAPS_PAGE;
+    setMapsShown(next);
+    if (next > builds.length && list.hasNextPage) void list.fetchNextPage();
+  };
+
+  const mapsPage =
+    view === "maps" ? (
+      list.error && !list.data ? (
+        <TableError onRetry={() => void list.refetch()} />
+      ) : (
+        <Suspense fallback={<MapsLoadingView hrefFor={hrefFor} />}>
+          <BuildsMapsPane
+            view={view}
+            hrefFor={hrefFor}
+            onViewIntent={prefetchView}
+            activeCount={activeCount(params)}
+            chips={activeChips(params)}
+            onRemoveChip={(key) => go(withoutChip(params, key))}
+            panel={<BuildsFiltersView {...filters} collapsed={false} />}
+            direction={direction}
+            onDirection={setDirection}
+            buildsLabel={`${count} ${count === 1 ? "build" : "builds"}`}
+            builds={mapBuilds}
+            maps={maps.flatMap((entry) => entry.data ?? [])}
+            failed={mapsFailed}
+            notice={mapsFailed ? <MapsError onRetry={() => maps.forEach((entry) => entry.isError && void entry.refetch())} /> : undefined}
+            now={now}
+            empty={
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
+                <p style={{ ...text(13, 400, t.text2), margin: 0 }}>No builds match these filters.</p>
+                <BuildsControl onClick={() => go({ lens: "all", madeFor: [], madeWith: [], query: null, view: params.view })}>Clear all</BuildsControl>
+              </div>
+            }
+            onMore={mapsShown < builds.length || list.hasNextPage ? onMoreMaps : undefined}
+            loadingMore={list.isFetchingNextPage}
+          />
+        </Suspense>
+      )
+    ) : null;
 
   const page = (
     <BuildsView
@@ -123,15 +209,7 @@ export default function BuildsPage() {
       view={view}
       hrefFor={hrefFor}
       onViewIntent={prefetchView}
-      filters={{
-        activeCount: activeCount(params),
-        sections,
-        catalogue: { total: liveCatalogue(classified, patternsLive).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive) },
-        onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
-        onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
-        onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
-        onOpenClosed: (sectionId) => setOpened((current) => new Set([...current, sectionId])),
-      }}
+      filters={filters}
       table={
         view === "table" && !(list.error && !list.data)
           ? {
@@ -173,7 +251,7 @@ export default function BuildsPage() {
       <SeoHead title="Builds · buildgallery" description="Things people built with AI, and the exact model versions other people got them working on." path="/builds" />
       {/* While the first screen loads the page is its loading state, the route's Placeholder; the page fades in over it. */}
       <PageArrival loading={loading} placeholder={<BuildsLoadingView />}>
-        {loading ? <BuildsLoadingView /> : page}
+        {loading ? <BuildsLoadingView /> : view === "maps" ? mapsPage : page}
       </PageArrival>
     </>
   );
