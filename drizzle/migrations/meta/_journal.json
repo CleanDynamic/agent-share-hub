@@ -169,6 +169,13 @@
       "when": 1793208272349,
       "tag": "0023_sv17_saved_items",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793228608499,
+      "tag": "0024_sv19_node_versions",
+      "breakpoints": true
     }
   ]
 }
