@@ -193,6 +193,10 @@ export interface SandboxViewProps extends CardProps {
   systemPromptAvailable?: boolean;
   datasetAvailable?: boolean;
   repoAvailable?: boolean;
+  /** SV-18: Add › From Library opens the window of saved items that fit. Absent, the item stays disabled. */
+  onAddFromLibrary?: () => void;
+  /** SV-18: the pointer or focus is on Add › From Library: fetch the window's code and its reads. */
+  onWarmLibrary?: () => void;
   /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
   onAddManual?: () => void;
   /** CA-02 P7: Add › Code opens the code dialog. Absent, the item stays disabled. */
@@ -222,7 +226,7 @@ export interface SandboxViewProps extends CardProps {
   onEditSelected?: () => void;
 }
 
-export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "code" | "check" | "result";
+export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "code" | "check" | "result" | "library";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -245,6 +249,8 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "code", name: "Code", line: "Source code written or run", ready: true },
   { key: "check", name: "Check", line: "Test of part of the build", ready: true },
   { key: "result", name: "Result", line: "Output the build produced", ready: true },
+  /* SV-18: saved steps and sessions, copied in with their source. Listed after the twelve; it opens its own window. */
+  { key: "library", name: "From Library", line: "Steps and collections you saved", ready: true },
 ];
 
 /** CA-03 P5: the Add menu's own words. */
@@ -276,7 +282,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable" | "onAddFromLibrary" | "onWarmLibrary">;
 
 /** One item of the Add menu, wired: what it calls, whether it is enabled. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
@@ -287,6 +293,8 @@ export interface AddEntry {
   onSelect?: () => unknown;
   /** CA-10: the item moves focus elsewhere itself (Prompt): the menu must not hand it back to Add as it closes. */
   movesFocus?: boolean;
+  /** SV-18: the pointer or focus is on the item. */
+  onWarm?: () => void;
 }
 
 /** CA-13 P1: the line under Add › Decision while the database change is not live. */
@@ -295,7 +303,7 @@ export const DECISION_OFF_LINE = "Not available yet";
 /** CA-15 P9: the line under Add › System prompt, Dataset or GitHub repository while its node type is not live. */
 export const TILE_OFF_LINE = "Not available yet";
 
-export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
+export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false, onAddFromLibrary, onWarmLibrary }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
     if (item.key === "system_prompt" || item.key === "dataset" || item.key === "repo") {
       const live = item.key === "system_prompt" ? systemPromptAvailable : item.key === "dataset" ? datasetAvailable : repoAvailable;
@@ -317,10 +325,11 @@ export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult
       agent: onAddAgent,
       manual: onAddManual,
       code: onAddCode,
+      library: onAddFromLibrary,
     };
     const handler = handlers[item.key];
     const wired = item.key in handlers;
-    return { ...item, enabled: item.ready && (!wired || Boolean(handler)), onSelect: handler, movesFocus: item.key === "prompt" };
+    return { ...item, enabled: item.ready && (!wired || Boolean(handler)), onSelect: handler, movesFocus: item.key === "prompt", ...(item.key === "library" ? { onWarm: onWarmLibrary } : null) };
   });
 }
 
@@ -513,6 +522,8 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
               <Menu.Item
                 key={item.key}
                 disabled={!item.enabled}
+                onPointerEnter={item.onWarm}
+                onFocus={item.onWarm}
                 onSelect={() => {
                   if (ask) {
                     setAsking(item);
@@ -1158,6 +1169,8 @@ function SandboxBody(props: SandboxViewProps) {
       onAddCode={props.onAddCode}
       onAddCheck={props.onAddCheck}
       checkable={props.checkable}
+      onAddFromLibrary={props.onAddFromLibrary}
+      onWarmLibrary={props.onWarmLibrary}
     />
   );
   const buildPanel = (

@@ -19,6 +19,8 @@ import { buildSteps, groupKey, sessionGroups } from "@/lib/build/graph";
 import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "@/lib/build/making";
 import { applyWrite, type MemoryBuild } from "@/lib/build/moveMemory";
 import { locate, moveBy, placePart, placeSession, writeOf, type MoveModel, type Write } from "@/lib/build/moveRules";
+import { snapshotOf } from "@/lib/build/buildSnapshot";
+import { insertSavedTile } from "@/lib/build/fromLibrary";
 import type { NodeTree } from "@/lib/build/types";
 import { BuildList } from "@/pages/site/compose/BuildList";
 import { dividers } from "@/pages/site/compose/buildListModel";
@@ -167,6 +169,19 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
       const copies = previous.tree.filter((entry) => ids.includes(entry.id)).map((entry) => ({ ...entry, id: fresh(`${entry.id}-copy`), position: entry.position + 0.5, children: [] }) as NodeTree);
       return { ...previous, tree: [...previous.tree, ...copies] };
     });
+  /* SV-18: Add › From Library puts a saved step at the end of the session as a tile added: it drops in ("add"). */
+  const insertFromLibrary = (session: string) =>
+    step("add", "Added Summary on one prompt from Library", (previous) => {
+      const before = snapshotOf(previous.tree, previous.making, []);
+      const made = insertSavedTile(
+        before,
+        { id: "si-demo", kind: "step", snapshot: { type: "prompt", title: "Summary on one prompt", note: null, payload: { text: "Summarise the call in five sections.", model: "Opus 5.5" }, source: { buildId: "b-src", buildTitle: "Call notes", buildSlug: null, makerId: "maya", nodeId: "src-demo" } } },
+        { kind: "top", session, name: "Session 1" },
+        { buildId: previous.tree[0]?.build_id ?? "b", copierId: "me", newId: () => fresh("c22-lib") },
+      );
+      const added = (made?.snapshot.nodes.slice(before.nodes.length) ?? []).map((entry) => ({ ...entry, children: [] }) as NodeTree);
+      return { ...previous, tree: [...previous.tree, ...added] };
+    });
   const split = (id: string) =>
     step("split", `Split Session 1 at ${nameOfTile(id)}`, (previous) => {
       const target = previous.tree.find((entry) => entry.id === id);
@@ -261,6 +276,7 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
     ["add-tile", () => addTile(CA22_S[0])],
     ["duplicate-p2", () => duplicate(["c22-p2"])],
     ["duplicate-two", () => duplicate(["c22-p1", "c22-p3"])],
+    ["insert-library", () => insertFromLibrary(CA22_S[0])],
     ["split-p3", () => split("c22-p3")],
     ["add-part", addPart],
     ["convert-p3", () => convert("c22-p3")],

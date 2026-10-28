@@ -11,13 +11,13 @@
    SV-17: the Parts, Sessions, Steps, Requests and Filter sets kinds are live (saved_items), with Used in, notes and the
    saved-by count on a public collection. All saved lists the builds and the kept items together, newest first.
 
-   NOT LIVE YET (drawn on the dev page only): Start a build from a collection and Use in a build (SV-18); the version switch
+   SV-18: Start a build from this collection is live. NOT LIVE YET (drawn on the dev page only): Use in a build; the version switch
    and Edited (SV-19); the changes list for kept items (SV-15 is live for saved builds: runs, rebuilds, answers and out-of-date);
    In collections (SV-25); the Filters and Sort controls (SV-24). */
 
 import { useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -110,6 +110,7 @@ function useReported(error: unknown, context: string) {
 
 export default function LibraryPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { handle } = useParams<{ handle?: string }>();
   const [params, setParams] = useSearchParams();
   const { user, profile } = useAuth();
@@ -428,6 +429,24 @@ export default function LibraryPage() {
       ? selectedItem(chosenItem)
       : null;
 
+  /* SV-18: a draft made from the collection's saved steps and sessions, in order; the composer opens on it. */
+  const startFromCollection = async (collectionId: string, name: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const [{ collectionSavedItemIds, savedItemsByIds }, { startBuildFromItems, START_COPY }] = await Promise.all([import("@/lib/library/savedItems"), import("@/lib/build/startFromCollection")]);
+      const ids = (await collectionSavedItemIds([collectionId])).get(collectionId) ?? [];
+      const id = await startBuildFromItems(await savedItemsByIds(ids), name);
+      if (id) navigate(`/compose/${id}`);
+      else toast(START_COPY.nothing);
+    } catch (error) {
+      reportError(error, { source: "action", context: "library-start-build" });
+      toast("Couldn't start a build from this collection.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const previewEntry = !openId ? (list[0] ?? null) : null;
   const preview: LibraryPreviewProps | undefined = previewEntry
     ? {
@@ -435,6 +454,7 @@ export default function LibraryPage() {
         meta: [`${privacyWord(previewEntry.isPrivate)} · ${countWords(previewEntry.itemCount, "item")}`, savedByOf(previewEntry.isPrivate ? undefined : previewEntry.id)].filter(Boolean).join(" · "),
         to: hrefFor({ collection: previewEntry.id }),
         status: statusOf(collectionBuilds),
+        onStart: () => void startFromCollection(previewEntry.id, previewEntry.name),
         rows: (collectionBuilds.data?.pages[0]?.items ?? []).slice(0, 3).map((item) => ({
           id: item.build.id,
           title: item.build.title?.trim() || "Untitled build",

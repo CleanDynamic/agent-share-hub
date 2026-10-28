@@ -113,6 +113,7 @@ const MOMENTS: Moment[] = [
     url: CA22,
     play: (page) => act(page, "duplicate-two"),
   },
+  { name: "insert-from-library", url: CA22, play: (page) => act(page, "insert-library") },
   { name: "split", url: CA22, play: (page) => act(page, "split-p3") },
   { name: "add-a-part", url: CA22, play: (page) => act(page, "add-part") },
   {

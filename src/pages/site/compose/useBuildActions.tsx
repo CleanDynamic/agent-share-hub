@@ -18,6 +18,8 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession, listBuildSessionRows } from "@/lib/build/buildSessions";
 import { REMOVE_COPY, type ClearCounts } from "@/lib/build/componentMenus";
 import { restoreSnapshot } from "@/lib/build/buildSnapshot";
+import { LIBRARY_COPY, fitsPlace, insertSavedTile, savedName, type LibraryPlace } from "@/lib/build/fromLibrary";
+import type { LibrarySavedItem } from "@/lib/library/savedItems";
 import { CONVERT_COPY, canConvert, convertRow, convertTiles, duplicateTiles, DUPLICATE_COPY, targetsOf, type ConvertTo } from "@/lib/build/duplicate";
 import { DEFAULT_AGENT_MODEL } from "./AddAgentDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
@@ -73,6 +75,11 @@ export interface BuildActions {
   removeSelection: (items: readonly Chosen[]) => void;
   /** CA-20 P7: copy tiles (each below its original, as one step). */
   duplicate: (ids: readonly string[]) => void;
+  /**
+   * SV-18: put saved steps and parts at a place, as one step of the history. The same writer Duplicate uses; the animator is
+   * told first with the new tiles' keys. Resolves the new tiles' ids (none when nothing fits); a failure rejects.
+   */
+  insertFromLibrary: (items: readonly LibrarySavedItem[], place: LibraryPlace, copierId: string) => Promise<string[]>;
   /** CA-20 P7: what a tile can be turned into, with the reason when it cannot. */
   convertTargets: (id: string) => { to: ConvertTo; label: string; reason?: string }[];
   /** CA-20 P7: turn a tile into another kind; asks first when something would not carry over. */
@@ -234,6 +241,26 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
     [buildId, steps, nodes, history],
   );
 
+  const insertFromLibrary = useCallback(
+    (items: readonly LibrarySavedItem[], place: LibraryPlace, copierId: string): Promise<string[]> => {
+      if (!buildId) return Promise.resolve([]);
+      const fits = items.filter((item) => item.kind !== "session" && fitsPlace(place, item));
+      if (fits.length === 0) return Promise.resolve([]);
+      // The new tiles' keys are chosen now, so the animator can be told which tiles to drop in before anything is written.
+      const tops = fits.map(() => crypto.randomUUID());
+      const sentence = fits.length === 1 ? LIBRARY_COPY.one(savedName(fits[0])) : LIBRARY_COPY.several(fits.length);
+      return history.track(
+        sentence,
+        async () => {
+          await restoreSnapshot(buildId, nodes, (current) => fits.reduce((made, item, at) => insertSavedTile(made, item, place, { buildId, copierId, newId: () => crypto.randomUUID(), topId: tops[at] })?.snapshot ?? made, current));
+          return tops;
+        },
+        { notice: true, motion: "add", keys: tops },
+      );
+    },
+    [buildId, nodes, history],
+  );
+
   const rowFor = useCallback((id: string) => flattenNodes(nodes.current()).find((node) => node.id === id), [nodes]);
 
   const convertTargets = useCallback(
@@ -353,6 +380,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       askRemoveSessions,
       removeSelection,
       duplicate,
+      insertFromLibrary,
       convertTargets,
       convert,
       fold,
@@ -363,7 +391,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       recentlyRemoved: { count: history.removed.length, open: () => setListOpen(true) },
       clear: { counts: clearCounts, ask: () => setClearing(true) },
     }),
-    [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, duplicate, convertTargets, convert, fold, group, ungroup, grouped, clearCounts, history.removed.length],
+    [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, duplicate, insertFromLibrary, convertTargets, convert, fold, group, ungroup, grouped, clearCounts, history.removed.length],
   );
 
   const dialogs = (

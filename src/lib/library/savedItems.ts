@@ -366,3 +366,56 @@ export async function collectionSavedBy(collectionIds: readonly string[]): Promi
   if (response.error) throw socialError("collectionSavedBy", response);
   return new Map(((response.data ?? []) as { collection_id: string; saved_by: number }[]).map((row) => [row.collection_id, Number(row.saved_by)]));
 }
+
+/* ── for Add from Library (SV-18) ── */
+
+/** The handles (no @) of these profiles, for "@maya" on a saved item. One request; none for no ids. A profile with no handle is absent. */
+export async function makerHandles(profileIds: readonly string[]): Promise<Map<string, string>> {
+  const ids = uniqueIds(profileIds);
+  if (ids.length === 0) return new Map();
+  const response = await db.from("profiles").select("id, username").in("id", ids).limit(ids.length);
+  if (response.error) throw socialError("makerHandles", response);
+  return new Map(((response.data ?? []) as { id: string; username: string | null }[]).flatMap((row) => (row.username ? [[row.id, row.username] as const] : [])));
+}
+
+/** For each of these collections, the ids of the reader's saved items in it, in the collection's order. One request; none for no ids. */
+export async function collectionSavedItemIds(collectionIds: readonly string[]): Promise<Map<string, string[]>> {
+  const ids = uniqueIds(collectionIds);
+  const out = new Map<string, string[]>();
+  if (ids.length === 0) return out;
+  const response = await db
+    .from("collection_items")
+    .select("collection_id, saved_item_id, position")
+    .in("collection_id", ids)
+    .not("saved_item_id", "is", null)
+    .order("position", { ascending: true, nullsFirst: false })
+    .limit(SAVED_ITEMS_MAX * 10);
+  if (response.error) throw socialError("collectionSavedItemIds", response);
+  for (const row of (response.data ?? []) as { collection_id: string; saved_item_id: string }[]) out.set(row.collection_id, [...(out.get(row.collection_id) ?? []), row.saved_item_id]);
+  return out;
+}
+
+/** These saved items of the signed-in reader, in the order of `ids`. One request; ids that are not the reader's are absent. */
+export async function savedItemsByIds(savedItemIds: readonly string[]): Promise<LibrarySavedItem[]> {
+  const ids = uniqueIds(savedItemIds);
+  if (ids.length === 0) return [];
+  const userId = await currentUserId();
+  if (!userId) throw signedOutError("savedItemsByIds");
+  const response = await db.from("saved_items").select(SAVED_COLUMNS).eq("user_id", userId).in("id", ids).limit(ids.length);
+  if (response.error) throw socialError("savedItemsByIds", response);
+  const found = new Map(((response.data ?? []) as SavedItemRow[]).map((row) => [row.id, toItem(row)]));
+  return savedItemIds.flatMap((id) => {
+    const item = found.get(id);
+    return item ? [item] : [];
+  });
+}
+
+/** The reader used these saved items just now: their "last used" moves to the present, so Library lists them first. Best effort; the caller ignores a failure. */
+export async function touchSavedItems(savedItemIds: readonly string[]): Promise<void> {
+  const ids = uniqueIds(savedItemIds);
+  if (ids.length === 0) return;
+  const userId = await currentUserId();
+  if (!userId) return;
+  const response = await db.from("saved_items").update({ last_used_at: new Date().toISOString() }).eq("user_id", userId).in("id", ids);
+  if (response.error) throw socialError("touchSavedItems", response);
+}

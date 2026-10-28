@@ -225,6 +225,8 @@ export interface BuildListProps {
   onAddAgentPrompt: (agentId: string, text: string) => Promise<boolean>;
   /** UI-P69: "Add an agent to this team". */
   onAddAgentTo: (teamId: string) => void;
+  /** SV-18: "Add from Library" inside an agent (its prompts) or a team (its agents). Absent: the row is not shown. */
+  onAddFromLibrary?: (parentId: string) => void;
   /** TF-06: "Attach a file" opens the file picker for this prompt. Absent: the item is not shown. */
   onAttach?: (id: string) => void;
   /** TF-06: files dropped on a prompt's card. Only with a fine pointer; absent: a card takes no drop. */
@@ -1571,6 +1573,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
         ) : (
           <GhostAdd label="Add a prompt to this agent" phone={props.phone} onClick={() => setAdding(true)} />
         )}
+        {props.onAddFromLibrary && !adding ? <GhostAdd label={isTeam ? "Add an agent from Library" : "Add a prompt from Library"} phone={props.phone} onClick={() => props.onAddFromLibrary?.(step.id)} /> : null}
       </div>
       ) : null}
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />

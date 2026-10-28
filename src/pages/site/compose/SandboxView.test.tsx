@@ -94,9 +94,9 @@ describe("SandboxView frame", () => {
     expect(screen.queryByText("Map is now available")).toBeNull();
   });
 
-  it("lists the twelve Add items in order, with no session in them (CA-12 P4, CA-15 P9); the three new tiles are live only once their node type is", () => {
-    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent", "Decision", "System prompt", "File", "Dataset", "Tool", "GitHub repository", "Manual step", "Code", "Check", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "agent", "decision", "file", "tool", "manual", "code", "check", "result"]);
+  it("lists the twelve Add items in order, then From Library (SV-18), with no session in them (CA-12 P4, CA-15 P9); the three new tiles are live only once their node type is", () => {
+    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Agent", "Decision", "System prompt", "File", "Dataset", "Tool", "GitHub repository", "Manual step", "Code", "Check", "Result", "From Library"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "agent", "decision", "file", "tool", "manual", "code", "check", "result", "library"]);
     expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Source code written or run");
     expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "Test of part of the build", ready: true });
   });
@@ -163,7 +163,7 @@ describe("the Add menu (UI-P69)", () => {
   });
 });
 
-describe("the Add menu holds exactly 12 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4)", () => {
+describe("the Add menu holds exactly 13 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4)", () => {
   it("enables every item once each has something to open", async () => {
     view({
       onAddCheck: vi.fn(),
@@ -182,12 +182,13 @@ describe("the Add menu holds exactly 12 items, all enabled (UI-P70, CA-02 P7, CA
       systemPromptAvailable: true,
       datasetAvailable: true,
       repoAvailable: true,
+      onAddFromLibrary: vi.fn(),
     });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items).toHaveLength(12);
+    expect(items).toHaveLength(13);
     expect(items[0].textContent).toBe("PromptMessage sent to a model");
-    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(12).fill(null));
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(13).fill(null));
     expect(items.map((item) => item.textContent).join(" ")).not.toMatch(/session/i);
   });
 

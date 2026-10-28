@@ -23,7 +23,7 @@
 
    Mounted by `ComposeRoute` only while SANDBOX_COMPOSER_ENABLED is on. */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { flushSync } from "react-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -156,6 +156,9 @@ import { usePostLinks } from "./usePostLinks";
 import { useColourPicking } from "./useColourPicking";
 import { previewColours, previewWorkstreams, type ColourPreview } from "@/lib/build/colourPreview";
 import { sayFailed } from "./draftStart";
+import { preloadAddFromLibrary } from "./addFromLibraryReads";
+import { sessionCopyOf, type LibraryPlace } from "@/lib/build/fromLibrary";
+import { touchSavedItems, type LibrarySavedItem } from "@/lib/library/savedItems";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -181,6 +184,9 @@ const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
 /** The later of two moments, either of which may be missing. */
 /** SV-07 P3: where a jump tab puts a session's head: this far below the sticky header. */
 const JUMP_GAP = 24;
+
+/** SV-18: the Add from Library window is its own chunk, fetched on hover or focus of Add › From Library and at idle. */
+const AddFromLibrary = lazy(() => import("./AddFromLibrary"));
 
 /** SV-07 P2: what `insertSession` adds: a chat imported, an empty session started here, or a ready-made copy. */
 type SessionSource =
@@ -1360,6 +1366,101 @@ function SandboxPageBody() {
     [prompts, afterWrite],
   );
 
+  /* ── SV-18: Add from Library ──
+     The window lists the reader's saved items that fit where the maker is adding: the session they are adding to, or the agent
+     or team whose "Add … from Library" row they pressed. Insert puts them in through the composer's one writer: tiles as one
+     step of the history, like Duplicate, with the animator told first; a saved session through `insertSession`, the way a
+     session is added. */
+  const [library, setLibrary] = useState<{ place: LibraryPlace; open: boolean } | null>(null);
+  const [inserted, setInserted] = useState<{ id: string; n: number } | null>(null);
+  const sessionName = useCallback(
+    (key: string | null): string => {
+      const row = key ? sourceSessionRows.find((entry) => entry.key === key) : undefined;
+      return row ? [`Session ${row.number}`, row.title].filter(Boolean).join(" · ") : "this build";
+    },
+    [sourceSessionRows],
+  );
+  const openLibrary = useCallback(
+    async (place: LibraryPlace) => {
+      try {
+        // A new post has no draft yet: it is made now, so the pick has somewhere to go.
+        if (!buildId) await ensureBuild();
+        setLibrary({ place, open: true });
+      } catch (cause) {
+        sayFailed(cause, "Library did not open");
+      }
+    },
+    [buildId, ensureBuild],
+  );
+  const onAddFromLibrary = useCallback(() => {
+    const picked = chosenRef.current;
+    const key = picked && sourceSessionRows.some((row) => row.key === picked) ? picked : currentSession;
+    void openLibrary({ kind: "top", session: key, name: sessionName(key) });
+  }, [sourceSessionRows, currentSession, openLibrary, sessionName]);
+  const onAddFromLibraryTo = useCallback(
+    (parentId: string) => {
+      const step = flatten(steps).find((candidate) => candidate.id === parentId);
+      if (!step) return;
+      const top = steps.find((candidate) => candidate.id === parentId || flatten(candidate.children).some((child) => child.id === parentId));
+      const where = top?.session ? sessionName(top.session) : "";
+      void openLibrary({ kind: step.kind === "team" ? "team" : "agent", id: parentId, name: [where, step.title ?? step.defaultTitle].filter(Boolean).join(" · ") });
+    },
+    [steps, openLibrary, sessionName],
+  );
+  const warmLibrary = useCallback(() => preloadAddFromLibrary(queryClient, user?.id ?? null), [queryClient, user?.id]);
+  /* Once the composer is up, at idle: the window's code and its first reads, so the first open is not a wait. */
+  useEffect(() => {
+    if (!user?.id) return;
+    const schedule = window.requestIdleCallback ?? ((run: () => void) => window.setTimeout(run, 1500));
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = schedule(() => preloadAddFromLibrary(queryClient, user.id));
+    return () => cancel(handle as number);
+  }, [queryClient, user?.id]);
+  const onInsertFromLibrary = useCallback(
+    async (items: LibrarySavedItem[], place: LibraryPlace) => {
+      const copier = user?.id;
+      if (!copier || items.length === 0) return;
+      try {
+        const at: LibraryPlace = place.kind === "top" ? { ...place, session: await sessionToWrite() } : place;
+        let run: LibrarySavedItem[] = [];
+        let first: string | null = null;
+        const flush = async () => {
+          if (run.length === 0) return;
+          const ids = await actions.insertFromLibrary(run, at, copier);
+          first ??= ids[0] ?? null;
+          run = [];
+        };
+        for (const item of items) {
+          if (item.kind !== "session") {
+            run.push(item);
+            continue;
+          }
+          await flush();
+          const copy = sessionCopyOf(item, copier);
+          await insertSession({ kind: "copy", copy, head: { tool: copy.meta.tool ?? NO_APP, detail: "", date: shortDate(new Date().toISOString()) } });
+        }
+        await flush();
+        if (first) setInserted((current) => ({ id: first as string, n: (current?.n ?? 0) + 1 }));
+        void touchSavedItems(items.map((item) => item.id)).catch(() => undefined);
+        void queryClient.invalidateQueries({ queryKey: ["library", "savedItemsUsedIn"] });
+        void queryClient.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
+      } catch (cause) {
+        console.error("[Compose] not added from Library", cause);
+        sayFailed(cause, "Not added from Library", () => void onInsertFromLibrary(items, place));
+      }
+    },
+    [user?.id, sessionToWrite, actions, insertSession, queryClient],
+  );
+  /* The new tile is brought into view only when it would be wholly off screen (SV-06's helper), and ringed once. */
+  useEffect(() => {
+    if (!inserted) return;
+    const tile = document.querySelector<HTMLElement>(`[data-tile-id="${inserted.id}"]`);
+    const box = tile?.getBoundingClientRect();
+    if (tile && box && (box.bottom < 0 || box.top > window.innerHeight)) scrollToShow(tile, { align: "middle" });
+    const timer = window.setTimeout(() => setInserted(null), ADD_FLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [inserted]);
+
   const addPiece = useCallback(
     async (kind: "tool" | "result", name?: string) => {
       const id = await prompts.addPiece(kind, name);
@@ -1932,6 +2033,8 @@ function SandboxPageBody() {
     onAddCode: () => setAddCodeOpen(true),
     onAddCheck: () => setAddCheckOpen(true),
     checkable: canCheck(steps),
+    onAddFromLibrary,
+    onWarmLibrary: warmLibrary,
   };
   /** Choosing a session for the next tile: at once, and a folded session is opened so the tile lands where it can be seen. */
   const aimAt = (key: string) => {
@@ -2364,6 +2467,7 @@ function SandboxPageBody() {
             onRemove={actions.removeTile}
             onAddAgentPrompt={stepOf.agentPrompt}
             onAddAgentTo={(teamId) => void stepOf.agentTo(teamId)}
+            onAddFromLibrary={onAddFromLibraryTo}
             onAttach={pickForStep}
             onNameMade={onNameMade}
             madeNames={madeByStep}
@@ -2412,7 +2516,7 @@ function SandboxPageBody() {
             addPromptRef={addPromptField}
             addPromptFlash={addPromptFlash}
             pendingAdd={pendingAdd}
-            ringedId={ringed?.id ?? null}
+            ringedId={ringed?.id ?? inserted?.id ?? null}
             addSession={addSessionProps}
             collapsed={collapsedKeys}
             onToggleCollapsed={onToggleCollapsed}
@@ -2464,6 +2568,17 @@ function SandboxPageBody() {
       </DetailsReferencesProvider>
       </GroupLabelsProvider>
       </PartRegistryProvider>
+      {library ? (
+        <Suspense fallback={null}>
+          <AddFromLibrary
+            open={library.open}
+            place={library.place}
+            phone={phone}
+            onClose={() => setLibrary((current) => (current ? { ...current, open: false } : null))}
+            onInsert={(items, place) => void onInsertFromLibrary(items, place)}
+          />
+        </Suspense>
+      ) : null}
       <AddAgentDialog
         open={addAgentOpen}
         onOpenChange={onAgentDialog}

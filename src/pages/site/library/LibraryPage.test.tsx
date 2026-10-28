@@ -57,6 +57,10 @@ const collectionSavedBy = vi.fn();
 const updateSavedItemNote = vi.fn();
 const unsaveItem = vi.fn();
 const saveItem = vi.fn();
+const collectionSavedItemIds = vi.fn();
+const savedItemsByIds = vi.fn();
+const startBuildFromItems = vi.fn();
+vi.mock("@/lib/build/startFromCollection", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/startFromCollection")>()), startBuildFromItems: (...args: unknown[]) => startBuildFromItems(...args) }));
 vi.mock("@/lib/library/savedItems", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/library/savedItems")>()),
   listSavedItems: (...args: unknown[]) => listSavedItems(...args),
@@ -66,6 +70,8 @@ vi.mock("@/lib/library/savedItems", async (importOriginal) => ({
   updateSavedItemNote: (...args: unknown[]) => updateSavedItemNote(...args),
   unsaveItem: (...args: unknown[]) => unsaveItem(...args),
   saveItem: (...args: unknown[]) => saveItem(...args),
+  collectionSavedItemIds: (...args: unknown[]) => collectionSavedItemIds(...args),
+  savedItemsByIds: (...args: unknown[]) => savedItemsByIds(...args),
 }));
 
 import LibraryPage from "./LibraryPage";
@@ -247,6 +253,32 @@ describe("Library", () => {
     renderAt("/library");
     expect(await screen.findByText("Collections didn't load.")).toBeInTheDocument();
     expect(screen.getByTestId("library-empty")).toBeInTheDocument();
+  });
+
+  it("starts a build from the previewed collection's saved items, in order, and opens it", async () => {
+    listCollections.mockResolvedValue([collection(2, { name: "Invoices" })]);
+    listCollectionBuilds.mockResolvedValue({ items: [], nextBefore: null });
+    const items = [{ id: "si-a", kind: "step" }, { id: "si-b", kind: "session" }];
+    collectionSavedItemIds.mockResolvedValue(new Map([["col-2", ["si-a", "si-b"]]]));
+    savedItemsByIds.mockResolvedValue(items);
+    startBuildFromItems.mockResolvedValue("draft-9");
+    renderAt("/library");
+    fireEvent.click(await screen.findByRole("button", { name: "Start a build from this collection" }));
+    await waitFor(() => expect(startBuildFromItems).toHaveBeenCalledWith(items, "Invoices"));
+    expect(savedItemsByIds).toHaveBeenCalledWith(["si-a", "si-b"]);
+    await waitFor(() => expect(where()).toBe("/compose/draft-9"));
+  });
+
+  it("says so, and makes no draft, when the collection has nothing that can start a build", async () => {
+    listCollections.mockResolvedValue([collection(2, { name: "Invoices" })]);
+    listCollectionBuilds.mockResolvedValue({ items: [], nextBefore: null });
+    collectionSavedItemIds.mockResolvedValue(new Map());
+    savedItemsByIds.mockResolvedValue([]);
+    startBuildFromItems.mockResolvedValue(null);
+    renderAt("/library");
+    fireEvent.click(await screen.findByRole("button", { name: "Start a build from this collection" }));
+    await waitFor(() => expect(startBuildFromItems).toHaveBeenCalled());
+    expect(where()).toBe("/library");
   });
 
   it("lists collections in the order given, previews the first, and opens one in the table with its actions", async () => {

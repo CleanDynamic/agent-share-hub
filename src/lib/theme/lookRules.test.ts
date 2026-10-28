@@ -249,6 +249,12 @@ export const CA03_FILES: readonly string[] = [
   "src/App.tsx",
   "src/components/brand/ErrorState.tsx",
   "src/dev/fixtures/drafts.ts",
+  // SV-18
+  "src/dev/fixtures/vision/composer-add-from-library.ts",
+  "src/pages/dev/VisionComposerAddFromLibrary.tsx",
+  "src/pages/site/compose/AddFromLibrary.tsx",
+  "src/pages/site/compose/AddFromLibraryWindow.tsx",
+  "src/pages/site/compose/libraryWindowModel.ts",
   // SV-08
   "src/dev/fixtures/vision/drafts.ts",
   "src/pages/dev/VisionDrafts.tsx",
