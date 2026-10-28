@@ -95,3 +95,37 @@ test.describe("/builds?view=maps in the site frame", () => {
     });
   }
 });
+
+/* SV-13: Classification is the same page shape as Maps (no filter column): the head, the row, the grid. Cards, nothing or
+   a refused read all leave the frame and the head. */
+test.describe("/builds?view=classification in the site frame", () => {
+  async function openClassification(page: Page, viewport?: number, theme: (typeof THEMES)[number] = "noon") {
+    await page.addInitScript((choice) => {
+      try {
+        window.localStorage.setItem("bg-theme", choice);
+      } catch {
+        /* private window: the default theme is a fine fallback for a layout check */
+      }
+    }, theme);
+    if (viewport) await page.setViewportSize({ width: viewport, height: 900 });
+    await page.goto("/builds?frame=site&view=classification");
+    await expect(page.getByTestId("site-frame")).toBeVisible();
+    await expect(page.locator('main#main [data-testid="builds-classification"], main#main [data-testid="builds-loading"]').first()).toBeVisible();
+  }
+
+  test("draws one h1, the view switch with Classification current, and no filter column", async ({ page }) => {
+    await openClassification(page);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    const views = page.getByRole("navigation", { name: "View" });
+    await expect(views.getByRole("link", { name: "Classification" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("complementary", { name: "Filters" })).toHaveCount(0);
+  });
+
+  for (const viewport of SWEEP) {
+    test(`does not move sideways at ${viewport}px`, async ({ page }) => {
+      await openClassification(page, viewport, "dusk");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+    });
+  }
+});
