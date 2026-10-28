@@ -50,6 +50,24 @@ vi.mock("@/lib/library", async (importOriginal) => ({
   getLibraryOwner: (...args: unknown[]) => getLibraryOwner(...args),
 }));
 
+const listSavedItems = vi.fn();
+const countSavedItems = vi.fn();
+const savedItemsUsedIn = vi.fn();
+const collectionSavedBy = vi.fn();
+const updateSavedItemNote = vi.fn();
+const unsaveItem = vi.fn();
+const saveItem = vi.fn();
+vi.mock("@/lib/library/savedItems", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/library/savedItems")>()),
+  listSavedItems: (...args: unknown[]) => listSavedItems(...args),
+  countSavedItems: (...args: unknown[]) => countSavedItems(...args),
+  savedItemsUsedIn: (...args: unknown[]) => savedItemsUsedIn(...args),
+  collectionSavedBy: (...args: unknown[]) => collectionSavedBy(...args),
+  updateSavedItemNote: (...args: unknown[]) => updateSavedItemNote(...args),
+  unsaveItem: (...args: unknown[]) => unsaveItem(...args),
+  saveItem: (...args: unknown[]) => saveItem(...args),
+}));
+
 import LibraryPage from "./LibraryPage";
 import type { GalleryBuild } from "@/lib/build";
 import type { BuildCollection } from "@/lib/library";
@@ -131,7 +149,29 @@ beforeEach(() => {
   getCollection.mockResolvedValue(null);
   listCollectionBuilds.mockResolvedValue({ items: [], nextBefore: null });
   getLibraryOwner.mockResolvedValue(null);
+  listSavedItems.mockResolvedValue({ items: [], next: null });
+  countSavedItems.mockResolvedValue({ part: 0, session: 0, step: 0, request: 0, filter_set: 0, collection: 0 });
+  savedItemsUsedIn.mockResolvedValue(new Map());
+  collectionSavedBy.mockResolvedValue(new Map());
+  updateSavedItemNote.mockResolvedValue(undefined);
+  unsaveItem.mockResolvedValue(undefined);
+  saveItem.mockResolvedValue(undefined);
 });
+
+function kept(n: number, over: Record<string, unknown> = {}) {
+  return {
+    id: `si-${n}`,
+    kind: "step",
+    buildId: "build-1",
+    ref: `node-${n}`,
+    snapshot: { type: "prompt", title: `Kept step ${n}`, payload: { text: "Summarise the call." }, source: { buildId: "build-1", buildTitle: "Call notes", buildSlug: "call-notes", makerId: "maker-1" } },
+    sourceVersion: null,
+    note: null,
+    savedAt: "2026-09-20T10:00:00.000Z",
+    lastUsedAt: "2026-09-29T10:00:00.000Z",
+    ...over,
+  };
+}
 
 describe("Library", () => {
   it("asks for the saves and the collections together, before either answers", async () => {
@@ -158,7 +198,7 @@ describe("Library", () => {
     await waitFor(() => expect(rowTitles()).toEqual(["Saved build 2", "Saved build 1"]));
     expect(screen.getByText("18 saved · 1 collection")).toBeInTheDocument();
     const kinds = within(screen.getByRole("navigation", { name: "Kinds" })).getAllByRole("link");
-    expect(kinds.map((link) => link.textContent)).toEqual(["All saved18", "Builds18"]);
+    expect(kinds.map((link) => link.textContent)).toEqual(["All saved18", "Builds18", "Parts0", "Sessions0", "Steps0", "Requests0", "Filter sets0"]);
     expect(screen.getAllByTestId("library-row")[0]).toHaveAttribute("aria-selected", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Show more" }));
@@ -245,13 +285,66 @@ describe("Library", () => {
     expect(within(dialog).getByRole("button", { name: "Delete collection" })).toBeTruthy();
   });
 
+  it("lists the kept steps with Used in, the reader's note and a way to take it out", async () => {
+    listSavedItems.mockResolvedValue({ items: [kept(1), kept(2, { snapshot: { type: "agent", title: "Clean-up agent", source: {} } })], next: null });
+    countSavedItems.mockResolvedValue({ part: 0, session: 0, step: 2, request: 0, filter_set: 0, collection: 0 });
+    savedItemsUsedIn.mockResolvedValue(new Map([["si-1", 4]]));
+    renderAt("/library?kind=steps");
+
+    await waitFor(() => expect(rowTitles()).toEqual(["Kept step 1", "Clean-up agent"]));
+    expect(listSavedItems).toHaveBeenCalledWith({ kind: "step", after: undefined });
+    expect(screen.getByRole("columnheader", { name: "Used in" })).toBeInTheDocument();
+    const panel = screen.getByTestId("library-selected");
+    expect(within(panel).getByText("4 builds")).toBeInTheDocument();
+    expect(within(panel).getByRole("link", { name: "Open source" })).toHaveAttribute("href", "/b2/call-notes");
+    expect(within(panel).queryByRole("button", { name: "Use in a build" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Start a build from this collection" })).toBeNull();
+
+    const note = within(panel).getByLabelText("Your note");
+    fireEvent.change(note, { target: { value: "Try on refunds" } });
+    fireEvent.blur(note);
+    await waitFor(() => expect(updateSavedItemNote).toHaveBeenCalledWith("si-1", "Try on refunds"));
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Remove from Library" }));
+    await waitFor(() => expect(unsaveItem).toHaveBeenCalledWith("si-1"));
+  });
+
+  it("starts the counts, the kept list and Used in with the saves, before any answers", async () => {
+    renderAt("/library?kind=sessions");
+    await waitFor(() => expect(listSavedItems).toHaveBeenCalledWith({ kind: "session", after: undefined }));
+    expect(countSavedItems).toHaveBeenCalledTimes(1);
+    expect(savedItemsUsedIn).toHaveBeenCalledTimes(1);
+    expect(listMySavedBuilds).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Nothing kept here yet.")).toBeInTheDocument();
+  });
+
+  it("lists the saved builds and the kept items together, newest first, under All saved", async () => {
+    listMySavedBuilds.mockResolvedValue({ items: [{ savedAt: "2026-09-28T10:00:00.000Z", build: card(1) }], nextBefore: null, total: 1 });
+    listSavedItems.mockResolvedValue({ items: [kept(1, { lastUsedAt: "2026-09-29T10:00:00.000Z" })], next: null });
+    countSavedItems.mockResolvedValue({ part: 0, session: 0, step: 1, request: 0, filter_set: 0, collection: 0 });
+    renderAt("/library");
+    await waitFor(() => expect(rowTitles()).toEqual(["Kept step 1", "Saved build 1"]));
+    expect(screen.getByText("2 saved · 0 collections")).toBeInTheDocument();
+  });
+
+  it("says saved by n on a public collection, and lets another reader save it", async () => {
+    getCollection.mockResolvedValue(collection(2, { ownerId: "maker-9", isPrivate: false }));
+    listCollectionBuilds.mockResolvedValue({ items: [], nextBefore: null });
+    collectionSavedBy.mockResolvedValue(new Map([["col-2", 14]]));
+    renderAt("/library?collection=col-2");
+
+    expect(await screen.findByText(/saved by 14 people/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Save collection" }));
+    await waitFor(() => expect(saveItem).toHaveBeenCalledWith({ kind: "collection", ref: "col-2", snapshot: { name: "Collection 2" } }));
+  });
+
   it("offers no Rename, Make public, Delete or Remove on somebody else's collection", async () => {
     getCollection.mockResolvedValue(collection(2, { ownerId: "maker-9", isPrivate: false }));
     listCollectionBuilds.mockResolvedValue({ items: [{ addedAt: "2026-09-28T10:00:00.000Z", build: card(5) }], nextBefore: null });
     renderAt("/library?collection=col-2");
 
     await waitFor(() => expect(within(screen.getByTestId("library-collection-open")).getByText("Collection 2")).toBeInTheDocument());
-    expect(screen.queryByTestId("library-collection-actions")).toBeNull();
+    for (const name of ["Rename", "Make public", "Make private", "Delete"]) expect(screen.queryByRole("button", { name })).toBeNull();
     expect(screen.queryByRole("button", { name: /Remove from/ })).toBeNull();
   });
 
@@ -267,6 +360,6 @@ describe("Library", () => {
     expect(screen.queryByRole("navigation", { name: "Kinds" })).toBeNull();
     expect(listMySavedBuilds).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "New collection" })).toBeNull();
-    expect(screen.queryByTestId("library-collection-actions")).toBeNull();
+    for (const name of ["Rename", "Make public", "Make private", "Delete"]) expect(screen.queryByRole("button", { name })).toBeNull();
   });
 });
