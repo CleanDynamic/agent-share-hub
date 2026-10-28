@@ -251,8 +251,9 @@ export default function LibraryPage() {
     entry.item ? savedItemRow(entry.item, usedIn.data ?? new Map(), now) : savedBuildRow({ savedAt: entry.at, build: entry.build as GalleryBuild }, now),
   );
 
+  /* All saved shows the builds even when the kept items fail to load (reported by their own context). */
   const itemsStatus = statusOf(kept);
-  const kindStatus: PanelStatus = openId || kind === "builds" ? statusOf(saved) : itemKind ? itemsStatus : saved.isLoading || kept.isLoading ? "loading" : saved.isError || kept.isError ? "error" : "ready";
+  const kindStatus: PanelStatus = openId || kind === "builds" ? statusOf(saved) : itemKind ? itemsStatus : saved.isLoading ? "loading" : saved.isError ? "error" : "ready";
   const tableStatus: PanelStatus = visiting && !openId ? statusOf(collections) : openId && !open ? statusOf(alone.isError ? alone : collectionBuilds) : openId ? statusOf(collectionBuilds) : kindStatus;
   const retryTable = () => {
     if (openId) return void collectionBuilds.refetch();
