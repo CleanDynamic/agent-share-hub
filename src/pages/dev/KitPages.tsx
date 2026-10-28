@@ -66,8 +66,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   classification: lazy(() => import("./ClassificationDemo")),
   /* CA-15b: each tile modal open on its own, and a List with every kind of tile (no board image is in the repo). */
   modals: lazy(() => import("./ModalsDemo")),
-  /* UI-P37 — the Bounties board, for its four states (no reference board is compared). */
-  "bounty-board": lazy(() => import("./BountyBoardDemo")),
+  /* UI-P37: the Bounties board. SV-14: retired; OpenBuilds is the vision board's page, `vision-openbuilds`. */
   /* PT-03 — the post thread, closed, open and in page mode (no board is compared). */
   "post-thread": lazy(() => import("./PostThreadDemo")),
   /* UI-P36 — Sign in (and, with `?mode=`, Join, reset and verify). */
@@ -76,7 +75,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
      replaces the entry: SV-10 home, SV-14 openbuilds, SV-11 builds-table, SV-12 builds-maps, SV-13
      builds-classification, SV-09 library, SV-18 composer-add-from-library, SV-08 drafts. */
   "vision-home": lazy(() => import("./VisionHome")),
-  "vision-openbuilds": lazy(() => import("./VisionNotBuilt")),
+  "vision-openbuilds": lazy(() => import("./VisionOpenBuilds")),
   "vision-builds-table": lazy(() => import("./VisionBuildsTable")),
   "vision-builds-maps": lazy(() => import("./VisionBuildsMaps")),
   "vision-builds-classification": lazy(() => import("./VisionBuildsClassification")),

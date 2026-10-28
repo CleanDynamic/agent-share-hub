@@ -25,7 +25,8 @@ export const PAGE_TARGETS: PageTarget[] = [
   { key: "builds-maps", path: "/builds?view=maps", readyMark: "builds", auth: true, maxRounds: 2 },
   /* SV-13: Classification draws the classifications the list already carries, so it takes the Table's one round. */
   { key: "builds-classification", path: "/builds?view=classification", readyMark: "builds", auth: true, maxRounds: 1 },
-  { key: "openbuilds", path: "/openbuilds", readyMark: "openbuilds", auth: true, maxRounds: null },
+  /* SV-14: the step requests, then (together) their counts, makers, steps strips and the reader's Me too marks: two rounds. */
+  { key: "openbuilds", path: "/openbuilds", readyMark: "openbuilds", auth: true, maxRounds: 2 },
   { key: "library-saved", path: "/library", readyMark: "library", auth: true, maxRounds: 1 },
   { key: "library-collections", path: "/library?tab=collections", readyMark: "library", auth: true, maxRounds: null },
   { key: "drafts", path: "/drafts", readyMark: "drafts", auth: true, maxRounds: 1 },

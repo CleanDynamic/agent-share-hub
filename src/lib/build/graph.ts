@@ -549,7 +549,7 @@ export const isStepTile = (node: Pick<BuildNode, "type"> & { payload?: unknown }
 const SOURCE_KIND: Record<string, StepKind> = { [SYSTEM_PROMPT_TYPE]: "system_prompt", [DATASET_TYPE]: "dataset", [REPO_TYPE]: "repo" };
 
 /** The kind a node is drawn as: a step tile's own, else the kind of its type; undefined for a node that is not a step. */
-const kindOfNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): StepKind | undefined =>
+export const kindOfNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): StepKind | undefined =>
   node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : node.type in SOURCE_KIND && isStepTile(node) ? SOURCE_KIND[node.type] : KIND_OF_TYPE[node.type];
 
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>

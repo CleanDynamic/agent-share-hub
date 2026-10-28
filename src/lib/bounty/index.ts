@@ -106,6 +106,21 @@ export {
   type Solver,
 } from "./solvers";
 
+// OpenBuilds (SV-14): the step requests with their steps strips, the reader's requests and record.
+export {
+  getMyRecord,
+  listMyOpenRequests,
+  listStepRequests,
+  type ListStepRequestsOptions,
+  type MyOpenRequest,
+  type MyRecord,
+  type RequestSize,
+  type StepRequestRecord,
+  type StepRequestSort,
+  type StepRequestsPage,
+  type StepStripNode,
+} from "./openBuilds";
+
 // The reader's one-click answer to an open ask. Its table is NS-P52's and is
 // keyed at bounties; the generation-1 bounty_me_too is neither read nor
 // written here — see the header of meToo.ts.
