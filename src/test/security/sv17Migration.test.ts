@@ -31,8 +31,12 @@ describe("the SV-17 migration", () => {
     for (const command of ["SELECT", "INSERT", "UPDATE", "DELETE"]) expect(text).toMatch(new RegExp(`ON public\\.saved_items FOR ${command}`));
     expect(text).not.toMatch(/(?<!select )auth\.uid\(\)/);
     expect(text).not.toMatch(/TO (public|anon)\b[^;]*saved_items|saved_items[^;]*TO anon/);
-    expect(text).toMatch(/REVOKE ALL ON public\.saved_items FROM anon, authenticated;/);
+    expect(text).toMatch(/REVOKE ALL ON public\.saved_items FROM anon, authenticated, service_role;/);
     expect(text).toMatch(/GRANT SELECT, INSERT, UPDATE, DELETE ON public\.saved_items TO authenticated;/);
+    expect(text).toMatch(/GRANT ALL ON public\.saved_items TO service_role;/);
+    const firstPolicy = text.indexOf("CREATE POLICY");
+    expect(text.indexOf("GRANT SELECT, INSERT, UPDATE, DELETE ON public.saved_items")).toBeLessThan(firstPolicy);
+    expect(text.indexOf("GRANT ALL ON public.saved_items TO service_role")).toBeLessThan(firstPolicy);
   });
 
   it("points the owner at profiles, never at the auth schema", () => {
