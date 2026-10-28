@@ -9,6 +9,8 @@
 // source build's maker, nothing when the maker is the one copying). A session copy is a ready-made `SessionCopy` for
 // `insertSession`, whose tiles carry `source_ref.import_session_id` (what saved_items_used_in counts a session by).
 //
+// MOTION: kind "add". A Library tile is not a copy of a tile on screen, so it drops in rather than sliding out from under the tile above.
+//
 // ONE WRITER. A step or a part is a snapshot of tiles, so the writing is `restoreSnapshot`, the same writer Duplicate and Undo use.
 
 import type { Json } from "@/integrations/supabase/types";

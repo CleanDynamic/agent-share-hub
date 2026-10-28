@@ -98,7 +98,7 @@ describe("Add › From Library", () => {
     expect(added?.source_ref).toEqual({ node_id: "src-prompt", build_id: "b-src", saved_item_id: "si-prompt" });
     expect(added?.payload).toMatchObject({ text: "Summarise the call.", model: "claude-opus-5-5" });
     // The animator was told first, with the new tile's key.
-    const told = expectSpy.mock.calls.map(([label]) => label).find((label) => label.kind === "duplicate");
+    const told = expectSpy.mock.calls.map(([label]) => label).find((label) => label.kind === "add" && label.keys.length > 0);
     expect(told?.keys).toEqual([added?.id]);
     expect(await screen.findByText("Added Summary on one prompt from Library")).toBeTruthy();
     expect(touch).toHaveBeenCalledWith(["si-prompt"]);

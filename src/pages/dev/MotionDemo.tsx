@@ -169,9 +169,9 @@ function MotionDemoPage({ fit = "board", state = "populated" }: DesignPageProps)
       const copies = previous.tree.filter((entry) => ids.includes(entry.id)).map((entry) => ({ ...entry, id: fresh(`${entry.id}-copy`), position: entry.position + 0.5, children: [] }) as NodeTree);
       return { ...previous, tree: [...previous.tree, ...copies] };
     });
-  /* SV-18: Add › From Library puts a saved step at the end of the session as the Duplicate label does ("duplicate"). */
+  /* SV-18: Add › From Library puts a saved step at the end of the session as a tile added: it drops in ("add"). */
   const insertFromLibrary = (session: string) =>
-    step("duplicate", "Added Summary on one prompt from Library", (previous) => {
+    step("add", "Added Summary on one prompt from Library", (previous) => {
       const before = snapshotOf(previous.tree, previous.making, []);
       const made = insertSavedTile(
         before,

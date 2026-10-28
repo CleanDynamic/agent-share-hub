@@ -255,7 +255,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           await restoreSnapshot(buildId, nodes, (current) => fits.reduce((made, item, at) => insertSavedTile(made, item, place, { buildId, copierId, newId: () => crypto.randomUUID(), topId: tops[at] })?.snapshot ?? made, current));
           return tops;
         },
-        { notice: true, motion: "duplicate", keys: tops },
+        { notice: true, motion: "add", keys: tops },
       );
     },
     [buildId, nodes, history],
