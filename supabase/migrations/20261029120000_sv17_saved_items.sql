@@ -4,7 +4,13 @@
 -- builds.save_count keeps working. A public collection can be kept too (kind 'collection'), which is what "saved by n" counts.
 --
 -- PRIVATE TO THE SAVER. saved_items has an owner-only policy for every command and no grant for anon, so nobody else reads a
--- row, the source's maker included. The one thing others may see is a count of how many readers kept a public collection,
+-- row, the source's maker included.
+--
+-- GRANTS ARE EXPLICIT. The table is revoked from anon and authenticated, then authenticated is granted exactly the four
+-- verbs its policies serve, as 20260917120000 does; nothing relies on the platform's default privileges.
+--
+-- user_id REFERENCES public.profiles(id), as builds.creator_id and collections.owner_id do, not the auth schema. A profile
+-- is made for every account (handle_new_user) and cascades from it, so a deleted account still removes its saved items. The one thing others may see is a count of how many readers kept a public collection,
 -- through collection_saved_by_count, which returns numbers and no row.
 --
 -- A SAVED COPY OUTLIVES ITS SOURCE. build_id is ON DELETE SET NULL, so a removed build leaves the snapshot usable.
@@ -37,7 +43,7 @@
 
 CREATE TABLE IF NOT EXISTS public.saved_items (
   id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id        uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id        uuid        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   kind           text        NOT NULL,
   build_id       uuid        NULL REFERENCES public.builds(id) ON DELETE SET NULL,
   ref            text        NULL,
@@ -101,7 +107,8 @@ CREATE POLICY "Readers remove their own saved items"
   TO authenticated
   USING (user_id = (select auth.uid()));
 
-REVOKE ALL ON public.saved_items FROM anon;
+REVOKE ALL ON public.saved_items FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.saved_items TO authenticated;
 
 COMMENT ON TABLE public.saved_items IS
   'SV-17. A part, session, step, request, filter set or public collection a reader kept, as a snapshot. Private: only the reader reads, writes and removes their own. Builds are in build_saves.';
