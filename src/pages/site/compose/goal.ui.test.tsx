@@ -26,7 +26,7 @@ afterEach(() => {
 
 const goal = { condition: "the order form passes its tests", atMost: 40, reached: "reached" as const, turns: 12 };
 const META = { "typed-a": { tool: "claude-code", date: "2026-10-12", goal } };
-const tree = [{ id: "p", build_id: "b", contributor_id: null, parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "Build it.", session: "typed-a" }, source_ref: null, event_id: null, is_gap: false, created_at: "", children: [] } as NodeTree];
+const tree = [{ id: "p", build_id: "b", contributor_id: null, parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "Build it.", session: "typed-a" }, source_ref: null, event_id: null, is_gap: false, created_at: "", updated_at: "", children: [] } as NodeTree];
 
 const session = (over: Partial<SessionView> = {}): SessionView => ({ kind: "session", key: "typed-a", number: 1, tool: "Claude Code", model: "", date: "12 Oct", inBuild: 1, total: 1, status: "ready", checklist: [], ...over });
 const mount = (view: SessionView, onSessionGoal = vi.fn()) => {

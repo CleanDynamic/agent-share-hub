@@ -62,6 +62,7 @@ function node(
     event_id: null,
     is_gap: false,
     created_at: `2026-01-01T00:00:0${id.length}Z`,
+    updated_at: "2026-01-01T00:00:00Z",
     children,
   };
 }
