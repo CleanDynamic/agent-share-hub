@@ -19,7 +19,6 @@ import { Link } from "react-router-dom";
 import { LampBar } from "@/components/brand/LampDot";
 import { Segmented } from "@/components/brand/Segmented";
 import { Skeleton } from "@/components/brand/Skeleton";
-import { useMinWidth } from "@/components/shell/useMinWidth";
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { ring } from "@/lib/theme/controls";
@@ -28,7 +27,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, MapsHead, ViewSwitch, ellipsis, text } from "./BuildsFrame";
+import { BuildsControl, MapsHead, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
 import type { TableChip } from "./BuildsTableView";
 
 /** The well, in the board's own units. */
@@ -214,17 +213,10 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
 
 /* ── the page ── */
 
-/** Three columns, two below 1100, one below 760. */
-export function useMapColumns(): 1 | 2 | 3 {
-  const two = useMinWidth(761);
-  const three = useMinWidth(1101);
-  return three ? 3 : two ? 2 : 1;
-}
-
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
   const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice } = props;
   const [open, setOpen] = useState(false);
-  const columns = useMapColumns();
+  const columns = useCardColumns();
   const shown = chips.slice(0, 4);
   const rest = chips.length - shown.length;
   return (

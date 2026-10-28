@@ -9,7 +9,8 @@
    needs nothing after them. The classifications and the makers come in the list's own select (`listBuildsTable`).
 
    ONE LOAD FOR EVERY VIEW. The same builds are passed to the view the address names: the Table here, Maps and
-   Classification as their own chunks (`buildsViews.ts`).
+   Classification as their own chunks (`buildsViews.ts`). Classification makes no read of its own: the list carries each
+   build's classification, and a value links to this page as the Table with that facet added.
 
    NOT LIVE YET (drawn on the dev page only): Steps, Sessions and Runs 12 weeks, the number filters, Works on model, Last
    confirmed, Rebuilds and Likes as filters (SV-23); Saved filter sets, moving filters, the Columns chooser and Add a
@@ -28,7 +29,7 @@ import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsControl, BuildsLoadingView, MapsLoadingView, TableRowSkeletons, text } from "./BuildsFrame";
+import { BuildsControl, BuildsLoadingView, ClassificationLoadingView, MapsLoadingView, text } from "./BuildsFrame";
 import { BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsView, statParts } from "./BuildsView";
 import {
@@ -50,6 +51,7 @@ import {
   type PanelOrder,
 } from "./buildsModel";
 import { BuildsClassificationView, BuildsMapsPane, prefetchView } from "./buildsViews";
+import { cardOf, readFacetChoice, writeFacetChoice } from "./classificationModel";
 import type { MapsDirection } from "./BuildsMapsView";
 
 /** One sentence and Retry (CA-28's wording). */
@@ -89,6 +91,8 @@ export default function BuildsPage() {
   const [direction, setDirection] = useState<MapsDirection>("horizontal");
   /* Maps: how many of the loaded builds are drawn; each 24 are one read. */
   const [mapsShown, setMapsShown] = useState(MAPS_PAGE);
+  /* Classification: which facets the cards show, kept for the viewer. */
+  const [shownFacets, setShownFacets] = useState(readFacetChoice);
 
   /* ── one round: the list, the stats, the lens counts and the facets start together ── */
 
@@ -149,8 +153,6 @@ export default function BuildsPage() {
   });
   const count = total ?? builds.length;
 
-  const other = view === "classification" ? <BuildsClassificationView builds={builds} /> : null;
-
   const filters: BuildsFiltersViewProps = {
       activeCount: activeCount(params),
       sections,
@@ -166,6 +168,14 @@ export default function BuildsPage() {
     setMapsShown(next);
     if (next > builds.length && list.hasNextPage) void list.fetchNextPage();
   };
+
+  const onFacets = (next: typeof shownFacets) => {
+    setShownFacets(next);
+    writeFacetChoice(next);
+  };
+
+  /* A value's link: the Table (no `view`) with the value's facet key added to the filters. */
+  const valueHref = (key: string) => galleryHref({ ...params, view: undefined, facets: [...new Set([...(params.facets ?? []), key])] });
 
   const mapsPage =
     view === "maps" ? (
@@ -196,6 +206,35 @@ export default function BuildsPage() {
               </div>
             }
             onMore={mapsShown < builds.length || list.hasNextPage ? onMoreMaps : undefined}
+            loadingMore={list.isFetchingNextPage}
+          />
+        </Suspense>
+      )
+    ) : null;
+
+  const classificationPage =
+    view === "classification" ? (
+      list.error && !list.data ? (
+        <TableError onRetry={() => void list.refetch()} />
+      ) : (
+        <Suspense fallback={<ClassificationLoadingView hrefFor={hrefFor} />}>
+          <BuildsClassificationView
+            view={view}
+            hrefFor={hrefFor}
+            onViewIntent={prefetchView}
+            buildsLabel={`${count} ${count === 1 ? "build" : "builds"}`}
+            activeCount={activeCount(params)}
+            panel={<BuildsFiltersView {...filters} collapsed={false} />}
+            facets={shownFacets}
+            onFacets={onFacets}
+            cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}
+            empty={
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
+                <p style={{ ...text(13, 400, t.text2), margin: 0 }}>No builds match these filters.</p>
+                <BuildsControl onClick={() => go({ lens: "all", madeFor: [], madeWith: [], query: null, view: params.view })}>Clear all</BuildsControl>
+              </div>
+            }
+            onMore={list.hasNextPage ? () => void list.fetchNextPage() : undefined}
             loadingMore={list.isFetchingNextPage}
           />
         </Suspense>
@@ -236,13 +275,7 @@ export default function BuildsPage() {
             }
           : null
       }
-      other={
-        list.error && !list.data ? (
-          <TableError onRetry={() => void list.refetch()} />
-        ) : (
-          <Suspense fallback={<TableRowSkeletons count={6} />}>{other}</Suspense>
-        )
-      }
+      other={list.error && !list.data ? <TableError onRetry={() => void list.refetch()} /> : null}
     />
   );
 
@@ -251,7 +284,7 @@ export default function BuildsPage() {
       <SeoHead title="Builds · buildgallery" description="Things people built with AI, and the exact model versions other people got them working on." path="/builds" />
       {/* While the first screen loads the page is its loading state, the route's Placeholder; the page fades in over it. */}
       <PageArrival loading={loading} placeholder={<BuildsLoadingView />}>
-        {loading ? <BuildsLoadingView /> : view === "maps" ? mapsPage : page}
+        {loading ? <BuildsLoadingView /> : view === "maps" ? mapsPage : view === "classification" ? classificationPage : page}
       </PageArrival>
     </>
   );

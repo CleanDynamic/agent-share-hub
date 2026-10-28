@@ -23,6 +23,8 @@ export const PAGE_TARGETS: PageTarget[] = [
   /* SV-12: the Maps view reads the page's builds' Maps once the list has answered (the ids come from it): two rounds, the
      second one request for 24 builds. */
   { key: "builds-maps", path: "/builds?view=maps", readyMark: "builds", auth: true, maxRounds: 2 },
+  /* SV-13: Classification draws the classifications the list already carries, so it takes the Table's one round. */
+  { key: "builds-classification", path: "/builds?view=classification", readyMark: "builds", auth: true, maxRounds: 1 },
   { key: "openbuilds", path: "/openbuilds", readyMark: "openbuilds", auth: true, maxRounds: null },
   { key: "library-saved", path: "/library", readyMark: "library", auth: true, maxRounds: 1 },
   { key: "library-collections", path: "/library?tab=collections", readyMark: "library", auth: true, maxRounds: null },

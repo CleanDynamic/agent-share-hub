@@ -1,12 +1,10 @@
 /* SV-11: the Builds views that are not the Table, each its own chunk. The page renders the chosen one lazily, and the
    view switch fetches a view's code when it is pointed at or focused (bundle-dynamic-imports). SV-12 made Maps the pane
-   (`BuildsMapsPane`); SV-13 replaces the Classification module. */
+   (`BuildsMapsPane`); SV-13 made Classification the view itself. */
 
 import { lazy } from "react";
 
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
-
-import type { BuildsOtherViewProps } from "./buildsOther";
 
 const LOAD = {
   maps: () => import("./BuildsMapsPane"),
@@ -23,5 +21,3 @@ export function prefetchView(view: GalleryViewMode): void {
   // SV-12: the Maps are read by their own chunk of the data layer; it comes with the view.
   if (view === "maps") void import("@/lib/build/buildsMaps").catch(() => undefined);
 }
-
-export type { BuildsOtherViewProps };

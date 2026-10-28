@@ -1111,7 +1111,6 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/builds/BuildsPage.test.tsx",
   "src/pages/site/builds/BuildsPage.tsx",
   "src/pages/site/builds/buildsModel.ts",
-  "src/pages/site/builds/buildsOther.ts",
   "src/pages/site/builds/buildsViews.ts",
 
   // SV-12
@@ -1123,6 +1122,13 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/builds/BuildsMapsPane.tsx",
   "src/pages/site/builds/BuildsMapsView.test.tsx",
   "src/pages/site/builds/mapsModel.ts",
+
+  // SV-13
+  "src/pages/site/builds/BuildsClassificationView.test.tsx",
+  "src/pages/site/builds/classificationModel.ts",
+  "src/pages/site/builds/classificationModel.test.ts",
+  "src/dev/fixtures/vision/builds-classification.ts",
+  "src/pages/dev/VisionBuildsClassification.tsx",
 ];
 
 /**
@@ -1396,6 +1402,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 10 is not in SPACE_REFINED",
     text: `<div style={{ marginTop: 10 }}>`,
     why: "SV-12: the Maps page's loading card puts the title row 10 under the well, as the card does.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `columnGap: 12, padding: "10px 0", borderTop:`,
+    why: "SV-13: a Classification row is 10 above and below its facet, as the board draws it.",
   },
   {
     rule: "spacing 7 is not in SPACE_REFINED",

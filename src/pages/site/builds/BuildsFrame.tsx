@@ -31,6 +31,13 @@ export function useBuildsTwoColumns(): boolean {
   return useMinWidth(TWO_COLUMNS_MIN);
 }
 
+/** Cards in three columns, two below 1100, one below 760 (Maps and Classification). */
+export function useCardColumns(): 1 | 2 | 3 {
+  const two = useMinWidth(761);
+  const three = useMinWidth(1101);
+  return three ? 3 : two ? 2 : 1;
+}
+
 /** Table rows are 48 high on the board. */
 export const TABLE_ROW = 48;
 
@@ -166,6 +173,19 @@ export function MapsHead({ switcher }: { switcher: ReactNode }) {
   );
 }
 
+/** SV-13: the Classification page's head: "n builds" 20/500, its sentence in `--text2`, and the view switch. */
+export function ClassificationHead({ figure, switcher }: { figure: string; switcher: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+      <div>
+        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em" }}>{figure}</h1>
+        <p style={{ margin: "4px 0 0", ...text(13, 400, t.text2) }}>Classification of each build · select a value to filter by it</p>
+      </div>
+      {switcher}
+    </div>
+  );
+}
+
 /* ── controls ── */
 
 /** A control at the board's 28 (44 on a phone): Add, Sort, Columns. Takes a ref and the rest of a button's props, so a
@@ -286,6 +306,7 @@ export function BuildsLoadingView() {
   const view = viewOfSearch(search);
   const hrefFor = (next: GalleryViewMode) => viewHref(pathname, search, next);
   if (view === "maps") return <MapsLoadingView hrefFor={hrefFor} />;
+  if (view === "classification") return <ClassificationLoadingView hrefFor={hrefFor} />;
   return (
     <LoadingRegion what="builds" announce>
       <BuildsColumns
@@ -326,6 +347,37 @@ export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) 
                 <div style={{ marginTop: 6 }}>
                   <Skeleton width="30%" height={10} radius={4} />
                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </LoadingRegion>
+  );
+}
+
+/** SV-13: the Classification page as it stands before its list arrives: the head, the row's height and cards with a
+    title and eight rows, at the grid's columns. */
+export function ClassificationLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) => string }) {
+  const columns = useCardColumns();
+  return (
+    <LoadingRegion what="builds" announce>
+      <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
+        <ClassificationHead figure="Builds" switcher={<ViewSwitch view="classification" hrefFor={hrefFor} />} />
+        <div style={{ height: 28, marginTop: 24 }} />
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 32 }} aria-hidden="true">
+          {Array.from({ length: columns * 2 }, (_, index) => (
+            <div key={index} style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
+              <Skeleton width="55%" height={12} radius={4} />
+              <div style={{ marginTop: 6 }}>
+                <Skeleton width="30%" height={10} radius={4} />
+              </div>
+              <div style={{ marginTop: 16 }}>
+                {Array.from({ length: 8 }, (__, row) => (
+                  <div key={row} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, height: 54, boxSizing: "border-box", borderTop: `1px solid ${t.hairline}` }}>
+                    <Skeleton width="40%" height={10} radius={4} />
+                  </div>
+                ))}
               </div>
             </div>
           ))}
