@@ -31,7 +31,14 @@ describe("the SV-17 migration", () => {
     for (const command of ["SELECT", "INSERT", "UPDATE", "DELETE"]) expect(text).toMatch(new RegExp(`ON public\\.saved_items FOR ${command}`));
     expect(text).not.toMatch(/(?<!select )auth\.uid\(\)/);
     expect(text).not.toMatch(/TO (public|anon)\b[^;]*saved_items|saved_items[^;]*TO anon/);
-    expect(text).toMatch(/REVOKE ALL ON public\.saved_items FROM anon/);
+    expect(text).toMatch(/REVOKE ALL ON public\.saved_items FROM anon, authenticated;/);
+    expect(text).toMatch(/GRANT SELECT, INSERT, UPDATE, DELETE ON public\.saved_items TO authenticated;/);
+  });
+
+  it("points the owner at profiles, never at the auth schema", () => {
+    const text = code();
+    expect(text).toMatch(/user_id\s+uuid\s+NOT NULL REFERENCES public\.profiles\(id\) ON DELETE CASCADE/);
+    expect(text).not.toMatch(/REFERENCES auth\./);
   });
 
   it("refuses the content of a draft", () => {
