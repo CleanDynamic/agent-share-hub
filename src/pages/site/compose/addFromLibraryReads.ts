@@ -23,5 +23,7 @@ export function preloadAddFromLibrary(client: QueryClient, viewerId: string | nu
   void loadAddFromLibrary().catch(() => undefined);
   if (!viewerId) return;
   const reads = insertReads(viewerId);
-  for (const read of [reads.saved, reads.usedIn, reads.collections]) void client.prefetchQuery(read).catch(() => undefined);
+  void client.prefetchQuery(reads.saved).catch(() => undefined);
+  void client.prefetchQuery(reads.usedIn).catch(() => undefined);
+  void client.prefetchQuery(reads.collections).catch(() => undefined);
 }
