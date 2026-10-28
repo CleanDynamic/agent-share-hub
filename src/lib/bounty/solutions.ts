@@ -7,6 +7,7 @@
 // of a stage_grids blob and acceptance merged it in.
 
 import { supabase } from "@/integrations/supabase/client";
+import { creditFor, setTileContributor } from "@/lib/build/contributors";
 import { getFieldsFor } from "@/lib/build/nodeTypes";
 import { createNotification } from "@/lib/notifications/createNotification";
 import type { NodePayload } from "@/lib/build/types";
@@ -312,6 +313,14 @@ export async function acceptSolution(
     eventId: result.event_id ?? "",
     acceptedAt: result.accepted_at ?? new Date().toISOString(),
   };
+
+  // SV-16: the tile is the solver's work, so it carries their credit. The author accepting is the build's maker, whose own
+  // writer sets it (the existing policy lets the maker update their tiles); it touches contributor_id and nothing else.
+  // Outside the transaction on purpose: a credit that could not be written (no column yet) must not undo an acceptance.
+  const credit = creditFor(accepted.solverId, result.author_id ?? "");
+  if (credit) {
+    await setTileContributor([accepted.nodeId], credit).catch((e) => console.warn("[acceptSolution] credit not written", e));
+  }
 
   // Best-effort, non-blocking, and outside the transaction on purpose: a
   // notification service being down must not roll back an acceptance that has

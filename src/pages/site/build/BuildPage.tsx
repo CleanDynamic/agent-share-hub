@@ -102,7 +102,8 @@ import { setupFolder } from "@/lib/build/setupFolder";
 import { runtimeFolder } from "@/lib/build/runtimeFolder";
 import { hasRuntimeFacts } from "@/lib/build/runSequence";
 import { shownGroups, type Step } from "@/lib/build/graph";
-import { readerSeesMap } from "@/lib/build/making";
+import { sessionContributorIds, tallyContributors } from "@/lib/build/contributors";
+import { readerSeesMap, sessionsMetaOf } from "@/lib/build/making";
 import { makingWithAllGroupColours, treeWithGroupColours } from "@/lib/build/referenceGroups";
 import { GroupLabelsProvider } from "@/pages/site/compose/groupLabels";
 import { toast } from "sonner";
@@ -446,6 +447,20 @@ export function BuildPage() {
     queryKey: ["bounty", "listSolverHandles", solverIds.join(",")],
     queryFn: () => listSolverHandles(solverIds),
     enabled: solverIds.length > 0,
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+  /* SV-16: who else made tiles or sessions. The ids ride in the record; only their handles are looked up. */
+  const contributorIds = useMemo(() => {
+    const maker = build?.creator_id ?? "";
+    const byTiles = tallyContributors(partsInOrder(tree), maker).map((entry) => entry.id);
+    const fromSessions = sessionContributorIds(sessionsMetaOf(build?.making), maker);
+    return [...new Set([...byTiles, ...fromSessions])];
+  }, [tree, build?.creator_id, build?.making]);
+  const contributorHandles = useQuery<Map<string, string | null>>({
+    queryKey: ["bounty", "listSolverHandles", contributorIds.join(",")],
+    queryFn: () => listSolverHandles(contributorIds),
+    enabled: contributorIds.length > 0,
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
@@ -1100,6 +1115,10 @@ export function BuildPage() {
             handle: (record.maker?.username ?? "").trim() || null,
             avatarUrl: record.maker?.avatarUrl ?? null,
             userId: build.creator_id,
+            contributors: contributorIds.flatMap((id) => {
+              const handle = (contributorHandles.data?.get(id) ?? "").trim();
+              return handle ? [handle] : [];
+            }),
           },
           madeWith: build.made_with ?? [],
           modelsUsed: build.models_used ?? [],

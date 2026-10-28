@@ -26,7 +26,8 @@ export type { Json };
  * narrow extension rather than by editing the generated file.
  */
 export type Build = Tables<"builds"> & { post_doc: ThreadDoc | null };
-export type BuildNode = Tables<"build_nodes">;
+/** SV-16: `contributor_id` is newer than the generated types, and absent until the migration is applied. */
+export type BuildNode = Tables<"build_nodes"> & { contributor_id?: string | null };
 export type BuildEvent = Tables<"build_events">;
 export type BuildMedia = Tables<"build_media">;
 export type BuildReproduction = Tables<"build_reproductions">;

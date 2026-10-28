@@ -5,6 +5,7 @@
 // position IS NULL is sitting in the compose tray and is none of those things.
 
 import { supabase } from "@/integrations/supabase/client";
+import { noteMissingContributorColumn, withContributorColumn } from "./contributors";
 import { checkRows, noteNodes } from "./staleWrites";
 import {
   buildLayerError,
@@ -116,13 +117,13 @@ export async function reorderNodes(
   }));
   const { error: parkError } = await supabase
     .from("build_nodes")
-    .upsert(parked, { onConflict: "id" });
+    .upsert(parked as never[], { onConflict: "id" });
   if (parkError) throw buildLayerError("reorderNodes (park)", parkError);
 
   const placed = rows.map(({ index, ...row }) => row);
   const { error: placeError } = await supabase
     .from("build_nodes")
-    .upsert(placed, { onConflict: "id" });
+    .upsert(placed as never[], { onConflict: "id" });
   if (placeError) throw buildLayerError("reorderNodes (place)", placeError);
 }
 
@@ -139,16 +140,20 @@ export async function deleteNode(id: string): Promise<void> {
  * build with a large tray costs nothing extra to render.
  */
 export async function getNodeTree(buildId: string): Promise<NodeTree[]> {
-  const { data, error } = await supabase
-    .from("build_nodes")
-    .select(NODE_COLUMNS)
-    .eq("build_id", buildId)
-    .not("position", "is", null)
-    .order("position", { ascending: true })
-    .limit(NODE_LIMIT);
+  // SV-16: the tiles' contributors ride in the same request; asked again without them if the column is not there yet.
+  const read = (columns: string) =>
+    supabase
+      .from("build_nodes")
+      .select(columns as typeof NODE_COLUMNS)
+      .eq("build_id", buildId)
+      .not("position", "is", null)
+      .order("position", { ascending: true })
+      .limit(NODE_LIMIT);
+  let { data, error } = await read(withContributorColumn(NODE_COLUMNS));
+  if (error && noteMissingContributorColumn(error)) ({ data, error } = await read(NODE_COLUMNS));
 
   if (error) throw buildLayerError("getNodeTree", error);
-  return nestNodes((data ?? []) as BuildNode[]);
+  return nestNodes((data ?? []) as unknown as BuildNode[]);
 }
 
 /**

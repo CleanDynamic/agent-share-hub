@@ -110,6 +110,7 @@ export interface BuildViewProps {
 }
 
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
+import { creditLine } from "@/lib/build/contributors";
 import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
 
 /** The phone shows this many parts before "Show n more parts". */
@@ -776,6 +777,8 @@ function ThreadHero({
   const handle = (maker?.handle ?? "").trim();
   const name = (maker?.name ?? "").trim() || handle || "Maker";
   const profileHref = handle ? `/profile/${encodeURIComponent(handle)}` : null;
+  /* SV-16: "with @kit and @dax", the part of the credit line after the maker. */
+  const withLine = (maker?.contributors?.length ?? 0) > 0 ? creditLine("", maker?.contributors ?? []).trim() : "";
   const tag = `${hero.shape}${hero.viaConnector ? " · via connector" : ""}`;
   const columns: CSSProperties = { display: "grid", gridTemplateColumns: `${AUTHOR_COLUMN}px minmax(0, 1fr)`, columnGap: AUTHOR_GAP };
 
@@ -855,6 +858,7 @@ function ThreadHero({
           <span style={{ ...text(14, 400, t.label), display: "flex", flex: "0 1 auto", minWidth: 0 }}>
             {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
             {thread.published ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${thread.published}` : thread.published}</span> : null}
+            {withLine ? <span data-testid="build-contributors" style={{ minWidth: 0, whiteSpace: "pre", ...ellipsis }}>{` · ${withLine}`}</span> : null}
           </span>
           <span style={{ marginLeft: 2, display: "inline-flex", flex: "none" }}>
             <MadeWithMarks madeWith={hero.madeWith} modelsUsed={hero.modelsUsed} phone={phone} />

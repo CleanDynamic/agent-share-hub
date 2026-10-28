@@ -105,6 +105,16 @@ describe("the build page with a thread", () => {
     expect(screen.getByTestId("build-thread-line")).toBeTruthy();
   });
 
+  it("credits the other people who made tiles: two named, then how many more, and nothing when there are none", () => {
+    const p = props();
+    const withMaker = (contributors?: string[]) => ({ ...p, hero: { ...p.hero, maker: { ...p.hero.maker!, contributors } } });
+    const { unmount } = mount(withMaker(["kit", "dax", "lou", "max"]));
+    expect(screen.getByTestId("build-contributors").textContent).toContain("with @kit, @dax and 2 more");
+    unmount();
+    mount(withMaker(undefined));
+    expect(screen.queryByTestId("build-contributors")).toBeNull();
+  });
+
   it("keeps the four actions and Follow by name, and Follow calls through", () => {
     const onToggle = vi.fn();
     const p = props({ thread: threadView({ follow: { following: false, busy: false, onToggle } }) });

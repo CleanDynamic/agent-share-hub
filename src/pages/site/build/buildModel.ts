@@ -129,6 +129,8 @@ export interface BuildHeroMaker {
   handle: string | null;
   avatarUrl: string | null;
   userId: string;
+  /** SV-16: handles of the people who made tiles or sessions besides the maker, most tiles first. Absent: none. */
+  contributors?: readonly string[];
 }
 
 /** What the hero needs to draw the thread at the top of the build page. */

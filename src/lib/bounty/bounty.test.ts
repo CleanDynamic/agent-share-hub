@@ -401,11 +401,32 @@ describe("acceptSolution", () => {
       queriesFor(table).some((q) =>
         q.ops.some((o) => ["insert", "update", "upsert", "delete"].includes(o.method)),
       );
-    expect(wrote("build_nodes")).toBe(false);
+    // SV-16: the one write the client adds is the solver's credit on the filled tile (contributor_id only); the five stay the transaction's.
+    const nodeWrites = queriesFor("build_nodes").flatMap((q) => q.ops.filter((o) => ["insert", "update", "upsert", "delete"].includes(o.method)));
+    expect(nodeWrites).toEqual([{ method: "update", args: [{ contributor_id: SOLVER_ID }] }]);
     expect(wrote("bounties")).toBe(false);
     expect(wrote("solutions")).toBe(false);
     expect(wrote("build_events")).toBe(false);
     expect(wrote("solution_acceptance_log")).toBe(false);
+  });
+
+  it("credits the filled tile to the solver, touching contributor_id and nothing else", async () => {
+    const AUTHOR = "a0a0a0a0-0000-4000-8000-0000000000a1";
+    db.next.solutions = [{ data: SUBMITTED, error: null }];
+    db.next.build_nodes = [{ data: { id: GAP_NODE_ID, type: "prompt" }, error: null }];
+    db.rpcNext = [{ data: { bounty_id: BOUNTY_ID, solution_id: SOLUTION_ID, solver_id: SOLVER_ID, author_id: AUTHOR, node_id: GAP_NODE_ID }, error: null }];
+    await acceptSolution(BOUNTY_ID, SOLUTION_ID);
+    const writes = queriesFor("build_nodes").flatMap((q) => q.ops.filter((o) => o.method === "update"));
+    expect(writes).toEqual([{ method: "update", args: [{ contributor_id: SOLVER_ID }] }]);
+    expect(queriesFor("build_nodes").some((q) => q.ops.some((o) => o.method === "in" && (o.args[1] as string[])[0] === GAP_NODE_ID))).toBe(true);
+  });
+
+  it("writes no credit when the maker answers their own request, and still accepts when the column is missing", async () => {
+    db.next.solutions = [{ data: { ...SUBMITTED, solver_id: CREATOR_ID }, error: null }];
+    db.next.build_nodes = [{ data: { id: GAP_NODE_ID, type: "prompt" }, error: null }];
+    db.rpcNext = [{ data: { solver_id: CREATOR_ID, author_id: CREATOR_ID, node_id: GAP_NODE_ID }, error: null }];
+    await acceptSolution(BOUNTY_ID, SOLUTION_ID);
+    expect(queriesFor("build_nodes").some((q) => q.ops.some((o) => o.method === "update"))).toBe(false);
   });
 
   it("refuses a solution filed against a different bounty", async () => {
