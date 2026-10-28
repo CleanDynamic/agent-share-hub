@@ -264,7 +264,7 @@ describe("a tile: no updated_at, so the row is read inside the write", () => {
   it("checks nothing for a tile this tab never knew (a new one)", async () => {
     open();
     await read();
-    const fresh = { id: "0a0a0a0a-0000-4000-8000-000000000099", build_id: DRAFT, contributor_id: null, parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "new" }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-24T19:00:00Z" } as BuildNode;
+    const fresh = { id: "0a0a0a0a-0000-4000-8000-000000000099", build_id: DRAFT, contributor_id: null, parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: { text: "new" }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-24T19:00:00Z", updated_at: "2026-10-24T19:00:00Z" } as BuildNode;
     await writeNodeRows([fresh]);
     expect(requests().some((request) => request.method === "GET" && request.path.includes("id=in."))).toBe(false);
   });

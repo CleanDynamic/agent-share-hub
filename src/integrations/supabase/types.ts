@@ -748,6 +748,7 @@ export type Database = {
           source_ref: Json | null
           title: string | null
           type: string
+          updated_at: string
         }
         Insert: {
           build_id: string
@@ -763,6 +764,7 @@ export type Database = {
           source_ref?: Json | null
           title?: string | null
           type: string
+          updated_at?: string
         }
         Update: {
           build_id?: string
@@ -778,6 +780,7 @@ export type Database = {
           source_ref?: Json | null
           title?: string | null
           type?: string
+          updated_at?: string
         }
         Relationships: [
           {
