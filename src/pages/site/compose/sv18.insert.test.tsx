@@ -15,7 +15,7 @@ vi.mock("@/lib/library/savedItems", async (importOriginal) => {
     ...real,
     listSavedItems: vi.fn(async () => ({ items: savedFixtures(), next: null })),
     savedItemsUsedIn: vi.fn(async () => new Map([["si-prompt", 4]])),
-    makerHandles: vi.fn(async () => new Map([["maya-id", "maya"]])),
+    makerHandles: vi.fn(async () => new Map([["0a0a0a0a-0000-4000-8000-000000000009", "maya"]])),
     collectionSavedItemIds: vi.fn(async () => new Map([["col-1", ["si-prompt", "si-agent"]]])),
     touchSavedItems: (...args: unknown[]) => touch(...(args as [])),
   };
@@ -45,7 +45,7 @@ async function openWindow() {
   openAdd();
   fireEvent.click(await screen.findByRole("menuitem", { name: /From Library/ }));
   // Three sessions: Add first asks which one; the session last added to is already chosen.
-  const ask = await screen.findByLabelText("Add to which session?", undefined, { timeout: 5_000 }).catch(() => null);
+  const ask = await screen.findByRole("radiogroup", { name: "Add to which session?" }, { timeout: 5_000 }).catch(() => null);
   if (ask) fireEvent.click(within(ask).getAllByRole("radio").find((radio) => radio.getAttribute("aria-checked") === "true") ?? within(ask).getAllByRole("radio")[0]);
   return screen.findByRole("dialog", { name: "Add from Library" }, { timeout: 15_000 });
 }
@@ -94,7 +94,7 @@ describe("Add › From Library", () => {
     await waitFor(() => expect(tiles()).toHaveLength(before + 1), { timeout: 20_000 });
     const added = tiles().find((row) => (row.source_ref as { saved_item_id?: string } | null)?.saved_item_id === "si-prompt");
     expect(added).toBeTruthy();
-    expect(added).toMatchObject({ type: "prompt", parent_id: null, title: "Summary on one prompt", contributor_id: "maya-id" });
+    expect(added).toMatchObject({ type: "prompt", parent_id: null, title: "Summary on one prompt", contributor_id: "0a0a0a0a-0000-4000-8000-000000000009" });
     expect(added?.source_ref).toEqual({ node_id: "src-prompt", build_id: "b-src", saved_item_id: "si-prompt" });
     expect(added?.payload).toMatchObject({ text: "Summarise the call.", model: "claude-opus-5-5" });
     // The animator was told first, with the new tile's key.
@@ -131,7 +131,7 @@ describe("Add › From Library", () => {
     expect(copies[0].source_ref).toMatchObject({ import_session_id: "import-9" });
     const key = (copies[0].payload as { session: string }).session;
     expect(key.startsWith("typed-")).toBe(true);
-    expect((draftRow()?.making as { sessions_meta: Record<string, { contributor_id?: string }> }).sessions_meta[key].contributor_id).toBe("maya-id");
+    expect((draftRow()?.making as { sessions_meta: Record<string, { contributor_id?: string }> }).sessions_meta[key].contributor_id).toBe("0a0a0a0a-0000-4000-8000-000000000009");
   });
 
   it("Collections lists the collection with how many of its items fit, and inserts them in order", async () => {
@@ -151,6 +151,7 @@ describe("Add › From Library", () => {
 
   it("inside a team lists agents only", async () => {
     await open();
+    fireEvent.click(await screen.findByRole("button", { name: "Show agents" }, { timeout: 15_000 }));
     const ghost = await screen.findByRole("button", { name: "Add an agent from Library" }, { timeout: 15_000 });
     fireEvent.click(ghost);
     const dialog = await screen.findByRole("dialog", { name: "Add from Library" }, { timeout: 15_000 });

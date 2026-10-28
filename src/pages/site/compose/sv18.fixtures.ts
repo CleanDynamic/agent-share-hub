@@ -14,7 +14,7 @@ const item = (id: string, kind: LibrarySavedItem["kind"], ref: string | null, sn
   lastUsedAt: "2026-10-12T10:00:00Z",
 });
 
-const source = { buildId: "b-src", buildTitle: "Call notes", buildSlug: "call-notes", makerId: "maya-id" };
+const source = { buildId: "b-src", buildTitle: "Call notes", buildSlug: "call-notes", makerId: "0a0a0a0a-0000-4000-8000-000000000009" };
 
 export const savedFixtures = (): LibrarySavedItem[] => [
   item("si-prompt", "step", "src-prompt", { type: "prompt", title: "Summary on one prompt", note: null, payload: { text: "Summarise the call.", model: "claude-opus-5-5" }, source: { ...source, nodeId: "src-prompt" } }),
