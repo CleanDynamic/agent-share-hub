@@ -309,7 +309,7 @@ export function LibraryCollections({ status, items, current, hrefFor, onNew, onR
 
 /* ── main: the changes ── */
 
-const CHANGE_TONE: Record<ChangeTag, ChipTone> = { EDITED: "lit", REMOVED: "breakage", RUN: "evidence", ANSWER: "text" };
+const CHANGE_TONE: Record<ChangeTag, ChipTone> = { EDITED: "lit", REMOVED: "breakage", RUN: "evidence", ANSWER: "text", REBUILD: "text", STALE: "lit" };
 
 export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps) {
   return (

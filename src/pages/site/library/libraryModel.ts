@@ -6,6 +6,8 @@
 
 import type { SavedBuild } from "@/lib/social";
 import { isStale } from "@/lib/build/signals";
+import type { ActivityEvent } from "@/lib/feed/activity";
+import { shortAgo } from "@/pages/site/home/homeModel";
 
 /* ── the kinds ── */
 
@@ -55,7 +57,7 @@ export interface LibraryRow {
   lastUsed: string;
 }
 
-export type ChangeTag = "EDITED" | "REMOVED" | "RUN" | "ANSWER";
+export type ChangeTag = "EDITED" | "REMOVED" | "RUN" | "ANSWER" | "REBUILD" | "STALE";
 
 export interface LibraryChange {
   id: string;
@@ -145,4 +147,42 @@ export function addressSearch(params: URLSearchParams, next: Partial<LibraryAddr
   set("tab", next.tab, "all");
   set("item", next.item);
   return search;
+}
+
+
+/* ── the changes (SV-15) ── */
+
+/** How far back the changes list looks. The Library has no "last visit" of its own, and Home's marker moves on every visit. */
+export const CHANGES_WINDOW_DAYS = 14;
+
+const handleOf = (person: { handle: string | null; name: string }) => (person.handle ? `@${person.handle}` : person.name);
+
+/** The changes on the reader's SAVED builds, as the list draws them. Builds they made are Home's and Builds' to report. */
+export function libraryChanges(events: readonly ActivityEvent[], now: number): LibraryChange[] {
+  return events
+    .filter((event) => event.role === "saver")
+    .map((event): LibraryChange => {
+      const age = shortAgo(event.at, now);
+      switch (event.kind) {
+        case "run":
+          return { id: event.id, tag: "RUN", item: event.buildTitle, detail: `${event.worked ? "worked" : "didn't work"}${event.model ? ` on ${event.model}` : ""} · ${handleOf(event.runner)}`, age };
+        case "rebuild":
+          return { id: event.id, tag: "REBUILD", item: event.buildTitle, detail: `rebuilt by ${handleOf(event.rebuilder)}`, age };
+        case "answer":
+          return { id: event.id, tag: "ANSWER", item: event.buildTitle, detail: `${handleOf(event.solver)} answered your saved request`, age };
+        case "stale":
+          return { id: event.id, tag: "STALE", item: event.buildTitle, detail: "not confirmed in a while", age };
+      }
+    });
+}
+
+/** The figure and meta for the list: "3 changes", "2 reproduced", "1 rebuilt". */
+export function changesFigure(rows: readonly LibraryChange[]): { figure: string; parts: { text: string; tone?: "evidence" | "lit" }[] } {
+  const count = (tag: ChangeTag) => rows.filter((row) => row.tag === tag).length;
+  const parts: { text: string; tone?: "evidence" | "lit" }[] = [];
+  if (count("RUN")) parts.push({ text: `${count("RUN")} run`, tone: "evidence" });
+  if (count("REBUILD")) parts.push({ text: `${count("REBUILD")} rebuilt` });
+  if (count("ANSWER")) parts.push({ text: `${count("ANSWER")} answered` });
+  if (count("STALE")) parts.push({ text: `${count("STALE")} out of date`, tone: "lit" });
+  return { figure: `${rows.length} ${rows.length === 1 ? "change" : "changes"}`, parts: [{ text: `Last ${CHANGES_WINDOW_DAYS} days` }, ...parts] };
 }
