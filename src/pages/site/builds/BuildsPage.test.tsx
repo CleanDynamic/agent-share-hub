@@ -26,6 +26,8 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   getGalleryFacets: () => getGalleryFacets(),
 }));
 
+import { emptyClassification } from "@/lib/classify/facets";
+
 import BuildsPage from "./BuildsPage";
 
 const build = (n: number) => ({
@@ -93,6 +95,26 @@ describe("BuildsPage", () => {
     expect(screen.getByRole("link", { name: "Maps" }).getAttribute("aria-current")).toBe("page");
     expect(listBuildsTable).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(listBuildsTable.mock.calls[0][0])).not.toContain("maps");
+  });
+
+  it("draws Classification from the builds already loaded, with no read of its own", async () => {
+    listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id: "education" }] } } }, build(2)], total: 2 });
+    renderAt("/builds?view=classification");
+    expect(await screen.findByTestId("builds-classification")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Classification" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getAllByTestId("classification-card")).toHaveLength(2);
+    expect(listBuildsTable).toHaveBeenCalledTimes(1);
+    expect(getClassificationFacets).toHaveBeenCalledTimes(1);
+  });
+
+  it("links a Classification value to the Table with that facet added, and the view dropped", async () => {
+    listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id: "education" }] } } }], total: 1 });
+    renderAt("/builds?view=classification&f=field%3Alaw");
+    const link = await screen.findByRole("link", { name: "Education" });
+    expect(link.getAttribute("href")).toBe("/builds?f=field%3Alaw&f=field%3Aeducation");
+    fireEvent.click(link);
+    await waitFor(() => expect(address).toBe("/builds?f=field%3Alaw&f=field%3Aeducation"));
+    expect(await screen.findByTestId("builds-page")).toBeTruthy();
   });
 
   it("writes a checked value to the address, and the list follows it", async () => {

@@ -79,7 +79,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   "vision-openbuilds": lazy(() => import("./VisionNotBuilt")),
   "vision-builds-table": lazy(() => import("./VisionBuildsTable")),
   "vision-builds-maps": lazy(() => import("./VisionBuildsMaps")),
-  "vision-builds-classification": lazy(() => import("./VisionNotBuilt")),
+  "vision-builds-classification": lazy(() => import("./VisionBuildsClassification")),
   "vision-library": lazy(() => import("./VisionLibrary")),
   "vision-composer-add-from-library": lazy(() => import("./VisionNotBuilt")),
   "vision-drafts": lazy(() => import("./VisionDrafts")),

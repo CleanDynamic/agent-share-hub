@@ -41,7 +41,7 @@ export interface BuildsViewProps {
   hrefFor: (view: GalleryViewMode) => string;
   onViewIntent?: (view: GalleryViewMode) => void;
   filters: BuildsFiltersViewProps;
-  /** The Table's props, or the other view's content (Maps, Classification). */
+  /** The Table's props, or what stands in its place (its error). Maps and Classification draw their own pages. */
   table: BuildsTableViewProps | null;
   other?: ReactNode;
 }
