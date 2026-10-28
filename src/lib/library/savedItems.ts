@@ -50,6 +50,8 @@ type Payload = Record<string, unknown>;
 export interface SnapshotSource {
   buildId: string;
   buildTitle: string | null;
+  /** For the link back to the source. */
+  buildSlug: string | null;
   /** The profile that made the work: the tile's contributor (SV-16), else the build's maker. */
   makerId: string | null;
   nodeId?: string;
@@ -99,14 +101,15 @@ export interface RequestSnapshot {
 
 const asPayload = (value: unknown): Payload => (value && typeof value === "object" && !Array.isArray(value) ? (value as Payload) : {});
 
-const sourceOf = (build: Pick<Build, "id" | "title" | "creator_id">, node?: Pick<NodeTree, "id"> & { contributor_id?: string | null }): SnapshotSource => ({
+const sourceOf = (build: Pick<Build, "id" | "title" | "slug" | "creator_id">, node?: Pick<NodeTree, "id"> & { contributor_id?: string | null }): SnapshotSource => ({
   buildId: build.id,
   buildTitle: build.title ?? null,
+  buildSlug: build.slug ?? null,
   makerId: node?.contributor_id ?? build.creator_id ?? null,
   ...(node ? { nodeId: node.id } : null),
 });
 
-export function stepSnapshot(node: Pick<NodeTree, "id" | "type" | "title" | "note" | "payload"> & { contributor_id?: string | null }, build: Pick<Build, "id" | "title" | "creator_id">): StepSnapshot {
+export function stepSnapshot(node: Pick<NodeTree, "id" | "type" | "title" | "note" | "payload"> & { contributor_id?: string | null }, build: Pick<Build, "id" | "title" | "slug" | "creator_id">): StepSnapshot {
   return { type: node.type, title: node.title ?? null, note: node.note ?? null, payload: methodOf(asPayload(node.payload)), source: sourceOf(build, node) };
 }
 
@@ -119,12 +122,12 @@ const childOf = (node: NodeTree): PartChild => ({
   children: (node.children ?? []).map(childOf),
 });
 
-export function partSnapshot(node: NodeTree, build: Pick<Build, "id" | "title" | "creator_id">): PartSnapshot {
+export function partSnapshot(node: NodeTree, build: Pick<Build, "id" | "title" | "slug" | "creator_id">): PartSnapshot {
   return { ...stepSnapshot(node, build), children: (node.children ?? []).map(childOf) };
 }
 
 /** The top-level prompt tiles of one session: those that name it by `payload.session` or `source_ref.import_session_id`. */
-export function sessionSnapshot(tree: readonly NodeTree[], sessionKey: string, build: Pick<Build, "id" | "title" | "creator_id" | "making">): SessionSnapshot {
+export function sessionSnapshot(tree: readonly NodeTree[], sessionKey: string, build: Pick<Build, "id" | "title" | "slug" | "creator_id" | "making">): SessionSnapshot {
   const tiles = tree.filter((node) => {
     const ref = asPayload(node.source_ref);
     return node.type === "prompt" && (asPayload(node.payload).session === sessionKey || ref.import_session_id === sessionKey);

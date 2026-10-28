@@ -4,6 +4,7 @@
    so Back and a shared link land where the reader was. Every value is read from it during render; nothing is copied
    into state (`rerender-derived-state-no-effect`). */
 
+import type { LibrarySavedItem, SavedKind } from "@/lib/library/savedItems";
 import type { SavedBuild } from "@/lib/social";
 import { isStale } from "@/lib/build/signals";
 import type { ActivityEvent } from "@/lib/feed/activity";
@@ -24,8 +25,23 @@ export const LIBRARY_KINDS: readonly { value: LibraryKind; label: string }[] = [
   { value: "filter-sets", label: "Filter sets" },
 ];
 
-/** The kinds with a source today: a save is a build (build_saves). Parts, Sessions, Steps, Requests and Filter sets arrive in SV-17. */
-export const LIVE_KINDS: readonly LibraryKind[] = ["all", "builds"];
+/** The kinds with a source: a build is in build_saves, the rest are saved_items (SV-17). */
+export const LIVE_KINDS: readonly LibraryKind[] = ["all", "builds", "parts", "sessions", "steps", "requests", "filter-sets"];
+
+/** The saved_items kind a Library kind lists, or null for All saved (which lists them all) and Builds (build_saves). */
+export function savedKindOf(kind: LibraryKind): SavedKind | null {
+  switch (kind) {
+    case "parts": return "part";
+    case "sessions": return "session";
+    case "steps": return "step";
+    case "requests": return "request";
+    case "filter-sets": return "filter_set";
+    default: return null;
+  }
+}
+
+/** Whether a Library kind reads saved_items at all: every kind but Builds. */
+export const readsSavedItems = (kind: LibraryKind): boolean => kind !== "builds";
 
 /** Each kind's own tabs (the board draws Steps: Steps, Changed, Removed). */
 export function kindTabs(kind: LibraryKind): { value: string; label: string }[] {
@@ -103,6 +119,69 @@ export function savedBuildRow({ savedAt, build }: SavedBuild, now: number): Libr
     lastUsed: ageWords(savedAt, now),
   };
 }
+
+/* ── saved items (SV-17) ── */
+
+const asRecord = (value: unknown): Record<string, unknown> => (value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {});
+const text = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
+
+/** The words a saved item is called by: its title, else the first of its text. */
+export function itemTitle(item: LibrarySavedItem): string {
+  const snap = item.snapshot;
+  const prompts = Array.isArray(snap.prompts) ? (snap.prompts as { text?: unknown }[]) : [];
+  const gap = asRecord(snap.gap);
+  const first = text(prompts[0]?.text) || text(asRecord(snap.payload).text) || text(asRecord(snap.payload).instructions);
+  const own = text(snap.title) || text(snap.name) || text(gap.title);
+  const words = (first || (item.kind === "request" ? "Request" : "Untitled")).split(/\s+/).slice(0, 8).join(" ");
+  return own || words;
+}
+
+const TYPE_WORD: Record<SavedKind, string> = { part: "Part", session: "Session", step: "Step", request: "Request", filter_set: "Filter set", collection: "Collection" };
+
+/** The row's Type: a step or part by its tile type ("Prompt", "Agent"), the rest by their kind. */
+export function itemType(item: LibrarySavedItem): string {
+  const tile = text(item.snapshot.type);
+  return (item.kind === "step" || item.kind === "part") && tile ? capital(tile.replace(/_/g, " ")) : TYPE_WORD[item.kind];
+}
+
+/** The line under the title: where it came from, in the board's order (the build, then what the session was run on). */
+export function itemDetail(item: LibrarySavedItem): string | null {
+  const snap = item.snapshot;
+  const source = asRecord(snap.source);
+  const prompts = Array.isArray(snap.prompts) ? snap.prompts.length : 0;
+  const parts =
+    item.kind === "session"
+      ? [text(source.tool), text(snap.model), prompts ? countWords(prompts, "prompt") : "", text(source.buildTitle)]
+      : item.kind === "filter_set"
+        ? [text(snap.query)]
+        : [text(source.buildTitle)];
+  return parts.filter(Boolean).join(" · ") || null;
+}
+
+/** A saved item as a table row. Used in is the count of builds with a tile from it; absent for kinds that are not put in a build. */
+export function savedItemRow(item: LibrarySavedItem, usedIn: ReadonlyMap<string, number>, now: number): LibraryRow {
+  const counted = item.kind === "part" || item.kind === "step" || item.kind === "session";
+  return {
+    id: item.id,
+    title: itemTitle(item),
+    detail: itemDetail(item),
+    type: itemType(item),
+    state: "same",
+    ...(counted ? { usedIn: usedIn.get(item.id) ?? 0 } : null),
+    lastUsed: ageWords(item.lastUsedAt, now),
+  };
+}
+
+/** What Copy puts on the clipboard for a saved item: its text, with a prompt per line for a session. */
+export function itemCopyText(item: LibrarySavedItem): string {
+  const snap = item.snapshot;
+  if (Array.isArray(snap.prompts)) return (snap.prompts as { text?: unknown }[]).map((prompt) => text(prompt.text)).filter(Boolean).join("\n\n");
+  const payload = asRecord(snap.payload);
+  return text(payload.text) || text(payload.instructions) || text(snap.query) || itemTitle(item);
+}
+
+/** "Saved by 14 people", or nothing when nobody else has kept it. */
+export const savedByWords = (count: number | undefined): string | null => (count && count > 0 ? `saved by ${count} ${count === 1 ? "person" : "people"}` : null);
 
 /** "Public" or "Private": a reader's own collection. */
 export const privacyWord = (isPrivate: boolean) => (isPrivate ? "Private" : "Public");

@@ -119,8 +119,10 @@ interface SelectedBase {
 export interface SelectedStep extends SelectedBase {
   kind: "step";
   versions?: { value: "saved" | "current"; onChange: (value: "saved" | "current") => void; saved: readonly DiffLine[]; current: readonly DiffLine[]; changed: string };
-  note?: { value: string; onChange: (value: string) => void };
+  note?: { value: string; onChange: (value: string) => void; /** The reader left the field: save it. */ onCommit?: () => void };
   onUse?: () => void;
+  /** Take it out of the Library. */
+  onRemove?: () => void;
 }
 
 /** A saved build: its Plaque, and Open as the one primary. */
@@ -575,7 +577,7 @@ export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
       {item.kind === "step" && item.note ? (
         <label style={{ display: "block", marginTop: 12, fontFamily: FIGTREE, fontSize: 12, color: t.label }}>
           Your note
-          <NoteField value={item.note.value} onChange={item.note.onChange} />
+          <NoteField value={item.note.value} onChange={item.note.onChange} onCommit={item.note.onCommit} />
         </label>
       ) : null}
 
@@ -586,6 +588,11 @@ export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
         {item.kind === "step" && item.openHref ? <LibraryControl href={item.openHref}>Open source</LibraryControl> : null}
         {item.kind === "build" && item.onAddToCollection ? <LibraryControl onClick={item.onAddToCollection}>Add to a collection</LibraryControl> : null}
       </div>
+      {item.kind === "step" && item.onRemove ? (
+        <div style={{ marginTop: 12 }}>
+          <LibraryTextButton onClick={item.onRemove}>Remove from Library</LibraryTextButton>
+        </div>
+      ) : null}
       {item.kind === "build" && item.onRemoveFromCollection ? (
         <div style={{ marginTop: 12 }}>
           <LibraryTextButton onClick={item.onRemoveFromCollection.onRemove}>Remove from {item.onRemoveFromCollection.name}</LibraryTextButton>
@@ -595,8 +602,8 @@ export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
   );
 }
 
-function NoteField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const { state, handlers } = useInteractive<HTMLTextAreaElement>();
+function NoteField({ value, onChange, onCommit }: { value: string; onChange: (value: string) => void; onCommit?: () => void }) {
+  const { state, handlers } = useInteractive<HTMLTextAreaElement>({ onBlur: () => onCommit?.() });
   return (
     <textarea
       rows={2}

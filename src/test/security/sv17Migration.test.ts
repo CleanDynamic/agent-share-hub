@@ -10,9 +10,9 @@ const sql = () => readFileSync(`${DIR}/${FILE}`, "utf8");
 const code = () => sql().replace(/--[^\n]*/g, "");
 
 describe("the SV-17 migration", () => {
-  it("steps after the newest migration before it", () => {
-    const others = readdirSync(DIR).filter((name) => name !== FILE).sort();
-    expect(FILE > others[others.length - 1]).toBe(true);
+  it("steps after the newest migration that was there when it was written (SV-16's)", () => {
+    expect(FILE > "20261028130000_sv16_contributor_credit.sql").toBe(true);
+    expect(readdirSync(DIR)).toContain(FILE);
   });
 
   it("makes saved_items with the columns the prompt names, one row per source, and the Library's index", () => {
