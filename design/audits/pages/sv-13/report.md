@@ -31,12 +31,12 @@ Facets derived / declared only:
   Declared only: Field, Task, Setting, Data handled, Age suitability. Data handled reads "stated", as the board draws it.
   Tools and stack is derived and may also hold the maker's own tools (declared.stack); those follow the derived ones, and a Tools value with no derived part reads "stated".
 Audits that fail on routes this change does not touch: audit:themes and audit:contrast fail (neither sweep visits Builds or any vision page; not run against main).
-Questions for Miles:
-  - A facet with no value shows "None" in the label colour with no source line. The board never draws an empty facet. Keep, or leave empty rows out of the card?
-  - A derived facet with no kept tile ids reads "derived" and never "from 0 tiles". The board has no such case.
-  - A value's link adds its facet to the filters already in the address (and drops the view), so the Table shows the builds that match both. The board says "filter by it" only.
+Questions for Miles: none. Decided and kept:
+  - An empty facet shows "None" in the label colour with no source line (cards keep one shape, rows line up across a grid row).
+  - A derived facet with no kept tile ids reads "derived", never "from 0 tiles".
+  - A value's link adds its facet to the filters already in the address and drops the view, so the Table shows builds matching both.
   - The maker's own words (a custom Field, Task or tool) are plain text: they have no id to filter by.
-  - The chooser opens from "Facets shown" under the row and keeps at least one facet. The board draws the control closed only.
+  - The chooser opens from "Facets shown" under the row and keeps at least one facet.
 ```
 
 ## What Miles needs to do
