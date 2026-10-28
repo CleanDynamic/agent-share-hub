@@ -30,7 +30,7 @@ const NOW = Date.parse("2026-10-28T12:00:00.000Z");
 const SINCE = new Date(NOW - 2 * DAY).toISOString();
 const ago = (days: number) => new Date(NOW - days * DAY).toISOString();
 
-const build = (over: Record<string, unknown> = {}) => ({ id: "b1", slug: "call-notes", title: "Call notes", status: "published", last_confirmed_at: ago(1), published_at: ago(30), ...over });
+const build = (over: Record<string, unknown> = {}) => ({ id: "b1", slug: "call-notes", title: "Call notes", creator_id: "u1", status: "published", last_confirmed_at: ago(1), published_at: ago(30), ...over });
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -50,7 +50,7 @@ describe("listActivityFor", () => {
 
   it("returns a rebuild of a build the reader saved, as a saver", async () => {
     tables.builds = [];
-    tables.build_saves = [{ build: build({ id: "b9", slug: "triage", title: "Triage" }) }];
+    tables.build_saves = [{ build: build({ id: "b9", slug: "triage", title: "Triage", creator_id: "u3" }) }];
     // The second `builds` read (parent_build_id) is the rebuild; the stub gives every builds read the same rows.
     tables.builds = [{ id: "b2", slug: "triage-2", title: "Triage 2", creator_id: "u2", parent_build_id: "b9", published_at: ago(1) }];
     const events = await listActivityFor({ userId: "u1", since: SINCE });
@@ -86,6 +86,19 @@ describe("listActivityFor", () => {
     tables.builds = [];
     expect(await listActivityFor({ userId: "u1", since: SINCE })).toEqual([]);
     expect(calls.map((c) => c.table).sort()).toEqual(["build_saves", "bounties", "builds"].sort());
+  });
+
+  it("savedOnly reads neither the reader's builds nor their requests, and leaves out a saved build they made", async () => {
+    tables.builds = [];
+    tables.build_saves = [{ build: build({ id: "b9", creator_id: "u3" }) }, { build: build({ id: "b1" }) }];
+    tables.build_reproductions = [
+      { id: "r1", build_id: "b9", user_id: "u2", confirmed_at: ago(1), model_used: null, worked: true, note: null },
+      { id: "r2", build_id: "b1", user_id: "u2", confirmed_at: ago(1), model_used: null, worked: true, note: null },
+    ];
+    const events = await listActivityFor({ userId: "u1", since: SINCE, savedOnly: true });
+    expect(events.map((e) => [e.id, e.role])).toEqual([["run:r1", "saver"]]);
+    expect(calls.some((c) => c.table === "bounties")).toBe(false);
+    expect(calls.find((c) => c.table === "builds")?.filters).not.toContainEqual(["eq", "creator_id", "u1"]);
   });
 
   it("orders newest first and cuts to the limit", async () => {
