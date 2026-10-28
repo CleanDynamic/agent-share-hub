@@ -148,6 +148,13 @@
       "when": 1793083213575,
       "tag": "0020_sv07_publish_needs_title",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793190937473,
+      "tag": "0021_sv15_bounties_author_index",
+      "breakpoints": true
     }
   ]
 }
