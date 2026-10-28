@@ -25,6 +25,7 @@ import { methodOf } from "@/lib/build/forkRules";
 import { sessionsMetaOf } from "@/lib/build/making";
 import { getNodeTree } from "@/lib/build/nodes";
 import type { Build, NodeTree } from "@/lib/build/types";
+import { versionNow } from "./sourceVersions";
 import { SocialError, currentUserId, db, isDuplicate, signedOutError, socialError, uniqueIds } from "@/lib/social/types";
 
 export type SavedKind = "part" | "session" | "step" | "request" | "filter_set" | "collection";
@@ -257,6 +258,13 @@ async function snapshotFor(input: SaveItemInput): Promise<{ buildId: string | nu
   }
 }
 
+const SOURCE_KINDS: ReadonlySet<SavedKind> = new Set<SavedKind>(["step", "part", "session"]);
+
+/** A saved item's snapshot made again from its source as it is now (SV-19): what Add from Library inserts as the current version. */
+export async function currentSnapshotOf(item: Pick<LibrarySavedItem, "kind" | "buildId" | "ref">): Promise<Payload> {
+  return (await snapshotFor({ kind: item.kind, buildId: item.buildId, ref: item.ref })).snapshot;
+}
+
 /** Keep an item as the signed-in reader. Keeping it twice is not an error. */
 export async function saveItem(input: SaveItemInput): Promise<void> {
   const ids = { buildId: input.buildId ?? null };
@@ -265,12 +273,15 @@ export async function saveItem(input: SaveItemInput): Promise<void> {
   if (!SAVED_KINDS.includes(input.kind)) throw invalid("saveItem", ids);
 
   const { buildId, snapshot } = await snapshotFor(input);
+  // SV-19: the source's version now, so a later edit reads as Edited. Best effort: without it the item reads as unchanged.
+  const sourceVersion = buildId && SOURCE_KINDS.has(input.kind) ? await versionNow(input.kind, input.ref ?? null, buildId).catch(() => null) : null;
   const response = await db.from("saved_items").insert({
     user_id: userId,
     kind: input.kind,
     build_id: buildId,
     ref: input.ref ?? null,
     snapshot,
+    source_version: sourceVersion,
   });
   if (response.error && !isDuplicate(response.error)) throw socialError("saveItem", response, { buildId });
 }

@@ -8,7 +8,8 @@
    WHAT IT LISTS is what fits where the maker is adding (`fitsPlace`, decided by the host); an item that does not fit is not here.
    The list is a radio group: one tab stop, the arrow keys move the choice, Enter inserts, Escape closes. The search field keeps
    the app's focus ring (the board sets `outline: none`; that is not ported). The "Current version" segment is switched on by
-   SV-19, which is what knows the source's newer version; until then it is shown and cannot be chosen. */
+   SV-19, which knows the source's newer version: a row whose source was edited offers it (`currentOn` is the date); every other
+   row shows it and cannot choose it. The saved version is the default. */
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, type CSSProperties, type KeyboardEvent } from "react";
@@ -27,7 +28,7 @@ import { IconSquare, RecipeButton } from "./modalRecipes";
 
 export type LibraryTab = "steps" | "collections";
 export type LibraryVersion = "saved" | "current";
-export type LibraryRowState = "same" | "edited" | "stale";
+export type LibraryRowState = "same" | "edited" | "removed" | "stale";
 
 export interface LibraryWindowRow {
   id: string;
@@ -50,7 +51,7 @@ export const LIBRARY_WINDOW_COPY = {
   steps: "Steps",
   collections: "Collections",
   version: "Version to insert",
-  states: { same: "Same", edited: "Edited since saved", stale: "Stale" } as Record<LibraryRowState, string>,
+  states: { same: "Same", edited: "Edited since saved", removed: "Source removed", stale: "Stale" } as Record<LibraryRowState, string>,
   loading: "Loading your saved items…",
   error: "Your saved items did not load.",
   retry: "Retry",
@@ -136,7 +137,7 @@ function Row({ row, selected, tabStop, last, phone, version, versions, onSelect,
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <span style={line(13, 500, t.text, 20)}>{row.title}</span>
-        <span style={{ ...line(12, 400, row.state === "edited" ? t.lit : t.label, 20), flexShrink: 0 }}>{LIBRARY_WINDOW_COPY.states[row.state]}</span>
+        <span style={{ ...line(12, 400, row.state === "edited" ? t.lit : row.state === "removed" ? t.catBreakage : t.label, 20), flexShrink: 0 }}>{LIBRARY_WINDOW_COPY.states[row.state]}</span>
       </div>
       <div style={line(12, 400, t.label, 17)}>{row.detail}</div>
       {selected && versions ? (

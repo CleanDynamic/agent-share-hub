@@ -114,6 +114,20 @@ describe("saveItem", () => {
     expect(JSON.stringify(row.snapshot)).not.toContain("run_cost");
   });
 
+  it("stores the source's version with a saved step, so a later edit can read as Edited (SV-19)", async () => {
+    tree = [node({ payload: { instructions: "Sort" } })];
+    answer = (table) => (table === "build_nodes" ? { data: [{ id: "n1", build_id: "b1", parent_id: null, type: "agent", updated_at: "2026-10-12T09:00:00+00:00", session: null, import_session: null }], error: null, status: 200 } : { data: [], error: null, status: 200 });
+    await saveItem({ kind: "step", buildId: "b1", ref: "n1" });
+    expect(inserts()[0].args[0]).toMatchObject({ source_version: "2026-10-12T09:00:00+00:00" });
+  });
+
+  it("still saves, with no version, when the versions can't be read (the column is not there yet)", async () => {
+    tree = [node({ payload: { instructions: "Sort" } })];
+    answer = (table) => (table === "build_nodes" ? { data: null, error: { code: "42703", message: "column build_nodes.updated_at does not exist" }, status: 400 } : { data: [], error: null, status: 200 });
+    await saveItem({ kind: "step", buildId: "b1", ref: "n1" });
+    expect(inserts()[0].args[0]).toMatchObject({ source_version: null });
+  });
+
   it("refuses a draft's content before any write", async () => {
     header = { ...published, status: "draft" };
     tree = [node({})];

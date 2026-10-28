@@ -6,6 +6,10 @@
 //   rebuild  a published build whose parent is one the reader made or saved
 //   answer   a solution, by someone else, on a request the reader opened
 //   stale    a build the reader made or saved that passed STALE_AFTER_DAYS since `since`
+// and, with `savedOnly` (the Library's changes), two about the reader's SAVED ITEMS below build size (SV-19):
+//   edited   a saved step, part or session whose source changed after `since` and after it was saved
+//   removed  a saved step, part or session whose source can no longer be read. Nothing records WHEN it went, so it is dated
+//            at the read: it stays in the list for as long as it is true, and Home (which does not pass `savedOnly`) never sees it.
 // (An answer on a request the reader SAVED waits for SV-17's saved requests.)
 //
 // THREE HOPS, each a set of parallel reads ⟦async-parallel⟧:
@@ -25,9 +29,11 @@
 // Private by design: every read is about the reader's own builds and saves, and RLS decides what they may see.
 
 import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
+import type { SavedKind } from "@/lib/library/savedItems";
+import { listSourceStates, type SourceItem, type SourceStatus } from "@/lib/library/sourceVersions";
 import { db } from "@/lib/social/types";
 
-export type ActivityKind = "run" | "rebuild" | "answer" | "stale";
+export type ActivityKind = "run" | "rebuild" | "answer" | "stale" | "edited" | "removed";
 
 /** Whose build it is to the reader: they made it, or they saved it. */
 export type ActivityRole = "maker" | "saver";
@@ -79,7 +85,13 @@ export interface StaleActivity extends ActivityBase {
   kind: "stale";
 }
 
-export type ActivityEvent = RunActivity | RebuildActivity | AnswerActivity | StaleActivity;
+/** A saved item whose source was edited or went away. The build fields are the snapshot's own (empty where the snapshot has none). */
+export interface SavedItemActivity extends ActivityBase {
+  kind: "edited" | "removed";
+  item: { id: string; kind: SavedKind; snapshot: Record<string, unknown> };
+}
+
+export type ActivityEvent = RunActivity | RebuildActivity | AnswerActivity | StaleActivity | SavedItemActivity;
 
 export interface ListActivityArgs {
   userId: string;
@@ -134,6 +146,10 @@ interface SolutionRow {
   submitted_at: string | null;
 }
 
+interface SavedItemRow extends SourceItem {
+  snapshot: Record<string, unknown>;
+}
+
 interface ProfileRow {
   id: string;
   username: string | null;
@@ -160,7 +176,7 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
   const now = Date.now();
 
   /* ── hop 1: what the reader owns ── */
-  const [mine, saves, bounties] = await Promise.all([
+  const [mine, saves, bounties, kept] = await Promise.all([
     savedOnly ? NONE : db.from("builds").select(BUILD_COLUMNS).eq("creator_id", userId).neq("status", "draft").limit(OWN_LIMIT),
     db
       .from("build_saves")
@@ -169,6 +185,9 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
       .order("created_at", { ascending: false })
       .limit(OWN_LIMIT),
     savedOnly ? NONE : db.from("bounties").select("id, build_id").eq("author_id", userId).limit(OWN_LIMIT),
+    savedOnly
+      ? db.from("saved_items").select("id, kind, build_id, ref, snapshot, source_version").eq("user_id", userId).in("kind", ["step", "part", "session"]).limit(OWN_LIMIT)
+      : NONE,
   ]);
 
   // A build the reader both made and saved is theirs as its maker, so savedOnly leaves it out. Keyed by id ⟦js-set-map-lookups⟧.
@@ -184,7 +203,10 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
   const buildOfBounty = new Map(bountyRows.map((row) => [row.id, row.build_id]));
 
   /* ── hop 2: what others did to them, one query per kind ── */
-  const [runs, rebuilds, answers] = await Promise.all([
+  const keptRows = rows<{ id: string; kind: SavedKind; build_id: string | null; ref: string | null; snapshot: Record<string, unknown> | null; source_version: string | null }>(kept).map(
+    (row): SavedItemRow => ({ id: row.id, kind: row.kind, buildId: row.build_id, ref: row.ref, snapshot: row.snapshot ?? {}, sourceVersion: row.source_version }),
+  );
+  const [runs, rebuilds, answers, sources] = await Promise.all([
     buildIds.length === 0
       ? NONE
       : db
@@ -216,6 +238,7 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
           .gt("submitted_at", sinceIso)
           .order("submitted_at", { ascending: false })
           .limit(EVENT_LIMIT),
+    keptRows.length === 0 ? new Map<string, SourceStatus>() : listSourceStates(keptRows),
   ]);
   const runRows = rows<ReproRow>(runs);
   const rebuildRows = rows<RebuildRow>(rebuilds);
@@ -261,6 +284,15 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
     const from = build.last_confirmed_at ?? build.published_at;
     if (!base || !from) continue;
     events.set(`stale:${buildId}`, { ...base, id: `stale:${buildId}`, kind: "stale", at: new Date(Date.parse(from) + STALE_AFTER_DAYS * MS_PER_DAY).toISOString() });
+  }
+
+  // Saved items: the source's version is newer than both the item and the window, or the source is gone.
+  for (const row of keptRows) {
+    const status = sources.get(row.id);
+    const source = (row.snapshot.source ?? {}) as { buildId?: string; buildSlug?: string | null; buildTitle?: string | null };
+    const base = { buildId: row.buildId ?? source.buildId ?? "", buildSlug: source.buildSlug ?? "", buildTitle: source.buildTitle ?? "", role: "saver" as const, item: { id: row.id, kind: row.kind, snapshot: row.snapshot } };
+    if (status?.state === "edited" && status.version && Date.parse(status.version) > sinceMs) events.set(`edited:${row.id}`, { ...base, id: `edited:${row.id}`, kind: "edited", at: status.version });
+    else if (status?.state === "removed") events.set(`removed:${row.id}`, { ...base, id: `removed:${row.id}`, kind: "removed", at: new Date(now).toISOString() });
   }
 
   return [...events.values()].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, Math.max(1, limit));

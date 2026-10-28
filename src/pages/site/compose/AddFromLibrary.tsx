@@ -15,7 +15,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
 import { fitWords, missingKindWords, type LibraryPlace } from "@/lib/build/fromLibrary";
-import { collectionSavedItemIds, makerHandles, type LibrarySavedItem } from "@/lib/library/savedItems";
+import { collectionSavedItemIds, currentSnapshotOf, makerHandles, type LibrarySavedItem } from "@/lib/library/savedItems";
+import { listSourceStates } from "@/lib/library/sourceVersions";
 
 import { insertReads } from "./addFromLibraryReads";
 import { AddFromLibraryWindow, type LibraryTab, type LibraryVersion } from "./AddFromLibraryWindow";
@@ -57,10 +58,14 @@ export default function AddFromLibrary({ open, place, phone, onInsert, onClose, 
   const items = useMemo(() => (saved.data?.items ?? []).filter((item) => item.kind === "step" || item.kind === "part" || item.kind === "session"), [saved.data]);
   const makerIds = [...new Set(items.flatMap((item) => ((item.snapshot as { source?: { makerId?: string | null } }).source?.makerId ? [(item.snapshot as { source: { makerId: string } }).source.makerId] : [])))].sort();
   const handles = useQuery({ queryKey: ["library", "makerHandles", makerIds], queryFn: () => makerHandles(makerIds), enabled: open && makerIds.length > 0, staleTime: 5 * 60_000 });
+  /* SV-19: whether each step's, part's and session's source was edited or is gone; one request, started once the items are in. */
+  const sourceKey = items.map((item) => `${item.id}:${item.sourceVersion ?? ""}`).join(",");
+  const sources = useQuery({ queryKey: ["library", "listSourceStates", viewerId, sourceKey], queryFn: () => listSourceStates(items), enabled: open && viewerId !== null && items.length > 0, staleTime: 30_000 });
+  useReported(sources.error, "add-from-library-sources");
   useReported(saved.error, "add-from-library-saved");
   useReported(collections.error, "add-from-library-collections");
 
-  const facts = useMemo(() => ({ usedIn: usedIn.data ?? new Map<string, number>(), handles: handles.data ?? new Map<string, string>() }), [usedIn.data, handles.data]);
+  const facts = useMemo(() => ({ usedIn: usedIn.data ?? new Map<string, number>(), handles: handles.data ?? new Map<string, string>(), sources: sources.data }), [usedIn.data, handles.data, sources.data]);
   const steps = useMemo(() => rowsFor(items, place, facts), [items, place, facts]);
   const kept = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
   const grouped = useMemo(
@@ -78,7 +83,21 @@ export default function AddFromLibrary({ open, place, phone, onInsert, onClose, 
     const list = (picked ?? []).filter((entry): entry is LibrarySavedItem => Boolean(entry));
     if (list.length === 0) return;
     onClose();
-    onInsert(list, place, version);
+    /* The current version is the source as it is now, made into a snapshot again, for the items whose source was edited. An item
+       whose source can't be read any more (or any other failure) goes in as saved: the copy always works. */
+    const wanted = version === "current" ? list.filter((entry) => sources.data?.get(entry.id)?.state === "edited") : [];
+    if (wanted.length === 0) return onInsert(list, place, version);
+    void Promise.all(
+      list.map(async (entry) => {
+        if (!wanted.includes(entry)) return entry;
+        try {
+          return { ...entry, snapshot: await currentSnapshotOf(entry) };
+        } catch (error) {
+          reportError(error, { source: "action", context: "add-from-library-current" });
+          return entry;
+        }
+      }),
+    ).then((made) => onInsert(made, place, version));
   };
 
   return (
