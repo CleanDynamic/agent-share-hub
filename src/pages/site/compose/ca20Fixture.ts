@@ -30,6 +30,7 @@ const node = (id: string, position: number, type: string, payload: Record<string
   source_ref: null,
   event_id: null,
   is_gap: false,
+  contributor_id: null,
   created_at: "2026-10-20T10:00:00Z",
 });
 

@@ -41,7 +41,7 @@ const LIVE_BUILDS = [
   "session_count", "shape", "slug", "solves_node_id", "source_content_item_id", "source_handle_at_fork", "source_title_at_fork",
   "status", "time_to_first_result", "title", "updated_at",
 ];
-const BUILD_NODES = ["build_id", "created_at", "event_id", "id", "is_gap", "note", "parent_id", "payload", "position", "source_ref", "title", "type"];
+const BUILD_NODES = ["build_id", "contributor_id", "created_at", "event_id", "id", "is_gap", "note", "parent_id", "payload", "position", "source_ref", "title", "type"];
 const BUILD_EVENTS = ["build_id", "created_at", "id", "kind", "occurred_at", "ordinal", "payload", "phase", "phase_title", "produced_node_id", "visibility"];
 const NODE_TYPES = ["category", "colour", "copyable", "icon", "is_active", "key", "label", "renderer", "schema", "sort"];
 const BUILD_MEDIA = [
