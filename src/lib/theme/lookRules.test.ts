@@ -1129,6 +1129,16 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/builds/classificationModel.test.ts",
   "src/dev/fixtures/vision/builds-classification.ts",
   "src/pages/dev/VisionBuildsClassification.tsx",
+
+  // SV-14
+  "src/lib/build/graph.ts",
+  "src/dev/fixtures/vision/openbuilds.ts",
+  "src/pages/dev/VisionOpenBuilds.tsx",
+  "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
+  "src/pages/site/openbuilds/OpenBuildsView.tsx",
+  "src/pages/site/openbuilds/OpenBuildsView.test.tsx",
+  "src/pages/site/openbuilds/openBuildsModel.ts",
+  "src/pages/site/openbuilds/openBuildsModel.test.ts",
 ];
 
 /**
@@ -1393,6 +1403,71 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: `<Link to={to} data-visual-slot="btn-primary" {...handlers} style={{ ...controlBase, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 `,
+    why: "SV-14: the OpenBuilds board pads Run an untested build 0 14.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<div aria-hidden="true" style={{ padding: "28px 0", borderBottom: last ? "none"`,
+    why: "SV-14: a request is 28 above and below (series README, Visual grammar 7); its loading block is the same.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<article data-testid="openbuilds-request" data-kind={item.kind} style={{ padding: "28px 0"`,
+    why: "SV-14: a request is 28 above and below (series README, Visual grammar 7).",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<div style={{ display: "flex", alignItems: "center", gap: 12, padding: "28px 0", color: t.text2 }}>`,
+    why: "SV-14: the empty requests line takes a request's 28 above and below.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<div style={{ display: "flex", justifyContent: "center", paddingTop: 28, borderTop:`,
+    why: "SV-14: Show more sits a request's 28 under the last one.",
+  },
+  {
+    rule: "spacing 28, 28 is not in SPACE_REFINED",
+    text: `<section aria-label={label} style={{ padding: first ? "0 0 28px" : "28px 0"`,
+    why: "SV-14: the OpenBuilds board's side sections are 28 apart with a hairline between.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: "const tileBox: CSSProperties = { boxSizing: \"border-box\", minWidth: 0, background: t.tile,",
+    why: "SV-14: the OpenBuilds board pads a strip tile 10 12.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<DashedSlot key={tile.id} as="li" style={{ padding: "10px 12px" }}>`,
+    why: "SV-14: the OpenBuilds board pads the open strip tile 10 12, as the others.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<DashedSlot key={session.key} as="li" style={{ padding: "10px 12px",`,
+    why: "SV-14: the OpenBuilds board pads the open session tile 10 12, as the others.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ display: "flex", alignItems: "center", gap: 10 }}>`,
+    why: "SV-14: the OpenBuilds board puts a request's chip, title and reward 10 apart.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `style={{ boxSizing: "content-box", display: "flex", alignItems: "center", gap: 10, minHeight: 44,`,
+    why: "SV-14: the OpenBuilds board puts a top contributor's avatar and handle 10 apart.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ marginTop: 10, fontSize: 12.5 }}>`,
+    why: "SV-14: the OpenBuilds board's week tile puts its count 10 under the bar.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropd`,
+    why: "SV-14: OpenBuilds' Sort is the menu the Builds Table's Sort opens (SV-11), a radio group behind the board's control. A styled select cannot be drawn: index.css paints every select's fill and border with !important.",
+  },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
     text: `<div role="group" aria-label={\`\${section.name} values\`} style={{ marginTop: 10 }}>`,

@@ -76,7 +76,7 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
      replaces the entry: SV-10 home, SV-14 openbuilds, SV-11 builds-table, SV-12 builds-maps, SV-13
      builds-classification, SV-09 library, SV-18 composer-add-from-library, SV-08 drafts. */
   "vision-home": lazy(() => import("./VisionHome")),
-  "vision-openbuilds": lazy(() => import("./VisionNotBuilt")),
+  "vision-openbuilds": lazy(() => import("./VisionOpenBuilds")),
   "vision-builds-table": lazy(() => import("./VisionBuildsTable")),
   "vision-builds-maps": lazy(() => import("./VisionBuildsMaps")),
   "vision-builds-classification": lazy(() => import("./VisionBuildsClassification")),
