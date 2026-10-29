@@ -26,7 +26,14 @@ vi.mock("@/lib/bounty", () => ({
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user, loading: false }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+const toast = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn() }));
+vi.mock("sonner", () => ({ toast }));
+const library = { data: undefined as unknown[] | undefined, isError: false, isLoadingError: false, refetch: vi.fn() };
+vi.mock("@/hooks/useLibrarySessions", () => ({ useLibrarySessions: () => library }));
+const offerSession = vi.fn();
+const acceptOffer = vi.fn();
+const declineOffer = vi.fn();
+vi.mock("@/lib/bounty/sessionOffers", () => ({ offerSession: (input: unknown) => offerSession(input), acceptOffer: (input: unknown) => acceptOffer(input), declineOffer: (id: string) => declineOffer(id) }));
 
 import OpenBuildsPage from "./OpenBuildsPage";
 
@@ -55,6 +62,8 @@ function page() {
         meToo: false,
         claim: null,
         fromRun: false,
+        target: null,
+        offers: [],
       },
     ],
     strips: [strip("a", 1), strip("b", 2), strip("c", 3), strip("g", 4, { type: "code", is_gap: true, title: "Fetch from paywalled sources" }), strip("e", 5)],
@@ -91,6 +100,11 @@ beforeEach(() => {
   getMyRecord.mockReset().mockResolvedValue({ reproduced: 40, tried: 0, accepted: 6 });
   listTopSolvers.mockReset().mockResolvedValue([{ id: "u1", username: "kit", display_name: null, avatar_url: null, solved: 9, rewardTotalGbp: null, lastSolvedAt: null }]);
   toggleMeToo.mockReset();
+  toast.mockReset();
+  library.data = [{ id: "imp-1", client: "claude-code", modelName: "Opus 5.5", firstPrompt: "Deploy the worker to Vercel", promptCount: 6, createdAt: "2026-10-03T10:00:00Z" }];
+  offerSession.mockReset().mockResolvedValue({});
+  acceptOffer.mockReset().mockResolvedValue("b1");
+  declineOffer.mockReset().mockResolvedValue(undefined);
 });
 
 describe("OpenBuildsPage", () => {
@@ -124,7 +138,7 @@ describe("OpenBuildsPage", () => {
   it("shows only the live tabs, and puts the tab and the sort in the address", async () => {
     mount();
     await screen.findByTestId("openbuilds-request");
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps", "Sessions", "Parts"]);
     fireEvent.click(screen.getByRole("tab", { name: "Steps" }));
     expect(where).toBe("?type=steps");
     fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Most needed" }), { key: "Enter" });
@@ -209,6 +223,84 @@ describe("OpenBuildsPage", () => {
     expect(claims).toBeInTheDocument();
     expect(await screen.findByText("Pitch deck · Whole build")).toBeInTheDocument();
     expect(listMyClaims).toHaveBeenCalledWith("me");
+  });
+
+  describe("a request for a session (SV-21)", () => {
+    const making = { sessions_meta: { "typed-1": { tool: "claude-code", date: "2026-10-01", model: "Opus 5.5" }, "typed-3": { tool: null, date: "2026-10-03" } }, session_order: ["typed-1", "typed-3"] };
+    const sessionPage = (offers: unknown[] = []) => {
+      const base = page();
+      base.requests[0] = {
+        ...base.requests[0],
+        bounty: { ...base.requests[0].bounty, gap_node_id: null, author_id: "maker-1" } as never,
+        gapTitle: null,
+        problem: "Deploy the worker to Vercel",
+        target: { size: "session", key: "typed-3", making },
+        offers: offers as never,
+      };
+      return base;
+    };
+
+    it("draws the numbered sessions with the open one, says Unclaimed, and offers through a dialog that files the pick", async () => {
+      listStepRequests.mockResolvedValue(sessionPage());
+      mount("/openbuilds?type=sessions");
+      const request = await screen.findByTestId("openbuilds-request");
+      expect(request).toHaveAttribute("data-kind", "session");
+      expect(within(request).getByRole("heading", { name: "Session 2 · Deploy the worker to Vercel" })).toBeInTheDocument();
+      expect(within(request).getByText("Unclaimed")).toBeInTheDocument();
+      expect(within(request).getByText("An offered session copies prompt text, model and source only")).toBeInTheDocument();
+      fireEvent.click(within(request).getByRole("button", { name: "Offer a session" }));
+      const dialog = await screen.findByTestId("offer-session-dialog");
+      expect(within(dialog).getByText("Claude Code · Opus 5.5 · 3 Oct · 6 prompts")).toBeInTheDocument();
+      const offer = within(dialog).getByRole("button", { name: "Offer this session" });
+      expect(offer).toBeDisabled();
+      fireEvent.click(within(dialog).getByRole("radio", { name: /Deploy the worker to Vercel/ }));
+      fireEvent.click(offer);
+      await waitFor(() => expect(offerSession).toHaveBeenCalledWith({ requestId: "q1", importId: "imp-1", userId: "me" }));
+      await waitFor(() => expect(screen.queryByTestId("offer-session-dialog")).toBeNull());
+      expect(toast).toHaveBeenCalledWith(expect.stringContaining("Session offered"), expect.anything());
+    });
+
+    it("keeps the dialog open and says why when the offer fails", async () => {
+      listStepRequests.mockResolvedValue(sessionPage());
+      offerSession.mockRejectedValue(new Error("Someone else is already working on this request"));
+      mount("/openbuilds?type=sessions");
+      fireEvent.click(within(await screen.findByTestId("openbuilds-request")).getByRole("button", { name: "Offer a session" }));
+      const dialog = await screen.findByTestId("offer-session-dialog");
+      fireEvent.click(within(dialog).getByRole("radio", { name: /Deploy/ }));
+      fireEvent.click(within(dialog).getByRole("button", { name: "Offer this session" }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent("Someone else is already working on this request");
+    });
+
+    it("sends a signed-out reader to sign in instead of opening the dialog", async () => {
+      user = null;
+      listStepRequests.mockResolvedValue(sessionPage());
+      mount("/openbuilds?type=sessions");
+      fireEvent.click(within(await screen.findByTestId("openbuilds-request")).getByRole("button", { name: "Offer a session" }));
+      expect(screen.queryByTestId("offer-session-dialog")).toBeNull();
+      await waitFor(() => expect(where).toBe("?redirect=%2Fopenbuilds%3Ftype%3Dsessions"));
+    });
+
+    it("gives the request's maker Accept and Decline on each offer, and gives the offerer a line", async () => {
+      const offer = { id: "o1", requestId: "q1", userId: "u9", handle: "kit", status: "offered", createdAt: "2026-11-01T00:00:00Z", session: { key: "i", model: "Opus 5.5", prompts: [1, 2, 3, 4, 5, 6] } };
+      user = { id: "maker-1" };
+      listStepRequests.mockResolvedValue(sessionPage([offer]));
+      mount("/openbuilds?type=sessions");
+      const list = await screen.findByRole("list", { name: "Offered sessions" });
+      expect(within(list).getByText("@kit offered a session · Opus 5.5 · 6 prompts")).toBeInTheDocument();
+      fireEvent.click(within(list).getByRole("button", { name: "Accept into the build" }));
+      await waitFor(() => expect(acceptOffer).toHaveBeenCalledWith({ offerId: "o1", makerId: "maker-1" }));
+      fireEvent.click(within(list).getByRole("button", { name: "Decline" }));
+      await waitFor(() => expect(declineOffer).toHaveBeenCalledWith("o1"));
+    });
+
+    it("shows the offerer only their own line, without the two answers", async () => {
+      const offer = { id: "o1", requestId: "q1", userId: "me", handle: "me", status: "offered", createdAt: "2026-11-01T00:00:00Z", session: { key: "i", model: null, prompts: [1] } };
+      listStepRequests.mockResolvedValue(sessionPage([offer]));
+      mount("/openbuilds?type=sessions");
+      const list = await screen.findByRole("list", { name: "Offered sessions" });
+      expect(within(list).getByText("You offered a session · 1 prompt")).toBeInTheDocument();
+      expect(within(list).queryByRole("button")).toBeNull();
+    });
   });
 
   it("asks a signed-out reader nothing of their own", async () => {

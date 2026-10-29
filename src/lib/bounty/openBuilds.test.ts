@@ -202,6 +202,41 @@ describe("listStepRequests · SV-21", () => {
   });
 });
 
+describe("listStepRequests · sessions and parts (SV-21)", () => {
+  const sized = (n: number, extra: Record<string, unknown> = {}) => ask(n, { gap_node_id: null, build_nodes: null, size: "session", target_key: "typed-3", problem: "Deploy it", ...extra });
+
+  it("reads the builds' making and the offers for the sized requests only, in the second round", async () => {
+    answers.bounties = { data: [ask(1), sized(2)], error: null };
+    answers.builds = { data: [{ id: "b2", making: { sessions_meta: {} } }], error: null };
+    answers.request_offers = { data: [{ id: "o1", request_id: "q2", user_id: "u9", status: "offered", created_at: "2026-11-01T00:00:00Z", snapshot: { key: "i", model: null, prompts: [] }, profiles: { username: "kit" } }], error: null };
+    const page = await listStepRequests();
+    expect(of("builds", "in")).toEqual([["id", ["b2"]]]);
+    expect(of("request_offers", "in")).toEqual([["request_id", ["q2"]]]);
+    expect(started.filter((request) => request.table === "builds" || request.table === "request_offers").every((request) => request.answeredBefore === 1)).toBe(true);
+    expect(page.requests[0]).toMatchObject({ target: null, offers: [] });
+    expect(page.requests[1]).toMatchObject({ target: { size: "session", key: "typed-3", making: { sessions_meta: {} } }, offers: [{ id: "o1", handle: "kit" }] });
+  });
+
+  it("asks nothing about making or offers when no request is for a session or a part", async () => {
+    answers.bounties = { data: [ask(1)], error: null };
+    await listStepRequests();
+    expect(started.some((request) => request.table === "builds" || request.table === "request_offers")).toBe(false);
+  });
+
+  it.each([["session"], ["part"]] as const)("reads %s requests by size, and none before the migration is applied", async (size) => {
+    answers.bounties = { data: [sized(1, { size })], error: null };
+    await listStepRequests({ size });
+    expect(of("bounties", "eq")).toContainEqual(["size", size]);
+    resetRunColumns();
+    answers.bounties = { data: null, error: { code: "42703" } };
+    expect((await listStepRequests({ size })).requests).toEqual([]);
+    // Once known, the next ask does not go to the database at all.
+    const asked = started.length;
+    expect((await listStepRequests({ size })).requests).toEqual([]);
+    expect(started).toHaveLength(asked);
+  });
+});
+
 describe("listMyOpenRequests", () => {
   it("groups the reader's waiting answers by ask, latest first, and names the latest solver", async () => {
     answers.solutions = {

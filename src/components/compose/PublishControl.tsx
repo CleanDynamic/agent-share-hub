@@ -81,6 +81,7 @@ import type { RebuildCreditSource } from "@/components/build/rebuildCredit";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
 import type { BuildBounties } from "@/hooks/useBuildBounties";
 import { createBountyForGap, type Bounty } from "@/lib/bounty";
+import { openTargetsOf } from "@/lib/build/openTargets";
 import { hasTitle, NO_TITLE } from "@/lib/build/publish";
 import {
   NO_CHANGES_REASON,
@@ -170,7 +171,9 @@ const NO_FILED: Map<string, Bounty> = new Map();
 
 /** One gap, resolved from its draft into the arguments a bounty is filed with. */
 interface BountyPlanItem {
-  nodeId: string;
+  nodeId: string | null;
+  /** SV-21: a session or a part the maker opened as a request, in place of a gap, with the problem they wrote. */
+  target?: { size: "session" | "part"; key: string; problem: string };
   /** For the failure sentence, which is read by someone, not by a machine. */
   title: string;
   rewardGbp: number | null;
@@ -271,7 +274,7 @@ export function PublishControl({
    */
   const plan = useMemo<BountyPlanItem[]>(() => {
     if (skipBounties) return [];
-    return gaps
+    const ofGaps: BountyPlanItem[] = gaps
       .filter((gap) => !filedByNode.has(gap.id))
       .map((gap) => ({ gap, draft: gapDrafts[gap.id] ?? DEFAULT_GAP_DRAFT }))
       .filter(({ draft }) => draft.ticked)
@@ -281,7 +284,16 @@ export function PublishControl({
         rewardGbp: parseReward(draft.reward),
         closesAt: closesAtFrom(draft.deadline),
       }));
-  }, [filedByNode, gapDrafts, gaps, skipBounties, typesByKey]);
+    // SV-21: a session or a part the maker opened as a request is filed too, with no reward and no deadline.
+    const ofTargets: BountyPlanItem[] = openTargetsOf(build.making).map((target) => ({
+      nodeId: null,
+      target,
+      title: target.size === "session" ? "A session request" : "A part request",
+      rewardGbp: null,
+      closesAt: null,
+    }));
+    return [...ofGaps, ...ofTargets];
+  }, [build.making, filedByNode, gapDrafts, gaps, skipBounties, typesByKey]);
 
   /** publishNow reads the plan a frame after the sheet closed; a ref, not a
    *  dependency, so the publish callback does not change on every keystroke. */
@@ -326,9 +338,12 @@ export function PublishControl({
             nodeId: item.nodeId,
             rewardGbp: item.rewardGbp,
             closesAt: item.closesAt,
+            ...(item.target ? { problem: item.target.problem, target: { size: item.target.size, key: item.target.key } } : null),
           });
           landed += 1;
-        } catch {
+        } catch (error) {
+          // A session or part that already has its open request needs nothing more: neither filed now nor failed.
+          if (item.target && error instanceof Error && error.message.endsWith("already has a request")) continue;
           // Rolled up into one sentence rather than surfaced one at a time: a
           // creator who has just published does not need three toasts, and the
           // message they do need is the same in every case.

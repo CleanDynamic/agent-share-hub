@@ -1153,6 +1153,10 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/bounty/runRequests.test.ts",
   "src/lib/bounty/claims.ts",
   "src/lib/bounty/claims.test.ts",
+  "src/lib/bounty/sessionOffers.ts",
+  "src/lib/bounty/sessionOffersRead.ts",
+  "src/lib/bounty/sessionOffers.test.ts",
+  "src/pages/site/openbuilds/OfferSessionDialog.tsx",
 ];
 
 /**
@@ -1481,6 +1485,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no untouched shadcn",
     text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropd`,
     why: "SV-14: OpenBuilds' Sort is the menu the Builds Table's Sort opens (SV-11), a radio group behind the board's control. A styled select cannot be drawn: index.css paints every select's fill and border with !important.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: `import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";`,
+    why: "SV-21: the offer dialog's list of sessions is a choice of one, a real radio group (one tab stop, arrows), as the report dialog's reasons are.",
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",

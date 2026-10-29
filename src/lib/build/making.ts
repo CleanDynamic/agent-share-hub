@@ -14,6 +14,7 @@ import { normaliseHex } from "@/lib/theme/partColour";
 import { TOOLS, toolFor, toolName } from "@/lib/tools/registry";
 import { updateBuildInStep } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
+import { openOf, openRefusal, type OpenRequest } from "./openRequest";
 import { extrasOf, extrasRefusal, type SessionExtras } from "./sessionFacts";
 import { serial } from "./staleWrites";
 import { buildLayerError, type BuildPatch } from "./types";
@@ -69,6 +70,8 @@ export interface SessionMeta extends SessionExtras {
   withAbove?: boolean;
   /** SV-16: the profile id of the person whose session this is, when not the build's maker. Absent: the maker. */
   contributor_id?: string;
+  /** SV-21: the maker opened this session as a request. Filed when the build is published. */
+  open?: OpenRequest;
 }
 
 /** CA-14 P1: the longest session title. */
@@ -169,6 +172,8 @@ export interface Workstream {
   /** The key of a session of another part: this part begins after it. */
   startsAfter?: string;
   collapsed?: boolean;
+  /** SV-21: the maker opened this part as a request. Filed when the build is published. */
+  open?: OpenRequest;
 }
 
 export const WORKSTREAM_PREFIX = "ws-";
@@ -225,6 +230,8 @@ export function storedWorkstreamsOf(making: unknown): Workstream[] {
     if (colour) part.colour = colour;
     if (typeof entry.startsAfter === "string" && entry.startsAfter.trim()) part.startsAfter = entry.startsAfter.trim();
     if (entry.collapsed === true) part.collapsed = true;
+    const open = openOf(entry.open);
+    if (open) part.open = open;
     out.push(part);
   }
   return out;
@@ -240,6 +247,8 @@ export function workstreamsRefusal(list: readonly Workstream[]): string | null {
     keys.add(part.key);
     if (part.name !== undefined && part.name.trim().length > WORKSTREAM_NAME_MAX) return `Part name: ${WORKSTREAM_NAME_MAX} characters max`;
     if (part.colour !== undefined && !normaliseHex(part.colour)) return "A colour is written like #7FA7D9.";
+    const open = openRefusal(part.open);
+    if (open) return open;
   }
   return null;
 }
@@ -337,6 +346,9 @@ export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
     if (entry.withAbove === true) meta.withAbove = true;
     // SV-16: kept only as a uuid; anything else is left where it is, never shown.
     if (typeof entry.contributor_id === "string" && UUID.test(entry.contributor_id)) meta.contributor_id = entry.contributor_id;
+    // SV-21: read as written, so a write of any other fact of the session keeps it.
+    const open = openOf(entry.open);
+    if (open) meta.open = open;
     // CA-05: cost, tokens, background, started with, at the same time as, own copy.
     Object.assign(meta, extrasOf(entry));
     out[key] = meta;
@@ -629,6 +641,8 @@ export function sessionMetaRefusal(key: string, meta: SessionMeta): string | nul
   if (meta.workstream !== undefined && (typeof meta.workstream !== "string" || !meta.workstream.trim())) return "A session's part is a part of this build.";
   if (meta.withAbove !== undefined && typeof meta.withAbove !== "boolean") return "Same stage as the session above is on or off.";
   if (meta.contributor_id !== undefined && !UUID.test(meta.contributor_id)) return "A session's contributor is a person.";
+  const open = openRefusal(meta.open);
+  if (open) return open;
   return extrasRefusal(meta);
 }
 
@@ -713,6 +727,29 @@ export async function setWorkstreams(buildId: string, list: readonly Workstream[
     if (why) throw buildLayerError("setWorkstreams", new Error(why));
     return { workstreams: next.map((part) => ({ ...part })) };
   });
+}
+
+/**
+ * SV-21 P3: open a session as a request with a problem, or take the request away (null). One session's entry changes, as
+ * `setSessionMeta` does it, on the entry as stored when the step starts. A session with no entry yet gets one that holds only
+ * the request.
+ */
+export function setSessionOpen(buildId: string, key: string, open: OpenRequest | null): Promise<Record<string, SessionMeta>> {
+  return setSessionMeta(buildId, key, (current) => {
+    const { open: _was, ...rest } = current ?? { tool: null, date: "" };
+    return open ? { ...rest, open: { problem: open.problem.trim() } } : current ? rest : null;
+  });
+}
+
+/** SV-21 P3: open a part as a request with a problem, or take the request away (null). Only that part changes. */
+export function setPartOpen(buildId: string, partKey: string, open: OpenRequest | null): Promise<Record<string, unknown>> {
+  return setWorkstreams(buildId, (stored) =>
+    stored.map((part) => {
+      if (part.key !== partKey) return part;
+      const { open: _was, ...rest } = part;
+      return open ? { ...rest, open: { problem: open.problem.trim() } } : rest;
+    }),
+  );
 }
 
 /** CA-17 P1: number or letter the parts, for the whole build. */

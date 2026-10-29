@@ -21,7 +21,7 @@
    NOT LIVE YET (drawn on the dev page only): the model release check and the week's goal (SV-22); briefs, model tests and
    reviews (SV-22); Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
 
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -32,6 +32,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getMyRecord, listMyClaims, listMyOpenRequests, listStepRequests, listTopSolvers, toggleMeToo, type StepRequestsPage } from "@/lib/bounty";
 import { reportError } from "@/lib/errors/report";
 import { usePageReady } from "@/lib/routing/pageReady";
+
+import { useLibrarySessions } from "@/hooks/useLibrarySessions";
 
 import { OpenBuildsLoadingView } from "./OpenBuildsFrame";
 import { OpenBuildsView, type PanelStatus, type RequestItem } from "./OpenBuildsView";
@@ -44,6 +46,10 @@ import {
   addressSearch,
   answersWords,
   claimRow,
+  offerChoice,
+  offerLine,
+  SESSION_OFFER_NOTE,
+  sessionRequestWords,
   contributorsKey,
   readAddress,
   rowsByBuild,
@@ -64,6 +70,9 @@ function useReported(error: unknown, context: string) {
     if (error) reportError(error, { source: "openbuilds", context });
   }, [error, context]);
 }
+
+/** Opened only by "Offer a session", so the page's first download does not carry it. */
+const OfferSessionDialog = lazy(() => import("./OfferSessionDialog").then((module) => ({ default: module.OfferSessionDialog })));
 
 const TABS = OPEN_BUILDS_TABS.filter((tab) => LIVE_TABS.includes(tab.value));
 
@@ -130,6 +139,50 @@ export default function OpenBuildsPage() {
     );
   };
 
+  /* ── offering a session, and answering an offer (SV-21) ── */
+
+  const [offering, setOffering] = useState<string | null>(null);
+  const library = useLibrarySessions({ active: false, withUnfinished: false, enabled: offering !== null && viewerId !== null });
+  const refreshRequests = () => qc.invalidateQueries({ queryKey: ["bounty", "listStepRequests"] });
+
+  const onOffer = (requestId: string) => {
+    if (!viewerId) {
+      navigate(`/login?redirect=${encodeURIComponent(`/openbuilds?${params.toString()}`)}`);
+      return;
+    }
+    setOffering(requestId);
+  };
+
+  const offerSelected = async (importId: string) => {
+    if (!offering || !viewerId) return;
+    try {
+      const { offerSession } = await import("@/lib/bounty/sessionOffers");
+      await offerSession({ requestId: offering, importId, userId: viewerId });
+    } catch (error) {
+      reportError(error, { source: "openbuilds", context: "offerSession" });
+      throw error;
+    }
+    toast("Session offered. Your copy of the build is in Drafts.", { action: { label: "Open Drafts", onClick: () => navigate("/drafts") } });
+    void refreshRequests();
+    void qc.invalidateQueries({ queryKey: ["bounty", "listMyClaims"] });
+  };
+
+  const decide = async (kind: "accept" | "decline", offerId: string) => {
+    if (!viewerId) return;
+    try {
+      const { acceptOffer, declineOffer } = await import("@/lib/bounty/sessionOffers");
+      if (kind === "decline") await declineOffer(offerId);
+      else {
+        const buildId = await acceptOffer({ offerId, makerId: viewerId });
+        toast("Session added to your build.", { action: { label: "Open build", onClick: () => navigate(`/compose/${buildId}`) } });
+      }
+      void refreshRequests();
+    } catch (error) {
+      reportError(error, { source: "openbuilds", context: `${kind}Offer` });
+      toast.error(error instanceof Error && error.message ? error.message : "Couldn't save that. Try again.");
+    }
+  };
+
   /* ── the view's props ── */
 
   const pages = requests.data?.pages ?? [];
@@ -153,6 +206,27 @@ export default function OpenBuildsPage() {
       meToo: { count, pressed: request.meToo, onToggle: () => onMeToo(request.bounty.id, request.meToo, count) },
       action: { label: "Answer", to: words.answerTo },
     };
+    const session = sessionRequestWords(request);
+    if (session) {
+      return {
+        ...shared,
+        kind: "session",
+        title: session.title,
+        reward: { text: "No reward", muted: true },
+        sessions: session.sessions,
+        offers: request.offers.map((offer) => ({
+          id: offer.id,
+          line: offerLine(offer, viewerId),
+          ...(request.bounty.author_id === viewerId ? { onAccept: () => void decide("accept", offer.id), onDecline: () => void decide("decline", offer.id) } : null),
+        })),
+        facts: [
+          { parts: words.claim ?? [{ text: "Unclaimed" }] },
+          { parts: [{ text: SESSION_OFFER_NOTE }] },
+          { meToo: true as const },
+        ],
+        action: { label: "Offer a session", onPress: () => onOffer(request.bounty.id) },
+      };
+    }
     return request.bounty.gap_node_id === null
       ? {
           ...shared,
@@ -240,6 +314,18 @@ export default function OpenBuildsPage() {
           }}
         />}
       </PageArrival>
+      {offering ? (
+        <Suspense fallback={null}>
+          <OfferSessionDialog
+            open
+            onOpenChange={(next) => (next ? undefined : setOffering(null))}
+            status={library.isLoadingError || library.isError ? "error" : library.data === undefined ? "loading" : "ready"}
+            onRetry={() => void library.refetch()}
+            choices={(library.data ?? []).map(offerChoice)}
+            onOffer={offerSelected}
+          />
+        </Suspense>
+      ) : null}
     </>
   );
 }

@@ -61,7 +61,8 @@ interface RequestBase {
   meta: readonly string[];
   facts?: readonly Fact[];
   meToo?: MeToo;
-  action: { label: string; to: string };
+  /** A link, or (an answer made in a dialog on this page) a press. */
+  action: { label: string; to?: string; onPress?: () => void };
 }
 
 export interface StepRequest extends RequestBase {
@@ -76,9 +77,20 @@ export interface BuildRequest extends RequestBase {
   build: { title: string; maker: string | null; steps: string };
 }
 
+/** An offered session on a request: for its maker, with the two answers; for the person who offered it, a line. */
+export interface SessionOfferRow {
+  id: string;
+  /** "@kit · Claude Code · Opus 5.5 · 6 prompts". */
+  line: string;
+  /** Present for the request's maker. */
+  onAccept?: () => void;
+  onDecline?: () => void;
+}
+
 export interface SessionRequest extends RequestBase {
   kind: "session";
   sessions: readonly { key: string; label: string; detail: string; open?: boolean }[];
+  offers?: readonly SessionOfferRow[];
 }
 
 export interface BriefAnswer {
@@ -345,6 +357,20 @@ function SessionTiles({ sessions }: { sessions: SessionRequest["sessions"] }) {
   );
 }
 
+function OfferRows({ offers }: { offers: readonly SessionOfferRow[] }) {
+  return (
+    <ul aria-label="Offered sessions" style={{ listStyle: "none", margin: "16px 0 0", padding: 0 }}>
+      {offers.map((offer, index) => (
+        <li key={offer.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 12px", minHeight: 48, borderTop: `1px solid ${t.hairline}`, borderBottom: index === offers.length - 1 ? `1px solid ${t.hairline}` : "none" }}>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 12.5 }}>{offer.line}</span>
+          {offer.onDecline ? <RequestAction onClick={offer.onDecline}>Decline</RequestAction> : null}
+          {offer.onAccept ? <RequestAction onClick={offer.onAccept}>Accept into the build</RequestAction> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function TextLink({ to, children }: { to: string; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
@@ -418,6 +444,7 @@ export function RequestArticle({ item, last }: { item: RequestItem; last: boolea
       {item.kind === "step" ? <StepStripTiles tiles={item.strip} /> : null}
       {item.kind === "build" ? <BuildRow build={item.build} /> : null}
       {item.kind === "session" ? <SessionTiles sessions={item.sessions} /> : null}
+      {item.kind === "session" && item.offers && item.offers.length > 0 ? <OfferRows offers={item.offers} /> : null}
       {item.kind === "brief" ? <BriefAnswers answersLine={item.answersLine} compareTo={item.compareTo} answers={item.answers} /> : null}
       {item.kind === "model-test" ? <ModelRows models={item.models} /> : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 16, fontSize: 12, color: t.label }}>
@@ -431,7 +458,11 @@ export function RequestArticle({ item, last }: { item: RequestItem; last: boolea
           ),
         )}
         <span style={{ flex: 1 }} />
-        <RequestAction to={item.action.to}>{item.action.label}</RequestAction>
+        {item.action.onPress ? (
+          <RequestAction onClick={item.action.onPress}>{item.action.label}</RequestAction>
+        ) : (
+          <RequestAction to={item.action.to ?? "#"}>{item.action.label}</RequestAction>
+        )}
       </div>
     </article>
   );
