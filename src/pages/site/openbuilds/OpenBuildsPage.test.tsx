@@ -37,6 +37,9 @@ vi.mock("@/lib/bounty/sessionOffers", () => ({ offerSession: (input: unknown) =>
 
 const listBriefs = vi.fn();
 const listModelTests = vi.fn();
+const listReviews = vi.fn();
+const getWeekGoal = vi.fn();
+vi.mock("@/lib/bounty/reviews", () => ({ listReviews: (options: unknown) => listReviews(options), getWeekGoal: () => getWeekGoal() }));
 const getReleaseCheck = vi.fn();
 vi.mock("@/lib/bounty/modelChecks", () => ({ listModelTests: (options: unknown) => listModelTests(options), getReleaseCheck: () => getReleaseCheck() }));
 vi.mock("@/lib/bounty/briefs", () => ({ listBriefs: (options: unknown) => listBriefs(options) }));
@@ -109,6 +112,8 @@ beforeEach(() => {
   listBriefs.mockReset().mockResolvedValue({ briefs: [], nextOffset: null });
   listModelTests.mockReset().mockResolvedValue({ tests: [], nextOffset: null });
   getReleaseCheck.mockReset().mockResolvedValue(null);
+  listReviews.mockReset().mockResolvedValue({ reviews: [], nextOffset: null });
+  getWeekGoal.mockReset().mockResolvedValue(null);
   toast.mockReset();
   library.data = [{ id: "imp-1", client: "claude-code", modelName: "Opus 5.5", firstPrompt: "Deploy the worker to Vercel", promptCount: 6, createdAt: "2026-10-03T10:00:00Z" }];
   offerSession.mockReset().mockResolvedValue({});
@@ -147,7 +152,7 @@ describe("OpenBuildsPage", () => {
   it("shows only the live tabs, and puts the tab and the sort in the address", async () => {
     mount();
     await screen.findByTestId("openbuilds-request");
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps", "Sessions", "Parts", "Briefs", "Model tests"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps", "Sessions", "Parts", "Briefs", "Model tests", "Reviews"]);
     fireEvent.click(screen.getByRole("tab", { name: "Steps" }));
     expect(where).toBe("?type=steps");
     fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Most needed" }), { key: "Enter" });
@@ -387,5 +392,34 @@ describe("OpenBuildsPage", () => {
     expect(within(request).getByText("Not tested")).toBeInTheDocument();
     expect(within(request).getByText("6 worked")).toBeInTheDocument();
     expect(within(request).getByRole("link", { name: "Reproduce on Opus 5.5" })).toHaveAttribute("href", "/b2/call-notes");
+  });
+  it("reads the Reviews tab: the runs, the failed ones, the step comments and the requests opened from it", async () => {
+    listReviews.mockResolvedValue({
+      reviews: [{ buildId: "b7", slug: "weekly", title: "Weekly report from Linear", maker: "luke", since: new Date(Date.now() - 8 * 3_600_000).toISOString(), runs: 3, failed: 1, stepComments: 4, requests: 1 }],
+      nextOffset: null,
+    });
+    mount("/openbuilds?type=reviews");
+    const request = await screen.findByTestId("openbuilds-request");
+    expect(listStepRequests).not.toHaveBeenCalled();
+    expect(within(request).getByRole("heading", { name: "Weekly report from Linear" })).toBeInTheDocument();
+    expect(within(request).getByText("@luke · held out of Builds until the review ends · 8h")).toBeInTheDocument();
+    expect(within(request).getByText(/3 runs/)).toBeInTheDocument();
+    expect(within(request).getByText("1 failed")).toBeInTheDocument();
+    expect(within(request).getByText("4 step comments")).toBeInTheDocument();
+    expect(within(request).getByText("1 step request opened from it")).toBeInTheDocument();
+    expect(within(request).getByRole("link", { name: "Reproduce to review" })).toHaveAttribute("href", "/b2/weekly");
+  });
+
+  it("draws the week's goal once a goal is set, and not before", async () => {
+    getWeekGoal.mockResolvedValue({ closed: 18, goal: 30 });
+    mount();
+    expect(await screen.findByRole("img", { name: "18 of 30 requests closed this week" })).toBeInTheDocument();
+    expect(screen.getByText(/60%/)).toBeInTheDocument();
+  });
+
+  it("leaves the week's goal out while there is none", async () => {
+    mount();
+    await screen.findByTestId("openbuilds-request");
+    expect(screen.queryByRole("img", { name: /requests closed this week/ })).not.toBeInTheDocument();
   });
 });

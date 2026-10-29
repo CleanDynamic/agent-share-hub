@@ -140,13 +140,14 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     signedIn: false,
     load: () => import("@/pages/site/openbuilds/OpenBuildsPage"),
     /* SV-14: the first screen's one round: the step requests in the address's sort (their own second round is inside the
-       read), the top contributors, the model release check, and a signed-in reader's requests and record. Same keys and functions as
+       read), the top contributors, the model release check, the week's goal, and a signed-in reader's requests and record. Same keys and functions as
        OpenBuildsPage. On /openbuilds itself the sort follows the address; from a link elsewhere, Most needed. */
     prefetch: async (_params, queryClient, { userId }) => {
       const here = window.location.pathname === SITE_NAV.bounties ? window.location.search : "";
-      const [bounty, modelChecks, { readAddress, sizeOfTab, stepRequestsKey, contributorsKey, releaseCheckKey, CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS }] = await Promise.all([
+      const [bounty, modelChecks, reviews, { readAddress, sizeOfTab, stepRequestsKey, contributorsKey, releaseCheckKey, weekGoalKey, CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS }] = await Promise.all([
         import("@/lib/bounty"),
         import("@/lib/bounty/modelChecks"),
+        import("@/lib/bounty/reviews"),
         import("@/pages/site/openbuilds/openBuildsModel"),
       ]);
       const { sort, tab } = readAddress(new URLSearchParams(here));
@@ -167,6 +168,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
         }),
         // SV-22: the model release check is one request of the same round.
         queryClient.prefetchQuery({ queryKey: releaseCheckKey, queryFn: () => modelChecks.getReleaseCheck(), staleTime: SLOW_STALE_MS }),
+        queryClient.prefetchQuery({ queryKey: weekGoalKey, queryFn: () => reviews.getWeekGoal(), staleTime: LIST_STALE_MS }),
         userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "listMyOpenRequests", userId], queryFn: () => bounty.listMyOpenRequests(userId), staleTime: LIST_STALE_MS }) : undefined,
         userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "listMyClaims", userId], queryFn: () => bounty.listMyClaims(userId), staleTime: LIST_STALE_MS }) : undefined,
         userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "getMyRecord", userId], queryFn: () => bounty.getMyRecord(userId), staleTime: SLOW_STALE_MS }) : undefined,

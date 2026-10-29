@@ -162,3 +162,4 @@ export { briefRefusal, comparePair, NO_GAPS, NOT_PUBLISHED } from "./briefRules"
 export { BRIEF_ANSWERS_KEPT, BRIEFS_PAGE_SIZE, listBriefs, publishBrief, setBrief, type BriefAnswerRecord, type BriefRecord, type BriefsPage } from "./briefs";
 export { MODEL_TESTS_PAGE_SIZE, addModelRelease, getReleaseCheck, listModelTests, listRecentReleases, type ModelTestRecord, type ModelTestsPage, type ReleaseCheck } from "./modelChecks";
 export { modelTestFor, nameOfModel, releaseBars, releasedWords, type ModelTestRow, type ReleasedModel } from "./modelRules";
+export { REVIEWS_PAGE_SIZE, WEEK_GOAL_SLUG, getWeekGoal, listReviews, setInReview, type ReviewRecord, type ReviewsPage, type WeekGoal } from "./reviews";

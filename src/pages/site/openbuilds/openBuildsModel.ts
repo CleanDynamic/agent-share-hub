@@ -12,13 +12,14 @@ import type { RequestSize, StepRequestRecord, StepStripNode } from "@/lib/bounty
 import { comparePair } from "@/lib/bounty/briefRules";
 import type { BriefRecord } from "@/lib/bounty/briefs";
 import type { ModelTestRecord, ReleaseCheck } from "@/lib/bounty/modelChecks";
+import type { ReviewRecord, WeekGoal } from "@/lib/bounty/reviews";
 import { releaseBars, releasedWords } from "@/lib/bounty/modelRules";
 import { claimDaysLeft, type MyClaim, type RequestClaim } from "@/lib/bounty/claims";
 import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, toolLabel, type SessionMeta } from "@/lib/build/making";
 import { numberSessions } from "@/lib/build/sessionNumbers";
 import { hasParts, labelsOf, workstreamTitle } from "@/lib/build/workstreams";
 import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
-import type { BriefRequest, FactPart, ModelTestRequest, ReleaseCheckProps } from "./OpenBuildsView";
+import type { BriefRequest, FactPart, ModelTestRequest, ReleaseCheckProps, ReviewRequest, WeekGoalProps } from "./OpenBuildsView";
 
 /* ── the address ── */
 
@@ -35,9 +36,9 @@ export const OPEN_BUILDS_TABS: readonly { value: OpenBuildsTab; label: string }[
   { value: "reviews", label: "Reviews" },
 ];
 
-/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs and Model tests with SV-22 Parts 1 and 2.
+/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs, Model tests and Reviews with SV-22.
     Whole-build requests are listed in All only. */
-export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts", "briefs", "model-tests"];
+export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts", "briefs", "model-tests", "reviews"];
 
 /** The tabs whose requests are not bounties: each reads its own table (SV-22). */
 export const BUILD_KIND_TABS = ["briefs", "model-tests", "reviews"] as const;
@@ -89,6 +90,8 @@ export const stepRequestsKey = (sort: OpenBuildsSort, size: RequestSize, viewerI
 export const briefsKey = ["bounty", "listBriefs"] as const;
 export const modelTestsKey = ["bounty", "listModelTests"] as const;
 export const releaseCheckKey = ["bounty", "getReleaseCheck"] as const;
+export const reviewsKey = ["bounty", "listReviews"] as const;
+export const weekGoalKey = ["bounty", "getWeekGoal"] as const;
 export const contributorsKey = ["bounty", "listTopSolvers", CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS] as const;
 
 /* ── words ── */
@@ -384,3 +387,35 @@ export function releaseCheckWords(check: ReleaseCheck, now: number): ReleaseChec
     runTo: check.nextSlug ? `/b2/${check.nextSlug}` : undefined,
   };
 }
+
+
+/* ── reviews and the week's goal (SV-22) ── */
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** A build in review as the view draws it: the runs and the failed ones, the step comments, and the requests opened from it. */
+export function reviewWords(review: ReviewRecord, now: number): Omit<ReviewRequest, "action" | "meToo"> {
+  return {
+    kind: "review",
+    id: review.buildId,
+    title: review.title,
+    meta: [atHandle(review.maker), "held out of Builds until the review ends", review.since ? shortAgo(review.since, now) : null].filter((part): part is string => Boolean(part)),
+    facts: [
+      {
+        parts:
+          review.runs === 0
+            ? [{ text: "No runs yet" }]
+            : [{ text: plural(review.runs, "run", "runs") }, ...(review.failed > 0 ? [{ text: " · " }, { text: `${review.failed} failed`, tone: "breakage" as const }] : [])],
+      },
+      { parts: [{ text: plural(review.stepComments, "step comment", "step comments") }] },
+      ...(review.requests > 0 ? [{ parts: [{ text: `${plural(review.requests, "step request", "step requests")} opened from it` }] }] : []),
+    ],
+  };
+}
+
+/** The week's goal as the tile draws it: whole percent, never past 100. */
+export const weekGoalWords = (week: WeekGoal): WeekGoalProps => ({
+  closed: week.closed,
+  goal: week.goal,
+  percent: Math.min(100, Math.round((week.closed / week.goal) * 100)),
+});

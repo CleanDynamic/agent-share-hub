@@ -28,6 +28,7 @@ import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import type { ThreadDoc } from "./thread";
 import { normaliseQuery, searchBuildIds } from "./search";
+import { isMissingColumn } from "@/lib/classify/storage";
 import { findAcross, isKnown, valueOf, type Facet } from "@/lib/classify/taxonomy";
 import { hasClassification, readClassification } from "@/lib/classify/facets";
 import type { Classification } from "@/lib/classify/types";
@@ -559,6 +560,36 @@ export interface GalleryFilters {
   query?: string;
 }
 
+/* ── SV-22 P3: a build in review stays out of Builds ───────────────────────────────────────────────────────────────────── */
+
+/** `builds.in_review` is added by SV-22's migration. Until it is applied the filter names a column that is not there, so a read
+    that fails with the missing-column code is run again without it, and the column is not asked for again. */
+let reviewColumnMissing = false;
+export const resetReviewColumn = (): void => {
+  reviewColumnMissing = false;
+};
+
+interface ReviewQuery {
+  eq(column: string, value: boolean): unknown;
+}
+
+/** A published build whose maker has put it in review is held out of Builds (listGallery, its counts, the table) until the review ends. */
+function leaveOutReviews<Q>(query: Q, reviews: boolean): Q {
+  return reviews ? ((query as unknown as ReviewQuery).eq("in_review", false) as Q) : query;
+}
+
+/** Runs `read` with the review filter, and again without it once if the column turns out to be missing. */
+async function withReviewFilter<T>(read: (reviews: boolean) => Promise<T>): Promise<T> {
+  if (reviewColumnMissing) return read(false);
+  try {
+    return await read(true);
+  } catch (error) {
+    if (!isMissingColumn(error)) throw error;
+    reviewColumnMissing = true;
+    return read(false);
+  }
+}
+
 export interface ListGalleryOptions extends GalleryFilters {
   limit?: number;
   offset?: number;
@@ -622,9 +653,11 @@ function applyLensFilters<Q>(query: Q, lens: GalleryLens, now: number = Date.now
  * against a clock. Fixing that needs now() in the ORDER BY, which means a view
  * or an RPC; the cards mark staleness in the freshness line either way.
  */
-export async function listGallery(
-  options: ListGalleryOptions = {}
-): Promise<GalleryPage> {
+export function listGallery(options: ListGalleryOptions = {}): Promise<GalleryPage> {
+  return withReviewFilter((reviews) => listGalleryRows(options, reviews));
+}
+
+async function listGalleryRows(options: ListGalleryOptions, reviews: boolean): Promise<GalleryPage> {
   const limit = Math.max(1, Math.min(options.limit ?? GALLERY_PAGE_SIZE, 60));
   const offset = Math.max(0, options.offset ?? 0);
 
@@ -677,7 +710,7 @@ export async function listGallery(
     query = query.in("id", ids);
   }
 
-  query = applyLensFilters(query, lens);
+  query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
   const { data, error, count } = await query
     .order("reproduction_count", { ascending: false })
@@ -838,21 +871,27 @@ export async function getClassificationFacets(): Promise<ClassificationFacets> {
  * numbered would be the wrong trade.
  */
 export async function countOpenBountyBuilds(): Promise<number> {
-  const { count, error } = await supabase
-    .from("builds")
-    .select(`id, bounties!bounties_build_id_fkey!inner(id)`, {
-      count: "exact",
-      head: true,
-    })
-    .in("status", ["published", "gallery"])
-    .or(galleryPredicate())
-    .eq("bounties.status", "open");
-
-  if (error) {
+  try {
+    return await withReviewFilter(async (reviews) => {
+      const { count, error } = await leaveOutReviews(
+        supabase
+          .from("builds")
+          .select(`id, bounties!bounties_build_id_fkey!inner(id)`, {
+            count: "exact",
+            head: true,
+          })
+          .in("status", ["published", "gallery"])
+          .or(galleryPredicate())
+          .eq("bounties.status", "open"),
+        reviews,
+      );
+      if (error) throw buildLayerError("countOpenBountyBuilds", error);
+      return count ?? 0;
+    });
+  } catch (error) {
     console.warn("[countOpenBountyBuilds] count unavailable", error);
     return 0;
   }
-  return count ?? 0;
 }
 
 // =============================================================================
@@ -975,13 +1014,11 @@ export async function getFeaturedBuild(now: Date = new Date()): Promise<Featured
  * without Proven's reproduction clause: the freshness figure getGalleryStats
  * reports counts every gallery build, run by someone or not.
  */
-async function countGalleryBuilds(
-  operation: string,
-  lens: GalleryLens,
-  now: number,
-  freshOnly = false,
-  shape?: BuildShape,
-): Promise<number> {
+function countGalleryBuilds(operation: string, lens: GalleryLens, now: number, freshOnly = false, shape?: BuildShape): Promise<number> {
+  return withReviewFilter((reviews) => countGalleryBuildRows(operation, lens, now, freshOnly, shape, reviews));
+}
+
+async function countGalleryBuildRows(operation: string, lens: GalleryLens, now: number, freshOnly: boolean, shape: BuildShape | undefined, reviews: boolean): Promise<number> {
   const unsolved = lens === "unsolved";
 
   let query = supabase
@@ -994,7 +1031,7 @@ async function countGalleryBuilds(
     .or(galleryPredicate());
 
   if (unsolved) query = query.eq("bounties.status", "open");
-  query = applyLensFilters(query, lens, now);
+  query = leaveOutReviews(applyLensFilters(query, lens, now), reviews);
   if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
   if (shape) query = query.eq("shape", shape);
 
@@ -1409,7 +1446,11 @@ function toBuildsTableBuild(row: BuildsTableRow): BuildsTableBuild {
  * and the sort, with the maker and the open requests embedded. The search is the feed's (`feedSearchClause`), which
  * works without `search_build_ids`; a query shaped like a handle looks its makers up first.
  */
-export async function listBuildsTable(options: BuildsTableOptions = {}): Promise<BuildsTablePage> {
+export function listBuildsTable(options: BuildsTableOptions = {}): Promise<BuildsTablePage> {
+  return withReviewFilter((reviews) => listBuildsTableRows(options, reviews));
+}
+
+async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean): Promise<BuildsTablePage> {
   const limit = Math.max(1, Math.min(options.limit ?? BUILDS_TABLE_PAGE_SIZE, 100));
   const offset = Math.max(0, options.offset ?? 0);
   const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens) ? (options.lens as GalleryLens) : "all";
@@ -1436,7 +1477,7 @@ export async function listBuildsTable(options: BuildsTableOptions = {}): Promise
     query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
   }
   if (search) query = query.or(search);
-  query = applyLensFilters(query, lens);
+  query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
   const { data, error, count } = await (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
     .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })

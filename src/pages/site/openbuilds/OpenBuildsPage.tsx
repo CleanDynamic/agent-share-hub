@@ -25,7 +25,10 @@
    release) in place of the bounties; the release check is `getReleaseCheck`, one request in round 1, drawn above the requests
    once the migration has a release in it.
 
-   NOT LIVE YET (drawn on the dev page only): the week's goal and reviews (SV-22); Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
+   REVIEWS AND THE WEEK'S GOAL (SV-22): Reviews reads `listReviews` (published builds their maker holds out of Builds); the goal is
+   `getWeekGoal`, one more request of round 1, drawn in the contributors' tile once a goal is set.
+
+   NOT LIVE YET (drawn on the dev page only): Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
 
 import { Suspense, lazy, useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -37,6 +40,7 @@ import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { listBriefs } from "@/lib/bounty/briefs";
 import { getReleaseCheck, listModelTests } from "@/lib/bounty/modelChecks";
+import { getWeekGoal, listReviews } from "@/lib/bounty/reviews";
 import { getMyRecord, listMyClaims, listMyOpenRequests, listStepRequests, listTopSolvers, toggleMeToo, type StepRequestsPage } from "@/lib/bounty";
 import { reportError } from "@/lib/errors/report";
 import { usePageReady } from "@/lib/routing/pageReady";
@@ -55,6 +59,10 @@ import {
   modelTestsKey,
   releaseCheckKey,
   releaseCheckWords,
+  reviewWords,
+  reviewsKey,
+  weekGoalKey,
+  weekGoalWords,
   isBuildKindTab,
   OPEN_BUILDS_SORTS,
   OPEN_BUILDS_TABS,
@@ -131,20 +139,31 @@ export default function OpenBuildsPage() {
     placeholderData: keepPreviousData,
     enabled: kind === "model-tests",
   });
-  const listing = kind === "briefs" ? briefs : kind === "model-tests" ? modelTests : requests;
+  const reviews = useInfiniteQuery({
+    queryKey: reviewsKey,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => listReviews({ offset: pageParam }),
+    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    placeholderData: keepPreviousData,
+    enabled: kind === "reviews",
+  });
+  const listing = kind === "briefs" ? briefs : kind === "model-tests" ? modelTests : kind === "reviews" ? reviews : requests;
   const mine = useQuery({ queryKey: ["bounty", "listMyOpenRequests", viewerId], queryFn: () => listMyOpenRequests(viewerId as string), enabled: viewerId !== null });
   const claims = useQuery({ queryKey: ["bounty", "listMyClaims", viewerId], queryFn: () => listMyClaims(viewerId as string), enabled: viewerId !== null });
   const record = useQuery({ queryKey: ["bounty", "getMyRecord", viewerId], queryFn: () => getMyRecord(viewerId as string), enabled: viewerId !== null });
   // The release check is one request, started with the rest of round 1; the page waits for it so the figure above the requests does not push them down when it arrives.
   const release = useQuery({ queryKey: releaseCheckKey, queryFn: getReleaseCheck });
+  const week = useQuery({ queryKey: weekGoalKey, queryFn: () => getWeekGoal() });
   const contributors = useQuery({ queryKey: contributorsKey, queryFn: () => listTopSolvers({ limit: CONTRIBUTORS_SHOWN, sinceDays: CONTRIBUTORS_DAYS }) });
 
   // The page shows its placeholder only while neither list has ever arrived: moving between tabs keeps what is drawn until the new tab's arrives.
-  const arriving = (requests.isPending && briefs.isPending && modelTests.isPending) || release.isPending;
+  const arriving = (requests.isPending && briefs.isPending && modelTests.isPending && reviews.isPending) || release.isPending || week.isPending;
   useReported(requests.error, "openbuilds-requests");
   useReported(briefs.error, "openbuilds-briefs");
   useReported(modelTests.error, "openbuilds-model-tests");
   useReported(release.error, "openbuilds-release-check");
+  useReported(reviews.error, "openbuilds-reviews");
+  useReported(week.error, "openbuilds-week-goal");
   useReported(mine.error, "openbuilds-your-requests");
   useReported(claims.error, "openbuilds-claims");
   useReported(record.error, "openbuilds-record");
@@ -288,6 +307,10 @@ export default function OpenBuildsPage() {
     .flatMap((page) => page.tests)
     .map((test) => ({ ...modelTestWords(test, now), action: { label: `Reproduce on ${test.target}`, to: `/b2/${test.slug}` } }));
 
+  const reviewItems: RequestItem[] = (reviews.data?.pages ?? [])
+    .flatMap((page) => page.reviews)
+    .map((review) => ({ ...reviewWords(review, now), action: { label: "Reproduce to review", to: `/b2/${review.slug}` } }));
+
   const move = (next: Parameters<typeof addressSearch>[1]) => setParams(addressSearch(params, next), { replace: true });
   const mineRows = mine.data ?? [];
   const waiting = mineRows.reduce((sum, row) => sum + row.answers, 0);
@@ -299,6 +322,7 @@ export default function OpenBuildsPage() {
       <PageArrival loading={arriving} placeholder={<OpenBuildsLoadingView />}>
         {arriving ? <OpenBuildsLoadingView /> : <OpenBuildsView
           release={release.data ? releaseCheckWords(release.data, now) : undefined}
+          week={week.data ? weekGoalWords(week.data) : undefined}
           requests={{
             tabs: TABS,
             tab: address.tab,
@@ -308,7 +332,7 @@ export default function OpenBuildsPage() {
             onSort: (sort) => move({ sort }),
             status: statusOf(listing),
             onRetry: () => void listing.refetch(),
-            items: kind === "briefs" ? briefItems : kind === "model-tests" ? modelTestItems : items,
+            items: kind === "briefs" ? briefItems : kind === "model-tests" ? modelTestItems : kind === "reviews" ? reviewItems : items,
             more: listing.hasNextPage ? { loading: listing.isFetchingNextPage, onMore: () => void listing.fetchNextPage() } : undefined,
           }}
           yourRequests={
