@@ -183,6 +183,13 @@
       "when": 1793279049909,
       "tag": "0025_sv20_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793311380644,
+      "tag": "0026_sv22_briefs",
+      "breakpoints": true
     }
   ]
 }
