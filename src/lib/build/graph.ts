@@ -314,6 +314,8 @@ export interface SessionGroup {
   colour?: string;
   /** CA-14 P1: the maker's title for the session (`sessions_meta[key].title`), 1 to 80 characters. Absent when it has none. */
   title?: string;
+  /** SV-21: the maker opened the session as a request (`sessions_meta[key].open`). Absent when they did not. */
+  open?: { problem: string };
   /**
    * CA-12: the session has an entry in `sessions_meta`. A session added the CA-12 way is given one, so its head is always
    * drawn; an old build's lone imported session has none and is drawn as it was, without a head.
@@ -1188,6 +1190,7 @@ export function sessionGroups(
     if (Object.keys(extras).length > 0) group.extras = extras;
     if (meta[key]?.colour) group.colour = meta[key].colour;
     if (meta[key]?.title) group.title = meta[key].title;
+    if (meta[key]?.open) group.open = meta[key].open;
     if (meta[key]) group.marked = true;
     const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
     if (words > LONG_SESSION_WORDS) group.longWords = words;

@@ -70,7 +70,8 @@ describe("no other numbering (source checks)", () => {
 
   it("only the one function hands out session numbers", () => {
     const callers = SHIPPED.filter((file) => /\bnumberSessions\(/.test(file.code) && file.rel !== "src/lib/build/sessionNumbers.ts").map((file) => file.rel);
-    expect(callers.sort()).toEqual(["src/lib/build/graph.ts", "src/pages/site/compose/composeModel.ts"]);
+    // SV-21: OpenBuilds names a requested session by this same function, from the build's `making` (sessionNumbers.ts says it may).
+    expect(callers.sort()).toEqual(["src/lib/build/graph.ts", "src/pages/site/compose/composeModel.ts", "src/pages/site/openbuilds/openBuildsModel.ts"]);
     const graph = SHIPPED.find((file) => file.rel === "src/lib/build/graph.ts")?.code ?? "";
     expect(graph).not.toMatch(/\+\+numbered|numberedAgain/);
     // A number worked out from a place in a list, or as the largest so far plus one.

@@ -2490,7 +2490,7 @@ function SandboxPageBody() {
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={stepOf.prompt}
             addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
-            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: (key) => actions.askRemoveSessions([key]), onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined, onRetryImport: (key) => void onRetryImport(key) }}
+            sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: (key) => actions.askRemoveSessions([key]), onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined, onRetryImport: (key) => void onRetryImport(key), onOpen: edits.onSessionOpen }}
             onDropSession={edits.onDrop}
             parts={
               partsModel
@@ -2499,7 +2499,7 @@ function SandboxPageBody() {
                     withAbove: partsModel.withAbove,
                     onToggle: (key, closed) => void onPartFold(key, closed),
                     onColour: (key, anchor, what, colour) => onColour(refTo({ kind: "workstream", id: key }), anchor, what, colour),
-                    ops: { onName: edits.onPartName, onMove: edits.onPartMove, onRemove: edits.onPartRemove, onStartsAfter: edits.onPartStartsAfter },
+                    ops: { onName: edits.onPartName, onMove: edits.onPartMove, onRemove: edits.onPartRemove, onStartsAfter: edits.onPartStartsAfter, onOpen: edits.onPartOpen },
                   }
                 : undefined
             }

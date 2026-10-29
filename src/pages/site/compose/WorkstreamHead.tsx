@@ -52,6 +52,8 @@ export interface WorkstreamOps {
   onMove: (key: string, by: -1 | 1) => void;
   onRemove: (key: string) => void;
   onStartsAfter: (key: string, session: string | null) => void;
+  /** SV-21: open the part as a request for its next session with a problem, or (null) take the request back. Absent: no ghost row. */
+  onOpen?: (key: string, problem: string | null) => void;
 }
 
 export interface WorkstreamHeadView {
@@ -68,6 +70,8 @@ export interface WorkstreamHeadView {
   startsAfterLine?: string;
   /** The session it starts after, for the tick in the submenu. */
   startsAfter?: string;
+  /** SV-21: the problem the part was opened as a request with; absent when it was not. */
+  open?: string;
 }
 
 export interface WorkstreamHeadProps {

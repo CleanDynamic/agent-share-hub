@@ -33,6 +33,7 @@ import { ToolMark } from "./refinedPieces";
 import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
 import { SESSION_META, SESSION_NAME } from "./tileRecipes";
 import { NO_APP, type SourceSession } from "./sourcesModel";
+import { OPEN_REQUEST_COPY, OpenRequestDialog } from "./OpenRequestDialog";
 import { ToolPicker } from "./ToolPicker";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildSelectionContext } from "./useBuildSelection";
@@ -51,6 +52,9 @@ export const SESSION_HEAD_COPY = {
   colour: "Colour…",
   mergeUp: "Merge with the session above",
   moveToPart: "Move to part…",
+  openAsRequest: "Open as a request…",
+  withdrawRequest: "Take the request back",
+  requested: "Open as a request",
   sameStage: "Same stage as the session above",
   count: (n: number) => `${n} ${n === 1 ? "tile" : "tiles"}`,
   typedPast: (n: number) => `${n}/${SESSION_TITLE_MAX}`,
@@ -72,6 +76,8 @@ export interface SessionOps {
   onWithAbove?: (key: string, on: boolean) => void;
   /** SV-05 P3: import a short session's missing prompts again. Absent: no Retry. */
   onRetryImport?: (key: string) => void;
+  /** SV-21: open the session as a request with a problem, or (null) take the request back. Absent: no menu item. */
+  onOpen?: (key: string, problem: string | null) => void;
 }
 
 /** CA-17 P2: what a session's head knows about the build's parts. Absent with one part. */
@@ -221,6 +227,8 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
   const head = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  /* SV-21: the dialog that asks what the request is for. */
+  const [asking, setAsking] = useState(false);
   const itemRing = useItemRing();
   const maker = Boolean(ops) && editable;
   /* CA-20 P3: chosen with others (Cmd, Ctrl or Shift click on the head), it is drawn as selected is. */
@@ -277,6 +285,11 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           </span>
         ) : null}
         {session.date ? <span style={quiet(t.label)}>{session.date}</span> : null}
+        {session.open ? (
+          <span data-testid="session-open-request" {...fullText(session.open)} style={{ ...quiet(t.lit), ...TITLE_LINE, maxWidth: 240 }}>
+            {SESSION_HEAD_COPY.requested}
+          </span>
+        ) : null}
         {session.imported ? <span data-testid="session-imported" style={quiet(t.text2)}>{SESSION_HEAD_COPY.imported(session.imported.have, session.imported.of)}</span> : null}
         {session.imported && maker && ops?.onRetryImport ? (
           <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Retry importing Session ${session.number}`} onClick={() => ops.onRetryImport?.(session.key)}>
@@ -422,6 +435,17 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
                       {SESSION_HEAD_COPY.edit}
                     </Row>
                   ) : null}
+                  {ops?.onOpen ? (
+                    session.open ? (
+                      <Row phone={phone} onSelect={() => ops.onOpen?.(session.key, null)}>
+                        {SESSION_HEAD_COPY.withdrawRequest}
+                      </Row>
+                    ) : (
+                      <Row phone={phone} onSelect={() => setAsking(true)}>
+                        {SESSION_HEAD_COPY.openAsRequest}
+                      </Row>
+                    )
+                  ) : null}
                   {selection ? (
                     <Row phone={phone} disabled={tiles === 0} reason={REASONS.noTiles} onSelect={() => selection.selectSession(session.key)}>
                       {MENU_COPY.selectAllInSession}
@@ -444,6 +468,17 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           </span>
         ) : null}
       </div>
+      {maker && ops?.onOpen ? (
+        <OpenRequestDialog
+          open={asking}
+          title={OPEN_REQUEST_COPY.openSession(session.number)}
+          onClose={() => setAsking(false)}
+          onSubmit={(problem) => {
+            setAsking(false);
+            ops.onOpen?.(session.key, problem);
+          }}
+        />
+      ) : null}
     </>
   );
 }

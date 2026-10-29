@@ -11,8 +11,9 @@ const code = () => sql().replace(/--[^\n]*/g, "");
 
 describe("the SV-20 migration", () => {
   it("steps after the newest migration before it", () => {
-    const others = readdirSync(DIR).filter((name) => name !== FILE).sort();
-    expect(FILE > others[others.length - 1]).toBe(true);
+    // Every migration that was there before it sorts earlier. Later ones (SV-21's) are not its concern.
+    const earlier = readdirSync(DIR).filter((name) => name !== FILE && name < "20261031").sort();
+    expect(FILE > earlier[earlier.length - 1]).toBe(true);
   });
 
   it("lets a notification target a node and a collection, keeping every value it allowed", () => {

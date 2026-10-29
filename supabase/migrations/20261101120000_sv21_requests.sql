@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS public.request_offers (
   created_at    timestamptz NOT NULL DEFAULT now(),
   decided_at    timestamptz NULL,
   CONSTRAINT request_offers_status_check CHECK (status IN ('offered', 'accepted', 'declined')),
-  CONSTRAINT request_offers_snapshot_shape CHECK (jsonb_typeof(snapshot) = 'object' AND jsonb_typeof(snapshot -> 'prompts') = 'array'),
+  CONSTRAINT request_offers_snapshot_shape CHECK (jsonb_typeof(snapshot) = 'object' AND coalesce(jsonb_typeof(snapshot -> 'prompts'), '') = 'array'),
   CONSTRAINT request_offers_one_per_session UNIQUE (request_id, user_id, session_key)
 );
 

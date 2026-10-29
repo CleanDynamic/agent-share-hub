@@ -1157,6 +1157,10 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/bounty/sessionOffersRead.ts",
   "src/lib/bounty/sessionOffers.test.ts",
   "src/pages/site/openbuilds/OfferSessionDialog.tsx",
+  "src/pages/site/compose/OpenRequestDialog.tsx",
+  "src/pages/site/compose/AskNextSessionRow.tsx",
+  "src/lib/build/openRequest.ts",
+  "src/lib/build/openTargets.ts",
 ];
 
 /**
