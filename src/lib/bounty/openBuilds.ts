@@ -16,13 +16,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { contributorColumnMissing, noteMissingContributorColumn } from "@/lib/build/contributors";
 import { listSolverHandles, countSolutionsByBounty } from "./solutions";
 import { BOUNTY_COLUMNS, OPEN_BOUNTIES_PAGE_SIZE } from "./bounties";
+import { isMissingColumn } from "@/lib/classify/storage";
+import { listActiveClaims, type RequestClaim } from "./claims";
 import { myMeToo } from "./meToo";
+import { listOpenOffers, type SessionOffer } from "./sessionOffersRead";
 import { bountyLayerError, type Bounty } from "./types";
 
 export type StepRequestSort = "needed" | "newest" | "closing" | "reward";
 
-/** Which requests: every size, or steps only (a named gap node). */
-export type RequestSize = "all" | "step";
+/** Which requests: every size, steps only (a named gap node), or those for a session or a part (SV-21). */
+export type RequestSize = "all" | "step" | "session" | "part";
 
 /** A node as the strips read returns it: the step's columns, and of its payload only the three keys that decide whether it is a step (`isStepNode`, graph.ts). */
 export interface StepStripNode {
@@ -49,6 +52,14 @@ export interface StepRequestRecord {
   solutions: number;
   /** Whether the reader has said Me too. */
   meToo: boolean;
+  /** SV-21: who is working on it, while their claim stands. */
+  claim: RequestClaim | null;
+  /** SV-21: opened from a run that did not work (`from_run_id`). */
+  fromRun: boolean;
+  /** SV-21: the session or part it is for, with the build's `making` to name it and its neighbours. Null for a step or a whole-build request. */
+  target: { size: "session" | "part"; key: string; making: unknown } | null;
+  /** SV-21: the offers on it the reader may see: their own, and every one if it is on their build. */
+  offers: SessionOffer[];
 }
 
 export interface StepRequestsPage {
@@ -89,11 +100,22 @@ const STRIP_ROWS_PER_BUILD = 200;
 const REQUESTS_SELECT =
   `${BOUNTY_COLUMNS}, builds!bounties_build_id_fkey!inner(id, slug, title, creator_id), build_nodes!bounties_gap_node_id_fkey(title)`;
 
+/** SV-21: the two columns a request from a run uses. Asked for until an error says they are missing (the migration is not applied). */
+const RUN_COLUMNS = "problem, from_run_id, size, target_key";
+let runColumnsMissing = false;
+export const resetRunColumns = (): void => {
+  runColumnsMissing = false;
+};
+
 /** The strip's columns: the step's own, and three payload keys by path (never the payload whole), and the gap's problem. */
 const STRIP_SELECT =
   "id, build_id, parent_id, type, title, position, is_gap, tested:payload->tested, setup:payload->setup, step:payload->step, gap_problem:payload->>gap_problem";
 
 interface RequestRow extends Bounty {
+  problem?: string | null;
+  from_run_id?: string | null;
+  size?: "session" | "part" | null;
+  target_key?: string | null;
   builds: { id: string; slug: string; title: string; creator_id: string } | null;
   build_nodes: { title: string | null } | null;
 }
@@ -127,19 +149,32 @@ async function listStepStrips(buildIds: readonly string[], gapIds: readonly stri
 export async function listStepRequests({ sort = "needed", size: wanted = "all", offset = 0, limit = OPEN_BOUNTIES_PAGE_SIZE, viewerId = null }: ListStepRequestsOptions = {}): Promise<StepRequestsPage> {
   const size = Math.min(Math.max(1, limit), 100);
 
-  let query = table("bounties")
-    .select(REQUESTS_SELECT)
-    .eq("status", "open")
-    .not("build_id", "is", null)
-    .in("builds.status", ["published", "gallery"]);
-  if (wanted === "step") query = query.not("gap_node_id", "is", null);
-  if (sort === "needed") query = query.order("me_too_count", { ascending: false });
-  if (sort === "closing") query = query.order("closes_at", { ascending: true, nullsFirst: false });
-  if (sort === "reward") query = query.order("reward_gbp", { ascending: false, nullsFirst: false });
-  const { data, error } = await query
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .range(offset, offset + size);
+  const read = (columns: string) => {
+    let query = table("bounties")
+      .select(columns)
+      .eq("status", "open")
+      .not("build_id", "is", null)
+      .in("builds.status", ["published", "gallery"]);
+    if (wanted === "step") query = query.not("gap_node_id", "is", null);
+    if (wanted === "session" || wanted === "part") query = query.eq("size", wanted);
+    if (sort === "needed") query = query.order("me_too_count", { ascending: false });
+    if (sort === "closing") query = query.order("closes_at", { ascending: true, nullsFirst: false });
+    if (sort === "reward") query = query.order("reward_gbp", { ascending: false, nullsFirst: false });
+    return query
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(offset, offset + size);
+  };
+  const sized = wanted === "session" || wanted === "part";
+  const none: StepRequestsPage = { requests: [], strips: [], nextOffset: null };
+  // Before the migration is applied no request is for a session or a part, and the filter would name a column that is not there.
+  if (sized && runColumnsMissing) return none;
+  let { data, error } = await read(runColumnsMissing ? REQUESTS_SELECT : `${REQUESTS_SELECT}, ${RUN_COLUMNS}`);
+  if (error && !runColumnsMissing && isMissingColumn(error)) {
+    runColumnsMissing = true;
+    if (sized) return none;
+    ({ data, error } = await read(REQUESTS_SELECT));
+  }
   if (error) throw bountyLayerError("listStepRequests", error);
 
   const all = (data ?? []) as RequestRow[];
@@ -150,30 +185,41 @@ export async function listStepRequests({ sort = "needed", size: wanted = "all", 
   const gapIds = [...new Set(rows.flatMap((row) => (row.gap_node_id ? [row.gap_node_id] : [])))];
   const makerIds = [...new Set(rows.map((row) => row.builds!.creator_id))];
 
-  const [solutions, makers, strips, marked] = await Promise.all([
+  const sizedBuildIds = [...new Set(rows.flatMap((row) => (row.size ? [row.builds!.id] : [])))];
+  const sizedIds = rows.flatMap((row) => (row.size ? [row.id] : []));
+  const [solutions, makers, strips, marked, claims, makings, offers] = await Promise.all([
     countSolutionsByBounty(ids),
     makerIds.length === 0
       ? Promise.resolve({ data: [], error: null })
       : table("profiles").select("id, username, avatar_url").in("id", makerIds).limit(makerIds.length),
     listStepStrips(buildIds, gapIds),
     viewerId && ids.length > 0 ? myMeToo(ids, viewerId) : Promise.resolve(new Set<string>()),
+    listActiveClaims(ids),
+    sizedBuildIds.length === 0 ? Promise.resolve({ data: [], error: null }) : table("builds").select("id, making").in("id", sizedBuildIds).limit(sizedBuildIds.length),
+    listOpenOffers(sizedIds),
   ]);
+  if (makings.error) throw bountyLayerError("listStepRequests (making)", makings.error);
   if (makers.error) throw bountyLayerError("listStepRequests (makers)", makers.error);
 
   const makerOf = new Map(((makers.data ?? []) as Array<{ id: string; username: string | null; avatar_url: string | null }>).map((row) => [row.id, { username: row.username, avatar_url: row.avatar_url }]));
+  const makingOf = new Map(((makings.data ?? []) as Array<{ id: string; making: unknown }>).map((row) => [row.id, row.making]));
   const problemOf = new Map(strips.flatMap((row) => (row.gap_problem ? [[row.id, row.gap_problem] as const] : [])));
 
   return {
     requests: rows.map((row) => {
-      const { builds, build_nodes, ...bounty } = row;
+      const { builds, build_nodes, problem: ownWords, from_run_id: fromRunId, size, target_key: targetKey, ...bounty } = row;
       return {
         bounty: bounty as Bounty,
         build: { id: builds!.id, slug: builds!.slug, title: builds!.title },
         maker: makerOf.get(builds!.creator_id) ?? null,
         gapTitle: build_nodes?.title?.trim() || null,
-        problem: (row.gap_node_id && problemOf.get(row.gap_node_id)?.trim()) || "",
+        problem: (row.gap_node_id ? problemOf.get(row.gap_node_id)?.trim() : ownWords?.trim()) || "",
         solutions: solutions.get(row.id) ?? 0,
         meToo: marked.has(row.id),
+        claim: claims.get(row.id) ?? null,
+        fromRun: Boolean(fromRunId),
+        target: size && targetKey ? { size, key: targetKey, making: makingOf.get(builds!.id) ?? null } : null,
+        offers: offers.filter((offer) => offer.requestId === row.id),
       };
     }),
     strips: strips.map(({ tested, setup, step, gap_problem: _problem, ...node }) => ({ ...node, payload: { tested, setup, step } })),

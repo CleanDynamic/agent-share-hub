@@ -3,7 +3,9 @@
 
 import { describe, expect, it } from "vitest";
 
-import { addressSearch, readAddress, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
+import type { StepRequestRecord } from "@/lib/bounty/openBuilds";
+
+import { addressSearch, offerChoice, offerLine, readAddress, sessionRequestWords, sizeOfTab, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
 
 const node = (id: string, position: number | null, extra: Partial<StripNode> = {}): StripNode => ({
   id,
@@ -21,6 +23,12 @@ describe("the address", () => {
   it("reads the tab and the sort, falling back to All and Most needed", () => {
     expect(readAddress(new URLSearchParams(""))).toEqual({ tab: "all", sort: "needed" });
     expect(readAddress(new URLSearchParams("type=steps&sort=reward"))).toEqual({ tab: "steps", sort: "reward" });
+  });
+
+  it("reads the Sessions and Parts tabs, and sizes each tab's read", () => {
+    expect(readAddress(new URLSearchParams("type=sessions"))).toEqual({ tab: "sessions", sort: "needed" });
+    expect(readAddress(new URLSearchParams("type=parts")).tab).toBe("parts");
+    expect(["all", "steps", "sessions", "parts"].map((tab) => sizeOfTab(tab as never))).toEqual(["all", "step", "session", "part"]);
   });
 
   it("ignores a tab that has no live type yet, and a sort it does not know", () => {
@@ -88,5 +96,76 @@ describe("the steps strip", () => {
     ]);
     expect(strips.get("r1")?.tiles.map((tile) => tile.id)).toEqual(["a", "g"]);
     expect(strips.get("r2")?.tiles.map((tile) => tile.id)).toEqual(["x"]);
+  });
+});
+
+
+describe("session and part requests (SV-21)", () => {
+  const meta = (tool: string | null, workstream: string, model?: string) => ({ tool, date: "2026-10-01", workstream, ...(model ? { model } : null) });
+  const making = {
+    workstreams: [{ key: "ws-a", name: "Support agent" }, { key: "ws-b" }],
+    sessions_meta: {
+      "typed-1": meta("claude-code", "ws-a", "Opus 5.5"),
+      "typed-2": meta(null, "ws-a"),
+      "typed-3": meta(null, "ws-b"),
+      "typed-4": meta(null, "ws-b"),
+    },
+    session_order: ["typed-1", "typed-2", "typed-3", "typed-4"],
+  };
+  const request = (size: "session" | "part", key: string, madeOf: unknown = making): StepRequestRecord =>
+    ({ problem: "Deploy it", target: { size, key, making: madeOf } }) as unknown as StepRequestRecord;
+
+  it("names a session by its number and its part, and marks it open among its neighbours", () => {
+    const words = sessionRequestWords(request("session", "typed-4"));
+    expect(words?.title).toBe("Part 2 · Session 4 · Deploy it");
+    expect(words?.sessions).toEqual([
+      { key: "typed-3", label: "Session 3", detail: "Session" },
+      { key: "typed-4", label: "Session 4", detail: "Open", open: true },
+    ]);
+  });
+
+  it("describes the other sessions by their app and model", () => {
+    const words = sessionRequestWords(request("session", "typed-2"));
+    expect(words?.title).toBe("Part 1 · Support agent · Session 2 · Deploy it");
+    expect(words?.sessions[0]).toEqual({ key: "typed-1", label: "Session 1", detail: "Claude Code · Opus 5.5" });
+  });
+
+  it("names a part, and ends its sessions with the one it asks for", () => {
+    const words = sessionRequestWords(request("part", "ws-a"));
+    expect(words?.title).toBe("Part 1 · Support agent · Deploy it");
+    expect(words?.sessions.map((tile) => [tile.label, tile.open === true])).toEqual([["Session 1", false], ["Session 2", false], ["Next session", true]]);
+  });
+
+  it("leaves the part out when the build has one, and still draws a session the maker has since removed", () => {
+    const one = { sessions_meta: { "typed-1": { tool: null, date: "2026-10-01" } }, session_order: ["typed-1"] };
+    expect(sessionRequestWords(request("session", "typed-1", one))?.title).toBe("Session 1 · Deploy it");
+    const gone = sessionRequestWords(request("session", "typed-9", one));
+    expect(gone?.title).toBe("Session · Deploy it");
+    expect(gone?.sessions.at(-1)).toEqual({ key: "typed-9", label: "Session", detail: "Open", open: true });
+    expect(sessionRequestWords(request("part", "ws-gone", one))?.title).toBe("A part · Deploy it");
+  });
+
+  it("draws at most four tiles, around the open one", () => {
+    const keys = Array.from({ length: 8 }, (_, at) => `typed-${at + 1}`);
+    const many = { sessions_meta: Object.fromEntries(keys.map((key) => [key, { tool: null, date: "2026-10-01" }])), session_order: keys };
+    expect(sessionRequestWords(request("session", "typed-6", many))?.sessions.map((tile) => tile.label)).toEqual(["Session 3", "Session 4", "Session 5", "Session 6"]);
+    expect(sessionRequestWords(request("part", "ws-implicit", many))?.sessions).toHaveLength(4);
+  });
+
+  it("is nothing for a request that is not for a session or a part", () => {
+    expect(sessionRequestWords({ problem: "", target: null } as unknown as StepRequestRecord)).toBeNull();
+  });
+
+  it("names a library session by its first prompt, with the app, model, day and prompts beneath", () => {
+    const base = { id: "i", client: "claude-code", modelName: "Opus 5.5", firstPrompt: "  Deploy the worker  ", promptCount: 6, createdAt: "2026-10-03T10:00:00Z" };
+    expect(offerChoice(base)).toEqual({ id: "i", name: "Deploy the worker", detail: "Claude Code · Opus 5.5 · 3 Oct · 6 prompts" });
+    expect(offerChoice({ ...base, client: null, modelName: null, firstPrompt: null, promptCount: 1 })).toEqual({ id: "i", name: "Untitled session", detail: "No app chosen · 3 Oct · 1 prompt" });
+  });
+
+  it("says who offered what, and 'You' for the reader's own", () => {
+    const offer = { handle: "kit", userId: "u9", session: { model: "Opus 5.5", prompts: [1, 2] } };
+    expect(offerLine(offer, "maker")).toBe("@kit offered a session · Opus 5.5 · 2 prompts");
+    expect(offerLine(offer, "u9")).toBe("You offered a session · Opus 5.5 · 2 prompts");
+    expect(offerLine({ ...offer, handle: null, session: { model: null, prompts: [1] } }, null)).toBe("Someone offered a session · 1 prompt");
   });
 });

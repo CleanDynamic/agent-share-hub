@@ -142,6 +142,14 @@ describe("the feed's items", () => {
     ]);
   });
 
+  it("offers a request from a failed run to the build's maker only", () => {
+    const failed = toFeedItem(row({ item_kind: "repro_note", repro_user_username: "kit", repro_worked: false }));
+    const makerId = failed.kind === "repro_note" ? failed.maker.id : "";
+    expect(runRows([failed], 3, makerId)[0]).toMatchObject({ canRequest: true, buildId: "b1" });
+    expect(runRows([failed], 3, "someone-else")[0].canRequest).toBe(false);
+    expect(runRows([failed])[0].canRequest).toBe(false);
+  });
+
   it("counts the loaded items newer than the last visit, and none on a first visit", () => {
     const items = [{ at: "2026-09-30T11:58:00Z" }, { at: "2026-09-30T10:00:00Z" }, { at: "junk" }];
     expect(newerThan(items, Date.parse("2026-09-30T11:00:00Z"))).toBe(1);

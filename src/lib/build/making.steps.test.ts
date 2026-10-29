@@ -7,7 +7,7 @@ vi.mock("@/integrations/supabase/client", async () => (await import("./__audit__
 
 import { REPO_SCHEMA, startAuditBackend, tableRows, type Delay, type Row } from "./__audit__/fakeSupabase";
 import { getBuild } from "./builds";
-import { patchMaking, setSessionMeta, setWorkstreams } from "./making";
+import { patchMaking, setPartOpen, setSessionMeta, setSessionOpen, setWorkstreams } from "./making";
 import { setSessionOrder } from "./sessionLayout";
 import { flatNodes, noteRecord, watchBuild, type RawClash } from "./staleWrites";
 
@@ -100,6 +100,40 @@ describe.each([
     ]);
     expect((making().workstreams as unknown[]).length).toBe(4);
     expect(Object.keys(making().sessions_meta as object)).toContain("typed-s6");
+  });
+});
+
+describe("SV-21: a session or a part opened as a request", () => {
+  beforeEach(() => {
+    open(SLOW);
+  });
+
+  it("marks one session and one part, together with a title written at the same moment, and loses neither", async () => {
+    await Promise.all([
+      setSessionOpen(DRAFT, "typed-s5", { problem: "  Deploy the worker to Vercel  " }),
+      setPartOpen(DRAFT, "ws-2", { problem: "No tests yet" }),
+      setSessionMeta(DRAFT, "typed-s5", (current) => ({ ...(current as object), tool: null, date: "2026-10-24", title: "Five!" })),
+    ]);
+    const entries = making().sessions_meta as Record<string, { title?: string; open?: { problem: string } }>;
+    expect(entries["typed-s5"]).toMatchObject({ title: "Five!", open: { problem: "Deploy the worker to Vercel" } });
+    const parts = making().workstreams as { key: string; open?: { problem: string } }[];
+    expect(parts.map((part) => [part.key, part.open?.problem ?? null])).toEqual([["ws-1", null], ["ws-2", "No tests yet"], ["ws-3", null]]);
+  });
+
+  it("takes the request away without touching the rest of the entry", async () => {
+    await setSessionOpen(DRAFT, "typed-s5", { problem: "Why" });
+    await setSessionOpen(DRAFT, "typed-s5", null);
+    const entry = (making().sessions_meta as Record<string, Record<string, unknown>>)["typed-s5"];
+    expect(entry.open).toBeUndefined();
+    expect(entry.title).toBe("Five");
+    await setPartOpen(DRAFT, "ws-1", { problem: "Why" });
+    await setPartOpen(DRAFT, "ws-1", null);
+    expect((making().workstreams as Record<string, unknown>[])[0]).not.toHaveProperty("open");
+  });
+
+  it("refuses a request with no words, and one that is too long", async () => {
+    await expect(setSessionOpen(DRAFT, "typed-s5", { problem: "   " })).rejects.toThrow(/Say what the request is for/);
+    await expect(setPartOpen(DRAFT, "ws-1", { problem: "x".repeat(501) })).rejects.toThrow(/500 characters/);
   });
 });
 

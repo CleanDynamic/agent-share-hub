@@ -54,6 +54,8 @@ export interface SourceSession {
   colour?: string;
   /** CA-14 P1: the maker's title for the session; absent when it has none. */
   title?: string;
+  /** SV-21: the problem the maker opened the session as a request with; absent when they did not. */
+  open?: string;
   /** SV-05 P3: an import that wrote fewer tiles than its session has prompts: how many it wrote, of how many. Absent otherwise. */
   imported?: { have: number; of: number };
   /** CA-14 P2: the session's day as the head shows it, "22 Oct"; "" for an old build's typed prompts. */
@@ -261,6 +263,7 @@ export function sourceSessions(
       ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
       ...(group.colour ? { colour: group.colour } : null),
       ...(group.title ? { title: group.title } : null),
+      ...(group.open ? { open: group.open.problem } : null),
       ...(factsOf(group, "maker") ? { facts: factsOf(group, "maker") as string } : null),
       ...(togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) ? { together: togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) as string } : null),
       prompts: mine.map((step) => ({

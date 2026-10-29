@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { modelLabel } from "@/lib/models/registry";
 import { COLLAPSE_OVER, deleteBuildSession, insertBuildSession, isMissingTable, listBuildSessionRows, nextSessionPosition, type BuildSessionRow } from "./buildSessions";
 import { createBuild, getBuildHeader } from "./builds";
+import { creditColumn, creditFor, noteMissingContributorColumn, withoutCredit } from "./contributors";
 import { REPLY_MAX } from "./composePrompts";
 import { nextTopPosition } from "./composeCover";
 import { loadImportProposal } from "./imports";
@@ -113,8 +114,9 @@ export function placeSession(rows: readonly Pick<BuildSessionRow, "sessionKey" |
 }
 
 /** The tiles' rows: a prompt per row, placed one after another from `from`. */
-export function tileRows(buildId: string, importId: string, model: string | null, prompts: readonly PromptTile[], from: number): BuildNodeInsert[] {
+export function tileRows(buildId: string, importId: string, model: string | null, prompts: readonly PromptTile[], from: number, credit: string | null = null): BuildNodeInsert[] {
   return prompts.map((prompt, at) => ({
+    ...creditColumn(credit),
     build_id: buildId,
     parent_id: null,
     position: from + at,
@@ -162,7 +164,10 @@ export type TileProgress = (progress: { done: number; total: number }) => void;
 async function insertTiles(rows: BuildNodeInsert[], onProgress?: TileProgress): Promise<string[]> {
   const ids: string[] = [];
   for (let at = 0; at < rows.length; at += TILE_BATCH) {
-    const { data, error } = await supabase.from("build_nodes").insert(rows.slice(at, at + TILE_BATCH)).select("id");
+    const batch = rows.slice(at, at + TILE_BATCH);
+    let { data, error } = await supabase.from("build_nodes").insert(batch).select("id");
+    // SV-21: a tile credited to someone, before SV-16's column is applied, is written without the credit.
+    if (error && noteMissingContributorColumn(error)) ({ data, error } = await supabase.from("build_nodes").insert(withoutCredit(batch)).select("id"));
     if (error) {
       await removeTiles(ids);
       throw error;
@@ -198,6 +203,77 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
     ? (await createBuild({ title: draftTitleOf(proposal.summary.proposed_title?.value, prompts) })).id
     : await verifyDraft(target.buildId);
 
+  return writeSession({
+    buildId,
+    sessionKey: importId,
+    model,
+    prompts,
+    isNew,
+    workstream: target.kind === "existing" ? target.workstream : undefined,
+    onProgress,
+    beforeStats: isNew ? () => recordCreatedVia(buildId, { destination: "new", importId, client: row.client, readerId: null }) : undefined,
+  });
+}
+
+/** SV-21: a finished session of the reader's, as an offer carries it: its prompts and its model. Refused as `addSessionToBuild` refuses. */
+export async function loadOfferedSession(importId: string): Promise<OfferedSession> {
+  const row = await readImport(importId);
+  if (!row) throw buildLayerError("loadOfferedSession", new Error("That session is no longer available."));
+  if (!["parsed", "claimed", "expired"].includes(row.status)) throw buildLayerError("loadOfferedSession", new Error("That session hasn't finished arriving."));
+  const prompts = promptsOfProposal(await loadImportProposal(importId));
+  if (prompts.length === 0) throw buildLayerError("loadOfferedSession", new Error("That session has no prompts to offer."));
+  return { key: importId, model: row.model?.trim() ? modelLabel(row.model) : null, prompts };
+}
+
+/** SV-21: a session offered to a request, as it is kept with the offer: the prompts and the model, and nothing else of the session. */
+export interface OfferedSession {
+  /** The key the session has in the build it is accepted into: the offering person's import. */
+  key: string;
+  model: string | null;
+  prompts: PromptTile[];
+}
+
+/**
+ * SV-21: accept an offered session into the maker's own build, draft or live. It is written as `addSessionToBuild` writes a
+ * session (prompt text, model and source only, in one go, undone as a whole if any of it fails), at the end of the part the
+ * request was for, with every tile and the session credited to the person who offered it (SV-16).
+ */
+export async function addOfferedSession(buildId: string, offered: OfferedSession, contributorId: string, workstream?: string, onProgress?: TileProgress): Promise<AddSessionResult> {
+  const { data } = await supabase.auth.getSession();
+  const maker = data.session?.user?.id;
+  const build = await getBuildHeader(buildId);
+  if (!build || !maker || build.creator_id !== maker) throw buildLayerError("addOfferedSession", new Error("That build isn't available."));
+  return writeSession({
+    buildId,
+    sessionKey: offered.key,
+    model: offered.model,
+    prompts: offered.prompts,
+    isNew: false,
+    workstream,
+    credit: creditFor(contributorId, maker),
+    onProgress,
+  });
+}
+
+interface WriteSessionInput {
+  buildId: string;
+  /** The session's key in the build: the import's id, or (SV-21, an accepted offer) the offered session's. */
+  sessionKey: string;
+  model: string | null;
+  prompts: readonly PromptTile[];
+  /** A build made a moment ago for this session: it has no sessions or tiles to read. */
+  isNew: boolean;
+  /** CA-17 P3: the part the session joins, when the build has parts. */
+  workstream?: string;
+  /** SV-21: the person whose work the tiles and the session are, when not the build's maker (SV-16's credit). */
+  credit?: string | null;
+  onProgress?: TileProgress;
+  /** Run inside the guard, once the session is in place: a failure takes the session out again. */
+  beforeStats?: () => Promise<void>;
+}
+
+/** The writes of one session into a build, whoever it comes from; undone as a whole if any of them fails. */
+async function writeSession({ buildId, sessionKey: importId, model, prompts, isNew, workstream, credit = null, onProgress, beforeStats }: WriteSessionInput): Promise<AddSessionResult> {
   const written: string[] = [];
   let oldRow: BuildSessionRow | undefined;
   let oldMeta: ReturnType<typeof sessionsMetaOf>[string] | undefined;
@@ -212,7 +288,7 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
       throw buildLayerError("addSessionToBuild", new Error("That session is already in this draft."));
     }
     // CA-17 P3: the part it joins, when the build has parts. An empty Session 1 in another part is left alone.
-    const part = isNew ? undefined : defaultWorkstream(making, target.kind === "existing" ? target.workstream : undefined);
+    const part = isNew ? undefined : defaultWorkstream(making, workstream);
     let replaced = emptyFirstSession(rows, making, tree);
     if (replaced && part && workstreamKeyOf(sessionsMetaOf(making)[replaced], storedWorkstreamsOf(making)) !== part) replaced = null;
     const place = placeSession(rows, replaced);
@@ -221,10 +297,10 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
     let ids: string[];
     try {
       onProgress?.({ done: 0, total: prompts.length });
-      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(tree)), onProgress);
+      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(tree), credit), onProgress);
     } catch (cause) {
       if (!isUniqueViolation(cause)) throw buildLayerError("addSessionToBuild (tiles)", cause);
-      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(await getNodeTree(buildId))), onProgress).catch((again) => {
+      ids = await insertTiles(tileRows(buildId, importId, model, prompts, nextTopPosition(await getNodeTree(buildId)), credit), onProgress).catch((again) => {
         throw buildLayerError("addSessionToBuild (tiles)", again);
       });
     }
@@ -239,7 +315,7 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
     }
     // CA-12: an entry in sessions_meta marks a session added this way, so its head is drawn even when it is the only one.
     if (!sessionsMetaOf(making)[importId]) {
-      await setSessionMeta(buildId, importId, { tool: null, date: "", ...(part ? { workstream: part } : null) });
+      await setSessionMeta(buildId, importId, { tool: null, date: "", ...(part ? { workstream: part } : null), ...(credit ? { contributor_id: credit } : null) });
       marked = true;
     }
     const collapsed = startsCollapsed(prompts.length);
@@ -269,9 +345,7 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
     } else await patchMaking(buildId, (made) => ({ session_order: orderNow(made, rows) })).catch((cause) => console.warn("[addSession] order not kept in making", cause));
     if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => console.warn("[addSession] fold not kept in making", cause));
 
-    if (isNew) {
-      await recordCreatedVia(buildId, { destination: "new", importId, client: row.client, readerId: null });
-    }
+    await beforeStats?.();
     await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
     return { buildId, sessionKey: importId, tiles: prompts.length, collapsed, replaced };
   } catch (cause) {

@@ -15,7 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { deleteBuildSession } from "@/lib/build/buildSessions";
 import { buildSteps, groupKey, topSteps, type SessionGroup, type Step } from "@/lib/build/graph";
-import { isLegacySession, newSessionKey, newWorkstreamKey, patchMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsCollapsedOf, sessionsMetaOf, setPartLabels, setSessionMeta, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta, type Workstream } from "@/lib/build/making";
+import { isLegacySession, newSessionKey, newWorkstreamKey, patchMaking, setMapSettings, type MapSettings, refreshMakingStats, sessionsCollapsedOf, sessionsMetaOf, setPartLabels, setSessionMeta, setSessionOpen, setWorkstreams, storedWorkstreamsOf, todayDay, type PartLabels, type SessionMeta, type Workstream } from "@/lib/build/making";
 import { reorderNodes } from "@/lib/build/nodes";
 import { droppedKey, movedKey, orderKeys, setSessionOrder, stackBySessionMoves } from "@/lib/build/sessionLayout";
 import { dayOfNode, insertedAfter, mergedTitle, mergeTitleNote, planLayout, reassigned, splitPlan, tilesOfSession, withoutKey, writeNodeRows } from "@/lib/build/sessionEdit";
@@ -178,6 +178,28 @@ export function useSessionEdits(input: SessionEditsInput) {
     [guard, refresh, stable, track],
   );
 
+  /**
+   * SV-21: a session opened as a request with a problem, or taken back (null). Its entry in `making` changes, in the node queue
+   * behind any write already going; the head says "Open as a request" from then on. The request is filed when the build is published.
+   */
+  const onSessionOpen = useCallback(
+    (key: string, problem: string | null) =>
+      void guard("Request not saved", () =>
+        track(
+          `${problem ? "Opened" : "Took back the request on"} Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(),
+          async () => {
+            const real = await stable(key);
+            const { buildId } = latest.current;
+            if (!real || !buildId) return;
+            await latest.current.nodes.run(() => setSessionOpen(buildId, real, problem ? { problem } : null));
+            await refresh(buildId);
+          },
+          { motion: "change", keys: [key] },
+        ),
+      ),
+    [guard, refresh, stable, track],
+  );
+
   /** CA-17 P2: set once `moveToPart` is made, further down; a drop between another part's sessions calls it. */
   const moveToPartRef = useRef<((key: string, to: string, before?: string) => Promise<void>) | null>(null);
 
@@ -325,6 +347,17 @@ export function useSessionEdits(input: SessionEditsInput) {
     }
     return key;
   }, [applyParts, editableKeys, guard, track]);
+
+  /** SV-21: a part opened as a request for its next session, or taken back (null). The ghost row at its end is the one thing that comes or goes. */
+  const onPartOpen = useCallback(
+    (key: string, problem: string | null) =>
+      void track(
+        problem ? `Asked for the next session in ${titleOf(key)}` : `Took back the request in ${titleOf(key)}`,
+        () => editPart("Request not saved", (stored) => withWorkstream(stored, key, { open: problem ? { problem } : undefined })),
+        { motion: problem ? "add" : "remove", keys: [key] },
+      ),
+    [editPart, track],
+  );
 
   const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Name not saved", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
   /** SV-07 P3: resolves when the fold is written, so the page's at-once fold can let go then. */
@@ -702,5 +735,5 @@ export function useSessionEdits(input: SessionEditsInput) {
       .catch((cause) => console.warn("[Sessions] a new tile was not put with its session", cause));
   }, [topCount, editableKeys, queryClient]);
 
-  return { onTitle, onMove, onDrop, onRemoveSessions, onMoveTiles, onMoveSessionsToPart, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };
+  return { onTitle, onSessionOpen, onPartOpen, onMove, onDrop, onRemoveSessions, onMoveTiles, onMoveSessionsToPart, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };
 }

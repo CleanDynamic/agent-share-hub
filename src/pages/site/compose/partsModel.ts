@@ -62,6 +62,7 @@ export function listPartsOf(making: unknown, sessionGroupsList: readonly Session
         sessions: part.sessions.length,
         collapsed: Boolean(part.collapsed),
         startsAfter: part.startsAfter,
+        ...(part.open ? { open: part.open.problem } : null),
         startsAfterLine: after && afterPart ? `${workstreamLabel(afterPart.index, labels)} · Session ${after.number}` : undefined,
       },
     };

@@ -10,6 +10,7 @@ import { BUILD_COLUMNS } from "@/lib/build/builds";
 import { countOpenBountyBuilds } from "@/lib/build/gallery";
 import { NODE_COLUMNS } from "@/lib/build/nodes";
 import type { Build, BuildNode } from "@/lib/build/types";
+import { isMissingColumn } from "@/lib/classify/storage";
 import { myMeToo } from "./meToo";
 import { countSolutionsByBounty } from "./solutions";
 import {
@@ -47,6 +48,12 @@ export interface CreateBountyForGapInput {
   /** Cash reward in pounds. NUMERIC on the column — never a float literal. */
   rewardGbp?: number | null;
   closesAt?: string | null;
+  /** SV-21: what is wrong, in words, for a request that names no gap node (a request from a failed run). */
+  problem?: string | null;
+  /** SV-21: the `build_reproductions` row a request was opened from. */
+  fromRunId?: string | null;
+  /** SV-21: a request for a session or a part of the build, by its key in `making`. Names no gap node. */
+  target?: { size: "session" | "part"; key: string } | null;
 }
 
 export interface ListOpenBountiesOptions {
@@ -88,6 +95,9 @@ export async function createBountyForGap({
   nodeId = null,
   rewardGbp = null,
   closesAt = null,
+  problem = null,
+  fromRunId = null,
+  target = null,
 }: CreateBountyForGapInput): Promise<Bounty> {
   const { data: build, error: buildError } = await supabase
     .from("builds")
@@ -119,6 +129,14 @@ export async function createBountyForGap({
     }
   }
 
+  // SV-21: written only when given, so a plain request never names a column the database may not have yet. The generated
+  // types do not know them until they are regenerated.
+  const columnsOfRun: object = {
+    ...(problem ? { problem } : null),
+    ...(fromRunId ? { from_run_id: fromRunId } : null),
+    ...(target ? { size: target.size, target_key: target.key } : null),
+  };
+
   const { data, error } = await supabase
     .from("bounties")
     .insert({
@@ -128,6 +146,7 @@ export async function createBountyForGap({
       status: "open",
       reward_gbp: rewardGbp,
       closes_at: closesAt,
+      ...columnsOfRun,
     })
     .select(BOUNTY_COLUMNS)
     .single();
@@ -136,7 +155,10 @@ export async function createBountyForGap({
   // creator can hit by double-clicking and deserves to hear in their own terms.
   if (error) {
     if ((error as { code?: string }).code === "23505") {
-      throw new Error("That gap already has a bounty on it");
+      throw new Error(fromRunId ? "That run already has a request" : target ? `That ${target.size} already has a request` : "That gap already has a bounty on it");
+    }
+    if ((problem || fromRunId || target) && isMissingColumn(error)) {
+      throw new Error("Requests of this kind are not available yet");
     }
     throw bountyLayerError("createBountyForGap", error);
   }

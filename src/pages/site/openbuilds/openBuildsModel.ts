@@ -9,7 +9,12 @@ import { REF_KIND } from "@/lib/build/postRefs";
 import { kindOfNode, topSteps, type StepKind } from "@/lib/build/graph";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { RequestSize, StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
+import { claimDaysLeft, type MyClaim, type RequestClaim } from "@/lib/bounty/claims";
+import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, toolLabel, type SessionMeta } from "@/lib/build/making";
+import { numberSessions } from "@/lib/build/sessionNumbers";
+import { hasParts, labelsOf, workstreamTitle } from "@/lib/build/workstreams";
 import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
+import type { FactPart } from "./OpenBuildsView";
 
 /* ── the address ── */
 
@@ -26,12 +31,12 @@ export const OPEN_BUILDS_TABS: readonly { value: OpenBuildsTab; label: string }[
   { value: "reviews", label: "Reviews" },
 ];
 
-/** The tabs with at least one live request type. Sessions and Parts arrive with SV-21; Briefs, Model tests and Reviews with SV-22.
-    Whole-build requests are listed in All only; SV-21, which adds request sizes, gives Whole build its own tab. */
-export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps"];
+/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs, Model tests and Reviews arrive with SV-22.
+    Whole-build requests are listed in All only. */
+export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts"];
 
 /** The request sizes a tab reads. */
-export const sizeOfTab = (tab: OpenBuildsTab): RequestSize => (tab === "steps" ? "step" : "all");
+export const sizeOfTab = (tab: OpenBuildsTab): RequestSize => (tab === "steps" ? "step" : tab === "sessions" ? "session" : tab === "parts" ? "part" : "all");
 
 export const OPEN_BUILDS_SORTS: readonly { value: OpenBuildsSort; label: string }[] = [
   { value: "needed", label: "Most needed" },
@@ -170,8 +175,32 @@ export interface StepRequestWords {
   problem: string | null;
   /** "2 days left", "1 answer": the facts before Me too. */
   facts: string[];
+  /** SV-21: "Claimed by @kit · 2 days left · fork in progress" while a claim stands; the claim comes first among the facts. */
+  claim: FactPart[] | null;
   answerTo: string;
 }
+
+/* ── claims (SV-21) ── */
+
+/** "1 day left", "3 days left". */
+export const daysLeftWords = (days: number) => `${days} ${days === 1 ? "day" : "days"} left`;
+
+/** The fact a claim draws: the claimer's handle in text colour, the rest in the fact's own. */
+export function claimFact(claim: RequestClaim, now: number): FactPart[] {
+  return [
+    { text: "Claimed by " },
+    { text: claim.handle ? `@${claim.handle}` : "someone", tone: "text" },
+    { text: ` · ${daysLeftWords(claimDaysLeft(claim.expiresAt, now))}${claim.forkBuildId ? " · fork in progress" : ""}` },
+  ];
+}
+
+/** A row of Your claims: "<build> · <gap or Whole build>", the days left, and where Answer goes. */
+export const claimRow = (claim: MyClaim, now: number) => ({
+  id: claim.requestId,
+  label: `${claim.build.title} · ${claim.gapTitle ?? "Whole build"}`,
+  detail: daysLeftWords(claimDaysLeft(claim.expiresAt, now)),
+  to: `/openbuilds/${claim.requestId}/solve`,
+});
 
 /** A whole-build request's title while the bounty has no words of its own: `gap_problem` lives on a gap node, and a
     whole-build request has none. */
@@ -186,9 +215,103 @@ export function stepRequestWords(request: StepRequestRecord, strip: StepStrip, n
     id: request.bounty.id,
     title: strip.number ? `Step ${strip.number} · ${gap}` : gap,
     reward: reward ? { text: reward } : { text: "No reward", muted: true },
-    meta: [request.build.title, atHandle(request.maker?.username), shortAgo(request.bounty.created_at, now)].filter((part): part is string => Boolean(part)),
+    meta: [request.build.title, atHandle(request.maker?.username), request.fromRun ? "From a failed run" : null, shortAgo(request.bounty.created_at, now)].filter((part): part is string => Boolean(part)),
     problem: request.bounty.gap_node_id === null ? null : request.problem || null,
     facts: [timeLeft(request.bounty.closes_at, now), answersWords(request.solutions)].filter(Boolean),
+    claim: request.claim ? claimFact(request.claim, now) : null,
     answerTo: `/openbuilds/${request.bounty.id}/solve`,
   };
+}
+
+
+/* ── session and part requests (SV-21) ── */
+
+/** Said on every request for a session or a part: what an offer carries over. It is `addSession`'s rule. */
+export const SESSION_OFFER_NOTE = "An offered session copies prompt text, model and source only";
+
+/** The most session tiles a request draws: the open one and its nearest neighbours. */
+export const SESSION_TILES_SHOWN = 4;
+
+/** "Claude Code · Opus 5.5", or "Session" when the session names neither. */
+const sessionDetail = (meta: SessionMeta | undefined): string => [toolLabel(meta?.tool), meta?.model].filter(Boolean).join(" · ") || "Session";
+
+/** `list` cut to `size` places around `at` (the place of the open one), keeping the order. */
+function around<T>(list: readonly T[], at: number, size: number): T[] {
+  const start = Math.max(0, Math.min(at - (size - 1), list.length - size));
+  return list.slice(start, start + size);
+}
+
+export interface SessionRequestWords {
+  title: string;
+  sessions: { key: string; label: string; detail: string; open?: boolean }[];
+}
+
+/**
+ * The title and the tiles of a request for a session or a part, from the build's `making`. A session is numbered as
+ * everywhere else (`numberSessions`); the part is named only when the build has two or more. A request for a part draws the
+ * part's sessions and, last, the one it asks for. A session or part the maker has since removed still has its request: it is
+ * drawn as "Session" or "A part" with the problem.
+ */
+export function sessionRequestWords(request: StepRequestRecord): SessionRequestWords | null {
+  const target = request.target;
+  if (!target) return null;
+  const problem = request.problem;
+  const meta = sessionsMetaOf(target.making);
+  const order = sessionOrderOf(target.making);
+  const keys = [...new Set([...order, ...Object.keys(meta)])];
+  const parts = storedWorkstreamsOf(target.making);
+  const labels = labelsOf(target.making);
+  const numbers = numberSessions(keys.map((key) => ({ key, firstTile: null })), order, { meta, workstreams: parts });
+  const partIndex = (key: string | undefined) => parts.findIndex((part) => part.key === key);
+  const partTitle = (index: number) => (index >= 0 ? workstreamTitle(parts[index], index, labels) : null);
+  const nameOf = (key: string) => `Session ${numbers.numberOf.get(key) ?? ""}`.trim();
+  const join = (...pieces: (string | null | undefined)[]) => pieces.filter((piece): piece is string => Boolean(piece)).join(" · ");
+
+  if (target.size === "session") {
+    const at = partIndex(numbers.partOf.get(target.key));
+    const sameKeys = numbers.keys.filter((key) => numbers.partOf.get(key) === numbers.partOf.get(target.key));
+    const present = sameKeys.includes(target.key);
+    const shown = present ? around(sameKeys, sameKeys.indexOf(target.key), SESSION_TILES_SHOWN) : sameKeys.slice(-(SESSION_TILES_SHOWN - 1));
+    const tiles = shown.map((key) => ({ key, label: nameOf(key), detail: key === target.key ? "Open" : sessionDetail(meta[key]), ...(key === target.key ? { open: true } : null) }));
+    if (!present) tiles.push({ key: target.key, label: "Session", detail: "Open", open: true });
+    return { title: join(hasParts(parts) ? partTitle(at) : null, present ? nameOf(target.key) : "Session", problem), sessions: tiles };
+  }
+
+  const at = partIndex(target.key);
+  const inPart = numbers.keys.filter((key) => numbers.partOf.get(key) === target.key);
+  const tiles = inPart.slice(-(SESSION_TILES_SHOWN - 1)).map((key) => ({ key, label: nameOf(key), detail: sessionDetail(meta[key]) }));
+  tiles.push({ key: "next", label: "Next session", detail: "Open", open: true } as (typeof tiles)[number]);
+  return { title: join(partTitle(at) ?? "A part", problem), sessions: tiles };
+}
+
+/* ── offering a session (SV-21) ── */
+
+/** "3 Oct". */
+const dayOf = (iso: string): string => {
+  const at = new Date(iso);
+  return Number.isNaN(at.getTime()) ? "" : at.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+};
+
+/** The least a session is read as here: what the library list holds. */
+export interface OfferableSession {
+  id: string;
+  client: string | null;
+  modelName: string | null;
+  firstPrompt: string | null;
+  promptCount: number;
+  createdAt: string;
+}
+
+/** A session in the offer dialog: its first prompt for a name, and "<app> · <model> · <day> · n prompts" beneath, "No app chosen" when the app is not known. */
+export const offerChoice = (session: OfferableSession): { id: string; name: string; detail: string } => ({
+  id: session.id,
+  name: session.firstPrompt?.trim().slice(0, 120) || "Untitled session",
+  detail: [toolLabel(session.client) ?? "No app chosen", session.modelName, dayOf(session.createdAt), `${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · "),
+});
+
+/** One offer as the request draws it: "@kit · Claude Code · Opus 5.5 · 6 prompts", or "You offered …" for the offerer's own. */
+export function offerLine(offer: { handle: string | null; userId: string; session: { model: string | null; prompts: readonly unknown[] } }, viewerId: string | null): string {
+  const n = offer.session.prompts.length;
+  const who = offer.userId === viewerId ? "You offered a session" : `${atHandle(offer.handle) ?? "Someone"} offered a session`;
+  return [who, offer.session.model, `${n} ${n === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · ");
 }

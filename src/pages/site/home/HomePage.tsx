@@ -28,7 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { useMyWeek } from "@/hooks/useProgressPage";
-import { listOpenBountyCards, myMeToo, OPEN_BOUNTIES_PAGE_SIZE, toggleMeToo } from "@/lib/bounty";
+import { findRunByHandle, listOpenBountyCards, myMeToo, OPEN_BOUNTIES_PAGE_SIZE, openRequestFromRun, toggleMeToo } from "@/lib/bounty";
 import { listDraftsWithSessions } from "@/lib/build/drafts";
 import { getGalleryBuildsByIds, listGallery, type GalleryBuild, type GalleryMedia } from "@/lib/build/gallery";
 import { attachSession } from "@/lib/build/sessions";
@@ -52,6 +52,7 @@ import {
   newerThan,
   readHomeSeen,
   runRows,
+  type HomeRunRow,
   shownItems,
   sinceSection,
   timeLeft,
@@ -272,6 +273,20 @@ export function HomePage() {
     return out;
   }, [openCards]);
 
+  /* SV-21: only when the maker presses it. The feed row has the build and the reproducer's handle, so the run is found now. */
+  const onOpenRequest = async (run: HomeRunRow) => {
+    if (!userId || !run.handle) return;
+    try {
+      const found = await findRunByHandle(run.buildId, run.handle);
+      if (!found) throw new Error("That run is not there any more");
+      await openRequestFromRun({ runId: found.id, viewerId: userId });
+      toast("Request opened.", { action: { label: "See requests", onClick: () => navigate("/openbuilds") } });
+    } catch (error) {
+      reportError(error, { source: "home", context: "openRequestFromRun" });
+      toast.error(error instanceof Error && error.message.startsWith("That run already") ? error.message : "Couldn't open a request from that run. Try again.");
+    }
+  };
+
   const onMeToo = async (bountyId: string) => {
     if (!userId) {
       navigate(SIGN_IN);
@@ -422,7 +437,8 @@ export function HomePage() {
                   error: reproduced.error ?? runsWeek.error,
                 }
               : undefined,
-            runs: runRows(items),
+            runs: runRows(items, 3, userId),
+            onOpenRequest: userId ? (run) => void onOpenRequest(run) : undefined,
           }}
           requests={publicLoadable({ isLoading: requests.isLoading, error: requests.error, data: requests.data, refetch: requests.refetch }, () =>
             [...openCards]

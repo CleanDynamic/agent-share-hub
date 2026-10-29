@@ -115,6 +115,7 @@ const INDENT = TILE_INDENT;
 import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSessionRow";
 import { WORKSTREAM_BODY, WORKSTREAM_FRAME, WORKSTREAM_GROUP } from "./workstreamRecipes";
 import { FramePieces } from "./framePieces";
+import { AskNextSessionRow } from "./AskNextSessionRow";
 import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNest";
@@ -2423,6 +2424,7 @@ export function BuildList(raw: BuildListProps) {
             <>
               {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
               {arrival.block && base.arriving && arrivingPart === view.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}
+              {parts?.ops?.onOpen ? <AskNextSessionRow label={view.label} partKey={view.key} open={view.open} phone={props.phone} onOpen={parts.ops.onOpen} /> : null}
             </>
           ) : (
             <div data-testid="workstream-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "4px 8px" }}>

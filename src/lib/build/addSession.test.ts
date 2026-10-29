@@ -5,8 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", async () => (await import("./__audit__/fakeSupabase")).clientModule);
 
 import { REPO_SCHEMA, startAuditBackend, tableRows, type Fault } from "./__audit__/fakeSupabase";
-import { addSessionToBuild, emptyFirstSession, linkSessionToBuild, placeSession, promptsOfProposal, startsCollapsed, tileRows } from "./addSession";
+import { addOfferedSession, addSessionToBuild, emptyFirstSession, linkSessionToBuild, placeSession, promptsOfProposal, startsCollapsed, tileRows } from "./addSession";
 import { COLLAPSE_OVER, reorderBuildSessions } from "./buildSessions";
+import { resetContributorColumn } from "./contributors";
 import { sessionsMetaOf } from "./making";
 import type { NodeTree } from "./types";
 
@@ -16,7 +17,10 @@ const WAITING = "0e0e0e0e-0000-4000-8000-000000000001";
 const LONG = "0e0e0e0e-0000-4000-8000-000000000003";
 const FIRST = "typed-11111111-0000-4000-8000-000000000001";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  resetContributorColumn();
+});
 
 const nodesOf = (build: string) => tableRows("build_nodes").filter((row) => row.build_id === build);
 const sessionRows = (build: string) => tableRows("build_sessions").filter((row) => row.build_id === build);
@@ -174,6 +178,35 @@ describe("addSessionToBuild", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     await addSessionToBuild(WAITING, { kind: "existing", buildId: DRAFT });
     expect(nodesOf(DRAFT)).toHaveLength(1);
+  });
+});
+
+describe("addOfferedSession (SV-21)", () => {
+  const KIT = "0c0c0c0c-0000-4000-8000-000000000009";
+  const offered = {
+    key: "0e0e0e0e-0000-4000-8000-0000000000f1",
+    model: "Opus 5.5",
+    prompts: [0, 1].map((index) => ({ text: `Prompt ${index}`, reply: null, sourceRef: { source: "claude_code", session_id: "s", index, local_id: `l${index}` } })) as never,
+  };
+
+  it("credits every tile row it writes", () => {
+    resetContributorColumn();
+    expect(tileRows("b", "imp", null, offered.prompts, 1, KIT).map((row) => (row as { contributor_id?: string }).contributor_id)).toEqual([KIT, KIT]);
+    expect(tileRows("b", "imp", null, offered.prompts, 1)[0]).not.toHaveProperty("contributor_id");
+  });
+
+  it("writes the offered prompts as tiles and a session entry, credited to the person who offered them", async () => {
+    startAuditBackend({ schema: REPO_SCHEMA });
+    const result = await addOfferedSession(DRAFT, offered, KIT);
+    expect(result).toMatchObject({ buildId: DRAFT, sessionKey: offered.key, tiles: 2 });
+    expect(nodesOf(DRAFT).map((node) => (node.payload as { text: string }).text)).toEqual(["Prompt 0", "Prompt 1"]);
+    expect(sessionsMetaOf((tableRows("builds").find((row) => row.id === DRAFT) as { making: unknown }).making)[offered.key]?.contributor_id).toBe(KIT);
+  });
+
+  it("refuses a build that is not the signed-in maker's, and writes nothing", async () => {
+    startAuditBackend({ schema: REPO_SCHEMA });
+    await expect(addOfferedSession("0d0d0d0d-0000-4000-8000-0000000000ff", offered, KIT)).rejects.toThrow();
+    expect(nodesOf(DRAFT)).toHaveLength(0);
   });
 });
 
