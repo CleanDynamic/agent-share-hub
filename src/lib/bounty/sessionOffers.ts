@@ -14,8 +14,9 @@
 
 import { addOfferedSession, addSessionToBuild, loadOfferedSession } from "@/lib/build/addSession";
 import { deleteBuild } from "@/lib/build/builds";
-import { readMaking, sessionsMetaOf, setPartOpen, setSessionOpen } from "@/lib/build/making";
+import { readMaking, sessionsMetaOf, setPartOpen, setSessionOpen, storedWorkstreamsOf } from "@/lib/build/making";
 import { startRebuild } from "@/lib/build/rebuild";
+import { workstreamKeyOf } from "@/lib/build/workstreams";
 import { claimRequest } from "./claims";
 import { isMissingOfferTable, OFFER_COLUMNS, OFFERS_NOT_LIVE, offerTable, toOffer, type OfferRow, type SessionOffer } from "./sessionOffersRead";
 import { bountyLayerError } from "./types";
@@ -42,10 +43,15 @@ async function readRequest(requestId: string, caller: string): Promise<RequestRo
   return row as RequestRow & { build_id: string; target_key: string };
 }
 
-/** The part a session joins: the part itself for a request for a part, the session's own part for a request for a session. */
+/**
+ * The part a session joins: the part itself for a request for a part, the session's own part for a request for a session
+ * (the first part when it names none), and none for a build with no parts.
+ */
 async function partOfRequest(request: { build_id: string; size: "session" | "part"; target_key: string }): Promise<string | undefined> {
   if (request.size === "part") return request.target_key;
-  return sessionsMetaOf(await readMaking(request.build_id))[request.target_key]?.workstream;
+  const making = await readMaking(request.build_id);
+  const stored = storedWorkstreamsOf(making);
+  return stored.length === 0 ? undefined : workstreamKeyOf(sessionsMetaOf(making)[request.target_key], stored);
 }
 
 /**

@@ -73,7 +73,7 @@ beforeEach(() => {
   addOfferedSession.mockResolvedValue({});
   deleteBuild.mockResolvedValue(undefined);
   claimRequest.mockResolvedValue(true);
-  readMaking.mockResolvedValue({ sessions_meta: { "typed-3": { tool: null, date: "2026-10-20", workstream: "ws-b" } } });
+  readMaking.mockResolvedValue({ workstreams: [{ key: "ws-a" }, { key: "ws-b" }], sessions_meta: { "typed-3": { tool: null, date: "2026-10-20", workstream: "ws-b" }, "typed-1": { tool: null, date: "2026-10-20" } } });
   setPartOpen.mockResolvedValue({});
   setSessionOpen.mockResolvedValue({});
 });
@@ -86,6 +86,15 @@ describe("offerSession", () => {
     expect(written.find((entry) => entry.table === "request_offers")?.row).toEqual({ request_id: "q1", user_id: "kit", fork_build_id: "fork-1", session_key: "imp-1", snapshot: SESSION });
     expect(claimRequest).toHaveBeenCalledWith({ requestId: "q1", userId: "kit", forkBuildId: "fork-1" });
     expect(offer).toMatchObject({ id: "o1", handle: "kit", status: "offered", session: { key: "imp-1" } });
+  });
+
+  it("joins the first part for a session that names none, and no part for a build that has none", async () => {
+    answers.bounties = { data: { ...REQUEST, target_key: "typed-1" } };
+    await offerSession({ requestId: "q1", importId: "imp-1", userId: "kit" });
+    expect(addSessionToBuild).toHaveBeenLastCalledWith("imp-1", { kind: "existing", buildId: "fork-1", workstream: "ws-a" });
+    readMaking.mockResolvedValue({ sessions_meta: { "typed-1": { tool: null, date: "2026-10-20" } } });
+    await offerSession({ requestId: "q1", importId: "imp-1", userId: "kit" });
+    expect(addSessionToBuild).toHaveBeenLastCalledWith("imp-1", { kind: "existing", buildId: "fork-1" });
   });
 
   it("joins the part itself for a request for a part", async () => {
