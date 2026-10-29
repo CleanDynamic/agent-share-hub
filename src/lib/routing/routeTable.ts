@@ -165,6 +165,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
           staleTime: SLOW_STALE_MS,
         }),
         userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "listMyOpenRequests", userId], queryFn: () => bounty.listMyOpenRequests(userId), staleTime: LIST_STALE_MS }) : undefined,
+        userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "listMyClaims", userId], queryFn: () => bounty.listMyClaims(userId), staleTime: LIST_STALE_MS }) : undefined,
         userId ? queryClient.prefetchQuery({ queryKey: ["bounty", "getMyRecord", userId], queryFn: () => bounty.getMyRecord(userId), staleTime: SLOW_STALE_MS }) : undefined,
       ]);
     },

@@ -22,7 +22,7 @@ let answers: Record<string, Answer | ((own: Recorded[]) => Answer)> = {};
 function builder(table: string) {
   const self: Record<string, unknown> = {};
   const own: Recorded[] = [];
-  for (const method of ["select", "eq", "neq", "in", "not", "or", "order", "range", "limit"]) {
+  for (const method of ["select", "eq", "neq", "in", "not", "or", "order", "range", "limit", "gt"]) {
     self[method] = (...args: unknown[]) => {
       calls.push({ table, method, args });
       own.push({ table, method, args });
@@ -44,7 +44,7 @@ function builder(table: string) {
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: string) => builder(table) } }));
 
-import { getMyRecord, listMyOpenRequests, listStepRequests } from "@/lib/bounty/openBuilds";
+import { getMyRecord, listMyOpenRequests, listStepRequests, resetRunColumns } from "@/lib/bounty/openBuilds";
 
 const of = (table: string, method: string) => calls.filter((call) => call.table === table && call.method === method).map((call) => call.args);
 
@@ -72,6 +72,7 @@ function ask(n: number, extra: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   resetContributorColumn();
+  resetRunColumns();
   calls = [];
   started = [];
   answered = 0;
@@ -79,7 +80,7 @@ beforeEach(() => {
 });
 
 describe("listStepRequests", () => {
-  it("takes two rounds: the asks, then counts, makers, strips and Me too together", async () => {
+  it("takes two rounds: the asks, then counts, makers, strips, claims and Me too together", async () => {
     answers.bounties = { data: [ask(1), ask(2)], error: null };
     answers.solutions = { data: [{ id: "s1", bounty_id: "q1" }], error: null };
     answers.profiles = { data: [{ id: "u1", username: "mira", avatar_url: null }], error: null };
@@ -96,7 +97,7 @@ describe("listStepRequests", () => {
 
     expect(started[0]).toEqual({ table: "bounties", answeredBefore: 0 });
     expect(started.slice(1).every((request) => request.answeredBefore === 1)).toBe(true);
-    expect(started.slice(1).map((request) => request.table).sort()).toEqual(["bounty_me_too_marks", "build_nodes", "profiles", "solutions"].sort());
+    expect(started.slice(1).map((request) => request.table).sort()).toEqual(["bounty_me_too_marks", "build_nodes", "profiles", "request_claims", "solutions"].sort());
 
     expect(page.requests.map((request) => [request.bounty.id, request.gapTitle, request.problem, request.solutions, request.meToo, request.maker?.username ?? null])).toEqual([
       ["q1", "Gap 1", "Stops on paywalls.", 1, false, "mira"],
@@ -161,6 +162,43 @@ describe("listStepRequests", () => {
     const page = await listStepRequests();
     expect(of("build_nodes", "or")[0]).toEqual(["parent_id.is.null"]);
     expect(page.requests[0]).toMatchObject({ gapTitle: null, problem: "" });
+  });
+});
+
+describe("listStepRequests · SV-21", () => {
+  it("reads the active claims of the page in the same round as the counts and makers, with no round of their own", async () => {
+    answers.bounties = { data: [ask(1)], error: null };
+    answers.request_claims = { data: [{ request_id: "q1", user_id: "u9", expires_at: "2099-01-01T00:00:00Z", fork_build_id: null, profiles: { username: "kit" } }], error: null };
+    const page = await listStepRequests();
+    expect(page.requests[0].claim).toMatchObject({ handle: "kit", userId: "u9" });
+    const bountyStart = started.find((request) => request.table === "bounties")!;
+    const claimStart = started.find((request) => request.table === "request_claims")!;
+    const solutionStart = started.find((request) => request.table === "solutions")!;
+    expect(claimStart.answeredBefore).toBe(solutionStart.answeredBefore);
+    expect(claimStart.answeredBefore).toBeGreaterThan(bountyStart.answeredBefore);
+  });
+
+  it("asks for the two run columns, uses a whole-build request's own words, and flags a request from a run", async () => {
+    answers.bounties = { data: [ask(1, { gap_node_id: null, build_nodes: null, problem: " It stops at step 3. ", from_run_id: "r1" })], error: null };
+    const page = await listStepRequests();
+    expect(String(of("bounties", "select")[0][0])).toContain(", problem, from_run_id");
+    expect(page.requests[0]).toMatchObject({ problem: "It stops at step 3.", fromRun: true });
+  });
+
+  it("asks again without them when the migration is not applied, and does not ask for them again", async () => {
+    let first = true;
+    answers.bounties = () => {
+      if (first) {
+        first = false;
+        return { data: null, error: { code: "42703" } };
+      }
+      return { data: [ask(1)], error: null };
+    };
+    const page = await listStepRequests();
+    expect(page.requests).toHaveLength(1);
+    expect(of("bounties", "select").map((args) => String(args[0]).includes("from_run_id"))).toEqual([true, false]);
+    await listStepRequests();
+    expect(of("bounties", "select").map((args) => String(args[0]).includes("from_run_id"))).toEqual([true, false, false]);
   });
 });
 

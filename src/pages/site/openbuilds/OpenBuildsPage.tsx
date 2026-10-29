@@ -15,9 +15,11 @@
    ME TOO is shown at once: the count and the pressed state change in the cache, the write follows, and a refusal puts
    both back and says so.
 
-   NOT LIVE YET (drawn on the dev page only): the model release check and the week's goal (SV-22); session, part and claim
-   requests and Your claims (SV-21); briefs, model tests and reviews (SV-22); Builds contributed to (SV-16); Groups (SV-24);
-   a request's origin, claim, failed runs and comments (SV-21). */
+   CLAIMS (SV-21): a request's claim comes with its second round (one more request in it, none of its own), and Your claims is
+   the reader's active claims. Both read nothing until the migration is applied. A request opened from a run says so in its meta.
+
+   NOT LIVE YET (drawn on the dev page only): the model release check and the week's goal (SV-22); briefs, model tests and
+   reviews (SV-22); Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
 
 import { useEffect } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -27,7 +29,7 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
-import { getMyRecord, listMyOpenRequests, listStepRequests, listTopSolvers, toggleMeToo, type StepRequestsPage } from "@/lib/bounty";
+import { getMyRecord, listMyClaims, listMyOpenRequests, listStepRequests, listTopSolvers, toggleMeToo, type StepRequestsPage } from "@/lib/bounty";
 import { reportError } from "@/lib/errors/report";
 import { usePageReady } from "@/lib/routing/pageReady";
 
@@ -41,6 +43,7 @@ import {
   OPEN_BUILDS_TABS,
   addressSearch,
   answersWords,
+  claimRow,
   contributorsKey,
   readAddress,
   rowsByBuild,
@@ -87,11 +90,13 @@ export default function OpenBuildsPage() {
     enabled: !authLoading,
   });
   const mine = useQuery({ queryKey: ["bounty", "listMyOpenRequests", viewerId], queryFn: () => listMyOpenRequests(viewerId as string), enabled: viewerId !== null });
+  const claims = useQuery({ queryKey: ["bounty", "listMyClaims", viewerId], queryFn: () => listMyClaims(viewerId as string), enabled: viewerId !== null });
   const record = useQuery({ queryKey: ["bounty", "getMyRecord", viewerId], queryFn: () => getMyRecord(viewerId as string), enabled: viewerId !== null });
   const contributors = useQuery({ queryKey: contributorsKey, queryFn: () => listTopSolvers({ limit: CONTRIBUTORS_SHOWN, sinceDays: CONTRIBUTORS_DAYS }) });
 
   useReported(requests.error, "openbuilds-requests");
   useReported(mine.error, "openbuilds-your-requests");
+  useReported(claims.error, "openbuilds-claims");
   useReported(record.error, "openbuilds-record");
   useReported(contributors.error, "openbuilds-contributors");
   usePageReady("openbuilds", !requests.isPending);
@@ -144,7 +149,7 @@ export default function OpenBuildsPage() {
       title: words.title,
       reward: words.reward,
       meta: words.meta,
-      facts: [...words.facts.map((text) => ({ parts: [{ text }] })), { meToo: true as const }],
+      facts: [...(words.claim ? [{ parts: words.claim }] : []), ...words.facts.map((text) => ({ parts: [{ text }] })), { meToo: true as const }],
       meToo: { count, pressed: request.meToo, onToggle: () => onMeToo(request.bounty.id, request.meToo, count) },
       action: { label: "Answer", to: words.answerTo },
     };
@@ -191,6 +196,16 @@ export default function OpenBuildsPage() {
                     detail: row.answers === 1 && row.latestSolver ? `@${row.latestSolver}` : answersWords(row.answers),
                     to: `/openbuilds/${row.bountyId}/solve`,
                   })),
+                }
+              : undefined
+          }
+          yourClaims={
+            viewerId
+              ? {
+                  status: statusOf(claims),
+                  onRetry: () => void claims.refetch(),
+                  meta: "Expire after 3 days without a change",
+                  rows: (claims.data ?? []).map((claim) => claimRow(claim, now)),
                 }
               : undefined
           }

@@ -57,6 +57,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import {
   acceptSolution,
+  claimRequest,
   listMySolutionRebuilds,
   listSolutions,
   startSolutionRebuild,
@@ -321,7 +322,13 @@ export function SolvePanel({
    * two things are different when they are not.
    */
   const startRebuild = useMutation({
-    mutationFn: () => startSolutionRebuild(bounty.id),
+    mutationFn: async () => {
+      const draftBuild = await startSolutionRebuild(bounty.id);
+      // SV-21: starting the fork is saying "I'm on this". A claim somebody else holds, or a table that is not there yet, never
+      // stops the fork: the claim is the board's courtesy, not a lock.
+      if (user?.id) await claimRequest({ requestId: bounty.id, userId: user.id, forkBuildId: draftBuild.id }).catch(() => false);
+      return draftBuild;
+    },
     onSuccess: (draftBuild) => {
       setError(null);
       navigate(`/compose/${draftBuild.id}?from=rebuild`);

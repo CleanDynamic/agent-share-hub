@@ -9,7 +9,9 @@ import { REF_KIND } from "@/lib/build/postRefs";
 import { kindOfNode, topSteps, type StepKind } from "@/lib/build/graph";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { RequestSize, StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
+import { claimDaysLeft, type MyClaim, type RequestClaim } from "@/lib/bounty/claims";
 import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
+import type { FactPart } from "./OpenBuildsView";
 
 /* ── the address ── */
 
@@ -170,8 +172,32 @@ export interface StepRequestWords {
   problem: string | null;
   /** "2 days left", "1 answer": the facts before Me too. */
   facts: string[];
+  /** SV-21: "Claimed by @kit · 2 days left · fork in progress" while a claim stands; the claim comes first among the facts. */
+  claim: FactPart[] | null;
   answerTo: string;
 }
+
+/* ── claims (SV-21) ── */
+
+/** "1 day left", "3 days left". */
+export const daysLeftWords = (days: number) => `${days} ${days === 1 ? "day" : "days"} left`;
+
+/** The fact a claim draws: the claimer's handle in text colour, the rest in the fact's own. */
+export function claimFact(claim: RequestClaim, now: number): FactPart[] {
+  return [
+    { text: "Claimed by " },
+    { text: claim.handle ? `@${claim.handle}` : "someone", tone: "text" },
+    { text: ` · ${daysLeftWords(claimDaysLeft(claim.expiresAt, now))}${claim.forkBuildId ? " · fork in progress" : ""}` },
+  ];
+}
+
+/** A row of Your claims: "<build> · <gap or Whole build>", the days left, and where Answer goes. */
+export const claimRow = (claim: MyClaim, now: number) => ({
+  id: claim.requestId,
+  label: `${claim.build.title} · ${claim.gapTitle ?? "Whole build"}`,
+  detail: daysLeftWords(claimDaysLeft(claim.expiresAt, now)),
+  to: `/openbuilds/${claim.requestId}/solve`,
+});
 
 /** A whole-build request's title while the bounty has no words of its own: `gap_problem` lives on a gap node, and a
     whole-build request has none. */
@@ -186,9 +212,10 @@ export function stepRequestWords(request: StepRequestRecord, strip: StepStrip, n
     id: request.bounty.id,
     title: strip.number ? `Step ${strip.number} · ${gap}` : gap,
     reward: reward ? { text: reward } : { text: "No reward", muted: true },
-    meta: [request.build.title, atHandle(request.maker?.username), shortAgo(request.bounty.created_at, now)].filter((part): part is string => Boolean(part)),
+    meta: [request.build.title, atHandle(request.maker?.username), request.fromRun ? "From a failed run" : null, shortAgo(request.bounty.created_at, now)].filter((part): part is string => Boolean(part)),
     problem: request.bounty.gap_node_id === null ? null : request.problem || null,
     facts: [timeLeft(request.bounty.closes_at, now), answersWords(request.solutions)].filter(Boolean),
+    claim: request.claim ? claimFact(request.claim, now) : null,
     answerTo: `/openbuilds/${request.bounty.id}/solve`,
   };
 }

@@ -1151,6 +1151,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/bounty/runRequestRules.ts",
   "src/lib/bounty/runRequests.ts",
   "src/lib/bounty/runRequests.test.ts",
+  "src/lib/bounty/claims.ts",
+  "src/lib/bounty/claims.test.ts",
 ];
 
 /**

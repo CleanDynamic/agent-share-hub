@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listStepRequests = vi.fn();
 const listMyOpenRequests = vi.fn();
+const listMyClaims = vi.fn();
 const getMyRecord = vi.fn();
 const listTopSolvers = vi.fn();
 const toggleMeToo = vi.fn();
@@ -17,6 +18,7 @@ let user: { id: string } | null = { id: "me" };
 vi.mock("@/lib/bounty", () => ({
   listStepRequests: (options: unknown) => listStepRequests(options),
   listMyOpenRequests: (id: string) => listMyOpenRequests(id),
+  listMyClaims: (id: string) => listMyClaims(id),
   getMyRecord: (id: string) => getMyRecord(id),
   listTopSolvers: (options: unknown) => listTopSolvers(options),
   toggleMeToo: (input: unknown) => toggleMeToo(input),
@@ -51,6 +53,8 @@ function page() {
         problem: "Stops on the first paywalled result.",
         solutions: 1,
         meToo: false,
+        claim: null,
+        fromRun: false,
       },
     ],
     strips: [strip("a", 1), strip("b", 2), strip("c", 3), strip("g", 4, { type: "code", is_gap: true, title: "Fetch from paywalled sources" }), strip("e", 5)],
@@ -82,6 +86,7 @@ beforeEach(() => {
   user = { id: "me" };
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   listStepRequests.mockReset().mockResolvedValue(page());
+  listMyClaims.mockReset().mockResolvedValue([]);
   listMyOpenRequests.mockReset().mockResolvedValue([{ bountyId: "q9", build: { slug: "gbngd", title: "gbngd" }, gapTitle: "Step two", answers: 2, latestSolver: "kit" }]);
   getMyRecord.mockReset().mockResolvedValue({ reproduced: 40, tried: 0, accepted: 6 });
   listTopSolvers.mockReset().mockResolvedValue([{ id: "u1", username: "kit", display_name: null, avatar_url: null, solved: 9, rewardTotalGbp: null, lastSolvedAt: null }]);
@@ -185,15 +190,32 @@ describe("OpenBuildsPage", () => {
     mount();
     await screen.findByTestId("openbuilds-request");
     expect(screen.queryByRole("region", { name: "Model release check" })).toBeNull();
-    for (const name of ["Your claims", "Groups"]) expect(screen.queryByRole("heading", { name })).toBeNull();
+    for (const name of ["Groups"]) expect(screen.queryByRole("heading", { name })).toBeNull();
     expect(screen.queryByText("Builds contributed to")).toBeNull();
     expect(screen.queryByText("Site goal")).toBeNull();
+  });
+
+  it("says who is working on a request, and lists the reader's own claims (SV-21)", async () => {
+    const soon = new Date(Date.now() + 2 * 86_400_000 - 3_600_000).toISOString();
+    const withClaim = page();
+    withClaim.requests[0] = { ...withClaim.requests[0], claim: { requestId: "q1", userId: "u1", handle: "kit", expiresAt: soon, forkBuildId: "f1" }, fromRun: true };
+    listStepRequests.mockResolvedValue(withClaim);
+    listMyClaims.mockResolvedValue([{ requestId: "q7", build: { slug: "pitch", title: "Pitch deck" }, gapTitle: null, expiresAt: soon, forkBuildId: null }]);
+    mount();
+    const request = await screen.findByTestId("openbuilds-request");
+    expect(within(request).getByText(/Claimed by/).textContent).toBe("Claimed by @kit · 2 days left · fork in progress");
+    expect(within(request).getByText("Research brief agent · @mira · From a failed run · 6h")).toBeInTheDocument();
+    const claims = await screen.findByRole("heading", { name: "Your claims" });
+    expect(claims).toBeInTheDocument();
+    expect(await screen.findByText("Pitch deck · Whole build")).toBeInTheDocument();
+    expect(listMyClaims).toHaveBeenCalledWith("me");
   });
 
   it("asks a signed-out reader nothing of their own", async () => {
     user = null;
     mount();
     await screen.findByTestId("openbuilds-request");
+    expect(listMyClaims).not.toHaveBeenCalled();
     expect(listMyOpenRequests).not.toHaveBeenCalled();
     expect(getMyRecord).not.toHaveBeenCalled();
     expect(listStepRequests).toHaveBeenCalledWith({ sort: "needed", size: "all", offset: 0, viewerId: null });
