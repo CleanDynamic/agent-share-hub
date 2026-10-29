@@ -133,7 +133,8 @@ export interface ReleaseCheckProps {
   /** One per reproduced build, in the order drawn; height is a share of the row's 40. */
   bars: readonly { state: "works" | "fails" | "untested"; height: number }[];
   to: string;
-  runTo: string;
+  /** The next reproduced build not tested on the model; none while every one is. */
+  runTo?: string;
 }
 
 export interface RequestsProps {
@@ -288,7 +289,7 @@ export function ReleaseCheck({ model, works, total, fails, untested, released, b
         <LegendItem colour={t.catBreakage}>Fails</LegendItem>
         <LegendItem colour={t.line}>Not tested</LegendItem>
         <span style={{ flex: 1 }} />
-        <OpenBuildsPrimary to={runTo}>Run an untested build</OpenBuildsPrimary>
+        {runTo ? <OpenBuildsPrimary to={runTo}>Run an untested build</OpenBuildsPrimary> : null}
       </div>
     </section>
   );

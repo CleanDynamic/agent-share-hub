@@ -160,3 +160,5 @@ export { findRunByHandle, openRequestFromRun, type RunForRequest } from "./runRe
 export { attachFork, claimDaysLeft, claimRequest, CLAIM_DAYS, listActiveClaims, listMyClaims, releaseClaim, type MyClaim, type RequestClaim } from "./claims";
 export { briefRefusal, comparePair, NO_GAPS, NOT_PUBLISHED } from "./briefRules";
 export { BRIEF_ANSWERS_KEPT, BRIEFS_PAGE_SIZE, listBriefs, publishBrief, setBrief, type BriefAnswerRecord, type BriefRecord, type BriefsPage } from "./briefs";
+export { MODEL_TESTS_PAGE_SIZE, addModelRelease, getReleaseCheck, listModelTests, listRecentReleases, type ModelTestRecord, type ModelTestsPage, type ReleaseCheck } from "./modelChecks";
+export { modelTestFor, nameOfModel, releaseBars, releasedWords, type ModelTestRow, type ReleasedModel } from "./modelRules";

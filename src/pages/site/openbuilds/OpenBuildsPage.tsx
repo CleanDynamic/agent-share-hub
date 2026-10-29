@@ -21,8 +21,11 @@
    BRIEFS (SV-22): the Briefs tab reads `listBriefs` (a published build marked a brief; its answers are its rebuilds) in place
    of the bounties, only while the tab is open. Marking a brief is `setBrief`; its control is placed by SV-25's build page.
 
-   NOT LIVE YET (drawn on the dev page only): the model release check and the week's goal (SV-22); model tests and
-   reviews (SV-22); Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
+   MODEL TESTS AND THE RELEASE CHECK (SV-22): Model tests reads `listModelTests` (reproduced builds not yet run on a recent
+   release) in place of the bounties; the release check is `getReleaseCheck`, one request in round 1, drawn above the requests
+   once the migration has a release in it.
+
+   NOT LIVE YET (drawn on the dev page only): the week's goal and reviews (SV-22); Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
 
 import { Suspense, lazy, useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -33,6 +36,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { listBriefs } from "@/lib/bounty/briefs";
+import { getReleaseCheck, listModelTests } from "@/lib/bounty/modelChecks";
 import { getMyRecord, listMyClaims, listMyOpenRequests, listStepRequests, listTopSolvers, toggleMeToo, type StepRequestsPage } from "@/lib/bounty";
 import { reportError } from "@/lib/errors/report";
 import { usePageReady } from "@/lib/routing/pageReady";
@@ -47,6 +51,10 @@ import {
   LIVE_TABS,
   briefWords,
   briefsKey,
+  modelTestWords,
+  modelTestsKey,
+  releaseCheckKey,
+  releaseCheckWords,
   isBuildKindTab,
   OPEN_BUILDS_SORTS,
   OPEN_BUILDS_TABS,
@@ -115,16 +123,28 @@ export default function OpenBuildsPage() {
     placeholderData: keepPreviousData,
     enabled: kind === "briefs",
   });
-  const listing = kind === "briefs" ? briefs : requests;
-  // The page shows its placeholder only while neither list has ever arrived: moving between tabs keeps what is drawn until the new tab's arrives.
-  const arriving = requests.isPending && briefs.isPending;
+  const modelTests = useInfiniteQuery({
+    queryKey: modelTestsKey,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => listModelTests({ offset: pageParam }),
+    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    placeholderData: keepPreviousData,
+    enabled: kind === "model-tests",
+  });
+  const listing = kind === "briefs" ? briefs : kind === "model-tests" ? modelTests : requests;
   const mine = useQuery({ queryKey: ["bounty", "listMyOpenRequests", viewerId], queryFn: () => listMyOpenRequests(viewerId as string), enabled: viewerId !== null });
   const claims = useQuery({ queryKey: ["bounty", "listMyClaims", viewerId], queryFn: () => listMyClaims(viewerId as string), enabled: viewerId !== null });
   const record = useQuery({ queryKey: ["bounty", "getMyRecord", viewerId], queryFn: () => getMyRecord(viewerId as string), enabled: viewerId !== null });
+  // The release check is one request, started with the rest of round 1; the page waits for it so the figure above the requests does not push them down when it arrives.
+  const release = useQuery({ queryKey: releaseCheckKey, queryFn: getReleaseCheck });
   const contributors = useQuery({ queryKey: contributorsKey, queryFn: () => listTopSolvers({ limit: CONTRIBUTORS_SHOWN, sinceDays: CONTRIBUTORS_DAYS }) });
 
+  // The page shows its placeholder only while neither list has ever arrived: moving between tabs keeps what is drawn until the new tab's arrives.
+  const arriving = (requests.isPending && briefs.isPending && modelTests.isPending) || release.isPending;
   useReported(requests.error, "openbuilds-requests");
   useReported(briefs.error, "openbuilds-briefs");
+  useReported(modelTests.error, "openbuilds-model-tests");
+  useReported(release.error, "openbuilds-release-check");
   useReported(mine.error, "openbuilds-your-requests");
   useReported(claims.error, "openbuilds-claims");
   useReported(record.error, "openbuilds-record");
@@ -264,6 +284,10 @@ export default function OpenBuildsPage() {
       action: { label: "Answer this brief", to: `/b2/${brief.slug}` },
     }));
 
+  const modelTestItems: RequestItem[] = (modelTests.data?.pages ?? [])
+    .flatMap((page) => page.tests)
+    .map((test) => ({ ...modelTestWords(test, now), action: { label: `Reproduce on ${test.target}`, to: `/b2/${test.slug}` } }));
+
   const move = (next: Parameters<typeof addressSearch>[1]) => setParams(addressSearch(params, next), { replace: true });
   const mineRows = mine.data ?? [];
   const waiting = mineRows.reduce((sum, row) => sum + row.answers, 0);
@@ -274,6 +298,7 @@ export default function OpenBuildsPage() {
       {/* Until the requests arrive the page draws the route's Placeholder itself, so the two are one shape whoever reads. */}
       <PageArrival loading={arriving} placeholder={<OpenBuildsLoadingView />}>
         {arriving ? <OpenBuildsLoadingView /> : <OpenBuildsView
+          release={release.data ? releaseCheckWords(release.data, now) : undefined}
           requests={{
             tabs: TABS,
             tab: address.tab,
@@ -283,7 +308,7 @@ export default function OpenBuildsPage() {
             onSort: (sort) => move({ sort }),
             status: statusOf(listing),
             onRetry: () => void listing.refetch(),
-            items: kind === "briefs" ? briefItems : items,
+            items: kind === "briefs" ? briefItems : kind === "model-tests" ? modelTestItems : items,
             more: listing.hasNextPage ? { loading: listing.isFetchingNextPage, onMore: () => void listing.fetchNextPage() } : undefined,
           }}
           yourRequests={

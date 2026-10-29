@@ -61,7 +61,7 @@ describe("getReproductionsByModel", () => {
     ];
     const out = await getReproductionsByModel(["b1"]);
     expect(out.b1).toEqual([
-      { modelId: "sonnet-5-5", modelName: "Sonnet 5.5", worked: 2, lastConfirmedAt: "2026-09-10T00:00:00Z" },
+      { modelId: "sonnet-5-5", modelName: "Sonnet 5.5", runs: 3, worked: 2, lastConfirmedAt: "2026-09-10T00:00:00Z" },
     ]);
   });
 
@@ -82,7 +82,7 @@ describe("getReproductionsByModel", () => {
   it("keeps a model nobody got working as worked 0 with no confirmation", async () => {
     rows = [row("b1", "Opus 5.5", false, "2026-09-01T00:00:00Z")];
     expect((await getReproductionsByModel(["b1"])).b1).toEqual([
-      { modelId: "opus-5-5", modelName: "Opus 5.5", worked: 0, lastConfirmedAt: null },
+      { modelId: "opus-5-5", modelName: "Opus 5.5", runs: 1, worked: 0, lastConfirmedAt: null },
     ]);
   });
 
@@ -126,7 +126,7 @@ describe("plaqueBuildFor", () => {
   });
 
   it("with a proof speaks for that model", () => {
-    const proof: ModelProof = { modelId: "opus-5-5", modelName: "Opus 5.5", worked: 3, lastConfirmedAt: "2026-09-01T00:00:00Z" };
+    const proof: ModelProof = { modelId: "opus-5-5", modelName: "Opus 5.5", runs: 3, worked: 3, lastConfirmedAt: "2026-09-01T00:00:00Z" };
     const plaque = plaqueBuildFor(build, proof);
     expect(plaque).toMatchObject({
       reproduction_count: 3,
@@ -137,7 +137,7 @@ describe("plaqueBuildFor", () => {
   });
 
   it("a model with nothing working reads as not yet reproduced", () => {
-    const proof: ModelProof = { modelId: null, modelName: "x", worked: 0, lastConfirmedAt: null };
+    const proof: ModelProof = { modelId: null, modelName: "x", runs: 1, worked: 0, lastConfirmedAt: null };
     expect(plaqueState(plaqueBuildFor(build, proof))).toBe("unreproduced");
   });
 });

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { StepRequestRecord } from "@/lib/bounty/openBuilds";
 
-import { briefWords, isBuildKindTab, addressSearch, offerChoice, offerLine, readAddress, sessionRequestWords, sizeOfTab, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
+import { briefWords, modelTestWords, releaseCheckWords, isBuildKindTab, addressSearch, offerChoice, offerLine, readAddress, sessionRequestWords, sizeOfTab, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
 
 const node = (id: string, position: number | null, extra: Partial<StripNode> = {}): StripNode => ({
   id,
@@ -189,5 +189,15 @@ describe("briefs", () => {
     expect(two.compareTo).toBe("/b2/a/compare/b");
     expect(two.answers.map((a) => [a.handle, a.lit])).toEqual([["@maya", true], ["someone", false]]);
     expect(briefWords(brief([{ slug: "a", runs: 0 }]), 0).compareTo).toBeUndefined();
+  });
+});
+
+describe("model tests and the release check", () => {
+  it("words a model test for the model it asks for, and links the check to the tab", () => {
+    const words = modelTestWords({ buildId: "b1", slug: "call", title: "Call notes", maker: "maya", lastConfirmedAt: null, target: "Opus 5.5", models: [{ model: "Opus 5.5", state: "untested" }] }, 0);
+    expect(words.title).toBe("Reproduce Call notes on Opus 5.5");
+    expect(words.meta).toEqual(["Call notes", "@maya"]);
+    const check = releaseCheckWords({ modelId: "opus-5-5", modelName: "Opus 5.5", releasedOn: "2026-10-26", works: 1, fails: 0, untested: 0, total: 1, nextSlug: null, bars: [{ s: "works", n: 1 }] }, Date.parse("2026-10-27T00:00:00Z"));
+    expect(check).toMatchObject({ model: "Opus 5.5", released: "released 1 day ago", to: "/openbuilds?type=model-tests", runTo: undefined });
   });
 });

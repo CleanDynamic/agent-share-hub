@@ -11,12 +11,14 @@ import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { RequestSize, StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
 import { comparePair } from "@/lib/bounty/briefRules";
 import type { BriefRecord } from "@/lib/bounty/briefs";
+import type { ModelTestRecord, ReleaseCheck } from "@/lib/bounty/modelChecks";
+import { releaseBars, releasedWords } from "@/lib/bounty/modelRules";
 import { claimDaysLeft, type MyClaim, type RequestClaim } from "@/lib/bounty/claims";
 import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, toolLabel, type SessionMeta } from "@/lib/build/making";
 import { numberSessions } from "@/lib/build/sessionNumbers";
 import { hasParts, labelsOf, workstreamTitle } from "@/lib/build/workstreams";
 import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
-import type { BriefRequest, FactPart } from "./OpenBuildsView";
+import type { BriefRequest, FactPart, ModelTestRequest, ReleaseCheckProps } from "./OpenBuildsView";
 
 /* ── the address ── */
 
@@ -33,9 +35,9 @@ export const OPEN_BUILDS_TABS: readonly { value: OpenBuildsTab; label: string }[
   { value: "reviews", label: "Reviews" },
 ];
 
-/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs with SV-22 Part 1.
+/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs and Model tests with SV-22 Parts 1 and 2.
     Whole-build requests are listed in All only. */
-export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts", "briefs"];
+export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts", "briefs", "model-tests"];
 
 /** The tabs whose requests are not bounties: each reads its own table (SV-22). */
 export const BUILD_KIND_TABS = ["briefs", "model-tests", "reviews"] as const;
@@ -85,6 +87,8 @@ export const CONTRIBUTORS_DAYS = 30;
 
 export const stepRequestsKey = (sort: OpenBuildsSort, size: RequestSize, viewerId: string | null) => ["bounty", "listStepRequests", sort, size, viewerId] as const;
 export const briefsKey = ["bounty", "listBriefs"] as const;
+export const modelTestsKey = ["bounty", "listModelTests"] as const;
+export const releaseCheckKey = ["bounty", "getReleaseCheck"] as const;
 export const contributorsKey = ["bounty", "listTopSolvers", CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS] as const;
 
 /* ── words ── */
@@ -349,5 +353,34 @@ export function briefWords(brief: BriefRecord, now: number): Omit<BriefRequest, 
       runs: answer.runs,
       lit: answer.runs > 0,
     })),
+  };
+}
+
+
+/* ── model tests and the release check (SV-22) ── */
+
+/** A model test as the view draws it: the request is for the newest release the build has not been run on. */
+export function modelTestWords(test: ModelTestRecord, now: number): Omit<ModelTestRequest, "action" | "meToo"> {
+  return {
+    kind: "model-test",
+    id: test.buildId,
+    title: `Reproduce ${test.title} on ${test.target}`,
+    meta: [test.title, atHandle(test.maker), test.lastConfirmedAt ? shortAgo(test.lastConfirmedAt, now) : null].filter((part): part is string => Boolean(part)),
+    models: test.models,
+  };
+}
+
+/** The release check as the view draws it. The primary leads to the next build not tested on the model; none to run, none drawn. */
+export function releaseCheckWords(check: ReleaseCheck, now: number): ReleaseCheckProps {
+  return {
+    model: check.modelName,
+    works: check.works,
+    total: check.total,
+    fails: check.fails,
+    untested: check.untested,
+    released: releasedWords(check.releasedOn, now),
+    bars: releaseBars(check.bars),
+    to: "/openbuilds?type=model-tests",
+    runTo: check.nextSlug ? `/b2/${check.nextSlug}` : undefined,
   };
 }
