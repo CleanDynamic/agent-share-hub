@@ -45,8 +45,11 @@ CREATE POLICY "Admins edit model releases" ON public.model_releases FOR UPDATE
 DROP POLICY IF EXISTS "Admins remove model releases" ON public.model_releases;
 CREATE POLICY "Admins remove model releases" ON public.model_releases FOR DELETE USING (public.is_admin((select auth.uid())));
 
-REVOKE ALL ON public.model_releases FROM anon;
-GRANT SELECT ON public.model_releases TO anon;
+-- Grants: revoke first, then grant. Reads for everyone; writes only reach a row through the admin policies above.
+REVOKE ALL ON public.model_releases FROM anon, authenticated;
+GRANT SELECT ON public.model_releases TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.model_releases TO authenticated;
+GRANT ALL ON public.model_releases TO service_role;
 
 -- Builds that someone has run: the check reads only these.
 CREATE INDEX IF NOT EXISTS idx_builds_reproduced
@@ -113,4 +116,4 @@ AS $$
 $$;
 
 REVOKE EXECUTE ON FUNCTION public.release_check() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.release_check() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.release_check() TO anon, authenticated, service_role;
