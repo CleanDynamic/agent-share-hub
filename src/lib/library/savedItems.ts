@@ -304,6 +304,14 @@ export async function updateSavedItemNote(savedItemId: string, note: string): Pr
   if (response.error) throw socialError("updateSavedItemNote", response);
 }
 
+/** Turn notifications on or off for a saved item (SV-20). Only the reader's own row; the database does the notifying. */
+export async function setSavedItemNotify(savedItemId: string, on: boolean): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) throw signedOutError("setSavedItemNotify");
+  const response = await db.from("saved_items").update({ notify: on }).eq("id", savedItemId).eq("user_id", userId);
+  if (response.error) throw socialError("setSavedItemNotify", response);
+}
+
 /* ── read ── */
 
 export interface ListSavedItemsOptions {

@@ -46,6 +46,9 @@ export type NotificationTargetType =
   | "build"
   | "build_comment"
   | "bounty_build"
+  // SV-20: a tile on a build page, and a collection a reader kept.
+  | "node"
+  | "collection"
   | null;
 
 /** RC-P19 — the build a notification is about, as the page names and links it. */

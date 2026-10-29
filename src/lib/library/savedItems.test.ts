@@ -62,6 +62,7 @@ import {
   sessionSnapshot,
   stepSnapshot,
   unsaveItem,
+  setSavedItemNotify,
   updateSavedItemNote,
 } from "./savedItems";
 
@@ -235,5 +236,23 @@ describe("Used in and saved by", () => {
     calls = [];
     expect((await collectionSavedBy([])).size).toBe(0);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("setSavedItemNotify (SV-20)", () => {
+  it("turns notifications on or off for the reader's own saved item, and nobody else's", async () => {
+    await setSavedItemNotify("si-1", true);
+    const update = calls.find((call) => call.table === "saved_items" && call.method === "update");
+    expect(update?.args[0]).toEqual({ notify: true });
+    expect(calls.filter((call) => call.table === "saved_items" && call.method === "eq").map((call) => call.args)).toEqual([
+      ["id", "si-1"],
+      ["user_id", "reader-1"],
+    ]);
+  });
+
+  it("refuses when signed out, before any request", async () => {
+    session = null;
+    await expect(setSavedItemNotify("si-1", false)).rejects.toBeInstanceOf(SocialError);
+    expect(calls.filter((call) => call.method === "update")).toHaveLength(0);
   });
 });

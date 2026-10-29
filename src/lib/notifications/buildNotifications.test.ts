@@ -140,6 +140,16 @@ describe("notificationHref", () => {
     expect(notificationHref(notification({ build: null }))).toBeNull();
   });
 
+  it("leads a collection to the reader's collection page, and a tile to its place on the build page (SV-20)", () => {
+    expect(notificationHref(notification({ kind: "rebuilt", target_type: "collection", target_id: "col-1" }))).toBe(
+      "/library/collections/col-1",
+    );
+    expect(notificationHref(notification({ kind: "reproduced", target_type: "node", target_id: "node-9" }))).toBe(
+      "/b2/invoice-reader#node-node-9",
+    );
+    expect(notificationHref(notification({ kind: "reproduced", target_type: "node", target_id: "node-9", build: null }))).toBeNull();
+  });
+
   it("leads a kind nobody knows nowhere", () => {
     expect(notificationHref(notification({ kind: "made_up_kind", target_type: null, target_id: null, build: null }))).toBeNull();
   });
@@ -156,5 +166,17 @@ describe("notificationMessage", () => {
   it("says a strange kind's stored message, and survives one with none", () => {
     expect(notificationMessage(notification({ kind: "made_up_kind", body: "Something happened." }))).toBe("Something happened.");
     expect(notificationMessage(notification({ kind: "made_up_kind", body: null }))).toBe("New notification");
+  });
+});
+
+describe("targets that are not fetched (SV-20)", () => {
+  it("names a node or a collection with no request of its own: the page names the build, the href needs only ids", async () => {
+    const { resolveNotificationTargets } = await import("@/lib/notifications");
+    const out = await resolveNotificationTargets([
+      row(1, { target_type: "node", target_id: "node-1" }),
+      row(2, { target_type: "collection", target_id: "col-1" }),
+    ]);
+    expect(requests()).toHaveLength(0);
+    expect(out.size).toBe(0);
   });
 });
