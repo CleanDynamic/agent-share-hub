@@ -44,6 +44,7 @@ export {
   stepSnapshot,
   touchSavedItems,
   unsaveItem,
+  setSavedItemNotify,
   updateSavedItemNote,
   type LibrarySavedItem,
   type SaveItemInput,

@@ -41,7 +41,8 @@ export async function resolveNotificationBuilds(rows: NotificationRow[]): Promis
 /**
  * Where a notification leads, or null when it leads nowhere. A build target is
  * the build's page: build and bounty_build to /b2/<slug>, build_comment to its
- * comments (/b2/<slug>#comments). A kind this page does not know leads
+ * comments (/b2/<slug>#comments), node to its tile (/b2/<slug>#node-<id>),
+ * collection to the reader's collection page. A kind this page does not know leads
  * nowhere: it shows its stored message and nothing else.
  */
 export function notificationHref(n: Notification): string | null {
@@ -51,6 +52,10 @@ export function notificationHref(n: Notification): string | null {
       return n.build ? `/b2/${n.build.slug}` : null;
     case "build_comment":
       return n.build ? `/b2/${n.build.slug}#comments` : null;
+    case "node":
+      return n.build && n.target_id ? `/b2/${n.build.slug}#node-${n.target_id}` : null;
+    case "collection":
+      return n.target_id ? `/library/collections/${n.target_id}` : null;
     default:
       break;
   }
@@ -126,7 +131,8 @@ export async function resolveNotificationTargets(
     if (!type) continue;
     // RC-P19: builds are named by resolveNotificationBuilds, and a follow's
     // profile is its actor, whom the page already has.
-    if (type === "build" || type === "build_comment" || type === "bounty_build") continue;
+    // SV-20: a node's build and a collection's id are all its link needs.
+    if (type === "build" || type === "build_comment" || type === "bounty_build" || type === "node" || type === "collection") continue;
     if (type === "profile" && r.notification_type === "follow") continue;
     (byType[type] ??= new Set()).add(id);
   }
