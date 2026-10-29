@@ -19,33 +19,27 @@ INSERT INTO public.saved_items (user_id, kind, build_id, ref, notify)
 -- Someone else runs the build.
 INSERT INTO public.build_reproductions (build_id, user_id, worked) VALUES (:'build_id', :'actor_id', true);
 
-DO $$
-DECLARE _n int;
-BEGIN
-  SELECT count(*) INTO _n FROM public.notifications
-   WHERE recipient_id = :'saver_id'::uuid AND notification_type = 'reproduced' AND target_type = 'node';
-  IF _n <> 1 THEN RAISE EXCEPTION 'SV-20: the saver should hear once about the run, heard % times', _n; END IF;
+-- A failed check divides by zero, which stops the script with the check's name in the query text.
+SELECT 1 / CASE WHEN count(*) = 1 THEN 1 ELSE 0 END AS saver_hears_once
+  FROM public.notifications
+ WHERE recipient_id = :'saver_id' AND notification_type = 'reproduced' AND target_type = 'node';
 
-  SELECT count(*) INTO _n FROM public.notifications
-   WHERE recipient_id = :'maker_id'::uuid AND notification_type = 'reproduced' AND target_type = 'build';
-  IF _n < 1 THEN RAISE EXCEPTION 'SV-20: the maker should still hear'; END IF;
+SELECT 1 / CASE WHEN count(*) >= 1 THEN 1 ELSE 0 END AS maker_still_hears
+  FROM public.notifications
+ WHERE recipient_id = :'maker_id' AND notification_type = 'reproduced' AND target_type = 'build';
 
-  SELECT count(*) INTO _n FROM public.notifications
-   WHERE recipient_id = :'actor_id'::uuid AND notification_type = 'reproduced';
-  IF _n <> 0 THEN RAISE EXCEPTION 'SV-20: nobody is told of their own act'; END IF;
-END $$;
+SELECT 1 / CASE WHEN count(*) = 0 THEN 1 ELSE 0 END AS nobody_told_of_their_own_act
+  FROM public.notifications
+ WHERE recipient_id = :'actor_id' AND notification_type = 'reproduced';
 
 -- Off by default: a saver with notify false hears nothing.
 UPDATE public.saved_items SET notify = false WHERE user_id = :'saver_id' AND ref = '00000000-0000-0000-0000-0000000000a1';
 DELETE FROM public.notifications WHERE recipient_id = :'saver_id';
 DELETE FROM public.build_reproductions WHERE build_id = :'build_id' AND user_id = :'actor_id';
 INSERT INTO public.build_reproductions (build_id, user_id, worked) VALUES (:'build_id', :'actor_id', false);
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM public.notifications WHERE recipient_id = :'saver_id'::uuid) THEN
-    RAISE EXCEPTION 'SV-20: a saver who turned notify off was told';
-  END IF;
-END $$;
+SELECT 1 / CASE WHEN count(*) = 0 THEN 1 ELSE 0 END AS notify_off_hears_nothing
+  FROM public.notifications
+ WHERE recipient_id = :'saver_id';
 
 \echo 'ALL CHECKS PASSED'
 ROLLBACK;
