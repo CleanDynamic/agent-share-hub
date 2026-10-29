@@ -933,6 +933,7 @@ export type Database = {
           forked_from_event_id: string | null
           hero_node_id: string | null
           id: string
+          is_brief: boolean
           last_confirmed_at: string | null
           last_confirmed_model: string | null
           live_url: string | null
@@ -981,6 +982,7 @@ export type Database = {
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
+          is_brief?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
           live_url?: string | null
@@ -1029,6 +1031,7 @@ export type Database = {
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
+          is_brief?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
           live_url?: string | null
