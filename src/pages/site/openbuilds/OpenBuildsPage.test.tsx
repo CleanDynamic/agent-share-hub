@@ -35,6 +35,15 @@ const acceptOffer = vi.fn();
 const declineOffer = vi.fn();
 vi.mock("@/lib/bounty/sessionOffers", () => ({ offerSession: (input: unknown) => offerSession(input), acceptOffer: (input: unknown) => acceptOffer(input), declineOffer: (id: string) => declineOffer(id) }));
 
+const listBriefs = vi.fn();
+const listModelTests = vi.fn();
+const listReviews = vi.fn();
+const getWeekGoal = vi.fn();
+vi.mock("@/lib/bounty/reviews", () => ({ listReviews: (options: unknown) => listReviews(options), getWeekGoal: () => getWeekGoal() }));
+const getReleaseCheck = vi.fn();
+vi.mock("@/lib/bounty/modelChecks", () => ({ listModelTests: (options: unknown) => listModelTests(options), getReleaseCheck: () => getReleaseCheck() }));
+vi.mock("@/lib/bounty/briefs", () => ({ listBriefs: (options: unknown) => listBriefs(options) }));
+
 import OpenBuildsPage from "./OpenBuildsPage";
 
 const strip = (id: string, position: number, extra: Record<string, unknown> = {}) => ({
@@ -100,6 +109,11 @@ beforeEach(() => {
   getMyRecord.mockReset().mockResolvedValue({ reproduced: 40, tried: 0, accepted: 6 });
   listTopSolvers.mockReset().mockResolvedValue([{ id: "u1", username: "kit", display_name: null, avatar_url: null, solved: 9, rewardTotalGbp: null, lastSolvedAt: null }]);
   toggleMeToo.mockReset();
+  listBriefs.mockReset().mockResolvedValue({ briefs: [], nextOffset: null });
+  listModelTests.mockReset().mockResolvedValue({ tests: [], nextOffset: null });
+  getReleaseCheck.mockReset().mockResolvedValue(null);
+  listReviews.mockReset().mockResolvedValue({ reviews: [], nextOffset: null });
+  getWeekGoal.mockReset().mockResolvedValue(null);
   toast.mockReset();
   library.data = [{ id: "imp-1", client: "claude-code", modelName: "Opus 5.5", firstPrompt: "Deploy the worker to Vercel", promptCount: 6, createdAt: "2026-10-03T10:00:00Z" }];
   offerSession.mockReset().mockResolvedValue({});
@@ -138,7 +152,7 @@ describe("OpenBuildsPage", () => {
   it("shows only the live tabs, and puts the tab and the sort in the address", async () => {
     mount();
     await screen.findByTestId("openbuilds-request");
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps", "Sessions", "Parts"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps", "Sessions", "Parts", "Briefs", "Model tests", "Reviews"]);
     fireEvent.click(screen.getByRole("tab", { name: "Steps" }));
     expect(where).toBe("?type=steps");
     fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Most needed" }), { key: "Enter" });
@@ -319,5 +333,93 @@ describe("OpenBuildsPage", () => {
     listStepRequests.mockRejectedValue(new Error("down"));
     mount();
     expect(await screen.findByText("Requests didn't load.")).toBeInTheDocument();
+  });
+  it("reads the Briefs tab from its own table, draws the answers and compares the two newest", async () => {
+    listBriefs.mockResolvedValue({
+      briefs: [
+        {
+          id: "br1", slug: "dentist", title: "Book a dentist appointment", maker: "dax", publishedAt: new Date(Date.now() - 4 * 86_400_000).toISOString(), openSteps: 4, answerCount: 2, reproduced: 1,
+          answers: [
+            { id: "a1", slug: "maya-dentist", title: "Mine", userId: "u1", handle: "maya", runs: 4, createdAt: new Date(Date.now() - 3_600_000).toISOString() },
+            { id: "a2", slug: "kit-dentist", title: "Kit's", userId: "u2", handle: "kit", runs: 0, createdAt: new Date(Date.now() - 7_200_000).toISOString() },
+          ],
+        },
+      ],
+      nextOffset: null,
+    });
+    mount("/openbuilds?type=briefs");
+    const request = await screen.findByTestId("openbuilds-request");
+    expect(listStepRequests).not.toHaveBeenCalled();
+    expect(within(request).getByRole("heading", { name: "Book a dentist appointment" })).toBeInTheDocument();
+    expect(within(request).getByText("@dax · 4 open steps · 4d")).toBeInTheDocument();
+    expect(within(request).getByText("2 answers · 1 reproduced")).toBeInTheDocument();
+    expect(within(request).getByRole("link", { name: "Compare answers" })).toHaveAttribute("href", "/b2/maya-dentist/compare/kit-dentist");
+    expect(within(request).getByRole("link", { name: "Answer this brief" })).toHaveAttribute("href", "/b2/dentist");
+  });
+  it("draws the model release check above the requests, from one request", async () => {
+    getReleaseCheck.mockResolvedValue({
+      modelId: "opus-5-5", modelName: "Opus 5.5", releasedOn: new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10), works: 94, fails: 11, untested: 15, total: 120, nextSlug: "call-notes",
+      bars: [{ s: "works", n: 3 }, { s: "fails", n: 1 }, { s: "untested", n: 0 }],
+    });
+    mount();
+    const check = await screen.findByRole("region", { name: "Model release check" });
+    expect(within(check).getByText("94 of 120")).toBeInTheDocument();
+    expect(within(check).getByText(/released 3 days ago/)).toBeInTheDocument();
+    expect(within(check).getByRole("link", { name: "Run an untested build" })).toHaveAttribute("href", "/b2/call-notes");
+    expect(getReleaseCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the release check out until a model has been released", async () => {
+    mount();
+    await screen.findByTestId("openbuilds-request");
+    expect(screen.queryByRole("region", { name: "Model release check" })).not.toBeInTheDocument();
+  });
+
+  it("reads the Model tests tab from the reproduced builds and asks for the untested model", async () => {
+    listModelTests.mockResolvedValue({
+      tests: [
+        {
+          buildId: "b9", slug: "call-notes", title: "Call notes", maker: "maya", lastConfirmedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(), target: "Opus 5.5",
+          models: [{ model: "Opus 5.5", state: "untested" }, { model: "Sonnet 4.5", state: "worked", runs: 6, worked: 6 }, { model: "GPT-5", state: "failed", runs: 3, worked: 1 }],
+        },
+      ],
+      nextOffset: null,
+    });
+    mount("/openbuilds?type=model-tests");
+    const request = await screen.findByTestId("openbuilds-request");
+    expect(listStepRequests).not.toHaveBeenCalled();
+    expect(within(request).getByRole("heading", { name: "Reproduce Call notes on Opus 5.5" })).toBeInTheDocument();
+    expect(within(request).getByText("Not tested")).toBeInTheDocument();
+    expect(within(request).getByText("6 worked")).toBeInTheDocument();
+    expect(within(request).getByRole("link", { name: "Reproduce on Opus 5.5" })).toHaveAttribute("href", "/b2/call-notes");
+  });
+  it("reads the Reviews tab: the runs, the failed ones, the step comments and the requests opened from it", async () => {
+    listReviews.mockResolvedValue({
+      reviews: [{ buildId: "b7", slug: "weekly", title: "Weekly report from Linear", maker: "luke", since: new Date(Date.now() - 8 * 3_600_000).toISOString(), runs: 3, failed: 1, stepComments: 4, requests: 1 }],
+      nextOffset: null,
+    });
+    mount("/openbuilds?type=reviews");
+    const request = await screen.findByTestId("openbuilds-request");
+    expect(listStepRequests).not.toHaveBeenCalled();
+    expect(within(request).getByRole("heading", { name: "Weekly report from Linear" })).toBeInTheDocument();
+    expect(within(request).getByText("@luke · held out of Builds until the review ends · 8h")).toBeInTheDocument();
+    expect(within(request).getByText(/3 runs/)).toBeInTheDocument();
+    expect(within(request).getByText("1 failed")).toBeInTheDocument();
+    expect(within(request).getByText("4 step comments")).toBeInTheDocument();
+    expect(within(request).getByText("1 step request opened from it")).toBeInTheDocument();
+    expect(within(request).getByRole("link", { name: "Reproduce to review" })).toHaveAttribute("href", "/b2/weekly");
+  });
+
+  it("draws the week's goal once a goal is set, and not before", async () => {
+    getWeekGoal.mockResolvedValue({ closed: 18, goal: 30 });
+    mount();
+    expect(await screen.findByRole("img", { name: "18 of 30 requests closed this week" })).toBeInTheDocument();
+    expect(screen.getByText(/60%/)).toBeInTheDocument();
+  });
+
+  it("leaves the week's goal out while there is none", async () => {
+    mount();
+    await screen.findByTestId("openbuilds-request");
+    expect(screen.queryByRole("img", { name: /requests closed this week/ })).not.toBeInTheDocument();
   });
 });

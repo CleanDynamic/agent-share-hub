@@ -9,12 +9,17 @@ import { REF_KIND } from "@/lib/build/postRefs";
 import { kindOfNode, topSteps, type StepKind } from "@/lib/build/graph";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { RequestSize, StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
+import { comparePair } from "@/lib/bounty/briefRules";
+import type { BriefRecord } from "@/lib/bounty/briefs";
+import type { ModelTestRecord, ReleaseCheck } from "@/lib/bounty/modelChecks";
+import type { ReviewRecord, WeekGoal } from "@/lib/bounty/reviews";
+import { releaseBars, releasedWords } from "@/lib/bounty/modelRules";
 import { claimDaysLeft, type MyClaim, type RequestClaim } from "@/lib/bounty/claims";
 import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, toolLabel, type SessionMeta } from "@/lib/build/making";
 import { numberSessions } from "@/lib/build/sessionNumbers";
 import { hasParts, labelsOf, workstreamTitle } from "@/lib/build/workstreams";
 import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
-import type { FactPart } from "./OpenBuildsView";
+import type { BriefRequest, FactPart, ModelTestRequest, ReleaseCheckProps, ReviewRequest, WeekGoalProps } from "./OpenBuildsView";
 
 /* ── the address ── */
 
@@ -31,9 +36,14 @@ export const OPEN_BUILDS_TABS: readonly { value: OpenBuildsTab; label: string }[
   { value: "reviews", label: "Reviews" },
 ];
 
-/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs, Model tests and Reviews arrive with SV-22.
+/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs, Model tests and Reviews with SV-22.
     Whole-build requests are listed in All only. */
-export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts"];
+export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts", "briefs", "model-tests", "reviews"];
+
+/** The tabs whose requests are not bounties: each reads its own table (SV-22). */
+export const BUILD_KIND_TABS = ["briefs", "model-tests", "reviews"] as const;
+export type BuildKindTab = (typeof BUILD_KIND_TABS)[number];
+export const isBuildKindTab = (tab: OpenBuildsTab): tab is BuildKindTab => (BUILD_KIND_TABS as readonly string[]).includes(tab);
 
 /** The request sizes a tab reads. */
 export const sizeOfTab = (tab: OpenBuildsTab): RequestSize => (tab === "steps" ? "step" : tab === "sessions" ? "session" : tab === "parts" ? "part" : "all");
@@ -77,6 +87,11 @@ export const CONTRIBUTORS_SHOWN = 3;
 export const CONTRIBUTORS_DAYS = 30;
 
 export const stepRequestsKey = (sort: OpenBuildsSort, size: RequestSize, viewerId: string | null) => ["bounty", "listStepRequests", sort, size, viewerId] as const;
+export const briefsKey = ["bounty", "listBriefs"] as const;
+export const modelTestsKey = ["bounty", "listModelTests"] as const;
+export const releaseCheckKey = ["bounty", "getReleaseCheck"] as const;
+export const reviewsKey = ["bounty", "listReviews"] as const;
+export const weekGoalKey = ["bounty", "getWeekGoal"] as const;
 export const contributorsKey = ["bounty", "listTopSolvers", CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS] as const;
 
 /* ── words ── */
@@ -315,3 +330,92 @@ export function offerLine(offer: { handle: string | null; userId: string; sessio
   const who = offer.userId === viewerId ? "You offered a session" : `${atHandle(offer.handle) ?? "Someone"} offered a session`;
   return [who, offer.session.model, `${n} ${n === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · ");
 }
+
+
+/* ── briefs (SV-22) ── */
+
+/** "1 open step", "4 open steps". */
+export const openStepsWords = (n: number) => `${n} open ${n === 1 ? "step" : "steps"}`;
+
+/** A brief as the view draws it: its answers are its rebuilds, newest first; "Compare answers" opens the two newest side by side. */
+export function briefWords(brief: BriefRecord, now: number): Omit<BriefRequest, "action" | "meToo"> {
+  const pair = comparePair(brief.answers);
+  return {
+    kind: "brief",
+    id: brief.id,
+    title: brief.title,
+    reward: { text: "Any model", muted: true },
+    meta: [atHandle(brief.maker), openStepsWords(brief.openSteps), brief.publishedAt ? shortAgo(brief.publishedAt, now) : null].filter((part): part is string => Boolean(part)),
+    answersLine: `${answersWords(brief.answerCount)} · ${brief.reproduced} reproduced`,
+    compareTo: pair ? `/b2/${pair[0].slug}/compare/${pair[1].slug}` : undefined,
+    answers: brief.answers.map((answer) => ({
+      id: answer.id,
+      userId: answer.userId,
+      handle: atHandle(answer.handle) ?? "someone",
+      detail: shortAgo(answer.createdAt, now),
+      runs: answer.runs,
+      lit: answer.runs > 0,
+    })),
+  };
+}
+
+
+/* ── model tests and the release check (SV-22) ── */
+
+/** A model test as the view draws it: the request is for the newest release the build has not been run on. */
+export function modelTestWords(test: ModelTestRecord, now: number): Omit<ModelTestRequest, "action" | "meToo"> {
+  return {
+    kind: "model-test",
+    id: test.buildId,
+    title: `Reproduce ${test.title} on ${test.target}`,
+    meta: [test.title, atHandle(test.maker), test.lastConfirmedAt ? shortAgo(test.lastConfirmedAt, now) : null].filter((part): part is string => Boolean(part)),
+    models: test.models,
+  };
+}
+
+/** The release check as the view draws it. The primary leads to the next build not tested on the model; none to run, none drawn. */
+export function releaseCheckWords(check: ReleaseCheck, now: number): ReleaseCheckProps {
+  return {
+    model: check.modelName,
+    works: check.works,
+    total: check.total,
+    fails: check.fails,
+    untested: check.untested,
+    released: releasedWords(check.releasedOn, now),
+    bars: releaseBars(check.bars),
+    to: "/openbuilds?type=model-tests",
+    runTo: check.nextSlug ? `/b2/${check.nextSlug}` : undefined,
+  };
+}
+
+
+/* ── reviews and the week's goal (SV-22) ── */
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** A build in review as the view draws it: the runs and the failed ones, the step comments, and the requests opened from it. */
+export function reviewWords(review: ReviewRecord, now: number): Omit<ReviewRequest, "action" | "meToo"> {
+  return {
+    kind: "review",
+    id: review.buildId,
+    title: review.title,
+    meta: [atHandle(review.maker), "held out of Builds until the review ends", review.since ? shortAgo(review.since, now) : null].filter((part): part is string => Boolean(part)),
+    facts: [
+      {
+        parts:
+          review.runs === 0
+            ? [{ text: "No runs yet" }]
+            : [{ text: plural(review.runs, "run", "runs") }, ...(review.failed > 0 ? [{ text: " · " }, { text: `${review.failed} failed`, tone: "breakage" as const }] : [])],
+      },
+      { parts: [{ text: plural(review.stepComments, "step comment", "step comments") }] },
+      ...(review.requests > 0 ? [{ parts: [{ text: `${plural(review.requests, "step request", "step requests")} opened from it` }] }] : []),
+    ],
+  };
+}
+
+/** The week's goal as the tile draws it: whole percent, never past 100. */
+export const weekGoalWords = (week: WeekGoal): WeekGoalProps => ({
+  closed: week.closed,
+  goal: week.goal,
+  percent: Math.min(100, Math.round((week.closed / week.goal) * 100)),
+});

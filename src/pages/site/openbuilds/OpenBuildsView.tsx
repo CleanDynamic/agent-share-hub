@@ -106,7 +106,8 @@ export interface BriefAnswer {
 export interface BriefRequest extends RequestBase {
   kind: "brief";
   answersLine: string;
-  compareTo: string;
+  /** The comparison of the two newest answers; none while there are fewer than two. */
+  compareTo?: string;
   answers: readonly BriefAnswer[];
 }
 
@@ -132,7 +133,8 @@ export interface ReleaseCheckProps {
   /** One per reproduced build, in the order drawn; height is a share of the row's 40. */
   bars: readonly { state: "works" | "fails" | "untested"; height: number }[];
   to: string;
-  runTo: string;
+  /** The next reproduced build not tested on the model; none while every one is. */
+  runTo?: string;
 }
 
 export interface RequestsProps {
@@ -287,7 +289,7 @@ export function ReleaseCheck({ model, works, total, fails, untested, released, b
         <LegendItem colour={t.catBreakage}>Fails</LegendItem>
         <LegendItem colour={t.line}>Not tested</LegendItem>
         <span style={{ flex: 1 }} />
-        <OpenBuildsPrimary to={runTo}>Run an untested build</OpenBuildsPrimary>
+        {runTo ? <OpenBuildsPrimary to={runTo}>Run an untested build</OpenBuildsPrimary> : null}
       </div>
     </section>
   );
@@ -385,7 +387,7 @@ function BriefAnswers({ answersLine, compareTo, answers }: Pick<BriefRequest, "a
     <div style={{ marginTop: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}`, fontSize: 12 }}>
         <span style={{ color: t.text2 }}>{answersLine}</span>
-        <TextLink to={compareTo}>Compare answers</TextLink>
+        {compareTo ? <TextLink to={compareTo}>Compare answers</TextLink> : null}
       </div>
       {answers.map((answer, index) => (
         <div

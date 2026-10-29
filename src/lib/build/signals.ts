@@ -145,6 +145,8 @@ export interface ModelProof {
   modelId: string | null;
   /** The version's name, the sender's trimmed text, or "Unknown model". */
   modelName: string;
+  /** Reproductions on this model, worked or not (SV-22: Model tests draws "6 runs · 6 worked"). */
+  runs: number;
   /** Reproductions on this model with worked = true. */
   worked: number;
   /** The newest confirmed_at among the WORKED rows; null when none worked. */
@@ -211,12 +213,14 @@ export async function getReproductionsByModel(
         proof = {
           modelId: version?.id ?? null,
           modelName: version?.name ?? (raw || UNKNOWN_MODEL_NAME),
+          runs: 0,
           worked: 0,
           lastConfirmedAt: null,
         };
         perBuild.set(key, proof);
       }
 
+      proof.runs += 1;
       if (row.worked === true) {
         proof.worked += 1;
         if (

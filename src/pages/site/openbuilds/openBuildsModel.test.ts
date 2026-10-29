@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { StepRequestRecord } from "@/lib/bounty/openBuilds";
 
-import { addressSearch, offerChoice, offerLine, readAddress, sessionRequestWords, sizeOfTab, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
+import { reviewWords, weekGoalWords, briefWords, modelTestWords, releaseCheckWords, isBuildKindTab, addressSearch, offerChoice, offerLine, readAddress, sessionRequestWords, sizeOfTab, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
 
 const node = (id: string, position: number | null, extra: Partial<StripNode> = {}): StripNode => ({
   id,
@@ -31,8 +31,8 @@ describe("the address", () => {
     expect(["all", "steps", "sessions", "parts"].map((tab) => sizeOfTab(tab as never))).toEqual(["all", "step", "session", "part"]);
   });
 
-  it("ignores a tab that has no live type yet, and a sort it does not know", () => {
-    expect(readAddress(new URLSearchParams("type=briefs&sort=oldest"))).toEqual({ tab: "all", sort: "needed" });
+  it("ignores a tab it does not know, and a sort it does not know", () => {
+    expect(readAddress(new URLSearchParams("type=nonsense&sort=oldest"))).toEqual({ tab: "all", sort: "needed" });
   });
 
   it("writes only what is not the default, and keeps other parameters", () => {
@@ -167,5 +167,57 @@ describe("session and part requests (SV-21)", () => {
     expect(offerLine(offer, "maker")).toBe("@kit offered a session · Opus 5.5 · 2 prompts");
     expect(offerLine(offer, "u9")).toBe("You offered a session · Opus 5.5 · 2 prompts");
     expect(offerLine({ ...offer, handle: null, session: { model: null, prompts: [1] } }, null)).toBe("Someone offered a session · 1 prompt");
+  });
+});
+
+describe("briefs", () => {
+  const brief = (answers: { slug: string; runs: number }[]) => ({
+    id: "br1", slug: "dentist", title: "Book a dentist", maker: "dax", publishedAt: null, openSteps: 1, answerCount: answers.length, reproduced: answers.filter((a) => a.runs > 0).length,
+    answers: answers.map((a, i) => ({ id: `a${i}`, slug: a.slug, title: a.slug, userId: `u${i}`, handle: i === 0 ? "maya" : null, runs: a.runs, createdAt: new Date(0).toISOString() })),
+  });
+
+  it("is read from the address and is not a bounty tab", () => {
+    expect(readAddress(new URLSearchParams("type=briefs")).tab).toBe("briefs");
+    expect(isBuildKindTab("briefs")).toBe(true);
+    expect(isBuildKindTab("steps")).toBe(false);
+  });
+
+  it("words the open steps, the answers and the lamp, and links Compare only with two answers", () => {
+    const two = briefWords(brief([{ slug: "a", runs: 3 }, { slug: "b", runs: 0 }]), 0);
+    expect(two.meta).toEqual(["@dax", "1 open step"]);
+    expect(two.answersLine).toBe("2 answers · 1 reproduced");
+    expect(two.compareTo).toBe("/b2/a/compare/b");
+    expect(two.answers.map((a) => [a.handle, a.lit])).toEqual([["@maya", true], ["someone", false]]);
+    expect(briefWords(brief([{ slug: "a", runs: 0 }]), 0).compareTo).toBeUndefined();
+  });
+});
+
+describe("model tests and the release check", () => {
+  it("words a model test for the model it asks for, and links the check to the tab", () => {
+    const words = modelTestWords({ buildId: "b1", slug: "call", title: "Call notes", maker: "maya", lastConfirmedAt: null, target: "Opus 5.5", models: [{ model: "Opus 5.5", state: "untested" }] }, 0);
+    expect(words.title).toBe("Reproduce Call notes on Opus 5.5");
+    expect(words.meta).toEqual(["Call notes", "@maya"]);
+    const check = releaseCheckWords({ modelId: "opus-5-5", modelName: "Opus 5.5", releasedOn: "2026-10-26", works: 1, fails: 0, untested: 0, total: 1, nextSlug: null, bars: [{ s: "works", n: 1 }] }, Date.parse("2026-10-27T00:00:00Z"));
+    expect(check).toMatchObject({ model: "Opus 5.5", released: "released 1 day ago", to: "/openbuilds?type=model-tests", runTo: undefined });
+  });
+});
+
+describe("reviews and the week's goal", () => {
+  const review = { buildId: "b1", slug: "w", title: "Weekly", maker: "luke", since: null, runs: 0, failed: 0, stepComments: 1, requests: 0 };
+
+  it("words a build in review, leaving out what is zero", () => {
+    const words = reviewWords(review, 0);
+    expect(words.meta).toEqual(["@luke", "held out of Builds until the review ends"]);
+    expect(words.facts).toEqual([{ parts: [{ text: "No runs yet" }] }, { parts: [{ text: "1 step comment" }] }]);
+    expect(reviewWords({ ...review, runs: 3, failed: 1, requests: 2 }, 0).facts).toEqual([
+      { parts: [{ text: "3 runs" }, { text: " · " }, { text: "1 failed", tone: "breakage" }] },
+      { parts: [{ text: "1 step comment" }] },
+      { parts: [{ text: "2 step requests opened from it" }] },
+    ]);
+  });
+
+  it("rounds the week's percent and stops it at 100", () => {
+    expect(weekGoalWords({ closed: 18, goal: 30 })).toEqual({ closed: 18, goal: 30, percent: 60 });
+    expect(weekGoalWords({ closed: 40, goal: 30 }).percent).toBe(100);
   });
 });
