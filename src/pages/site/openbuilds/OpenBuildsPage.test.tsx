@@ -35,6 +35,9 @@ const acceptOffer = vi.fn();
 const declineOffer = vi.fn();
 vi.mock("@/lib/bounty/sessionOffers", () => ({ offerSession: (input: unknown) => offerSession(input), acceptOffer: (input: unknown) => acceptOffer(input), declineOffer: (id: string) => declineOffer(id) }));
 
+const listBriefs = vi.fn();
+vi.mock("@/lib/bounty/briefs", () => ({ listBriefs: (options: unknown) => listBriefs(options) }));
+
 import OpenBuildsPage from "./OpenBuildsPage";
 
 const strip = (id: string, position: number, extra: Record<string, unknown> = {}) => ({
@@ -100,6 +103,7 @@ beforeEach(() => {
   getMyRecord.mockReset().mockResolvedValue({ reproduced: 40, tried: 0, accepted: 6 });
   listTopSolvers.mockReset().mockResolvedValue([{ id: "u1", username: "kit", display_name: null, avatar_url: null, solved: 9, rewardTotalGbp: null, lastSolvedAt: null }]);
   toggleMeToo.mockReset();
+  listBriefs.mockReset().mockResolvedValue({ briefs: [], nextOffset: null });
   toast.mockReset();
   library.data = [{ id: "imp-1", client: "claude-code", modelName: "Opus 5.5", firstPrompt: "Deploy the worker to Vercel", promptCount: 6, createdAt: "2026-10-03T10:00:00Z" }];
   offerSession.mockReset().mockResolvedValue({});
@@ -138,7 +142,7 @@ describe("OpenBuildsPage", () => {
   it("shows only the live tabs, and puts the tab and the sort in the address", async () => {
     mount();
     await screen.findByTestId("openbuilds-request");
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps", "Sessions", "Parts"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Steps", "Sessions", "Parts", "Briefs"]);
     fireEvent.click(screen.getByRole("tab", { name: "Steps" }));
     expect(where).toBe("?type=steps");
     fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Most needed" }), { key: "Enter" });
@@ -319,5 +323,27 @@ describe("OpenBuildsPage", () => {
     listStepRequests.mockRejectedValue(new Error("down"));
     mount();
     expect(await screen.findByText("Requests didn't load.")).toBeInTheDocument();
+  });
+  it("reads the Briefs tab from its own table, draws the answers and compares the two newest", async () => {
+    listBriefs.mockResolvedValue({
+      briefs: [
+        {
+          id: "br1", slug: "dentist", title: "Book a dentist appointment", maker: "dax", publishedAt: new Date(Date.now() - 4 * 86_400_000).toISOString(), openSteps: 4, answerCount: 2, reproduced: 1,
+          answers: [
+            { id: "a1", slug: "maya-dentist", title: "Mine", userId: "u1", handle: "maya", runs: 4, createdAt: new Date(Date.now() - 3_600_000).toISOString() },
+            { id: "a2", slug: "kit-dentist", title: "Kit's", userId: "u2", handle: "kit", runs: 0, createdAt: new Date(Date.now() - 7_200_000).toISOString() },
+          ],
+        },
+      ],
+      nextOffset: null,
+    });
+    mount("/openbuilds?type=briefs");
+    const request = await screen.findByTestId("openbuilds-request");
+    expect(listStepRequests).not.toHaveBeenCalled();
+    expect(within(request).getByRole("heading", { name: "Book a dentist appointment" })).toBeInTheDocument();
+    expect(within(request).getByText("@dax · 4 open steps · 4d")).toBeInTheDocument();
+    expect(within(request).getByText("2 answers · 1 reproduced")).toBeInTheDocument();
+    expect(within(request).getByRole("link", { name: "Compare answers" })).toHaveAttribute("href", "/b2/maya-dentist/compare/kit-dentist");
+    expect(within(request).getByRole("link", { name: "Answer this brief" })).toHaveAttribute("href", "/b2/dentist");
   });
 });

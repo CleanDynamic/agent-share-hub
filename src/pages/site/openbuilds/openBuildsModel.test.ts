@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { StepRequestRecord } from "@/lib/bounty/openBuilds";
 
-import { addressSearch, offerChoice, offerLine, readAddress, sessionRequestWords, sizeOfTab, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
+import { briefWords, isBuildKindTab, addressSearch, offerChoice, offerLine, readAddress, sessionRequestWords, sizeOfTab, stripFor, stripsFor, type StripNode } from "./openBuildsModel";
 
 const node = (id: string, position: number | null, extra: Partial<StripNode> = {}): StripNode => ({
   id,
@@ -32,7 +32,7 @@ describe("the address", () => {
   });
 
   it("ignores a tab that has no live type yet, and a sort it does not know", () => {
-    expect(readAddress(new URLSearchParams("type=briefs&sort=oldest"))).toEqual({ tab: "all", sort: "needed" });
+    expect(readAddress(new URLSearchParams("type=reviews&sort=oldest"))).toEqual({ tab: "all", sort: "needed" });
   });
 
   it("writes only what is not the default, and keeps other parameters", () => {
@@ -167,5 +167,27 @@ describe("session and part requests (SV-21)", () => {
     expect(offerLine(offer, "maker")).toBe("@kit offered a session · Opus 5.5 · 2 prompts");
     expect(offerLine(offer, "u9")).toBe("You offered a session · Opus 5.5 · 2 prompts");
     expect(offerLine({ ...offer, handle: null, session: { model: null, prompts: [1] } }, null)).toBe("Someone offered a session · 1 prompt");
+  });
+});
+
+describe("briefs", () => {
+  const brief = (answers: { slug: string; runs: number }[]) => ({
+    id: "br1", slug: "dentist", title: "Book a dentist", maker: "dax", publishedAt: null, openSteps: 1, answerCount: answers.length, reproduced: answers.filter((a) => a.runs > 0).length,
+    answers: answers.map((a, i) => ({ id: `a${i}`, slug: a.slug, title: a.slug, userId: `u${i}`, handle: i === 0 ? "maya" : null, runs: a.runs, createdAt: new Date(0).toISOString() })),
+  });
+
+  it("is read from the address and is not a bounty tab", () => {
+    expect(readAddress(new URLSearchParams("type=briefs")).tab).toBe("briefs");
+    expect(isBuildKindTab("briefs")).toBe(true);
+    expect(isBuildKindTab("steps")).toBe(false);
+  });
+
+  it("words the open steps, the answers and the lamp, and links Compare only with two answers", () => {
+    const two = briefWords(brief([{ slug: "a", runs: 3 }, { slug: "b", runs: 0 }]), 0);
+    expect(two.meta).toEqual(["@dax", "1 open step"]);
+    expect(two.answersLine).toBe("2 answers · 1 reproduced");
+    expect(two.compareTo).toBe("/b2/a/compare/b");
+    expect(two.answers.map((a) => [a.handle, a.lit])).toEqual([["@maya", true], ["someone", false]]);
+    expect(briefWords(brief([{ slug: "a", runs: 0 }]), 0).compareTo).toBeUndefined();
   });
 });

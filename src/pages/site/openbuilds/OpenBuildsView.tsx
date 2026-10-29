@@ -106,7 +106,8 @@ export interface BriefAnswer {
 export interface BriefRequest extends RequestBase {
   kind: "brief";
   answersLine: string;
-  compareTo: string;
+  /** The comparison of the two newest answers; none while there are fewer than two. */
+  compareTo?: string;
   answers: readonly BriefAnswer[];
 }
 
@@ -385,7 +386,7 @@ function BriefAnswers({ answersLine, compareTo, answers }: Pick<BriefRequest, "a
     <div style={{ marginTop: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}`, fontSize: 12 }}>
         <span style={{ color: t.text2 }}>{answersLine}</span>
-        <TextLink to={compareTo}>Compare answers</TextLink>
+        {compareTo ? <TextLink to={compareTo}>Compare answers</TextLink> : null}
       </div>
       {answers.map((answer, index) => (
         <div

@@ -9,12 +9,14 @@ import { REF_KIND } from "@/lib/build/postRefs";
 import { kindOfNode, topSteps, type StepKind } from "@/lib/build/graph";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { RequestSize, StepRequestRecord, StepStripNode } from "@/lib/bounty/openBuilds";
+import { comparePair } from "@/lib/bounty/briefRules";
+import type { BriefRecord } from "@/lib/bounty/briefs";
 import { claimDaysLeft, type MyClaim, type RequestClaim } from "@/lib/bounty/claims";
 import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf, toolLabel, type SessionMeta } from "@/lib/build/making";
 import { numberSessions } from "@/lib/build/sessionNumbers";
 import { hasParts, labelsOf, workstreamTitle } from "@/lib/build/workstreams";
 import { atHandle, shortAgo, timeLeft } from "@/pages/site/home/homeModel";
-import type { FactPart } from "./OpenBuildsView";
+import type { BriefRequest, FactPart } from "./OpenBuildsView";
 
 /* ── the address ── */
 
@@ -31,9 +33,14 @@ export const OPEN_BUILDS_TABS: readonly { value: OpenBuildsTab; label: string }[
   { value: "reviews", label: "Reviews" },
 ];
 
-/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs, Model tests and Reviews arrive with SV-22.
+/** The tabs with at least one live request type. Sessions and Parts went live with SV-21; Briefs with SV-22 Part 1.
     Whole-build requests are listed in All only. */
-export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts"];
+export const LIVE_TABS: readonly OpenBuildsTab[] = ["all", "steps", "sessions", "parts", "briefs"];
+
+/** The tabs whose requests are not bounties: each reads its own table (SV-22). */
+export const BUILD_KIND_TABS = ["briefs", "model-tests", "reviews"] as const;
+export type BuildKindTab = (typeof BUILD_KIND_TABS)[number];
+export const isBuildKindTab = (tab: OpenBuildsTab): tab is BuildKindTab => (BUILD_KIND_TABS as readonly string[]).includes(tab);
 
 /** The request sizes a tab reads. */
 export const sizeOfTab = (tab: OpenBuildsTab): RequestSize => (tab === "steps" ? "step" : tab === "sessions" ? "session" : tab === "parts" ? "part" : "all");
@@ -77,6 +84,7 @@ export const CONTRIBUTORS_SHOWN = 3;
 export const CONTRIBUTORS_DAYS = 30;
 
 export const stepRequestsKey = (sort: OpenBuildsSort, size: RequestSize, viewerId: string | null) => ["bounty", "listStepRequests", sort, size, viewerId] as const;
+export const briefsKey = ["bounty", "listBriefs"] as const;
 export const contributorsKey = ["bounty", "listTopSolvers", CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS] as const;
 
 /* ── words ── */
@@ -314,4 +322,32 @@ export function offerLine(offer: { handle: string | null; userId: string; sessio
   const n = offer.session.prompts.length;
   const who = offer.userId === viewerId ? "You offered a session" : `${atHandle(offer.handle) ?? "Someone"} offered a session`;
   return [who, offer.session.model, `${n} ${n === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · ");
+}
+
+
+/* ── briefs (SV-22) ── */
+
+/** "1 open step", "4 open steps". */
+export const openStepsWords = (n: number) => `${n} open ${n === 1 ? "step" : "steps"}`;
+
+/** A brief as the view draws it: its answers are its rebuilds, newest first; "Compare answers" opens the two newest side by side. */
+export function briefWords(brief: BriefRecord, now: number): Omit<BriefRequest, "action" | "meToo"> {
+  const pair = comparePair(brief.answers);
+  return {
+    kind: "brief",
+    id: brief.id,
+    title: brief.title,
+    reward: { text: "Any model", muted: true },
+    meta: [atHandle(brief.maker), openStepsWords(brief.openSteps), brief.publishedAt ? shortAgo(brief.publishedAt, now) : null].filter((part): part is string => Boolean(part)),
+    answersLine: `${answersWords(brief.answerCount)} · ${brief.reproduced} reproduced`,
+    compareTo: pair ? `/b2/${pair[0].slug}/compare/${pair[1].slug}` : undefined,
+    answers: brief.answers.map((answer) => ({
+      id: answer.id,
+      userId: answer.userId,
+      handle: atHandle(answer.handle) ?? "someone",
+      detail: shortAgo(answer.createdAt, now),
+      runs: answer.runs,
+      lit: answer.runs > 0,
+    })),
+  };
 }

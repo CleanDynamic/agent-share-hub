@@ -18,7 +18,10 @@
    CLAIMS (SV-21): a request's claim comes with its second round (one more request in it, none of its own), and Your claims is
    the reader's active claims. Both read nothing until the migration is applied. A request opened from a run says so in its meta.
 
-   NOT LIVE YET (drawn on the dev page only): the model release check and the week's goal (SV-22); briefs, model tests and
+   BRIEFS (SV-22): the Briefs tab reads `listBriefs` (a published build marked a brief; its answers are its rebuilds) in place
+   of the bounties, only while the tab is open. Marking a brief is `setBrief`; its control is placed by SV-25's build page.
+
+   NOT LIVE YET (drawn on the dev page only): the model release check and the week's goal (SV-22); model tests and
    reviews (SV-22); Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
 
 import { Suspense, lazy, useEffect, useState } from "react";
@@ -29,6 +32,7 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
+import { listBriefs } from "@/lib/bounty/briefs";
 import { getMyRecord, listMyClaims, listMyOpenRequests, listStepRequests, listTopSolvers, toggleMeToo, type StepRequestsPage } from "@/lib/bounty";
 import { reportError } from "@/lib/errors/report";
 import { usePageReady } from "@/lib/routing/pageReady";
@@ -41,6 +45,9 @@ import {
   CONTRIBUTORS_DAYS,
   CONTRIBUTORS_SHOWN,
   LIVE_TABS,
+  briefWords,
+  briefsKey,
+  isBuildKindTab,
   OPEN_BUILDS_SORTS,
   OPEN_BUILDS_TABS,
   addressSearch,
@@ -87,6 +94,7 @@ export default function OpenBuildsPage() {
 
   /* ── round 1: everything that needs nothing else ── */
 
+  const kind = isBuildKindTab(address.tab) ? address.tab : null;
   const size = sizeOfTab(address.tab);
   const key = stepRequestsKey(address.sort, size, viewerId);
   const requests = useInfiniteQuery({
@@ -96,19 +104,32 @@ export default function OpenBuildsPage() {
     getNextPageParam: (last) => last.nextOffset ?? undefined,
     placeholderData: keepPreviousData,
     // The key carries the reader (their Me too marks): asked once the session is known, never once as nobody first.
-    enabled: !authLoading,
+    enabled: !authLoading && !kind,
   });
+  // SV-22: a tab whose requests are not bounties reads its own table, started only on that tab; the old content stays across tabs.
+  const briefs = useInfiniteQuery({
+    queryKey: briefsKey,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => listBriefs({ offset: pageParam }),
+    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    placeholderData: keepPreviousData,
+    enabled: kind === "briefs",
+  });
+  const listing = kind === "briefs" ? briefs : requests;
+  // The page shows its placeholder only while neither list has ever arrived: moving between tabs keeps what is drawn until the new tab's arrives.
+  const arriving = requests.isPending && briefs.isPending;
   const mine = useQuery({ queryKey: ["bounty", "listMyOpenRequests", viewerId], queryFn: () => listMyOpenRequests(viewerId as string), enabled: viewerId !== null });
   const claims = useQuery({ queryKey: ["bounty", "listMyClaims", viewerId], queryFn: () => listMyClaims(viewerId as string), enabled: viewerId !== null });
   const record = useQuery({ queryKey: ["bounty", "getMyRecord", viewerId], queryFn: () => getMyRecord(viewerId as string), enabled: viewerId !== null });
   const contributors = useQuery({ queryKey: contributorsKey, queryFn: () => listTopSolvers({ limit: CONTRIBUTORS_SHOWN, sinceDays: CONTRIBUTORS_DAYS }) });
 
   useReported(requests.error, "openbuilds-requests");
+  useReported(briefs.error, "openbuilds-briefs");
   useReported(mine.error, "openbuilds-your-requests");
   useReported(claims.error, "openbuilds-claims");
   useReported(record.error, "openbuilds-record");
   useReported(contributors.error, "openbuilds-contributors");
-  usePageReady("openbuilds", !requests.isPending);
+  usePageReady("openbuilds", !arriving);
 
   /* ── me too: shown at once, put back if refused ── */
 
@@ -236,6 +257,13 @@ export default function OpenBuildsPage() {
       : { ...shared, kind: "step", problem: words.problem, strip: strip.tiles };
   });
 
+  const briefItems: RequestItem[] = (briefs.data?.pages ?? [])
+    .flatMap((page) => page.briefs)
+    .map((brief) => ({
+      ...briefWords(brief, now),
+      action: { label: "Answer this brief", to: `/b2/${brief.slug}` },
+    }));
+
   const move = (next: Parameters<typeof addressSearch>[1]) => setParams(addressSearch(params, next), { replace: true });
   const mineRows = mine.data ?? [];
   const waiting = mineRows.reduce((sum, row) => sum + row.answers, 0);
@@ -244,8 +272,8 @@ export default function OpenBuildsPage() {
     <>
       <SeoHead title="OpenBuilds · buildgallery" description="Published builds that take contributions: open steps to answer, with rewards." path="/openbuilds" />
       {/* Until the requests arrive the page draws the route's Placeholder itself, so the two are one shape whoever reads. */}
-      <PageArrival loading={requests.isPending} placeholder={<OpenBuildsLoadingView />}>
-        {requests.isPending ? <OpenBuildsLoadingView /> : <OpenBuildsView
+      <PageArrival loading={arriving} placeholder={<OpenBuildsLoadingView />}>
+        {arriving ? <OpenBuildsLoadingView /> : <OpenBuildsView
           requests={{
             tabs: TABS,
             tab: address.tab,
@@ -253,10 +281,10 @@ export default function OpenBuildsPage() {
             sorts: OPEN_BUILDS_SORTS,
             sort: address.sort,
             onSort: (sort) => move({ sort }),
-            status: statusOf(requests),
-            onRetry: () => void requests.refetch(),
-            items,
-            more: requests.hasNextPage ? { loading: requests.isFetchingNextPage, onMore: () => void requests.fetchNextPage() } : undefined,
+            status: statusOf(listing),
+            onRetry: () => void listing.refetch(),
+            items: kind === "briefs" ? briefItems : items,
+            more: listing.hasNextPage ? { loading: listing.isFetchingNextPage, onMore: () => void listing.fetchNextPage() } : undefined,
           }}
           yourRequests={
             viewerId
