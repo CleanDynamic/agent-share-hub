@@ -1148,6 +1148,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/openbuilds/OpenBuildsPage.test.tsx",
   "src/lib/bounty/openBuilds.ts",
   "src/lib/bounty/openBuilds.test.ts",
+  "src/lib/bounty/runRequestRules.ts",
+  "src/lib/bounty/runRequests.ts",
+  "src/lib/bounty/runRequests.test.ts",
 ];
 
 /**

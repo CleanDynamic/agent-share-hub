@@ -7,6 +7,7 @@
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { RowEngagement } from "@/components/social/EngagementRow";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
+import { canOpenFromRun } from "@/lib/bounty/runRequestRules";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import type { WhereNextItem } from "@/lib/build/whereNext";
 import type { Classification } from "@/lib/classify/types";
@@ -174,6 +175,10 @@ export interface HomeRunRow {
   handle: string | null;
   href: string;
   at: string;
+  /** SV-21: the build the run is of, for opening a request from it. */
+  buildId: string;
+  /** SV-21: the viewer made the build and the run did not work, so "Open a request from this run" is offered. */
+  canRequest: boolean;
 }
 
 export interface HomeRequestRow {
@@ -405,11 +410,11 @@ export function homeItemOf(item: FeedItem, context: HomeItemContext): HomeFeedIt
 }
 
 /** The latest runs: the feed's own notes, newest first. */
-export function runRows(items: readonly FeedItem[], limit = 3): HomeRunRow[] {
+export function runRows(items: readonly FeedItem[], limit = 3, viewerId: string | null = null): HomeRunRow[] {
   const out: HomeRunRow[] = [];
   for (const item of items) {
     if (item.kind !== "repro_note") continue;
-    out.push({ key: item.key, worked: item.worked, buildTitle: item.title, handle: item.handle, href: `/b2/${item.slug}`, at: item.at });
+    out.push({ key: item.key, worked: item.worked, buildTitle: item.title, handle: item.handle, href: `/b2/${item.slug}`, at: item.at, buildId: item.buildId, canRequest: canOpenFromRun(item, item.maker.id, viewerId) });
     if (out.length === limit) break;
   }
   return out;

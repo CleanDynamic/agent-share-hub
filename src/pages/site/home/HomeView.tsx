@@ -29,6 +29,7 @@ import { InnerTile } from "@/components/vision/InnerTile";
 import { PageFigure } from "@/components/vision/PageFigure";
 import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
+import { REQUEST_FROM_RUN_LABEL } from "@/lib/bounty/runRequestRules";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -107,6 +108,8 @@ export interface HomeRoom {
   failure?: PanelFailure;
   /** The latest runs: the feed's own notes. */
   runs: readonly HomeRunRow[];
+  /** SV-21: opens a request from a run that did not work. Absent: the button is not drawn. */
+  onOpenRequest?: (run: HomeRunRow) => void;
 }
 
 export interface HomeViewProps {
@@ -783,18 +786,24 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
       {room.runs.length > 0 ? (
         <div style={{ marginTop: 14 }} data-testid="home-latest-runs">
           {room.runs.map((run) => (
-            <Link
-              key={run.key}
-              to={run.href}
-              style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 36, borderTop: `1px solid ${t.hairline}`, color: t.text, textDecoration: "none" }}
-            >
-              <span style={runChip(run.worked)}>{run.worked ? "Worked" : "Didn’t"}</span>
-              <span style={{ minWidth: 0, ...ellipsis, ...text(12.5, 400, t.text) }}>
-                <span style={{ fontWeight: 500 }}>{run.buildTitle}</span>
-                {run.handle ? <span style={{ color: t.label }}>{` · ${atHandle(run.handle)}`}</span> : null}
-              </span>
-              <span style={text(11.5, 400, t.label)}>{shortAgo(run.at, now)}</span>
-            </Link>
+            <div key={run.key} style={{ borderTop: `1px solid ${t.hairline}` }}>
+              <Link
+                to={run.href}
+                style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 36, color: t.text, textDecoration: "none" }}
+              >
+                <span style={runChip(run.worked)}>{run.worked ? "Worked" : "Didn’t"}</span>
+                <span style={{ minWidth: 0, ...ellipsis, ...text(12.5, 400, t.text) }}>
+                  <span style={{ fontWeight: 500 }}>{run.buildTitle}</span>
+                  {run.handle ? <span style={{ color: t.label }}>{` · ${atHandle(run.handle)}`}</span> : null}
+                </span>
+                <span style={text(11.5, 400, t.label)}>{shortAgo(run.at, now)}</span>
+              </Link>
+              {run.canRequest && room.onOpenRequest ? (
+                <div style={{ paddingBottom: 8 }}>
+                  <HomeControl onClick={() => room.onOpenRequest?.(run)}>{REQUEST_FROM_RUN_LABEL}</HomeControl>
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       ) : null}

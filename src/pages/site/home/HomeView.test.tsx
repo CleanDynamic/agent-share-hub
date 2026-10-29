@@ -189,3 +189,24 @@ describe("HomeView · narrower windows", () => {
     for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
+
+describe("HomeView · a request from a failed run (SV-21)", () => {
+  const base = visionHomeProps("populated");
+  const runs = base.room.runs.map((run) => (run.worked ? run : { ...run, canRequest: true }));
+
+  it("offers the button on a failed run the viewer may act on, and presses it with that run", () => {
+    const onOpenRequest = vi.fn();
+    mount({ room: { ...base.room, runs, onOpenRequest } });
+    const buttons = screen.getAllByRole("button", { name: "Open a request from this run" });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]);
+    expect(onOpenRequest).toHaveBeenCalledWith(expect.objectContaining({ key: "r2", worked: false }));
+  });
+
+  it("draws no button without a handler, or on a run the viewer may not act on", () => {
+    mount({ room: { ...base.room, runs } });
+    expect(screen.queryByRole("button", { name: "Open a request from this run" })).toBeNull();
+    mount({ room: { ...base.room, onOpenRequest: vi.fn() } });
+    expect(screen.queryByRole("button", { name: "Open a request from this run" })).toBeNull();
+  });
+});

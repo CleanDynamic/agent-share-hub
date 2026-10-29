@@ -272,9 +272,9 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
       litToday: 3,
       runsThisWeek: 62,
       runs: [
-        { key: "r1", worked: true, buildTitle: "Inbox triage", handle: "kit", href: "/b2/inbox-triage", at: minutes(2) },
-        { key: "r2", worked: false, buildTitle: "Research brief", handle: "jay", href: "/b2/research-brief", at: hours(5) },
-        { key: "r3", worked: true, buildTitle: "Call notes", handle: "kit", href: "/b2/call-notes", at: minutes(34) },
+        { key: "r1", worked: true, buildTitle: "Inbox triage", handle: "kit", href: "/b2/inbox-triage", at: minutes(2), buildId: "inbox-triage", canRequest: false },
+        { key: "r2", worked: false, buildTitle: "Research brief", handle: "jay", href: "/b2/research-brief", at: hours(5), buildId: "research-brief", canRequest: false },
+        { key: "r3", worked: true, buildTitle: "Call notes", handle: "kit", href: "/b2/call-notes", at: minutes(34), buildId: "call-notes", canRequest: false },
       ],
     },
     requests: {

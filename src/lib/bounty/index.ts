@@ -155,3 +155,5 @@ export {
 
 export { validateBountyForPublish, type BountyValidationResult } from "./validateBountyForPublish";
 export { countMissingInStageGrids, type MissingCounts } from "./countMissing";
+export { canOpenFromRun, REQUEST_FROM_RUN_LABEL } from "./runRequestRules";
+export { findRunByHandle, openRequestFromRun, type RunForRequest } from "./runRequests";
