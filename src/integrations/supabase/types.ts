@@ -4777,6 +4777,7 @@ export type Database = {
           kind: string
           last_used_at: string
           note: string | null
+          notify: boolean
           ref: string | null
           snapshot: Json
           source_version: string | null
@@ -4789,6 +4790,7 @@ export type Database = {
           kind: string
           last_used_at?: string
           note?: string | null
+          notify?: boolean
           ref?: string | null
           snapshot?: Json
           source_version?: string | null
@@ -4801,6 +4803,7 @@ export type Database = {
           kind?: string
           last_used_at?: string
           note?: string | null
+          notify?: boolean
           ref?: string | null
           snapshot?: Json
           source_version?: string | null
@@ -5835,6 +5838,16 @@ export type Database = {
           recipient: string
           source_id: string
           source_type: string
+        }
+        Returns: undefined
+      }
+      rc_notify_savers: {
+        Args: {
+          _actor: string
+          _build: string
+          _kind: string
+          _message: string
+          _skip?: string
         }
         Returns: undefined
       }
