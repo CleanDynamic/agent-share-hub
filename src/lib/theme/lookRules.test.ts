@@ -1169,6 +1169,10 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/galleryRanges.test.ts",
   "src/pages/site/compose/useStoredBuildCounts.ts",
   "src/pages/site/compose/useStoredBuildCounts.test.tsx",
+  "src/lib/build/runsPerWeek.ts",
+  "src/lib/build/runsPerWeek.test.ts",
+  "src/pages/site/builds/buildsModel.ranges.test.ts",
+  "src/lib/models/registry.ts",
 ];
 
 /**

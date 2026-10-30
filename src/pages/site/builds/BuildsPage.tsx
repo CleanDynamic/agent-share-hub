@@ -15,8 +15,11 @@
    SV-23 P1: Steps and Sessions (the columns and their range filters) are drawn once the list carries the stored counts
    (`countsLive`) and their spread has answered; the median steps sits in the footer. The spread is read in the same round.
 
-   NOT LIVE YET (drawn on the dev page only): Runs 12 weeks, Works on model, Last confirmed, Rebuilds and Likes as filters
-   (SV-23 P2); Saved filter sets, moving filters, the Columns chooser and Add a
+   SV-23 P2: Runs, 12 weeks are twelve weekly counts embedded in the list's select; Last confirmed and Confirmed or stale read
+   `last_confirmed_at`; Reproductions, Rebuilds and Likes are ranges on their columns; Works on model filters `worked_models`,
+   its counts read beside the facets. The ranges and Works on model are drawn with the stored counts.
+
+   NOT LIVE YET (drawn on the dev page only): Saved filter sets, moving filters, the Columns chooser and Add a
    calculation (SV-24). */
 
 import { Suspense, useEffect, useState } from "react";
@@ -26,7 +29,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { reportError } from "@/lib/errors/report";
-import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
 import { galleryHref, parseGalleryParams, type GalleryParams, type GalleryViewMode } from "@/lib/build/galleryParams";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
@@ -114,6 +117,7 @@ export default function BuildsPage() {
   const classification = useQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: SLOW_STALE_MS });
   const facets = useQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: SLOW_STALE_MS });
   const spread = useQuery({ queryKey: ["build", "getCountSpread"], queryFn: getCountSpread, staleTime: SLOW_STALE_MS });
+  const worksOn = useQuery({ queryKey: ["build", "getWorksOnModelCounts"], queryFn: getWorksOnModelCounts, staleTime: SLOW_STALE_MS });
 
   useEffect(() => {
     if (list.error) reportError(list.error, { source: "query", context: "listBuildsTable" });
@@ -159,6 +163,10 @@ export default function BuildsPage() {
     orders,
     ranges: params.ranges,
     spread: countsLive ? (spread.data ?? null) : null,
+    within: params.within,
+    confirmState: params.state,
+    model: params.model,
+    worksOn: countsLive ? (worksOn.data ?? null) : null,
   });
   const rangesLive = countsLive && Boolean(spread.data);
   const count = total ?? builds.length;
@@ -166,7 +174,7 @@ export default function BuildsPage() {
   const filters: BuildsFiltersViewProps = {
       activeCount: activeCount(params),
       sections,
-      catalogue: { total: liveCatalogue(classified, patternsLive, rangesLive).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive, rangesLive) },
+      catalogue: { total: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)) },
       onRange: (sectionId, value) => {
         if ((RANGE_KEYS as readonly string[]).includes(sectionId)) navigate(galleryHref(withRange(params, sectionId as RangeKey, value)), { preventScrollReset: true, replace: true });
       },

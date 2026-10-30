@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { parseGalleryParams } from "@/lib/build/galleryParams";
 
-import { activeChips, histogramOf, medianOf, panelSections, tableFooter, withRange, withoutChip } from "./buildsModel";
+import { activeChips, histogramOf, liveCatalogue, medianOf, panelSections, tableFooter, toggled, withRange, withoutChip } from "./buildsModel";
 import type { RangeSection } from "./BuildsFiltersView";
 
 const params = (search: string) => parseGalleryParams(new URLSearchParams(search));
@@ -84,5 +84,52 @@ describe("the median", () => {
     expect(tableFooter(2, [row(4), row(12), row(null)]).median).toBe("Median 8 steps");
     expect(tableFooter(1, [row(1)]).median).toBe("Median 1 step");
     expect(tableFooter(1, [row(null)]).median).toBeUndefined();
+  });
+});
+
+describe("the proof (SV-23 P2)", () => {
+  const OPUS = { model: { id: "opus-5-5", name: "Opus 5.5" }, builds: 18 } as never;
+  const SPREAD = { reproductions: new Map([[1, 3]]), rebuilds: new Map(), likes: new Map(), steps: new Map(), sessions: new Map() };
+  const ids = (state: object) => panelSections({ ...STATE, ...state }).map((section) => section.id);
+
+  it("draws Last confirmed and Confirmed or stale without any stored count, and the rest with it", () => {
+    expect(ids({ spread: null, worksOn: null })).toEqual(expect.arrayContaining(["within", "state", "shape"]));
+    expect(ids({ spread: null, worksOn: null })).not.toContain("model");
+    expect(ids({ spread: null, worksOn: null })).not.toContain("reproductions");
+    expect(ids({ spread: SPREAD, worksOn: [OPUS] }).filter((id) => ["reproductions", "model", "within", "state", "rebuilds", "likes", "shape", "steps", "sessions"].includes(id))).toEqual([
+      "reproductions", "model", "within", "state", "rebuilds", "likes", "shape", "steps", "sessions",
+    ]);
+  });
+
+  it("holds the chosen value on each, and opens it", () => {
+    const sections = panelSections({ ...STATE, spread: SPREAD, worksOn: [OPUS], model: "opus-5-5", within: 30, confirmState: "stale" });
+    expect(sections.find((section) => section.id === "model")).toMatchObject({ kind: "word", options: [{ key: "opus-5-5", label: "Opus 5.5", count: 18, checked: true }] });
+    expect(sections.find((section) => section.id === "within")).toMatchObject({ kind: "word", options: expect.arrayContaining([{ key: "within:30", label: "Within 30 days", checked: true }]) });
+    expect(sections.find((section) => section.id === "state")).toMatchObject({ kind: "word" });
+  });
+
+  it("is a choice of one: choosing the held value clears it, another replaces it", () => {
+    expect(toggled(params("model=opus-5-5"), "model", "opus-5-5").model).toBeUndefined();
+    expect(toggled(params(""), "model", "opus-5-5").model).toBe("opus-5-5");
+    expect(toggled(params("within=7"), "within", "within:30").within).toBe(30);
+    expect(toggled(params("within=7"), "within", "within:7").within).toBeUndefined();
+    expect(toggled(params("state=stale"), "state", "state:confirmed").state).toBe("confirmed");
+    expect(toggled(params("state=stale"), "state", "state:stale").state).toBeUndefined();
+  });
+
+  it("has a chip for each, in words, and removing it clears only it", () => {
+    const chosen = params("model=opus-5-5&within=30&state=stale&reps=2");
+    expect(activeChips(chosen).map((chip) => [chip.name, chip.value])).toEqual([["Works on", "Opus 5.5"], ["Last confirmed", "Within 30 days"], ["Confirmed or stale", "Stale"]]);
+    expect(withoutChip(chosen, "model").model).toBeUndefined();
+    expect(withoutChip(chosen, "within").within).toBeUndefined();
+    expect(withoutChip(chosen, "state").state).toBeUndefined();
+    expect(withoutChip(chosen, "within").state).toBe("stale");
+  });
+
+  it("lists in the catalogue only the filters that work", () => {
+    const names = (groups: ReturnType<typeof liveCatalogue>, group: string) => groups.find((entry) => entry.name === group)?.items;
+    expect(names(liveCatalogue(true, false), "Proof")).toBe("Last confirmed, Confirmed or stale");
+    expect(names(liveCatalogue(true, false, true, true), "Proof")).toBe("Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes");
+    expect(names(liveCatalogue(true, true, true, true), "Structure")).toBe("Shape, Steps, Sessions, Patterns");
   });
 });

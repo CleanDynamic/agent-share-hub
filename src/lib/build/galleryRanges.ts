@@ -5,6 +5,10 @@
 export const RANGE_FILTERS = {
   steps: { column: "step_count", cap: 60, name: "Steps" },
   sessions: { column: "session_count", cap: 20, name: "Sessions" },
+  // SV-23 P2: the proof, on columns every build has.
+  reproductions: { column: "reproduction_count", cap: 50, name: "Reproductions" },
+  rebuilds: { column: "rebuild_count", cap: 20, name: "Rebuilds" },
+  likes: { column: "like_count", cap: 50, name: "Likes" },
 } as const;
 
 export type RangeKey = keyof typeof RANGE_FILTERS;

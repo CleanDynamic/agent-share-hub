@@ -29,7 +29,8 @@ export type WordOrder = "az" | "count" | "scale";
 export interface WordOption {
   key: string;
   label: string;
-  count: number;
+  /** Absent: the filter has no count to show (Last confirmed, Confirmed or stale). */
+  count?: number;
   checked: boolean;
 }
 
@@ -217,7 +218,7 @@ function OptionRow({ option, onToggle }: { option: WordOption; onToggle: () => v
     <label style={{ display: "grid", gridTemplateColumns: "14px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 30, cursor: "pointer", ...text(12.5, 400, option.checked ? t.text : t.text2) }}>
       <Checkbox checked={option.checked} onChange={onToggle} style={{ width: 14, height: 14 }} />
       <span>{option.label}</span>
-      <span style={small(t.label)}>{option.count}</span>
+      {option.count === undefined ? <span /> : <span style={small(t.label)}>{option.count}</span>}
     </label>
   );
 }

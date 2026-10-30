@@ -18,6 +18,7 @@ const countGalleryLenses = vi.fn();
 const getClassificationFacets = vi.fn();
 const getGalleryFacets = vi.fn();
 const getCountSpread = vi.fn();
+const getWorksOnModelCounts = vi.fn();
 vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/gallery")>()),
   listBuildsTable: (...args: unknown[]) => listBuildsTable(...args),
@@ -26,6 +27,7 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   getClassificationFacets: () => getClassificationFacets(),
   getGalleryFacets: () => getGalleryFacets(),
   getCountSpread: () => getCountSpread(),
+  getWorksOnModelCounts: () => getWorksOnModelCounts(),
 }));
 
 import { emptyClassification } from "@/lib/classify/facets";
@@ -72,6 +74,8 @@ beforeEach(() => {
   getGalleryFacets.mockResolvedValue({ roles: [], tools: [], patterns: [], patternsLive: false });
   getCountSpread.mockReset();
   getCountSpread.mockResolvedValue(null);
+  getWorksOnModelCounts.mockReset();
+  getWorksOnModelCounts.mockResolvedValue(null);
 });
 
 describe("BuildsPage", () => {
@@ -83,6 +87,7 @@ describe("BuildsPage", () => {
     expect(getClassificationFacets).toHaveBeenCalledTimes(1);
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
     expect(getCountSpread).toHaveBeenCalledTimes(1);
+    expect(getWorksOnModelCounts).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole("heading", { level: 1, name: /^2 builds/ })).toBeTruthy();
   });
 
@@ -208,6 +213,54 @@ describe("BuildsPage", () => {
       expect(screen.getByRole("group", { name: "Sessions, 2 or more" })).toBeTruthy();
       fireEvent.click(screen.getByRole("button", { name: "Remove filter Sessions" }));
       await waitFor(() => expect(address).toBe("/builds"));
+    });
+  });
+
+  describe("the proof (SV-23 P2)", () => {
+    const SPREAD = { steps: new Map(), sessions: new Map(), reproductions: new Map([[1, 4], [3, 2]]), rebuilds: new Map(), likes: new Map() };
+    const OPUS = { id: "opus-5-5", name: "Opus 5.5" };
+
+    it("draws Runs, 12 weeks from the list, with words for the bars", async () => {
+      listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), runs: [0, 0, 1, 0, 2, 0, 0, 3, 0, 0, 1, 1] }], total: 1 });
+      renderAt("/builds");
+      expect(await screen.findByRole("columnheader", { name: "Runs, 12 weeks" })).toBeTruthy();
+      expect(screen.getByRole("img", { name: "Runs per week over 12 weeks, oldest first: 0, 0, 1, 0, 2, 0, 0, 3, 0, 0, 1, 1" })).toBeTruthy();
+    });
+
+    it("offers Last confirmed and Confirmed or stale from the columns that exist, and writes the choice to the address", async () => {
+      renderAt("/builds");
+      fireEvent.click(await screen.findByRole("button", { name: /^Last confirmed\s*Any/ }));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+      await waitFor(() => expect(address).toBe("/builds?within=30"));
+      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedWithin: 30 })));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+      await waitFor(() => expect(address).toBe("/builds"));
+      fireEvent.click(screen.getByRole("button", { name: /^Confirmed or stale\s*Any/ }));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Stale, not confirmed in 120 days/ }));
+      await waitFor(() => expect(address).toBe("/builds?state=stale"));
+      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedState: "stale" })));
+      expect(await screen.findByRole("button", { name: "Remove filter Confirmed or stale" })).toBeTruthy();
+    });
+
+    it("draws Works on model once its counts answer with the stored counts live, and writes the model", async () => {
+      getCountSpread.mockResolvedValue(SPREAD);
+      getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
+      listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1)], total: 1 });
+      renderAt("/builds");
+      fireEvent.click(await screen.findByRole("button", { name: /^Works on model\s*Any/ }));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Opus 5.5/ }));
+      await waitFor(() => expect(address).toBe("/builds?model=opus-5-5"));
+      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ worksOn: "opus-5-5" })));
+      expect(await screen.findByRole("button", { name: "Remove filter Works on" })).toBeTruthy();
+    });
+
+    it("draws no Works on model, and no Reproductions range, while the stored counts are not live", async () => {
+      getCountSpread.mockResolvedValue(SPREAD);
+      getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
+      renderAt("/builds");
+      await screen.findByRole("link", { name: "Build 1" });
+      expect(screen.queryByRole("button", { name: /^Works on model/ })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^Reproductions\s*Any/ })).toBeNull();
     });
   });
 });

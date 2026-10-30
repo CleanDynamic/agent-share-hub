@@ -21,13 +21,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
-import { MODEL_VERSIONS, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
+import { MODEL_VERSIONS, modelById, modelKeysOf, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
 import { TOOLS, toolFor } from "@/lib/tools/registry";
 import { isPattern, type Pattern } from "./patterns";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import type { ThreadDoc } from "./thread";
 import { RANGE_FILTERS, RANGE_KEYS, type NumberRange, type RangeKey } from "./galleryRanges";
+import { runsPerWeek, runsSince } from "./runsPerWeek";
 import { normaliseQuery, searchBuildIds } from "./search";
 import { isMissingColumn } from "@/lib/classify/storage";
 import { findAcross, isKnown, valueOf, type Facet } from "@/lib/classify/taxonomy";
@@ -1333,6 +1334,14 @@ const BUILDS_TABLE_COLUMNS =
   "maker:profiles!builds_creator_id_fkey(username, display_name)";
 
 /**
+ * SV-23 P2: Runs, 12 weeks. The runs of the last twelve weeks of each build on the page, embedded in the list's own select, so they
+ * cost no request; counted by week on the client (`runsPerWeek`). At most this many per build: a run is one person's, and a build
+ * on the page has rarely more than a few in twelve weeks.
+ */
+const RUNS_EMBED = "build_reproductions!build_reproductions_build_id_fkey(confirmed_at)";
+const RUNS_PER_BUILD = 200;
+
+/**
  * SV-23 P1: the stored counts the Steps and Sessions columns and range filters read. They are in the list's own select, so they cost no
  * request. Until the SV-23 migration is applied the columns are missing: the read says so once (`isMissingColumn`), is made again
  * without them, and `countsLive` on the page is false, so the page draws no Steps or Sessions and offers no range.
@@ -1366,6 +1375,8 @@ export interface BuildsTableBuild {
   /** SV-23 P1: the stored counts; null until the composer has saved the build since they existed. */
   stepCount?: number | null;
   sessionCount?: number | null;
+  /** SV-23 P2: runs in each of the last twelve calendar weeks, oldest first. */
+  runs?: number[];
 }
 
 export interface BuildsTableOptions {
@@ -1384,6 +1395,12 @@ export interface BuildsTableOptions {
   query?: string;
   /** SV-23 P1: number filters on the stored counts. A build with no count is left out of a range on it. */
   ranges?: Partial<Record<RangeKey, NumberRange>>;
+  /** SV-23 P2: last confirmed within this many days (a build nobody has run is left out). */
+  confirmedWithin?: number;
+  /** SV-23 P2: run, and last confirmed within the stale window (`confirmed`) or before it (`stale`). */
+  confirmedState?: "confirmed" | "stale";
+  /** SV-23 P2: Works on model: a registry model id; builds with a run that worked on it. */
+  worksOn?: string;
   sort?: GalleryFeedSort;
   offset?: number;
   limit?: number;
@@ -1403,6 +1420,7 @@ interface TableQuery extends PromiseLike<{ data: unknown; error: unknown; count?
   or(filters: string): TableQuery;
   eq(column: string, value: unknown): TableQuery;
   gte(column: string, value: string | number): TableQuery;
+  lt(column: string, value: string | number): TableQuery;
   lte(column: string, value: string | number): TableQuery;
   contains(column: string, values: readonly unknown[]): TableQuery;
   overlaps(column: string, values: readonly unknown[]): TableQuery;
@@ -1441,11 +1459,12 @@ interface BuildsTableRow {
   classification?: unknown;
   step_count?: number | null;
   session_count?: number | null;
+  build_reproductions?: { confirmed_at: string | null }[] | null;
   maker: { username: string | null; display_name: string | null } | null;
   bounties: { reward_gbp: number | null }[] | null;
 }
 
-function toBuildsTableBuild(row: BuildsTableRow): BuildsTableBuild {
+function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
   const read = readClassification(row.classification);
   const rewards = (row.bounties ?? []).map((bounty) => bounty.reward_gbp).filter((reward): reward is number => typeof reward === "number" && reward > 0);
   return {
@@ -1464,7 +1483,13 @@ function toBuildsTableBuild(row: BuildsTableRow): BuildsTableBuild {
     open: { count: (row.bounties ?? []).length, reward: rewards.length > 0 ? Math.max(...rewards) : null },
     stepCount: typeof row.step_count === "number" ? row.step_count : null,
     sessionCount: typeof row.session_count === "number" ? row.session_count : null,
+    runs: runsPerWeek((row.build_reproductions ?? []).map((run) => run.confirmed_at), now),
   };
+}
+
+/** A moment `days` before the start of today (UTC): the same all day, so the list's cache is not a new request every millisecond. */
+export function confirmedCutoff(days: number, now: Date): string {
+  return new Date(Math.floor(now.getTime() / DAY_MS) * DAY_MS - days * DAY_MS).toISOString();
 }
 
 /**
@@ -1485,15 +1510,17 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
     ? "bounties!bounties_build_id_fkey!inner(reward_gbp, status)"
     : "bounties!bounties_build_id_fkey(reward_gbp, status)";
   const search = await feedSearchClause(options.query, true);
+  const now = new Date();
 
   const request = async (withCounts: boolean) => {
-    const columns = withCounts ? `${BUILDS_TABLE_COLUMNS}, ${BUILDS_COUNT_COLUMNS}` : BUILDS_TABLE_COLUMNS;
+    const columns = `${withCounts ? `${BUILDS_TABLE_COLUMNS}, ${BUILDS_COUNT_COLUMNS}` : BUILDS_TABLE_COLUMNS}, ${RUNS_EMBED}`;
     let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact" }) => TableQuery } })
       .from("builds")
       .select(`${columns}, ${bounties}`, { count: "exact" })
       .in("status", ["published", "gallery"])
       .or(galleryPredicate())
-      .eq("bounties.status", "open");
+      .eq("bounties.status", "open")
+      .gte("build_reproductions.confirmed_at", runsSince(now).toISOString());
 
     const madeWith = madeWithSpellings(options.tool);
     if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
@@ -1513,10 +1540,18 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
         if (range?.max !== undefined) query = query.lte(RANGE_FILTERS[key].column, range.max);
       }
     }
+    // SV-23 P2: the proof. Last confirmed and Confirmed or stale read `last_confirmed_at` of builds that have been run.
+    if (options.confirmedWithin !== undefined) query = query.gte("last_confirmed_at", confirmedCutoff(options.confirmedWithin, now));
+    if (options.confirmedState === "confirmed") query = query.gte("reproduction_count", 1).gte("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
+    if (options.confirmedState === "stale") query = query.gte("reproduction_count", 1).lt("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
+    // Works on model: `worked_models` holds model_key() of each model a run worked on; any spelling of the chosen version matches.
+    const worksOn = withCounts && options.worksOn ? modelById(options.worksOn) : null;
+    if (worksOn) query = query.overlaps("worked_models", modelKeysOf(worksOn));
     query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
     return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
       .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })
+      .limit(RUNS_PER_BUILD, { referencedTable: "build_reproductions" })
       .range(offset, offset + limit - 1);
   };
 
@@ -1530,7 +1565,7 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
   const { data, error, count } = answer;
   if (error) throw buildLayerError("listBuildsTable", error);
 
-  return { countsLive: withCounts, builds: ((data ?? []) as BuildsTableRow[]).map(toBuildsTableBuild), total: typeof count === "number" ? count : null };
+  return { countsLive: withCounts, builds: ((data ?? []) as BuildsTableRow[]).map((row) => toBuildsTableBuild(row, now)), total: typeof count === "number" ? count : null };
 }
 
 /**
@@ -1549,4 +1584,29 @@ export async function getCountSpread(): Promise<CountSpread | null> {
     (spread[row.kind] ??= new Map()).set(row.value, row.builds);
   }
   return spread as CountSpread;
+}
+
+/**
+ * SV-23 P2: Works on model, the panel's counts: builds with a run that worked on each model, by registry model. Alongside the facets.
+ * A model's spellings in `worked_models` are summed (a build with runs under two spellings of one model counts twice, which is rare).
+ * `null` when the function or the column is not there yet: the filter is then not drawn.
+ */
+export interface WorksOnModelCount {
+  model: ModelVersion;
+  builds: number;
+}
+
+export async function getWorksOnModelCounts(): Promise<WorksOnModelCount[] | null> {
+  const { data, error } = await (supabase as unknown as { rpc: (name: string) => PromiseLike<{ data: unknown; error: unknown }> }).rpc("works_on_model_counts");
+  if (error || !Array.isArray(data)) return null;
+  const byModel = new Map<string, WorksOnModelCount>();
+  for (const row of data as { model_key?: unknown; builds?: unknown }[]) {
+    if (typeof row.model_key !== "string" || typeof row.builds !== "number") continue;
+    const model = normaliseModel(row.model_key);
+    if (!model) continue;
+    const held = byModel.get(model.id);
+    if (held) held.builds += row.builds;
+    else byModel.set(model.id, { model, builds: row.builds });
+  }
+  return [...byModel.values()].sort((a, b) => b.builds - a.builds || a.model.name.localeCompare(b.model.name));
 }

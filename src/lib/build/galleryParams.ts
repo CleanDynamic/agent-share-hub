@@ -55,6 +55,13 @@ export const DEFAULT_GALLERY_SORT: GalleryFeedSort = "reproduced";
 
 const GALLERY_PATH = "/builds";
 
+/** SV-23 P2: the choices for Last confirmed; 120 is the lamp's own window (STALE_AFTER_DAYS). */
+export const CONFIRMED_WITHIN: readonly number[] = [7, 30, 90, 120];
+export type ConfirmedWithin = 7 | 30 | 90 | 120;
+export type ConfirmedState = "confirmed" | "stale";
+
+const isWithin = (value: string | null): boolean => value !== null && CONFIRMED_WITHIN.includes(Number(value)) && String(Number(value)) === value;
+
 /** What the gallery's address says. */
 export interface GalleryParams {
   lens: GalleryLens;
@@ -81,6 +88,10 @@ export interface GalleryParams {
   facets?: string[];
   /** SV-11. Only builds with an open request. */
   open?: true;
+  /** SV-23 P2. Last confirmed: within this many days. */
+  within?: ConfirmedWithin;
+  /** SV-23 P2. Confirmed within the stale window (`state=confirmed`) or not (`state=stale`); only builds that have been run. */
+  state?: ConfirmedState;
   /** SV-23. Number filters (`steps=5-30`); present only when at least one is set. */
   ranges?: Partial<Record<RangeKey, NumberRange>>;
   /** UI-P49. Present only when it is not the resting sort (SV-11: reproduced). */
@@ -152,6 +163,8 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(isPattern(pattern) ? { pattern } : {}),
     ...(facets.length > 0 ? { facets } : {}),
     ...(search.get("open") === "1" ? { open: true as const } : {}),
+    ...(isWithin(search.get("within")) ? { within: Number(search.get("within")) as ConfirmedWithin } : {}),
+    ...(search.get("state") === "confirmed" || search.get("state") === "stale" ? { state: search.get("state") as ConfirmedState } : {}),
     ...(Object.keys(ranges).length > 0 ? { ranges } : {}),
     ...(isSort(sort) && sort !== DEFAULT_GALLERY_SORT ? { sort } : {}),
   };
@@ -159,7 +172,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, the number filters (SV-23: steps, sessions), sort, q.
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -175,6 +188,8 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   if (isPattern(params.pattern)) out.set("pattern", params.pattern);
   for (const key of cleanFacetKeys(params.facets)) out.append("f", key);
   if (params.open === true) out.set("open", "1");
+  if (params.within !== undefined && CONFIRMED_WITHIN.includes(params.within)) out.set("within", String(params.within));
+  if (params.state === "confirmed" || params.state === "stale") out.set("state", params.state);
   for (const key of RANGE_KEYS) {
     const range = formatRange(params.ranges?.[key]);
     if (range) out.set(key, range);

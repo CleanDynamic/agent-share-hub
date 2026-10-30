@@ -37,6 +37,15 @@ describe("the address", () => {
     expect(galleryHref(params)).toBe("/builds?steps=5-30&sessions=2-");
   });
 
+  it("carries the proof ranges and the confirmed choices, in one order", () => {
+    const params = parseGalleryParams(new URLSearchParams("likes=-10&state=stale&sessions=2-&within=30&reproductions=3-&within=45&rebuilds=1-4"));
+    expect(params.within).toBe(30);
+    expect(params.state).toBe("stale");
+    expect(galleryHref(params)).toBe("/builds?within=30&state=stale&sessions=2-&reproductions=3-&rebuilds=1-4&likes=-10");
+    expect(parseGalleryParams(new URLSearchParams("within=45&state=fresh")).within).toBeUndefined();
+    expect(parseGalleryParams(new URLSearchParams("within=45&state=fresh")).state).toBeUndefined();
+  });
+
   it("has no ranges when none is set, and drops one that does not read", () => {
     expect(parseGalleryParams(new URLSearchParams("steps=30-5")).ranges).toBeUndefined();
     expect(galleryHref({ ranges: {} })).toBe("/builds");
