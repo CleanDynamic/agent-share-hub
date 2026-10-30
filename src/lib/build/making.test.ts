@@ -73,7 +73,6 @@ describe("refreshMakingStats", () => {
     expect(listBuildSessions).toHaveBeenCalledWith(BUILD_ID);
     expect(updateBuild.mock.calls[0][0]).toBe(BUILD_ID);
     expect(patch()).toMatchObject({
-      session_count: 3,
       prompt_count: 13,
       ai_turn_count: 50,
       models_used: ["Sonnet 5.5", "GPT-6 Luna"],
@@ -138,14 +137,15 @@ describe("refreshMakingStats", () => {
     await refreshMakingStats(BUILD_ID);
     expect(patch().made_with).toEqual([]);
     expect(patch().models_used).toEqual([]);
-    expect(patch().session_count).toBe(2);
+    // SV-23 P1: session_count has one writer, the composer's counts; this write leaves it alone.
+    expect(patch()).not.toHaveProperty("session_count");
   });
 
   it("writes zeros for a build with no sessions", async () => {
     listBuildSessions.mockResolvedValue([]);
     build();
     await refreshMakingStats(BUILD_ID);
-    expect(patch()).toMatchObject({ session_count: 0, prompt_count: 0, ai_turn_count: 0, models_used: [] });
+    expect(patch()).toMatchObject({ prompt_count: 0, ai_turn_count: 0, models_used: [] });
   });
 
   it("ignores a malformed making column", async () => {

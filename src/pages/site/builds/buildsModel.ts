@@ -1,17 +1,18 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
-import { DEFAULT_GALLERY_SORT, type GalleryParams } from "@/lib/build/galleryParams";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { CONFIRMED_WITHIN, DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
+import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
-import { isStale } from "@/lib/build/signals";
+import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
 import { shownValues } from "@/lib/classify/facets";
 import { labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, TAXONOMY, valueOf, type Facet } from "@/lib/classify/taxonomy";
-import { modelLabel } from "@/lib/models/registry";
+import { modelById, modelLabel } from "@/lib/models/registry";
 import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
-import type { CatalogueGroup, FilterSection, WordOption, WordOrder } from "./BuildsFiltersView";
+import type { CatalogueGroup, FilterSection, RangeSection, WordOption, WordOrder } from "./BuildsFiltersView";
 import type { ColumnId, TableChip, TableFooterView, TableRowView, TableTool } from "./BuildsTableView";
 
 /** What the list is asked for: everything in the address but the view, which changes what is drawn, not what is read. */
@@ -24,6 +25,10 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
     pattern: params.pattern,
     openBounties: params.open === true,
     query: params.query ?? undefined,
+    ranges: params.ranges,
+    confirmedWithin: params.within,
+    confirmedState: params.state,
+    worksOn: params.model,
     sort: params.sort ?? DEFAULT_GALLERY_SORT,
   };
 }
@@ -78,6 +83,63 @@ export interface PanelState {
   /** The filters opened on this visit, beyond those opened by default and by holding a value. */
   opened: ReadonlySet<string>;
   orders: Readonly<Record<string, PanelOrder>>;
+  /** SV-23: the number filters, drawn once their spread has answered (the stored counts are live). */
+  ranges?: Partial<Record<RangeKey, NumberRange>>;
+  spread?: CountSpread | null;
+  /** SV-23 P2: the proof filters in the address, and the models with a worked run (null: the count is not live, so no Works on model). */
+  within?: ConfirmedWithin;
+  confirmState?: ConfirmedState;
+  model?: string;
+  worksOn?: readonly WorksOnModelCount[] | null;
+}
+
+const WITHIN_WORDS = (days: number) => `Within ${days} days`;
+const STATE_WORDS: Record<ConfirmedState, { option: string; chip: string }> = {
+  confirmed: { option: `Confirmed in the last ${STALE_AFTER_DAYS} days`, chip: "Confirmed" },
+  stale: { option: `Stale, not confirmed in ${STALE_AFTER_DAYS} days`, chip: "Stale" },
+};
+
+/* ── the number filters (SV-23) ── */
+
+const HISTOGRAM_BARS = 12;
+
+/** Bars from 0 to 1 over the filter's values 0 to its cap, and whether each bar holds any value in the chosen range. */
+export function histogramOf(counts: ReadonlyMap<number, number> | undefined, cap: number, range: NumberRange | undefined): RangeSection["histogram"] {
+  // The cap + 1 values 0 to cap, shared out evenly: value v is in bar floor(v * 12 / (cap + 1)), so the cap is in the last.
+  const barOf = (value: number) => Math.min(HISTOGRAM_BARS - 1, Math.floor((Math.min(value, cap) * HISTOGRAM_BARS) / (cap + 1)));
+  const totals = Array.from({ length: HISTOGRAM_BARS }, () => 0);
+  for (const [value, builds] of counts ?? []) totals[barOf(value)] += builds;
+  const most = Math.max(1, ...totals);
+  const first = barOf(range?.min ?? 0);
+  const last = barOf(range?.max ?? cap);
+  return totals.map((total, at) => ({ height: total / most, inRange: at >= first && at <= last }));
+}
+
+/** One number filter: the histogram, the slider's two ends and the range in words. */
+function rangeSection(key: RangeKey, spread: CountSpread, range: NumberRange | undefined): RangeSection {
+  const { cap, name } = RANGE_FILTERS[key];
+  return {
+    kind: "range",
+    id: key,
+    name,
+    valueText: range ? rangeWords(range) : "Any",
+    histogram: histogramOf(spread[key], cap, range),
+    min: 0,
+    max: cap,
+    value: [range?.min ?? 0, range?.max ?? cap],
+    describe: (value, end) => (end === "min" ? (value === 0 ? "any" : `${value} or more`) : value >= cap ? "no limit" : `up to ${value}`),
+    endLabels: ["0", `${cap}+`],
+  };
+}
+
+/** The address with a number filter set from the slider's two ends; the ends of the scale are no limit. */
+export function withRange(params: GalleryParams, key: RangeKey, value: readonly [number, number]): GalleryParams {
+  const { cap } = RANGE_FILTERS[key];
+  const range: NumberRange = { ...(value[0] > 0 ? { min: value[0] } : {}), ...(value[1] < cap ? { max: value[1] } : {}) };
+  const ranges = { ...params.ranges };
+  if (range.min === undefined && range.max === undefined) delete ranges[key];
+  else ranges[key] = range;
+  return { ...params, ranges: Object.keys(ranges).length > 0 ? ranges : undefined };
 }
 
 /** Field and Autonomy are open by default, as the board draws them; a filter holding a value is open. */
@@ -113,12 +175,42 @@ export function panelSections(state: PanelState): FilterSection[] {
       sections.push({ kind: "word", id: facet, name, order, options: facetOptions(facet, counts, state.facets, order === "scale" ? "az" : order) });
     }
   }
+  const rangeSections = (keys: readonly RangeKey[]) => {
+    if (!state.spread) return;
+    for (const key of keys) {
+      const range = state.ranges?.[key];
+      if (isOpen(key, range !== undefined)) sections.push(rangeSection(key, state.spread, range));
+      else sections.push({ kind: "closed", id: key, name: RANGE_FILTERS[key].name, value: "Any" });
+    }
+  };
+  /* SV-23 P2, the proof: Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes. */
+  rangeSections(["reproductions"]);
+  if (state.worksOn) {
+    const chosen = state.model ? modelById(state.model) : null;
+    if (isOpen("model", chosen !== null)) {
+      const options = state.worksOn.map((entry) => ({ key: entry.model.id, label: entry.model.name, count: entry.builds, checked: entry.model.id === state.model }));
+      if (chosen && !options.some((option) => option.checked)) options.push({ key: chosen.id, label: chosen.name, count: 0, checked: true });
+      sections.push({ kind: "word", id: "model", name: "Works on model", order: "count", options });
+    } else sections.push({ kind: "closed", id: "model", name: "Works on model", value: "Any" });
+  }
+  sections.push(
+    isOpen("within", state.within !== undefined)
+      ? { kind: "word", id: "within", name: "Last confirmed", order: "scale", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) }
+      : { kind: "closed", id: "within", name: "Last confirmed", value: "Any" },
+  );
+  sections.push(
+    isOpen("state", state.confirmState !== undefined)
+      ? { kind: "word", id: "state", name: "Confirmed or stale", order: "scale", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) }
+      : { kind: "closed", id: "state", name: "Confirmed or stale", value: state.confirmState ? STATE_WORDS[state.confirmState].chip : "Any" },
+  );
+  rangeSections(["rebuilds", "likes"]);
   const shapeOpen = isOpen("shape", state.shapes.length > 0);
   sections.push(
     shapeOpen
       ? { kind: "word", id: "shape", name: "Shape", order: "az", options: GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })) }
       : { kind: "closed", id: "shape", name: "Shape", value: state.shapes.length === 1 ? shapeWord(state.shapes[0]) : state.shapes.length > 1 ? `${state.shapes.length} chosen` : "Any" },
   );
+  rangeSections(["steps", "sessions"]);
   if (state.patterns) {
     const patternOpen = isOpen("pattern", state.pattern !== undefined);
     sections.push(
@@ -136,13 +228,16 @@ export function panelSections(state: PanelState): FilterSection[] {
 }
 
 /** The catalogue on the live page: only the filters that work, by group. */
-export function liveCatalogue(classified: boolean, patterns: boolean): CatalogueGroup[] {
+export function liveCatalogue(classified: boolean, patterns: boolean, ranges = false, models = false): CatalogueGroup[] {
   const groups: CatalogueGroup[] = [];
   if (classified) {
     const names = [...PANEL_FACETS.slice(0, 9), "stack" as Facet, ...PANEL_FACETS.slice(9)].map((facet) => FACET_LABEL[facet]);
     groups.push({ name: "Classification", count: names.length, items: names.join(", ") });
   }
-  const structure = ["Shape", ...(patterns ? ["Patterns"] : [])];
+  const named = (keys: readonly RangeKey[]) => (ranges ? keys.map((key) => RANGE_FILTERS[key].name) : []);
+  const proof = [...named(["reproductions"]), ...(models ? ["Works on model"] : []), "Last confirmed", "Confirmed or stale", ...named(["rebuilds", "likes"])];
+  groups.push({ name: "Proof", count: proof.length, items: proof.join(", ") });
+  const structure = ["Shape", ...named(["steps", "sessions"]), ...(patterns ? ["Patterns"] : [])];
   groups.push({ name: "Structure", count: structure.length, items: structure.join(", ") });
   groups.push({ name: "OpenBuilds", count: 1, items: "Open requests" });
   return groups;
@@ -167,6 +262,14 @@ export function activeChips(params: GalleryParams): TableChip[] {
   for (const shape of params.shapes ?? []) chips.push({ key: `shape:${shape}`, name: "Shape", value: shapeWord(shape) });
   if (params.pattern) chips.push({ key: "pattern", name: "Patterns", value: PATTERN_LABEL[params.pattern] });
   if (params.open) chips.push({ key: "open", name: "Open requests", value: "Has one" });
+  const model = params.model ? modelById(params.model) : null;
+  if (model) chips.push({ key: "model", name: "Works on", value: model.name });
+  if (params.within !== undefined) chips.push({ key: "within", name: "Last confirmed", value: WITHIN_WORDS(params.within) });
+  if (params.state) chips.push({ key: "state", name: "Confirmed or stale", value: STATE_WORDS[params.state].chip });
+  for (const key of RANGE_KEYS) {
+    const range = params.ranges?.[key];
+    if (range) chips.push({ key: `range:${key}`, name: RANGE_FILTERS[key].name, value: rangeWords(range) });
+  }
   if (params.query) chips.push({ key: "q", name: "Search", value: params.query });
   return chips;
 }
@@ -179,6 +282,13 @@ export function withoutChip(params: GalleryParams, key: string): GalleryParams {
   if (key === "pattern") return { ...params, pattern: undefined };
   if (key === "open") return { ...params, open: undefined };
   if (key === "q") return { ...params, query: null };
+  if (key === "model") return { ...params, model: undefined };
+  if (key === "within") return { ...params, within: undefined };
+  if (key === "state") return { ...params, state: undefined };
+  if (key.startsWith("range:")) {
+    const { [key.slice(6) as RangeKey]: _removed, ...rest } = params.ranges ?? {};
+    return { ...params, ranges: Object.keys(rest).length > 0 ? rest : undefined };
+  }
   return params;
 }
 
@@ -188,6 +298,10 @@ export function toggled(params: GalleryParams, sectionId: string, key: string): 
   if (sectionId === "shape") return { ...params, shapes: flip(params.shapes ?? []) };
   if (sectionId === "pattern") return { ...params, pattern: params.pattern === key ? undefined : (key as Pattern) };
   if (sectionId === "open") return { ...params, open: params.open ? undefined : true };
+  // SV-23 P2: Works on model, Last confirmed and Confirmed or stale are each a choice of one: choosing the one held clears it.
+  if (sectionId === "model") return { ...params, model: params.model === key ? undefined : key };
+  if (sectionId === "within") return { ...params, within: params.within === Number(key.slice(7)) ? undefined : (Number(key.slice(7)) as ConfirmedWithin) };
+  if (sectionId === "state") return { ...params, state: params.state === key.slice(6) ? undefined : (key.slice(6) as ConfirmedState) };
   return { ...params, facets: flip(params.facets ?? []) };
 }
 
@@ -226,20 +340,25 @@ export function tableRow(build: BuildsTableBuild, now: number): TableRowView {
     built: first("built"),
     field: first("field"),
     tools: tools.slice(0, 3),
-    steps: null,
-    sessions: null,
+    steps: build.stepCount ?? null,
+    sessions: build.sessionCount ?? null,
     reproductions: build.reproductionCount,
     lit: build.reproductionCount > 0 && !isStale({ last_confirmed_at: build.lastConfirmedAt, published_at: build.publishedAt }, now),
     confirmed: ago ? `${ago === "now" ? "just now" : `${ago} ago`}${model ? ` on ${model}` : ""}` : "",
-    runs: [],
+    runs: build.runs ?? [],
     rebuilds: build.rebuildCount,
     open: build.open.count === 0 ? "" : `${build.open.count} open${build.open.reward ? ` · £${build.open.reward}` : ""}`,
     cost: first("cost"),
   };
 }
 
-/** The live columns: the board's, less those whose data does not exist yet (Steps, Sessions, Runs: SV-23). */
-export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "tools", "reproductions", "confirmed", "rebuilds", "open", "cost"];
+/** The live columns: the board's, less Steps and Sessions, which wait for the stored counts. */
+export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "tools", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
+
+/** SV-23 P1: Steps and Sessions join once the list carries the stored counts. */
+export function columnsFor(countsLive: boolean): readonly ColumnId[] {
+  return countsLive ? ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"] : LIVE_COLUMNS;
+}
 
 /** The most common value among the rows, or null. */
 function mostCommon(values: readonly string[]): string | null {
@@ -250,13 +369,23 @@ function mostCommon(values: readonly string[]): string | null {
   return best;
 }
 
-/** The footer: the count, the most common Field and Tools on the page, and the reproductions on the page. */
+/** The middle of the counted steps (the mean of the two in the middle for an even number), or null when no row has a count. */
+export function medianOf(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** The footer: the count, the most common Field and Tools on the page, the median steps and the reproductions on the page. */
 export function tableFooter(total: number | null, rows: readonly TableRowView[]): TableFooterView {
+  const median = medianOf(rows.flatMap((row) => (row.steps === null ? [] : [row.steps])));
   const common = [mostCommon(rows.map((row) => row.field)), mostCommon(rows.flatMap((row) => row.tools.map((tool) => tool.name)))].filter(Boolean);
   const count = total ?? rows.length;
   return {
     count: `${count} ${count === 1 ? "build" : "builds"}`,
     mostCommon: common.length > 0 ? `Most common · ${common.join(", ")}` : undefined,
+    median: median === null ? undefined : `Median ${median} ${median === 1 ? "step" : "steps"}`,
     total: `Total ${rows.reduce((sum, row) => sum + row.reproductions, 0)}`,
   };
 }

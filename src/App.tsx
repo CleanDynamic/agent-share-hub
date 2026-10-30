@@ -45,6 +45,8 @@ const ContentDetail = lazy(() => import("./pages/ContentDetail"));
 const ContentOrReblogRoute = lazy(() => import("@/components/routing/ContentOrReblogRoute"));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
 const Admin = lazy(() => import("./pages/Admin"));
+/* SV-23: /dev/backfill-counts, the one-off count of existing builds. Not a dev-only page: it runs in production, behind AdminRoute. */
+const BackfillCounts = lazy(() => import("./pages/dev/BackfillCounts"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 
 
@@ -320,6 +322,7 @@ const App = () => (
                 {/* /path/:id route removed */}
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+                <Route path="/dev/backfill-counts" element={<AdminRoute><BackfillCounts /></AdminRoute>} />
                 {/* UI-P36 — the four entrance pages in the site frame behind the
                     flag. Layout hands these straight through, outside AppShell,
                     so the site branch brings its own bare frame (as /rebuild/:slug

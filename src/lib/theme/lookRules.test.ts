@@ -1161,6 +1161,23 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AskNextSessionRow.tsx",
   "src/lib/build/openRequest.ts",
   "src/lib/build/openTargets.ts",
+
+  // SV-23
+  "src/lib/build/buildCounts.ts",
+  "src/lib/build/buildCounts.test.ts",
+  "src/lib/build/galleryRanges.ts",
+  "src/lib/build/galleryRanges.test.ts",
+  "src/pages/site/compose/useStoredBuildCounts.ts",
+  "src/pages/site/compose/useStoredBuildCounts.test.tsx",
+  "src/lib/build/runsPerWeek.ts",
+  "src/lib/build/runsPerWeek.test.ts",
+  "src/pages/site/builds/buildsModel.ranges.test.ts",
+  "src/lib/models/registry.ts",
+  "src/lib/build/buildCountsWrite.ts",
+  "src/lib/build/buildCountsWrite.test.ts",
+  "src/lib/build/backfillCounts.ts",
+  "src/lib/build/backfillCounts.test.ts",
+  "src/pages/dev/BackfillCounts.tsx",
 ];
 
 /**

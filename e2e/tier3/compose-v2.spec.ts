@@ -535,8 +535,8 @@ test("a prompt from a session in no build yet puts the session into this draft, 
     build_id: BUILD_ID,
   });
   await expect
-    .poll(() => writesTo(backend, "builds", "PATCH").find((write) => write.body && "session_count" in write.body)?.body)
-    .toMatchObject({ session_count: 1, models_used: ["Opus 5.5"], made_with: ["Claude", "Opus 5.5"] });
+    .poll(() => writesTo(backend, "builds", "PATCH").find((write) => write.body && "models_used" in write.body)?.body)
+    .toMatchObject({ models_used: ["Opus 5.5"], made_with: ["Claude", "Opus 5.5"] });
   await expect(page.getByTestId("made-with-chip")).toHaveText(["Claude · Opus 5.5"]);
   await expect(sessions.getByRole("button", { name: /^Session 1: Opus 5\.5/ })).toBeVisible();
   await expect(sessions.getByTestId("waiting-session")).toHaveCount(0);

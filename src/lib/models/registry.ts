@@ -380,6 +380,11 @@ const BY_KEY: ReadonlyMap<string, ModelVersion> = (() => {
   return map;
 })();
 
+/** SV-23: every comparison key a run's `model_used` may have for this version (its id, name and aliases), as `model_key()` in the database makes them. */
+export function modelKeysOf(version: ModelVersion): string[] {
+  return [...new Set([version.id, version.name, ...version.aliases].map(modelKey).filter(Boolean))];
+}
+
 /** The named version a client's text means, or null when it is not one we name. */
 export function normaliseModel(raw: string | null | undefined): ModelVersion | null {
   if (typeof raw !== "string") return null;

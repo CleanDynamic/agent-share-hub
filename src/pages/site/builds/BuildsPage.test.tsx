@@ -17,6 +17,8 @@ const getGalleryStats = vi.fn();
 const countGalleryLenses = vi.fn();
 const getClassificationFacets = vi.fn();
 const getGalleryFacets = vi.fn();
+const getCountSpread = vi.fn();
+const getWorksOnModelCounts = vi.fn();
 vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/gallery")>()),
   listBuildsTable: (...args: unknown[]) => listBuildsTable(...args),
@@ -24,6 +26,8 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   countGalleryLenses: () => countGalleryLenses(),
   getClassificationFacets: () => getClassificationFacets(),
   getGalleryFacets: () => getGalleryFacets(),
+  getCountSpread: () => getCountSpread(),
+  getWorksOnModelCounts: () => getWorksOnModelCounts(),
 }));
 
 import { emptyClassification } from "@/lib/classify/facets";
@@ -68,6 +72,10 @@ beforeEach(() => {
   getClassificationFacets.mockResolvedValue({ live: true, counts: { "field:education": 9, "field:law": 4, "autonomy:fully-autonomous": 2 } });
   getGalleryFacets.mockReset();
   getGalleryFacets.mockResolvedValue({ roles: [], tools: [], patterns: [], patternsLive: false });
+  getCountSpread.mockReset();
+  getCountSpread.mockResolvedValue(null);
+  getWorksOnModelCounts.mockReset();
+  getWorksOnModelCounts.mockResolvedValue(null);
 });
 
 describe("BuildsPage", () => {
@@ -78,6 +86,8 @@ describe("BuildsPage", () => {
     expect(countGalleryLenses).toHaveBeenCalledTimes(1);
     expect(getClassificationFacets).toHaveBeenCalledTimes(1);
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
+    expect(getCountSpread).toHaveBeenCalledTimes(1);
+    expect(getWorksOnModelCounts).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole("heading", { level: 1, name: /^2 builds/ })).toBeTruthy();
   });
 
@@ -158,5 +168,99 @@ describe("BuildsPage", () => {
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByRole("heading", { level: 1, name: /^1 build\b/ })).toBeTruthy();
+  });
+
+  describe("the stored counts (SV-23 P1)", () => {
+    const counted = (n: number, steps: number | null, sessions: number | null) => ({ ...build(n), stepCount: steps, sessionCount: sessions });
+    const SPREAD = { steps: new Map([[2, 4], [12, 9], [60, 1]]), sessions: new Map([[1, 7], [3, 2]]) };
+
+    it("draws no Steps or Sessions, and offers no range, until the list carries the counts", async () => {
+      renderAt("/builds");
+      await screen.findByRole("link", { name: "Build 1" });
+      expect(screen.queryByRole("columnheader", { name: "Steps" })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^Steps/ })).toBeNull();
+    });
+
+    it("draws the columns, the median in the footer and a closed filter for each range once they are live", async () => {
+      getCountSpread.mockResolvedValue(SPREAD);
+      listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 4, 1), counted(2, 12, 3), counted(3, null, 0)], total: 3 });
+      renderAt("/builds");
+      expect(await screen.findByRole("columnheader", { name: "Steps" })).toBeTruthy();
+      expect(screen.getByRole("columnheader", { name: "Sessions" })).toBeTruthy();
+      expect(screen.getByText("Median 8 steps")).toBeTruthy();
+      expect(await screen.findByRole("button", { name: /^Steps\s*Any/ })).toBeTruthy();
+      expect(screen.getByRole("button", { name: /^Sessions\s*Any/ })).toBeTruthy();
+    });
+
+    it("writes a range to the address, replacing the entry so dragging leaves one step in history, and the list follows", async () => {
+      getCountSpread.mockResolvedValue(SPREAD);
+      listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 4, 1)], total: 1 });
+      renderAt("/builds");
+      fireEvent.click(await screen.findByRole("button", { name: /^Steps\s*Any/ }));
+      const from = await screen.findByRole("slider", { name: "Steps from" });
+      from.focus();
+      fireEvent.keyDown(from, { key: "ArrowRight" });
+      await waitFor(() => expect(address).toBe("/builds?steps=1-"));
+      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ ranges: { steps: { min: 1 } } })));
+      expect(await screen.findByRole("button", { name: "Remove filter Steps" })).toBeTruthy();
+    });
+
+    it("opens a range already in the address, and a chip takes it away", async () => {
+      getCountSpread.mockResolvedValue(SPREAD);
+      listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 6, 1)], total: 1 });
+      renderAt("/builds?sessions=2-");
+      expect(await screen.findByRole("slider", { name: "Sessions from" })).toBeTruthy();
+      expect(screen.getByRole("group", { name: "Sessions, 2 or more" })).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Remove filter Sessions" }));
+      await waitFor(() => expect(address).toBe("/builds"));
+    });
+  });
+
+  describe("the proof (SV-23 P2)", () => {
+    const SPREAD = { steps: new Map(), sessions: new Map(), reproductions: new Map([[1, 4], [3, 2]]), rebuilds: new Map(), likes: new Map() };
+    const OPUS = { id: "opus-5-5", name: "Opus 5.5" };
+
+    it("draws Runs, 12 weeks from the list, with words for the bars", async () => {
+      listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), runs: [0, 0, 1, 0, 2, 0, 0, 3, 0, 0, 1, 1] }], total: 1 });
+      renderAt("/builds");
+      expect(await screen.findByRole("columnheader", { name: "Runs, 12 weeks" })).toBeTruthy();
+      expect(screen.getByRole("img", { name: "Runs per week over 12 weeks, oldest first: 0, 0, 1, 0, 2, 0, 0, 3, 0, 0, 1, 1" })).toBeTruthy();
+    });
+
+    it("offers Last confirmed and Confirmed or stale from the columns that exist, and writes the choice to the address", async () => {
+      renderAt("/builds");
+      fireEvent.click(await screen.findByRole("button", { name: /^Last confirmed\s*Any/ }));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+      await waitFor(() => expect(address).toBe("/builds?within=30"));
+      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedWithin: 30 })));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+      await waitFor(() => expect(address).toBe("/builds"));
+      fireEvent.click(screen.getByRole("button", { name: /^Confirmed or stale\s*Any/ }));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Stale, not confirmed in 120 days/ }));
+      await waitFor(() => expect(address).toBe("/builds?state=stale"));
+      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedState: "stale" })));
+      expect(await screen.findByRole("button", { name: "Remove filter Confirmed or stale" })).toBeTruthy();
+    });
+
+    it("draws Works on model once its counts answer with the stored counts live, and writes the model", async () => {
+      getCountSpread.mockResolvedValue(SPREAD);
+      getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
+      listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1)], total: 1 });
+      renderAt("/builds");
+      fireEvent.click(await screen.findByRole("button", { name: /^Works on model\s*Any/ }));
+      fireEvent.click(screen.getByRole("checkbox", { name: /Opus 5.5/ }));
+      await waitFor(() => expect(address).toBe("/builds?model=opus-5-5"));
+      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ worksOn: "opus-5-5" })));
+      expect(await screen.findByRole("button", { name: "Remove filter Works on" })).toBeTruthy();
+    });
+
+    it("draws no Works on model, and no Reproductions range, while the stored counts are not live", async () => {
+      getCountSpread.mockResolvedValue(SPREAD);
+      getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
+      renderAt("/builds");
+      await screen.findByRole("link", { name: "Build 1" });
+      expect(screen.queryByRole("button", { name: /^Works on model/ })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^Reproductions\s*Any/ })).toBeNull();
+    });
   });
 });
