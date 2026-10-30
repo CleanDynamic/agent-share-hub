@@ -267,6 +267,13 @@
       "when": 1793394507721,
       "tag": "0037_rc_maker_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793401352736,
+      "tag": "0038_sv23_stored_counts",
+      "breakpoints": true
     }
   ]
 }
