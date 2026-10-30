@@ -55,59 +55,10 @@
 
 
 -- =============================================================================
--- a. target_type: the old values, plus three for builds
+-- a. LEFT OUT, on purpose: the target_type check: SV-20 (20261031120000) already installed a wider one (adds 'node' and 'collection'); this section would drop it.
+-- Applying it would undo SV-20. The live definitions are the SV-20 ones.
 -- =============================================================================
--- The check is found in the catalogue, not by name: every CHECK on
--- notifications whose only column is target_type ⟦references/
--- schema-constraints.md⟧. Before anything is dropped, the rows are read: if any
--- holds a target_type the new check would refuse, the block stops, names the
--- values, and nothing has changed — the live table allows something the
--- repository does not know about, and the list below must be regenerated.
-DO $$
-DECLARE
-  _attnum  smallint;
-  _conname text;
-  _refused text;
-BEGIN
-  SELECT a.attnum INTO _attnum
-    FROM pg_attribute a
-   WHERE a.attrelid = 'public.notifications'::regclass
-     AND a.attname = 'target_type'
-     AND NOT a.attisdropped;
-
-  IF _attnum IS NULL THEN
-    RAISE EXCEPTION 'RC-P19: notifications has no target_type column; nothing was changed';
-  END IF;
-
-  SELECT string_agg(DISTINCT n.target_type, ', ' ORDER BY n.target_type) INTO _refused
-    FROM public.notifications n
-   WHERE n.target_type IS NOT NULL
-     AND n.target_type NOT IN ('blueprint','blog','bounty','stage','block','comment','message','thread','profile',
-                               'build','build_comment','bounty_build');
-
-  IF _refused IS NOT NULL THEN
-    RAISE EXCEPTION 'RC-P19: notifications holds target_type values the new check would refuse: %; nothing was changed', _refused;
-  END IF;
-
-  FOR _conname IN
-    SELECT c.conname
-      FROM pg_constraint c
-     WHERE c.conrelid = 'public.notifications'::regclass
-       AND c.contype = 'c'
-       AND c.conkey = ARRAY[_attnum]
-  LOOP
-    EXECUTE format('ALTER TABLE public.notifications DROP CONSTRAINT %I', _conname);
-  END LOOP;
-
-  ALTER TABLE public.notifications
-    ADD CONSTRAINT notifications_target_type_check
-    CHECK (target_type IS NULL OR target_type IN
-      ('blueprint','blog','bounty','stage','block','comment','message','thread','profile',
-       'build','build_comment','bounty_build'));
-END;
-$$;
-
-
+ 
 -- =============================================================================
 -- b. The build a notification is about
 -- =============================================================================
@@ -183,87 +134,15 @@ REVOKE ALL ON FUNCTION public.rc_notify(uuid, uuid, text, uuid, text, uuid, text
 
 
 -- =============================================================================
--- d. builds: rebuilt, and published
+-- d. LEFT OUT, on purpose: rc_notify_build_visible and its trigger: SV-20 (20261031120000) already replaced them with the version that also tells savers.
+-- Applying it would undo SV-20. The live definitions are the SV-20 ones.
 -- =============================================================================
--- Fires when a build BECOMES visible (published or gallery): inserted visible,
--- or updated from draft. A build that is already visible and changes again
--- tells nobody anything.
---
--- AT MOST 500 FOLLOWERS PER BUILD. 'published' goes to the maker's first 500
--- followers, oldest follow first; beyond that none are told, so publishing
--- stays one short transaction whoever publishes. A maker with more followers
--- than that needs a queued fan-out, which this migration does not build.
-CREATE OR REPLACE FUNCTION public.rc_notify_build_visible()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  _parent_creator uuid;
-  _follower       uuid;
-BEGIN
-  IF NEW.status NOT IN ('published', 'gallery') THEN
-    RETURN NULL;
-  END IF;
-  IF TG_OP = 'UPDATE' AND OLD.status IN ('published', 'gallery') THEN
-    RETURN NULL;
-  END IF;
-
-  IF NEW.parent_build_id IS NOT NULL THEN
-    SELECT b.creator_id INTO _parent_creator
-      FROM public.builds b
-     WHERE b.id = NEW.parent_build_id;
-    PERFORM public.rc_notify(_parent_creator, NEW.creator_id, 'rebuilt', NEW.id, 'build', NEW.id, 'rebuilt your build');
-  END IF;
-
-  FOR _follower IN
-    SELECT f.follower_id
-      FROM public.follows f
-     WHERE f.following_id = NEW.creator_id
-     ORDER BY f.created_at
-     LIMIT 500
-  LOOP
-    PERFORM public.rc_notify(_follower, NEW.creator_id, 'published', NEW.id, 'build', NEW.id, 'published a new build');
-  END LOOP;
-
-  RETURN NULL;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_rc_notify_build_visible ON public.builds;
-CREATE TRIGGER trg_rc_notify_build_visible
-AFTER INSERT OR UPDATE OF status ON public.builds
-FOR EACH ROW EXECUTE FUNCTION public.rc_notify_build_visible();
-
-
+ 
 -- =============================================================================
--- e. build_reproductions: reproduced
+-- e. LEFT OUT, on purpose: rc_notify_reproduced and its trigger: SV-20 (20261031120000) already replaced them with the version that also tells savers.
+-- Applying it would undo SV-20. The live definitions are the SV-20 ones.
 -- =============================================================================
-CREATE OR REPLACE FUNCTION public.rc_notify_reproduced()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  _creator uuid;
-BEGIN
-  SELECT b.creator_id INTO _creator FROM public.builds b WHERE b.id = NEW.build_id;
-  PERFORM public.rc_notify(
-    _creator, NEW.user_id, 'reproduced', NEW.build_id, 'build', NEW.build_id,
-    CASE WHEN NEW.worked THEN 'ran your build and it worked' ELSE 'ran your build and it did not work' END
-  );
-  RETURN NULL;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_rc_notify_reproduced ON public.build_reproductions;
-CREATE TRIGGER trg_rc_notify_reproduced
-AFTER INSERT ON public.build_reproductions
-FOR EACH ROW EXECUTE FUNCTION public.rc_notify_reproduced();
-
-
+ 
 -- =============================================================================
 -- f. build_comments: comment, and reply
 -- =============================================================================
@@ -326,43 +205,10 @@ FOR EACH ROW EXECUTE FUNCTION public.rc_notify_like();
 
 
 -- =============================================================================
--- h. solutions: solution, and solved
+-- h. LEFT OUT, on purpose: rc_notify_solution and its trigger: SV-20 (20261031120000) already replaced them with the version that also tells savers.
+-- Applying it would undo SV-20. The live definitions are the SV-20 ones.
 -- =============================================================================
--- A solution is inserted as 'submitted' (src/lib/bounty/solutions.ts) and
--- accepted by accept_bounty_solution, which updates it to 'accepted'. Both
--- notifications carry the bounty's build, where the answer is credited.
-CREATE OR REPLACE FUNCTION public.rc_notify_solution()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  _author uuid;
-  _build  uuid;
-BEGIN
-  SELECT bo.author_id, bo.build_id INTO _author, _build
-    FROM public.bounties bo
-   WHERE bo.id = NEW.bounty_id;
-
-  IF TG_OP = 'INSERT' THEN
-    IF NEW.status = 'submitted' THEN
-      PERFORM public.rc_notify(_author, NEW.solver_id, 'solution', _build, 'bounty_build', NEW.bounty_id, 'posted a solution to your bounty');
-    END IF;
-  ELSIF NEW.status = 'accepted' AND OLD.status IS DISTINCT FROM 'accepted' THEN
-    PERFORM public.rc_notify(NEW.solver_id, _author, 'solved', _build, 'bounty_build', NEW.bounty_id, 'accepted your solution');
-  END IF;
-
-  RETURN NULL;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_rc_notify_solution ON public.solutions;
-CREATE TRIGGER trg_rc_notify_solution
-AFTER INSERT OR UPDATE OF status ON public.solutions
-FOR EACH ROW EXECUTE FUNCTION public.rc_notify_solution();
-
-
+ 
 -- =============================================================================
 -- i. follows: follow
 -- =============================================================================

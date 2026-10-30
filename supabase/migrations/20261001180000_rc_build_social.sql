@@ -489,7 +489,7 @@ CREATE POLICY "Authors and admins delete comments"
 -- and authenticated; a column grant narrows nothing while a table-wide grant
 -- stands. So everything is revoked first, then granted exactly.
 REVOKE ALL ON public.build_likes, public.build_saves, public.build_comments
-  FROM PUBLIC, anon, authenticated;
+  FROM PUBLIC, anon, authenticated, service_role;
 
 GRANT SELECT ON public.build_likes, public.build_comments TO anon;
 
@@ -497,3 +497,5 @@ GRANT SELECT, INSERT, DELETE ON public.build_likes, public.build_saves TO authen
 
 GRANT SELECT, INSERT, DELETE ON public.build_comments TO authenticated;
 GRANT UPDATE (body, edited_at) ON public.build_comments TO authenticated;
+
+GRANT ALL ON public.build_likes, public.build_saves, public.build_comments TO service_role;
