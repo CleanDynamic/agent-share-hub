@@ -1042,6 +1042,7 @@ export type Database = {
       }
       builds: {
         Row: {
+          agent_count: number | null
           ai_turn_count: number
           classification: Json
           comment_count: number
@@ -1073,6 +1074,7 @@ export type Database = {
           monetisation_type: string | null
           outcome: string | null
           parent_build_id: string | null
+          part_count: number | null
           patterns: string[]
           post_doc: Json | null
           price_gbp: number | null
@@ -1092,11 +1094,13 @@ export type Database = {
           source_handle_at_fork: string | null
           source_title_at_fork: string | null
           status: string
+          step_count: number | null
           time_to_first_result: number | null
           title: string
           updated_at: string
         }
         Insert: {
+          agent_count?: number | null
           ai_turn_count?: number
           classification?: Json
           comment_count?: number
@@ -1128,6 +1132,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          part_count?: number | null
           patterns?: string[]
           post_doc?: Json | null
           price_gbp?: number | null
@@ -1147,11 +1152,13 @@ export type Database = {
           source_handle_at_fork?: string | null
           source_title_at_fork?: string | null
           status?: string
+          step_count?: number | null
           time_to_first_result?: number | null
           title: string
           updated_at?: string
         }
         Update: {
+          agent_count?: number | null
           ai_turn_count?: number
           classification?: Json
           comment_count?: number
@@ -1183,6 +1190,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          part_count?: number | null
           patterns?: string[]
           post_doc?: Json | null
           price_gbp?: number | null
@@ -1202,6 +1210,7 @@ export type Database = {
           source_handle_at_fork?: string | null
           source_title_at_fork?: string | null
           status?: string
+          step_count?: number | null
           time_to_first_result?: number | null
           title?: string
           updated_at?: string
@@ -6014,6 +6023,14 @@ export type Database = {
           _user_id: string
         }
         Returns: Json
+      }
+      builds_count_spread: {
+        Args: never
+        Returns: {
+          builds: number
+          kind: string
+          value: number
+        }[]
       }
       calc_level_from_xp: { Args: { _xp: number }; Returns: number }
       can_delete_primitive_comment: {
