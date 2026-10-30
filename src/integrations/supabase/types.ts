@@ -5973,6 +5973,15 @@ export type Database = {
         Args: { _creator: string; _status: string; _visibility: string }
         Returns: boolean
       }
+      top_solvers: {
+        Args: { max_results?: number; since_days?: number }
+        Returns: {
+          last_solved_at: string
+          reward_total: number
+          solved: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
