@@ -6107,6 +6107,26 @@ export type Database = {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
       }
+      maker_build_metrics: {
+        Args: { uid: string }
+        Returns: {
+          build_id: string
+          failed_last_30_days: number
+          open_bounties: number
+          runs: number
+          solutions_waiting: number
+          worked: number
+        }[]
+      }
+      maker_stats: {
+        Args: { uid: string }
+        Returns: {
+          builds: number
+          gaps_solved: number
+          rebuilds_of_their_work: number
+          reproductions_received: number
+        }[]
+      }
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
       model_key: { Args: { raw: string }; Returns: string }
