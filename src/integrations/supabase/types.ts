@@ -1098,6 +1098,7 @@ export type Database = {
           time_to_first_result: number | null
           title: string
           updated_at: string
+          worked_models: string[]
         }
         Insert: {
           agent_count?: number | null
@@ -1156,6 +1157,7 @@ export type Database = {
           time_to_first_result?: number | null
           title: string
           updated_at?: string
+          worked_models?: string[]
         }
         Update: {
           agent_count?: number | null
@@ -1214,6 +1216,7 @@ export type Database = {
           time_to_first_result?: number | null
           title?: string
           updated_at?: string
+          worked_models?: string[]
         }
         Relationships: [
           {
@@ -6277,6 +6280,13 @@ export type Database = {
           reward_total: number
           solved: number
           user_id: string
+        }[]
+      }
+      works_on_model_counts: {
+        Args: never
+        Returns: {
+          builds: number
+          model_key: string
         }[]
       }
     }
