@@ -3986,6 +3986,7 @@ export type Database = {
         Row: {
           actor_id: string | null
           body: string | null
+          build_id: string | null
           collection_id: string | null
           content_id: string | null
           created_at: string
@@ -4002,6 +4003,7 @@ export type Database = {
         Insert: {
           actor_id?: string | null
           body?: string | null
+          build_id?: string | null
           collection_id?: string | null
           content_id?: string | null
           created_at?: string
@@ -4018,6 +4020,7 @@ export type Database = {
         Update: {
           actor_id?: string | null
           body?: string | null
+          build_id?: string | null
           collection_id?: string | null
           content_id?: string | null
           created_at?: string
@@ -4044,6 +4047,13 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
           {
@@ -6087,6 +6097,18 @@ export type Database = {
           recipient: string
           source_id: string
           source_type: string
+        }
+        Returns: undefined
+      }
+      rc_notify: {
+        Args: {
+          actor: string
+          build: string
+          kind: string
+          message: string
+          recipient: string
+          target: string
+          target_type: string
         }
         Returns: undefined
       }
