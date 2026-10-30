@@ -933,6 +933,8 @@ export type Database = {
           forked_from_event_id: string | null
           hero_node_id: string | null
           id: string
+          in_review: boolean
+          in_review_since: string | null
           is_brief: boolean
           last_confirmed_at: string | null
           last_confirmed_model: string | null
@@ -982,6 +984,8 @@ export type Database = {
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
+          in_review?: boolean
+          in_review_since?: string | null
           is_brief?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
@@ -1031,6 +1035,8 @@ export type Database = {
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
+          in_review?: boolean
+          in_review_since?: string | null
           is_brief?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
@@ -4933,6 +4939,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_challenges: {
+        Row: {
+          created_at: string
+          goal: number
+          slug: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          goal: number
+          slug: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          goal?: number
+          slug?: string
+          title?: string
+        }
+        Relationships: []
       }
       solution_acceptance_log: {
         Row: {
