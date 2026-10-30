@@ -5921,6 +5921,12 @@ export type Database = {
           saved_item_id: string
         }[]
       }
+      search_build_ids: {
+        Args: { max_results?: number; q: string }
+        Returns: {
+          build_id: string
+        }[]
+      }
       semantic_search: {
         Args: { match_count: number; query_embedding: string }
         Returns: {
