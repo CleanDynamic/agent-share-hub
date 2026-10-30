@@ -456,7 +456,7 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
       };
 
       await updateBuildInStep(buildId, {
-        // SV-23 P1: session_count is written with the composer's counts (`useStoredBuildCounts`), which count the sessions the composer shows.
+        // SV-23 P1: session_count is written with the other stored counts (`buildCountsWrite`), which count the sessions the composer shows.
         prompt_count: sessions.reduce((sum, session) => sum + session.promptCount, 0),
         ai_turn_count: sessions.reduce((sum, session) => sum + session.turnCount, 0),
         models_used: modelsUsed,
@@ -467,6 +467,9 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
     });
     // CA-13 P11: the patterns the build uses follow it. A failure here never fails the save that called this.
     void import("./patternsWrite").then((module) => module.refreshPatterns(buildId, making)).catch(() => undefined);
+    // SV-23 P1: the stored counts follow it the same way, counted with the composer's own functions, so a session added away from the
+    // composer (an offer accepted on OpenBuilds, Drafts, the upload page) updates them too.
+    void import("./buildCountsWrite").then((module) => module.refreshStoredCounts(buildId, making)).catch(() => undefined);
   } catch (error) {
     console.warn("[refreshMakingStats] making stats not written", {
       code: errorCode(error),

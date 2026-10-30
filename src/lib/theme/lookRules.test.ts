@@ -1173,6 +1173,11 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/runsPerWeek.test.ts",
   "src/pages/site/builds/buildsModel.ranges.test.ts",
   "src/lib/models/registry.ts",
+  "src/lib/build/buildCountsWrite.ts",
+  "src/lib/build/buildCountsWrite.test.ts",
+  "src/lib/build/backfillCounts.ts",
+  "src/lib/build/backfillCounts.test.ts",
+  "src/pages/dev/BackfillCounts.tsx",
 ];
 
 /**

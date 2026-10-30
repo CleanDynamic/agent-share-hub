@@ -1,6 +1,7 @@
 /* SV-23 P1: the build's stored counts (steps, parts, agents, sessions), written the way the classification facets are: 1.5 seconds
    after the tiles stop changing and the maker's own saves have landed, through the build's write queue (`updateBuild`). The counts are the ones the composer shows
-   (`storedCountsOf`), so a number on the Builds table is the number here. This is the ONE writer of `builds.session_count`.
+   (`storedCountsOf`), so a number on the Builds table is the number here. The same counts are written, with the same function, by
+   `refreshMakingStats` for a session added away from the composer (`buildCountsWrite`), so the two always agree.
 
    The columns may not exist yet (the SV-23 migration is applied later): a write that finds one missing is remembered and no more
    are tried this session, and it is never a failure of anything the maker did. A build that has nothing in it and was never counted
