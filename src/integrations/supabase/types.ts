@@ -5803,7 +5803,7 @@ export type Database = {
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       gallery_facets_base: { Args: { thresholds?: Json }; Returns: Json }
       get_build_feed: {
-        Args: { before?: string; page_size?: number }
+        Args: { before?: string; only_following?: boolean; page_size?: number }
         Returns: {
           bounty_gap_title: string
           bounty_id: string
