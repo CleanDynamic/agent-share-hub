@@ -2947,6 +2947,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sent_at: string | null
+          shared_build_id: string | null
           shared_content_id: string | null
           shared_content_meta: Json | null
           shared_content_type: string | null
@@ -2970,6 +2971,7 @@ export type Database = {
           reply_to_message_id?: string | null
           sender_id: string
           sent_at?: string | null
+          shared_build_id?: string | null
           shared_content_id?: string | null
           shared_content_meta?: Json | null
           shared_content_type?: string | null
@@ -2993,6 +2995,7 @@ export type Database = {
           reply_to_message_id?: string | null
           sender_id?: string
           sent_at?: string | null
+          shared_build_id?: string | null
           shared_content_id?: string | null
           shared_content_meta?: Json | null
           shared_content_type?: string | null
@@ -3022,6 +3025,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_messages_shared_build_id_fkey"
+            columns: ["shared_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
           {
@@ -3195,6 +3205,7 @@ export type Database = {
           last_message_sender_id: string | null
           participant_a: string | null
           participant_b: string | null
+          pinned_build_id: string | null
           pinned_content_id: string | null
           pinned_content_type: string | null
           request_status: string | null
@@ -3219,6 +3230,7 @@ export type Database = {
           last_message_sender_id?: string | null
           participant_a?: string | null
           participant_b?: string | null
+          pinned_build_id?: string | null
           pinned_content_id?: string | null
           pinned_content_type?: string | null
           request_status?: string | null
@@ -3243,6 +3255,7 @@ export type Database = {
           last_message_sender_id?: string | null
           participant_a?: string | null
           participant_b?: string | null
+          pinned_build_id?: string | null
           pinned_content_id?: string | null
           pinned_content_type?: string | null
           request_status?: string | null
@@ -3306,6 +3319,13 @@ export type Database = {
             columns: ["participant_b"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_threads_pinned_build_id_fkey"
+            columns: ["pinned_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
           {
