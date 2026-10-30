@@ -60,9 +60,7 @@ CREATE POLICY "Admins edit site challenges" ON public.site_challenges FOR UPDATE
 DROP POLICY IF EXISTS "Admins remove site challenges" ON public.site_challenges;
 CREATE POLICY "Admins remove site challenges" ON public.site_challenges FOR DELETE USING (public.is_admin((select auth.uid())));
 
-REVOKE ALL ON public.site_challenges FROM anon;
-GRANT SELECT ON public.site_challenges TO anon;
-
-INSERT INTO public.site_challenges (slug, title, goal)
-VALUES ('weekly-requests-closed', 'Requests closed this week', 30)
-ON CONFLICT (slug) DO NOTHING;
+REVOKE ALL ON public.site_challenges FROM anon, authenticated, service_role;
+GRANT SELECT ON public.site_challenges TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.site_challenges TO authenticated;
+GRANT ALL ON public.site_challenges TO service_role;
