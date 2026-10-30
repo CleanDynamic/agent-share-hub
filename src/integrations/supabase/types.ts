@@ -1061,6 +1061,7 @@ export type Database = {
           in_review: boolean
           in_review_since: string | null
           is_brief: boolean
+          is_hidden: boolean
           last_confirmed_at: string | null
           last_confirmed_model: string | null
           like_count: number
@@ -1115,6 +1116,7 @@ export type Database = {
           in_review?: boolean
           in_review_since?: string | null
           is_brief?: boolean
+          is_hidden?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
           like_count?: number
@@ -1169,6 +1171,7 @@ export type Database = {
           in_review?: boolean
           in_review_since?: string | null
           is_brief?: boolean
+          is_hidden?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
           like_count?: number
@@ -2424,6 +2427,60 @@ export type Database = {
           {
             foreignKeyName: "content_ratings_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_reports: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_reporter_profile_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "content_reports_reporter_profile_fkey"
+            columns: ["reporter_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -6069,6 +6126,10 @@ export type Database = {
           untested: number
           works: number
         }[]
+      }
+      resolve_report: {
+        Args: { action: string; report: string }
+        Returns: undefined
       }
       respec_track: { Args: { _track: string }; Returns: string }
       saved_items_used_in: {
