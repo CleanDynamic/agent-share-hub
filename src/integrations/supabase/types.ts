@@ -5900,6 +5900,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      rebuild_tree: {
+        Args: { max_nodes?: number; root: string }
+        Returns: {
+          creator_id: string
+          depth: number
+          id: string
+          parent_build_id: string
+          published_at: string
+          rebuild_note: string
+          reproduction_count: number
+          slug: string
+          title: string
+        }[]
+      }
       record_daily_activity: { Args: never; Returns: Json }
       release_check: {
         Args: never
