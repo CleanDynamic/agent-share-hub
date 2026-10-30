@@ -23,6 +23,8 @@ vi.mock("@/lib/bounty", () => ({
   listTopSolvers: (options: unknown) => listTopSolvers(options),
   toggleMeToo: (input: unknown) => toggleMeToo(input),
 }));
+const listGroups = vi.fn();
+vi.mock("@/lib/build/filterSets", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/filterSets")>()), listGroups: () => listGroups() }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user, loading: false }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
@@ -107,6 +109,7 @@ beforeEach(() => {
   listMyClaims.mockReset().mockResolvedValue([]);
   listMyOpenRequests.mockReset().mockResolvedValue([{ bountyId: "q9", build: { slug: "gbngd", title: "gbngd" }, gapTitle: "Step two", answers: 2, latestSolver: "kit" }]);
   getMyRecord.mockReset().mockResolvedValue({ reproduced: 40, tried: 0, accepted: 6 });
+  listGroups.mockReset().mockResolvedValue([]);
   listTopSolvers.mockReset().mockResolvedValue([{ id: "u1", username: "kit", display_name: null, avatar_url: null, solved: 9, rewardTotalGbp: null, lastSolvedAt: null }]);
   toggleMeToo.mockReset();
   listBriefs.mockReset().mockResolvedValue({ briefs: [], nextOffset: null });
@@ -212,6 +215,28 @@ describe("OpenBuildsPage", () => {
     expect(screen.queryByText("Tried, didn't work")).toBeNull();
     expect(screen.getByText("Accepted answers, last 30 days")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /@kit/ })).toHaveAttribute("href", "/profile/kit");
+  });
+
+  it("draws the Groups once there is one: a public filter set, the reader's own first, linking to Builds with its filters (SV-24)", async () => {
+    listGroups.mockResolvedValue([
+      { id: "0b6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c10", name: "Sales automation", search: "f=field%3Asales&f=stack%3Aclaude-code", members: 12, member: true, mine: true },
+      { id: "9d6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c11", name: "Research agents", search: "", members: 1, member: false, mine: false },
+    ]);
+    mount();
+    await screen.findByTestId("openbuilds-request");
+    expect(await screen.findByRole("heading", { name: "Groups" })).toBeInTheDocument();
+    expect(screen.getByText("Public filter sets, by members")).toBeInTheDocument();
+    const sales = screen.getByRole("link", { name: /Sales automation/ });
+    expect(sales).toHaveAttribute("href", "/builds?f=field%3Asales&f=stack%3Aclaude-code&set=0b6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c10");
+    expect(sales.textContent).toContain("12 members · yours");
+    expect(screen.getByRole("link", { name: /Research agents/ }).textContent).toContain("1 member");
+  });
+
+  it("says so when the Groups did not load, with Retry (SV-24)", async () => {
+    listGroups.mockRejectedValue(new Error("no"));
+    mount();
+    expect(await screen.findByText("Groups didn't load.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
   it("draws nothing that has no data yet", async () => {

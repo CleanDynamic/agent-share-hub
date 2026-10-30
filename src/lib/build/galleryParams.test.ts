@@ -176,3 +176,21 @@ describe("CA-16: classification facets in the address", () => {
     expect(galleryHref(parse(href.split("?")[1]))).toBe(href);
   });
 });
+
+describe("SV-24: the open filter set in the address", () => {
+  const ID = "0b6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c10";
+
+  it("reads set when it is an id, and drops anything else", () => {
+    expect(parse(`set=${ID}`).set).toBe(ID);
+    expect(parse(`set=${ID.toUpperCase()}`).set).toBe(ID);
+    expect(parse("set=not-an-id")).not.toHaveProperty("set");
+    expect(parse("")).not.toHaveProperty("set");
+  });
+
+  it("writes set last, after q, and a parse then write is a tidy", () => {
+    const href = galleryHref({ query: "nlp", sort: "rebuilt", facets: ["field:ai-ml"], set: ID });
+    expect(href).toBe(`/builds?f=field%3Aai-ml&sort=rebuilt&q=nlp&set=${ID}`);
+    expect(galleryHref(parse(href.split("?")[1]))).toBe(href);
+    expect(galleryHref({ set: "nope" })).toBe("/builds");
+  });
+});

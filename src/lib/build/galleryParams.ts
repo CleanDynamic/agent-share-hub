@@ -96,7 +96,12 @@ export interface GalleryParams {
   ranges?: Partial<Record<RangeKey, NumberRange>>;
   /** UI-P49. Present only when it is not the resting sort (SV-11: reproduced). */
   sort?: GalleryFeedSort;
+  /** SV-24. The filter set that is open: where the panel's layout is kept. The filters themselves are the other parameters. */
+  set?: string;
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const cleanSet = (value: string | null | undefined): string | undefined => (typeof value === "string" && UUID.test(value) ? value.toLowerCase() : undefined);
 
 /** Trimmed, empty entries dropped, first occurrence kept. */
 function cleanValues(values: readonly string[] | undefined): string[] {
@@ -167,12 +172,13 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(search.get("state") === "confirmed" || search.get("state") === "stale" ? { state: search.get("state") as ConfirmedState } : {}),
     ...(Object.keys(ranges).length > 0 ? { ranges } : {}),
     ...(isSort(sort) && sort !== DEFAULT_GALLERY_SORT ? { sort } : {}),
+    ...(cleanSet(search.get("set")) ? { set: cleanSet(search.get("set")) } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, q.
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, q, set (SV-24: the open filter set).
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -198,6 +204,8 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);
+  const set = cleanSet(params.set);
+  if (set) out.set("set", set);
 
   const written = out.toString();
   return written ? `${GALLERY_PATH}?${written}` : GALLERY_PATH;

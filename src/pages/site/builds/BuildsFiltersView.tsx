@@ -11,16 +11,21 @@
    button named "Move <filter>". Focus rings stay. */
 
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InnerTile } from "@/components/vision/InnerTile";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
 import { BuildsControl, BuildsTextButton, text } from "./BuildsFrame";
+import { DeleteSetDialog, SetNameDialog } from "./SetDialogs";
 
 /* ── props ── */
 
@@ -82,8 +87,37 @@ export type FilterSection = WordSection | RangeSection | ScaleSection | ClosedSe
 export interface SavedSetRow {
   id: string;
   name: string;
-  count: number;
+  /** The board's number at the right. Absent: a word (`note`) or nothing. */
+  count?: number;
+  /** "Public" for a set others can open. */
+  note?: string;
   href: string;
+  isPublic?: boolean;
+  /** The set the address names. */
+  current?: boolean;
+}
+
+/** The open set's group line: who follows it, and Join or Leave for a set that is not the reader's own. */
+export interface OpenSetView {
+  id: string;
+  name: string;
+  mine: boolean;
+  isPublic: boolean;
+  members: number;
+  member: boolean;
+  onJoin?: () => void;
+  onLeave?: () => void;
+}
+
+export interface SavedSetsProps {
+  rows: readonly SavedSetRow[];
+  /** Rejects when it could not save. */
+  onSaveCurrent: (name: string, isPublic: boolean) => void | Promise<void>;
+  open?: OpenSetView;
+  /** Absent: the rows have no menu. */
+  onRename?: (id: string, name: string) => void | Promise<void>;
+  onTogglePublic?: (id: string, isPublic: boolean) => void;
+  onDelete?: (id: string) => void | Promise<void>;
 }
 
 export interface CatalogueGroup {
@@ -97,7 +131,7 @@ export interface BuildsFiltersViewProps {
   activeCount: number;
   onAdd?: () => void;
   /** Absent: the section is not drawn. */
-  savedSets?: { rows: readonly SavedSetRow[]; onSaveCurrent: () => void };
+  savedSets?: SavedSetsProps;
   sections: readonly FilterSection[];
   catalogue?: { total: number; groups: readonly CatalogueGroup[] };
   onToggleOption: (sectionId: string, key: string) => void;
@@ -167,32 +201,108 @@ function FiltersHead({ activeCount, onAdd }: { activeCount: number; onAdd?: () =
 
 /* ── saved filter sets ── */
 
-function SavedSetLink({ row }: { row: SavedSetRow }) {
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+function SetMenu({ row, onRename, onTogglePublic, onDelete }: { row: SavedSetRow; onRename: () => void; onTogglePublic?: (isPublic: boolean) => void; onDelete: () => void }) {
+  const phone = useIsPhone();
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <a
-      href={row.href}
-      {...handlers}
-      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 36, textDecoration: "none", ...text(12.5, 400, state.hovered ? t.text : t.text2), ...ring(state.focusVisible) }}
-    >
-      <span>{row.name}</span>
-      <span style={small(t.label)}>{row.count}</span>
-    </a>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={`More for ${row.name}`}
+          {...handlers}
+          style={{ width: phone ? 44 : 28, height: phone ? 44 : 28, margin: phone ? -8 : 0, display: "grid", placeItems: "center", background: "none", border: 0, padding: 0, color: state.hovered ? t.text : t.label, cursor: "pointer", ...ring(state.focusVisible) }}
+        >
+          <Glyph name="more" size={14} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={4}>
+        <DropdownMenuItem onSelect={onRename}>Rename</DropdownMenuItem>
+        {onTogglePublic ? <DropdownMenuItem onSelect={() => onTogglePublic(!row.isPublic)}>{row.isPublic ? "Make private" : "Make public"}</DropdownMenuItem> : null}
+        <DropdownMenuItem onSelect={onDelete}>Delete</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-function SavedSets({ rows, onSaveCurrent }: { rows: readonly SavedSetRow[]; onSaveCurrent: () => void }) {
+function SavedSetLink({ row, menu }: { row: SavedSetRow; menu?: ReactNode }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const value = row.count !== undefined ? row.count : row.note;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <Link
+        to={row.href}
+        aria-current={row.current ? "true" : undefined}
+        {...handlers}
+        style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 36, textDecoration: "none", borderRadius: r.chip, ...text(12.5, row.current ? 500 : 400, state.hovered || row.current ? t.text : t.text2), ...ring(state.focusVisible) }}
+      >
+        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+        {value !== undefined ? <span style={small(t.label)}>{value}</span> : null}
+      </Link>
+      {menu}
+    </div>
+  );
+}
+
+/** What the open set says about itself under the list: a group has members, and a reader who did not make it can follow it. */
+function OpenSetLine({ open }: { open: OpenSetView }) {
+  const members = `${open.members} ${open.members === 1 ? "member" : "members"}`;
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 6, minHeight: 28 }}>
+      <span style={small(t.label)}>{open.isPublic ? `${open.mine ? "Your group" : "Group"} · ${members}` : "Private to you"}</span>
+      {!open.mine && open.isPublic ? (
+        open.member ? (
+          <BuildsTextButton onClick={open.onLeave} aria-label={`Leave ${open.name}`}>Leave</BuildsTextButton>
+        ) : (
+          <BuildsTextButton onClick={open.onJoin} color={t.text2} aria-label={`Join ${open.name}`}>Join</BuildsTextButton>
+        )
+      ) : null}
+    </div>
+  );
+}
+
+function SavedSets({ rows, onSaveCurrent, open, onRename, onTogglePublic, onDelete }: SavedSetsProps) {
+  const [naming, setNaming] = useState<"save" | SavedSetRow | null>(null);
+  const [deleting, setDeleting] = useState<SavedSetRow | null>(null);
+  const sets = open && !rows.some((row) => row.id === open.id) ? [{ id: open.id, name: open.name, href: "", note: undefined, current: true } as SavedSetRow] : [];
   return (
     <section aria-label="Saved filter sets" style={rule}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <h3 style={{ ...name12, margin: 0 }}>Saved filter sets</h3>
-        <BuildsTextButton onClick={onSaveCurrent}>Save current</BuildsTextButton>
+        <BuildsTextButton onClick={() => setNaming("save")}>Save current</BuildsTextButton>
       </div>
       <div style={{ marginTop: 6 }}>
         {rows.map((row) => (
-          <SavedSetLink key={row.id} row={row} />
+          <SavedSetLink
+            key={row.id}
+            row={row}
+            menu={onRename || onDelete ? <SetMenu row={row} onRename={() => setNaming(row)} onTogglePublic={onTogglePublic ? (isPublic) => onTogglePublic(row.id, isPublic) : undefined} onDelete={() => setDeleting(row)} /> : undefined}
+          />
         ))}
       </div>
+      {sets.length > 0 && open && !open.mine ? <p style={{ ...small(t.text2), margin: "6px 0 0" }}>Open: {open.name}</p> : null}
+      {open ? <OpenSetLine open={open} /> : null}
+      <SetNameDialog
+        open={naming !== null}
+        onOpenChange={(next) => (next ? undefined : setNaming(null))}
+        title={naming === "save" || naming === null ? "Save these filters" : "Rename filter set"}
+        description={naming === "save" || naming === null ? "Keep the filters you have chosen under a name. It is saved to your Library too." : "The filters in it stay as they are."}
+        submitLabel={naming === "save" || naming === null ? "Save" : "Rename"}
+        initialName={naming !== null && naming !== "save" ? naming.name : ""}
+        askPublic={naming === "save" || naming === null}
+        onSubmit={async (name, isPublic) => {
+          if (naming !== null && naming !== "save") await onRename?.(naming.id, name);
+          else await onSaveCurrent(name, isPublic);
+        }}
+      />
+      <DeleteSetDialog
+        name={deleting?.name ?? null}
+        onCancel={() => setDeleting(null)}
+        onDelete={async () => {
+          if (deleting) await onDelete?.(deleting.id);
+          setDeleting(null);
+        }}
+      />
     </section>
   );
 }
@@ -375,7 +485,7 @@ export function BuildsFiltersView(props: BuildsFiltersViewProps) {
       <FiltersHead activeCount={activeCount} onAdd={onAdd} />
       {collapsed ? null : (
         <>
-          {savedSets ? <SavedSets rows={savedSets.rows} onSaveCurrent={savedSets.onSaveCurrent} /> : null}
+          {savedSets ? <SavedSets {...savedSets} /> : null}
           {open.map((section) => {
             const move = onMove ? (direction: "up" | "down") => onMove(section.id, direction) : undefined;
             if (section.kind === "word") {

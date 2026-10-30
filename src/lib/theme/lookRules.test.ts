@@ -1178,6 +1178,13 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/backfillCounts.ts",
   "src/lib/build/backfillCounts.test.ts",
   "src/pages/dev/BackfillCounts.tsx",
+
+  // SV-24
+  "src/lib/build/filterSets.ts",
+  "src/lib/build/filterSets.test.ts",
+  "src/lib/build/buildsLayout.ts",
+  "src/lib/build/buildsLayout.test.ts",
+  "src/pages/site/builds/SetDialogs.tsx",
 ];
 
 /**

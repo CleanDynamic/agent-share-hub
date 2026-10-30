@@ -12,6 +12,22 @@ const report = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/errors/report", () => ({ reportError: report }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: vi.fn(), auth: { getSession: vi.fn(async () => ({ data: { session: null } })) } } }));
 
+const auth = vi.hoisted(() => ({ user: null as { id: string } | null }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
+vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+
+const sets = vi.hoisted(() => ({
+  listMyFilterSets: vi.fn(),
+  getFilterSet: vi.fn(),
+  createFilterSet: vi.fn(),
+  renameFilterSet: vi.fn(),
+  setFilterSetPublic: vi.fn(),
+  deleteFilterSet: vi.fn(),
+  joinFilterSet: vi.fn(),
+  leaveFilterSet: vi.fn(),
+}));
+vi.mock("@/lib/build/filterSets", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/filterSets")>()), ...sets }));
+
 const listBuildsTable = vi.fn();
 const getGalleryStats = vi.fn();
 const countGalleryLenses = vi.fn();
@@ -76,6 +92,10 @@ beforeEach(() => {
   getCountSpread.mockResolvedValue(null);
   getWorksOnModelCounts.mockReset();
   getWorksOnModelCounts.mockResolvedValue(null);
+  auth.user = null;
+  for (const fn of Object.values(sets)) fn.mockReset();
+  sets.listMyFilterSets.mockResolvedValue([]);
+  sets.getFilterSet.mockResolvedValue(null);
 });
 
 describe("BuildsPage", () => {
@@ -264,3 +284,101 @@ describe("BuildsPage", () => {
     });
   });
 });
+
+describe("SV-24 P1: saved filter sets", () => {
+  const SET_ID = "0b6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c10";
+  const mine = { id: SET_ID, name: "Stale agents", search: "shape=agent&state=stale", isPublic: false, ownerId: "reader-1", layout: null };
+
+  it("draws no section, and makes no request for sets, when nobody is signed in", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(screen.queryByRole("region", { name: "Saved filter sets" })).toBeNull();
+    expect(sets.listMyFilterSets).not.toHaveBeenCalled();
+    expect(sets.getFilterSet).not.toHaveBeenCalled();
+  });
+
+  it("lists the reader's sets as links that open them on the same view, with the set marked in the address", async () => {
+    auth.user = { id: "reader-1" };
+    sets.listMyFilterSets.mockResolvedValue([mine, { ...mine, id: "9d6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c11", name: "Sales", search: "f=field%3Asales", isPublic: true }]);
+    renderAt("/builds?view=maps");
+    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }, { timeout: 4000 }));
+    const link = await screen.findByRole("link", { name: /Stale agents/ });
+    expect(link.getAttribute("href")).toBe(`/builds?view=maps&shape=agent&state=stale&set=${SET_ID}`);
+    expect(screen.getByRole("link", { name: /Sales/ }).textContent).toContain("Public");
+  });
+
+  it("starts the sets with the first round, and reads the open set only when the address names one", async () => {
+    auth.user = { id: "reader-1" };
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(sets.listMyFilterSets).toHaveBeenCalledTimes(1);
+    expect(sets.getFilterSet).not.toHaveBeenCalled();
+  });
+
+  it("saves the current filters under a name, and opens the new set", async () => {
+    auth.user = { id: "reader-1" };
+    sets.createFilterSet.mockResolvedValue(mine);
+    renderAt("/builds?view=maps&f=field%3Alaw&sort=newest");
+    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }, { timeout: 4000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "Save current" }));
+    fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "Law, newest" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /Public/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(sets.createFilterSet).toHaveBeenCalledWith({ name: "Law, newest", search: "f=field%3Alaw&sort=newest", isPublic: true }));
+    await waitFor(() => expect(address).toBe(`/builds?view=maps&shape=agent&state=stale&set=${SET_ID}`));
+  });
+
+  it("renames a set from its menu", async () => {
+    auth.user = { id: "reader-1" };
+    sets.listMyFilterSets.mockResolvedValue([mine]);
+    sets.renameFilterSet.mockResolvedValue("Old agents");
+    renderAt("/builds");
+    fireEvent.keyDown(await screen.findByRole("button", { name: "More for Stale agents" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Rename" }));
+    const field = await screen.findByLabelText("Name");
+    expect((field as HTMLInputElement).value).toBe("Stale agents");
+    fireEvent.change(field, { target: { value: "Old agents" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    await waitFor(() => expect(sets.renameFilterSet).toHaveBeenCalledWith(SET_ID, "Old agents"));
+  });
+
+  it("deletes the open set after asking, and drops the marker from the address", async () => {
+    auth.user = { id: "reader-1" };
+    sets.listMyFilterSets.mockResolvedValue([mine]);
+    sets.getFilterSet.mockResolvedValue({ ...mine, mine: true, members: 0, member: false });
+    sets.deleteFilterSet.mockResolvedValue(undefined);
+    renderAt(`/builds?shape=agent&state=stale&set=${SET_ID}`);
+    fireEvent.keyDown(await screen.findByRole("button", { name: "More for Stale agents" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    expect(sets.deleteFilterSet).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(sets.deleteFilterSet).toHaveBeenCalledWith(SET_ID));
+    await waitFor(() => expect(address).toBe("/builds?shape=agent&state=stale"));
+  });
+
+  it("lets a reader follow a public set that is not theirs, and leave it", async () => {
+    auth.user = { id: "reader-1" };
+    const group = { ...mine, ownerId: "maker-9", name: "Sales agents", isPublic: true };
+    sets.getFilterSet.mockResolvedValue({ ...group, mine: false, members: 12, member: false });
+    sets.joinFilterSet.mockResolvedValue(undefined);
+    renderAt(`/builds?set=${SET_ID}`);
+    expect(await screen.findByText("Group · 12 members")).toBeTruthy();
+    sets.getFilterSet.mockResolvedValue({ ...group, mine: false, members: 13, member: true });
+    fireEvent.click(screen.getByRole("button", { name: "Join Sales agents" }));
+    await waitFor(() => expect(sets.joinFilterSet).toHaveBeenCalledWith(SET_ID));
+    fireEvent.click(await screen.findByRole("button", { name: "Leave Sales agents" }));
+    await waitFor(() => expect(sets.leaveFilterSet).toHaveBeenCalledWith(SET_ID));
+  });
+
+  it("reports a failed save and tells the reader, and the window stays open to try again", async () => {
+    auth.user = { id: "reader-1" };
+    sets.createFilterSet.mockRejectedValue(new Error("nope"));
+    renderAt("/builds");
+    fireEvent.click(await screen.findByRole("button", { name: "Save current" }));
+    fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "x" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ context: "createFilterSet" })));
+    expect(await screen.findByText("Couldn't save that. Try again.")).toBeTruthy();
+  });
+});
+
