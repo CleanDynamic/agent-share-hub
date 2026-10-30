@@ -933,6 +933,8 @@ export type Database = {
           forked_from_event_id: string | null
           hero_node_id: string | null
           id: string
+          in_review: boolean
+          in_review_since: string | null
           is_brief: boolean
           last_confirmed_at: string | null
           last_confirmed_model: string | null
@@ -982,6 +984,8 @@ export type Database = {
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
+          in_review?: boolean
+          in_review_since?: string | null
           is_brief?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
@@ -1031,6 +1035,8 @@ export type Database = {
           forked_from_event_id?: string | null
           hero_node_id?: string | null
           id?: string
+          in_review?: boolean
+          in_review_since?: string | null
           is_brief?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
@@ -3719,6 +3725,24 @@ export type Database = {
         }
         Relationships: []
       }
+      model_releases: {
+        Row: {
+          created_at: string
+          model_id: string
+          released_on: string
+        }
+        Insert: {
+          created_at?: string
+          model_id: string
+          released_on: string
+        }
+        Update: {
+          created_at?: string
+          model_id?: string
+          released_on?: string
+        }
+        Relationships: []
+      }
       node_types: {
         Row: {
           category: string
@@ -4916,6 +4940,27 @@ export type Database = {
           },
         ]
       }
+      site_challenges: {
+        Row: {
+          created_at: string
+          goal: number
+          slug: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          goal: number
+          slug: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          goal?: number
+          slug?: string
+          title?: string
+        }
+        Relationships: []
+      }
       solution_acceptance_log: {
         Row: {
           accepted_at: string
@@ -5834,6 +5879,7 @@ export type Database = {
       }
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
+      model_key: { Args: { raw: string }; Returns: string }
       rc_grant_xp: {
         Args: {
           amount: number
@@ -5855,6 +5901,18 @@ export type Database = {
         Returns: undefined
       }
       record_daily_activity: { Args: never; Returns: Json }
+      release_check: {
+        Args: never
+        Returns: {
+          bars: Json
+          fails: number
+          model_id: string
+          next_slug: string
+          released_on: string
+          untested: number
+          works: number
+        }[]
+      }
       respec_track: { Args: { _track: string }; Returns: string }
       saved_items_used_in: {
         Args: never
