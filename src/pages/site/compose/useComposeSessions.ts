@@ -81,6 +81,8 @@ export interface ComposeSessions {
   retry: () => void;
   /** The library's real error, for the log. */
   libraryError: unknown;
+  /** SV-23: the build's own sessions and their rows have both been read (the stored counts wait for them). */
+  buildLoaded: boolean;
   /** CA-24 P3: the build's own sessions or their rows never loaded. */
   buildFailed: boolean;
   buildError: unknown;
@@ -319,6 +321,7 @@ export function useComposeSessions({
     status,
     retry: () => void library.refetch(),
     libraryError: library.error ?? undefined,
+    buildLoaded: buildSessions.data !== undefined && rows.data !== undefined,
     buildFailed: (buildSessions.isError && buildSessions.data === undefined) || (rows.isError && rows.data === undefined),
     buildError: buildSessions.error ?? rows.error ?? undefined,
     retryBuild: () => void Promise.all([queryClient.refetchQueries({ queryKey: buildSessionsKey(buildId), exact: true }), queryClient.refetchQueries({ queryKey: buildSessionRowsKey(buildId), exact: true })]),

@@ -456,7 +456,7 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
       };
 
       await updateBuildInStep(buildId, {
-        session_count: sessions.length,
+        // SV-23 P1: session_count is written with the composer's counts (`useStoredBuildCounts`), which count the sessions the composer shows.
         prompt_count: sessions.reduce((sum, session) => sum + session.promptCount, 0),
         ai_turn_count: sessions.reduce((sum, session) => sum + session.turnCount, 0),
         models_used: modelsUsed,

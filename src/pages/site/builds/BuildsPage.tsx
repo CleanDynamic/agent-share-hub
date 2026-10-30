@@ -12,8 +12,11 @@
    Classification as their own chunks (`buildsViews.ts`). Classification makes no read of its own: the list carries each
    build's classification, and a value links to this page as the Table with that facet added.
 
-   NOT LIVE YET (drawn on the dev page only): Steps, Sessions and Runs 12 weeks, the number filters, Works on model, Last
-   confirmed, Rebuilds and Likes as filters (SV-23); Saved filter sets, moving filters, the Columns chooser and Add a
+   SV-23 P1: Steps and Sessions (the columns and their range filters) are drawn once the list carries the stored counts
+   (`countsLive`) and their spread has answered; the median steps sits in the footer. The spread is read in the same round.
+
+   NOT LIVE YET (drawn on the dev page only): Runs 12 weeks, Works on model, Last confirmed, Rebuilds and Likes as filters
+   (SV-23 P2); Saved filter sets, moving filters, the Columns chooser and Add a
    calculation (SV-24). */
 
 import { Suspense, useEffect, useState } from "react";
@@ -23,7 +26,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { reportError } from "@/lib/errors/report";
-import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getGalleryFacets, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
 import { galleryHref, parseGalleryParams, type GalleryParams, type GalleryViewMode } from "@/lib/build/galleryParams";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 import { usePageReady } from "@/lib/routing/pageReady";
@@ -34,12 +38,12 @@ import { BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersV
 import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
-  LIVE_COLUMNS,
   MAPS_PAGE,
   SORT_COLUMN,
   SORT_OPTIONS,
   activeChips,
   activeCount,
+  columnsFor,
   listParamsOf,
   liveCatalogue,
   nextTableOffset,
@@ -47,6 +51,7 @@ import {
   tableFooter,
   tableRow,
   toggled,
+  withRange,
   withoutChip,
   type PanelOrder,
 } from "./buildsModel";
@@ -108,6 +113,7 @@ export default function BuildsPage() {
   const lensCounts = useQuery({ queryKey: ["build", "countGalleryLenses"], queryFn: countGalleryLenses, staleTime: SLOW_STALE_MS });
   const classification = useQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: SLOW_STALE_MS });
   const facets = useQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: SLOW_STALE_MS });
+  const spread = useQuery({ queryKey: ["build", "getCountSpread"], queryFn: getCountSpread, staleTime: SLOW_STALE_MS });
 
   useEffect(() => {
     if (list.error) reportError(list.error, { source: "query", context: "listBuildsTable" });
@@ -141,6 +147,7 @@ export default function BuildsPage() {
 
   const classified = classification.data?.live === true;
   const patternsLive = facets.data?.patternsLive === true;
+  const countsLive = list.data?.pages[0]?.countsLive === true;
   const sections = panelSections({
     facets: params.facets ?? [],
     shapes: params.shapes ?? [],
@@ -150,13 +157,19 @@ export default function BuildsPage() {
     patterns: patternsLive ? (facets.data?.patterns ?? []) : null,
     opened,
     orders,
+    ranges: params.ranges,
+    spread: countsLive ? (spread.data ?? null) : null,
   });
+  const rangesLive = countsLive && Boolean(spread.data);
   const count = total ?? builds.length;
 
   const filters: BuildsFiltersViewProps = {
       activeCount: activeCount(params),
       sections,
-      catalogue: { total: liveCatalogue(classified, patternsLive).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive) },
+      catalogue: { total: liveCatalogue(classified, patternsLive, rangesLive).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive, rangesLive) },
+      onRange: (sectionId, value) => {
+        if ((RANGE_KEYS as readonly string[]).includes(sectionId)) navigate(galleryHref(withRange(params, sectionId as RangeKey, value)), { preventScrollReset: true, replace: true });
+      },
       onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
       onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
       onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
@@ -259,7 +272,7 @@ export default function BuildsPage() {
               chips: activeChips(params),
               onRemoveChip: (key) => go(withoutChip(params, key)),
               onClearAll: () => go({ lens: params.lens, madeFor: [], madeWith: [], query: null, view: params.view, sort: params.sort }),
-              columns: LIVE_COLUMNS,
+              columns: columnsFor(countsLive),
               rows,
               sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,
               sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },

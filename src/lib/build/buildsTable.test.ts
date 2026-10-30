@@ -12,16 +12,18 @@ interface Recorded {
 
 let calls: Recorded[] = [];
 let response: { data: unknown[]; error: unknown; count: number | null } = { data: [], error: null, count: 0 };
+/** Answers given first, one to a request, before `response`. */
+let queue: (typeof response)[] = [];
 
 function builder() {
   const self: Record<string, unknown> = {};
-  for (const method of ["select", "in", "or", "overlaps", "contains", "order", "limit", "range", "eq", "gte", "ilike"]) {
+  for (const method of ["select", "in", "or", "overlaps", "contains", "order", "limit", "range", "eq", "gte", "lte", "ilike"]) {
     self[method] = (...args: unknown[]) => {
       calls.push({ method, args });
       return self;
     };
   }
-  self.then = (resolve: (value: unknown) => unknown) => Promise.resolve(response).then(resolve);
+  self.then = (resolve: (value: unknown) => unknown) => Promise.resolve(queue.length > 0 ? queue.shift() : response).then(resolve);
   return self;
 }
 
@@ -34,11 +36,13 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { listBuildsTable, stackClause } from "@/lib/build/gallery";
+import { getCountSpread, listBuildsTable, resetBuildsCountColumns, stackClause } from "@/lib/build/gallery";
 
 const call = (method: string) => calls.filter((entry) => entry.method === method);
 
 beforeEach(() => {
+  resetBuildsCountColumns();
+  queue = [];
   calls = [];
   response = { data: [], error: null, count: 0 };
 });
@@ -119,5 +123,76 @@ describe("listBuildsTable", () => {
   it("throws a named error when the read fails", async () => {
     response = { data: [], error: { message: "boom" }, count: null };
     await expect(listBuildsTable()).rejects.toThrow(/listBuildsTable/);
+  });
+});
+
+describe("the stored counts (SV-23 P1)", () => {
+  const rows = [{ id: "a", slug: "a", title: "A", shape: "app", made_with: [], reproduction_count: 1, rebuild_count: 0, step_count: 12, session_count: 2, maker: null, bounties: [] }];
+
+  it("reads them in the list's own select, and says they are live", async () => {
+    response = { data: rows, error: null, count: 1 };
+    const page = await listBuildsTable();
+    expect(call("select")).toHaveLength(1);
+    expect(call("select")[0].args[0]).toContain("step_count, session_count");
+    expect(page.countsLive).toBe(true);
+    expect(page.builds[0]).toMatchObject({ stepCount: 12, sessionCount: 2 });
+  });
+
+  it("filters a range on the stored column, from and to", async () => {
+    await listBuildsTable({ ranges: { steps: { min: 5, max: 30 }, sessions: { min: 2 } } });
+    expect(call("gte")).toEqual([
+      { method: "gte", args: ["step_count", 5] },
+      { method: "gte", args: ["session_count", 2] },
+    ]);
+    expect(call("lte")).toEqual([{ method: "lte", args: ["step_count", 30] }]);
+  });
+
+  it("reads again without the counts when the columns are missing, and does not ask for them again", async () => {
+    queue = [
+      { data: [], error: { code: "42703", message: "column builds.step_count does not exist" }, count: null },
+      { data: rows.map(({ step_count: _a, session_count: _b, ...rest }) => rest), error: null, count: 1 },
+    ];
+    const page = await listBuildsTable();
+    const asked = call("select").map((entry) => entry.args[0] as string);
+    expect(asked).toHaveLength(2);
+    expect(asked[0]).toContain("step_count");
+    expect(asked[1]).not.toContain("step_count");
+    expect(page.countsLive).toBe(false);
+    expect(page.builds[0].stepCount).toBeNull();
+
+    calls = [];
+    await listBuildsTable({ ranges: { steps: { min: 5 } } });
+    expect(call("select")).toHaveLength(1);
+    expect(call("select")[0].args[0]).not.toContain("step_count");
+    expect(call("gte")).toEqual([]);
+  });
+});
+
+describe("getCountSpread", () => {
+  it("is null when the function is not there yet", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST202" } });
+    const { supabase } = await import("@/integrations/supabase/client");
+    (supabase as unknown as { rpc: unknown }).rpc = rpc;
+    expect(await getCountSpread()).toBeNull();
+  });
+
+  it("maps each kind's values to the builds at them", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        { kind: "steps", value: 4, builds: 3 },
+        { kind: "steps", value: 60, builds: 1 },
+        { kind: "sessions", value: 1, builds: 5 },
+        { kind: "steps", value: "x", builds: 2 },
+      ],
+      error: null,
+    });
+    const { supabase } = await import("@/integrations/supabase/client");
+    (supabase as unknown as { rpc: unknown }).rpc = rpc;
+    const spread = await getCountSpread();
+    expect(rpc).toHaveBeenCalledWith("builds_count_spread");
+    expect(spread?.steps?.get(4)).toBe(3);
+    expect(spread?.steps?.get(60)).toBe(1);
+    expect(spread?.sessions?.get(1)).toBe(5);
+    expect(spread?.steps?.size).toBe(2);
   });
 });

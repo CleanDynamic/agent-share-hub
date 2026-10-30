@@ -1161,6 +1161,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AskNextSessionRow.tsx",
   "src/lib/build/openRequest.ts",
   "src/lib/build/openTargets.ts",
+
+  // SV-23
+  "src/lib/build/buildCounts.ts",
+  "src/lib/build/buildCounts.test.ts",
+  "src/lib/build/galleryRanges.ts",
+  "src/lib/build/galleryRanges.test.ts",
+  "src/pages/site/compose/useStoredBuildCounts.ts",
+  "src/pages/site/compose/useStoredBuildCounts.test.tsx",
 ];
 
 /**

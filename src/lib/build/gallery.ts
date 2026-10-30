@@ -27,6 +27,7 @@ import { isPattern, type Pattern } from "./patterns";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import type { ThreadDoc } from "./thread";
+import { RANGE_FILTERS, RANGE_KEYS, type NumberRange, type RangeKey } from "./galleryRanges";
 import { normaliseQuery, searchBuildIds } from "./search";
 import { isMissingColumn } from "@/lib/classify/storage";
 import { findAcross, isKnown, valueOf, type Facet } from "@/lib/classify/taxonomy";
@@ -1331,6 +1332,19 @@ const BUILDS_TABLE_COLUMNS =
   "id, slug, title, shape, made_with, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, rebuild_count, classification, " +
   "maker:profiles!builds_creator_id_fkey(username, display_name)";
 
+/**
+ * SV-23 P1: the stored counts the Steps and Sessions columns and range filters read. They are in the list's own select, so they cost no
+ * request. Until the SV-23 migration is applied the columns are missing: the read says so once (`isMissingColumn`), is made again
+ * without them, and `countsLive` on the page is false, so the page draws no Steps or Sessions and offers no range.
+ */
+const BUILDS_COUNT_COLUMNS = "step_count, session_count";
+let countColumnsMissing = false;
+
+/** For tests: forget that the count columns were missing. */
+export const resetBuildsCountColumns = (): void => {
+  countColumnsMissing = false;
+};
+
 /** One row of the Builds table. */
 export interface BuildsTableBuild {
   id: string;
@@ -1349,6 +1363,9 @@ export interface BuildsTableBuild {
   maker: { handle: string | null; name: string | null } | null;
   /** The open requests on the build: how many (up to BOUNTIES_PER_BUILD) and the largest reward offered. */
   open: { count: number; reward: number | null };
+  /** SV-23 P1: the stored counts; null until the composer has saved the build since they existed. */
+  stepCount?: number | null;
+  sessionCount?: number | null;
 }
 
 export interface BuildsTableOptions {
@@ -1365,12 +1382,16 @@ export interface BuildsTableOptions {
   /** Only builds with an open request. The Open requests lens is the same filter. */
   openBounties?: boolean;
   query?: string;
+  /** SV-23 P1: number filters on the stored counts. A build with no count is left out of a range on it. */
+  ranges?: Partial<Record<RangeKey, NumberRange>>;
   sort?: GalleryFeedSort;
   offset?: number;
   limit?: number;
 }
 
 export interface BuildsTablePage {
+  /** SV-23 P1: the stored count columns exist (the migration is applied). */
+  countsLive: boolean;
   builds: BuildsTableBuild[];
   /** Every build matching the filters (exact: the page shows it in full); null when the count did not come back. */
   total: number | null;
@@ -1382,6 +1403,7 @@ interface TableQuery extends PromiseLike<{ data: unknown; error: unknown; count?
   or(filters: string): TableQuery;
   eq(column: string, value: unknown): TableQuery;
   gte(column: string, value: string | number): TableQuery;
+  lte(column: string, value: string | number): TableQuery;
   contains(column: string, values: readonly unknown[]): TableQuery;
   overlaps(column: string, values: readonly unknown[]): TableQuery;
   order(column: string, options: { ascending: boolean; nullsFirst?: boolean }): TableQuery;
@@ -1417,6 +1439,8 @@ interface BuildsTableRow {
   published_at: string | null;
   rebuild_count: number | null;
   classification?: unknown;
+  step_count?: number | null;
+  session_count?: number | null;
   maker: { username: string | null; display_name: string | null } | null;
   bounties: { reward_gbp: number | null }[] | null;
 }
@@ -1438,6 +1462,8 @@ function toBuildsTableBuild(row: BuildsTableRow): BuildsTableBuild {
     ...(hasClassification(read) ? { classifiedAs: read } : null),
     maker: row.maker ? { handle: row.maker.username ?? null, name: row.maker.display_name?.trim() || null } : null,
     open: { count: (row.bounties ?? []).length, reward: rewards.length > 0 ? Math.max(...rewards) : null },
+    stepCount: typeof row.step_count === "number" ? row.step_count : null,
+    sessionCount: typeof row.session_count === "number" ? row.session_count : null,
   };
 }
 
@@ -1460,29 +1486,67 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
     : "bounties!bounties_build_id_fkey(reward_gbp, status)";
   const search = await feedSearchClause(options.query, true);
 
-  let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact" }) => TableQuery } })
-    .from("builds")
-    .select(`${BUILDS_TABLE_COLUMNS}, ${bounties}`, { count: "exact" })
-    .in("status", ["published", "gallery"])
-    .or(galleryPredicate())
-    .eq("bounties.status", "open");
+  const request = async (withCounts: boolean) => {
+    const columns = withCounts ? `${BUILDS_TABLE_COLUMNS}, ${BUILDS_COUNT_COLUMNS}` : BUILDS_TABLE_COLUMNS;
+    let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact" }) => TableQuery } })
+      .from("builds")
+      .select(`${columns}, ${bounties}`, { count: "exact" })
+      .in("status", ["published", "gallery"])
+      .or(galleryPredicate())
+      .eq("bounties.status", "open");
 
-  const madeWith = madeWithSpellings(options.tool);
-  if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
-  const shapes = cleanShapes(options.shapes ? [...options.shapes] : undefined);
-  if (shapes.length > 0) query = query.in("shape", shapes);
-  if (options.pattern) query = query.contains("patterns", [options.pattern]);
-  // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
-  for (const [facet, keys] of facetGroups(options.facets ?? [])) {
-    query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
+    const madeWith = madeWithSpellings(options.tool);
+    if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
+    const shapes = cleanShapes(options.shapes ? [...options.shapes] : undefined);
+    if (shapes.length > 0) query = query.in("shape", shapes);
+    if (options.pattern) query = query.contains("patterns", [options.pattern]);
+    // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
+    for (const [facet, keys] of facetGroups(options.facets ?? [])) {
+      query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
+    }
+    if (search) query = query.or(search);
+    // SV-23 P1: a range reads its stored column, so it is only asked while the columns are there.
+    if (withCounts) {
+      for (const key of RANGE_KEYS) {
+        const range = options.ranges?.[key];
+        if (range?.min !== undefined) query = query.gte(RANGE_FILTERS[key].column, range.min);
+        if (range?.max !== undefined) query = query.lte(RANGE_FILTERS[key].column, range.max);
+      }
+    }
+    query = leaveOutReviews(applyLensFilters(query, lens), reviews);
+
+    return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
+      .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })
+      .range(offset, offset + limit - 1);
+  };
+
+  let withCounts = !countColumnsMissing;
+  let answer = await request(withCounts);
+  if (answer.error && withCounts && isMissingColumn(answer.error)) {
+    countColumnsMissing = true;
+    withCounts = false;
+    answer = await request(false);
   }
-  if (search) query = query.or(search);
-  query = leaveOutReviews(applyLensFilters(query, lens), reviews);
-
-  const { data, error, count } = await (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
-    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })
-    .range(offset, offset + limit - 1);
+  const { data, error, count } = answer;
   if (error) throw buildLayerError("listBuildsTable", error);
 
-  return { builds: ((data ?? []) as BuildsTableRow[]).map(toBuildsTableBuild), total: typeof count === "number" ? count : null };
+  return { countsLive: withCounts, builds: ((data ?? []) as BuildsTableRow[]).map(toBuildsTableBuild), total: typeof count === "number" ? count : null };
+}
+
+/**
+ * SV-23 P1: how many published builds sit at each value of a number filter (a value above the filter's cap is counted at the cap),
+ * for the panel's histograms. One request, started with the list. `null` when the function is not there yet or the read failed:
+ * the filters it draws are then not drawn.
+ */
+export type CountSpread = Partial<Record<RangeKey, ReadonlyMap<number, number>>>;
+
+export async function getCountSpread(): Promise<CountSpread | null> {
+  const { data, error } = await (supabase as unknown as { rpc: (name: string) => PromiseLike<{ data: unknown; error: unknown }> }).rpc("builds_count_spread");
+  if (error || !Array.isArray(data)) return null;
+  const spread: Record<string, Map<number, number>> = {};
+  for (const row of data as { kind?: unknown; value?: unknown; builds?: unknown }[]) {
+    if (typeof row.kind !== "string" || typeof row.value !== "number" || typeof row.builds !== "number") continue;
+    (spread[row.kind] ??= new Map()).set(row.value, row.builds);
+  }
+  return spread as CountSpread;
 }

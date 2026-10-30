@@ -41,6 +41,7 @@ import { toolFor } from "@/lib/tools/registry";
 import { isPattern, type Pattern } from "./patterns";
 import { isKnown, type Facet } from "@/lib/classify/taxonomy";
 
+import { RANGE_KEYS, formatRange, parseRange, type NumberRange, type RangeKey } from "./galleryRanges";
 import { normaliseQuery } from "./search";
 
 /** SV-11: the three views of the same builds; the Table is the resting one. */
@@ -80,6 +81,8 @@ export interface GalleryParams {
   facets?: string[];
   /** SV-11. Only builds with an open request. */
   open?: true;
+  /** SV-23. Number filters (`steps=5-30`); present only when at least one is set. */
+  ranges?: Partial<Record<RangeKey, NumberRange>>;
   /** UI-P49. Present only when it is not the resting sort (SV-11: reproduced). */
   sort?: GalleryFeedSort;
 }
@@ -132,6 +135,11 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const facets = cleanFacetKeys(search.getAll("f"));
   const view = search.get("view");
   const sort = search.get("sort");
+  const ranges: Partial<Record<RangeKey, NumberRange>> = {};
+  for (const key of RANGE_KEYS) {
+    const range = parseRange(search.get(key));
+    if (range) ranges[key] = range;
+  }
   return {
     lens: isLens(lens) ? lens : "all",
     madeFor: cleanValues(search.getAll("for")),
@@ -144,13 +152,14 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(isPattern(pattern) ? { pattern } : {}),
     ...(facets.length > 0 ? { facets } : {}),
     ...(search.get("open") === "1" ? { open: true as const } : {}),
+    ...(Object.keys(ranges).length > 0 ? { ranges } : {}),
     ...(isSort(sort) && sort !== DEFAULT_GALLERY_SORT ? { sort } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, sort, q.
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, the number filters (SV-23: steps, sessions), sort, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -166,6 +175,10 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   if (isPattern(params.pattern)) out.set("pattern", params.pattern);
   for (const key of cleanFacetKeys(params.facets)) out.append("f", key);
   if (params.open === true) out.set("open", "1");
+  for (const key of RANGE_KEYS) {
+    const range = formatRange(params.ranges?.[key]);
+    if (range) out.set(key, range);
+  }
   if (isSort(params.sort) && params.sort !== DEFAULT_GALLERY_SORT) out.set("sort", params.sort);
 
   const query = normaliseQuery(params.query ?? null);

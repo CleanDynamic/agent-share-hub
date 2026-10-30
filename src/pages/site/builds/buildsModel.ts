@@ -1,7 +1,8 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type CountSpread, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { DEFAULT_GALLERY_SORT, type GalleryParams } from "@/lib/build/galleryParams";
+import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
 import { isStale } from "@/lib/build/signals";
 import { shownValues } from "@/lib/classify/facets";
@@ -11,7 +12,7 @@ import { modelLabel } from "@/lib/models/registry";
 import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
-import type { CatalogueGroup, FilterSection, WordOption, WordOrder } from "./BuildsFiltersView";
+import type { CatalogueGroup, FilterSection, RangeSection, WordOption, WordOrder } from "./BuildsFiltersView";
 import type { ColumnId, TableChip, TableFooterView, TableRowView, TableTool } from "./BuildsTableView";
 
 /** What the list is asked for: everything in the address but the view, which changes what is drawn, not what is read. */
@@ -24,6 +25,7 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
     pattern: params.pattern,
     openBounties: params.open === true,
     query: params.query ?? undefined,
+    ranges: params.ranges,
     sort: params.sort ?? DEFAULT_GALLERY_SORT,
   };
 }
@@ -78,6 +80,52 @@ export interface PanelState {
   /** The filters opened on this visit, beyond those opened by default and by holding a value. */
   opened: ReadonlySet<string>;
   orders: Readonly<Record<string, PanelOrder>>;
+  /** SV-23: the number filters, drawn once their spread has answered (the stored counts are live). */
+  ranges?: Partial<Record<RangeKey, NumberRange>>;
+  spread?: CountSpread | null;
+}
+
+/* ── the number filters (SV-23) ── */
+
+const HISTOGRAM_BARS = 12;
+
+/** Bars from 0 to 1 over the filter's values 0 to its cap, and whether each bar holds any value in the chosen range. */
+export function histogramOf(counts: ReadonlyMap<number, number> | undefined, cap: number, range: NumberRange | undefined): RangeSection["histogram"] {
+  // The cap + 1 values 0 to cap, shared out evenly: value v is in bar floor(v * 12 / (cap + 1)), so the cap is in the last.
+  const barOf = (value: number) => Math.min(HISTOGRAM_BARS - 1, Math.floor((Math.min(value, cap) * HISTOGRAM_BARS) / (cap + 1)));
+  const totals = Array.from({ length: HISTOGRAM_BARS }, () => 0);
+  for (const [value, builds] of counts ?? []) totals[barOf(value)] += builds;
+  const most = Math.max(1, ...totals);
+  const first = barOf(range?.min ?? 0);
+  const last = barOf(range?.max ?? cap);
+  return totals.map((total, at) => ({ height: total / most, inRange: at >= first && at <= last }));
+}
+
+/** One number filter: the histogram, the slider's two ends and the range in words. */
+function rangeSection(key: RangeKey, spread: CountSpread, range: NumberRange | undefined): RangeSection {
+  const { cap, name } = RANGE_FILTERS[key];
+  return {
+    kind: "range",
+    id: key,
+    name,
+    valueText: range ? rangeWords(range) : "Any",
+    histogram: histogramOf(spread[key], cap, range),
+    min: 0,
+    max: cap,
+    value: [range?.min ?? 0, range?.max ?? cap],
+    describe: (value, end) => (end === "min" ? (value === 0 ? "any" : `${value} or more`) : value >= cap ? "no limit" : `up to ${value}`),
+    endLabels: ["0", `${cap}+`],
+  };
+}
+
+/** The address with a number filter set from the slider's two ends; the ends of the scale are no limit. */
+export function withRange(params: GalleryParams, key: RangeKey, value: readonly [number, number]): GalleryParams {
+  const { cap } = RANGE_FILTERS[key];
+  const range: NumberRange = { ...(value[0] > 0 ? { min: value[0] } : {}), ...(value[1] < cap ? { max: value[1] } : {}) };
+  const ranges = { ...params.ranges };
+  if (range.min === undefined && range.max === undefined) delete ranges[key];
+  else ranges[key] = range;
+  return { ...params, ranges: Object.keys(ranges).length > 0 ? ranges : undefined };
 }
 
 /** Field and Autonomy are open by default, as the board draws them; a filter holding a value is open. */
@@ -119,6 +167,13 @@ export function panelSections(state: PanelState): FilterSection[] {
       ? { kind: "word", id: "shape", name: "Shape", order: "az", options: GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })) }
       : { kind: "closed", id: "shape", name: "Shape", value: state.shapes.length === 1 ? shapeWord(state.shapes[0]) : state.shapes.length > 1 ? `${state.shapes.length} chosen` : "Any" },
   );
+  if (state.spread) {
+    for (const key of RANGE_KEYS) {
+      const range = state.ranges?.[key];
+      if (isOpen(key, range !== undefined)) sections.push(rangeSection(key, state.spread, range));
+      else sections.push({ kind: "closed", id: key, name: RANGE_FILTERS[key].name, value: "Any" });
+    }
+  }
   if (state.patterns) {
     const patternOpen = isOpen("pattern", state.pattern !== undefined);
     sections.push(
@@ -136,13 +191,13 @@ export function panelSections(state: PanelState): FilterSection[] {
 }
 
 /** The catalogue on the live page: only the filters that work, by group. */
-export function liveCatalogue(classified: boolean, patterns: boolean): CatalogueGroup[] {
+export function liveCatalogue(classified: boolean, patterns: boolean, ranges = false): CatalogueGroup[] {
   const groups: CatalogueGroup[] = [];
   if (classified) {
     const names = [...PANEL_FACETS.slice(0, 9), "stack" as Facet, ...PANEL_FACETS.slice(9)].map((facet) => FACET_LABEL[facet]);
     groups.push({ name: "Classification", count: names.length, items: names.join(", ") });
   }
-  const structure = ["Shape", ...(patterns ? ["Patterns"] : [])];
+  const structure = ["Shape", ...(ranges ? RANGE_KEYS.map((key) => RANGE_FILTERS[key].name) : []), ...(patterns ? ["Patterns"] : [])];
   groups.push({ name: "Structure", count: structure.length, items: structure.join(", ") });
   groups.push({ name: "OpenBuilds", count: 1, items: "Open requests" });
   return groups;
@@ -167,6 +222,10 @@ export function activeChips(params: GalleryParams): TableChip[] {
   for (const shape of params.shapes ?? []) chips.push({ key: `shape:${shape}`, name: "Shape", value: shapeWord(shape) });
   if (params.pattern) chips.push({ key: "pattern", name: "Patterns", value: PATTERN_LABEL[params.pattern] });
   if (params.open) chips.push({ key: "open", name: "Open requests", value: "Has one" });
+  for (const key of RANGE_KEYS) {
+    const range = params.ranges?.[key];
+    if (range) chips.push({ key: `range:${key}`, name: RANGE_FILTERS[key].name, value: rangeWords(range) });
+  }
   if (params.query) chips.push({ key: "q", name: "Search", value: params.query });
   return chips;
 }
@@ -179,6 +238,10 @@ export function withoutChip(params: GalleryParams, key: string): GalleryParams {
   if (key === "pattern") return { ...params, pattern: undefined };
   if (key === "open") return { ...params, open: undefined };
   if (key === "q") return { ...params, query: null };
+  if (key.startsWith("range:")) {
+    const { [key.slice(6) as RangeKey]: _removed, ...rest } = params.ranges ?? {};
+    return { ...params, ranges: Object.keys(rest).length > 0 ? rest : undefined };
+  }
   return params;
 }
 
@@ -226,8 +289,8 @@ export function tableRow(build: BuildsTableBuild, now: number): TableRowView {
     built: first("built"),
     field: first("field"),
     tools: tools.slice(0, 3),
-    steps: null,
-    sessions: null,
+    steps: build.stepCount ?? null,
+    sessions: build.sessionCount ?? null,
     reproductions: build.reproductionCount,
     lit: build.reproductionCount > 0 && !isStale({ last_confirmed_at: build.lastConfirmedAt, published_at: build.publishedAt }, now),
     confirmed: ago ? `${ago === "now" ? "just now" : `${ago} ago`}${model ? ` on ${model}` : ""}` : "",
@@ -238,8 +301,13 @@ export function tableRow(build: BuildsTableBuild, now: number): TableRowView {
   };
 }
 
-/** The live columns: the board's, less those whose data does not exist yet (Steps, Sessions, Runs: SV-23). */
+/** The live columns: the board's, less those whose data does not exist yet (Runs: SV-23 P2). */
 export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "tools", "reproductions", "confirmed", "rebuilds", "open", "cost"];
+
+/** SV-23 P1: Steps and Sessions join once the list carries the stored counts. */
+export function columnsFor(countsLive: boolean): readonly ColumnId[] {
+  return countsLive ? ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "rebuilds", "open", "cost"] : LIVE_COLUMNS;
+}
 
 /** The most common value among the rows, or null. */
 function mostCommon(values: readonly string[]): string | null {
@@ -250,13 +318,23 @@ function mostCommon(values: readonly string[]): string | null {
   return best;
 }
 
-/** The footer: the count, the most common Field and Tools on the page, and the reproductions on the page. */
+/** The middle of the counted steps (the mean of the two in the middle for an even number), or null when no row has a count. */
+export function medianOf(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** The footer: the count, the most common Field and Tools on the page, the median steps and the reproductions on the page. */
 export function tableFooter(total: number | null, rows: readonly TableRowView[]): TableFooterView {
+  const median = medianOf(rows.flatMap((row) => (row.steps === null ? [] : [row.steps])));
   const common = [mostCommon(rows.map((row) => row.field)), mostCommon(rows.flatMap((row) => row.tools.map((tool) => tool.name)))].filter(Boolean);
   const count = total ?? rows.length;
   return {
     count: `${count} ${count === 1 ? "build" : "builds"}`,
     mostCommon: common.length > 0 ? `Most common · ${common.join(", ")}` : undefined,
+    median: median === null ? undefined : `Median ${median} ${median === 1 ? "step" : "steps"}`,
     total: `Total ${rows.reduce((sum, row) => sum + row.reproductions, 0)}`,
   };
 }

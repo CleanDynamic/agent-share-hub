@@ -78,6 +78,8 @@ import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { useClassificationCard } from "./useClassificationCard";
+import { useStoredBuildCounts } from "./useStoredBuildCounts";
+import { storedCountsOf } from "@/lib/build/buildCounts";
 import { BuildAnnouncer, noticeWords, useAnnounce } from "./BuildAnnouncer";
 import { AddMenu, SandboxView, type PanelState, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
 import type { PanelName } from "./PanelBoundary";
@@ -1546,6 +1548,10 @@ function SandboxPageBody() {
     owner: compose.isOwner,
     ensureBuild,
   });
+  /* SV-23 P1: the counts the Builds table filters on are the ones shown here, written with the facets once everything they are
+     worked from has loaded. */
+  const storedCounts = useMemo(() => (build && sessions.buildLoaded ? storedCountsOf(savedSteps, savedGroups, storedWorkstreamsOf(made)) : null), [build, sessions.buildLoaded, savedSteps, savedGroups, made]);
+  useStoredBuildCounts({ buildId, build, owner: compose.isOwner, counts: storedCounts });
   /* CA-20 P5: Save in the Classification Card is a step: the card as it was is written back by Undo. */
   const saveCard = useCallback(
     async (draft: Parameters<typeof classificationCard.onSave>[0]) => {
