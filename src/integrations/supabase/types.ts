@@ -5803,7 +5803,7 @@ export type Database = {
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       gallery_facets_base: { Args: { thresholds?: Json }; Returns: Json }
       get_build_feed: {
-        Args: { before?: string; page_size?: number }
+        Args: { before?: string; only_following?: boolean; page_size?: number }
         Returns: {
           bounty_gap_title: string
           bounty_id: string
@@ -5900,6 +5900,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      rebuild_tree: {
+        Args: { max_nodes?: number; root: string }
+        Returns: {
+          creator_id: string
+          depth: number
+          id: string
+          parent_build_id: string
+          published_at: string
+          rebuild_note: string
+          reproduction_count: number
+          slug: string
+          title: string
+        }[]
+      }
       record_daily_activity: { Args: never; Returns: Json }
       release_check: {
         Args: never
@@ -5919,6 +5933,12 @@ export type Database = {
         Returns: {
           builds: number
           saved_item_id: string
+        }[]
+      }
+      search_build_ids: {
+        Args: { max_results?: number; q: string }
+        Returns: {
+          build_id: string
         }[]
       }
       semantic_search: {
@@ -5966,6 +5986,15 @@ export type Database = {
       sv01_lineage_visible: {
         Args: { _creator: string; _status: string; _visibility: string }
         Returns: boolean
+      }
+      top_solvers: {
+        Args: { max_results?: number; since_days?: number }
+        Returns: {
+          last_solved_at: string
+          reward_total: number
+          solved: number
+          user_id: string
+        }[]
       }
     }
     Enums: {

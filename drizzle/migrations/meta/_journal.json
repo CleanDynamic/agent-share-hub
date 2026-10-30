@@ -204,6 +204,34 @@
       "when": 1793393536546,
       "tag": "0028_sv22_reviews_goal",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793393877857,
+      "tag": "0029_rc_search_builds",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793393934734,
+      "tag": "0030_rc_build_feed_following",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793393963151,
+      "tag": "0031_rc_top_solvers",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793393990798,
+      "tag": "0032_rc_rebuild_tree",
+      "breakpoints": true
     }
   ]
 }
