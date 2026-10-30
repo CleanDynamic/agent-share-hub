@@ -548,6 +548,78 @@ export type Database = {
           },
         ]
       }
+      build_comments: {
+        Row: {
+          author_id: string
+          body: string
+          build_id: string
+          created_at: string
+          edited_at: string | null
+          id: string
+          is_hidden: boolean
+          node_id: string | null
+          parent_id: string | null
+        }
+        Insert: {
+          author_id: string
+          body: string
+          build_id: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          is_hidden?: boolean
+          node_id?: string | null
+          parent_id?: string | null
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          build_id?: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          is_hidden?: boolean
+          node_id?: string | null
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_comments_author_profile_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "build_comments_author_profile_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_comments_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_comments_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "build_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       build_events: {
         Row: {
           build_id: string
@@ -648,6 +720,32 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "build_layers_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      build_likes: {
+        Row: {
+          build_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          build_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          build_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_likes_build_id_fkey"
             columns: ["build_id"]
             isOneToOne: false
             referencedRelation: "builds"
@@ -874,6 +972,32 @@ export type Database = {
           },
         ]
       }
+      build_saves: {
+        Row: {
+          build_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          build_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          build_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_saves_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       build_sessions: {
         Row: {
           build_id: string
@@ -920,6 +1044,7 @@ export type Database = {
         Row: {
           ai_turn_count: number
           classification: Json
+          comment_count: number
           completeness: number | null
           cost_monthly: number | null
           cost_setup: number | null
@@ -936,8 +1061,10 @@ export type Database = {
           in_review: boolean
           in_review_since: string | null
           is_brief: boolean
+          is_hidden: boolean
           last_confirmed_at: string | null
           last_confirmed_model: string | null
+          like_count: number
           live_url: string | null
           made_for: string[] | null
           made_with: string[] | null
@@ -956,6 +1083,7 @@ export type Database = {
           repo_url: string | null
           reproduction_count: number
           root_build_id: string | null
+          save_count: number
           session_count: number
           shape: string
           slug: string
@@ -971,6 +1099,7 @@ export type Database = {
         Insert: {
           ai_turn_count?: number
           classification?: Json
+          comment_count?: number
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
@@ -987,8 +1116,10 @@ export type Database = {
           in_review?: boolean
           in_review_since?: string | null
           is_brief?: boolean
+          is_hidden?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
+          like_count?: number
           live_url?: string | null
           made_for?: string[] | null
           made_with?: string[] | null
@@ -1007,6 +1138,7 @@ export type Database = {
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
+          save_count?: number
           session_count?: number
           shape?: string
           slug: string
@@ -1022,6 +1154,7 @@ export type Database = {
         Update: {
           ai_turn_count?: number
           classification?: Json
+          comment_count?: number
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
@@ -1038,8 +1171,10 @@ export type Database = {
           in_review?: boolean
           in_review_since?: string | null
           is_brief?: boolean
+          is_hidden?: boolean
           last_confirmed_at?: string | null
           last_confirmed_model?: string | null
+          like_count?: number
           live_url?: string | null
           made_for?: string[] | null
           made_with?: string[] | null
@@ -1058,6 +1193,7 @@ export type Database = {
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
+          save_count?: number
           session_count?: number
           shape?: string
           slug?: string
@@ -1331,9 +1467,10 @@ export type Database = {
         Row: {
           added_at: string
           added_by: string
+          build_id: string | null
           cached_meta: Json | null
           collection_id: string
-          content_id: string
+          content_id: string | null
           id: string
           item_id: string | null
           item_kind: string | null
@@ -1344,9 +1481,10 @@ export type Database = {
         Insert: {
           added_at?: string
           added_by: string
+          build_id?: string | null
           cached_meta?: Json | null
           collection_id: string
-          content_id: string
+          content_id?: string | null
           id?: string
           item_id?: string | null
           item_kind?: string | null
@@ -1357,9 +1495,10 @@ export type Database = {
         Update: {
           added_at?: string
           added_by?: string
+          build_id?: string | null
           cached_meta?: Json | null
           collection_id?: string
-          content_id?: string
+          content_id?: string | null
           id?: string
           item_id?: string | null
           item_kind?: string | null
@@ -1380,6 +1519,13 @@ export type Database = {
             columns: ["added_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
           {
@@ -2287,6 +2433,60 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_reporter_profile_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "content_reports_reporter_profile_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_share_views: {
         Row: {
           id: string
@@ -2747,6 +2947,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sent_at: string | null
+          shared_build_id: string | null
           shared_content_id: string | null
           shared_content_meta: Json | null
           shared_content_type: string | null
@@ -2770,6 +2971,7 @@ export type Database = {
           reply_to_message_id?: string | null
           sender_id: string
           sent_at?: string | null
+          shared_build_id?: string | null
           shared_content_id?: string | null
           shared_content_meta?: Json | null
           shared_content_type?: string | null
@@ -2793,6 +2995,7 @@ export type Database = {
           reply_to_message_id?: string | null
           sender_id?: string
           sent_at?: string | null
+          shared_build_id?: string | null
           shared_content_id?: string | null
           shared_content_meta?: Json | null
           shared_content_type?: string | null
@@ -2822,6 +3025,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_messages_shared_build_id_fkey"
+            columns: ["shared_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
           {
@@ -2995,6 +3205,7 @@ export type Database = {
           last_message_sender_id: string | null
           participant_a: string | null
           participant_b: string | null
+          pinned_build_id: string | null
           pinned_content_id: string | null
           pinned_content_type: string | null
           request_status: string | null
@@ -3019,6 +3230,7 @@ export type Database = {
           last_message_sender_id?: string | null
           participant_a?: string | null
           participant_b?: string | null
+          pinned_build_id?: string | null
           pinned_content_id?: string | null
           pinned_content_type?: string | null
           request_status?: string | null
@@ -3043,6 +3255,7 @@ export type Database = {
           last_message_sender_id?: string | null
           participant_a?: string | null
           participant_b?: string | null
+          pinned_build_id?: string | null
           pinned_content_id?: string | null
           pinned_content_type?: string | null
           request_status?: string | null
@@ -3106,6 +3319,13 @@ export type Database = {
             columns: ["participant_b"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_threads_pinned_build_id_fkey"
+            columns: ["pinned_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
           {
@@ -3786,6 +4006,7 @@ export type Database = {
         Row: {
           actor_id: string | null
           body: string | null
+          build_id: string | null
           collection_id: string | null
           content_id: string | null
           created_at: string
@@ -3802,6 +4023,7 @@ export type Database = {
         Insert: {
           actor_id?: string | null
           body?: string | null
+          build_id?: string | null
           collection_id?: string | null
           content_id?: string | null
           created_at?: string
@@ -3818,6 +4040,7 @@ export type Database = {
         Update: {
           actor_id?: string | null
           body?: string | null
+          build_id?: string | null
           collection_id?: string | null
           content_id?: string | null
           created_at?: string
@@ -3844,6 +4067,13 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
           {
@@ -5877,6 +6107,26 @@ export type Database = {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
       }
+      maker_build_metrics: {
+        Args: { uid: string }
+        Returns: {
+          build_id: string
+          failed_last_30_days: number
+          open_bounties: number
+          runs: number
+          solutions_waiting: number
+          worked: number
+        }[]
+      }
+      maker_stats: {
+        Args: { uid: string }
+        Returns: {
+          builds: number
+          gaps_solved: number
+          rebuilds_of_their_work: number
+          reproductions_received: number
+        }[]
+      }
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
       model_key: { Args: { raw: string }; Returns: string }
@@ -5887,6 +6137,18 @@ export type Database = {
           recipient: string
           source_id: string
           source_type: string
+        }
+        Returns: undefined
+      }
+      rc_notify: {
+        Args: {
+          actor: string
+          build: string
+          kind: string
+          message: string
+          recipient: string
+          target: string
+          target_type: string
         }
         Returns: undefined
       }
@@ -5926,6 +6188,10 @@ export type Database = {
           untested: number
           works: number
         }[]
+      }
+      resolve_report: {
+        Args: { action: string; report: string }
+        Returns: undefined
       }
       respec_track: { Args: { _track: string }; Returns: string }
       saved_items_used_in: {

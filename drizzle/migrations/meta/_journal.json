@@ -232,6 +232,41 @@
       "when": 1793393990798,
       "tag": "0032_rc_rebuild_tree",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793394352983,
+      "tag": "0033_rc_build_social",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793394398821,
+      "tag": "0034_rc_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793394450496,
+      "tag": "0035_rc_build_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793394476258,
+      "tag": "0036_rc_dm_builds",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793394507721,
+      "tag": "0037_rc_maker_stats",
+      "breakpoints": true
     }
   ]
 }
