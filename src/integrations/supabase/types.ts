@@ -3719,6 +3719,24 @@ export type Database = {
         }
         Relationships: []
       }
+      model_releases: {
+        Row: {
+          created_at: string
+          model_id: string
+          released_on: string
+        }
+        Insert: {
+          created_at?: string
+          model_id: string
+          released_on: string
+        }
+        Update: {
+          created_at?: string
+          model_id?: string
+          released_on?: string
+        }
+        Relationships: []
+      }
       node_types: {
         Row: {
           category: string
@@ -5834,6 +5852,7 @@ export type Database = {
       }
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
+      model_key: { Args: { raw: string }; Returns: string }
       rc_grant_xp: {
         Args: {
           amount: number
@@ -5855,6 +5874,18 @@ export type Database = {
         Returns: undefined
       }
       record_daily_activity: { Args: never; Returns: Json }
+      release_check: {
+        Args: never
+        Returns: {
+          bars: Json
+          fails: number
+          model_id: string
+          next_slug: string
+          released_on: string
+          untested: number
+          works: number
+        }[]
+      }
       respec_track: { Args: { _track: string }; Returns: string }
       saved_items_used_in: {
         Args: never
