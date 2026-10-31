@@ -37,7 +37,6 @@ import { errorCode, errorLine } from "@/lib/errors/code";
 import { t } from "@/lib/theme/tokens";
 
 import { Button } from "./Button";
-import { reportError } from "@/lib/errors/report";
 
 export const DEFAULT_ERROR_LINE = "That didn't load.";
 
@@ -77,8 +76,10 @@ function useLogOnce(error: unknown, panel: string, log?: string) {
   useEffect(() => {
     if (error === undefined || logged.current === error) return;
     logged.current = error;
-    if (log) reportError(errorLine(log, error), { source: "console", context: "ErrorState" });
-    else reportError(error, { source: "console", context: "ErrorState" });
+    // eslint-disable-next-line no-console -- the one structured log of a panel that did not load, asserted by its tests (SV-26)
+    if (log) console.error(errorLine(log, error));
+    // eslint-disable-next-line no-console -- the one structured log of a panel that did not load, asserted by its tests (SV-26)
+    else console.error(`[${panel}] did not load`, error);
   }, [error, panel, log]);
 }
 
