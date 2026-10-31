@@ -297,6 +297,7 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
               tools={input.tools ?? []}
               inTeam={Boolean(view.parent)}
               deployment={view.deployment ?? []}
+              ownSetup={view.ownSetup}
               onExtras={h.onExtras}
               onOpenTile={h.onSelect}
               onAddDeployment={h.onAddDeployment}

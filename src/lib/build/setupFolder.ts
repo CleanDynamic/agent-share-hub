@@ -47,6 +47,9 @@ export function settingsJson(rules: readonly SetupRule[]): string {
   return `${JSON.stringify({ hooks }, null, 2)}\n`;
 }
 
+/** SV-27 P6: "Install the email-triage skill from ClawHub." */
+export const installLine = (item: Pick<ReaderSetupItem, "name" | "registry" | "skillName">): string => `Install the ${item.skillName ?? item.name} skill from ${item.registry ?? "its registry"}.`;
+
 /** The folder's entries, in order: instructions, skills, .mcp.json, .claude/settings.json. */
 export async function setupFolder(items: readonly ReaderSetupItem[], load: (url: string) => Promise<Uint8Array | null>): Promise<{ entries: ZipEntry[]; missing: string[] }> {
   const encoder = new TextEncoder();
@@ -58,8 +61,13 @@ export async function setupFolder(items: readonly ReaderSetupItem[], load: (url:
     if (data) entries.push({ path, data });
     else missing.push(name);
   };
-  for (const item of shared.filter((entry) => entry.kind === "instructions")) await fetchInto(rootPath(item.path ?? item.name), item.download, item.name);
-  for (const item of shared.filter((entry) => entry.kind === "skill")) {
+  // SV-27 P6: a context file made into a template is written as its template; the original stays out (it is Not shared).
+  for (const item of items.filter((entry) => entry.kind === "instructions" && entry.template)) entries.push({ path: rootPath(item.path ?? item.name), data: encoder.encode(item.template ?? "") });
+  for (const item of shared.filter((entry) => entry.kind === "instructions" && !entry.template)) await fetchInto(rootPath(item.path ?? item.name), item.download, item.name);
+  // SV-27 P6: a skill installed from a registry with no files of its own is a line telling the copier to install it by name.
+  const toInstall = shared.filter((entry) => entry.kind === "skill" && entry.origin === "registry" && !entry.download && entry.files.length === 0);
+  if (toInstall.length > 0) entries.push({ path: "SKILLS-TO-INSTALL.md", data: encoder.encode(`${toInstall.map((entry) => installLine(entry)).join("\n")}\n`) });
+  for (const item of shared.filter((entry) => entry.kind === "skill" && !toInstall.includes(entry))) {
     const folder = `.claude/skills/${safe(item.name)}`;
     await fetchInto(`${folder}/SKILL.md`, item.download, item.name);
     const base = item.path?.includes("/") ? item.path.slice(0, item.path.lastIndexOf("/") + 1) : "";

@@ -35,6 +35,11 @@ export function methodOf<T extends object | null | undefined>(payload: T): T {
       return rest;
     });
   }
+  // SV-27 P6: a context file made into a template travels as its template and variables; the original file (Not shared) does not.
+  if (isRecord(out.setup) && out.setup.kind === "instructions" && typeof out.template === "string" && out.template && out.not_shared === true) {
+    delete out.media_id;
+    delete out.url;
+  }
   // A decision's answer is the original's: it stays, as what the copy is checked against.
   if (isRecord(out.answer) && Array.isArray(out.questions)) {
     out.expected = out.answer;

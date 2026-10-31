@@ -93,10 +93,34 @@ export interface SetupRule {
   command: string;
 }
 
+/** SV-27 P6: who wrote a skill: the maker, the agent itself, or a skill registry it was installed from. */
+export const SKILL_ORIGINS = ["maker", "agent", "registry"] as const;
+export type SkillOrigin = (typeof SKILL_ORIGINS)[number];
+export const SKILL_ORIGIN_LABEL: Record<SkillOrigin, string> = { maker: "Written by the maker", agent: "Written by the agent", registry: "Installed from a skill registry" };
+export const SKILL_NAME_MAX = 80;
+export const REGISTRY_NAME_MAX = 40;
+
+/** "Written by the agent", "From ClawHub"; null when the origin is not said. */
+export function skillOriginLine(item: Pick<SetupItem, "origin" | "registry">): string | null {
+  if (!item.origin) return null;
+  if (item.origin === "registry") return item.registry ? `From ${item.registry}` : SKILL_ORIGIN_LABEL.registry;
+  return SKILL_ORIGIN_LABEL[item.origin];
+}
+
 /** One item of a session's setup, as read from its node. */
 export interface SetupItem {
   id: string;
+  /** The session it belongs to; "" when it belongs to an agent (SV-27 P6). */
   session: string;
+  /** SV-27 P6: the agent or team tile it belongs to, or null for a session's item. Exactly one of the two is set. */
+  agent: string | null;
+  /** SV-27 P6: a skill's origin, and for a registry skill the registry and the skill's name there. */
+  origin: SkillOrigin | null;
+  registry: string | null;
+  skillName: string | null;
+  /** SV-27 P6: an instructions file made into a template: the text with `{name}` variables, and their descriptions. */
+  template: string | null;
+  variables: { name: string; description: string }[];
   kind: SetupKind;
   /** The file's name ("CLAUDE.md"), the skill's name, the server's name, or the rule's command. */
   name: string;
@@ -124,14 +148,41 @@ const str = (value: unknown): string | null => (typeof value === "string" && val
 /** Whether a node's payload marks it as part of a session's setup. */
 export function isSetupPayload(payload: unknown): boolean {
   if (!isRecord(payload) || !isRecord(payload.setup)) return false;
-  return typeof payload.setup.session === "string" && SETUP_KINDS.includes(payload.setup.kind as SetupKind);
+  // SV-27 P6: an item belongs to a session, or to an agent (`setup.agent`, a node id).
+  const owned = typeof payload.setup.session === "string" || (typeof payload.setup.agent === "string" && payload.setup.agent.length > 0);
+  return owned && SETUP_KINDS.includes(payload.setup.kind as SetupKind);
 }
 
-/** The setup a node belongs to, or null. */
-export function setupOfNode(node: Pick<BuildNode, "payload">): { session: string; kind: SetupKind; loaded?: SetupLoaded } | null {
+/** The setup a node belongs to, or null. An agent's item has `agent` set and `session` "". */
+export function setupOfNode(node: Pick<BuildNode, "payload">): { session: string; agent?: string; kind: SetupKind; loaded?: SetupLoaded } | null {
   if (!isSetupPayload(node.payload)) return null;
   const setup = (node.payload as Record<string, Record<string, string>>).setup;
-  return { session: setup.session, kind: setup.kind as SetupKind, ...(SETUP_LOADED.includes(setup.loaded as SetupLoaded) ? { loaded: setup.loaded as SetupLoaded } : null) };
+  const agent = typeof setup.agent === "string" && setup.agent ? setup.agent : null;
+  return {
+    session: agent ? "" : setup.session,
+    ...(agent ? { agent } : null),
+    kind: setup.kind as SetupKind,
+    ...(SETUP_LOADED.includes(setup.loaded as SetupLoaded) ? { loaded: setup.loaded as SetupLoaded } : null),
+  };
+}
+
+/** SV-27 P6: where an item's setup is kept, as one key: the session's key, or `agent:<id>`. */
+export const setupOwnerKey = (item: Pick<SetupItem, "session" | "agent">): string => (item.agent ? `agent:${item.agent}` : item.session);
+
+/** SV-27 P6: an agent's own setup items, in position order. */
+export const agentSetupItemsOf = (tree: readonly NodeTree[], agentId: string): SetupItem[] => setupItemsOf(tree).filter((item) => item.agent === agentId);
+
+/**
+ * SV-27 P6: an item moved to a session or to an agent: the payload to write, as one change (one undo step). An item belongs to
+ * exactly one of the two, so the other key is taken off.
+ */
+export function movedSetupPayload(payload: unknown, owner: { session: string } | { agent: string }): Record<string, unknown> {
+  const p = isRecord(payload) ? { ...payload } : {};
+  const setup = isRecord(p.setup) ? { ...p.setup } : {};
+  delete setup.session;
+  delete setup.agent;
+  p.setup = "agent" in owner ? { ...setup, agent: owner.agent } : { ...setup, session: owner.session };
+  return p;
 }
 
 function readServer(payload: Record<string, unknown>, name: string): SetupServer | null {
@@ -180,9 +231,16 @@ export function setupItemsOf(tree: readonly NodeTree[], session?: string | null)
           : setup.kind === "rule"
             ? (str(payload.source) ?? "")
             : (str(payload.title) ?? "Untitled file");
+    const origin = setup.kind === "skill" && SKILL_ORIGINS.includes(payload.origin as SkillOrigin) ? (payload.origin as SkillOrigin) : null;
     out.push({
       id: node.id,
       session: setup.session,
+      agent: setup.agent ?? null,
+      origin,
+      registry: origin === "registry" ? (str(payload.registry)?.trim().slice(0, REGISTRY_NAME_MAX) ?? null) : null,
+      skillName: origin === "registry" ? (str(payload.skill_name)?.trim().slice(0, SKILL_NAME_MAX) ?? null) : null,
+      template: setup.kind === "instructions" ? str(payload.template) : null,
+      variables: setup.kind === "instructions" && Array.isArray(payload.variables) ? payload.variables.flatMap((entry) => (isRecord(entry) && typeof entry.name === "string" ? [{ name: entry.name, description: typeof entry.description === "string" ? entry.description : "" }] : [])) : [],
       kind: setup.kind,
       name,
       description: str(skill?.description),
@@ -461,4 +519,78 @@ export async function setNotShared(node: BuildNode, notShared: boolean): Promise
     is_gap: node.is_gap,
   };
   return upsertNode(row);
+}
+
+/* ── SV-27 P6: the agent's setup, context file templates and skill origins ── */
+
+/** A context file's template: the selected words, each turned into a `{name}` variable with a description. */
+export interface TemplatePick {
+  /** The words in the original, as selected. */
+  words: string;
+  name: string;
+  description: string;
+}
+
+export const TEMPLATE_COPY = {
+  make: "Make a template",
+  variable: (name: string) => `{${name}}`,
+  badName: "A variable's name is letters, digits and underscores.",
+  notInText: (words: string) => `"${words}" is not in the file.`,
+} as const;
+
+const VARIABLE_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,59}$/;
+
+/**
+ * The template a context file becomes: every occurrence of each pick's words replaced by `{name}`, and the variables in the order
+ * they were picked. Throws a plain sentence for a bad name or words that are not in the text. Pure.
+ */
+export function templateFrom(text: string, picks: readonly TemplatePick[]): { template: string; variables: { name: string; description: string }[] } {
+  let template = text;
+  for (const pick of picks) {
+    if (!VARIABLE_NAME.test(pick.name)) throw new Error(TEMPLATE_COPY.badName);
+    if (!pick.words || !template.includes(pick.words)) throw new Error(TEMPLATE_COPY.notInText(pick.words));
+    template = template.split(pick.words).join(`{${pick.name}}`);
+  }
+  const variables = picks.filter((pick, at) => picks.findIndex((other) => other.name === pick.name) === at).map((pick) => ({ name: pick.name, description: pick.description.trim().slice(0, 140) }));
+  return { template, variables };
+}
+
+/** A template filled with a copier's values; a variable with no value is left as `{name}`. */
+export const fillTemplate = (template: string, values: Readonly<Record<string, string>>): string => template.replace(/\{([A-Za-z_][A-Za-z0-9_]{0,59})\}/g, (whole, name: string) => (values[name]?.trim() ? values[name].trim() : whole));
+
+/**
+ * The payload an instructions item takes with its template: the template and its variables, and the original marked Not shared
+ * (the maker can undo that with `setNotShared`). A null template takes the template off and leaves Not shared as it is.
+ */
+export function withTemplate(payload: unknown, made: { template: string; variables: { name: string; description: string }[] } | null): Record<string, unknown> {
+  const p = isRecord(payload) ? { ...payload } : {};
+  if (!made) {
+    delete p.template;
+    delete p.variables;
+    return p;
+  }
+  return { ...p, template: made.template, variables: made.variables, not_shared: true };
+}
+
+/** The payload a skill takes with its origin; registry needs the registry's name and the skill's name there. */
+export function withSkillOrigin(payload: unknown, origin: SkillOrigin | null, registry?: { registry: string; skillName: string }): Record<string, unknown> {
+  const p = isRecord(payload) ? { ...payload } : {};
+  delete p.origin;
+  delete p.registry;
+  delete p.skill_name;
+  if (!origin) return p;
+  if (origin === "registry") {
+    const name = registry?.registry.trim() ?? "";
+    const skill = registry?.skillName.trim() ?? "";
+    if (!name || !skill) throw new Error("Name the registry and the skill there.");
+    if (name.length > REGISTRY_NAME_MAX || skill.length > SKILL_NAME_MAX) throw new Error(`The skill's name: ${SKILL_NAME_MAX} characters max`);
+    return { ...p, origin, registry: name, skill_name: skill };
+  }
+  return { ...p, origin };
+}
+
+/** Writes an item's new owner, its template, or a skill's origin: one node write, one undo step. */
+export async function setSetupPayload(node: BuildNode, payload: Record<string, unknown>): Promise<BuildNode> {
+  refuseIf("setSetupPayload", isSetupPayload(payload) ? null : "That is not part of a setup.");
+  return upsertNode({ ...node, payload: payload as Json });
 }

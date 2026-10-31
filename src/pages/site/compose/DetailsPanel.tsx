@@ -232,6 +232,8 @@ export interface AgentView extends InputsView {
   runChannels?: readonly { id: string; name: string }[];
   /** SV-27 P5: the agent's or team's deployment fields (framework, approvals, sandbox, role ...), as stored. */
   fields?: AgentFields;
+  /** SV-27 P6: the agent's own setup items: context files, skills, MCP servers and hooks. */
+  ownSetup?: readonly { id: string; kind: string; name: string; origin: string | null }[];
   /** SV-27 P5: the agent's deployment, one entry per tile, for its Deployment line. */
   deployment?: readonly { id: string; kind: string; name: string }[];
   /** CA-05 P9, an agent only: how it tidies its notes, and what it changes each round. */

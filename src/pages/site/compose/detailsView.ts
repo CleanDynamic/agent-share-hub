@@ -47,7 +47,7 @@ import {
   type NamedPiece,
 } from "./detailsModel";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
-import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/lib/build/setup";
+import { agentSetupItemsOf, isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode, skillOriginLine } from "@/lib/build/setup";
 import { runtimeViewOf } from "./runtimeView";
 import { draftFromFacts } from "@/lib/build/decisionDraft";
 import type { AgentView, CheckView, DatasetView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, RepoView, ResultView, SessionView, SystemPromptView, ToolView } from "./DetailsPanel";
@@ -217,7 +217,7 @@ function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
 }
 
 /** SV-27 P5: an agent's or team's deployment fields, the channels that can start it, and its Deployment line. */
-function deploymentOfAgent(id: string, tree: readonly NodeTree[]): Pick<AgentView, "fields" | "runChannels" | "deployment"> {
+function deploymentOfAgent(id: string, tree: readonly NodeTree[]): Pick<AgentView, "fields" | "runChannels" | "deployment" | "ownSetup"> {
   const find = (nodes: readonly NodeTree[]): NodeTree | null => {
     for (const node of nodes) {
       if (node.id === id) return node;
@@ -231,7 +231,8 @@ function deploymentOfAgent(id: string, tree: readonly NodeTree[]): Pick<AgentVie
   const fields = agentFieldsOf(node?.payload);
   const runChannels = runChannelsOf(tiles);
   const deployment = deploymentLineOf(tiles, id);
-  return { ...(Object.keys(fields).length > 0 ? { fields } : null), ...(runChannels.length > 0 ? { runChannels } : null), ...(deployment.length > 0 ? { deployment } : null) };
+  const ownSetup = agentSetupItemsOf(tree as NodeTree[], id).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, origin: skillOriginLine(item) }));
+  return { ...(Object.keys(fields).length > 0 ? { fields } : null), ...(runChannels.length > 0 ? { runChannels } : null), ...(deployment.length > 0 ? { deployment } : null), ...(ownSetup.length > 0 ? { ownSetup } : null) };
 }
 
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {

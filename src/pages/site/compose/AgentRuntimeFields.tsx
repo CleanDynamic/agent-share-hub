@@ -119,12 +119,14 @@ export interface AgentRuntimeFieldsProps {
   /** The agent sits inside a team. */
   inTeam: boolean;
   deployment: readonly { id: string; kind: string; name: string }[];
+  /** SV-27 P6: its own setup items. */
+  ownSetup?: readonly { id: string; kind: string; name: string; origin: string | null }[];
   onExtras?: (id: string, patch: Record<string, unknown>) => void;
   onOpenTile?: (id: string) => void;
   onAddDeployment?: (agentId: string) => void;
 }
 
-export function AgentRuntimeFields({ id, kind, phone, fields, harness, tools, inTeam, deployment, onExtras, onOpenTile, onAddDeployment }: AgentRuntimeFieldsProps) {
+export function AgentRuntimeFields({ id, kind, phone, fields, harness, tools, inTeam, deployment, ownSetup = [], onExtras, onOpenTile, onAddDeployment }: AgentRuntimeFieldsProps) {
   const [shown, setShown] = useState<AgentFields>(fields);
   const [addingModels, setAddingModels] = useState(false);
   const write = (patch: Record<string, unknown>, next: Partial<AgentFields>) => {
@@ -139,6 +141,16 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, tools, in
       <Field id={`${id}-deployment`} label={DEPLOYMENT_LINE_COPY.label} group>
         <DeploymentLine entries={deployment} phone={phone} onOpen={onOpenTile} onAdd={onAddDeployment ? () => onAddDeployment(id) : undefined} />
       </Field>
+
+      {ownSetup.length > 0 ? (
+        <Field id={`${id}-setup`} label="Setup" group>
+          {ownSetup.map((item) => (
+            <span key={item.id} style={{ fontSize: 12.5, color: t.text2 }}>
+              {[item.kind, item.name, item.origin].filter(Boolean).join(" · ")}
+            </span>
+          ))}
+        </Field>
+      ) : null}
 
       {kind === "agent" && !harness ? (
         <Field id={`${id}-framework`} label={FRAMEWORK_COPY.label} hint={FRAMEWORK_COPY.help} group>

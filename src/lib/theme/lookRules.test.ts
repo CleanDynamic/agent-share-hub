@@ -1252,6 +1252,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/graph.ts",
   "src/lib/build/tileExtras.ts",
   "src/lib/tools/registry.ts",
+  "src/lib/build/setupFolder.ts",
+  "src/lib/build/forkRules.ts",
 ];
 
 /**
