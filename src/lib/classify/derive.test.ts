@@ -226,7 +226,9 @@ describe("deriveClassification: Build method", () => {
   });
 
   it("reads the maker's own code as Direct API", () => {
-    expect(values([agent({ harness: "" })], "method")).toContain("direct-api");
+    // SV-27: only an agent the maker said is Built in code; no harness is Not said, which says nothing about a harness.
+    expect(values([agent({ built_in_code: true })], "method")).toContain("direct-api");
+    expect(values([agent({ harness: "" })], "method")).not.toContain("direct-api");
     expect(values([agent({ harness: "claude-code" })], "method")).toEqual(["ai-coding-agent"]);
   });
 });

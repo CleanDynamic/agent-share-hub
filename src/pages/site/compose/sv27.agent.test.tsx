@@ -45,7 +45,7 @@ const type = (name: string, value: string) => {
 
 describe("Framework", () => {
   it("shows only for an agent built in code, and saves", () => {
-    const onExtras = fields({ harness: null });
+    const onExtras = fields({ harness: null, builtInCode: true });
     choose("Framework", "LangGraph");
     expect(onExtras).toHaveBeenCalledWith("a1", { framework: "langgraph" });
     expect(screen.getByText("A harness runs an agent for you. A framework is a library you build one with.")).toBeTruthy();

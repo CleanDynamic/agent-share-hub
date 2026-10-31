@@ -379,7 +379,7 @@ const AGENT_SECTIONS = (team: boolean): readonly SectionDef[] => [
   S("model", team ? "Team" : "Models", team ? "" : "The main model, and up to three more with their roles", (tile) => {
     if (tile.kind !== "agent" && tile.kind !== "team") return null;
     if (tile.kind === "agent" && tile.setup) {
-      return rows([[HARNESS_COPY.label, tile.setup.harness ? (toolName(tile.setup.harness) ?? tile.setup.harness) : HARNESS_COPY.builtInCode], ...tile.setup.models.map((row, at) => [at === 0 ? "Model" : `Model ${at + 1}`, `${row.model ? modelLabel(row.model) : ""} · ${row.role}`] as const)]);
+      return rows([[HARNESS_COPY.label, tile.setup.harness ? (toolName(tile.setup.harness) ?? tile.setup.harness) : tile.setup.builtInCode ? HARNESS_COPY.builtInCode : HARNESS_COPY.notSaid], ...tile.setup.models.map((row, at) => [at === 0 ? "Model" : `Model ${at + 1}`, `${row.model ? modelLabel(row.model) : ""} · ${row.role}`] as const)]);
     }
     return rows([["In", tile.parent], ["Model", tile.model]]);
   }, !team),

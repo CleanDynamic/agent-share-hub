@@ -374,7 +374,7 @@ export interface DetailsHandlers {
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
   onInstructions?: (id: string, text: string) => void;
   /** CA-02 P5: change what an agent ran in, its models or its tools. Absent: they are shown, not edited. */
-  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[]; memory?: string }) => void;
+  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; builtInCode?: boolean; models?: AgentModel[]; tools: string[]; memory?: string }) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
   /** CA-28 P1: read a session's prompts again after they did not load. Absent: the Session window says so without Retry. */

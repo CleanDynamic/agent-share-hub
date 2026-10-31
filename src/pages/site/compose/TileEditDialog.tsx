@@ -298,6 +298,7 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
               phone={phone}
               fields={view.fields ?? {}}
               harness={input.harness ?? null}
+              builtInCode={!input.harness && input.builtInCode === true}
               tools={input.tools ?? []}
               inTeam={Boolean(view.parent)}
               deployment={view.deployment ?? []}

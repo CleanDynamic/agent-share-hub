@@ -87,8 +87,10 @@ export interface AddAgentInput {
   model: string;
   /** CA-02 P4: the system instructions, when the dialog was opened by "Add as an agent" or the maker wrote them. */
   instructions?: string;
-  /** CA-02 P5: the host platform, as an id or typed; null for its maker's own code. */
+  /** CA-02 P5: the harness, as an id or typed; null when it names none. */
   harness: string | null;
+  /** SV-27: Built in code (no harness); absent with no harness is Not sure. */
+  builtInCode?: boolean;
   /** CA-02 P5: every model with its role, the main one first; only when there is more than one. */
   models?: AgentModel[];
   /** CA-02 P5: the tools it can use, as ids or typed names. */
@@ -200,6 +202,7 @@ function Form({
     name: name.trim() || null,
     ...savedModels(setup),
     harness: setup.harness,
+    ...(!setup.harness && setup.builtInCode ? { builtInCode: true } : null),
     tools: setup.tools,
     ...(instructions.trim() ? { instructions } : null),
     ...(start !== "ask" ? { runs: { how: start, ...(startDetail.trim() ? { detail: startDetail.trim() } : null) } as Runs } : null),
@@ -271,7 +274,7 @@ function Form({
         </OptionalField>
 
         {team ? null : (
-        <OptionalField name={AGENT_SETUP_COPY.runsIn} summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
+        <OptionalField name={AGENT_SETUP_COPY.runsIn} summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : setup.builtInCode ? AGENT_SETUP_COPY.ownCode : null)} phone={phone}>
           {parts.host}
         </OptionalField>
         )}

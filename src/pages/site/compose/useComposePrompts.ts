@@ -176,6 +176,8 @@ export interface AgentSetupInput {
   /** The main model. */
   model: string;
   harness?: string | null;
+  /** SV-27: Built in code (no harness); absent or false with no harness is Not sure. */
+  builtInCode?: boolean;
   /** Every model with its role, the main one first; only when there is more than one. */
   models?: AgentModel[];
   /** Tool ids or typed names: each becomes a reference to the build's integration node for it, made when missing. */
@@ -758,14 +760,14 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, builtInCode, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
     attempt(`${capital(kind)} not added`, async () => {
       const build = await latest.current.ensureBuild();
       const toolRefs = await toolRefsFor(build, tools ?? []);
       // Only the keys given: an agent made without them is written exactly as before.
       const setup = {
         ...(instructions ? { instructions } : null),
-        ...(harness ? { harness } : null),
+        ...(harness ? { harness } : builtInCode ? { builtInCode: true } : null),
         ...(models && models.length > 1 ? { models } : null),
         ...(toolRefs.length ? { toolRefs } : null),
         ...(memory?.trim() ? { memory } : null),
@@ -822,13 +824,13 @@ export function useComposePrompts({
       return true;
     }, false);
 
-  const setAgent = (id: string, { model, harness, models, tools, memory }: AgentSetupInput) =>
+  const setAgent = (id: string, { model, harness, builtInCode, models, tools, memory }: AgentSetupInput) =>
     void attempt("Agent not saved", async () => {
       const build = await latest.current.ensureBuild();
       const toolRefs = await toolRefsFor(build, tools ?? []);
       const node = findNode(nodes.current(), id);
       if (!node) return;
-      nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs, ...(memory !== undefined ? { memory } : null) }));
+      nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, builtInCode: !harness && builtInCode === true, models: models ?? [], toolRefs, ...(memory !== undefined ? { memory } : null) }));
       noteTool(build, harness);
     }, undefined);
 

@@ -142,8 +142,10 @@ export interface Step {
   filename?: string | null;
   /** CA-02 P7, code only: "start reading here". */
   entrypoint?: boolean;
-  /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null for its maker's own code. */
+  /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null when it names none. */
   harness?: string | null;
+  /** SV-27: the agent is built in the maker's own code (no harness), as the maker said (`payload.built_in_code`). */
+  builtInCode?: boolean;
   /** CA-02 P5, an agent only: its models with their roles, when it has more than one. */
   models?: AgentModel[];
   /** CA-02 P5, an agent only: the integration nodes it was allowed to call. */
@@ -663,7 +665,7 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
 }
 
 /** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound" | "limits" | "output" | "sample"> {
+function agentFacts(payload: Payload): Pick<Step, "harness" | "builtInCode" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound" | "limits" | "output" | "sample"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
@@ -672,6 +674,7 @@ function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRe
   const changesEachRound = stringOf(payload.changes_each_round)?.trim().slice(0, CHANGES_EACH_ROUND_MAX);
   return {
     harness: harness ? (toolName(harness) ?? harness) : null,
+    ...(!harness && payload.built_in_code === true ? { builtInCode: true } : null),
     ...(models.length > 1 ? { models } : null),
     ...(toolRefs.length ? { toolRefs } : null),
     ...(memory ? { memory } : null),
@@ -1447,8 +1450,13 @@ const titleOrNull = (value: string | null | undefined): string | null => value?.
 
 /** What an agent ran in, the models it used and the tools it could call (CA-02 P5). Every key is optional. */
 export interface AgentSetup {
-  /** A tool id or a typed name; null or absent for the maker's own code. */
+  /** A tool id or a typed name; null or absent when it names none. */
   harness?: string | null;
+  /**
+   * SV-27: Harness has three states: a harness picked; Built in code (no harness), stored as `built_in_code: true`; and Not sure,
+   * which stores neither. An old agent with no harness reads as Not sure: the two cannot be told apart.
+   */
+  builtInCode?: boolean;
   /** Every model with its role, the main one first. Stored only when there is more than one. */
   models?: readonly AgentModel[];
   /** The integration nodes the agent may call. */
@@ -1465,7 +1473,7 @@ export interface AgentSetup {
  * The payload keys an agent's setup writes, checked. `model` is the main model and stays required: everything that
  * reads an agent reads it. A row of `models` with no model is refused; so is a fifth row.
  */
-function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory, memoryTidy, changesEachRound }: AgentSetup): Payload {
+function setupPayload(operation: string, model: string, { harness, builtInCode, models, toolRefs, memory, memoryTidy, changesEachRound }: AgentSetup): Payload {
   const main = model.trim();
   if (!main) throw refuse(operation, "An agent needs a model.");
   const out: Payload = { model: main };
@@ -1473,6 +1481,8 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   if (named) {
     if (named.length > HARNESS_MAX) throw refuse(operation, `Harness: ${HARNESS_MAX} characters max`);
     out.harness = toolFor(named)?.id ?? named;
+  } else if (builtInCode) {
+    out.built_in_code = true;
   }
   if (models && models.length > 0) {
     if (models.length > AGENT_MODELS_MAX) throw refuse(operation, `Models: ${AGENT_MODELS_MAX} max`);
@@ -1736,9 +1746,12 @@ export async function setAgentSetup(node: BuildNode, { model, ...setup }: { mode
   const keys = setupPayload("setAgentSetup", model, setup);
   const payload = { ...payloadOf(node) };
   payload.model = keys.model;
-  if ("harness" in setup) {
+  if ("harness" in setup || "builtInCode" in setup) {
     if (keys.harness) payload.harness = keys.harness;
     else delete payload.harness;
+    // SV-27: Built in code is kept only with no harness; Not sure stores neither.
+    if (keys.built_in_code === true) payload.built_in_code = true;
+    else delete payload.built_in_code;
   }
   if ("models" in setup) {
     if (keys.models) payload.models = keys.models;

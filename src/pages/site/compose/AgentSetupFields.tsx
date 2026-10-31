@@ -52,6 +52,9 @@ export const AGENT_SETUP_COPY = {
   runsIn: HARNESS_COPY.label,
   runsInLine: "Tool or framework",
   ownCode: HARNESS_COPY.builtInCode,
+  /** SV-27: the none row, and what it reads as once chosen. */
+  notSure: HARNESS_COPY.notSure,
+  notSaid: HARNESS_COPY.notSaid,
   models: "Models",
   addModel: "Add a model",
   tools: "Available tools",
@@ -78,8 +81,10 @@ export interface SetupModelRow {
 }
 
 export interface AgentSetupValue {
-  /** A tool id or a typed name; null for the maker's own code. */
+  /** A tool id or a typed name; null when it names none. */
   harness: string | null;
+  /** SV-27: Built in code (no harness). With no harness and this unset, the Harness is Not sure ("Not said"). */
+  builtInCode?: boolean;
   /** The main model first. */
   models: SetupModelRow[];
   /** Tool ids or typed names, in the order they were added. */
@@ -182,6 +187,17 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
   const setRow = (index: number, row: Partial<SetupModelRow>) =>
     onChange({ ...value, models: value.models.map((entry, i) => (i === index ? { ...entry, ...row } : entry)) });
 
+  /** SV-27: "Built in code (no harness)", a choice of its own beside Not sure. */
+  const builtInCodeRow = {
+    label: AGENT_SETUP_COPY.ownCode,
+    chosen: !value.harness && value.builtInCode === true,
+    onChoose: () => {
+      const result = withHarness(value, null);
+      setCleared(result.cleared);
+      setRunsChosen(true);
+      onChange({ ...result.value, builtInCode: true });
+    },
+  };
   const runsInPicker = (
         <span>
           <ToolPicker
@@ -191,12 +207,14 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
               const result = withHarness(value, next);
               setCleared(result.cleared);
               setRunsChosen(true);
-              onChange(result.value);
+              onChange({ ...result.value, builtInCode: false });
             }}
             inBuild={inBuild}
             runtime
             allowNone
-            noneLabel={AGENT_SETUP_COPY.ownCode}
+            noneLabel={AGENT_SETUP_COPY.notSure}
+            noneShown={AGENT_SETUP_COPY.notSaid}
+            code={builtInCodeRow}
             unpicked={dialog && !runsChosen}
             phone={phone}
             step="agent"
@@ -212,12 +230,14 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
         const result = withHarness(value, next);
         setCleared(result.cleared);
         setRunsChosen(true);
-        onChange(result.value);
+        onChange({ ...result.value, builtInCode: false });
       }}
       inBuild={inBuild}
       runtime
       allowNone
-      noneLabel={AGENT_SETUP_COPY.ownCode}
+      noneLabel={AGENT_SETUP_COPY.notSure}
+      noneShown={AGENT_SETUP_COPY.notSaid}
+      code={builtInCodeRow}
       unpicked={!runsChosen}
       phone={phone}
       step="agent"

@@ -1273,6 +1273,9 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/architectureMap.ts",
   "src/pages/site/compose/ArchitectureMap.tsx",
   "src/lib/build/costFields.ts",
+  "src/pages/site/compose/ToolPicker.tsx",
+  "src/pages/site/compose/toolPickerModel.ts",
+  "src/pages/site/compose/tileEdits.ts",
 ];
 
 /**

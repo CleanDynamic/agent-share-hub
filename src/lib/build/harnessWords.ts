@@ -9,4 +9,7 @@ export const HARNESS_COPY = {
   label: "Harness",
   select: "Select a harness",
   builtInCode: "Built in code (no harness)",
+  /** SV-27: the third state: the maker did not say. Stores nothing; an old agent with no harness reads so too. */
+  notSure: "Not sure",
+  notSaid: "Not said",
 } as const;

@@ -112,8 +112,10 @@ export interface AgentRuntimeFieldsProps {
   kind: "agent" | "team";
   phone: boolean;
   fields: AgentFields;
-  /** The harness the window has now (null: Built in code). */
+  /** The harness the window has now; null when it names none. */
   harness: string | null;
+  /** SV-27: Built in code (no harness); Framework shows only then, never for Not said. */
+  builtInCode?: boolean;
   /** The Available tools the window has now, by id or typed name. */
   tools: readonly string[];
   /** The agent sits inside a team. */
@@ -126,7 +128,7 @@ export interface AgentRuntimeFieldsProps {
   onAddDeployment?: (agentId: string) => void;
 }
 
-export function AgentRuntimeFields({ id, kind, phone, fields, harness, tools, inTeam, deployment, ownSetup = [], onExtras, onOpenTile, onAddDeployment }: AgentRuntimeFieldsProps) {
+export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCode = false, tools, inTeam, deployment, ownSetup = [], onExtras, onOpenTile, onAddDeployment }: AgentRuntimeFieldsProps) {
   const [shown, setShown] = useState<AgentFields>(fields);
   const [addingModels, setAddingModels] = useState(false);
   const write = (patch: Record<string, unknown>, next: Partial<AgentFields>) => {
@@ -152,7 +154,7 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, tools, in
         </Field>
       ) : null}
 
-      {kind === "agent" && !harness ? (
+      {kind === "agent" && !harness && builtInCode ? (
         <Field id={`${id}-framework`} label={FRAMEWORK_COPY.label} hint={FRAMEWORK_COPY.help} group>
           <PickMenu<string>
             label={FRAMEWORK_COPY.label}

@@ -302,7 +302,7 @@ describe("the trigger and the system instructions (CA-12 P11, CA-15 P7)", () => 
     expect(box.placeholder).not.toMatch(/^e\.g\./);
   });
 
-  it("hands back the instructions and a schedule, and Built in code leaves the harness empty", () => {
+  it("hands back the instructions and a schedule, and Not sure leaves the harness empty", () => {
     const props = open();
     openRow("System instructions");
     fireEvent.change((screen.getAllByLabelText("System instructions").at(-1) as HTMLElement), { target: { value: "Triage my inbox" } });
@@ -311,10 +311,11 @@ describe("the trigger and the system instructions (CA-12 P11, CA-15 P7)", () => 
     fireEvent.change(screen.getByLabelText("Schedule"), { target: { value: "Mondays 07:00" } });
     openRow("Harness");
     fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
-    fireEvent.click(screen.getByRole("option", { name: "Built in code (no harness)" }));
-    expect((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement).textContent).toBe("Built in code (no harness)");
+    fireEvent.click(screen.getByRole("option", { name: "Not sure" }));
+    expect((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement).textContent).toBe("Not said");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ instructions: "Triage my inbox", harness: null, runs: { how: "schedule", detail: "Mondays 07:00" } }));
+    expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0]).not.toHaveProperty("builtInCode");
   });
 
   it("an event trigger asks for the triggering event, and is stored as an event", () => {
@@ -396,8 +397,8 @@ describe("CA-13 · Deep Agents and supporting models in the Add dialog", () => {
     fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
     const rows = screen.getAllByRole("option").map((row) => row.textContent ?? "");
     expect(screen.getByText("Runtime models and services")).toBeTruthy();
-    // "Built in code (no harness)", then the subcategory's own rows before any other tool.
-    expect(rows.slice(0, 3)).toEqual(["Built in code (no harness)", "TypeSafe Jev", "ScaleDown Summarize"]);
+    // "Not sure" and "Built in code (no harness)", then the subcategory's own rows before any other tool.
+    expect(rows.slice(0, 4)).toEqual(["Not sure", "Built in code (no harness)", "TypeSafe Jev", "ScaleDown Summarize"]);
     expect(screen.getAllByText("Agent frameworks").length).toBeGreaterThan(0);
     expect(screen.getAllByText("LangChain Deep Agents").length).toBeGreaterThan(0);
     expect(screen.getAllByText("LangGraph").length).toBeGreaterThan(0);

@@ -395,7 +395,8 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
     if (step.kind === "prompt" && step.tool) noteApp(step.tool, [step.id]);
     if (step.kind === "agent" && step.harness) noteApp(step.harness, [step.id]);
   }
-  const ownCode = [...agents.filter((tile) => !tile.step?.harness && !str(tile.payload.harness).trim()), ...toolTiles.filter((tile) => (tile.step?.app?.connection ?? str(tile.payload.connection)) === "code")];
+  // SV-27: only an agent the maker said is built in code; Not said says nothing about a harness.
+  const ownCode = [...agents.filter((tile) => !tile.step?.harness && !str(tile.payload.harness).trim() && (tile.step?.builtInCode === true || tile.payload.built_in_code === true)), ...toolTiles.filter((tile) => (tile.step?.app?.connection ?? str(tile.payload.connection)) === "code")];
   if (ownCode.length > 0) out.add("method", "direct-api", ids(ownCode));
 
   /* ── Autonomy ── */

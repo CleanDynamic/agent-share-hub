@@ -97,6 +97,7 @@ export function AgentConfigRenderer(props: NodeProps) {
     "output",
     "sample",
     "harness",
+    "built_in_code",
     "models",
     ...AGENT_PARAM_KEYS,
     ...AGENT_TEST_KEYS,
@@ -113,9 +114,10 @@ export function AgentConfigRenderer(props: NodeProps) {
 
         <KeyValueGrid pairs={params} />
 
-        {harness ? (
+        {harness || payload.built_in_code === true ? (
           <Field label={HARNESS_COPY.label}>
-            <Prose>{toolName(harness) ?? harness}</Prose>
+            {/* SV-27: Built in code is said; Not said shows nothing. */}
+            <Prose>{harness ? (toolName(harness) ?? harness) : HARNESS_COPY.builtInCode}</Prose>
           </Field>
         ) : null}
 
