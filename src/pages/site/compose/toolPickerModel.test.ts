@@ -146,7 +146,8 @@ describe("CA-12 P13 · two lists", () => {
     for (const id of ["github", "gitlab", "stripe", "supabase", "postgres", "vercel", "netlify", "cloudflare", "slack", "gmail", "google-drive", "google-sheets", "notion", "linear", "jira", "figma", "airtable", "shopify", "twilio", "resend", "n8n", "zapier", "make", "elevenlabs"]) {
       expect(appIds, id).toContain(id);
     }
-    expect(APPS).toHaveLength(24);
+    // SV-27 P8: Google Calendar joins the apps.
+    expect(APPS).toHaveLength(25);
     const aiIds = WORKSPACE_AI_TOOLS.map((tool) => tool.id);
     for (const id of ["chatgpt", "claude", "claude-code", "cursor", "lovable", "github-copilot", "midjourney", "suno"]) expect(aiIds, id).toContain(id);
     for (const id of ["github", "stripe", "vercel", "gmail"]) expect(aiIds, id).not.toContain(id);
@@ -162,7 +163,7 @@ describe("CA-12 P13 · two lists", () => {
     expect(rows[rows.length - 1]).toEqual({ kind: "showAll", count: APPS.length });
     const all = pickerRows({ ...apps, expanded: true });
     expect(all[0]).toEqual({ kind: "heading", label: "Apps and services" });
-    expect(ids(all)).toHaveLength(24);
+    expect(ids(all)).toHaveLength(25);
     expect(ids(all)).not.toContain("chatgpt");
   });
 
@@ -196,9 +197,9 @@ describe("CA-12 P13 · two lists", () => {
   });
 
   it("an app does not run itself, and an app can be named on a Tool tile, a manual step and an agent", () => {
-    expect(toolsForStep("tool", "app")).toHaveLength(24);
-    expect(toolsForStep("manual", "app")).toHaveLength(24);
-    expect(toolsForStep("agent", "app")).toHaveLength(24);
+    expect(toolsForStep("tool", "app")).toHaveLength(25);
+    expect(toolsForStep("manual", "app")).toHaveLength(25);
+    expect(toolsForStep("agent", "app")).toHaveLength(25);
   });
 });
 
@@ -214,7 +215,7 @@ describe("CA-13 rule 5 · Runtime models and services in the pickers", () => {
     const rows = pickerRows({ ...ai, runtime: true });
     const headings = rows.filter((row) => row.kind === "heading").map((row) => (row as { label: string }).label);
     expect(headings.slice(0, 5)).toEqual(["Runtime models and services", "Decision models", "Context helpers", "Agent frameworks", "Tracing"]);
-    expect(ids(rows).slice(0, 8)).toEqual(["typesafe-jev", "scaledown-summarize", "scaledown-compress", "scaledown-extract", "scaledown-classify", "deep-agents", "langgraph", "langsmith"]);
+    expect(ids(rows).slice(0, 8)).toEqual(["typesafe-jev", "scaledown-summarize", "scaledown-compress", "scaledown-extract", "scaledown-classify", "deep-agents", "langgraph", "crewai"]);
   });
 
   it("finds a runtime model by typing when it is asked for", () => {

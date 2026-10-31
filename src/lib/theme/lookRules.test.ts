@@ -1262,6 +1262,8 @@ export const CA03_FILES: readonly string[] = [
   "src/hooks/useNodeType.ts",
   "src/pages/site/compose/useComposePrompts.ts",
   "src/lib/build/partnership.ts",
+  "src/lib/build/deploymentNeeds.ts",
+  "src/lib/classify/derive.ts",
 ];
 
 /**
