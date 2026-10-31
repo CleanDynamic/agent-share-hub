@@ -369,7 +369,7 @@ function setupView(node: NodeTree, ctx: ViewContext): DetailsView | null {
     id: node.id,
     number: "",
     title: node.title,
-    defaultTitle: item.rule.when || "Rule",
+    defaultTitle: item.rule.when || SETUP_KIND_LABEL.rule,
     sentWithLine: [eyebrow, item.rule.when, item.rule.filter].filter(Boolean).join(" · "),
     language: "bash",
     filename: null,

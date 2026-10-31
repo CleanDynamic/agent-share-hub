@@ -9,6 +9,7 @@
    The head's controls (direction, Fit to screen, Map options) are the maker's; a reader's head has Fit to screen only.
    Below 768 wide the map is always vertical. */
 
+import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { GROUP_LABEL_COPY, useGroupLookup } from "./groupLabels";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Maximize2, MoreHorizontal } from "lucide-react";
@@ -87,7 +88,7 @@ export const MAP_COPY = {
   noMapBody: "A map shows how the sessions connect across parts and stages. It is built from the sessions you already have.",
   create: "Create a map",
   untitled: "untitled",
-  noApp: "No app chosen",
+  noApp: NO_HARNESS,
 } as const;
 
 const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;

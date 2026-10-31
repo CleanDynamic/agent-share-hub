@@ -959,7 +959,7 @@ describe("an agent that names its harness, its models and its tools (CA-02 P5)",
       />,
     );
 
-  it("draws Host platform, one line per model with its role under the model line, and each tool", () => {
+  it("draws Harness, one line per model with its role under the model line, and each tool", () => {
     const { container } = draw({
       system_prompt: "Triage my inbox",
       model: "Opus 5.5",
@@ -971,7 +971,7 @@ describe("an agent that names its harness, its models and its tools (CA-02 P5)",
       tools: [{ tool_ref: "t-gmail" }, { tool_ref: "t-copilot" }],
     });
     const card = within(container);
-    expect(card.getByText("Host platform")).toBeTruthy();
+    expect(card.getByText("Harness")).toBeTruthy();
     expect(card.getByText("Hermes Agent")).toBeTruthy();
     expect(card.getByText("Models")).toBeTruthy();
     expect(card.getByText("Opus 5.5 · main")).toBeTruthy();
@@ -981,12 +981,12 @@ describe("an agent that names its harness, its models and its tools (CA-02 P5)",
     // Read through their own lines, never again as raw leftovers.
     expect(container.textContent).not.toContain("hermes-agent");
     const text = container.textContent ?? "";
-    expect(text.indexOf("Opus 5.5")).toBeLessThan(text.indexOf("Host platform"));
+    expect(text.indexOf("Opus 5.5")).toBeLessThan(text.indexOf("Harness"));
   });
 
-  it("draws an old agent exactly as before: no Host platform, no Models", () => {
+  it("draws an old agent exactly as before: no Harness, no Models", () => {
     const { container } = draw({ system_prompt: "Triage my inbox", model: "Opus 5.5" });
-    expect(container.textContent).not.toContain("Host platform");
+    expect(container.textContent).not.toContain("Harness");
     expect(container.textContent).not.toContain("Models");
   });
 });

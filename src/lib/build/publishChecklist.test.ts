@@ -70,7 +70,7 @@ describe("publishChecklist required items", () => {
 });
 
 describe("publishChecklist recommended items", () => {
-  it("names the sessions with no app, the Card when it is not filled and each reminder", () => {
+  it("names the sessions with no harness, the Card when it is not filled and each reminder", () => {
     const out = publishChecklist({
       ...base,
       appless: [
@@ -81,7 +81,7 @@ describe("publishChecklist recommended items", () => {
       reminders: [{ line: "People copying this will get a request, not your code.", stepId: "n2" }],
     });
     expect(out.recommended.map((item) => [item.words, item.detail, item.action?.label])).toEqual([
-      ["Apps for 2 sessions", "Sessions 2 and 4 have no app", "Show"],
+      ["Sessions with no harness", "Sessions 2 and 4 have no harness", "Show"],
       ["Classification", "Not filled", "Open Classification"],
       ["People copying this will get a request, not your code.", null, "Go to it"],
     ]);
@@ -92,9 +92,9 @@ describe("publishChecklist recommended items", () => {
 
   it("says one session in the singular and three in a list", () => {
     const one = publishChecklist({ ...base, appless: [{ key: "a", number: 3 }] }).recommended[0];
-    expect([one.words, one.detail]).toEqual(["Apps for 1 session", "Session 3 has no app"]);
+    expect([one.words, one.detail]).toEqual(["Sessions with no harness", "Session 3 has no harness"]);
     const three = publishChecklist({ ...base, appless: [1, 2, 4].map((number) => ({ key: `s${number}`, number })) }).recommended[0];
-    expect(three.detail).toBe("Sessions 1, 2 and 4 have no app");
+    expect(three.detail).toBe("Sessions 1, 2 and 4 have no harness");
   });
 });
 

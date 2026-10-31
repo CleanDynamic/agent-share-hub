@@ -29,7 +29,8 @@ export const SETUP_KIND_LABEL: Record<SetupKind, string> = {
   instructions: "Instructions",
   skill: "Skill",
   server: "MCP server",
-  rule: "Rule",
+  /** SV-27 P1: the kind holds hooks (`HOOK_EVENTS`); stored as `rule`. */
+  rule: "Hook",
   workflow: "Workflow",
 };
 

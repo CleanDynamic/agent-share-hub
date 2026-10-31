@@ -972,7 +972,7 @@ export function setupSentences(setup: readonly ReaderSetupItem[]): string[] {
   const rules = names("rule");
   if (skills.length > 0) out.push(`Skills: ${join(skills)}.`);
   if (servers.length > 0) out.push(`MCP servers: ${join(servers)}.`);
-  if (rules.length > 0) out.push(`Rules: ${rules.join("; ")}.`);
+  if (rules.length > 0) out.push(`Hooks: ${rules.join("; ")}.`);
   return out;
 }
 

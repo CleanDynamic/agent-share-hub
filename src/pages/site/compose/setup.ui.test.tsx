@@ -79,7 +79,7 @@ describe("Session window › Setup", () => {
     render(<SessionDialog view={view} onClose={vi.fn()} handlers={handlers} />);
     const section = screen.getByTestId("session-setup");
     const text = section.textContent ?? "";
-    for (const word of ["Instructions", "CLAUDE.md", "MCP server", "github", "Rule", "npm test", "Skill", "order-forms"]) expect(text).toContain(word);
+    for (const word of ["Instructions", "CLAUDE.md", "MCP server", "github", "Hook", "npm test", "Skill", "order-forms"]) expect(text).toContain(word);
     expect(within(section).getAllByRole("button", { name: /^Keep private/ })).toHaveLength(3);
     expect(text).toContain("Not shared");
     fireEvent.click(within(section).getByRole("button", { name: "Keep private: CLAUDE.md" }));
@@ -109,7 +109,7 @@ describe("Session window › Setup", () => {
     const { base } = ctx();
     expect(resolveView({ ...base, selectedId: "x1" })).toMatchObject({ kind: "file", name: "CLAUDE.md", sentWithLine: "Setup · Instructions" });
     expect(resolveView({ ...base, selectedId: "x3" })).toMatchObject({ kind: "tool", service: "github" });
-    expect(resolveView({ ...base, selectedId: "x4" })).toMatchObject({ kind: "code", source: "npm test", sentWithLine: "Setup · Rule · After a tool runs" });
+    expect(resolveView({ ...base, selectedId: "x4" })).toMatchObject({ kind: "code", source: "npm test", sentWithLine: "Setup · Hook · After a tool runs" });
   });
 
   it("is not a step, a file of the build or a tool a step can use", () => {
@@ -153,14 +153,14 @@ describe("the build page", () => {
     expect(screen.queryByTestId("session-setup")).toBeNull();
     fireEvent.click(buttons[0]);
     const rows = within(screen.getByTestId("session-setup")).getAllByTestId("setup-row");
-    expect(rows.map((row) => row.textContent)).toEqual(["InstructionsCLAUDE.md", "MCP servergithub", "RuleAfter a tool runs: npm test", "Skill · not sharedorder-formsOrder forms that add up."]);
+    expect(rows.map((row) => row.textContent)).toEqual(["InstructionsCLAUDE.md", "MCP servergithub", "HookAfter a tool runs: npm test", "Skill · not sharedorder-formsOrder forms that add up."]);
     expect(within(screen.getByTestId("session-setup")).getAllByTestId("setup-loaded").map((group) => group.getAttribute("aria-label"))).toEqual(["At the start", "Only when needed"]);
     expect(screen.getByTestId("session-setup").style.marginLeft).toBe("28px");
   });
 
   it("starts the session in Copy for AI with its setup, and says the setup's secrets as placeholders only", () => {
     const md = stepsMarkdown({ title: "T" }, view().steps);
-    expect(md).toContain("Before you start, put CLAUDE.md in your project folder.\nSkills: order-forms.\nMCP servers: github.\nRules: After a tool runs: npm test.");
+    expect(md).toContain("Before you start, put CLAUDE.md in your project folder.\nSkills: order-forms.\nMCP servers: github.\nHooks: After a tool runs: npm test.");
     expect(md.indexOf("Skills: order-forms.")).toBeGreaterThan(md.indexOf("New chat in Claude Code"));
   });
 });

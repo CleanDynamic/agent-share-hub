@@ -50,7 +50,7 @@ describe("StepsList · a pasted chat given its tool (TF-13)", () => {
   it("reads 'New chat' with no logo until a tool is chosen", () => {
     mountList(chatOnly({}));
     // CA-14 P2: the reader's head reads "Session 1", with a neutral glyph while the app is unknown.
-    expect(screen.getByRole("group", { name: "Session 1 · No app chosen" }).querySelector("[data-mark]")).toBeNull();
+    expect(screen.getByRole("group", { name: "Session 1 · No harness chosen" }).querySelector("[data-mark]")).toBeNull();
   });
 
   it("reads 'Session 1 · Perplexity' with Perplexity's logo once chosen", () => {

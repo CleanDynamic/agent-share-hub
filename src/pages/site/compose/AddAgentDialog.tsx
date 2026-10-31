@@ -27,7 +27,7 @@ import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { startingModel } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
 
-import { savedModels, setupReady, useAgentSetupFields, type AgentSetupValue } from "./AgentSetupFields";
+import { AGENT_SETUP_COPY, savedModels, setupReady, useAgentSetupFields, type AgentSetupValue } from "./AgentSetupFields";
 import { ChoiceGrid } from "./ChoiceGrid";
 import { HelpersField } from "./HelpersField";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
@@ -271,7 +271,7 @@ function Form({
         </OptionalField>
 
         {team ? null : (
-        <OptionalField name="Host platform" summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
+        <OptionalField name={AGENT_SETUP_COPY.runsIn} summary={summaryOf(setup.harness ? (toolName(setup.harness) ?? setup.harness) : null)} phone={phone}>
           {parts.host}
         </OptionalField>
         )}

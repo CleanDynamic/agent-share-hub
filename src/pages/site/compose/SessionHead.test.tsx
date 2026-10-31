@@ -171,9 +171,9 @@ describe("the app", () => {
   it("is a text button that opens the app picker while a session has none", () => {
     const base = sandboxListProps("bakery");
     const [[number, first], ...rest] = [...base.dividers.entries()];
-    list({ dividers: new Map([[number, { ...first, tool: "No app chosen" }], ...rest]), onPickApp: vi.fn() });
-    const pick = within(head(1)).getByRole("button", { name: "Pick an app for session 1" });
-    expect(pick.textContent).toBe("No app chosen");
+    list({ dividers: new Map([[number, { ...first, tool: "No harness chosen" }], ...rest]), onPickApp: vi.fn() });
+    const pick = within(head(1)).getByRole("button", { name: "Pick a harness for session 1" });
+    expect(pick.textContent).toBe("No harness chosen");
   });
 });
 
@@ -183,9 +183,9 @@ describe("empty sessions and mixed tiles", () => {
     const heads = [...base.dividers.values()];
     // The three sessions are numbered 2, 3 and 4; the empty one is Session 1, so it comes first.
     const renumbered = new Map([...base.dividers.entries()].map(([step, head]) => [step, { ...head, number: head.number + 1 }]));
-    list({ dividers: renumbered, emptySessions: [{ key: "typed-empty", number: 1, tool: "No app chosen", detail: "", prompts: [], date: "22 Oct" }] });
+    list({ dividers: renumbered, emptySessions: [{ key: "typed-empty", number: 1, tool: "No harness chosen", detail: "", prompts: [], date: "22 Oct" }] });
     const names = screen.getAllByTestId("session-head").map((el) => el.getAttribute("aria-label"));
-    expect(names[0]).toBe("Session 1 · No app chosen");
+    expect(names[0]).toBe("Session 1 · No harness chosen");
     expect(names).toHaveLength(heads.length + 1);
     const run = document.querySelector('[data-session-key="typed-empty"]') as HTMLElement;
     expect(within(run).getByText("No tiles yet")).toBeTruthy();

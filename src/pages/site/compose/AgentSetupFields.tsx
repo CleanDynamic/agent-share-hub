@@ -29,6 +29,7 @@
    text link under them; Host platform a picker field ("Select a platform"); Available tools a small "Select tools" button
    with the chosen tools as tags; Memory one field. Details keeps its own look. */
 
+import { HARNESS_COPY } from "@/lib/build/harnessWords";
 import { useAnnounce } from "./BuildAnnouncer";
 import { X } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
@@ -47,10 +48,10 @@ import { ToolPicker } from "./ToolPicker";
 import { FieldInput, Hint, IconSquare, PICKER_ROW, RemovableTag, Row, Tag, TagList, TextLink } from "./modalRecipes";
 
 export const AGENT_SETUP_COPY = {
-  runsIn: "Host platform",
+  /** SV-27 P1: was Host platform; `payload.harness` is unchanged. */
+  runsIn: HARNESS_COPY.label,
   runsInLine: "Tool or framework",
-  ownCode: "Own code (API)",
-  notSure: "Not sure",
+  ownCode: HARNESS_COPY.builtInCode,
   models: "Models",
   addModel: "Add a model",
   tools: "Available tools",
@@ -63,7 +64,7 @@ export const AGENT_SETUP_COPY = {
   memoryPlaceholder: "Which dishes it featured, in a notes file it keeps",
   /** CA-15b: the Add dialog's words. */
   memoryDialogPlaceholder: "Dishes already featured, stored in a notes file",
-  selectPlatform: "Select a platform",
+  selectPlatform: HARNESS_COPY.select,
   selectTools: "Select tools",
   role: (n: number) => `Role of model ${n}`,
   removeModel: (n: number) => `Remove model ${n}`,
@@ -195,7 +196,7 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
             inBuild={inBuild}
             runtime
             allowNone
-            noneLabel={dialog ? AGENT_SETUP_COPY.notSure : AGENT_SETUP_COPY.ownCode}
+            noneLabel={AGENT_SETUP_COPY.ownCode}
             unpicked={dialog && !runsChosen}
             phone={phone}
             step="agent"
@@ -216,7 +217,7 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
       inBuild={inBuild}
       runtime
       allowNone
-      noneLabel={AGENT_SETUP_COPY.notSure}
+      noneLabel={AGENT_SETUP_COPY.ownCode}
       unpicked={!runsChosen}
       phone={phone}
       step="agent"

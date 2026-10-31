@@ -7,6 +7,7 @@
 // configuration types share one code path and a fifth added to the registry
 // renders without a change here. Nothing in this file switches on node.type.
 
+import { HARNESS_COPY } from "@/lib/build/harnessWords";
 import type { ReactNode } from "react";
 import { agentModelsOf } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
@@ -113,7 +114,7 @@ export function AgentConfigRenderer(props: NodeProps) {
         <KeyValueGrid pairs={params} />
 
         {harness ? (
-          <Field label="Host platform">
+          <Field label={HARNESS_COPY.label}>
             <Prose>{toolName(harness) ?? harness}</Prose>
           </Field>
         ) : null}

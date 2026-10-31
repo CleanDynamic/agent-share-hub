@@ -222,7 +222,7 @@ describe("draftsModel", () => {
     expect(sessionSource({ modelName: null, client: "claude-code" })).toBe("Claude Code");
     expect(sessionSource({ modelName: null, client: "web" })).toBe("Pasted");
     expect(sessionSource({ modelName: null, client: "chatgpt" })).toBe("ChatGPT");
-    expect(sessionSource({ modelName: null, client: null })).toBe("No app chosen");
+    expect(sessionSource({ modelName: null, client: null })).toBe("No harness chosen");
     expect(sessionSource({ modelName: "Opus 5.5", client: "claude" })).toBe("Opus 5.5");
   });
 

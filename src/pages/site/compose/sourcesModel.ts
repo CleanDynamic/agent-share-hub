@@ -9,6 +9,7 @@
    is in the build, and "added by you" otherwise. A file a step makes is noted
    "made in step {n}". */
 
+import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
 import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
@@ -190,7 +191,7 @@ export interface SourceUnfinishedItem {
 }
 
 /** CA-12 P3: what a session with no app reads as. "Unknown tool" and "typed here" are not shown anywhere. */
-export const NO_APP = "No app chosen";
+export const NO_APP = NO_HARNESS;
 
 /** CA-12 P3: Session 1 of a post whose draft is not made yet. The draft makes the real one; this stands in until then. */
 export const FIRST_SESSION_KEY = "typed-first-session";

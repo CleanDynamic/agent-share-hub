@@ -49,7 +49,7 @@ Each prompt runs after the one before has merged, one at a time, in number order
 
 ## Decisions made for this series
 
-- **Session rows** in Drafts, Home and the composer's Your sessions are named by their first prompt (as the boards draw them), with `<tool> · <model> · <date> · in n drafts` in the detail line. A row whose first turn is a Claude Code summary is named by the first real prompt (SV-07's Summary tiles). Where the tool is unknown, the detail line starts `No app chosen`. SV-05 Part 3 follows this.
+- **Session rows** in Drafts, Home and the composer's Your sessions are named by their first prompt (as the boards draw them), with `<tool> · <model> · <date> · in n drafts` in the detail line. A row whose first turn is a Claude Code summary is named by the first real prompt (SV-07's Summary tiles). Where the tool is unknown, the detail line starts `No harness chosen`. SV-05 Part 3 follows this.
 - **The stagger total on imports** is fixed: up to 4 prompts keep 110 ms apart, more close the gap so the spread never passes 330 ms; list staggers never spread past 300 ms (SV-06 Part 5).
 - **Heavier layers are built only when a target fails without them:** `compose_open` and the kept cache (SV-03), `go()` waiting (SV-04), the stored Map summary (SV-12). The report says which were built and the numbers that decided it.
 - **VB-14 and VB-15 are each split in two** (SV-21 and SV-22, SV-23 and SV-24), so no session carries six mechanisms and four migrations.

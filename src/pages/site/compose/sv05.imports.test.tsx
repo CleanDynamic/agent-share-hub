@@ -74,7 +74,7 @@ describe("SV-05 P3 · a library row", () => {
     expect(item.line).toBe("Claude Code · Haiku 4.5 · 10 Oct · 1 prompt");
   });
 
-  it("with an unknown tool reads No app chosen first in its detail line", () => {
+  it("with an unknown tool reads No harness chosen first in its detail line", () => {
     const [item] = librarySources([summary()], new Set(), Date.parse("2026-10-26T10:00:00Z"));
     expect(item.line).toBe(`${NO_APP} · Haiku 4.5 · 10 Oct · 1 prompt`);
     expect(item.appKnown).toBe(false);

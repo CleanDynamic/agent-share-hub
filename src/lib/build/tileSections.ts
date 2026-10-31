@@ -8,6 +8,7 @@
 // PURE. No React, no I/O. `read` takes the view the Details panel is given (`DetailsView`, type only) and a `BuildFacts`
 // for naming other tiles. Nothing here writes anything.
 
+import { HARNESS_COPY } from "./harnessWords";
 import type { DetailsView } from "@/pages/site/compose/DetailsPanel";
 import { asksHowRun, modelRunLine } from "@/lib/build/modelRun";
 import { goalLine } from "@/lib/build/making";
@@ -378,7 +379,7 @@ const AGENT_SECTIONS = (team: boolean): readonly SectionDef[] => [
   S("model", team ? "Team" : "Models", team ? "" : "The main model, and up to three more with their roles", (tile) => {
     if (tile.kind !== "agent" && tile.kind !== "team") return null;
     if (tile.kind === "agent" && tile.setup) {
-      return rows([["Runs in", tile.setup.harness ? (toolName(tile.setup.harness) ?? tile.setup.harness) : "Own code (API)"], ...tile.setup.models.map((row, at) => [at === 0 ? "Model" : `Model ${at + 1}`, `${row.model ? modelLabel(row.model) : ""} · ${row.role}`] as const)]);
+      return rows([[HARNESS_COPY.label, tile.setup.harness ? (toolName(tile.setup.harness) ?? tile.setup.harness) : HARNESS_COPY.builtInCode], ...tile.setup.models.map((row, at) => [at === 0 ? "Model" : `Model ${at + 1}`, `${row.model ? modelLabel(row.model) : ""} · ${row.role}`] as const)]);
     }
     return rows([["In", tile.parent], ["Model", tile.model]]);
   }, !team),
@@ -516,7 +517,7 @@ const REPO: readonly SectionDef[] = [
 ];
 
 const SESSION: readonly SectionDef[] = [
-  S("app", "App and model", "The app the session ran in, and the model", (tile) => (tile.kind === "session" ? rows([["App", tile.tool], ["Model", tile.model ? modelLabel(tile.model) : null]]) : null), true),
+  S("app", "Harness and model", "The harness the session ran in, and the model", (tile) => (tile.kind === "session" ? rows([[HARNESS_COPY.label, tile.tool], ["Model", tile.model ? modelLabel(tile.model) : null]]) : null), true),
   S("date", "Date", "The day the session ran", (tile) => (tile.kind === "session" ? one("Date", tile.date) : null)),
   S("goal", "Worked until", "A condition, and how many turns at most", (tile) => (tile.kind === "session" && tile.goal ? one("Worked until", goalLine(tile.goal).replace(/^Worked until /, "")) : null)),
   S("extras", "Cost and tokens", "What it cost, how many tokens, whether it ran in the background", (tile) => {
@@ -580,7 +581,7 @@ export function readSections(tile: DetailsView, build: BuildFacts): { sections: 
   return { sections, notSet };
 }
 
-/** "Not set: Host platform, Memory, Sample run. Edit to add them." Nothing when nothing is empty. */
+/** "Not set: Harness, Memory, Sample run. Edit to add them." Nothing when nothing is empty. */
 export function notSetLine(notSet: readonly string[]): string | null {
   if (notSet.length === 0) return null;
   return `Not set: ${notSet.join(", ")}. Edit to add them.`;

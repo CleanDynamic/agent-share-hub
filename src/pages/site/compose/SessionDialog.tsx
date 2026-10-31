@@ -10,6 +10,7 @@
    Built from `modalRecipes` (lookRules holds this file to it); the fields that are not the recipes' own (the cost fields, the
    command it started with, the menu of sessions it ran beside) are the ones Details had, drawn as they always were. */
 
+import { HARNESS_COPY, NO_HARNESS } from "@/lib/build/harnessWords";
 import { LoadingRegion } from "@/components/brand/Skeleton";
 import { LoadingBlocks } from "./LoadingBlocks";
 import { SESSION_PROMPT_ROWS } from "./loadingBlocks";
@@ -49,10 +50,11 @@ import { ToolPicker } from "./ToolPicker";
 
 export const SESSION_DIALOG_COPY = {
   title: (n: number, tool: string) => `Session ${n}${tool ? ` · ${tool}` : ""}`,
-  subtitle: "App, date, cost and setup",
-  appAndModel: "App and model",
-  app: "App",
-  noApp: "No app chosen",
+  subtitle: "Harness, date, cost and setup",
+  appAndModel: "Harness and model",
+  /** SV-27 P1: the session's harness (`sessions_meta[key].tool`, key unchanged). */
+  app: HARNESS_COPY.label,
+  noApp: NO_HARNESS,
   model: "Model",
   notNamed: "Not named",
   date: "Date",
