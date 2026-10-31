@@ -70,7 +70,7 @@ test.describe("SV-04 P4: the composer in the one frame", () => {
       };
       requestAnimationFrame(look);
     });
-    await page.getByRole("button", { name: "New build" }).click();
+    await page.getByRole("button", { name: "New build", exact: true }).click();
     await ready(page, "composer");
     await page.waitForFunction(() => !document.querySelector('[data-testid="compose-skeleton"]'));
     await page.waitForTimeout(600);

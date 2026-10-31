@@ -154,6 +154,10 @@ function buildRow(n: number, extra: Row = {}): Row {
     price_gbp: null,
     donation_enabled: false,
     solves_node_id: null,
+    /* SV-22's two flags, at their defaults (both NOT NULL DEFAULT false). Builds reads with `in_review=eq.false` and the
+       briefs with `is_brief`, so a row without them would be left out of every list. */
+    in_review: false,
+    is_brief: false,
     build_nodes: [],
     /* THE EMBEDDED COVER. The gallery reads media through the PostgREST embed
        `build_media!build_media_build_id_fkey(...)`, not through a second query,
