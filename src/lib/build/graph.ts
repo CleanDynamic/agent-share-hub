@@ -15,6 +15,8 @@
 
 import { DEPLOYMENT_KIND_NAME, cleanDeployment, deploymentKindOf, moveMemoryNote, typeOfKind, type DeploymentKind } from "./deployment";
 import { agentFieldsRefusal } from "./agentFields";
+// SV-27 P9: the API estimate and measured speed cleaners, registered for `setExtras`.
+import "./deploymentCost";
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, REPLY_MAX, swapMoves } from "./composePrompts";

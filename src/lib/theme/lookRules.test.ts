@@ -1264,6 +1264,12 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/partnership.ts",
   "src/lib/build/deploymentNeeds.ts",
   "src/lib/classify/derive.ts",
+  "src/lib/build/deploymentCost.ts",
+  "src/lib/build/compare.ts",
+  "src/dev/fixtures/deployment/assistant.ts",
+  "src/dev/fixtures/deployment/self-hosted.ts",
+  "src/dev/fixtures/deployment/agent-team.ts",
+  "src/dev/fixtures/deployment/node.ts",
 ];
 
 /**

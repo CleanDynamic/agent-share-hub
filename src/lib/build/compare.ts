@@ -1,6 +1,7 @@
 // CA-13 Part 9: comparing two builds of the same thing, pure. Steps are matched by kind and order and the ones with no match are
 // shown as gaps. Totals keep "to build" and "to run" in separate rows (rule 3); the differences read in plain words.
 
+import { setupDifference } from "./deploymentCost";
 import { buildPartsOf, runTilesOf, showsCost } from "./costView";
 import { buildTotals, duration, money, runTotals, tokensWords, type BuildTotals, type RunTotals } from "./cost";
 import type { SessionGroup, Step } from "./graph";
@@ -12,6 +13,10 @@ export interface CompareSide {
   groups: readonly SessionGroup[];
   /** The models its sessions and agents used, by name. */
   models: readonly string[];
+  /** SV-27 P9: its setup figures (the maker's) and its API estimate, each kept apart from To build and To run. */
+  setup?: number | null;
+  estimate?: string | null;
+  currency?: "GBP" | "USD";
 }
 
 export interface CompareRow {
@@ -45,6 +50,9 @@ export interface SideTotals {
   models: string[];
   patterns: Pattern[];
   money: boolean;
+  setup: number | null;
+  estimate: string | null;
+  currency: "GBP" | "USD";
 }
 
 export function totalsOf(side: CompareSide): SideTotals {
@@ -55,6 +63,9 @@ export function totalsOf(side: CompareSide): SideTotals {
     models: [...new Set(side.models)],
     patterns: buildPatterns(side.steps, side.groups),
     money: showsCost(side.groups),
+    setup: side.setup ?? null,
+    estimate: side.estimate ?? null,
+    currency: side.currency ?? "GBP",
   };
 }
 
@@ -80,6 +91,9 @@ export function totalsRows(a: SideTotals, b: SideTotals): TotalsRow[] {
     { label: "To build · tokens", a: buildCell(a, (t) => (t.tokens > 0 ? tokensWords(t.tokens) : null)), b: buildCell(b, (t) => (t.tokens > 0 ? tokensWords(t.tokens) : null)) },
     { label: "To build · cost", a: a.money ? buildCell(a, (t) => (t.money.length ? t.money.map((m) => money(m.cost, m.currency)).join(" and ") : null)) : dash, b: b.money ? buildCell(b, (t) => (t.money.length ? t.money.map((m) => money(m.cost, m.currency)).join(" and ") : null)) : dash },
     { label: "To run", a: runCell(a), b: runCell(b) },
+    // SV-27 P9: each in its own row, never added to To build or To run.
+    { label: "To set up", a: a.money && a.setup !== null ? money(a.setup, a.currency) : dash, b: b.money && b.setup !== null ? money(b.setup, b.currency) : dash },
+    { label: "API estimate", a: a.money && a.estimate ? a.estimate : dash, b: b.money && b.estimate ? b.estimate : dash },
     { label: "Steps", a: String(a.steps), b: String(b.steps) },
     { label: "Models used", a: a.models.join(", ") || dash, b: b.models.join(", ") || dash },
   ];
@@ -102,6 +116,10 @@ export function differences(a: SideTotals, b: SideTotals): string[] {
   if (a.build && b.build) {
     if (a.build.tokens > 0 && b.build.tokens > 0 && a.build.tokens !== b.build.tokens && share(a.build.tokens, b.build.tokens) >= 5) out.push(`used ${share(a.build.tokens, b.build.tokens)}% ${a.build.tokens < b.build.tokens ? "fewer" : "more"} tokens`);
     if (a.build.ms > 0 && b.build.ms > 0 && a.build.ms !== b.build.ms && share(a.build.ms, b.build.ms) >= 5) out.push(`took ${share(a.build.ms, b.build.ms)}% ${a.build.ms < b.build.ms ? "less" : "more"} time`);
+  }
+  if (a.money && b.money) {
+    const setup = setupDifference(a.setup, b.setup, a.currency);
+    if (setup) out.push(setup);
   }
   if (a.steps !== b.steps) out.push(`has ${Math.abs(a.steps - b.steps)} ${a.steps < b.steps ? "fewer" : "more"} ${Math.abs(a.steps - b.steps) === 1 ? "step" : "steps"}`);
   return out;

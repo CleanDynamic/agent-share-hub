@@ -19,7 +19,8 @@ import { DECISION_TYPE, checkLine, decisionOf } from "./decision";
 
 type Payload = Record<string, unknown>;
 
-export const EVIDENCE_KEYS = ["build_cost", "run_cost", "trace_url"] as const;
+/** SV-27 P9: a Result's or Check's measured speed is evidence too: the copy has not run. */
+export const EVIDENCE_KEYS = ["build_cost", "run_cost", "trace_url", "measured"] as const;
 
 const isRecord = (value: unknown): value is Payload => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
