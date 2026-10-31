@@ -55,3 +55,6 @@ supabase/functions/**/deno.lock
 # e2e/audit/rc-critique.spec.ts --project=desktop`; the critique written from
 # them is docs/reconciliation/critique/, which is committed.
 e2e/audit/critique/
+
+# SV-26: the visualizer's output is a build artefact
+design/audits/size/stats.html
