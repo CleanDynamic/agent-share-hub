@@ -10,7 +10,6 @@ import { getNodeTree } from "./nodes";
 import { buildPatterns, type Pattern } from "./patterns";
 import { updateBuild } from "./builds";
 import type { BuildPatch } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 let columnMissing = false;
 
@@ -38,7 +37,8 @@ export async function refreshPatterns(buildId: string, making: unknown): Promise
     return true;
   } catch (error) {
     if (isMissingColumn(error)) columnMissing = true;
-    else reportError({ buildId }, { source: "console", context: "refreshPatterns patterns not written" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    else console.warn("[refreshPatterns] patterns not written", { buildId });
     return false;
   }
 }

@@ -33,7 +33,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 /** The column, named once. */
 const CREATED_VIA = "created_via";
@@ -204,10 +203,11 @@ export async function getCreatedVia(buildId: string): Promise<CreatedVia | null>
   const { data, error } = await selectCreatedVia(buildId);
 
   if (error) {
-    reportError({
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn("[getCreatedVia] provenance unreadable", {
       code: errorCode(error),
       buildId,
-    }, { source: "console", context: "getCreatedVia provenance unreadable" });
+    });
     return null;
   }
   return parseCreatedVia(data?.created_via);
@@ -249,10 +249,11 @@ export async function recordCreatedVia(
       .eq("id", buildId);
     if (error) throw error;
   } catch (error) {
-    reportError({
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn("[recordCreatedVia] provenance not recorded", {
       code: errorCode(error),
       buildId,
-    }, { source: "console", context: "recordCreatedVia provenance not recorded" });
+    });
   }
 }
 

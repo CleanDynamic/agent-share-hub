@@ -28,7 +28,6 @@ import type { MotionChannel, MotionKind } from "./listMotion";
 import { sayFailed } from "./draftStart";
 import type { ComposeNodes } from "./useComposeNodes";
 import { buildSessionRowsKey } from "./useComposeSessions";
-import { reportError } from "@/lib/errors/report";
 
 export interface BuildNotice {
   sentence: string;
@@ -275,7 +274,8 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { b
         try {
           await step.undo();
         } catch (cause) {
-          reportError(cause, { source: "console", context: "History undo failed" });
+          // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+          console.error("[History] undo failed", cause);
           sayFailed(cause, HISTORY_COPY.undoFailed);
           return;
         }
@@ -295,7 +295,8 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { b
         try {
           await step.redo();
         } catch (cause) {
-          reportError(cause, { source: "console", context: "History redo failed" });
+          // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+          console.error("[History] redo failed", cause);
           sayFailed(cause, HISTORY_COPY.redoFailed);
           return;
         }
@@ -341,7 +342,8 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { b
         removedList.current = removedList.current.filter((candidate) => candidate.id !== id);
         redraw((n) => n + 1);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "History restore failed" });
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+        console.error("[History] restore failed", cause);
         sayFailed(cause, REMOVED_COPY.cannot);
       }
     },

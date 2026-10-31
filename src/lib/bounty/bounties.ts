@@ -22,7 +22,6 @@ import {
   type DeadlineExtension,
   type GapNode,
 } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 // One string literal, not a concatenation: PostgREST parses the column list at
 // the type level and `+` erases the literal type it needs.
@@ -711,7 +710,8 @@ export async function getOpenBountyPool(): Promise<OpenBountyPool> {
   if (rows.length >= OPEN_POOL_LIMIT) {
     // TODO: replace with an aggregate RPC (`open_bounty_pool()`, security
     // invoker, returning sum(reward_gbp) and the counts) that has no row cap.
-    reportError(new Error("getOpenBountyPool read the"), { source: "console", context: "getOpenBountyPool read the" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn(`[getOpenBountyPool] read the ${OPEN_POOL_LIMIT}-row cap; the pool is partial`);
   }
 
   let pool = 0;

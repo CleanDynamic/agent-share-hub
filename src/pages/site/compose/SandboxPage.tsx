@@ -286,7 +286,8 @@ function SandboxPageBody() {
       await compose.unpublish();
       return "done";
     } catch (cause) {
-      reportError(cause, { source: "console", context: "Sandbox unpublish failed" });
+      // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+      console.error("[Sandbox] unpublish failed", cause);
       const failure = unpublishFailure(cause);
       toast.error(failure === "failed" ? "Build not unpublished" : `Build not unpublished: ${shortReason(cause)}`);
       return failure;
@@ -897,7 +898,8 @@ function SandboxPageBody() {
         }
       } else await insertSession({ kind: "empty" }, workstream);
     } catch (cause) {
-      reportError(cause, { source: "console", context: "Sandbox session not made" });
+      // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+      console.error("[Sandbox] session not made", cause);
       sayFailed(cause, "Session not made", () => void again(workstream));
     } finally {
       setStartingSession(false);
@@ -921,7 +923,8 @@ function SandboxPageBody() {
       void setCollapsed(buildId, key, closed)
         .then(() => Promise.all([queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }), queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) })]))
         .catch((cause) => {
-          reportError(cause, { source: "console", context: "Sandbox collapse not saved" });
+          // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+          console.error("[Sandbox] collapse not saved", cause);
           setCollapseOverride((previous) => ({ ...previous, [key]: !closed }));
           sayFailed(cause, "Fold not saved", () => again(key, closed));
         });
@@ -959,7 +962,8 @@ function SandboxPageBody() {
         await setSessionMeta(id, key, (stored) => ({ ...(stored ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() }), ...change }));
         await refreshRecord(id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox session not saved" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] session not saved", cause);
         sayFailed(cause, "Session not saved", () => void again(key, change));
       }
     },
@@ -989,7 +993,8 @@ function SandboxPageBody() {
         });
         await refreshRecord(id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox goal not saved" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] goal not saved", cause);
         sayFailed(cause, "Goal not saved", () => void again(key, goal));
       }
     },
@@ -1014,7 +1019,8 @@ function SandboxPageBody() {
         await setSessionMeta(id, key, (stored) => withExtras(stored ?? fallbackMeta(group, key), extras));
         await refreshRecord(id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox session facts not saved" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] session facts not saved", cause);
         sayFailed(cause, "Session details not saved", () => void again(key, extras));
       }
     },
@@ -1039,7 +1045,8 @@ function SandboxPageBody() {
         }
         await refreshRecord(id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox sessions at the same time not saved" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] sessions at the same time not saved", cause);
         sayFailed(cause, "Ran alongside not saved", () => void again(key, next));
       }
     },
@@ -1061,7 +1068,8 @@ function SandboxPageBody() {
         );
         await refreshRecord(id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox session colour not saved" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] session colour not saved", cause);
         sayFailed(cause, "Colour not saved", () => void again(key, colour));
       }
     },
@@ -1078,7 +1086,8 @@ function SandboxPageBody() {
         await setSessionMeta(id, real, (stored) => ({ ...(stored ?? { tool: null, date: todayDay() }), tool }));
         await refreshRecord(id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox app not saved" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] app not saved", cause);
         sayFailed(cause, "App not saved", () => void again(key, tool));
       }
     },
@@ -1216,7 +1225,8 @@ function SandboxPageBody() {
         await refreshRecord(id);
       });
     } catch (cause) {
-      reportError(cause, { source: "console", context: "Sandbox reference groups not saved" });
+      // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+      console.error("[Sandbox] reference groups not saved", cause);
       sayFailed(cause, "Colours not saved", () => void again(list, order));
     }
   };
@@ -1369,7 +1379,8 @@ function SandboxPageBody() {
         setSelectedId(id);
         afterWrite();
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox check not added" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] check not added", cause);
         sayFailed(cause, "Check not added");
       }
     },
@@ -1480,7 +1491,8 @@ function SandboxPageBody() {
         void queryClient.invalidateQueries({ queryKey: ["library", "savedItemsUsedIn"] });
         void queryClient.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Compose not added from Library" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Compose] not added from Library", cause);
         sayFailed(cause, "Not added from Library", () => void onInsertFromLibrary(items, place));
       }
     },
@@ -1561,7 +1573,8 @@ function SandboxPageBody() {
           setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
         }
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox result not added" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] result not added", cause);
         sayFailed(cause, "Result not added", () => void again(input));
       } finally {
         setPendingAdd(null);
@@ -1696,7 +1709,8 @@ function SandboxPageBody() {
           window.open(payload.url, "_blank", "noopener");
         }
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox download failed" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] download failed", cause);
         sayFailed(cause, "File not downloaded", () => void again(nodeId));
       }
     },
@@ -1714,7 +1728,8 @@ function SandboxPageBody() {
         const media = await nodes.run(() => uploadMedia({ buildId: id, file }));
         prompts.setFields(resultId, { media_id: media.id });
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox picture not added" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] picture not added", cause);
         sayFailed(cause, `${file.name} not added`, () => void again(resultId, file));
       }
     },
@@ -1730,7 +1745,8 @@ function SandboxPageBody() {
         const blob = await response.blob();
         viewProps.onFiles([new File([blob], media.filename ?? "cover", { type: media.mime ?? blob.type })]);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox cover not set" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] cover not set", cause);
         sayFailed(cause, "Cover not set", () => void again(mediaId));
       }
     },
@@ -1751,7 +1767,8 @@ function SandboxPageBody() {
       try {
         await insertSession({ kind: "import", importId, head, count: item?.promptCount ?? 0 }, workstream);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox session not added" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] session not added", cause);
         sayFailed(cause, "Session not added", () => void again(importId, workstream));
       } finally {
         setAdding((previous) => {
@@ -1777,7 +1794,8 @@ function SandboxPageBody() {
         ]);
         setSessionSaid(`Imported ${written} ${written === 1 ? "prompt" : "prompts"}.`);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox prompts not imported" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] prompts not imported", cause);
         sayFailed(cause, "Prompts not imported", () => void again(key));
       }
     },
@@ -1809,7 +1827,8 @@ function SandboxPageBody() {
         await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
         return added.node;
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox file not added" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] file not added", cause);
         sayFailed(cause, `${file.name} not ${verb === "attach" ? "attached" : "added"}`, () => void again(file, verb, parentId, rows, tile));
         return null;
       }
@@ -1956,7 +1975,8 @@ function SandboxPageBody() {
         });
         await refreshRecord(id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Sandbox setup not added" });
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] setup not added", cause);
         sayFailed(cause, "Setup item not added");
       }
       return left;
@@ -1982,7 +2002,8 @@ function SandboxPageBody() {
           nodes.record(id, await setNotShared(row, true));
         })
         .catch((cause) => {
-          reportError(cause, { source: "console", context: "Sandbox not marked" });
+          // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+          console.error("[Sandbox] not marked", cause);
           sayFailed(cause, "Item not kept private", () => again(id));
         });
     },
@@ -2021,7 +2042,8 @@ function SandboxPageBody() {
           const { cost: _c, currency: _u, tokens: _t, cached: _k, ...kept } = group?.extras ?? {};
           await onSessionExtras(key, { ...kept, ...(cost !== undefined ? { cost, currency: "USD" as const } : null), ...(tokens ? { tokens } : null), ...(cached ? { cached } : null) });
         } catch (cause) {
-          reportError(cause, { source: "console", context: "Sandbox result file not read" });
+          // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+          console.error("[Sandbox] result file not read", cause);
           rest.push(file);
         }
       }

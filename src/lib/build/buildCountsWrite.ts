@@ -18,7 +18,6 @@ import { getNodeTree } from "./nodes";
 import { orderByWorkstream } from "./workstreams";
 import { isMissingColumn } from "@/lib/classify/storage";
 import type { BuildPatch } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 let columnsMissing = false;
 
@@ -44,7 +43,8 @@ export async function refreshStoredCounts(buildId: string, making: unknown): Pro
     return true;
   } catch (error) {
     if (isMissingColumn(error)) columnsMissing = true;
-    else reportError({ buildId }, { source: "console", context: "refreshStoredCounts counts not written" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    else console.warn("[refreshStoredCounts] counts not written", { buildId });
     return false;
   }
 }

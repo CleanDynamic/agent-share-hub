@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { reportError } from "@/lib/errors/report";
 
 const MIN_POSTS = 3;
 
@@ -71,6 +70,7 @@ export async function recomputeDerivedBio(userId: string): Promise<void> {
       .eq("id", userId);
     if (upErr) throw upErr;
   } catch (err) {
-    reportError(err, { source: "console", context: "recomputeDerivedBio failed for" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.error("[recomputeDerivedBio] failed for", userId, err);
   }
 }

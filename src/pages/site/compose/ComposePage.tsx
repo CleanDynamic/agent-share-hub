@@ -60,7 +60,6 @@ import { useComposePrompts } from "./useComposePrompts";
 import { useComposeSessions } from "./useComposeSessions";
 import { DraftNotStartedError } from "./draftStart";
 import { errorLine } from "@/lib/errors/code";
-import { reportError } from "@/lib/errors/report";
 
 const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", buildId] as const;
 
@@ -131,7 +130,8 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         .then(async (created) => {
           // Every post has at least one session. It is not worth a failed draft if this one cannot be written.
           firstSession.current = await seedFirstSession(created.id).catch((cause: unknown) => {
-            reportError(errorLine("[Compose] Session 1 not made", cause), { source: "console", context: "ComposePage" });
+            // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+            console.error(errorLine("[Compose] Session 1 not made", cause));
             return null;
           });
           hydratedFor.current = created.id;
@@ -142,7 +142,8 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         })
         .catch((cause: unknown) => {
           creating.current = null;
-          reportError(errorLine("[Compose] createBuild failed", cause), { source: "console", context: "ComposePage" });
+          // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+          console.error(errorLine("[Compose] createBuild failed", cause));
           toast.error("Draft not started");
           // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
           throw new DraftNotStartedError(cause);
@@ -226,7 +227,8 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       queryClient.setQueryData(coverKey(id), media);
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
     } catch (cause) {
-      reportError(cause, { source: "console", context: "Compose cover failed" });
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.error("[Compose] cover failed", cause);
       setMediaError("Cover not added");
     } finally {
       setAdding(null);
@@ -240,7 +242,8 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       queryClient.setQueryData(coverKey(buildId), null);
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) });
     } catch (cause) {
-      reportError(cause, { source: "console", context: "Compose cover removal failed" });
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.error("[Compose] cover removal failed", cause);
       setMediaError("Cover not removed");
     }
   };
@@ -308,11 +311,13 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       try {
         await refreshMakingStats(row.id);
       } catch (cause) {
-        reportError(cause, { source: "console", context: "Compose making stats not refreshed" });
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+        console.warn("[Compose] making stats not refreshed", cause);
       }
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(row.id) });
     } catch (cause) {
-      reportError(cause, { source: "console", context: "Compose publish failed" });
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.error("[Compose] publish failed", cause);
       toast.error("Build not published", { action: { label: "Retry", onClick: () => void onPublish() } });
     }
   };

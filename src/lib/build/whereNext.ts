@@ -40,7 +40,6 @@ import {
   type GalleryRow,
 } from "./gallery";
 import { buildLayerError, type BuildShape } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 /** At most this many builds in a row. */
 export const WHERE_NEXT_PER_ROW = 3;
@@ -393,7 +392,8 @@ async function sparksFor(buildIds: readonly string[], now: Date): Promise<Map<st
   if (rows.length >= SPARK_ROWS_LIMIT) {
     // TODO: replace with an RPC that returns per-build daily counts, which has
     // no row cap to bucket around.
-    reportError(new Error("getWhereNextForViewer read the"), { source: "console", context: "getWhereNextForViewer read the" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn(`[getWhereNextForViewer] read the ${SPARK_ROWS_LIMIT}-row cap; the sparklines are partial`);
   }
 
   const out = new Map<string, number[]>(buildIds.map((id) => [id, new Array<number>(SPARK_DAYS).fill(0)]));

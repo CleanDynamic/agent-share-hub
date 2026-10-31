@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
-import { reportError } from "@/lib/errors/report";
 
 /**
  * WHY BOTH HOOKS RESOLVE BEFORE THEY SUBSCRIBE (NS-P50).
@@ -30,7 +29,8 @@ export function useBountyDiscussionUpdates(
       try {
         bountyRowId = await resolveBountyByLegacyItem(bountyId);
       } catch (e) {
-        reportError(e, { source: "console", context: "useBountyDiscussionUpdates no bounties header" });
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+        console.warn("[useBountyDiscussionUpdates] no bounties header", e);
         return;
       }
       if (cancelled) return;
@@ -70,7 +70,8 @@ export function useBountySolutionUpdates(
       try {
         bountyRowId = await resolveBountyByLegacyItem(bountyId);
       } catch (e) {
-        reportError(e, { source: "console", context: "useBountySolutionUpdates no bounties header" });
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+        console.warn("[useBountySolutionUpdates] no bounties header", e);
         return;
       }
       if (cancelled) return;

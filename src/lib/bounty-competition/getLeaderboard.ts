@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import type { LeaderboardEntry, LeaderboardSort } from "./types";
 import { refreshLeaderboardCache } from "./refreshLeaderboardCache";
-import { reportError } from "@/lib/errors/report";
 
 const STALE_MS = 5 * 60 * 1000;
 
@@ -35,7 +34,8 @@ export async function getLeaderboard({
     try {
       await refreshLeaderboardCache(bountyId);
     } catch (e) {
-      reportError(e, { source: "console", context: "getLeaderboard inline refresh failed" });
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.warn("[getLeaderboard] inline refresh failed", e);
     }
   }
 

@@ -21,14 +21,14 @@ import { parseAmount } from "./composeModel";
 import type { ComposeDetailKey, ComposeDetails } from "./MoreDetails";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { sayFailed } from "./draftStart";
-import { reportError } from "@/lib/errors/report";
 
 const EMPTY: ComposeDetails = { symptom: "", resolution: "", costMonthly: "", costSetup: "", firstResult: "", gapOn: false, gapProblem: "" };
 
 const amount = (value: number | null | undefined) => (typeof value === "number" ? String(value) : "");
 
 const failed = (line: string) => (cause: unknown) => {
-  reportError(cause, { source: "console", context: "Compose details write failed" });
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+  console.error("[Compose] details write failed", cause);
   sayFailed(cause, line);
 };
 

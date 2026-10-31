@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ThreadSummary, ThreadType, MessageKind, SharedContentType } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 interface GetThreadsArgs {
   userId: string;
@@ -53,7 +52,8 @@ export async function getThreads({
   }
   if (memErr) {
     // Don't throw — legacy participant lookup below will still work
-    reportError(memErr, { source: "console", context: "getThreads members query failed" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn("[getThreads] members query failed", memErr);
   }
 
   // 2. Threads where user is participant_a/b OR in members table

@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications/createNotification";
 import type { AnchorType } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 /** Walk a TipTap JSON doc and collect plain text. */
 function extractPlainText(node: any): string {
@@ -128,7 +127,8 @@ export async function postComment({
         targetType: "comment",
         targetId: data.id,
         metadata: { anchor_type: anchorType, anchor_id: anchorId },
-      }).catch((e) => reportError(e, { source: "console", context: "postComment mention notify failed" })),
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      }).catch((e) => console.warn("[postComment] mention notify failed", e)),
     ),
   );
 
@@ -168,7 +168,8 @@ export async function postComment({
       }
     }
   } catch (e) {
-    reportError(e, { source: "console", context: "postComment author notify failed" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn("[postComment] author notify failed", e);
   }
 
   // Reference notifications (best-effort)
@@ -192,7 +193,8 @@ export async function postComment({
           });
         }
       } catch (e) {
-        reportError(e, { source: "console", context: "postComment reference notify failed" });
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+        console.warn("[postComment] reference notify failed", e);
       }
     }),
   );

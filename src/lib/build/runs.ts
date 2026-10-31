@@ -14,7 +14,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { buildLayerError } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 /** The most reproduction rows read to draw the chart; past it the series is partial. */
 const RUNS_ROWS_LIMIT = 5000;
@@ -83,7 +82,8 @@ export async function getRunsOfMyBuilds(
   if (rows.length >= RUNS_ROWS_LIMIT) {
     // TODO: replace with an RPC that returns per-day counts for a maker's
     // builds, which has no row cap to bucket around.
-    reportError(new Error("getRunsOfMyBuilds read the"), { source: "console", context: "getRunsOfMyBuilds read the" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn(`[getRunsOfMyBuilds] read the ${RUNS_ROWS_LIMIT}-row cap; the series is partial`);
   }
 
   const dayIndex = (iso: string | null | undefined): number | null => {
@@ -133,7 +133,10 @@ export async function countPeopleWhoRanMyBuildsThisWeek(
   if (rows.length >= PEOPLE_ROWS_LIMIT) {
     // TODO: replace with an RPC that returns count(distinct user_id), which has
     // no row cap.
-    reportError(new Error("countPeopleWhoRanMyBuildsThisWeek read the"), { source: "console", context: "countPeopleWhoRanMyBuildsThisWeek read the" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn(
+      `[countPeopleWhoRanMyBuildsThisWeek] read the ${PEOPLE_ROWS_LIMIT}-row cap; the count is partial`,
+    );
   }
 
   return new Set(rows.map((row) => row.user_id)).size;

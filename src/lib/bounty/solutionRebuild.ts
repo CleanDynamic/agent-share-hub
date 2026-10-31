@@ -48,7 +48,6 @@ import { createNotification } from "@/lib/notifications/createNotification";
 import { checkNodePayload, payloadRejectionMessage } from "./payload";
 import type { SubmittedSolution } from "./solutions";
 import { SOLUTION_COLUMNS, bountyLayerError, type Bounty } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 /** The statuses that mean "a reader can open this". listRebuilds' set. */
 const PUBLISHED_STATUSES = ["published", "gallery"] as const;
@@ -354,7 +353,8 @@ export async function submitSolutionRebuild({
         },
       });
     } catch (e) {
-      reportError(e, { source: "console", context: "submitSolutionRebuild author notification failed" });
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.warn("[submitSolutionRebuild] author notification failed", e);
     }
   })();
 

@@ -160,11 +160,13 @@ describe("refreshMakingStats", () => {
     maybeSingle.mockResolvedValue({ data: null, error: { code: "42501" } });
     await expect(refreshMakingStats(BUILD_ID)).resolves.toBeUndefined();
     expect(updateBuild).not.toHaveBeenCalled();
+    // eslint-disable-next-line no-console -- the spy on the deliberate log
     expect(console.warn).toHaveBeenCalledWith(expect.any(String), { code: "42501", buildId: BUILD_ID });
 
     build();
     updateBuild.mockRejectedValue(new Error("write failed with a value in it"));
     await expect(refreshMakingStats(BUILD_ID)).resolves.toBeUndefined();
+    // eslint-disable-next-line no-console -- the spy on the deliberate log
     expect(console.warn).toHaveBeenLastCalledWith(expect.any(String), { code: "unknown", buildId: BUILD_ID });
   });
 });

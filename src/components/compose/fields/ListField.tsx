@@ -52,7 +52,6 @@ import { FieldShell } from "../SchemaForm";
 import { resolveWidget, type FieldWidgetProps } from "./index";
 import { r } from "@/lib/theme/radius";
 import { workspaceCard } from "@/components/shell/WorkspaceBar";
-import { reportError } from "@/lib/errors/report";
 
 /** A row is an object keyed by the sub-field keys. Anything else is repaired. */
 type Row = Record<string, Json | undefined>;
@@ -102,9 +101,12 @@ export function acceptedSubFields(field: FieldDef): FieldDef[] {
     const path = `${field.key}.${subField.key}`;
     if (!warnedNestedPaths.has(path)) {
       warnedNestedPaths.add(path);
-      reportError(`[NeoScale] node_types schema: "${path}" nests a list inside a list. ` +
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.warn(
+        `[NeoScale] node_types schema: "${path}" nests a list inside a list. ` +
           "The schema dialect allows one level of nesting only, so this " +
-          "sub-field is not rendered. Fix the node_types row.", { source: "console", context: "ListField" });
+          "sub-field is not rendered. Fix the node_types row."
+      );
     }
     return false;
   });

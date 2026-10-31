@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { reportError } from "@/lib/errors/report";
 
 const lastWriteAt = new Map<string, number>();
 const THROTTLE_MS = 30_000;
@@ -51,7 +50,8 @@ export async function recordReadingProgress({
     .from("reading_progress")
     .upsert(payload, { onConflict: "reader_id,post_id" });
   if (error) {
-    reportError(error, { source: "console", context: "recordReadingProgress upsert failed" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.warn("[recordReadingProgress] upsert failed", error);
     return;
   }
 
@@ -69,7 +69,8 @@ export async function recordReadingProgress({
         .update({ reading_completion_count: next } as any)
         .eq("id", postId);
     } catch (e) {
-      reportError(e, { source: "console", context: "recordReadingProgress completion count bump failed" });
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.warn("[recordReadingProgress] completion count bump failed", e);
     }
   }
 }

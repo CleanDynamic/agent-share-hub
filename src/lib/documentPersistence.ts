@@ -33,7 +33,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDocumentStore } from './documentStore';
 import { scheduleRecompute } from './metadata/scheduleRecompute';
 import type { Block, Connection, Stage } from '@/types/document';
-import { reportError } from "@/lib/errors/report";
 
 // ── Status store ────────────────────────────────────────────────────────────
 
@@ -266,7 +265,8 @@ async function flush(kind: 'position' | 'full'): Promise<void> {
     // so only schedule a recompute on full flushes.
     if (kind === 'full') scheduleRecompute(documentId);
   } catch (err) {
-    reportError(err, { source: "console", context: "documentPersistence flush failed" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    console.error('[documentPersistence] flush failed', err);
     usePersistenceStatus.getState().setSaveStatus(
       isOnline() ? 'error' : 'offline',
     );

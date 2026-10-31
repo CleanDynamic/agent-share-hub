@@ -12,7 +12,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { buildLayerError } from "./types";
-import { reportError } from "@/lib/errors/report";
 
 /** A session with more prompts than this is added collapsed. */
 export const COLLAPSE_OVER = 12;
@@ -91,7 +90,8 @@ export async function draftsOfImports(importIds: readonly string[]): Promise<Map
   if (importIds.length === 0) return out;
   const { data, error } = await table().select<Pick<Row, "build_id" | "import_id">>("build_id, import_id").in("import_id", importIds).limit(DRAFTS_LIMIT);
   if (error) {
-    if (!isMissingTable(error)) reportError(error, { source: "console", context: "Sessions drafts of sessions not read" });
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+    if (!isMissingTable(error)) console.error("[Sessions] drafts of sessions not read", error);
     return out;
   }
   for (const row of data ?? []) {

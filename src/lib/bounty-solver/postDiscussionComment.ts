@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications/createNotification";
 import { extractMentions } from "@/lib/mentions";
 import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
-import { reportError } from "@/lib/errors/report";
 
 export async function postDiscussionComment(args: {
   bountyId: string;
@@ -78,7 +77,8 @@ export async function postDiscussionComment(args: {
         }
       }
     } catch (e) {
-      reportError(e, { source: "console", context: "postDiscussionComment notification failed" });
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+      console.warn("[postDiscussionComment] notification failed", e);
     }
   })();
 

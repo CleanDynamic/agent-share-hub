@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { reportError } from "@/lib/errors/report";
 
 export type CommentAnchorType = 'prose' | 'block' | 'stage' | 'arrow';
 
@@ -133,7 +132,8 @@ export function useDocumentComments(documentId: string | null) {
         .select()
         .single();
       if (error) {
-        reportError(error, { source: "console", context: "addComment failed" });
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
+        console.error('addComment failed', error);
         return null;
       }
       return data as DocumentComment;
