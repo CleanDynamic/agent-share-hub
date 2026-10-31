@@ -4,17 +4,15 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { BrowserRouter, Navigate, Route, useParams, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { AddToCollectionHost } from "@/components/library/AddToCollectionHost";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isPermissionError } from "@/lib/errors/permission";
 import { connectErrorReporting } from "@/lib/errors/wire";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { PresenceProvider } from "@/components/PresenceProvider";
 import { ShareMenuProvider } from "@/components/share/ShareMenuProvider";
 import { ReblogComposeProvider } from "@/contexts/ReblogComposeContext";
-import { QuotableSelectionProvider } from "@/components/quoting/QuotableSelectionProvider";
+import { IdleMount } from "@/lib/routing/IdleMount";
 import { UploadPickerProvider } from "@/contexts/UploadPickerContext";
 import { Layout } from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -32,9 +30,17 @@ import { PageChangeProvider } from "@/lib/routing/PageChangeProvider";
 import { ScrollKeeper } from "@/lib/routing/ScrollKeeper";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
 import { FrameRoute } from "./components/shell/FrameRoute";
-import { ComposeRoute } from "./pages/site/compose/ComposeRoute";
+import { preloadComposeRoute } from "./pages/site/compose/preload";
 import { LinkFrameRoute, SignInSite } from "./pages/site/signin/SignInRoutes";
 
+/** SV-26 P2: the composer's route, which holds the build layer's reads, loads with the composer and not with the first page. */
+const ComposeRoute = lazy(() => preloadComposeRoute().then((m) => ({ default: m.ComposeRoute })));
+/** SV-26 P2: these draw nothing when the page opens; each loads once the browser is idle (IdleMount). */
+const Toaster = lazy(() => import("@/components/ui/toaster").then((m) => ({ default: m.Toaster })));
+const PresenceProvider = lazy(() => import("@/components/PresenceProvider").then((m) => ({ default: m.PresenceProvider })));
+const QuotableSelectionProvider = lazy(() =>
+  import("@/components/quoting/QuotableSelectionProvider").then((m) => ({ default: m.QuotableSelectionProvider })),
+);
 const Upload = lazy(() => import("./pages/Upload"));
 const UploadTypeSelector = lazy(() => import("./pages/UploadTypeSelector"));
 const BlogUpload = lazy(() => import("./pages/BlogUpload"));
@@ -231,18 +237,24 @@ const App = () => (
       }}
     >
       <TooltipProvider>
-        <Toaster />
+        <IdleMount>
+          <Toaster />
+        </IdleMount>
         <Sonner />
         {/* SV-04: navigation runs as a transition, so the page on screen stays while the next one's code loads. */}
         <BrowserRouter future={{ v7_startTransition: true }}>
           <ThemeProvider>
           <AuthProvider>
-            <PresenceProvider />
+            <IdleMount>
+              <PresenceProvider />
+            </IdleMount>
             <ConnectionBanner />
             <ShareMenuProvider>
             <ReblogComposeProvider>
             <UploadPickerProvider>
-            <QuotableSelectionProvider />
+            <IdleMount>
+              <QuotableSelectionProvider />
+            </IdleMount>
             {/* RC-P18 — the one "Add to a collection" dialog, opened from the
                 Save toast; addToCollection.ts says why it lives here. */}
             <AddToCollectionHost />

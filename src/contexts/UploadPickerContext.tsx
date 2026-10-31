@@ -1,9 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { Suspense, createContext, lazy, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { UploadTypePicker, type UploadContentType } from "@/components/upload/UploadTypePicker";
+import type { UploadContentType } from "@/components/upload/UploadTypePicker";
+import { useEverOpened, useLoadAtIdle } from "@/lib/routing/lazyHost";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type PickerMode = "all" | "bounty";
+
+/** SV-26 P2: the picker's code loads the first time it opens, or at idle. */
+const loadPicker = () => import("@/components/upload/UploadTypePicker");
+const UploadTypePicker = lazy(() => loadPicker().then((m) => ({ default: m.UploadTypePicker })));
 
 interface UploadPickerContextValue {
   openUploadTypePicker: (mode?: PickerMode) => void;
@@ -44,6 +49,8 @@ export function UploadPickerProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const pickerMounted = useEverOpened(isOpen);
+  useLoadAtIdle(loadPicker);
 
   const openUploadTypePicker = useCallback((m: PickerMode = "all") => {
     setMode(m);
@@ -86,13 +93,17 @@ export function UploadPickerProvider({ children }: { children: ReactNode }) {
   return (
     <UploadPickerContext.Provider value={{ openUploadTypePicker, closeUploadTypePicker }}>
       {children}
-      <UploadTypePicker
-        isOpen={isOpen}
-        onClose={handleClose}
-        variant={isMobile ? "mobile" : "desktop"}
-        onSelect={handleSelect}
-        mode={mode}
-      />
+      {pickerMounted && (
+        <Suspense fallback={null}>
+          <UploadTypePicker
+            isOpen={isOpen}
+            onClose={handleClose}
+            variant={isMobile ? "mobile" : "desktop"}
+            onSelect={handleSelect}
+            mode={mode}
+          />
+        </Suspense>
+      )}
     </UploadPickerContext.Provider>
   );
 }

@@ -16,7 +16,7 @@ import { matchPath } from "react-router-dom";
 
 import { SITE_NAV } from "@/components/shell/siteNav";
 import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
-import { SkipToBuild } from "@/pages/site/compose/buildFocus";
+import { SkipToBuild } from "@/pages/site/compose/SkipToBuild";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 
 import {
@@ -225,7 +225,11 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     key: "create",
     pattern: ["/compose/:buildId", "/compose/new"],
     signedIn: true,
-    load: async () => (await import("@/pages/site/compose/preload")).preloadComposer() as Promise<{ default: ComponentType<never> }>,
+    load: async () => {
+      const { preloadComposeRoute, preloadComposer } = await import("@/pages/site/compose/preload");
+      void preloadComposeRoute();
+      return preloadComposer() as Promise<{ default: ComponentType<never> }>;
+    },
     prefetch: async ({ buildId }, queryClient, { userId }) => {
       if (!userId || !buildId || buildId === "new" || buildId === "start") return;
       const { startComposerReads } = await import("@/pages/site/compose/composerOpen");
