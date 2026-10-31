@@ -13,6 +13,7 @@
 // EVERY WRITE refuses bad input through buildLayerError with a message made of
 // identifiers and fixed words only, never the text the maker wrote (CONTRACT §9).
 
+import { agentFieldsRefusal } from "./agentFields";
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, REPLY_MAX, swapMoves } from "./composePrompts";
@@ -83,12 +84,18 @@ export interface Use {
 }
 
 /** CA-04 P6: "goal" ran until a goal was reached; "script" ran from a script or GitHub, its command or workflow as the detail. */
-export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event" | "goal" | "script";
+/**
+ * SV-27 P5: "background" runs all the time as a background service (its detail, what it listens for); "ongoing" keeps working on
+ * an ongoing goal (its detail, the goal). `channels`: the Channel tiles that start runs, for "event" and "background".
+ */
+export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event" | "goal" | "script" | "background" | "ongoing";
 
 export interface Runs {
   how: RunsHow;
   count?: number;
   detail?: string;
+  /** SV-27 P5: node ids of Channel tiles with `starts_runs`, for "event" and "background". */
+  channels?: string[];
 }
 
 /** One of an agent's models and what it does there (CA-02 P5). The first is always "main". */
@@ -355,7 +362,16 @@ const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
 export const DECISION_TYPE_MISSING = "Decisions need the CA-13 database change. Ask Lovable to apply it.";
 
 const USE_KINDS: readonly UseKind[] = ["output", "file", "tool"];
-const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event", "goal", "script"];
+const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event", "goal", "script", "background", "ongoing"];
+
+/** SV-27 P5: the longest a background service's detail and an ongoing goal are. */
+export const BACKGROUND_DETAIL_MAX = 80;
+export const ONGOING_DETAIL_MAX = 120;
+/** The most Channel tiles a way of running names. */
+export const RUNS_CHANNELS_MAX = 10;
+
+/** SV-27 P5: the ways of running that a message on a channel can start. */
+export const runsTakeChannels = (how: RunsHow | null | undefined): boolean => how === "event" || how === "background";
 
 /** CA-04 P6: the longest command or workflow a step that ran from a script keeps. */
 export const SCRIPT_DETAIL_MAX = 4000;
@@ -429,9 +445,13 @@ export function parseRuns(value: unknown): Runs | null {
   if (!isRecord(value) || !RUNS_HOWS.includes(value.how as RunsHow)) return null;
   const runs: Runs = { how: value.how as RunsHow };
   if (runs.how === "parallel" && typeof value.count === "number" && Number.isFinite(value.count)) runs.count = value.count;
-  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event" || runs.how === "script") {
+  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event" || runs.how === "script" || runs.how === "background" || runs.how === "ongoing") {
     const detail = stringOf(value.detail)?.trim();
     if (detail) runs.detail = detail;
+  }
+  if (runsTakeChannels(runs.how) && Array.isArray(value.channels)) {
+    const channels = [...new Set(value.channels.filter((id): id is string => typeof id === "string" && id.length > 0))].slice(0, RUNS_CHANNELS_MAX);
+    if (channels.length > 0) runs.channels = channels;
   }
   return runs;
 }
@@ -484,6 +504,10 @@ export function runsLabel(runs: Runs | null | undefined): string {
       return "Until a goal was reached";
     case "script":
       return "From a script or GitHub";
+    case "background":
+      return `All the time, as a background service${detail}`;
+    case "ongoing":
+      return `Keeps working on an ongoing goal${detail}`;
     default:
       return "";
   }
@@ -1398,9 +1422,14 @@ function runsPayload(operation: string, runs: Runs | null | undefined): Json | n
     // The goal is the session's (making.sessions_meta), never repeated here.
   } else {
     const detail = (runs.detail ?? "").trim();
-    const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : WHEN_DETAIL_MAX;
+    const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : runs.how === "background" ? BACKGROUND_DETAIL_MAX : runs.how === "ongoing" ? ONGOING_DETAIL_MAX : WHEN_DETAIL_MAX;
     if (detail.length > max) throw refuse(operation, `Line: ${max} characters max`);
     if (detail) next.detail = detail;
+  }
+  if (runsTakeChannels(runs.how) && runs.channels && runs.channels.length > 0) {
+    const channels = [...new Set(runs.channels.filter((id) => typeof id === "string" && id.length > 0))];
+    if (channels.length > RUNS_CHANNELS_MAX) throw refuse(operation, `Up to ${RUNS_CHANNELS_MAX} channels.`);
+    next.channels = channels;
   }
   return next as unknown as Json;
 }
@@ -3050,6 +3079,9 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
  * value takes the key off; every other key of the payload is written back as it was read.
  */
 export async function setExtras(node: BuildNode, patch: Record<string, unknown>): Promise<BuildNode> {
+  // SV-27 P5: a role is only for an agent inside a team.
+  const notHere = agentFieldsRefusal(node, patch);
+  if (notHere) throw refuse("setExtras", notHere);
   let cleaned: Record<string, Json | null>;
   try {
     cleaned = cleanExtras(node.type, patch);

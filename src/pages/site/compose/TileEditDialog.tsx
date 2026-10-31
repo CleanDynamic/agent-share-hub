@@ -30,6 +30,7 @@ import { bufferedHandlers } from "./editHandlers";
 import { useBuildHistoryContext } from "./useBuildHistory";
 import { GoesBlock, InsideBlock, MakesBlock, PicturesBlock, RuntimeBlocks, SummaryRow, TitleRow, ToolsUsedBlock, TrainedBlock, UsesBlock, WhereRanBlock } from "./editKit";
 import { ModelRunFields } from "./ModelRunFields";
+import { AgentRuntimeFields } from "./AgentRuntimeFields";
 import { SessionDialog } from "./SessionDialog";
 import { RunsGroup } from "./RunsFields";
 import {
@@ -286,6 +287,20 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
         after: (input) => (
           <>
             {view.kind === "agent" && h.onModelRun && asksHowRun(input.harness, input.model) ? <ModelRunFields id={view.id} run={view.modelRun ?? null} hosts={view.runHosts} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
+            {/* SV-27 P5: framework, compatible models, model routing, approvals, sandbox, role, tool permissions, the Deployment line. */}
+            <AgentRuntimeFields
+              id={view.id}
+              kind={view.kind}
+              phone={phone}
+              fields={view.fields ?? {}}
+              harness={input.harness ?? null}
+              tools={input.tools ?? []}
+              inTeam={Boolean(view.parent)}
+              deployment={view.deployment ?? []}
+              onExtras={h.onExtras}
+              onOpenTile={h.onSelect}
+              onAddDeployment={h.onAddDeployment}
+            />
             <InsideBlock label={view.inside} rows={view.insideRows} phone={phone} handlers={h} />
             {inputs(view, h, phone, false)}
             <RuntimeBlocks view={view} phone={phone} handlers={h} />

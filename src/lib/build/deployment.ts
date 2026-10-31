@@ -7,6 +7,8 @@
 //
 // PURE. No React, no Supabase.
 
+import { toolName } from "@/lib/tools/registry";
+
 /** The nine node types the SV-27 migration adds. */
 export const DEPLOYMENT_TYPES = ["host", "inference_server", "knowledge_base", "memory", "relay", "channel", "voice", "monitoring", "billing"] as const;
 export type DeploymentType = (typeof DEPLOYMENT_TYPES)[number];
@@ -497,4 +499,50 @@ export function detachFromAgent(tiles: readonly DeploymentTile[], agentId: strin
 /** The build's Host tiles as Where offers them: id, name, GPUs. */
 export function runHostsOf(tree: readonly { id: string; type: string; title?: string | null; payload?: unknown; parent_id: string | null; position?: number | null }[]): { id: string; name: string; gpus?: Gpu[] }[] {
   return deploymentTilesOf(tree).flatMap((tile) => (tile.kind === "host" ? [{ id: tile.id, name: tile.payload.name || tile.title || DEPLOYMENT_KIND_NAME.host, ...(tile.payload.gpus ? { gpus: tile.payload.gpus } : null) }] : []));
+}
+
+/* ── the agent's Deployment line and its channels (Part 5) ── */
+
+/** A provider as shown: the registry tool's name, or the name as typed. */
+export const providerName = (provider: string): string => (provider ? (toolName(provider) ?? provider) : "");
+
+/** What a tile is called in a line: a host's name, a provider's name, else the kind ("Front end"). */
+export function deploymentName(tile: DeploymentTile): string {
+  switch (tile.kind) {
+    case "host":
+      return tile.payload.name || tile.title || DEPLOYMENT_KIND_NAME.host;
+    case "knowledge_base":
+      return providerName(tile.payload.app) || tile.title || DEPLOYMENT_KIND_NAME.knowledge_base;
+    case "relay":
+      return providerName(tile.payload.provider) || tile.payload.network || tile.title || DEPLOYMENT_KIND_NAME.relay;
+    case "front_end":
+      return DEPLOYMENT_KIND_NAME.front_end;
+    default:
+      return providerName(tile.payload.provider) || tile.title || DEPLOYMENT_KIND_NAME[tile.kind];
+  }
+}
+
+/**
+ * An agent's or team's Deployment line, in DEPLOYMENT_ORDER: "Mac Mini · Letta · Telegram, WhatsApp · ElevenLabs · Front end".
+ * Each entry opens its tile; entries of one kind sit together, separated by commas.
+ */
+export function deploymentLineOf(tiles: readonly DeploymentTile[], agentId: string): { id: string; kind: DeploymentKind; name: string }[] {
+  return tilesOfAgent(tiles, agentId).map((tile) => ({ id: tile.id, kind: tile.kind, name: deploymentName(tile) }));
+}
+
+/** The line as text: kinds apart by " · ", tiles of one kind by ", ". */
+export function deploymentLineText(entries: readonly { kind: DeploymentKind; name: string }[]): string {
+  const groups: string[][] = [];
+  let last: DeploymentKind | null = null;
+  for (const entry of entries) {
+    if (entry.kind === last) groups[groups.length - 1].push(entry.name);
+    else groups.push([entry.name]);
+    last = entry.kind;
+  }
+  return groups.map((group) => group.join(", ")).join(" · ");
+}
+
+/** The Channel tiles that start runs, as How did it run? offers them: id and provider name. */
+export function runChannelsOf(tiles: readonly DeploymentTile[]): { id: string; name: string }[] {
+  return tiles.flatMap((tile) => (tile.kind === "channel" && tile.payload.starts_runs ? [{ id: tile.id, name: deploymentName(tile) }] : []));
 }

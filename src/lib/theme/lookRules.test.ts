@@ -1244,6 +1244,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/DetailsPanel.tsx",
   "src/pages/site/compose/editKit.tsx",
   "src/pages/site/compose/TileEditDialog.tsx",
+  "src/lib/build/agentFields.ts",
+  "src/lib/build/harnessFacts.ts",
+  "src/pages/site/compose/AgentRuntimeFields.tsx",
+  "src/pages/site/compose/RunsFields.tsx",
+  "src/pages/site/compose/detailsModel.ts",
+  "src/lib/build/graph.ts",
+  "src/lib/build/tileExtras.ts",
+  "src/lib/tools/registry.ts",
 ];
 
 /**

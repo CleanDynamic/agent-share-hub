@@ -91,6 +91,17 @@ export type ToolModels =
 
 export type StepKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "result" | "code";
 
+/** SV-27 P8: facts a harness's source page states. */
+export interface ToolFacts {
+  hosting?: "vendor" | "self-hosted";
+  licence?: string;
+  defaults?: { approval_mode?: "full" | "risky" | "every" | "reviewer"; sandbox?: "none" | "container" | "vm" | "vendor" };
+  /** The month the source was read: "2026-10". */
+  checked: string;
+  /** The page the facts were read from. */
+  source: string;
+}
+
 export interface Tool {
   /** CA-12 P13: the lists it is offered in. */
   lists: readonly ToolList[];
@@ -132,6 +143,12 @@ export interface Tool {
   readsOutside?: true;
   /** CA-05 P8: the tool runs models on the maker's own computer, so how it was run (size, where) is worth saying. */
   local?: true;
+  /**
+   * SV-27 P8: what the tool's own source page states about it, filled only from that page and never from memory: who hosts it,
+   * its licence, its defaults for approvals and sandbox, and the month the page was read. A fact with no source stays empty.
+   * (Named `facts`, not `checked`: `checked` is already the date the model list was read.)
+   */
+  facts?: ToolFacts;
   /** CA-16: how a build made in this tool was made, as a Build method id in `lib/classify/taxonomy.ts`. Set for the tools the classification reads. */
   buildMethod?: BuildMethodId;
 }

@@ -392,7 +392,7 @@ const AGENT_SECTIONS = (team: boolean): readonly SectionDef[] => [
   S("memory", "Memory", "Stored between runs, and where", (tile) => (tile.kind === "agent" ? rows([["What it remembers", tile.setup?.memory], ["How it tidies", tile.memoryTidy], ["Changes each round", tile.changesEachRound]]) : null)),
   MODEL_RUN,
   RUNTIME.helpers,
-  S("limits", "Limits", "Steps, budget, run time, approvals, prohibited actions", (tile) => numbered(agentExtrasOf(payloadOf(tile)).limits ?? [], "limit")),
+  S("limits", "Limits", "Steps, budget, run time, prohibited actions", (tile) => numbered(agentExtrasOf(payloadOf(tile)).limits ?? [], "limit")),
   S("output", "Output and destination", "Format and destination", (tile) => prose(agentExtrasOf(payloadOf(tile)).output ?? "")),
   S("sample", "Sample run", "Transcript or trace of one run", (tile) => prose(agentExtrasOf(payloadOf(tile)).sample ?? "", null, { code: true, copy: true })),
   S("pattern", "Orchestration pattern", "Sequential, lead and delegates, parallel then merge, writer and reviewer", (tile) => {

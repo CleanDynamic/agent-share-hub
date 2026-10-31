@@ -367,13 +367,13 @@ describe("limits, output, sample run and orchestration pattern (CA-15 P7)", () =
     expect(props.onAdd).not.toHaveBeenCalled();
   });
 
-  it("shows the orchestration pattern only for a team, with four choices, and never hands one back for a single agent", () => {
+  it("shows the orchestration pattern only for a team, with six choices, and never hands one back for a single agent", () => {
     const props = open();
     expect(screen.queryByText("Orchestration pattern")).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }));
     openRow("Orchestration pattern");
     const grid = screen.getByRole("group", { name: "Orchestration pattern" });
-    expect(within(grid).getAllByRole("button").map((button) => button.textContent)).toEqual(["Sequential", "Lead with delegates", "Parallel then merged", "Writer and reviewer"]);
+    expect(within(grid).getAllByRole("button").map((button) => button.textContent)).toEqual(["Sequential", "Lead with delegates", "Parallel then merged", "Writer and reviewer", "Agents hand off to each other", "Agents talk in one group chat"]);
     fireEvent.click(within(grid).getByRole("button", { name: "Parallel then merged" }));
     expect(within(grid).getByRole("button", { name: "Parallel then merged" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.one) }));

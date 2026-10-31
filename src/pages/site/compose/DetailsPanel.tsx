@@ -71,6 +71,7 @@ import {
   VALUE,
 } from "./detailsRecipes";
 import type { ModelRun } from "@/lib/build/modelRun";
+import type { AgentFields } from "@/lib/build/agentFields";
 import type { RunHostChoice } from "./ModelRunFields";
 import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnection, ToolRunsAt, ManualWhere } from "@/lib/build/graph";
 import type { AgentSetupValue } from "./AgentSetupFields";
@@ -227,6 +228,12 @@ export interface AgentView extends InputsView {
   modelRun?: ModelRun | null;
   /** SV-27 P4: the build's Host tiles, offered under Where. */
   runHosts?: RunHostChoice[];
+  /** SV-27 P5: the Channel tiles that start runs, offered under How did it run?. */
+  runChannels?: readonly { id: string; name: string }[];
+  /** SV-27 P5: the agent's or team's deployment fields (framework, approvals, sandbox, role ...), as stored. */
+  fields?: AgentFields;
+  /** SV-27 P5: the agent's deployment, one entry per tile, for its Deployment line. */
+  deployment?: readonly { id: string; kind: string; name: string }[];
   /** CA-05 P9, an agent only: how it tidies its notes, and what it changes each round. */
   memoryTidy?: string;
   changesEachRound?: string;
@@ -337,6 +344,8 @@ export type DetailsView = (PromptView | ManualView | SessionView | FileView | To
 export interface DetailsHandlers {
   /** CA-15 P11: change the keys an Optional row owns (null takes a key off). Absent: the Optional rows are not shown. */
   onExtras?: (id: string, patch: Record<string, unknown>) => void;
+  /** SV-27 P5: the Add menu's Deployment group, aimed at this agent or team. */
+  onAddDeployment?: (agentId: string) => void;
   /** CA-13 P2: save a decision's settings. Absent: it is shown, not edited. */
   onDecision?: (id: string, input: DecisionInput) => void;
   /** CA-13 P3: set when a runtime tile runs (null: always). Absent: Runs when is not shown. */

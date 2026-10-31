@@ -55,7 +55,7 @@ export const AGENT_DIALOG_COPY = {
   event: "Triggering event",
   eventPlaceholder: "A new email arrives",
   limits: "Limits",
-  limitsLine: "Steps, budget, run time, approvals, prohibited actions",
+  limitsLine: "Steps, budget, run time, prohibited actions",
   limitsPlaceholder: "One per line",
   output: "Output and destination",
   outputLine: "Format and destination",
