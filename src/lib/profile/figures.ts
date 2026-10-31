@@ -101,6 +101,7 @@ async function getBountyEarningsGbp(userId: string): Promise<number> {
   const rows = (accepted.data ?? []) as Array<{ bounty_id: string }>;
   if (rows.length >= ACCEPTED_LIMIT) {
     // TODO: an aggregate RPC (security invoker) beside maker_stats, with no cap.
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn(`[getMakerFigures] read the ${ACCEPTED_LIMIT}-row cap; the earnings are partial`);
   }
 

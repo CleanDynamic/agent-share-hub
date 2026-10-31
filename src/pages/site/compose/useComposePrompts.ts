@@ -151,6 +151,7 @@ const capital = (word: string): string => `${word.slice(0, 1).toUpperCase()}${wo
 
 /** Log a failed write with its cause, and say so in one line; `retry`, when there is one, is the toast's Retry. */
 const failed = (line: string, retry?: () => void) => (cause: unknown) => {
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
   console.error("[Compose] prompt write failed", cause);
   sayFailed(cause, line, retry);
 };
@@ -382,6 +383,7 @@ export function useComposePrompts({
     if (!build || !value) return;
     addMadeWithTools(build, [toolName(value) ?? value]).then(
       (state) => showMadeWithIn(queryClient, build, state),
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       (cause) => console.warn("[Compose] Made with not updated", { code: errorCode(cause), buildId: build }),
     );
   };

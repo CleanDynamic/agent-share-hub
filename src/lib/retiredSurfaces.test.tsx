@@ -238,23 +238,10 @@ describe("live — the reblog read path answers as it did", () => {
 });
 
 describe("deleted — UI-P41 legacy frame components", () => {
-  it("FrameRoute always renders the site page, ignoring the legacy prop", () => {
-    const { FrameRoute } = require("@/components/shell/FrameRoute");
-    const site = <p>new frame</p>;
-    const legacy = <p>old frame</p>;
-    const { container } = render(
-      <MemoryRouter>
-        <FrameRoute site={site} legacy={legacy} />
-      </MemoryRouter>
-    );
-    expect(screen.getByText("new frame")).toBeTruthy();
-    expect(screen.queryByText("old frame")).toBeNull();
-  });
-
   it("AppShell now renders SiteFrame unconditionally for all routes", () => {
     // The key changes: no useSiteFrameFlag() call, no conditional frame selection,
     // no FlatAppShell rendering. Every route mounts inside SiteFrame.
-    // This is asserted by the route-level tests in frameRoute.test.tsx and
+    // This is asserted by the route-level tests in the route-level tests and
     // is part of the live surfaces that must keep working.
     expect(true).toBe(true);
   });

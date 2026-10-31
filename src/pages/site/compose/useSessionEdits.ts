@@ -154,6 +154,7 @@ export function useSessionEdits(input: SessionEditsInput) {
       try {
         await task();
       } catch (cause) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Sessions]", line, cause);
         sayFailed(cause, line, () => void again(line, task));
       }
@@ -732,6 +733,7 @@ export function useSessionEdits(input: SessionEditsInput) {
         }
         await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) });
       })
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       .catch((cause) => console.warn("[Sessions] a new tile was not put with its session", cause));
   }, [topCount, editableKeys, queryClient]);
 

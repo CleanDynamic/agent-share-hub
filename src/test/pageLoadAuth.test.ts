@@ -12,7 +12,6 @@ const PAGE_LOAD_FILES = [
   "src/components/ContentBlockViewer.tsx",
   "src/components/ExistingBlueprintSearch.tsx",
   "src/hooks/useDocumentComments.ts",
-  "src/pages/ContentDetail.legacy.tsx",
 ];
 
 const callsOf = (file: string) => {

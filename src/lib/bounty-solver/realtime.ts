@@ -29,6 +29,7 @@ export function useBountyDiscussionUpdates(
       try {
         bountyRowId = await resolveBountyByLegacyItem(bountyId);
       } catch (e) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.warn("[useBountyDiscussionUpdates] no bounties header", e);
         return;
       }
@@ -69,6 +70,7 @@ export function useBountySolutionUpdates(
       try {
         bountyRowId = await resolveBountyByLegacyItem(bountyId);
       } catch (e) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.warn("[useBountySolutionUpdates] no bounties header", e);
         return;
       }

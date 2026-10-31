@@ -353,6 +353,7 @@ export async function submitSolutionRebuild({
         },
       });
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[submitSolutionRebuild] author notification failed", e);
     }
   })();

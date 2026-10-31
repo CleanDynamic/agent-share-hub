@@ -52,6 +52,7 @@ export function useStoredBuildCounts({ buildId, build, owner, counts }: UseStore
       updateBuild(buildId, patch as unknown as BuildPatch).catch((cause: unknown) => {
         if (isMissingColumn(cause)) columnsMissing = true;
         else sent.current = "";
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.warn("[counts] stored counts not written", { code: (cause as { code?: string })?.code });
       });
     };

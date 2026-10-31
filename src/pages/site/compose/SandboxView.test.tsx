@@ -576,6 +576,7 @@ describe("CA-10 · a save that stopped says what failed", () => {
     view({ status: "error", loadError: { code: "57014", message: "canceling statement due to statement timeout" } });
     expect(screen.getByText("This build didn't load.")).toBeTruthy();
     expect(screen.getByText("Code 57014")).toBeTruthy();
+    // eslint-disable-next-line no-console -- the spy on the deliberate log
     expect(console.error).toHaveBeenCalledWith("[Compose] build read failed 57014 canceling statement due to statement timeout");
   });
 });

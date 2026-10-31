@@ -7,6 +7,7 @@ import {
   ResultsCarouselViewer,
   type Slide,
 } from "./ResultsCarouselViewer";
+import { reportError } from "@/lib/errors/report";
 
 interface ResultsViewerSectionProps {
   contentItemId: string;
@@ -67,7 +68,7 @@ export function ResultsViewerSection({
         }));
         if (!cancelled) setSlides(next);
       } catch (err) {
-        console.warn("[ResultsViewerSection] load failed", err);
+        reportError(err, { source: "console", context: "ResultsViewerSection load failed" });
       }
     })();
     return () => {

@@ -117,6 +117,8 @@ describe("Clear the build", () => {
 
   it("is one step: everything goes, the title and the post's words stay, and one Undo brings back the ids, sessions, group and links", async () => {
     await mountCa20(seedCa20);
+    // SV-26: the Post tab's code loads apart from the page; Clear acts on its editor, so wait for the tab.
+    await screen.findByTestId("post-tab", undefined, { timeout: 15_000 });
     const before = JSON.stringify(positions().map((row) => [row.id, row.parent_id, row.position, row.payload]).sort());
     const title = draftRow()?.title;
     await openOptions();

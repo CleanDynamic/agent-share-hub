@@ -77,6 +77,7 @@ export async function postDiscussionComment(args: {
         }
       }
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[postDiscussionComment] notification failed", e);
     }
   })();

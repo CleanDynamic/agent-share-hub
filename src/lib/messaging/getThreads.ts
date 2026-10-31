@@ -52,6 +52,7 @@ export async function getThreads({
   }
   if (memErr) {
     // Don't throw — legacy participant lookup below will still work
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[getThreads] members query failed", memErr);
   }
 

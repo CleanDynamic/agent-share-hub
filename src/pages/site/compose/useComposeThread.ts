@@ -212,6 +212,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
             void flush();
           }, delay);
         } else {
+          // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
           console.error(errorLine("[Compose] thread save failed", cause));
           stoppedRef.current = true;
           setSaveError(cause instanceof Error ? cause : new Error(String(cause)));

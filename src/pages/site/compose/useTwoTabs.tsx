@@ -218,6 +218,7 @@ export function useTwoTabs(input: TwoTabsInput): TwoTabs {
         });
         setQueue((entries) => entries.filter((entry) => entry.id !== item.id));
       } catch (cause) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Compose] a clash could not be settled", cause);
       } finally {
         setBusy(false);

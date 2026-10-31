@@ -21,21 +21,8 @@ const INNER = 'button, a[href], input, select, textarea, [role="button"], [conte
 const innerOf = (item: HTMLElement): HTMLElement[] =>
   [...item.querySelectorAll<HTMLElement>(INNER)].filter((el) => el.closest(ROVING_ITEM) === item && !el.matches(ROVING_ITEM) && shown(el) && !el.hasAttribute("disabled"));
 
-/** The item a Tab press lands on: the last one that had focus, or the first. */
-export function currentBuildItem(): HTMLElement | null {
-  const root = document.querySelector<HTMLElement>('[data-testid="build-list"]');
-  if (!root) return null;
-  return root.querySelector<HTMLElement>(`:is(${ROVING_ITEM})[tabindex="0"]`) ?? itemsOf(root)[0] ?? null;
-}
-
-/** Skip to build: focus goes to the build list's current item, or to the Build panel when the list has none. */
-export function focusBuild(): boolean {
-  const target = currentBuildItem() ?? document.querySelector<HTMLElement>('[aria-label="Build"]');
-  if (!target) return false;
-  target.focus();
-  target.scrollIntoView?.({ block: "nearest" });
-  return true;
-}
+/* SV-26 P2: these three live in SkipToBuild.tsx, so the route table can name the skip link without this file's hooks. */
+export { SkipToBuild, currentBuildItem, focusBuild } from "./SkipToBuild";
 
 export function useRovingList(rootRef: { current: HTMLElement | null }, onSelect?: (id: string) => void): void {
   const last = useRef<{ key: string; index: number } | null>(null);
@@ -161,41 +148,4 @@ export function useItemRing(id?: string | null): { ring: CSSProperties; bind: { 
       },
     },
   };
-}
-
-/** "Skip to build": the page's first stop. Hidden until focused, then at the top-left of the composer box. */
-export function SkipToBuild() {
-  const [focused, setFocused] = useState(false);
-  const hidden: CSSProperties = { position: "absolute", width: 1, height: 1, margin: -1, padding: 0, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap", border: 0 };
-  const shown: CSSProperties = {
-    position: "absolute",
-    left: 18,
-    top: HEADER_HEIGHT + 12,
-    zIndex: 40,
-    boxSizing: "border-box",
-    display: "inline-flex",
-    alignItems: "center",
-    height: 32,
-    padding: "0 12px",
-    borderRadius: 8,
-    background: t.window,
-    border: `1px solid ${t.windowBorder}`,
-    textDecoration: "none",
-    ...text(13, 500, t.text),
-    ...ring(true),
-  };
-  return (
-    <a
-      href="#build"
-      data-testid="skip-to-build"
-      style={focused ? shown : hidden}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      onClick={(event) => {
-        if (focusBuild()) event.preventDefault();
-      }}
-    >
-      Skip to build
-    </a>
-  );
 }

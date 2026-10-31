@@ -76,7 +76,9 @@ function useLogOnce(error: unknown, panel: string, log?: string) {
   useEffect(() => {
     if (error === undefined || logged.current === error) return;
     logged.current = error;
+    // eslint-disable-next-line no-console -- the one structured log of a panel that did not load, asserted by its tests (SV-26)
     if (log) console.error(errorLine(log, error));
+    // eslint-disable-next-line no-console -- the one structured log of a panel that did not load, asserted by its tests (SV-26)
     else console.error(`[${panel}] did not load`, error);
   }, [error, panel, log]);
 }

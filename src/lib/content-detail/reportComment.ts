@@ -11,6 +11,6 @@ export async function reportComment({
   commentId: string;
   reason?: string;
 }) {
-  console.info("[reportComment] queued", { commentId, reason });
+
   return { ok: true as const };
 }

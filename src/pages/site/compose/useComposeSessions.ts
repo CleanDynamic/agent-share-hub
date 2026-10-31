@@ -216,6 +216,7 @@ export function useComposeSessions({
       const state = kind === "model" ? await setMadeWithModel(id, name, on) : await setMadeWithEntry(id, name, on);
       return { id, state, value: undefined };
     }).catch((cause) => {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] Made with not changed", cause);
       sayFailed(cause, "Made with not changed", () => toggleMadeWith(chip, on));
       void settleMadeWith(id);
@@ -228,6 +229,7 @@ export function useComposeSessions({
       const state = await setMadeWithEntry(id, name, true);
       return { id, state, value: undefined };
     }).catch((cause) => {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] Made with entry not added", cause);
       sayFailed(cause, "Made with not added", () => addMadeWith(name));
     });
@@ -264,6 +266,7 @@ export function useComposeSessions({
       const state = await getMadeWith(id).catch(() => null);
       return { id, state, value: undefined };
     })
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       .catch((cause) => console.error("[Compose] session not put into this build", cause))
       .finally(() =>
         refreshLists()
@@ -280,6 +283,7 @@ export function useComposeSessions({
       return { id: id ?? "", state, value: true };
     })
       .catch((cause) => {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Compose] setSessionModel failed", cause);
         sayFailed(cause, "Model not saved", () => void setModel(sessionId, model));
         return false;
@@ -298,6 +302,7 @@ export function useComposeSessions({
       return { id, state, value: true };
     })
       .catch((cause) => {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Compose] setSessionTool failed", cause);
         sayFailed(cause, "Tool not saved", () => void setTool(sessionId, tool));
         return false;

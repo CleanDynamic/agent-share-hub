@@ -10,6 +10,7 @@ import {
 } from '@/lib/results';
 import type { ContentItemResult } from '@/lib/results/types';
 import { ResultsCarouselEditor, type Slide } from './ResultsCarouselEditor';
+import { reportError } from "@/lib/errors/report";
 
 const PHOTO_MAX = 10 * 1024 * 1024; // 10MB
 const VIDEO_MAX = 100 * 1024 * 1024; // 100MB
@@ -46,7 +47,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
       const rows = await getResultsForContentItem(contentItemId);
       setSlides(rows.map(rowToSlide));
     } catch (err) {
-      console.warn('[ResultsSection] load failed', err);
+      reportError(err, { source: "console", context: "ResultsSection load failed" });
     }
   }, [contentItemId]);
 
@@ -196,7 +197,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
     if (existing) clearTimeout(existing);
     const t = setTimeout(() => {
       updateResultSlide(id, { caption: value }).catch((err) =>
-        console.warn('[ResultsSection] caption save failed', err),
+        reportError(err, { source: "console", context: "ResultsSection caption save failed" }),
       );
     }, 800);
     captionTimers.current.set(id, t);
@@ -208,7 +209,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
     if (existing) clearTimeout(existing);
     const t = setTimeout(() => {
       updateResultSlide(id, { text: value }).catch((err) =>
-        console.warn('[ResultsSection] text save failed', err),
+        reportError(err, { source: "console", context: "ResultsSection text save failed" }),
       );
     }, 800);
     textTimers.current.set(id, t);
@@ -224,7 +225,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
       try {
         await reorderResultSlides(contentItemId, newOrder);
       } catch (err) {
-        console.warn('[ResultsSection] reorder failed', err);
+        reportError(err, { source: "console", context: "ResultsSection reorder failed" });
       }
     },
     [contentItemId],

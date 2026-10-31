@@ -53,10 +53,6 @@ const DEFINITIONS: Record<string, string[]> = {
      puts it in index.css and the component references it by name. The rule and
      its keyframe travelled together and sit next to each other. */
   "src/index.css": ["ns-badge", "ns-comment-new-reply"],
-  /* These two never left their consumer, so the rule and the markup that
-     wears it live in one file and cannot drift apart. */
-  "src/components/library/LibraryShell.tsx": ["ns-collections-grid"],
-  "src/components/library/CollectionDetailPage.tsx": ["ns-detail-grid"],
 };
 
 describe("the .ns-* rules inherited from the retired shell", () => {

@@ -174,6 +174,7 @@ export async function submitSolution({
         },
       });
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[submitSolution] author notification failed", e);
     }
   })();
@@ -319,6 +320,7 @@ export async function acceptSolution(
   // Outside the transaction on purpose: a credit that could not be written (no column yet) must not undo an acceptance.
   const credit = creditFor(accepted.solverId, result.author_id ?? "");
   if (credit) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     await setTileContributor([accepted.nodeId], credit).catch((e) => console.warn("[acceptSolution] credit not written", e));
   }
 
@@ -339,6 +341,7 @@ export async function acceptSolution(
         },
       });
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[acceptSolution] solver notification failed", e);
     }
   })();
@@ -481,6 +484,7 @@ export async function listSolutions({
   // A failed profile read costs the bylines their names, not the panel its
   // answers: the payloads are the substance and they are already in hand.
   if (profiles.error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[listSolutions] solver profiles failed", profiles.error);
   }
   if (votes.error) throw bountyLayerError("listSolutions (votes)", votes.error);

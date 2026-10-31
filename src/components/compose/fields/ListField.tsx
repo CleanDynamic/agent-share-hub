@@ -101,6 +101,7 @@ export function acceptedSubFields(field: FieldDef): FieldDef[] {
     const path = `${field.key}.${subField.key}`;
     if (!warnedNestedPaths.has(path)) {
       warnedNestedPaths.add(path);
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn(
         `[NeoScale] node_types schema: "${path}" nests a list inside a list. ` +
           "The schema dialect allows one level of nesting only, so this " +

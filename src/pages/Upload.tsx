@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
@@ -36,7 +36,8 @@ import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
-import { ArticleEditor } from '@/components/article/ArticleEditor';
+/* SV-26 P3: the article editor (flow canvas, d3, tables) loads when its step opens. */
+const ArticleEditor = lazy(() => import('@/components/article/ArticleEditor').then((m) => ({ default: m.ArticleEditor })));
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CompactUploadHeader } from '@/components/upload/CompactUploadHeader';
 import { ResultsSection } from '@/components/upload/ResultsSection';
@@ -53,6 +54,7 @@ import { coverImageFromRow, resultsFromJson, type CoverImage, type ResultBlock }
 import { type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
 import { scrollBehavior, feedback } from "@/lib/theme/motion";
+import { reportError } from "@/lib/errors/report";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -484,7 +486,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               state.connections = sg.connections ?? {};
             });
           } catch (e) {
-            console.error('Failed to hydrate stage grids:', e);
+            reportError(e, { source: "console", context: "Failed to hydrate stage grids:" });
           }
         }
 
@@ -534,7 +536,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           })));
         }
       } catch (err) {
-        console.error("Failed to load draft:", err);
+        reportError(err, { source: "console", context: "Failed to load draft:" });
       } finally {
         setDraftLoading(false);
       }
@@ -698,7 +700,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           .select("id")
           .single();
         if (error || !inserted) {
-          console.error("Draft save failed:", error);
+          reportError(error, { source: "console", context: "Draft save failed:" });
           if (!silent) toast({ title: "Failed to save draft", description: error?.message ?? "Unknown error", variant: "destructive" });
           return null;
         }
@@ -719,7 +721,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           .update(updateData)
           .eq("id", draftIdToUse);
         if (error) {
-          console.error("Draft update failed:", error);
+          reportError(error, { source: "console", context: "Draft update failed:" });
           if (!silent) toast({ title: "Failed to save draft", description: error.message, variant: "destructive" });
           return null;
         }
@@ -733,7 +735,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         .delete()
         .eq("content_id", draftIdToUse!);
       if (delErr) {
-        console.error("Draft block cleanup failed:", delErr);
+        reportError(delErr, { source: "console", context: "Draft block cleanup failed:" });
       }
 
       const draftFlatBlocks = flattenBlocks(contentBlocks);
@@ -765,7 +767,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           external_file_url: block.externalFileUrl?.trim() || null,
         } as any);
         if (blkErr) {
-          console.error("Draft block insert failed:", blkErr);
+          reportError(blkErr, { source: "console", context: "Draft block insert failed:" });
         }
       }
 
@@ -777,7 +779,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       if (!silent) toast({ title: `Saved “${savedName}”`, description: "Draft saved to your library." });
       return draftIdToUse;
     } catch (err: any) {
-      console.error("Draft save threw:", err);
+      reportError(err, { source: "console", context: "Draft save threw:" });
       if (!silent) toast({ title: "Failed to save draft", description: err?.message, variant: "destructive" });
       return currentDraftId;
     } finally {
@@ -1500,6 +1502,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               display: 'flex',
               justifyContent: 'center',
             }}>
+              <Suspense fallback={null}>
               <ArticleEditor
                   canvasDoc={canvasDoc}
                   initialContent={
@@ -1536,7 +1539,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       try {
                         await flushRecompute(id);
                       } catch (err) {
-                        console.warn('[Upload] flushRecompute failed', err);
+                        reportError(err, { source: "console", context: "Upload flushRecompute failed" });
                         toast({ title: 'Could not refresh metadata', description: 'Try again in a moment.', variant: 'destructive' });
                         return;
                       }
@@ -1551,6 +1554,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   editable
                   mode={mode}
                 />
+              </Suspense>
             </div>
           </div>
         )}

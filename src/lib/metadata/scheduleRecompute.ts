@@ -22,6 +22,7 @@ export function scheduleRecompute(contentItemId: string): void {
   const t = setTimeout(() => {
     queue.delete(contentItemId);
     recomputeMetadata(contentItemId).catch((err) => {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[scheduleRecompute] recompute failed", contentItemId, err);
     });
   }, DEBOUNCE_MS);
@@ -39,6 +40,7 @@ export async function flushRecompute(contentItemId: string): Promise<void> {
   try {
     await recomputeMetadata(contentItemId);
   } catch (err) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.error("[flushRecompute] recompute failed", contentItemId, err);
   }
 }

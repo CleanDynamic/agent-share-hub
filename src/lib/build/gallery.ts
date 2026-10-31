@@ -891,6 +891,7 @@ export async function countOpenBountyBuilds(): Promise<number> {
       return count ?? 0;
     });
   } catch (error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[countOpenBountyBuilds] count unavailable", error);
     return 0;
   }
@@ -953,6 +954,7 @@ export async function getFeaturedBuild(now: Date = new Date()): Promise<Featured
     // TODO: replace with an RPC that groups build_reproductions by build_id in
     // SQL (a `most_reproduced_builds(since, limit)` function, security invoker),
     // which has no row cap to rank around.
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn(`[getFeaturedBuild] read the ${FEATURED_ROWS_LIMIT}-row cap; the ranking is partial`);
   }
 

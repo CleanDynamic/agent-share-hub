@@ -75,6 +75,7 @@ export async function submitSolution(solutionId: string): Promise<Solution> {
         .update({ bounty_solutions_submitted: cur + 1 } as any)
         .eq("id", sol.solver_id);
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[submitSolution] notification/stat update failed", e);
     }
   })();

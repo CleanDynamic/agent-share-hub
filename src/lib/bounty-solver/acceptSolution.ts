@@ -161,6 +161,7 @@ export async function acceptSolution(args: {
         } as any)
         .eq("id", solution.solver_id);
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[acceptSolution] solver stat update failed", e);
     }
   })();

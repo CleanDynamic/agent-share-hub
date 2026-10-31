@@ -86,6 +86,7 @@ export async function extendBountyDeadline({
         ),
       );
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[extendBountyDeadline] notification fan-out failed", e);
     }
   })();

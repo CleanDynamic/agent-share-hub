@@ -27,6 +27,7 @@ const EMPTY: ComposeDetails = { symptom: "", resolution: "", costMonthly: "", co
 const amount = (value: number | null | undefined) => (typeof value === "number" ? String(value) : "");
 
 const failed = (line: string) => (cause: unknown) => {
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
   console.error("[Compose] details write failed", cause);
   sayFailed(cause, line);
 };

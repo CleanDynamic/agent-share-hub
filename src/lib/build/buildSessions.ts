@@ -90,6 +90,7 @@ export async function draftsOfImports(importIds: readonly string[]): Promise<Map
   if (importIds.length === 0) return out;
   const { data, error } = await table().select<Pick<Row, "build_id" | "import_id">>("build_id, import_id").in("import_id", importIds).limit(DRAFTS_LIMIT);
   if (error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     if (!isMissingTable(error)) console.error("[Sessions] drafts of sessions not read", error);
     return out;
   }

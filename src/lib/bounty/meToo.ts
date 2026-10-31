@@ -88,6 +88,7 @@ export async function myMeToo(
   // to render because the thing that says "me too" is not there. An unmarked
   // button is a smaller wrong answer than no panel.
   if (error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[myMeToo] marks unreadable", error);
     return out;
   }

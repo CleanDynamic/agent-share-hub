@@ -130,6 +130,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         .then(async (created) => {
           // Every post has at least one session. It is not worth a failed draft if this one cannot be written.
           firstSession.current = await seedFirstSession(created.id).catch((cause: unknown) => {
+            // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
             console.error(errorLine("[Compose] Session 1 not made", cause));
             return null;
           });
@@ -141,6 +142,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         })
         .catch((cause: unknown) => {
           creating.current = null;
+          // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
           console.error(errorLine("[Compose] createBuild failed", cause));
           toast.error("Draft not started");
           // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
@@ -225,6 +227,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       queryClient.setQueryData(coverKey(id), media);
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
     } catch (cause) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] cover failed", cause);
       setMediaError("Cover not added");
     } finally {
@@ -239,6 +242,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       queryClient.setQueryData(coverKey(buildId), null);
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) });
     } catch (cause) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] cover removal failed", cause);
       setMediaError("Cover not removed");
     }
@@ -307,10 +311,12 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       try {
         await refreshMakingStats(row.id);
       } catch (cause) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.warn("[Compose] making stats not refreshed", cause);
       }
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(row.id) });
     } catch (cause) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] publish failed", cause);
       toast.error("Build not published", { action: { label: "Retry", onClick: () => void onPublish() } });
     }

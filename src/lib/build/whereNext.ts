@@ -392,6 +392,7 @@ async function sparksFor(buildIds: readonly string[], now: Date): Promise<Map<st
   if (rows.length >= SPARK_ROWS_LIMIT) {
     // TODO: replace with an RPC that returns per-build daily counts, which has
     // no row cap to bucket around.
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn(`[getWhereNextForViewer] read the ${SPARK_ROWS_LIMIT}-row cap; the sparklines are partial`);
   }
 

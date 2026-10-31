@@ -95,6 +95,7 @@ export function useClassificationCard({ buildId, build, tree, title, description
           const result = await writeClassification(buildId, next);
           if (result.written) queryClient.setQueryData<StoredClassification>(classificationKey(buildId), { live: true, classification: next, facets: computeFacets(next) });
         } catch (cause) {
+          // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
           console.warn("[classification] derived values not written", { code: (cause as { code?: string })?.code });
         }
       });

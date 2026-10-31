@@ -156,6 +156,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           },
           { notice: true, removed, keys: tops.map((step) => step.id) },
         )
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         .catch((cause) => console.error("[Compose] tiles not removed", cause));
     },
     [steps, nodes, history, bridge],
@@ -182,6 +183,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           },
           { notice: true, removed, keys: [fileId] },
         )
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         .catch((cause) => console.error("[Compose] file not removed", cause));
     },
     [nodes, history, bridge],
@@ -236,6 +238,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       const sentence = picked.length === 1 ? DUPLICATE_COPY.one(tileName(picked[0])) : DUPLICATE_COPY.several(picked.length);
       void history
         .track(sentence, () => restoreSnapshot(buildId, nodes, (current) => duplicateTiles(current, picked.map((step) => step.id), () => crypto.randomUUID()).snapshot), { notice: true, motion: "duplicate" })
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         .catch((cause) => console.error("[Compose] not duplicated", cause));
     },
     [buildId, steps, nodes, history],
@@ -287,6 +290,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
             }),
           { notice: true, motion: "convert", keys: [id] },
         )
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         .catch((cause) => console.error("[Compose] not converted", cause));
     },
     [buildId, nodes, history],
@@ -369,6 +373,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
         },
         { notice: true, removed },
       )
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       .catch((cause) => console.error("[Compose] build not cleared", cause));
   }, [buildId, history, nodes, groups, made, bridge, onCleared, queryClient, clearCounts]);
 

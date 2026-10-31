@@ -1,4 +1,5 @@
 import * as React from "react";
+import { visibleInterval } from "@/lib/visibleInterval";
 import {
   Trophy,
   Send,
@@ -109,8 +110,7 @@ function calculateTimeProgress(deadline: Date | null, createdAt: Date): number {
 function useNow(intervalMs = 60_000) {
   const [, setTick] = React.useState(0);
   React.useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
-    return () => clearInterval(id);
+    return visibleInterval(() => setTick((t) => t + 1), intervalMs);
   }, [intervalMs]);
 }
 

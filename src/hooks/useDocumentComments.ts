@@ -132,6 +132,7 @@ export function useDocumentComments(documentId: string | null) {
         .select()
         .single();
       if (error) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error('addComment failed', error);
         return null;
       }

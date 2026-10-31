@@ -43,6 +43,7 @@ export async function refreshStoredCounts(buildId: string, making: unknown): Pro
     return true;
   } catch (error) {
     if (isMissingColumn(error)) columnsMissing = true;
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     else console.warn("[refreshStoredCounts] counts not written", { buildId });
     return false;
   }

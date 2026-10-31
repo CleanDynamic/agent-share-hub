@@ -235,16 +235,6 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "to define two Monaco themes and switch them from ThemeProvider — not " +
       "to put a token in this object.",
   },
-  "src/components/ui/chart.tsx": {
-    max: 5,
-    why:
-      "RECHARTS ATTRIBUTE SELECTORS, not colour declarations. These are " +
-      "shadcn's own chart wrapper matching the values Recharts hardcodes into " +
-      "the SVG it emits — `[&_.recharts-dot[stroke='#fff']]:stroke-transparent` " +
-      "overrides that stroke precisely BECAUSE the library wrote #fff. The hex " +
-      "is the selector's left-hand side; changing it stops the rule matching " +
-      "and the override it exists to apply disappears.",
-  },
   "src/components/article/TopToolbar.tsx": {
     max: 2,
     why:
@@ -260,30 +250,6 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "AN INLINE SVG PLACEHOLDER, built as a data: URI. A data: URI is a " +
       "separate document and inherits nothing from the page, so a custom " +
       "property in it resolves to nothing at all. Dev-only route.",
-  },
-  "src/components/content-detail/AIPdfPreview.tsx": {
-    max: 1,
-    why:
-      "BLACK INK ON A PRINTED PAGE. The note above the declaration is the " +
-      "argument and it predates this prompt: a PDF preview is a printed " +
-      "artefact, it renders white with black ink in both rooms, and theming " +
-      "it would put Dusk's palette on paper. NOTE FOR BG-P30: the page " +
-      "GROUND beside this ink is `var(--chrome-hi)`, which is #FFFFFF on " +
-      "Noon but #CBC6E4 on Dusk — so the page does drift lavender in " +
-      "the dark room, which contradicts the note. Worth settling.",
-  },
-  "src/components/progress/xp-kit/xp-bar.tsx": {
-    max: 1,
-    why:
-      "A LEGIBILITY SCRIM behind text that sits over a filled progress bar. " +
-      "See the note on the scrims below.",
-  },
-  "src/components/challenges/quest/claim-button.tsx": {
-    max: 1,
-    why:
-      "A LEGIBILITY SCRIM behind the label on a claim button that carries an " +
-      "amber glow underneath it. Same unresolved question as the other two " +
-      "scrims — see the note below them.",
   },
   "src/components/ambient/ActionXpHintInner.tsx": {
     max: 1,

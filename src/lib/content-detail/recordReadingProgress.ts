@@ -50,6 +50,7 @@ export async function recordReadingProgress({
     .from("reading_progress")
     .upsert(payload, { onConflict: "reader_id,post_id" });
   if (error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[recordReadingProgress] upsert failed", error);
     return;
   }
@@ -68,6 +69,7 @@ export async function recordReadingProgress({
         .update({ reading_completion_count: next } as any)
         .eq("id", postId);
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[recordReadingProgress] completion count bump failed", e);
     }
   }

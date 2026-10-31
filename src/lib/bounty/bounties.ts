@@ -710,6 +710,7 @@ export async function getOpenBountyPool(): Promise<OpenBountyPool> {
   if (rows.length >= OPEN_POOL_LIMIT) {
     // TODO: replace with an aggregate RPC (`open_bounty_pool()`, security
     // invoker, returning sum(reward_gbp) and the counts) that has no row cap.
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn(`[getOpenBountyPool] read the ${OPEN_POOL_LIMIT}-row cap; the pool is partial`);
   }
 

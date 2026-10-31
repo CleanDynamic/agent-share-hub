@@ -317,10 +317,7 @@ describe("no badge uses a category hue or a tier colour", () => {
       "BadgeMark.tsx",
       "badge-data.ts",
       "badge-tile.tsx",
-      "badge-detail-modal.tsx",
-      "cabinet-grid.tsx",
       "pending-reveal-strip.tsx",
-      "showcase-editor.tsx",
       "showcase-strip.tsx",
     ];
     for (const file of files) {

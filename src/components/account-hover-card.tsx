@@ -97,7 +97,7 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
               }}
               onClick={(e) => {
                 e.stopPropagation()
-                console.log(`Follow @${account.username}`)
+
               }}
             >
               Follow

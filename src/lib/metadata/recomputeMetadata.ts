@@ -18,6 +18,7 @@ async function safeRun<T>(
   try {
     return await fn();
   } catch (err) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.error(
       `[recomputeMetadata] ${label} failed for ${contentItemId}:`,
       err
@@ -112,6 +113,7 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
     .eq("id", contentItemId);
 
   if (updateErr) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.error(
       `[recomputeMetadata] update failed for ${contentItemId}:`,
       updateErr
@@ -129,6 +131,7 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
   void import("@/lib/content-detail/recomputeCanonicalPayload")
     .then((m) => m.recomputeCanonicalPayload(contentItemId))
     .catch((err) =>
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn(
         `[recomputeMetadata] canonical payload refresh failed for ${contentItemId}:`,
         err,

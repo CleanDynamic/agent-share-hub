@@ -26,6 +26,7 @@ import type { GalleryMedia } from "@/lib/build";
 import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
 import { MAX_POST_PICTURES, MAX_THREAD_MEDIA, type PostMediaAttrs, type ThreadPostMedia } from "@/lib/build/thread";
 import type { BuildMedia, MediaKind } from "@/lib/build/types";
+import { reportError } from "@/lib/errors/report";
 
 // --- the store ---------------------------------------------------------------------
 
@@ -419,7 +420,7 @@ async function runUpload(host: PictureHost, buildId: string, item: Item): Promis
     host.store.addRows([done.media]);
     if (patchUpload(host, item.uploadId, { mediaId: done.media.id, w: done.w, h: done.h, uploadId: null, failed: false })) host.files.delete(item.uploadId);
   } catch (cause) {
-    console.error("[Compose] picture upload failed", cause);
+    reportError(cause, { source: "console", context: "Compose picture upload failed" });
     if (!(host.files.get(item.uploadId)?.stopped ?? true)) setFailed(host, item.uploadId, true);
   } finally {
     host.store.setProgress(item.uploadId, null);
@@ -433,7 +434,7 @@ async function startUploads(host: PictureHost, items: readonly Item[]): Promise<
     if (!ensure) throw new Error("no build to upload to");
     buildId = await ensure();
   } catch (cause) {
-    console.error("[Compose] could not start the picture upload", cause);
+    reportError(cause, { source: "console", context: "Compose could not start the picture upload" });
     for (const item of items) setFailed(host, item.uploadId, true);
     return;
   }

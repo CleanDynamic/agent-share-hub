@@ -92,6 +92,7 @@ export function DraftsPage() {
         void refresh();
         toast("New build started.", { action: { label: "Open", onClick: () => navigate(`/compose/${id}`) } });
       } catch (error) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Drafts] attachSession (new) failed", error);
         void refresh();
         failed("Couldn't start a build from that session.");
@@ -107,6 +108,7 @@ export function DraftsPage() {
         void refresh();
         toast(`Added to ${draftTitle(draft.title)}.`);
       } catch (error) {
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Drafts] attachSession (existing) failed", error);
         void refresh();
         failed("Couldn't add that session.");
@@ -120,6 +122,7 @@ export function DraftsPage() {
       const removed = await removeEmptyDrafts(userId);
       toast(removed === 1 ? "Removed 1 empty draft." : `Removed ${removed} empty drafts.`);
     } catch (error) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Drafts] removeEmptyDrafts failed", error);
       failed("Couldn't remove the empty drafts.");
     } finally {

@@ -38,7 +38,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { countDraftBuilds } from "@/lib/build/sessions";
+import { countDraftBuilds } from "@/lib/build/draftCount";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useCurrentPath, useGo } from "@/lib/routing/go";
 import { PageLink } from "@/lib/routing/PageLink";

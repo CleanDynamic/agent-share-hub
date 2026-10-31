@@ -4,7 +4,7 @@
 // followed, because its module arrives with the route that asks for it.
 //
 // THE COMPOSER STAYS OUT (neoscale-performance: "the compose route must never
-// appear in the initial bundle"). App.tsx imports ComposeRoute eagerly, and
+// appear in the initial bundle"). App.tsx used to import ComposeRoute eagerly, and
 // one import of the `@/lib/build` barrel or of useComposeBuild from it used to
 // put the whole build layer (Build File, conversion, rebuild, the composer's
 // hook) into the first download: about 70 KB of minified script that no page
@@ -87,7 +87,26 @@ describe("the first download", () => {
 
   it("reaches App.tsx, so the walk is reading imports at all", () => {
     expect(reached.has(join(SRC, "App.tsx"))).toBe(true);
-    expect(reached.has(join(SRC, "pages/site/compose/ComposeRoute.tsx"))).toBe(true);
+  });
+
+  /* SV-26 P2: App.tsx loads ComposeRoute with the composer, and each window that draws nothing until something opens it
+     (the share menu, the reblog window, the upload picker, the connector guide, the toasts) loads on first use or at idle. */
+  it.each([
+    "src/pages/site/compose/ComposeRoute.tsx",
+    "src/components/share/ShareMenu.tsx",
+    "src/components/share/ShareMenuHost.tsx",
+    "src/components/reblog/ReblogComposeSheet.tsx",
+    "src/components/reblog/ReblogComposeHost.tsx",
+    "src/components/upload/UploadTypePicker.tsx",
+    "src/components/connect/ConnectorGuide.tsx",
+    "src/components/connect/ConnectorDialogView.tsx",
+    "src/components/ambient/GamificationToasts.tsx",
+    "src/components/quoting/QuotableSelectionProvider.tsx",
+    "src/lib/build/sessions.ts",
+    "src/lib/build/builds.ts",
+  ])("keeps %s out of the first download", (path) => {
+    const file = join(ROOT, path);
+    expect(reached.has(file), reached.has(file) ? chainTo(reached, file) : "").toBe(false);
   });
 
   it.each(["src/pages/site/compose/ComposePage.tsx", "src/hooks/useComposeBuild.ts", "src/lib/build/index.ts"])(

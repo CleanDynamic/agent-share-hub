@@ -33,12 +33,14 @@ export async function recordPostView({
       referrer: ref,
       is_bot_or_crawler: isBot,
     });
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
   if (error) console.warn("[recordPostView] log insert failed", error);
 
   if (!isBot) {
     try {
       await supabase.rpc("increment_content_view_count", { _content_id: postId });
     } catch (e) {
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[recordPostView] view count rpc failed", e);
     }
   }

@@ -37,6 +37,7 @@ export async function refreshPatterns(buildId: string, making: unknown): Promise
     return true;
   } catch (error) {
     if (isMissingColumn(error)) columnMissing = true;
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     else console.warn("[refreshPatterns] patterns not written", { buildId });
     return false;
   }

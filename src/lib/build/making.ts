@@ -471,6 +471,7 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
     // composer (an offer accepted on OpenBuilds, Drafts, the upload page) updates them too.
     void import("./buildCountsWrite").then((module) => module.refreshStoredCounts(buildId, making)).catch(() => undefined);
   } catch (error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[refreshMakingStats] making stats not written", {
       code: errorCode(error),
       buildId,
@@ -558,6 +559,7 @@ export async function setMadeWithModel(buildId: string, model: string, on: boole
     return { patch: { made_with: next.madeWith, making: { ...making, excluded_models: next.excluded } } as unknown as BuildPatch, result: next };
   });
   // The choice is written; the stats only summarise it, and the next refresh repairs them.
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
   await refreshMakingStats(buildId).catch(() => console.warn("[setMadeWithModel] making stats not refreshed", { buildId }));
   return getMadeWith(buildId);
 }
@@ -683,6 +685,7 @@ export async function setSessionMeta(
     return { patch: { making: { ...making, sessions_meta: entries } } as unknown as BuildPatch, result: entries };
   });
   const tool = (written as SessionMeta | null)?.tool?.trim();
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
   if (tool) await addMadeWithTools(buildId, [toolName(tool) ?? tool]).catch(() => console.warn("[setSessionMeta] Made with not updated", { buildId }));
   return entries;
 }

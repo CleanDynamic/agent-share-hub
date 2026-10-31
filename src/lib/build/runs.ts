@@ -82,6 +82,7 @@ export async function getRunsOfMyBuilds(
   if (rows.length >= RUNS_ROWS_LIMIT) {
     // TODO: replace with an RPC that returns per-day counts for a maker's
     // builds, which has no row cap to bucket around.
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn(`[getRunsOfMyBuilds] read the ${RUNS_ROWS_LIMIT}-row cap; the series is partial`);
   }
 
@@ -132,6 +133,7 @@ export async function countPeopleWhoRanMyBuildsThisWeek(
   if (rows.length >= PEOPLE_ROWS_LIMIT) {
     // TODO: replace with an RPC that returns count(distinct user_id), which has
     // no row cap.
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn(
       `[countPeopleWhoRanMyBuildsThisWeek] read the ${PEOPLE_ROWS_LIMIT}-row cap; the count is partial`,
     );

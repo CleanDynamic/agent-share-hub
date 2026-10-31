@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { SENTIENT, type } from "@/lib/theme/type";
 import { scrollBehavior } from "@/lib/theme/motion";
+import { reportError } from "@/lib/errors/report";
 
 const lowlight = createLowlight(common);
 
@@ -86,7 +87,7 @@ export function BlogView({ item }: BlogViewProps) {
         validationCacheRef.current = fingerprint;
         setValidatedBody(next);
       } catch (err) {
-        console.warn("[BlogView] reference validation failed", err);
+        reportError(err, { source: "console", context: "BlogView reference validation failed" });
         if (!cancelled) setValidatedBody(body);
       }
     })();
@@ -127,7 +128,7 @@ export function BlogView({ item }: BlogViewProps) {
         kind: "like",
         postId: item.id,
         actorId: user.id,
-      }).catch(console.error);
+      }).catch((error) => reportError(error, { source: "console", context: "BlogView" }));
     }
   };
 

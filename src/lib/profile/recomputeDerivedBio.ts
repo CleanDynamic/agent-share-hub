@@ -70,6 +70,7 @@ export async function recomputeDerivedBio(userId: string): Promise<void> {
       .eq("id", userId);
     if (upErr) throw upErr;
   } catch (err) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.error("[recomputeDerivedBio] failed for", userId, err);
   }
 }

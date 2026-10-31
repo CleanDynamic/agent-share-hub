@@ -296,6 +296,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       } else {
         stoppedRef.current = true;
         setSaveFailure({ reason: shortReason(cause), code: errorCode(cause) });
+        // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error(errorLine("[Compose] header save failed", cause));
       }
     } finally {

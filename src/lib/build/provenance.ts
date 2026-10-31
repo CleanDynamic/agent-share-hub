@@ -203,6 +203,7 @@ export async function getCreatedVia(buildId: string): Promise<CreatedVia | null>
   const { data, error } = await selectCreatedVia(buildId);
 
   if (error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[getCreatedVia] provenance unreadable", {
       code: errorCode(error),
       buildId,
@@ -248,6 +249,7 @@ export async function recordCreatedVia(
       .eq("id", buildId);
     if (error) throw error;
   } catch (error) {
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     console.warn("[recordCreatedVia] provenance not recorded", {
       code: errorCode(error),
       buildId,

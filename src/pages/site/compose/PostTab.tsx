@@ -283,6 +283,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
       .then((rows) => {
         if (!stale) host.store.addRows(rows);
       })
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       .catch((cause) => console.error("[Compose] thread media did not load", cause));
     return () => {
       stale = true;

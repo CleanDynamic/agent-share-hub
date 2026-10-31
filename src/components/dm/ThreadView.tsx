@@ -439,6 +439,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       return data;
     },
     refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 
   // Fetch messages

@@ -181,6 +181,7 @@ async function insertTiles(rows: BuildNodeInsert[], onProgress?: TileProgress): 
 async function removeTiles(ids: readonly string[]): Promise<void> {
   for (let at = 0; at < ids.length; at += TILE_BATCH) {
     const { error } = await supabase.from("build_nodes").delete().in("id", ids.slice(at, at + TILE_BATCH));
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     if (error) console.error("[addSession] tiles not taken back", error);
   }
 }
@@ -324,6 +325,7 @@ async function writeSession({ buildId, sessionKey: importId, model, prompts, isN
     } catch (cause) {
       // The table is not applied yet: the tiles alone make the session (the group is read from them), without an order.
       if (!isMissingTable((cause as { cause?: unknown } | null)?.cause ?? cause)) throw cause;
+      // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.warn("[addSession] build_sessions is not applied; the session is in the draft by its tiles");
     }
 
@@ -342,10 +344,13 @@ async function writeSession({ buildId, sessionKey: importId, model, prompts, isN
       const [afterTree, afterMaking] = await Promise.all([getNodeTree(buildId), readMaking(buildId)]);
       const moves = planLayout(afterTree, afterMaking, sessionsMetaOf(afterMaking), grouped).moves;
       if (moves.length > 0) await reorderNodes(buildId, moves);
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     } else await patchMaking(buildId, (made) => ({ session_order: orderNow(made, rows) })).catch((cause) => console.warn("[addSession] order not kept in making", cause));
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => console.warn("[addSession] fold not kept in making", cause));
 
     await beforeStats?.();
+    // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
     await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
     return { buildId, sessionKey: importId, tiles: prompts.length, collapsed, replaced };
   } catch (cause) {
@@ -403,6 +408,7 @@ export async function fillMissingTiles(importId: string, buildId: string): Promi
   }
   const moves = planLayout(await getNodeTree(buildId), making, sessionsMetaOf(making), getSessionOrder(making, rows)).moves;
   if (moves.length > 0) await reorderNodes(buildId, moves);
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
   await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
   return missing.length;
 }
@@ -460,6 +466,7 @@ export async function addSessionCopy(buildId: string, copy: SessionCopy, workstr
     await deleteBuildSession(buildId, copy.key).catch(() => undefined);
     throw cause;
   }
+  // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
   await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
   return { buildId, sessionKey: copy.key, tiles: ids.length, collapsed: false, replaced: null };
 }
