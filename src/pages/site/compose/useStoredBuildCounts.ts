@@ -16,6 +16,7 @@ import type { BuildPatch } from "@/lib/build/types";
 import { isMissingColumn } from "@/lib/classify/storage";
 
 import { DERIVED_WRITE_MS } from "./useClassificationCard";
+import { reportError } from "@/lib/errors/report";
 
 let columnsMissing = false;
 
@@ -52,7 +53,7 @@ export function useStoredBuildCounts({ buildId, build, owner, counts }: UseStore
       updateBuild(buildId, patch as unknown as BuildPatch).catch((cause: unknown) => {
         if (isMissingColumn(cause)) columnsMissing = true;
         else sent.current = "";
-        console.warn("[counts] stored counts not written", { code: (cause as { code?: string })?.code });
+        reportError({ code: (cause as { code?: string })?.code }, { source: "console", context: "counts stored counts not written" });
       });
     };
     timer = window.setTimeout(write, DERIVED_WRITE_MS);

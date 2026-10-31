@@ -23,7 +23,7 @@
 
    Mounted by `ComposeRoute` only while SANDBOX_COMPOSER_ENABLED is on. */
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { flushSync } from "react-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -75,7 +75,7 @@ import { classificationLines } from "@/lib/classify/lines";
 import { allTiles, orderOf } from "@/lib/build/buildSelection";
 import { useComposePage } from "./ComposePage";
 import type { PreviewMaker } from "@/components/post/PostPreview";
-import { PostTab } from "./PostTab";
+import type { PostTab as PostTabImpl } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { useClassificationCard } from "./useClassificationCard";
 import { useStoredBuildCounts } from "./useStoredBuildCounts";
@@ -83,34 +83,35 @@ import { storedCountsOf } from "@/lib/build/buildCounts";
 import { BuildAnnouncer, noticeWords, useAnnounce } from "./BuildAnnouncer";
 import { AddMenu, SandboxView, type PanelState, type SandboxCounts, type SandboxMissingItem, type SandboxLens } from "./SandboxView";
 import type { PanelName } from "./PanelBoundary";
-import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
-import { AddResultDialog, type AddResultInput } from "./AddResultDialog";
-import { AddToolDialog, type AddToolInput } from "./AddToolDialog";
+import type { AddManualStepDialog as AddManualStepDialogImpl, AddManualStepInput } from "./AddManualStepDialog";
+import type { AddResultDialog as AddResultDialogImpl, AddResultInput } from "./AddResultDialog";
+import type { AddToolDialog as AddToolDialogImpl, AddToolInput } from "./AddToolDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
-import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
-import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
-import { AddDatasetDialog } from "./AddDatasetDialog";
-import { AddDecisionDialog } from "./AddDecisionDialog";
-import { AddRepoDialog } from "./AddRepoDialog";
-import { AddSystemPromptDialog } from "./AddSystemPromptDialog";
+import type { AddCheckDialog as AddCheckDialogImpl, AddCheckInput } from "./AddCheckDialog";
+import type { AddCodeDialog as AddCodeDialogImpl, AddCodeInput } from "./AddCodeDialog";
+import type { AddDatasetDialog as AddDatasetDialogImpl } from "./AddDatasetDialog";
+import type { AddDecisionDialog as AddDecisionDialogImpl } from "./AddDecisionDialog";
+import type { AddRepoDialog as AddRepoDialogImpl } from "./AddRepoDialog";
+import type { AddSystemPromptDialog as AddSystemPromptDialogImpl } from "./AddSystemPromptDialog";
 import type { DecisionInput } from "@/lib/build/graph";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { ADD_FLASH_MS, BuildList, partName, type AddAsAgentInput, type PendingAdd } from "./BuildList";
 import { useComposerScrollPadding } from "./composeChrome";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
-import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import type { FullPromptWindow as FullPromptWindowImpl } from "@/components/build/FullPromptWindow";
 import { attachFiles } from "./attachFiles";
 import { DetailsPanel, type DetailsHandlers } from "./DetailsPanel";
-import { TileEditDialog } from "./TileEditDialog";
+import type { TileEditDialog as TileEditDialogImpl } from "./TileEditDialog";
+import { opensEditDialog } from "./TileEditDialog";
 import { buildFactsOf, pieces, resolveView, type MediaFacts } from "./detailsView";
 import { sessionMapFor, type MapPieceLike } from "@/lib/build/sessionMap";
 import { centre, partElement } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { SessionMapColumn, NoMap } from "./SessionMap";
-import { SessionMapPanel } from "./SessionMapPanel";
+import type { SessionMapPanel as SessionMapPanelImpl } from "./SessionMapPanel";
 import { makerMapOf, type MapSettings } from "@/lib/build/making";
 import { suggestUses } from "@/lib/build/suggest";
-import { SourcesPanel } from "./SourcesPanel";
+import type { SourcesPanel as SourcesPanelImpl } from "./SourcesPanel";
 import { FIRST_SESSION_KEY, NO_APP, isChatExport, librarySources, repeatsOf, projectFileReminders, shortDate, sourceFiles, sourceSessions, unfinishedSources, type SourceSession } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { useOnScreen } from "@/hooks/useOnScreen";
@@ -122,8 +123,8 @@ import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { useWriteGuard } from "./useWriteGuard";
-import { LeaveWindow } from "./saveWindows";
-import { ClashWindow } from "./ClashWindow";
+import type { LeaveWindow as LeaveWindowImpl } from "./saveWindows";
+import type { ClashWindow as ClashWindowImpl } from "./ClashWindow";
 import { useTwoTabs, type ClashDescription } from "./useTwoTabs";
 import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
@@ -148,7 +149,8 @@ import { NOTICE_COPY } from "@/lib/build/referenceHistory";
 import { GroupLabelsProvider } from "./groupLabels";
 import { useReferenceActions } from "./useReferenceActions";
 import { DetailsReferencesProvider, type DetailsReferencesValue } from "./DetailsReferences";
-import { ReferenceWindows, showWords } from "./ReferenceWindows";
+import type { ReferenceWindows as ReferenceWindowsImpl } from "./ReferenceWindows";
+import { showWords } from "./showWords";
 import { useHistoryKeys } from "./useReferenceHistory";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
 import { allParts, PartWindow } from "@/components/build/PartWindow";
@@ -158,9 +160,11 @@ import { usePostLinks } from "./usePostLinks";
 import { useColourPicking } from "./useColourPicking";
 import { previewColours, previewWorkstreams, type ColourPreview } from "@/lib/build/colourPreview";
 import { sayFailed } from "./draftStart";
+import { lazyWindow, preloadComposerWindows } from "./lazyWindow";
 import { preloadAddFromLibrary } from "./addFromLibraryReads";
 import { sessionCopyOf, type LibraryPlace } from "@/lib/build/fromLibrary";
 import { touchSavedItems, type LibrarySavedItem } from "@/lib/library/savedItems";
+import { reportError } from "@/lib/errors/report";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -186,6 +190,32 @@ const PUBLISH_OFFLINE = "You're offline. Publish when you reconnect.";
 /** The later of two moments, either of which may be missing. */
 /** SV-07 P3: where a jump tab puts a session's head: this far below the sticky header. */
 const JUMP_GAP = 24;
+
+/** SV-26 P3: these windows load the first time they open, or at idle once the composer is ready (lazyWindow.tsx). */
+const AddManualStepDialog = lazyWindow<ComponentProps<typeof AddManualStepDialogImpl>>(() => import("./AddManualStepDialog").then((m) => ({ default: m.AddManualStepDialog })), (p) => p.open);
+const AddResultDialog = lazyWindow<ComponentProps<typeof AddResultDialogImpl>>(() => import("./AddResultDialog").then((m) => ({ default: m.AddResultDialog })), (p) => p.open);
+const AddToolDialog = lazyWindow<ComponentProps<typeof AddToolDialogImpl>>(() => import("./AddToolDialog").then((m) => ({ default: m.AddToolDialog })), (p) => p.open);
+const AddCheckDialog = lazyWindow<ComponentProps<typeof AddCheckDialogImpl>>(() => import("./AddCheckDialog").then((m) => ({ default: m.AddCheckDialog })), (p) => p.open);
+const AddCodeDialog = lazyWindow<ComponentProps<typeof AddCodeDialogImpl>>(() => import("./AddCodeDialog").then((m) => ({ default: m.AddCodeDialog })), (p) => p.open);
+const AddDatasetDialog = lazyWindow<ComponentProps<typeof AddDatasetDialogImpl>>(() => import("./AddDatasetDialog").then((m) => ({ default: m.AddDatasetDialog })), (p) => p.open);
+const AddDecisionDialog = lazyWindow<ComponentProps<typeof AddDecisionDialogImpl>>(() => import("./AddDecisionDialog").then((m) => ({ default: m.AddDecisionDialog })), (p) => p.open);
+const AddRepoDialog = lazyWindow<ComponentProps<typeof AddRepoDialogImpl>>(() => import("./AddRepoDialog").then((m) => ({ default: m.AddRepoDialog })), (p) => p.open);
+const AddSystemPromptDialog = lazyWindow<ComponentProps<typeof AddSystemPromptDialogImpl>>(() => import("./AddSystemPromptDialog").then((m) => ({ default: m.AddSystemPromptDialog })), (p) => p.open);
+const TileEditDialog = lazyWindow<ComponentProps<typeof TileEditDialogImpl>>(() => import("./TileEditDialog").then((m) => ({ default: m.TileEditDialog })), (p) => opensEditDialog(p.view));
+const FullPromptWindow = lazyWindow<ComponentProps<typeof FullPromptWindowImpl>>(() => import("@/components/build/FullPromptWindow").then((m) => ({ default: m.FullPromptWindow })), (p) => p.openId !== null);
+
+/** SV-26 P3: the Post tab, the Map's panel and Sources are panes that draw when their tab or window is on; same loading. */
+const PostTab = lazyWindow<ComponentProps<typeof PostTabImpl>>(() => import("./PostTab").then((m) => ({ default: m.PostTab })), () => true);
+const SessionMapPanel = lazyWindow<ComponentProps<typeof SessionMapPanelImpl>>(() => import("./SessionMapPanel").then((m) => ({ default: m.SessionMapPanel })), () => true);
+const SourcesPanel = lazyWindow<ComponentProps<typeof SourcesPanelImpl>>(() => import("./SourcesPanel").then((m) => ({ default: m.SourcesPanel })), () => true);
+
+const ReferenceWindows = lazyWindow<ComponentProps<typeof ReferenceWindowsImpl>>(
+  () => import("./ReferenceWindows").then((m) => ({ default: m.ReferenceWindows })),
+  (p) => Boolean(p.actions.groupWindow) || p.actions.coloursOpen,
+);
+
+const ClashWindow = lazyWindow<ComponentProps<typeof ClashWindowImpl>>(() => import("./ClashWindow").then((m) => ({ default: m.ClashWindow })), (p) => Boolean(p.view));
+const LeaveWindow = lazyWindow<ComponentProps<typeof LeaveWindowImpl>>(() => import("./saveWindows").then((m) => ({ default: m.LeaveWindow })), (p) => p.open);
 
 /** SV-18: the Add from Library window is its own chunk, fetched on hover or focus of Add › From Library and at idle. */
 const AddFromLibrary = lazy(() => import("./AddFromLibrary"));
@@ -256,7 +286,7 @@ function SandboxPageBody() {
       await compose.unpublish();
       return "done";
     } catch (cause) {
-      console.error("[Sandbox] unpublish failed", cause);
+      reportError(cause, { source: "console", context: "Sandbox unpublish failed" });
       const failure = unpublishFailure(cause);
       toast.error(failure === "failed" ? "Build not unpublished" : `Build not unpublished: ${shortReason(cause)}`);
       return failure;
@@ -867,7 +897,7 @@ function SandboxPageBody() {
         }
       } else await insertSession({ kind: "empty" }, workstream);
     } catch (cause) {
-      console.error("[Sandbox] session not made", cause);
+      reportError(cause, { source: "console", context: "Sandbox session not made" });
       sayFailed(cause, "Session not made", () => void again(workstream));
     } finally {
       setStartingSession(false);
@@ -891,7 +921,7 @@ function SandboxPageBody() {
       void setCollapsed(buildId, key, closed)
         .then(() => Promise.all([queryClient.invalidateQueries({ queryKey: buildSessionRowsKey(buildId) }), queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) })]))
         .catch((cause) => {
-          console.error("[Sandbox] collapse not saved", cause);
+          reportError(cause, { source: "console", context: "Sandbox collapse not saved" });
           setCollapseOverride((previous) => ({ ...previous, [key]: !closed }));
           sayFailed(cause, "Fold not saved", () => again(key, closed));
         });
@@ -929,7 +959,7 @@ function SandboxPageBody() {
         await setSessionMeta(id, key, (stored) => ({ ...(stored ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() }), ...change }));
         await refreshRecord(id);
       } catch (cause) {
-        console.error("[Sandbox] session not saved", cause);
+        reportError(cause, { source: "console", context: "Sandbox session not saved" });
         sayFailed(cause, "Session not saved", () => void again(key, change));
       }
     },
@@ -959,7 +989,7 @@ function SandboxPageBody() {
         });
         await refreshRecord(id);
       } catch (cause) {
-        console.error("[Sandbox] goal not saved", cause);
+        reportError(cause, { source: "console", context: "Sandbox goal not saved" });
         sayFailed(cause, "Goal not saved", () => void again(key, goal));
       }
     },
@@ -984,7 +1014,7 @@ function SandboxPageBody() {
         await setSessionMeta(id, key, (stored) => withExtras(stored ?? fallbackMeta(group, key), extras));
         await refreshRecord(id);
       } catch (cause) {
-        console.error("[Sandbox] session facts not saved", cause);
+        reportError(cause, { source: "console", context: "Sandbox session facts not saved" });
         sayFailed(cause, "Session details not saved", () => void again(key, extras));
       }
     },
@@ -1009,7 +1039,7 @@ function SandboxPageBody() {
         }
         await refreshRecord(id);
       } catch (cause) {
-        console.error("[Sandbox] sessions at the same time not saved", cause);
+        reportError(cause, { source: "console", context: "Sandbox sessions at the same time not saved" });
         sayFailed(cause, "Ran alongside not saved", () => void again(key, next));
       }
     },
@@ -1031,7 +1061,7 @@ function SandboxPageBody() {
         );
         await refreshRecord(id);
       } catch (cause) {
-        console.error("[Sandbox] session colour not saved", cause);
+        reportError(cause, { source: "console", context: "Sandbox session colour not saved" });
         sayFailed(cause, "Colour not saved", () => void again(key, colour));
       }
     },
@@ -1048,7 +1078,7 @@ function SandboxPageBody() {
         await setSessionMeta(id, real, (stored) => ({ ...(stored ?? { tool: null, date: todayDay() }), tool }));
         await refreshRecord(id);
       } catch (cause) {
-        console.error("[Sandbox] app not saved", cause);
+        reportError(cause, { source: "console", context: "Sandbox app not saved" });
         sayFailed(cause, "App not saved", () => void again(key, tool));
       }
     },
@@ -1186,7 +1216,7 @@ function SandboxPageBody() {
         await refreshRecord(id);
       });
     } catch (cause) {
-      console.error("[Sandbox] reference groups not saved", cause);
+      reportError(cause, { source: "console", context: "Sandbox reference groups not saved" });
       sayFailed(cause, "Colours not saved", () => void again(list, order));
     }
   };
@@ -1339,7 +1369,7 @@ function SandboxPageBody() {
         setSelectedId(id);
         afterWrite();
       } catch (cause) {
-        console.error("[Sandbox] check not added", cause);
+        reportError(cause, { source: "console", context: "Sandbox check not added" });
         sayFailed(cause, "Check not added");
       }
     },
@@ -1415,7 +1445,10 @@ function SandboxPageBody() {
     if (!user?.id) return;
     const schedule = window.requestIdleCallback ?? ((run: () => void) => window.setTimeout(run, 1500));
     const cancel = window.cancelIdleCallback ?? window.clearTimeout;
-    const handle = schedule(() => preloadAddFromLibrary(queryClient, user.id));
+    const handle = schedule(() => {
+      preloadAddFromLibrary(queryClient, user.id);
+      preloadComposerWindows();
+    });
     return () => cancel(handle as number);
   }, [queryClient, user?.id]);
   const onInsertFromLibrary = useCallback(
@@ -1447,7 +1480,7 @@ function SandboxPageBody() {
         void queryClient.invalidateQueries({ queryKey: ["library", "savedItemsUsedIn"] });
         void queryClient.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
       } catch (cause) {
-        console.error("[Compose] not added from Library", cause);
+        reportError(cause, { source: "console", context: "Compose not added from Library" });
         sayFailed(cause, "Not added from Library", () => void onInsertFromLibrary(items, place));
       }
     },
@@ -1528,7 +1561,7 @@ function SandboxPageBody() {
           setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
         }
       } catch (cause) {
-        console.error("[Sandbox] result not added", cause);
+        reportError(cause, { source: "console", context: "Sandbox result not added" });
         sayFailed(cause, "Result not added", () => void again(input));
       } finally {
         setPendingAdd(null);
@@ -1663,7 +1696,7 @@ function SandboxPageBody() {
           window.open(payload.url, "_blank", "noopener");
         }
       } catch (cause) {
-        console.error("[Sandbox] download failed", cause);
+        reportError(cause, { source: "console", context: "Sandbox download failed" });
         sayFailed(cause, "File not downloaded", () => void again(nodeId));
       }
     },
@@ -1681,7 +1714,7 @@ function SandboxPageBody() {
         const media = await nodes.run(() => uploadMedia({ buildId: id, file }));
         prompts.setFields(resultId, { media_id: media.id });
       } catch (cause) {
-        console.error("[Sandbox] picture not added", cause);
+        reportError(cause, { source: "console", context: "Sandbox picture not added" });
         sayFailed(cause, `${file.name} not added`, () => void again(resultId, file));
       }
     },
@@ -1697,7 +1730,7 @@ function SandboxPageBody() {
         const blob = await response.blob();
         viewProps.onFiles([new File([blob], media.filename ?? "cover", { type: media.mime ?? blob.type })]);
       } catch (cause) {
-        console.error("[Sandbox] cover not set", cause);
+        reportError(cause, { source: "console", context: "Sandbox cover not set" });
         sayFailed(cause, "Cover not set", () => void again(mediaId));
       }
     },
@@ -1718,7 +1751,7 @@ function SandboxPageBody() {
       try {
         await insertSession({ kind: "import", importId, head, count: item?.promptCount ?? 0 }, workstream);
       } catch (cause) {
-        console.error("[Sandbox] session not added", cause);
+        reportError(cause, { source: "console", context: "Sandbox session not added" });
         sayFailed(cause, "Session not added", () => void again(importId, workstream));
       } finally {
         setAdding((previous) => {
@@ -1744,7 +1777,7 @@ function SandboxPageBody() {
         ]);
         setSessionSaid(`Imported ${written} ${written === 1 ? "prompt" : "prompts"}.`);
       } catch (cause) {
-        console.error("[Sandbox] prompts not imported", cause);
+        reportError(cause, { source: "console", context: "Sandbox prompts not imported" });
         sayFailed(cause, "Prompts not imported", () => void again(key));
       }
     },
@@ -1776,7 +1809,7 @@ function SandboxPageBody() {
         await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
         return added.node;
       } catch (cause) {
-        console.error("[Sandbox] file not added", cause);
+        reportError(cause, { source: "console", context: "Sandbox file not added" });
         sayFailed(cause, `${file.name} not ${verb === "attach" ? "attached" : "added"}`, () => void again(file, verb, parentId, rows, tile));
         return null;
       }
@@ -1923,7 +1956,7 @@ function SandboxPageBody() {
         });
         await refreshRecord(id);
       } catch (cause) {
-        console.error("[Sandbox] setup not added", cause);
+        reportError(cause, { source: "console", context: "Sandbox setup not added" });
         sayFailed(cause, "Setup item not added");
       }
       return left;
@@ -1949,7 +1982,7 @@ function SandboxPageBody() {
           nodes.record(id, await setNotShared(row, true));
         })
         .catch((cause) => {
-          console.error("[Sandbox] not marked", cause);
+          reportError(cause, { source: "console", context: "Sandbox not marked" });
           sayFailed(cause, "Item not kept private", () => again(id));
         });
     },
@@ -1988,7 +2021,7 @@ function SandboxPageBody() {
           const { cost: _c, currency: _u, tokens: _t, cached: _k, ...kept } = group?.extras ?? {};
           await onSessionExtras(key, { ...kept, ...(cost !== undefined ? { cost, currency: "USD" as const } : null), ...(tokens ? { tokens } : null), ...(cached ? { cached } : null) });
         } catch (cause) {
-          console.error("[Sandbox] result file not read", cause);
+          reportError(cause, { source: "console", context: "Sandbox result file not read" });
           rest.push(file);
         }
       }

@@ -119,6 +119,7 @@ import type { ModelRun } from "@/lib/build/modelRun";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { showMadeWithIn } from "./useComposeSessions";
 import { sayFailed } from "./draftStart";
+import { reportError } from "@/lib/errors/report";
 
 /** The key a prompt written on this page carries until it is saved. */
 const LOCAL = "local-";
@@ -151,7 +152,7 @@ const capital = (word: string): string => `${word.slice(0, 1).toUpperCase()}${wo
 
 /** Log a failed write with its cause, and say so in one line; `retry`, when there is one, is the toast's Retry. */
 const failed = (line: string, retry?: () => void) => (cause: unknown) => {
-  console.error("[Compose] prompt write failed", cause);
+  reportError(cause, { source: "console", context: "Compose prompt write failed" });
   sayFailed(cause, line, retry);
 };
 
@@ -382,7 +383,7 @@ export function useComposePrompts({
     if (!build || !value) return;
     addMadeWithTools(build, [toolName(value) ?? value]).then(
       (state) => showMadeWithIn(queryClient, build, state),
-      (cause) => console.warn("[Compose] Made with not updated", { code: errorCode(cause), buildId: build }),
+      (cause) => reportError({ code: errorCode(cause), buildId: build }, { source: "console", context: "Compose Made with not updated" }),
     );
   };
 

@@ -9,6 +9,7 @@ import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
 import { groupTo } from "@/lib/build/referenceGroups";
 import { NOTICE_COPY } from "@/lib/build/referenceHistory";
 
+import { showWords } from "./showWords";
 import { ColoursWindow } from "./ColoursWindow";
 import { ReferenceGroupWindow } from "./ReferenceGroupWindow";
 import type { useReferenceActions } from "./useReferenceActions";
@@ -23,16 +24,7 @@ export interface ReferenceWindowsProps {
   phone: boolean;
 }
 
-/** The words a link is made of, in the post: to the middle, focused, outlined. */
-export function showWords(to: string) {
-  window.setTimeout(() => {
-    const el = document.querySelector<HTMLElement>(`[data-ref="${CSS.escape(to)}"]`);
-    if (!el) return;
-    centre(el);
-    el.focus({ preventScroll: true });
-    flashOutline(el);
-  }, 0);
-}
+export { showWords };
 
 export function ReferenceWindows({ references, actions, refGroups, lookup, phone }: ReferenceWindowsProps) {
   const [swatches, setSwatches] = useColourSwatches();

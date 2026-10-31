@@ -50,6 +50,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import type { ComposeThread } from "./useComposeThread";
+import { reportError } from "@/lib/errors/report";
 
 export interface PostTabProps {
   thread: ComposeThread;
@@ -283,7 +284,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
       .then((rows) => {
         if (!stale) host.store.addRows(rows);
       })
-      .catch((cause) => console.error("[Compose] thread media did not load", cause));
+      .catch((cause) => reportError(cause, { source: "console", context: "Compose thread media did not load" }));
     return () => {
       stale = true;
     };

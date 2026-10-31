@@ -60,6 +60,7 @@ import { useComposePrompts } from "./useComposePrompts";
 import { useComposeSessions } from "./useComposeSessions";
 import { DraftNotStartedError } from "./draftStart";
 import { errorLine } from "@/lib/errors/code";
+import { reportError } from "@/lib/errors/report";
 
 const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", buildId] as const;
 
@@ -130,7 +131,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         .then(async (created) => {
           // Every post has at least one session. It is not worth a failed draft if this one cannot be written.
           firstSession.current = await seedFirstSession(created.id).catch((cause: unknown) => {
-            console.error(errorLine("[Compose] Session 1 not made", cause));
+            reportError(errorLine("[Compose] Session 1 not made", cause), { source: "console", context: "ComposePage" });
             return null;
           });
           hydratedFor.current = created.id;
@@ -141,7 +142,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         })
         .catch((cause: unknown) => {
           creating.current = null;
-          console.error(errorLine("[Compose] createBuild failed", cause));
+          reportError(errorLine("[Compose] createBuild failed", cause), { source: "console", context: "ComposePage" });
           toast.error("Draft not started");
           // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
           throw new DraftNotStartedError(cause);
@@ -225,7 +226,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       queryClient.setQueryData(coverKey(id), media);
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
     } catch (cause) {
-      console.error("[Compose] cover failed", cause);
+      reportError(cause, { source: "console", context: "Compose cover failed" });
       setMediaError("Cover not added");
     } finally {
       setAdding(null);
@@ -239,7 +240,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       queryClient.setQueryData(coverKey(buildId), null);
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) });
     } catch (cause) {
-      console.error("[Compose] cover removal failed", cause);
+      reportError(cause, { source: "console", context: "Compose cover removal failed" });
       setMediaError("Cover not removed");
     }
   };
@@ -307,11 +308,11 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
       try {
         await refreshMakingStats(row.id);
       } catch (cause) {
-        console.warn("[Compose] making stats not refreshed", cause);
+        reportError(cause, { source: "console", context: "Compose making stats not refreshed" });
       }
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(row.id) });
     } catch (cause) {
-      console.error("[Compose] publish failed", cause);
+      reportError(cause, { source: "console", context: "Compose publish failed" });
       toast.error("Build not published", { action: { label: "Retry", onClick: () => void onPublish() } });
     }
   };

@@ -29,6 +29,7 @@ import { outlineOnce } from "./buildMotion";
 import type { BuildHistoryApi } from "./useBuildHistory";
 import type { ComposeNodes } from "./useComposeNodes";
 import type { ComposeThread } from "./useComposeThread";
+import { reportError } from "@/lib/errors/report";
 
 /** The slide ids (`data-slide-id`) of what differs between two reads of a build: tiles whose contents changed or are new, and sessions whose entry changed. */
 export function changedSlides(before: BuildRecord, after: BuildRecord): string[] {
@@ -218,7 +219,7 @@ export function useTwoTabs(input: TwoTabsInput): TwoTabs {
         });
         setQueue((entries) => entries.filter((entry) => entry.id !== item.id));
       } catch (cause) {
-        console.error("[Compose] a clash could not be settled", cause);
+        reportError(cause, { source: "console", context: "Compose a clash could not be settled" });
       } finally {
         setBusy(false);
       }

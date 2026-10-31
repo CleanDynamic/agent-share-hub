@@ -46,6 +46,7 @@ import { NOT_AVAILABLE, type ReferenceBridge } from "@/lib/build/referenceBridge
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import { NO_APP } from "./sourcesModel";
+import { reportError } from "@/lib/errors/report";
 
 export interface SessionEditsInput {
   buildId: string | undefined;
@@ -154,7 +155,7 @@ export function useSessionEdits(input: SessionEditsInput) {
       try {
         await task();
       } catch (cause) {
-        console.error("[Sessions]", line, cause);
+        reportError(cause, { source: "console", context: "Sessions" });
         sayFailed(cause, line, () => void again(line, task));
       }
     },
@@ -732,7 +733,7 @@ export function useSessionEdits(input: SessionEditsInput) {
         }
         await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) });
       })
-      .catch((cause) => console.warn("[Sessions] a new tile was not put with its session", cause));
+      .catch((cause) => reportError(cause, { source: "console", context: "Sessions a new tile was not put with its session" }));
   }, [topCount, editableKeys, queryClient]);
 
   return { onTitle, onSessionOpen, onPartOpen, onMove, onDrop, onRemoveSessions, onMoveTiles, onMoveSessionsToPart, onMergeUp, onSplitHere, onMoveTile, arm, onAddPart, onPartName, onPartFold, onPartColour, onPartStartsAfter, onPartMove, onDropPart, onPartRemove, onMoveToPart, onDropOnPart: onMoveToPart, onWithAbove, onLabels, onMapSettings };

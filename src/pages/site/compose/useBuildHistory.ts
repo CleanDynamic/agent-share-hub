@@ -28,6 +28,7 @@ import type { MotionChannel, MotionKind } from "./listMotion";
 import { sayFailed } from "./draftStart";
 import type { ComposeNodes } from "./useComposeNodes";
 import { buildSessionRowsKey } from "./useComposeSessions";
+import { reportError } from "@/lib/errors/report";
 
 export interface BuildNotice {
   sentence: string;
@@ -274,7 +275,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { b
         try {
           await step.undo();
         } catch (cause) {
-          console.error("[History] undo failed", cause);
+          reportError(cause, { source: "console", context: "History undo failed" });
           sayFailed(cause, HISTORY_COPY.undoFailed);
           return;
         }
@@ -294,7 +295,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { b
         try {
           await step.redo();
         } catch (cause) {
-          console.error("[History] redo failed", cause);
+          reportError(cause, { source: "console", context: "History redo failed" });
           sayFailed(cause, HISTORY_COPY.redoFailed);
           return;
         }
@@ -340,7 +341,7 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { b
         removedList.current = removedList.current.filter((candidate) => candidate.id !== id);
         redraw((n) => n + 1);
       } catch (cause) {
-        console.error("[History] restore failed", cause);
+        reportError(cause, { source: "console", context: "History restore failed" });
         sayFailed(cause, REMOVED_COPY.cannot);
       }
     },

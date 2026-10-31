@@ -32,6 +32,7 @@ import { canSucceedLater, errorLine } from "@/lib/errors/code";
 import { pendingWrites } from "@/lib/build/pendingWrites";
 
 import { saveState, type SaveState } from "./composeModel";
+import { reportError } from "@/lib/errors/report";
 
 /** Marks a thread that was opened before its build existed. */
 const NEW = "new";
@@ -212,7 +213,7 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
             void flush();
           }, delay);
         } else {
-          console.error(errorLine("[Compose] thread save failed", cause));
+          reportError(errorLine("[Compose] thread save failed", cause), { source: "console", context: "useComposeThread" });
           stoppedRef.current = true;
           setSaveError(cause instanceof Error ? cause : new Error(String(cause)));
         }

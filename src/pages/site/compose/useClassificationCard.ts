@@ -22,6 +22,7 @@ import { getClassification, writeClassification, type StoredClassification } fro
 import { TAXONOMY_VERSION } from "@/lib/classify/taxonomy";
 
 import { applyDraft, type ClassificationCardData, type ClassificationDraft, type ClassificationSaved } from "./classificationCardModel";
+import { reportError } from "@/lib/errors/report";
 
 /** How long the composer waits after the tiles stop changing before it writes the derived values. */
 export const DERIVED_WRITE_MS = 1500;
@@ -95,7 +96,7 @@ export function useClassificationCard({ buildId, build, tree, title, description
           const result = await writeClassification(buildId, next);
           if (result.written) queryClient.setQueryData<StoredClassification>(classificationKey(buildId), { live: true, classification: next, facets: computeFacets(next) });
         } catch (cause) {
-          console.warn("[classification] derived values not written", { code: (cause as { code?: string })?.code });
+          reportError({ code: (cause as { code?: string })?.code }, { source: "console", context: "classification derived values not written" });
         }
       });
     }, DERIVED_WRITE_MS);

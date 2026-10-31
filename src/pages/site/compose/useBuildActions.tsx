@@ -41,6 +41,7 @@ import { SessionRemoveWindow, type SessionRemoval } from "./removePieces";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import type { BuildHistoryApi } from "./useBuildHistory";
 import type { ComposeNodes } from "./useComposeNodes";
+import { reportError } from "@/lib/errors/report";
 
 /** What the page hands the actions. */
 export interface BuildActionsInput {
@@ -156,7 +157,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           },
           { notice: true, removed, keys: tops.map((step) => step.id) },
         )
-        .catch((cause) => console.error("[Compose] tiles not removed", cause));
+        .catch((cause) => reportError(cause, { source: "console", context: "Compose tiles not removed" }));
     },
     [steps, nodes, history, bridge],
   );
@@ -182,7 +183,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
           },
           { notice: true, removed, keys: [fileId] },
         )
-        .catch((cause) => console.error("[Compose] file not removed", cause));
+        .catch((cause) => reportError(cause, { source: "console", context: "Compose file not removed" }));
     },
     [nodes, history, bridge],
   );
@@ -236,7 +237,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       const sentence = picked.length === 1 ? DUPLICATE_COPY.one(tileName(picked[0])) : DUPLICATE_COPY.several(picked.length);
       void history
         .track(sentence, () => restoreSnapshot(buildId, nodes, (current) => duplicateTiles(current, picked.map((step) => step.id), () => crypto.randomUUID()).snapshot), { notice: true, motion: "duplicate" })
-        .catch((cause) => console.error("[Compose] not duplicated", cause));
+        .catch((cause) => reportError(cause, { source: "console", context: "Compose not duplicated" }));
     },
     [buildId, steps, nodes, history],
   );
@@ -287,7 +288,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
             }),
           { notice: true, motion: "convert", keys: [id] },
         )
-        .catch((cause) => console.error("[Compose] not converted", cause));
+        .catch((cause) => reportError(cause, { source: "console", context: "Compose not converted" }));
     },
     [buildId, nodes, history],
   );
@@ -369,7 +370,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
         },
         { notice: true, removed },
       )
-      .catch((cause) => console.error("[Compose] build not cleared", cause));
+      .catch((cause) => reportError(cause, { source: "console", context: "Compose build not cleared" }));
   }, [buildId, history, nodes, groups, made, bridge, onCleared, queryClient, clearCounts]);
 
   const actions = useMemo<BuildActions>(

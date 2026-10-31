@@ -44,6 +44,7 @@ import { trackWrite } from "@/lib/build/pendingWrites";
 
 import type { MadeWithChip } from "./composeModel";
 import { sayFailed } from "./draftStart";
+import { reportError } from "@/lib/errors/report";
 
 const STALE_MS = 30_000;
 const NO_SESSIONS: SessionSummary[] = [];
@@ -216,7 +217,7 @@ export function useComposeSessions({
       const state = kind === "model" ? await setMadeWithModel(id, name, on) : await setMadeWithEntry(id, name, on);
       return { id, state, value: undefined };
     }).catch((cause) => {
-      console.error("[Compose] Made with not changed", cause);
+      reportError(cause, { source: "console", context: "Compose Made with not changed" });
       sayFailed(cause, "Made with not changed", () => toggleMadeWith(chip, on));
       void settleMadeWith(id);
     });
@@ -228,7 +229,7 @@ export function useComposeSessions({
       const state = await setMadeWithEntry(id, name, true);
       return { id, state, value: undefined };
     }).catch((cause) => {
-      console.error("[Compose] Made with entry not added", cause);
+      reportError(cause, { source: "console", context: "Compose Made with entry not added" });
       sayFailed(cause, "Made with not added", () => addMadeWith(name));
     });
   };
@@ -264,7 +265,7 @@ export function useComposeSessions({
       const state = await getMadeWith(id).catch(() => null);
       return { id, state, value: undefined };
     })
-      .catch((cause) => console.error("[Compose] session not put into this build", cause))
+      .catch((cause) => reportError(cause, { source: "console", context: "Compose session not put into this build" }))
       .finally(() =>
         refreshLists()
           .catch(() => undefined)
@@ -280,7 +281,7 @@ export function useComposeSessions({
       return { id: id ?? "", state, value: true };
     })
       .catch((cause) => {
-        console.error("[Compose] setSessionModel failed", cause);
+        reportError(cause, { source: "console", context: "Compose setSessionModel failed" });
         sayFailed(cause, "Model not saved", () => void setModel(sessionId, model));
         return false;
       })
@@ -298,7 +299,7 @@ export function useComposeSessions({
       return { id, state, value: true };
     })
       .catch((cause) => {
-        console.error("[Compose] setSessionTool failed", cause);
+        reportError(cause, { source: "console", context: "Compose setSessionTool failed" });
         sayFailed(cause, "Tool not saved", () => void setTool(sessionId, tool));
         return false;
       })
