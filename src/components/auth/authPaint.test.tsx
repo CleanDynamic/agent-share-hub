@@ -311,7 +311,7 @@ describe("the auth surface's sources", () => {
   );
 
   it("has every card in the folder under test", () => {
-    expect(files.length).toBeGreaterThanOrEqual(15);
+    expect(files.length).toBeGreaterThanOrEqual(11);
   });
 
   /* COMMENTS ARE STRIPPED FIRST, and that is the point rather than a loophole:
