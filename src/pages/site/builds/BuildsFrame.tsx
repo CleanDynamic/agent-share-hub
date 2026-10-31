@@ -192,7 +192,8 @@ export function ClassificationHead({ figure, switcher }: { figure: string; switc
     menu's trigger can be one. */
 export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(function BuildsControl({ children, ...rest }, ref) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  /* A menu's trigger hands this its own pointer and focus handlers: they are chained, not replaced (a Radix menu opens on pointer down). */
+  const { state, handlers } = useInteractive<HTMLButtonElement>(rest);
   return (
     <button
       ref={ref}
@@ -223,13 +224,16 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
   );
 });
 
-/** A text button: "Clear all", "Save current", "Add a calculation". */
-export function BuildsTextButton({ onClick, children, size = 12, color = t.label, ...rest }: { onClick?: () => void; children: ReactNode; size?: 11.5 | 12 | 12.5; color?: string; "aria-pressed"?: boolean; "aria-label"?: string }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+/** A text button: "Clear all", "Save current", "Add a calculation". Takes a ref and a button's props, so a menu's trigger can be one. */
+export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & { size?: 11.5 | 12 | 12.5; color?: string }>(function BuildsTextButton(
+  { children, size = 12, color = t.label, ...rest },
+  ref,
+) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>(rest);
   return (
     <button
+      ref={ref}
       type="button"
-      onClick={onClick}
       {...rest}
       {...handlers}
       style={{
@@ -248,7 +252,7 @@ export function BuildsTextButton({ onClick, children, size = 12, color = t.label
       {children}
     </button>
   );
-}
+});
 
 /* ── loading ── */
 

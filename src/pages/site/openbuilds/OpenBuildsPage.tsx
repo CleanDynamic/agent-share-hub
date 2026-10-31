@@ -28,7 +28,11 @@
    REVIEWS AND THE WEEK'S GOAL (SV-22): Reviews reads `listReviews` (published builds their maker holds out of Builds); the goal is
    `getWeekGoal`, one more request of round 1, drawn in the contributors' tile once a goal is set.
 
-   NOT LIVE YET (drawn on the dev page only): Builds contributed to (SV-16); Groups (SV-24); a request's failed runs and comments. */
+   GROUPS (SV-24): the public filter sets, the reader's own first and then by members (`listGroups`, one request of round 1; a Group is
+   a public filter set with members, not a guild). A row opens Builds with that set's filters. The section is drawn once there is a
+   group to show, and the page waits for the read so it does not appear after the rest.
+
+   NOT LIVE YET (drawn on the dev page only): Builds contributed to (SV-16); a request's failed runs and comments. */
 
 import { Suspense, lazy, useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -41,6 +45,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { listBriefs } from "@/lib/bounty/briefs";
 import { getReleaseCheck, listModelTests } from "@/lib/bounty/modelChecks";
 import { getWeekGoal, listReviews } from "@/lib/bounty/reviews";
+import { filterSetHref, listGroups } from "@/lib/build/filterSets";
 import { getMyRecord, listMyClaims, listMyOpenRequests, listStepRequests, listTopSolvers, toggleMeToo, type StepRequestsPage } from "@/lib/bounty";
 import { reportError } from "@/lib/errors/report";
 import { usePageReady } from "@/lib/routing/pageReady";
@@ -154,10 +159,11 @@ export default function OpenBuildsPage() {
   // The release check is one request, started with the rest of round 1; the page waits for it so the figure above the requests does not push them down when it arrives.
   const release = useQuery({ queryKey: releaseCheckKey, queryFn: getReleaseCheck });
   const week = useQuery({ queryKey: weekGoalKey, queryFn: () => getWeekGoal() });
+  const groups = useQuery({ queryKey: ["build", "listGroups"], queryFn: () => listGroups() });
   const contributors = useQuery({ queryKey: contributorsKey, queryFn: () => listTopSolvers({ limit: CONTRIBUTORS_SHOWN, sinceDays: CONTRIBUTORS_DAYS }) });
 
   // The page shows its placeholder only while neither list has ever arrived: moving between tabs keeps what is drawn until the new tab's arrives.
-  const arriving = (requests.isPending && briefs.isPending && modelTests.isPending && reviews.isPending) || release.isPending || week.isPending;
+  const arriving = (requests.isPending && briefs.isPending && modelTests.isPending && reviews.isPending) || release.isPending || week.isPending || groups.isPending;
   useReported(requests.error, "openbuilds-requests");
   useReported(briefs.error, "openbuilds-briefs");
   useReported(modelTests.error, "openbuilds-model-tests");
@@ -168,6 +174,7 @@ export default function OpenBuildsPage() {
   useReported(claims.error, "openbuilds-claims");
   useReported(record.error, "openbuilds-record");
   useReported(contributors.error, "openbuilds-contributors");
+  useReported(groups.error, "openbuilds-groups");
   usePageReady("openbuilds", !arriving);
 
   /* ── me too: shown at once, put back if refused ── */
@@ -373,6 +380,22 @@ export default function OpenBuildsPage() {
                     { label: "Answers accepted", value: String(record.data?.accepted ?? 0) },
                     ...(record.data?.contributed === undefined ? [] : [{ label: "Builds contributed to", value: String(record.data.contributed) }]),
                   ],
+                }
+              : undefined
+          }
+          groups={
+            groups.isError || (groups.data?.length ?? 0) > 0
+              ? {
+                  status: statusOf(groups),
+                  onRetry: () => void groups.refetch(),
+                  meta: "Public filter sets, by members",
+                  to: "/builds",
+                  rows: (groups.data ?? []).map((group) => ({
+                    id: group.id,
+                    label: group.name,
+                    detail: `${group.members} ${group.members === 1 ? "member" : "members"}${group.mine ? " · yours" : group.member ? " · joined" : ""}`,
+                    to: filterSetHref(group),
+                  })),
                 }
               : undefined
           }
