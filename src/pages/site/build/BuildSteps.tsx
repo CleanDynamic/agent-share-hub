@@ -44,6 +44,7 @@ import { PartWindow } from "@/components/build/PartWindow";
 import { drawBranches } from "@/components/build/BranchRows";
 import { LinkLines } from "@/components/build/LinkLines";
 import { HelperChips, ShapeChip, TraceLink } from "@/components/build/RuntimeChips";
+import { SaveMark, UsedInLine } from "@/components/build/ConnectionMarks";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
@@ -682,6 +683,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
         </span>
       ) : null}
       {chat.key ? <MemberLabel to={refTo({ kind: "session", id: chat.key })} /> : null}
+      {chat.key ? <SaveMark kind="session" id={chat.key} /> : null}
       {chat.date ? <span style={{ ...text(13, 400, t.label), whiteSpace: "nowrap" }}>{chat.date}</span> : null}
     </div>
   );
@@ -824,7 +826,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
        count or the word for one. */
     return (
       <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
-        <Title entry={entry} right={null} />
+        <Title entry={entry} right={<SaveMark kind="step" id={step.id} />} />
         <TypeLine step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
         <CheckCasesBody cases={step.check.caseList} indent={INDENT} />
@@ -849,6 +851,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <TypeLine step={step} indent={INDENT} />
         <DecisionTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
+        <UsedInLine id={step.id} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
@@ -891,7 +894,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-kind={step.kind}
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
-        <Title entry={entry} right={step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null} />
+        <Title entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
         <TypeLine step={step} indent={INDENT} />
         {step.kind === "system_prompt" ? <SystemPromptTileBody step={step} indent={INDENT} full /> : step.kind === "dataset" ? <DatasetTileBody step={step} indent={INDENT} /> : <RepoTileBody step={step} indent={INDENT} />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
@@ -927,12 +930,13 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
 
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
-      <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
+      <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
       <TypeLine step={step} indent={INDENT} />
       {step.kind === "code" ? <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} /> : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
+      <UsedInLine id={step.id} indent={INDENT} />
       {step.kind === "code" ? <LinkLines lines={[...callsOf(step.id, view.steps.map((candidate) => candidate.step)), ...definesOf(step.id, view.steps.map((candidate) => candidate.step))]} onOpen={ctx.go} indent={INDENT} /> : null}
       <SaveLines files={entry.makes} />
       <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
@@ -1030,6 +1034,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <h3 style={{ ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0, letterSpacing: "-0.005em" }}>{entry.title}</h3>
         <span style={{ flexGrow: 1 }} />
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
+        <SaveMark kind="step" id={step.id} />
       </div>
       <TypeLine step={step} indent={INDENT} />
       {line ? <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div> : null}
@@ -1037,6 +1042,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       {step.helpers?.length ? <HelperChips helpers={step.helpers} indent={INDENT} decisionName={(id) => ctx.view.steps.map((candidate) => candidate.step).find((candidate) => candidate.id === id)?.title ?? undefined} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="reader" groups={ctx.view.groups ?? []} indent={INDENT} />
+      <UsedInLine id={step.id} indent={INDENT} />
       {step.traceUrl ? <span style={{ paddingLeft: INDENT }}><TraceLink url={step.traceUrl} /></span> : null}
       <OutsideWarning names={entry.outside} style={{ marginLeft: INDENT }} />
       <SaveLines files={entry.makes} />

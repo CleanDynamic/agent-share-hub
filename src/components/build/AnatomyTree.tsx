@@ -14,6 +14,7 @@ import { t } from "@/lib/theme/tokens";
 import { body as bodyType, measure } from "@/lib/theme/type";
 import { feedback } from "@/lib/theme/motion";
 import { PartCommentMarker } from "@/components/social/PartCommentMarker";
+import { SaveMark } from "./ConnectionMarks";
 
 /**
  * RC-P17 — each part's comment count, and what "Comment on this part" does.
@@ -150,6 +151,8 @@ function TreeNode({
             onPress={() => partComments.onComment(node.id)}
           />
         ) : null}
+        {/* SV-25: Save, beside Comment. A part with parts inside is a part; one without is a tile. */}
+        <SaveMark kind={hasChildren ? "part" : "step"} id={node.id} />
       </div>
 
       {hasChildren && open ? (

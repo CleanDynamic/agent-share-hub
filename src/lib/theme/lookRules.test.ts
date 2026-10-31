@@ -1189,6 +1189,15 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/builds/useBuildsLayout.ts",
   "src/pages/site/builds/useBuildsLayout.test.tsx",
   "src/pages/site/builds/buildsModel.layout.test.ts",
+
+  // SV-25
+  "src/components/build/BuildConnections.tsx",
+  "src/components/build/ConnectionMarks.tsx",
+  "src/components/build/ConnectionMarks.test.tsx",
+  "src/components/build/AnatomyTree.tsx",
+  "src/lib/build/connections.ts",
+  "src/pages/site/build/BuildPage.tsx",
+  "src/pages/site/build/BuildSteps.tsx",
 ];
 
 /**
