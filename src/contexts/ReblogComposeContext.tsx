@@ -1,5 +1,4 @@
 import { Suspense, createContext, lazy, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLoadAtIdle } from "@/lib/routing/lazyHost";
 
@@ -55,7 +54,8 @@ export function ReblogComposeProvider({ children }: { children: ReactNode }) {
   const openReblog = useCallback(
     (post: ReblogTargetInput) => {
       if (!isLoggedIn) {
-        toast.error("Sign in to reblog");
+        // SV-26 P2: sonner loads here, on the press, so it stays out of the first download.
+        void import("sonner").then(({ toast }) => toast.error("Sign in to reblog"));
         return;
       }
       setTarget(post);

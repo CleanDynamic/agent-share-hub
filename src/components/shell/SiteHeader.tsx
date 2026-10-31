@@ -25,13 +25,11 @@
 // (21 → 18). The side gutters below 1328 are not drawn on any board and keep the
 // 1280 column's edges, so they stay.
 
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Bell, Moon, Search, Sun } from "lucide-react";
-import { memo, useState, type CSSProperties } from "react";
+import { lazy, memo, startTransition, Suspense, useEffect, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
-import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { Icon } from "@/components/brand/Icon";
 import { IconButton } from "@/components/brand/IconButton";
@@ -41,18 +39,17 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { countDraftBuilds } from "@/lib/build/draftCount";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useCurrentPath, useGo } from "@/lib/routing/go";
-import { PageLink } from "@/lib/routing/PageLink";
-import { MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
+import { useIdleReady } from "@/lib/routing/lazyHost";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BottomSheet } from "./BottomSheet";
+import { AccountButton } from "./AccountButton";
 import { HEADER_HEIGHT } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
+import { LazyBottomSheet } from "./LazyBottomSheet";
 import { isActivityPath, isBuildsPath, PRIMARY_LINKS, SITE_NAV, sectionForPath, type PrimarySection } from "./siteNav";
 import { useMinWidth } from "./useMinWidth";
 
@@ -102,69 +99,50 @@ const visuallyHidden: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-function AccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: FrameViewer; onSignOut: () => void; avatarSize?: number }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const profileHref = viewer.handle ? `/profile/${viewer.handle}` : SITE_NAV.profile;
-  const item: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    height: 30,
-    padding: "0 9px",
-    borderRadius: 10,
-    fontFamily: FIGTREE,
-    fontSize: 12,
-    fontWeight: 500,
-    textDecoration: "none",
-    outline: "none",
-    cursor: "pointer",
-    border: 0,
-    background: "transparent",
-    width: "100%",
-    textAlign: "left",
-  };
+/* SV-26 P2: the account menu and its menu library load apart from the first page (`AccountMenu.tsx`). Until they are
+   here the same account button stands in its place; it warms the menu on hover or focus, and a press opens the menu as
+   soon as its code arrives. At idle the menu takes over, in a transition, so the button on screen stays until then. */
+const loadAccountMenu = () => import("./AccountMenu");
+const AccountMenu = lazy(() => loadAccountMenu().then((m) => ({ default: m.AccountMenu })));
+
+function LazyAccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: FrameViewer; onSignOut: () => void; avatarSize?: number }) {
+  const idle = useIdleReady();
+  const [ready, setReady] = useState(false);
+  const [openOnMount, setOpenOnMount] = useState(false);
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    if (idle) startTransition(() => setReady(true));
+  }, [idle]);
+  const press = () =>
+    startTransition(() => {
+      setOpenOnMount(true);
+      setReady(true);
+    });
+  const standIn = (
+    <AccountButton
+      viewer={viewer}
+      avatarSize={avatarSize}
+      onPointerEnter={() => void loadAccountMenu().catch(() => undefined)}
+      onFocus={() => {
+        setFocused(true);
+        void loadAccountMenu().catch(() => undefined);
+      }}
+      onBlur={() => setFocused(false)}
+      onPointerDown={(event) => {
+        if (event.button === 0 && !event.ctrlKey) press();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
+          event.preventDefault();
+          press();
+        }
+      }}
+    />
+  );
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          aria-label="Account"
-          {...handlers}
-          style={{ padding: 0, border: 0, background: "transparent", borderRadius: "50%", cursor: "pointer", display: "flex", ...ring(state.focusVisible) }}
-        >
-          <Avatar size={avatarSize} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
-        </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="end"
-          sideOffset={8}
-          style={{
-            minWidth: 190,
-            padding: 4,
-            borderRadius: 14,
-            background: t.solid,
-            border: `1px solid ${t.glassBorder}`,
-            boxShadow: t.shadowFloat,
-            color: t.text,
-            zIndex: 50,
-          }}
-        >
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <PageLink to={profileHref} style={item}>Profile</PageLink>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <PageLink to={SITE_NAV.library} style={item}>Library</PageLink>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <PageLink to={SITE_NAV.drafts} style={item}>Drafts</PageLink>
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator style={{ height: 1, margin: "4px 4px", background: t.line }} />
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <button type="button" onClick={onSignOut} style={item}>Sign out</button>
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+    <Suspense fallback={standIn}>
+      {ready ? <AccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={avatarSize} defaultOpen={openOnMount} focusOnMount={focused} /> : standIn}
+    </Suspense>
   );
 }
 
@@ -345,7 +323,7 @@ function RefinedSiteHeaderView({
       />
 
       {viewer ? (
-        <AccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={26} />
+        <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={26} />
       ) : (
         <Button variant="secondary" size={30} onClick={onSignIn} style={REFINED_30}>
           Sign in
@@ -353,7 +331,7 @@ function RefinedSiteHeaderView({
       )}
 
       {searchField ? null : (
-        <BottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
+        <LazyBottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
           <HeaderSearch
             variant="sheet"
             autoFocus
@@ -364,7 +342,7 @@ function RefinedSiteHeaderView({
               return used;
             }}
           />
-        </BottomSheet>
+        </LazyBottomSheet>
       )}
     </header>
   );

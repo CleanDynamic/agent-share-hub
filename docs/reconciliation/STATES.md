@@ -11,7 +11,7 @@ Keys are the real names each treatment resolves to: `t.*` from src/lib/theme/tok
 | 3 | Tertiary / ghost action | transparent, no border, --text2 label and icon | `buttonStyle("ghost")`, `t.text2` |
 | 4 | Chip, unselected | transparent, 1px --line border, --text2 label, --r-chip, the text style of CategoryChip | `chipStyle("outline")`, `chipType`, `t.line`, `t.text2`, `r.chip`, `CategoryChip` |
 | 5 | Chip, selected | --recess fill, 1px --text border, --text label, and a 12px Check icon before the label; aria-checked (radio chips) or aria-pressed (toggle chips) | `t.recess`, `t.text`, `r.chip`, `chipType`, `Check` |
-| 6 | Nav item, active | existing behaviour, unchanged. Phone bottom nav: --action text and icon, no fill. Desktop left rail: 2px --action left edge, 12% --action wash, --text label | `MobileBottomNav`, `t.action`, `t.text` |
+| 6 | Nav item, active | existing behaviour, unchanged. Phone bottom nav: --action text and icon, no fill. Desktop left rail: 2px --action left edge, 12% --action wash, --text label | `Dock`, `t.action`, `t.text` |
 | 7 | Engagement action, inactive | outline icon in --text2; count in --text2, DM Mono 12, tabular-nums | `t.text2`, `DM_MONO`, `tabular` |
 | 8 | Engagement action, active (liked, saved) | icon filled --action, count --text | `t.action`, `t.text` |
 | 9 | Focus | the theme's single focus ring: 2px --focus-ring (the ink on Noon, the lamp gold on Dusk), 2px --bg offset | `focusRing`, `ring`, `t.focusRing`, `t.bg` |

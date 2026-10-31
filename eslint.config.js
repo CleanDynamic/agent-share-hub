@@ -30,4 +30,10 @@ export default tseslint.config(
     files: ["src/lib/errors/report.ts"],
     rules: { "no-console": "off" },
   },
+  {
+    // The rule is for the app (src). The Node scripts, the edge functions (whose logs are console output) and the
+    // e2e audits (which print their reports) print on purpose.
+    files: ["scripts/**", "supabase/functions/**", "e2e/**"],
+    rules: { "no-console": "off" },
+  },
 );

@@ -2,7 +2,7 @@
 
 import type { Badge } from "./badge-data"
 import { badgeLabel, badgePaint } from "./BadgeMark"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { r } from "@/lib/theme/radius"
 import { cn } from "@/lib/utils"
 import { Plus, Settings2 } from "lucide-react"
@@ -27,7 +27,9 @@ export function ShowcaseStrip({ badges, isOwnProfile = true, autoPinned = false,
   const shown = badges.slice(0, MAX)
   const emptyCount = isOwnProfile ? Math.max(0, MAX - shown.length) : 0
 
+  // SV-26 P2: the strip's tooltips share one provider, as they shared the app's.
   return (
+    <TooltipProvider>
     <section aria-labelledby="showcase-heading" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -107,5 +109,6 @@ export function ShowcaseStrip({ badges, isOwnProfile = true, autoPinned = false,
         ))}
       </div>
     </section>
+    </TooltipProvider>
   )
 }

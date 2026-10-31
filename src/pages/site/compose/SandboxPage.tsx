@@ -142,7 +142,7 @@ import { SelectionBar, type SelectionBarProps } from "./removePieces";
 import { outlineOnce, useHeld } from "./buildMotion";
 import { scrollToShow } from "./pageScroll";
 import { MotionChannel, MotionChannelContext } from "./listMotion";
-import { BASE } from "@/lib/theme/motion";
+import { BASE, scrollBehavior } from "@/lib/theme/motion";
 import type { Drawn } from "@/lib/build/buildSelection";
 import { ADDED, HANDLERS_THAT_CHANGE_NOTHING, HANDLERS_THAT_REMOVE, handlerSentence } from "@/lib/build/stepSentences";
 import { NOTICE_COPY } from "@/lib/build/referenceHistory";
@@ -160,7 +160,7 @@ import { usePostLinks } from "./usePostLinks";
 import { useColourPicking } from "./useColourPicking";
 import { previewColours, previewWorkstreams, type ColourPreview } from "@/lib/build/colourPreview";
 import { sayFailed } from "./draftStart";
-import { lazyWindow, preloadComposerWindows } from "./lazyWindow";
+import { lazyWindow, preloadComposerWindows, useWarmWindowsOnIntent } from "./lazyWindow";
 import { preloadAddFromLibrary } from "./addFromLibraryReads";
 import { sessionCopyOf, type LibraryPlace } from "@/lib/build/fromLibrary";
 import { touchSavedItems, type LibrarySavedItem } from "@/lib/library/savedItems";
@@ -1451,6 +1451,8 @@ function SandboxPageBody() {
     [steps, openLibrary, sessionName],
   );
   const warmLibrary = useCallback(() => preloadAddFromLibrary(queryClient, user?.id ?? null), [queryClient, user?.id]);
+  /* SV-26 P3: and on the first hover or focus of a control, if that comes before idle. */
+  useWarmWindowsOnIntent();
   /* Once the composer is up, at idle: the window's code and its first reads, so the first open is not a wait. */
   useEffect(() => {
     if (!user?.id) return;
@@ -1672,7 +1674,7 @@ function SandboxPageBody() {
     (keys: readonly string[]) => {
       selection.selectSessions(keys);
       const first = keys.find((key) => document.querySelector(`[data-session-key="${key}"]`));
-      if (first) document.querySelector(`[data-session-key="${first}"]`)?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      if (first) document.querySelector(`[data-session-key="${first}"]`)?.scrollIntoView?.({ block: "center", behavior: scrollBehavior() });
     },
     [selection],
   );

@@ -76,6 +76,7 @@ import { useLensMorph } from "./mapMorph";
 import { ComposeArrival } from "./ComposeSkeleton";
 import { PanelBoundary, type PanelName } from "./PanelBoundary";
 import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 export type SandboxLens = "list" | "map";
 
@@ -1014,7 +1015,7 @@ function SandboxBody(props: SandboxViewProps) {
     window.setTimeout(() => {
       const section = postRef.current;
       if (!section) return;
-      section.scrollIntoView?.({ block: "start", behavior: "smooth" });
+      section.scrollIntoView?.({ block: "start", behavior: scrollBehavior() });
       const editable = section.querySelector<HTMLElement>('[contenteditable="true"]');
       (editable ?? section).focus({ preventScroll: true });
     }, 0);
@@ -1041,7 +1042,7 @@ function SandboxBody(props: SandboxViewProps) {
     const id = item.stepId;
     const target = id ? document.querySelector<HTMLElement>(`[data-tile-id="${id}"], [data-node-id="${id}"]`) : postRef.current;
     if (!target) return;
-    target.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    target.scrollIntoView?.({ block: "center", behavior: scrollBehavior() });
     outlineOnce(target);
   };
   const onChecklistAction = (item: ChecklistItem) => {

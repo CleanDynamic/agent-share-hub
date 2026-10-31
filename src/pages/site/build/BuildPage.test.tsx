@@ -30,6 +30,9 @@ const unfollowMaker = vi.fn().mockResolvedValue(undefined);
 const isBuildHidden = vi.fn().mockResolvedValue(false);
 const auth = vi.hoisted(() => ({ isLoggedIn: false, userId: null as string | null }));
 
+/* These tests are the page with the steps switch off: UI-P76 turned it on, and flags.ts keeps the old page as the
+   rollback. */
+vi.mock("@/lib/build/flags", async (importOriginal) => ({ ...(await importOriginal<object>()), BUILD_PAGE_STEPS_ENABLED: false }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: auth.userId ? { id: auth.userId } : null }),
 }));
@@ -187,7 +190,8 @@ describe("BuildPage (site frame)", () => {
     expect(screen.getByText("not yet reproduced")).toBeTruthy();
     expect(screen.getByText("£18.40")).toBeTruthy();
     expect(screen.getByText("35 min")).toBeTruthy();
-    expect(screen.getByText("A Google account", { selector: "div" })).toBeTruthy();
+    // What you need, in the proof card.
+    expect(within(screen.getByTestId("build-proof")).getByText("A Google account")).toBeTruthy();
     expect(screen.getByTestId("build-hero").textContent).toContain("made by @maya");
 
     const rows = screen.getAllByTestId("build-part-row");

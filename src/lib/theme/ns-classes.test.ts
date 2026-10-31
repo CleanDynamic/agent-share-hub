@@ -142,7 +142,9 @@ describe("the .ns-* rules inherited from the retired shell", () => {
        rule that would have fought the app's own frame the moment anyone wired
        it up, plus three hexes the colour sweep would otherwise have had to
        allowlist as "dead file". */
-    const sheets = [SHARED, "src/index.css", "src/components/shell/flat-shell.css"];
+    /* flat-shell.css left with the flat shell (the one site frame replaced it, UI-P41 and SV-04), so it can define
+       nothing; the two stylesheets left are read. */
+    const sheets = [SHARED, "src/index.css"];
     for (const cls of inert) {
       for (const sheet of sheets) {
         expect(defines(read(sheet), cls), `${sheet} now defines .${cls}`).toBe(false);

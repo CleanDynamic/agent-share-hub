@@ -104,6 +104,12 @@ describe("the first download", () => {
     "src/components/quoting/QuotableSelectionProvider.tsx",
     "src/lib/build/sessions.ts",
     "src/lib/build/builds.ts",
+    // The header's account menu, the frame's bottom sheets, the tooltip and the sonner toaster.
+    "src/components/shell/AccountMenu.tsx",
+    "src/components/shell/BottomSheet.tsx",
+    "src/components/ui/tooltip.tsx",
+    "src/components/ui/sonner.tsx",
+    "src/components/ui/idleSonner.tsx",
   ])("keeps %s out of the first download", (path) => {
     const file = join(ROOT, path);
     expect(reached.has(file), reached.has(file) ? chainTo(reached, file) : "").toBe(false);
@@ -114,6 +120,25 @@ describe("the first download", () => {
     (path) => {
       const file = join(ROOT, path);
       expect(reached.has(file), reached.has(file) ? chainTo(reached, file) : "").toBe(false);
+    },
+  );
+
+  /* SV-26 P2: the libraries those windows draw with load with them. A package import is not followed by the walk above,
+     so this reads each reached file's own imports for the package names. */
+  it.each(["@radix-ui/react-dropdown-menu", "@radix-ui/react-dialog", "@radix-ui/react-tooltip", "sonner", "react-helmet-async"])(
+    "imports nothing from %s",
+    (pkg) => {
+      const importers = [...reached.keys()].filter((file) => {
+        const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+        return source.statements.some(
+          (statement) =>
+            ts.isImportDeclaration(statement) &&
+            !statement.importClause?.isTypeOnly &&
+            ts.isStringLiteral(statement.moduleSpecifier) &&
+            statement.moduleSpecifier.text === pkg,
+        );
+      });
+      expect(importers.map((file) => chainTo(reached, file))).toEqual([]);
     },
   );
 });

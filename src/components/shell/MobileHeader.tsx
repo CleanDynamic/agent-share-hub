@@ -28,7 +28,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BottomSheet } from "./BottomSheet";
+import { LazyBottomSheet } from "./LazyBottomSheet";
 import type { FrameViewer } from "./frameTypes";
 import { RoutedHeaderSearch } from "./HeaderSearch";
 import { SITE_NAV } from "./siteNav";
@@ -157,11 +157,11 @@ function MobileHeaderContainer() {
         onSignIn={() => navigate(`/login?redirect=${encodeURIComponent(pathname + window.location.search)}`)}
       />
 
-      <BottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
+      <LazyBottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
         <RoutedHeaderSearch variant="sheet" autoFocus onDone={() => setSearchOpen(false)} />
-      </BottomSheet>
+      </LazyBottomSheet>
 
-      <BottomSheet open={accountOpen} onOpenChange={setAccountOpen} title="Account">
+      <LazyBottomSheet open={accountOpen} onOpenChange={setAccountOpen} title="Account">
         <Link to={profileHref} style={row} onClick={() => setAccountOpen(false)}>Profile</Link>
         <Link to={SITE_NAV.library} style={row} onClick={() => setAccountOpen(false)}>Library</Link>
         <Link to={SITE_NAV.drafts} style={row} onClick={() => setAccountOpen(false)}>Drafts</Link>
@@ -179,7 +179,7 @@ function MobileHeaderContainer() {
         >
           Sign out
         </button>
-      </BottomSheet>
+      </LazyBottomSheet>
     </>
   );
 }

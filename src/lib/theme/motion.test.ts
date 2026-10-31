@@ -368,8 +368,11 @@ describe("scroll reveals live on the two sanctioned surfaces only", () => {
      this is the assertion that keeps the third one from being added quietly. */
   /* UI-P28 added the site-frame Gallery here for its grid's entrance; UI-P49
      replaced that grid with the one-column feed, which has no scroll reveal, so
-     it is off the list again. */
-  const SANCTIONED = ["src/pages/BuildPage.tsx", "src/pages/Gallery.tsx"];
+     it is off the list again. The two legacy pages that held the reveals,
+     src/pages/BuildPage.tsx and src/pages/Gallery.tsx, are gone (the site frame's
+     build page and Builds replaced them, and neither reveals on scroll), so
+     nothing may import it now. */
+  const SANCTIONED: string[] = [];
 
   it("is imported by exactly those two", () => {
     const importers = SCANNED.filter((file) => /from ["'][^"']*useReveal["']/.test(file.code))
@@ -430,7 +433,17 @@ describe("the theme switch (BG-P02, re-verified by BG-P32)", () => {
 
 describe("the global reduced-motion guarantee", () => {
   const css = readFileSync(join(SRC, "index.css"), "utf8");
-  const global = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+  /* The global block is the last reduced-motion block in the file, read to its own closing brace: the refined look's
+     "nothing animates" rule follows it now (UI-P87) and is a different rule. */
+  const global = (() => {
+    const start = css.lastIndexOf("@media (prefers-reduced-motion: reduce)");
+    let depth = 0;
+    for (let i = css.indexOf("{", start); i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}" && --depth === 0) return css.slice(start, i + 1);
+    }
+    return css.slice(start);
+  })();
 
   it("reaches every element and both pseudo-elements", () => {
     expect(global).toMatch(/\*,\s*\n\s*\*::before,\s*\n\s*\*::after/);

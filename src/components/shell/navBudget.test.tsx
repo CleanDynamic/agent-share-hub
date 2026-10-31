@@ -107,7 +107,7 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeInTheDocument();
   });
 
-  it("the phone's account sheet lists Profile, Library and Drafts, then Sign out", () => {
+  it("the phone's account sheet lists Profile, Library and Drafts, then Sign out", async () => {
     authState.isLoggedIn = true;
     authState.profile = { display_name: "Ada Lovelace", username: "ada", avatar_url: null };
     authState.user = { id: "u1", email: "ada@example.com" };
@@ -119,7 +119,8 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
       </ThemeProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Account" }));
-    const sheet = screen.getByRole("dialog", { name: "Account" });
+    // SV-26 P2: the sheet's code loads on first open (LazyBottomSheet).
+    const sheet = await screen.findByRole("dialog", { name: "Account" });
     expect(within(sheet).getAllByRole("link").map((a) => a.textContent)).toEqual(["Profile", "Library", "Drafts"]);
     expect(within(sheet).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
       "/profile/ada",

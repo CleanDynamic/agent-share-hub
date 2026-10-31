@@ -37,7 +37,7 @@
 // not touch. It is reported rather than quietly repainted.
 
 import { Link } from "react-router-dom";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PublishControl } from "@/components/compose/PublishControl";
 import {
   WorkspaceBar,
@@ -430,8 +430,9 @@ export function ComposeTopBar({
      creator actually spends the hour. */
   const mode: WorkspaceMode = isRebuild ? "rebuild" : "compose";
 
+  /* SV-26 P2: the bar, its hero controls and Publish share one tooltip provider, as they shared the app's. */
   return (
-    <>
+    <TooltipProvider>
     <WorkspaceBar
       mode={mode}
       exit={{ to: "/gallery" }}
@@ -523,6 +524,6 @@ export function ComposeTopBar({
     />
 
     {isRebuild && rebuild ? <RebuildOriginStrip build={build} rebuild={rebuild} /> : null}
-    </>
+    </TooltipProvider>
   );
 }
