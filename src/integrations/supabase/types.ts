@@ -3495,6 +3495,88 @@ export type Database = {
         }
         Relationships: []
       }
+      filter_set_members: {
+        Row: {
+          filter_set_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          filter_set_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          filter_set_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "filter_set_members_filter_set_id_fkey"
+            columns: ["filter_set_id"]
+            isOneToOne: false
+            referencedRelation: "filter_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "filter_set_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "filter_set_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      filter_sets: {
+        Row: {
+          created_at: string
+          id: string
+          is_public: boolean
+          name: string
+          query: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          name: string
+          query?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          query?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "filter_sets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "filter_sets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string
@@ -6126,6 +6208,17 @@ export type Database = {
       is_thread_member: {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
+      }
+      list_filter_set_groups: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          is_member: boolean
+          is_owner: boolean
+          members: number
+          name: string
+          search: string
+        }[]
       }
       maker_build_metrics: {
         Args: { uid: string }

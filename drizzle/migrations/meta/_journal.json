@@ -281,6 +281,13 @@
       "when": 1793401444235,
       "tag": "0039_sv23_proof_filters",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793409182692,
+      "tag": "0040_sv24_filter_sets",
+      "breakpoints": true
     }
   ]
 }
