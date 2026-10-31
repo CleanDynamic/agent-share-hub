@@ -8,25 +8,30 @@ import { hasClassification, regulatedArea, shownValues } from "@/lib/classify/fa
 import { REGULATED_NOTICE, labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
 import { isCustomEntry, type Classification, type Entry, type Provenance } from "@/lib/classify/types";
+import { useInRouterContext } from "react-router-dom";
+import { galleryHref, cleanFacetKeys } from "@/lib/build/galleryParams";
+import { PageLink } from "@/lib/routing/PageLink";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 interface Shown {
   label: string;
   provenance: Provenance;
+  /** `<facet>:<id>`, the Builds filter for this value. Absent for a value the maker typed. */
+  key?: string;
 }
 
-const declared = (facet: Facet, entries: readonly Entry[]): Shown[] => entries.map((entry) => ({ label: isCustomEntry(entry) ? entry.custom : labelFor(facet, entry.id), provenance: "stated" }));
+const declared = (facet: Facet, entries: readonly Entry[]): Shown[] => entries.map((entry) => ({ label: isCustomEntry(entry) ? entry.custom : labelFor(facet, entry.id), provenance: "stated", ...(isCustomEntry(entry) ? null : { key: `${facet}:${entry.id}` }) }));
 
 const read = (c: Classification, facet: Facet): Shown[] => {
   const shown = shownValues(c, facet);
-  return shown.values.map((id) => ({ label: labelFor(facet, id), provenance: shown.provenance }));
+  return shown.values.map((id) => ({ label: labelFor(facet, id), provenance: shown.provenance, key: `${facet}:${id}` }));
 };
 
 /** The three lines of the section, each a list of facets with their values. */
 export function classificationRows(c: Classification): { key: string; facet: Facet; values: Shown[] }[][] {
   const decl = (facet: "field" | "task" | "setting" | "data" | "stack"): Shown[] => declared(facet, c.declared[facet]);
-  const age: Shown[] = c.declared.age ? [{ label: labelFor("age", c.declared.age), provenance: "stated" }] : [];
+  const age: Shown[] = c.declared.age ? [{ label: labelFor("age", c.declared.age), provenance: "stated", key: `age:${c.declared.age}` }] : [];
   const stack = [...read(c, "stack"), ...decl("stack").filter((value) => !read(c, "stack").some((have) => have.label.toLowerCase() === value.label.toLowerCase()))];
   return [
     [
@@ -73,11 +78,23 @@ function Facet_({ facet, values }: { facet: Facet; values: Shown[] }) {
         values.map((value, index) => (
           <span key={`${value.label}-${index}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: t.text, fontFamily: facet === "stack" ? DM_MONO : undefined }}>
             <ProvenanceDot kind={value.provenance} />
-            {value.label}
+            <ValueLabel value={value} />
           </span>
         ))
       )}
     </li>
+  );
+}
+
+/** SV-25: a value is a link to Builds filtered by it, when the Builds filter knows it. */
+function ValueLabel({ value }: { value: Shown }) {
+  const inRouter = useInRouterContext();
+  const known = inRouter && value.key && cleanFacetKeys([value.key]).length > 0;
+  if (!known) return <>{value.label}</>;
+  return (
+    <PageLink to={galleryHref({ facets: [value.key as string] })} data-testid="classification-link" style={{ color: "inherit", textDecoration: "none" }}>
+      {value.label}
+    </PageLink>
   );
 }
 

@@ -438,3 +438,14 @@ export async function touchSavedItems(savedItemIds: readonly string[]): Promise<
   const response = await db.from("saved_items").update({ last_used_at: new Date().toISOString() }).eq("user_id", userId).in("id", ids);
   if (response.error) throw socialError("touchSavedItems", response);
 }
+
+/* ── for the build page (SV-25) ── */
+
+/** What the signed-in reader has kept in one build: `kind:ref` -> the saved item's id. One request; empty when signed out. */
+export async function savedInBuild(buildId: string): Promise<Map<string, string>> {
+  const userId = await currentUserId();
+  if (!userId) return new Map();
+  const response = await db.from("saved_items").select("id, kind, ref").eq("user_id", userId).eq("build_id", buildId).in("kind", ["part", "step", "session"]).limit(SAVED_ITEMS_MAX * 5);
+  if (response.error) throw socialError("savedInBuild", response, { buildId });
+  return new Map(((response.data ?? []) as { id: string; kind: SavedKind; ref: string | null }[]).flatMap((row) => (row.ref ? [[`${row.kind}:${row.ref}`, row.id] as const] : [])));
+}

@@ -36,6 +36,10 @@ import { CoverFallback } from "@/components/brand/CoverFallback";
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import type { PartViewerMode } from "@/components/brand/PartViewer";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
+import { BuildConnectionsProvider, inCollectionsText, type BuildConnections, type SaveKind } from "@/components/build/BuildConnections";
+import { inCollectionsCount, usedInCounts } from "@/lib/build/connections";
+import { saveItem, savedInBuild, unsaveItem } from "@/lib/library/savedItems";
+import { reportError } from "@/lib/errors/report";
 import { CreditLine } from "@/components/build/CreditLine";
 import { useForkBuild } from "@/components/build/ForkControl";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
@@ -520,6 +524,60 @@ export function BuildPage() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
+
+  /* ── connections (SV-25): started with the page's first reads, none of them waits on another ── */
+
+  const published = Boolean(buildId) && build?.status !== "draft";
+  const usedIn = useQuery<Map<string, number>>({
+    queryKey: ["build", "usedInCounts", buildId],
+    queryFn: () => usedInCounts(buildId as string, [...indexTree(tree).keys()]),
+    enabled: published && tree.length > 0,
+    staleTime: 60_000,
+  });
+  const inCollections = useQuery<number>({
+    queryKey: ["build", "inCollectionsCount", buildId],
+    queryFn: () => inCollectionsCount(buildId as string),
+    enabled: published,
+    staleTime: 60_000,
+  });
+  const savedKey = ["library", "savedInBuild", buildId, user?.id ?? null];
+  const savedHere = useQuery<Map<string, string>>({
+    queryKey: savedKey,
+    queryFn: () => savedInBuild(buildId as string),
+    enabled: published && isLoggedIn,
+    staleTime: 60_000,
+  });
+  const connections = useMemo<BuildConnections>(
+    () => ({
+      usedIn: new Map([...(usedIn.data ?? [])].filter(([, n]) => n > 0)),
+      save:
+        published && isLoggedIn && buildId
+          ? {
+              isSaved: (kind, ref) => savedHere.data?.has(`${kind}:${ref}`) ?? false,
+              toggle: (kind: SaveKind, ref: string) => {
+                const key = `${kind}:${ref}`;
+                const existing = savedHere.data?.get(key);
+                // The glyph changes on the press; a failure puts it back.
+                queryClient.setQueryData<Map<string, string>>(savedKey, (map) => {
+                  const next = new Map(map ?? []);
+                  if (existing) next.delete(key);
+                  else next.set(key, "pending");
+                  return next;
+                });
+                const write = existing ? unsaveItem(existing) : saveItem({ kind, buildId, ref });
+                void write
+                  .catch((error: unknown) => {
+                    reportError(error, { source: "query", context: existing ? "unsaveItem" : "saveItem" });
+                    toast({ title: existing ? "Could not remove it from your Library" : "Could not save it", variant: "destructive" });
+                  })
+                  .finally(() => void queryClient.invalidateQueries({ queryKey: savedKey }));
+              },
+            }
+          : null,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [usedIn.data, savedHere.data, published, isLoggedIn, buildId],
+  );
 
   /* ── lookups ── */
 
@@ -1053,6 +1111,7 @@ export function BuildPage() {
   );
 
   return arrive(
+    <BuildConnectionsProvider value={connections}>
     <GroupLabelsProvider making={build.making}>
       <SeoHead
         title={shareTitle(build.title)}
@@ -1153,7 +1212,7 @@ export function BuildPage() {
                 error: runFailure.error,
               }
             : undefined,
-          details: proofDetails(build, tree),
+          details: [...proofDetails(build, tree), ...((inCollections.data ?? 0) > 0 ? [{ label: "Collections", value: inCollectionsText(inCollections.data as number) }] : [])],
           completeness: completeness
             ? {
                 score: completeness.score,
@@ -1253,6 +1312,7 @@ export function BuildPage() {
         </Suspense>
       ) : null}
     </GroupLabelsProvider>
+    </BuildConnectionsProvider>
   );
 }
 
