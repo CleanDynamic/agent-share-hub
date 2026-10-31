@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { AI_TOOLS, TOOLS, providersFor, toolFor } from "@/lib/tools/registry";
 import { deriveClassification } from "@/lib/classify/derive";
+import { assistantTree } from "@/dev/fixtures/deployment/assistant";
 
 import { BEFORE_COPY, beforeYouCopy, deploymentNeeds } from "./deploymentNeeds";
 import { refOf } from "./deployment";
@@ -32,10 +33,16 @@ describe("the registry", () => {
     expect(TOOLS.filter((tool) => tool.deploys && tool.logo !== null && ["letta", "mem0", "grafana"].includes(tool.id))).toEqual([]);
   });
 
-  it("leaves a harness fact empty with no source, and says a vendor default as the vendor's, with its month", () => {
-    expect(harnessFacts("openclaw")).toBeNull();
-    expect(harnessDefaultLine("openclaw")).toBeNull();
+  it("fills a harness fact only from its source, and says a vendor default as the vendor's, with its month", () => {
+    expect(harnessFacts("openclaw")).toMatchObject({ name: "OpenClaw", defaults: { approval_mode: "full" }, checked: "2026-10", source: "https://docs.openclaw.ai/tools/exec-approvals" });
+    expect(harnessFacts("openclaw")?.defaults?.sandbox).toBeUndefined();
+    expect(harnessDefaultLine("openclaw")).toBe("OpenClaw's default: full access (its docs, October 2026)");
+    expect(harnessFacts("hermes-agent")).toMatchObject({ defaults: { approval_mode: "reviewer" }, checked: "2026-10" });
+    expect(harnessFacts("hermes-agent")?.defaults?.sandbox).toBeUndefined();
+    expect(harnessDefaultLine("hermes-agent")).toBe("Hermes Agent's default: an AI reviewer, then asks you (its docs, October 2026)");
+    // No hosting or licence is stated on either page, so neither is filled.
     expect(hostingLine("hermes-agent")).toBeNull();
+    expect(harnessFacts("claude-code")).toBeNull();
     expect(monthWord("2026-10")).toBe("October 2026");
   });
 });
@@ -85,6 +92,10 @@ describe("Before you copy", () => {
     expect(beforeYouCopy(ASSISTANT)).toEqual([BEFORE_COPY.full, BEFORE_COPY.noSandbox]);
     expect(beforeYouCopy([node("r1", 0, "relay", { joins: ["a", "b"], network: "public internet" })])).toEqual([BEFORE_COPY.publicRelay]);
     expect(beforeYouCopy([node("a1", 0, "agent_config", {})])).toEqual([]);
+    // The assistant fixture leaves Approvals unset on OpenClaw, so its docs' default is said, as the vendor's.
+    expect(beforeYouCopy(assistantTree)).toEqual(["OpenClaw runs actions without asking by default (its docs, October 2026)."]);
+    // A maker who said an approval mode is not told the default.
+    expect(beforeYouCopy([node("a1", 0, "agent_config", { harness: "openclaw", approval_mode: "risky" })])).toEqual([]);
   });
 });
 

@@ -440,6 +440,9 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
     status: "current",
     source: "https://docs.openclaw.ai/providers/models",
     checked: "2026-10-19",
+    // SV-27 P8: from https://docs.openclaw.ai/tools/exec-approvals, read 2026-10: "An unconfigured node uses the same `full` /
+    // `off` baseline as the Gateway." (security full, ask off: it runs commands without asking). The page names no default sandbox.
+    facts: { defaults: { approval_mode: "full" }, checked: "2026-10", source: "https://docs.openclaw.ai/tools/exec-approvals" },
   },
   {
     id: "hermes-agent", name: "Hermes Agent", group: "agents", logo: "hermesagent", aliases: [],
@@ -451,6 +454,10 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
     status: "current",
     source: "https://hermes-agent.nousresearch.com/docs/integrations/providers",
     checked: "2026-10-19",
+    // SV-27 P8: from https://hermes-agent.nousresearch.com/docs/user-guide/security/, read 2026-10: approvals.mode defaults to
+    // "smart": an auxiliary model approves low-risk commands, denies dangerous ones and asks when uncertain (our "reviewer"). The
+    // page names no default sandbox.
+    facts: { defaults: { approval_mode: "reviewer" }, checked: "2026-10", source: "https://hermes-agent.nousresearch.com/docs/user-guide/security/" },
   },
   {
     id: "muse", name: "Muse", group: "agents", logo: null, aliases: ["meta muse", "muse by meta"],
