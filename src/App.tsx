@@ -29,9 +29,8 @@ import { RouteWarmup } from "@/lib/routing/RouteWarmup";
 import { PageChangeProvider } from "@/lib/routing/PageChangeProvider";
 import { ScrollKeeper } from "@/lib/routing/ScrollKeeper";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
-import { FrameRoute } from "./components/shell/FrameRoute";
 import { preloadComposeRoute } from "./pages/site/compose/preload";
-import { LinkFrameRoute, SignInSite } from "./pages/site/signin/SignInRoutes";
+import { SignInSite } from "./pages/site/signin/SignInRoutes";
 
 /** SV-26 P2: the composer's route, which holds the build layer's reads, loads with the composer and not with the first page. */
 const ComposeRoute = lazy(() => preloadComposeRoute().then((m) => ({ default: m.ComposeRoute })));
@@ -102,26 +101,26 @@ const BountySolveShowPage = lazy(() => import("./pages/BountySolveShowPage"));
 // direct load raced the profile fetch and bounced creators too.
 const Analytics = lazy(() => import("./pages/Analytics"));
 // UI-P27 — Home in the site frame. Its own chunk, so the entry bundle keeps the
-// legacy Home alone; `FrameRoute` picks one by the `site_frame` flag.
+// legacy Home alone; the site page is the only one.
 function OldLineageRedirect() {
   const { slug } = useParams();
   return <Navigate to={`/b2/${slug}/lineage`} replace />;
 }
 const HomePage = lazy(ROUTE_TABLE.home.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P28: the Gallery in the site frame; its own chunk, picked by `FrameRoute`. SV-11: it is Builds.
+// UI-P28: the Gallery in the site frame; its own chunk, rendered directly. SV-11: it is Builds.
 const BuildsPage = lazy(ROUTE_TABLE.gallery.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P29 — the Build page in the site frame; its own chunk, picked by `FrameRoute`.
+// UI-P29 — the Build page in the site frame; its own chunk, rendered directly.
 const BuildSitePage = lazy(ROUTE_TABLE.build.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P31 — Rebuild and lineage in the site frame; their own chunks, picked by `FrameRoute`.
+// UI-P31 — Rebuild and lineage in the site frame; their own chunks, rendered directly.
 const RebuildSitePage = lazy(() => import("./pages/site/rebuild/RebuildPage"));
 const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
 // CA-13 P9 — two builds of the same thing, side by side.
 const CompareSitePage = lazy(() => import("./pages/site/compare/ComparePage"));
-// UI-P34 — the Profile in the site frame; its own chunk, picked by `FrameRoute`.
+// UI-P34 — the Profile in the site frame; its own chunk, rendered directly.
 const ProfileSitePage = lazy(ROUTE_TABLE.profile.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P35 — Activity in the site frame; its own chunk (it draws a chart), picked by `FrameRoute`.
+// UI-P35 — Activity in the site frame; its own chunk (it draws a chart), rendered directly.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
-// UI-P36 — Sign in, Join, reset and verify in the entrance's frame; each its own chunk, picked by `FrameRoute`.
+// UI-P36 — Sign in, Join, reset and verify in the entrance's frame; each its own chunk, rendered directly.
 const LoginSitePage = lazy(() => import("./pages/site/signin/LoginPage"));
 const SignupSitePage = lazy(() => import("./pages/site/signin/SignupPage"));
 const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswordPage"));
@@ -270,18 +269,9 @@ const App = () => (
                 <Route
                   path="/"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <HomePage />
                         </RouteBoundary>
-                      }
-                      legacy={
-                        <RouteBoundary>
-                          <HomePage />
-                        </RouteBoundary>
-                      }
-                    />
                   }
                 />
                 {/* RC-P05 — the old discovery addresses. Each one duplicated
@@ -342,41 +332,31 @@ const App = () => (
                     flag is known, because a link's token works once: the legacy
                     page must not mount first and spend it. /auth/callback is not
                     repainted here. */}
-                <Route path="/signup" element={<FrameRoute site={<SignInSite><SignupSitePage /></SignInSite>} legacy={<SignInSite><SignupSitePage /></SignInSite>} />} />
-                <Route path="/login" element={<FrameRoute site={<SignInSite><LoginSitePage /></SignInSite>} legacy={<SignInSite><LoginSitePage /></SignInSite>} />} />
+                <Route path="/signup" element={<SignInSite><SignupSitePage /></SignInSite>} />
+                <Route path="/login" element={<SignInSite><LoginSitePage /></SignInSite>} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/verify-email" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<SignInSite><VerifyEmailSitePage /></SignInSite>} />} />
-                <Route path="/verify-email/:token" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<SignInSite><VerifyEmailSitePage /></SignInSite>} />} />
-                <Route path="/reset-password" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<SignInSite><ResetPasswordSitePage /></SignInSite>} />} />
-                <Route path="/reset-password/:token" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<SignInSite><ResetPasswordSitePage /></SignInSite>} />} />
+                <Route path="/verify-email" element={<SignInSite><VerifyEmailSitePage /></SignInSite>} />
+                <Route path="/verify-email/:token" element={<SignInSite><VerifyEmailSitePage /></SignInSite>} />
+                <Route path="/reset-password" element={<SignInSite><ResetPasswordSitePage /></SignInSite>} />
+                <Route path="/reset-password/:token" element={<SignInSite><ResetPasswordSitePage /></SignInSite>} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
                 <Route
                   path="/profile"
                   element={
                     <ProtectedRoute>
-                      <FrameRoute
-                        site={
-                          <RouteBoundary>
+                      <RouteBoundary>
                             <ProfileSitePage />
                           </RouteBoundary>
-                        }
-                        legacy={<ProfileSitePage />}
-                      />
                     </ProtectedRoute>
                   }
                 />
                 <Route
                   path="/profile/:handle"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <ProfileSitePage />
                         </RouteBoundary>
-                      }
-                      legacy={<ProfileSitePage />}
-                    />
                   }
                 />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
@@ -396,27 +376,18 @@ const App = () => (
                 <Route
                   path="/connect"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <ConnectSitePage />
                         </RouteBoundary>
-                      }
-                    />
                   }
                 />
                 <Route
                   path="/notifications"
                   element={
                     <ProtectedRoute>
-                      <FrameRoute
-                        site={
-                          <RouteBoundary>
+                      <RouteBoundary>
                             <ActivitySitePage />
                           </RouteBoundary>
-                        }
-                        legacy={<ActivitySitePage />}
-                      />
                     </ProtectedRoute>
                   }
                 />
@@ -478,28 +449,18 @@ const App = () => (
                 <Route
                   path="/b2/:slug"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <BuildSitePage />
                         </RouteBoundary>
-                      }
-                      legacy={<BuildSitePage />}
-                    />
                   }
                 />
                 {/* CA-13 P9 — two builds that share a root in the rebuild tree, compared step by step. */}
                 <Route
                   path="/b2/:slug/compare/:otherSlug"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <CompareSitePage />
                         </RouteBoundary>
-                      }
-                      legacy={<RouteBoundary><CompareSitePage /></RouteBoundary>}
-                    />
                   }
                 />
                 {/* RC-P14 — every published rebuild in a build's family, beside
@@ -509,14 +470,9 @@ const App = () => (
                 <Route
                   path="/b2/:slug/lineage"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <LineageSitePage />
                         </RouteBoundary>
-                      }
-                      legacy={<RouteBoundary><LineageSitePage /></RouteBoundary>}
-                    />
                   }
                 />
                 {/* SV-02: the Gallery is Builds. The old address redirects, keeping search and hash. */}
@@ -524,14 +480,9 @@ const App = () => (
                 <Route
                   path="/builds"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <BuildsPage />
                         </RouteBoundary>
-                      }
-                      legacy={<BuildsPage />}
-                    />
                   }
                 />
                 {/* RC-P05 — the Bounties board's address, so the navigation has
@@ -562,14 +513,9 @@ const App = () => (
                 <Route
                   path="/rebuild/:slug"
                   element={
-                    <FrameRoute
-                      site={
-                        <RouteBoundary>
+                    <RouteBoundary>
                           <RebuildSitePage />
                         </RouteBoundary>
-                      }
-                      legacy={<RebuildSitePage />}
-                    />
                   }
                 />
               </Route>

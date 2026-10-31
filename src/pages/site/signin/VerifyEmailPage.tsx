@@ -9,7 +9,7 @@
    entrance's card: they were never the legacy shell's, only its content.
 
    A TOKEN WORKS ONCE. The route holds this page back until the `site_frame` flag
-   is known (see `LinkFrameRoute`), so the legacy page never mounts first and
+   is known, so the legacy page never mounts first and
    spends it.
 
    Identity comes from `useAuth()`: "Continue" goes where the signed-in reader's

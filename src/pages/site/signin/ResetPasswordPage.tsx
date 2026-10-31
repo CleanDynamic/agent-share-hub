@@ -11,7 +11,7 @@
    URL goes straight to the dead-link state.
 
    A TOKEN WORKS ONCE. The route holds this page back until the `site_frame` flag
-   is known (see `LinkFrameRoute`), so the legacy page never mounts first and
+   is known, so the legacy page never mounts first and
    spends it.
 
    What the Supabase calls became is only where they live: named functions in
