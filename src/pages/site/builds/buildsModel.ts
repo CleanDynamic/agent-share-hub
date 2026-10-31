@@ -13,7 +13,9 @@ import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
 import type { CatalogueGroup, FilterSection, RangeSection, WordOption, WordOrder } from "./BuildsFiltersView";
-import type { ColumnId, TableChip, TableFooterView, TableRowView, TableTool } from "./BuildsTableView";
+import { CALC_KINDS, type CalcKind, type Calculation } from "@/lib/build/buildsLayout";
+
+import { ALL_COLUMNS, COLUMN_NAME, type CalculationOption, type ColumnId, type ColumnsMenu, type ExtraColumnId, type TableCalculation, type TableChip, type TableFooterView, type TableRowView, type TableTool } from "./BuildsTableView";
 
 /** What the list is asked for: everything in the address but the view, which changes what is drawn, not what is read. */
 export function listParamsOf(params: GalleryParams): BuildsTableOptions {
@@ -313,8 +315,8 @@ export const MAPS_PAGE = 24;
 
 /* ── the rows ── */
 
-/** A build as a row of the Table. */
-export function tableRow(build: BuildsTableBuild, now: number): TableRowView {
+/** A build as a row of the Table. The extra columns' values are worked out only for the columns that are drawn. */
+export function tableRow(build: BuildsTableBuild, now: number, extras: readonly ExtraColumnId[] = []): TableRowView {
   const c = build.classifiedAs;
   const first = (facet: Facet) => {
     if (!c) return "";
@@ -349,6 +351,7 @@ export function tableRow(build: BuildsTableBuild, now: number): TableRowView {
     rebuilds: build.rebuildCount,
     open: build.open.count === 0 ? "" : `${build.open.count} open${build.open.reward ? ` · £${build.open.reward}` : ""}`,
     cost: first("cost"),
+    ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, id === "shape" ? shapeWord(build.shape) : first(id)])) } : null),
   };
 }
 
@@ -358,6 +361,92 @@ export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "to
 /** SV-23 P1: Steps and Sessions join once the list carries the stored counts. */
 export function columnsFor(countsLive: boolean): readonly ColumnId[] {
   return countsLive ? ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"] : LIVE_COLUMNS;
+}
+
+/* ── the columns the reader chose (SV-24 P2) ── */
+
+/** The columns the chooser offers: all 24, less Steps and Sessions until the list carries the stored counts. */
+export function availableColumns(countsLive: boolean): ColumnId[] {
+  return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions"));
+}
+
+/** The columns drawn: the default twelve, or the ones the reader kept, always with Build, always in the table's own order. */
+export function chosenColumns(saved: readonly string[] | null, countsLive: boolean): ColumnId[] {
+  if (saved === null) return [...columnsFor(countsLive)];
+  const wanted = new Set(saved);
+  return availableColumns(countsLive).filter((id) => id === "build" || wanted.has(id));
+}
+
+/** "12 of 24". */
+export const columnsLabel = (chosen: readonly ColumnId[], countsLive: boolean): string => `${chosen.length} of ${availableColumns(countsLive).length}`;
+
+/** The chooser's checklist. */
+export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void): ColumnsMenu {
+  return { options: availableColumns(countsLive).map((id) => ({ id, name: COLUMN_NAME[id], on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })), onToggle, onReset };
+}
+
+/** The chosen columns with one turned on or off. Build stays. */
+export function toggledColumns(chosen: readonly ColumnId[], id: ColumnId): string[] {
+  if (id === "build") return [...chosen];
+  return chosen.includes(id) ? chosen.filter((entry) => entry !== id) : [...chosen, id];
+}
+
+/* ── the footer's calculations (SV-24 P2): worked out from the rows on the page, no request ── */
+
+const NUMBERS: Partial<Record<ColumnId, (row: TableRowView) => number | null>> = {
+  steps: (row) => row.steps,
+  sessions: (row) => row.sessions,
+  reproductions: (row) => row.reproductions,
+  rebuilds: (row) => row.rebuilds,
+};
+
+const WORDS: Partial<Record<ColumnId, (row: TableRowView) => string[]>> = {
+  built: (row) => [row.built],
+  field: (row) => [row.field],
+  tools: (row) => row.tools.map((tool) => tool.name),
+  cost: (row) => [row.cost],
+  ...Object.fromEntries((["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"] as const).map((id) => [id, (row: TableRowView) => [row.extra?.[id] ?? ""]])),
+};
+
+export const CALC_WORD: Record<CalcKind, string> = { sum: "Sum", median: "Median", common: "Most common" };
+
+/** What can be worked out on a column: a count has a sum and a median, a word its most common value, the rest nothing. */
+export function calculationsFor(column: ColumnId): CalcKind[] {
+  return NUMBERS[column] ? ["sum", "median"] : WORDS[column] ? ["common"] : [];
+}
+
+/** The value of one calculation over the rows, or null when no row has a value for it. */
+export function calculate(calculation: Calculation, rows: readonly TableRowView[]): string | null {
+  const column = calculation.column as ColumnId;
+  if (!calculationsFor(column).includes(calculation.kind)) return null;
+  const numbers = NUMBERS[column];
+  if (numbers) {
+    const values = rows.flatMap((row) => {
+      const value = numbers(row);
+      return value === null ? [] : [value];
+    });
+    if (values.length === 0) return null;
+    return String(calculation.kind === "sum" ? values.reduce((total, value) => total + value, 0) : medianOf(values));
+  }
+  return mostCommon(rows.flatMap((row) => WORDS[column]?.(row) ?? []));
+}
+
+/** The calculations the reader added that still make sense for the columns drawn, as footer entries. */
+export function footerCalculations(calculations: readonly Calculation[], chosen: readonly ColumnId[], rows: readonly TableRowView[], onRemove: (calculation: Calculation) => void): TableCalculation[] {
+  return calculations
+    .filter((calculation) => chosen.includes(calculation.column as ColumnId) && CALC_KINDS.includes(calculation.kind))
+    .map((calculation) => {
+      const text = `${CALC_WORD[calculation.kind]}, ${COLUMN_NAME[calculation.column as ColumnId]}`;
+      return { key: `${calculation.column}:${calculation.kind}`, text: `${text} ${calculate(calculation, rows) ?? "·"}`, onRemove: () => onRemove(calculation) };
+    });
+}
+
+/** The menu of Add a calculation: each drawn column that can have one, with the ones already added on. */
+export function calculationOptions(calculations: readonly Calculation[], chosen: readonly ColumnId[]): CalculationOption[] {
+  return chosen.flatMap((column) => {
+    const kinds = calculationsFor(column);
+    return kinds.length === 0 ? [] : [{ column, name: COLUMN_NAME[column], kinds: kinds.map((kind) => ({ kind, label: CALC_WORD[kind], on: calculations.some((entry) => entry.column === column && entry.kind === kind) })) }];
+  });
 }
 
 /** The most common value among the rows, or null. */

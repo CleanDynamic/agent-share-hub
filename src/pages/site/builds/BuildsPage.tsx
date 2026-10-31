@@ -24,7 +24,10 @@
    only when the address names one. A set is opened with the same view the reader is on. Saving, renaming, making public and
    deleting write, then the lists are read again; Library is kept in step by the data layer.
 
-   NOT LIVE YET (drawn on the dev page only): moving filters, the Columns chooser and Add a calculation (SV-24 P2). */
+   SV-24 P2: THE LAYOUT IS THE READER'S (`buildsLayout.ts`, `useBuildsLayout`): the filters' order (dragged by the grip, or Move up
+   and Move down from its menu), which are open, a checklist's height, the Table's columns (the Columns chooser, 12 of 24) and the
+   footer's calculations (sum, median, most common, from the rows loaded: no request). It is kept in the open filter set when the
+   reader made it, and in this browser otherwise. */
 
 import { Suspense, useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,7 +38,8 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
-import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, setFilterSetPublic, type FilterSet } from "@/lib/build/filterSets";
+import { effectiveOrder, moved, orderedBy, placed, withCalculation, withColumns, withHeight, withOpened, withOrder, type BuildsLayout } from "@/lib/build/buildsLayout";
+import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, saveFilterSetLayout, setFilterSetPublic, type FilterSet, type FilterSetDetail } from "@/lib/build/filterSets";
 import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
 import { galleryHref, parseGalleryParams, type GalleryParams, type GalleryViewMode } from "@/lib/build/galleryParams";
@@ -53,7 +57,11 @@ import {
   SORT_OPTIONS,
   activeChips,
   activeCount,
-  columnsFor,
+  calculationOptions,
+  chosenColumns,
+  columnsLabel,
+  columnsMenu,
+  footerCalculations,
   listParamsOf,
   liveCatalogue,
   nextTableOffset,
@@ -61,11 +69,14 @@ import {
   tableFooter,
   tableRow,
   toggled,
+  toggledColumns,
   withRange,
   withoutChip,
   type PanelOrder,
 } from "./buildsModel";
 import { BuildsClassificationView, BuildsMapsPane, prefetchView } from "./buildsViews";
+import { EXTRA_COLUMNS, type ExtraColumnId } from "./BuildsTableView";
+import { useBuildsLayout } from "./useBuildsLayout";
 import { cardOf, readFacetChoice, writeFacetChoice } from "./classificationModel";
 import type { MapsDirection } from "./BuildsMapsView";
 
@@ -102,8 +113,7 @@ export default function BuildsPage() {
   const go = (next: GalleryParams) => navigate(galleryHref(next), { preventScrollReset: true });
   const hrefFor = (next: GalleryViewMode) => galleryHref({ ...params, view: next === "table" ? undefined : next });
 
-  /* The panel's own: which filters were opened on this visit, and how each checklist is ordered. */
-  const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
+  /* The panel's own, for the visit: how each checklist is ordered. Which filters are open is the layout's. */
   const [orders, setOrders] = useState<Record<string, PanelOrder>>({});
   /* Maps: which way the Map is drawn, kept for the visit. */
   const [direction, setDirection] = useState<MapsDirection>("horizontal");
@@ -132,6 +142,21 @@ export default function BuildsPage() {
   const mySets = useQuery({ queryKey: ["build", "listMyFilterSets", userId], queryFn: () => listMyFilterSets(), enabled: userId !== null, staleTime: SLOW_STALE_MS });
   const openSet = useQuery({ queryKey: ["build", "getFilterSet", params.set], queryFn: () => getFilterSet(params.set as string), enabled: Boolean(params.set), staleTime: SLOW_STALE_MS });
 
+  /* SV-24 P2: the layout, in the open set when the reader made it and in this browser otherwise. */
+  const openDetail = openSet.data ?? null;
+  const { layout, update } = useBuildsLayout(
+    openDetail?.mine ? { id: openDetail.id, search: openDetail.search, layout: openDetail.layout } : null,
+    async (set, next: BuildsLayout) => {
+      try {
+        await saveFilterSetLayout(set.id, set.search, next);
+        queryClient.setQueryData<FilterSetDetail | null>(["build", "getFilterSet", set.id], (current) => (current ? { ...current, layout: next } : current));
+      } catch (error) {
+        reportError(error, { source: "query", context: "saveFilterSetLayout" });
+        toast.error("Couldn't keep the layout in the filter set.");
+      }
+    },
+  );
+
   useEffect(() => {
     if (list.error) reportError(list.error, { source: "query", context: "listBuildsTable" });
   }, [list.error]);
@@ -158,13 +183,16 @@ export default function BuildsPage() {
   }, [maps]);
 
   const total = list.data?.pages[0]?.total ?? null;
-  const rows = builds.map((build) => tableRow(build, now));
+  const countsLive = list.data?.pages[0]?.countsLive === true;
+  const columns = chosenColumns(layout.columns, countsLive);
+  const extras = columns.filter((id): id is ExtraColumnId => (EXTRA_COLUMNS as readonly string[]).includes(id));
+  const rows = builds.map((build) => tableRow(build, now, extras));
+  const calculationChoices = calculationOptions(layout.calculations, columns);
   const loading = list.isLoading;
   usePageReady("builds", !loading && (view !== "maps" || mapsSettled));
 
   const classified = classification.data?.live === true;
   const patternsLive = facets.data?.patternsLive === true;
-  const countsLive = list.data?.pages[0]?.countsLive === true;
   const sections = panelSections({
     facets: params.facets ?? [],
     shapes: params.shapes ?? [],
@@ -172,7 +200,7 @@ export default function BuildsPage() {
     open: params.open === true,
     counts: classified ? (classification.data?.counts ?? {}) : null,
     patterns: patternsLive ? (facets.data?.patterns ?? []) : null,
-    opened,
+    opened: new Set(layout.opened),
     orders,
     ranges: params.ranges,
     spread: countsLive ? (spread.data ?? null) : null,
@@ -181,6 +209,10 @@ export default function BuildsPage() {
     model: params.model,
     worksOn: countsLive ? (worksOn.data ?? null) : null,
   });
+  /* The filters in the reader's order. The ones drawn open are what a move steps through. */
+  const orderedSections = orderedBy(sections, layout.order);
+  const sectionIds = sections.map((section) => section.id);
+  const openIds = orderedSections.filter((section) => section.kind !== "closed").map((section) => section.id);
   const rangesLive = countsLive && Boolean(spread.data);
   const count = total ?? builds.length;
 
@@ -206,7 +238,6 @@ export default function BuildsPage() {
     }
   };
 
-  const openDetail = openSet.data ?? null;
   const savedSets: SavedSetsProps | undefined =
     userId === null
       ? undefined
@@ -259,7 +290,7 @@ export default function BuildsPage() {
   const filters: BuildsFiltersViewProps = {
       activeCount: activeCount(params),
       savedSets,
-      sections,
+      sections: orderedSections,
       catalogue: { total: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)) },
       onRange: (sectionId, value) => {
         if ((RANGE_KEYS as readonly string[]).includes(sectionId)) navigate(galleryHref(withRange(params, sectionId as RangeKey, value)), { preventScrollReset: true, replace: true });
@@ -267,7 +298,11 @@ export default function BuildsPage() {
       onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
       onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
       onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
-      onOpenClosed: (sectionId) => setOpened((current) => new Set([...current, sectionId])),
+      onOpenClosed: (sectionId) => update((current) => withOpened(current, sectionId)),
+      onMove: (sectionId, direction) => update((current) => withOrder(current, moved(effectiveOrder(sectionIds, current.order), openIds, sectionId, direction))),
+      onDrop: (sectionId, index) => update((current) => withOrder(current, placed(effectiveOrder(sectionIds, current.order), openIds, sectionId, index))),
+      heights: layout.heights,
+      onResize: (sectionId, height) => update((current) => withHeight(current, sectionId, height)),
   };
 
   const onMoreMaps = () => {
@@ -366,11 +401,28 @@ export default function BuildsPage() {
               chips: activeChips(params),
               onRemoveChip: (key) => go(withoutChip(params, key)),
               onClearAll: () => go({ lens: params.lens, madeFor: [], madeWith: [], query: null, view: params.view, sort: params.sort }),
-              columns: columnsFor(countsLive),
+              columns,
+              columnsLabel: columnsLabel(columns, countsLive),
+              columnsMenu: columnsMenu(
+                columns,
+                countsLive,
+                (id) => update((current) => withColumns(current, toggledColumns(chosenColumns(current.columns, countsLive), id))),
+                layout.columns === null ? undefined : () => update((current) => withColumns(current, null)),
+              ),
               rows,
               sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,
               sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
-              footer: tableFooter(total, rows),
+              footer: {
+                ...tableFooter(total, rows),
+                calculations: footerCalculations(layout.calculations, columns, rows, (calculation) => update((current) => withCalculation(current, calculation, false))),
+                calculate:
+                  calculationChoices.length > 0
+                    ? {
+                        options: calculationChoices,
+                        onToggle: (column, kind) => update((current) => withCalculation(current, { column, kind }, !current.calculations.some((entry) => entry.column === column && entry.kind === kind))),
+                      }
+                    : undefined,
+              },
               onMore: list.hasNextPage ? () => void list.fetchNextPage() : undefined,
               loadingMore: list.isFetchingNextPage,
               empty: (

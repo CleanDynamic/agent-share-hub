@@ -16,14 +16,18 @@ import { Link } from "react-router-dom";
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
+import { Checkbox } from "@/components/brand/Checkbox";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
+import type { CalcKind } from "@/lib/build/buildsLayout";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -34,11 +38,22 @@ import { BuildsControl, BuildsTextButton, TABLE_ROW, ellipsis, text } from "./Bu
 
 /* ── props ── */
 
-export type ColumnId = "build" | "built" | "field" | "tools" | "steps" | "sessions" | "reproductions" | "confirmed" | "runs" | "rebuilds" | "open" | "cost";
+/** The board's twelve columns. */
+export type BoardColumnId = "build" | "built" | "field" | "tools" | "steps" | "sessions" | "reproductions" | "confirmed" | "runs" | "rebuilds" | "open" | "cost";
+
+/** SV-24 P2: the twelve more the Columns chooser offers, 24 in all: Shape and the classification facets that are not already a column. */
+export type ExtraColumnId = "shape" | "task" | "setting" | "role" | "technique" | "modality" | "method" | "autonomy" | "data" | "oversight" | "age" | "skill";
+
+export type ColumnId = BoardColumnId | ExtraColumnId;
 
 export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
 
-const HEAD: Record<ColumnId, string> = {
+export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"];
+
+/** Every column, the extras after the board's twelve (so the footer's groups stay together). */
+export const ALL_COLUMNS: readonly ColumnId[] = [...COLUMN_ORDER, ...EXTRA_COLUMNS];
+
+export const COLUMN_NAME: Record<ColumnId, string> = {
   build: "Build",
   built: "What was built",
   field: "Field",
@@ -51,7 +66,20 @@ const HEAD: Record<ColumnId, string> = {
   rebuilds: "Rebuilds",
   open: "Open",
   cost: "Cost to run",
+  shape: "Shape",
+  task: "Task",
+  setting: "Setting",
+  role: "Role",
+  technique: "Technique",
+  modality: "Modality",
+  method: "Method",
+  autonomy: "Autonomy",
+  data: "Data",
+  oversight: "Oversight",
+  age: "Age",
+  skill: "Skill",
 };
+const HEAD = COLUMN_NAME;
 
 const RIGHT: ReadonlySet<ColumnId> = new Set(["steps", "sessions", "reproductions", "rebuilds"]);
 
@@ -79,6 +107,8 @@ export interface TableRowView {
   rebuilds: number;
   open: string;
   cost: string;
+  /** SV-24 P2: the extra columns' values; absent where the dev page draws only the board's twelve. */
+  extra?: Readonly<Partial<Record<ExtraColumnId, string>>>;
 }
 
 export interface SortOption {
@@ -100,7 +130,32 @@ export interface TableFooterView {
   median?: string;
   /** "Total 214". */
   total?: string;
+  /** The dev page's button, with no menu. */
   onCalculate?: () => void;
+  /** SV-24 P2: the calculations added, each worked out from the loaded page. */
+  calculations?: readonly TableCalculation[];
+  /** SV-24 P2: Add a calculation as a menu of the columns it can be made on. */
+  calculate?: { options: readonly CalculationOption[]; onToggle: (column: ColumnId, kind: CalcKind) => void };
+}
+
+export interface TableCalculation {
+  key: string;
+  /** "Sum, Steps 214". */
+  text: string;
+  onRemove: () => void;
+}
+
+export interface CalculationOption {
+  column: ColumnId;
+  name: string;
+  kinds: readonly { kind: CalcKind; label: string; on: boolean }[];
+}
+
+export interface ColumnsMenu {
+  options: readonly { id: ColumnId; name: string; on: boolean; locked?: boolean }[];
+  onToggle: (id: ColumnId) => void;
+  /** Back to the default twelve; drawn only while the columns are not. */
+  onReset?: () => void;
 }
 
 export interface BuildsTableViewProps {
@@ -110,6 +165,8 @@ export interface BuildsTableViewProps {
   sort: { value: string; options: readonly SortOption[]; onChange: (value: string) => void };
   /** "12 of 24": drawn only where the chooser is live. */
   columnsLabel?: string;
+  /** SV-24 P2: the Columns chooser. Absent: the label is all there is. */
+  columnsMenu?: ColumnsMenu;
   chips: readonly TableChip[];
   onRemoveChip: (key: string) => void;
   onClearAll: () => void;
@@ -151,13 +208,43 @@ function SortMenu({ sort }: { sort: BuildsTableViewProps["sort"] }) {
   );
 }
 
-function LensRow({ lenses, lens, onLens, sort, columnsLabel }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel">) {
+/** The Columns chooser: a checklist of every column in a popover. Build is always on. */
+function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <BuildsControl aria-label={`Columns: ${label}`}>
+          <span style={{ color: t.label }}>Columns</span> {label}
+        </BuildsControl>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={6} style={{ width: 320, maxWidth: "calc(100vw - 28px)", padding: 16 }}>
+        <div role="group" aria-label="Columns" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 16 }}>
+          {menu.options.map((option) => (
+            <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
+              <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
+              <span>{option.name}</span>
+            </label>
+          ))}
+        </div>
+        {menu.onReset ? (
+          <div style={{ marginTop: 12 }}>
+            <BuildsTextButton onClick={menu.onReset}>Back to the default columns</BuildsTextButton>
+          </div>
+        ) : null}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu">) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
       <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
         <SortMenu sort={sort} />
-        {columnsLabel ? (
+        {columnsLabel && columnsMenu ? (
+          <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
+        ) : columnsLabel ? (
           <BuildsControl>
             <span style={{ color: t.label }}>Columns</span> {columnsLabel}
           </BuildsControl>
@@ -280,10 +367,12 @@ function cellOf(id: ColumnId, row: TableRowView): ReactNode {
       return row.open || "·";
     case "cost":
       return row.cost;
+    default:
+      return row.extra?.[id] ?? "";
   }
 }
 
-const QUIET: ReadonlySet<ColumnId> = new Set(["built", "field", "confirmed", "open", "cost"]);
+const QUIET: ReadonlySet<ColumnId> = new Set(["built", "field", "confirmed", "open", "cost", ...EXTRA_COLUMNS]);
 
 /** Rows past the first screen are skipped until they come near. */
 const FIRST_SCREEN_ROWS = 14;
@@ -306,10 +395,58 @@ function span(columns: readonly ColumnId[], from: ColumnId, group: readonly Colu
   return group.filter((id) => columns.includes(id) && columns.indexOf(id) >= columns.indexOf(from)).length;
 }
 
+/** Add a calculation: a menu of the columns one can be made on (sum and median of a count, most common of a word), or the dev page's plain button. */
+function AddCalculation({ footer }: { footer: TableFooterView }) {
+  if (footer.calculate) {
+    const { options, onToggle } = footer.calculate;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <BuildsTextButton size={11.5} color={t.text2}>
+            Add a calculation
+          </BuildsTextButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={6} style={{ maxHeight: 320, overflowY: "auto" }}>
+          {options.flatMap((option) =>
+            option.kinds.map((entry) => (
+              <DropdownMenuCheckboxItem key={`${option.column}:${entry.kind}`} checked={entry.on} onCheckedChange={() => onToggle(option.column, entry.kind)}>
+                {entry.label}, {option.name}
+              </DropdownMenuCheckboxItem>
+            )),
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+  return footer.onCalculate ? (
+    <BuildsTextButton size={11.5} color={t.text2} onClick={footer.onCalculate}>
+      Add a calculation
+    </BuildsTextButton>
+  ) : null;
+}
+
+/** The calculations added, each with its way to take it off, and the button that adds one. */
+function CalculationCell({ footer }: { footer: TableFooterView }) {
+  return (
+    <span style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 16px" }}>
+      <AddCalculation footer={footer} />
+      {(footer.calculations ?? []).map((calculation) => (
+        <span key={calculation.key} style={{ display: "inline-flex", alignItems: "baseline", gap: 4, ...text(11.5, 400, t.label) }}>
+          {calculation.text}
+          <BuildsTextButton size={11.5} aria-label={`Remove ${calculation.text}`} onClick={calculation.onRemove}>
+            ×
+          </BuildsTextButton>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: TableFooterView }) {
   const cells: ReactNode[] = [];
   const small = { ...text(11.5, 400, t.label), padding: "12px 12px 0 0" };
   const skip = new Set<ColumnId>();
+  const hasCalculations = Boolean(footer.onCalculate || footer.calculate);
   columns.forEach((id, position) => {
     if (skip.has(id)) return;
     if (id === "build") {
@@ -329,16 +466,25 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
       columns.slice(position).forEach((c) => skip.add(c));
       cells.push(
         <td key={id} colSpan={rest} style={{ ...small, padding: "12px 0 0" }}>
-          {footer.onCalculate ? <BuildsTextButton size={11.5} color={t.text2} onClick={footer.onCalculate}>Add a calculation</BuildsTextButton> : null}
+          {hasCalculations ? <CalculationCell footer={footer} /> : null}
         </td>,
       );
     } else {
       cells.push(<td key={id} style={small} />);
     }
   });
+  /* With Confirmed off the button has no cell of its own: it sits in a row under the footer, the width of the table. */
+  const apart = hasCalculations && !columns.includes("confirmed");
   return (
     <tfoot>
       <tr>{cells}</tr>
+      {apart ? (
+        <tr>
+          <td colSpan={columns.length} style={{ padding: "8px 0 0" }}>
+            <CalculationCell footer={footer} />
+          </td>
+        </tr>
+      ) : null}
     </tfoot>
   );
 }
@@ -346,10 +492,10 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty } = props;
+  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty } = props;
   return (
     <div data-testid="builds-table">
-      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} />
+      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} />
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>

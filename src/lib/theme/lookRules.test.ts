@@ -1185,6 +1185,10 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/buildsLayout.ts",
   "src/lib/build/buildsLayout.test.ts",
   "src/pages/site/builds/SetDialogs.tsx",
+  "src/pages/site/builds/filterDrag.ts",
+  "src/pages/site/builds/useBuildsLayout.ts",
+  "src/pages/site/builds/useBuildsLayout.test.tsx",
+  "src/pages/site/builds/buildsModel.layout.test.ts",
 ];
 
 /**
@@ -1511,6 +1515,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "no untouched shadcn",
+    text: `import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";`,
+    why: "SV-24: the Builds Table's Columns chooser is a checklist in the popover the app already uses (MadeWithLine, ToolPicker), behind the board's Columns control.",
+  },
+  {
+    rule: "no untouched shadcn",
     text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropd`,
     why: "SV-14: OpenBuilds' Sort is the menu the Builds Table's Sort opens (SV-11), a radio group behind the board's control. A styled select cannot be drawn: index.css paints every select's fill and border with !important.",
   },
@@ -1521,7 +1530,7 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
-    text: `<div role="group" aria-label={\`\${section.name} values\`} style={{ marginTop: 10 }}>`,
+    text: `<div ref={list} role="group" aria-label={\`\${section.name} values\`} style={{ ...(height ? { maxHeight: height,`,
     why: "SV-11: the Builds board starts a checklist 10 under its head.",
   },
   {

@@ -25,6 +25,7 @@ const sets = vi.hoisted(() => ({
   deleteFilterSet: vi.fn(),
   joinFilterSet: vi.fn(),
   leaveFilterSet: vi.fn(),
+  saveFilterSetLayout: vi.fn(),
 }));
 vi.mock("@/lib/build/filterSets", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/filterSets")>()), ...sets }));
 
@@ -93,6 +94,7 @@ beforeEach(() => {
   getWorksOnModelCounts.mockReset();
   getWorksOnModelCounts.mockResolvedValue(null);
   auth.user = null;
+  localStorage.clear();
   for (const fn of Object.values(sets)) fn.mockReset();
   sets.listMyFilterSets.mockResolvedValue([]);
   sets.getFilterSet.mockResolvedValue(null);
@@ -379,6 +381,102 @@ describe("SV-24 P1: saved filter sets", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ context: "createFilterSet" })));
     expect(await screen.findByText("Couldn't save that. Try again.")).toBeTruthy();
+  });
+});
+
+describe("SV-24 P2: the reader's layout", () => {
+  const SET_ID = "0b6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c10";
+  const sectionNames = () => Array.from(screen.getByTestId("builds-filters").querySelectorAll("section[aria-label]")).map((node) => node.getAttribute("aria-label")).filter((name) => name !== "Saved filter sets");
+  const stored = () => JSON.parse(localStorage.getItem("builds:layout:v1") ?? "null");
+
+  it("moves a filter from its grip's menu, keeps the order in this browser, and finds it there on the next visit", async () => {
+    const first = renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
+    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
+    /* The filters that are closed rows keep their places: Autonomy takes Field's slot, and Field the one Autonomy had. */
+    expect(stored().order[0]).toBe("autonomy");
+    expect(stored().order.indexOf("field")).toBeGreaterThan(stored().order.indexOf("task"));
+    first.unmount();
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]);
+  });
+
+  it("keeps a filter opened, and a checklist's height, for the next visit", async () => {
+    renderAt("/builds");
+    fireEvent.click(await screen.findByRole("button", { name: /^Task\s*Any/ }).catch(() => screen.findByRole("button", { name: /^Setting\s*Any/ })));
+    expect(stored().opened).toHaveLength(1);
+    fireEvent.keyDown(screen.getByRole("separator", { name: "Resize Field" }), { key: "End" });
+    await waitFor(() => expect(stored().heights).toEqual({ field: 480 }));
+  });
+
+  it("chooses the Table's columns from the Columns chooser, and keeps them", async () => {
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), derived: { skill: { values: ["no-coding"] } } } }], total: 1 });
+    renderAt("/builds");
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 12 of 24" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
+    expect(await screen.findByRole("columnheader", { name: "Skill" })).toBeTruthy();
+    expect(screen.getByText("No coding")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Columns: 13 of 24" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Rebuilds" }));
+    await waitFor(() => expect(screen.queryByRole("columnheader", { name: "Rebuilds" })).toBeNull());
+    expect(stored().columns).toContain("skill");
+    expect(stored().columns).not.toContain("rebuilds");
+    fireEvent.click(screen.getByRole("button", { name: "Back to the default columns" }));
+    await waitFor(() => expect(screen.queryByRole("columnheader", { name: "Skill" })).toBeNull());
+    expect(stored().columns).toBeNull();
+  });
+
+  it("offers no Steps or Sessions column until the list carries the stored counts", async () => {
+    renderAt("/builds");
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 10 of 22" }));
+    expect(screen.queryByRole("checkbox", { name: "Steps" })).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "Shape" })).toBeTruthy();
+  });
+
+  it("adds a calculation to the footer, worked out from the rows loaded with no request, and takes it off", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(listBuildsTable).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Add a calculation" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Sum, Reproductions" }));
+    expect(await screen.findByText("Sum, Reproductions 3")).toBeTruthy();
+    expect(stored().calculations).toEqual([{ column: "reproductions", kind: "sum" }]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Sum, Reproductions 3" }));
+    await waitFor(() => expect(screen.queryByText("Sum, Reproductions 3")).toBeNull());
+    expect(listBuildsTable).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the layout in the reader's own open set, and not in the browser", async () => {
+    auth.user = { id: "reader-1" };
+    const own = { id: SET_ID, name: "Mine", search: "shape=agent", isPublic: false, ownerId: "reader-1", layout: { order: ["autonomy"], opened: [], heights: {}, columns: null, calculations: [] }, mine: true, members: 0, member: false };
+    sets.getFilterSet.mockResolvedValue(own);
+    sets.listMyFilterSets.mockResolvedValue([own]);
+    sets.saveFilterSetLayout.mockResolvedValue(undefined);
+    renderAt(`/builds?shape=agent&set=${SET_ID}`);
+    await screen.findByRole("link", { name: "Build 1" });
+    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Move Autonomy" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
+    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]));
+    await waitFor(() => expect(sets.saveFilterSetLayout).toHaveBeenCalledTimes(1), { timeout: 3000 });
+    expect(sets.saveFilterSetLayout).toHaveBeenCalledWith(SET_ID, "shape=agent", expect.objectContaining({ order: expect.arrayContaining(["field", "autonomy"]) }));
+    expect(stored()).toBeNull();
+  });
+
+  it("keeps the layout in the browser when the open set is someone else's", async () => {
+    auth.user = { id: "reader-1" };
+    sets.getFilterSet.mockResolvedValue({ id: SET_ID, name: "Theirs", search: "", isPublic: true, ownerId: "maker-9", layout: { order: ["autonomy"], opened: [], heights: {}, columns: null, calculations: [] }, mine: false, members: 3, member: false });
+    renderAt(`/builds?set=${SET_ID}`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
+    await waitFor(() => expect(stored()).not.toBeNull());
+    expect(sets.saveFilterSetLayout).not.toHaveBeenCalled();
   });
 });
 
