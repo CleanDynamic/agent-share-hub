@@ -1235,6 +1235,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/openbuilds/openBuildsModel.ts",
   "src/lib/build/harnessWords.ts",
   "src/lib/build/sv27.harness.test.ts",
+  "src/lib/build/deployment.ts",
+  "src/lib/build/fork.ts",
+  "src/lib/build/duplicate.ts",
+  "src/lib/build/buildUpdates.ts",
 ];
 
 /**

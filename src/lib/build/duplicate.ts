@@ -10,6 +10,7 @@ import { AGENT_TYPE, FILE_TYPE, MANUAL_LINES_MAX, MANUAL_STEP_TYPE, MANUAL_TEXT_
 import { PROMPT_TYPE } from "./composePrompts";
 import type { BuildNode } from "./types";
 import { isSummaryPayload } from "./summaryTurn";
+import { rewriteDeploymentRefs } from "./deployment";
 
 export const DUPLICATE_COPY = {
   one: (name: string): string => `Duplicated ${name}`,
@@ -55,6 +56,19 @@ export function duplicateTiles(snapshot: BuildSnapshot, ids: readonly string[], 
     return id;
   };
   for (const row of tops) out.push(copy(row, row.parent_id, true));
+
+  // SV-27 P3: a deployment line, a served model, a relay's agents, a knowledge base's readers and a channel picked under How did
+  // it run? point at the copies of tiles copied together; a tile not copied is still pointed at as it was.
+  const copiedIds = new Map<string, string>();
+  // `copy` made the rows in this same order: each top, then what is inside it.
+  let at = 0;
+  const walk = (row: BuildNode) => {
+    copiedIds.set(row.id, made[at].id);
+    at += 1;
+    for (const inner of childrenOf(row.id)) walk(inner);
+  };
+  for (const row of tops) walk(row);
+  for (const row of made) row.payload = rewriteDeploymentRefs(row.payload, copiedIds) as Json;
 
   // Each top copy sits directly after its original; the siblings are numbered again, so no two share a place.
   const all = [...rows, ...made];
