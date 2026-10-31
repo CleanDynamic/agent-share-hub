@@ -86,7 +86,10 @@ describe("Recently removed", () => {
     fireEvent.click(within(window_).getByRole("button", { name: "Restore Prompt 4" }));
     await waitFor(() => expect(ids()).toContain(IDS.p3), { timeout: 15_000 });
     expect(tileOrder()).toEqual([IDS.p1, IDS.p2, IDS.team, IDS.p3, IDS.p4]);
-    expect(nodeRow(IDS.p3)).toEqual(JSON.parse(before));
+    // The row comes back as it was. The seed leaves out contributor_id (SV-16), whose default is null, and updated_at
+    // (SV-19) is the database's own stamp of the write, so it is not compared.
+    const { updated_at: _stamp, ...restored } = nodeRow(IDS.p3) ?? {};
+    expect(restored).toEqual({ contributor_id: null, ...JSON.parse(before) });
     // The file it makes comes back too, and into the tile that uses it.
     expect(nodeRow(IDS.file)?.payload).toMatchObject({ title: "orders.csv", made_by: IDS.p3 });
     expect(JSON.stringify(nodeRow(IDS.p4)?.payload)).toContain(IDS.file);

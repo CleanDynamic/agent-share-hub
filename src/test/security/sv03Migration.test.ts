@@ -10,9 +10,13 @@ const sql = () => readFileSync(`${DIR}/${FILE}`, "utf8");
 const code = () => sql().replace(/--[^\n]*/g, "");
 
 describe("the SV-03 migration", () => {
-  it("steps after the newest migration before it", () => {
-    const others = readdirSync(DIR).filter((name) => name !== FILE).sort();
-    expect(FILE > others[others.length - 1]).toBe(true);
+  /* It was the newest when SV-03 wrote it; later prompts add migrations after it (SV-22 to SV-24), so what lasts is that
+     its timestamp is its own and orders it against every other migration. */
+  it("has a timestamp of its own, so it runs in a defined place among the others", () => {
+    const stamp = FILE.slice(0, 14);
+    const others = readdirSync(DIR).filter((name) => name !== FILE && name.endsWith(".sql"));
+    expect(others.filter((name) => name.startsWith(stamp))).toEqual([]);
+    expect(FILE).toMatch(/^\d{14}_/);
   });
 
   it("adds the drafts index, only if it is missing, and does not add the two that already exist", () => {

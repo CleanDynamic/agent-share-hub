@@ -16,6 +16,8 @@ import { CategoryChip } from "@/components/brand/CategoryChip";
 import { GapMarker, gapEdge } from "@/components/brand/GapMarker";
 import { Plaque, plaqueState } from "@/components/brand/Plaque";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
+// The phone nav: MobileBottomNav became the dock (UI-P19); row 6 cites it.
+import { Dock } from "@/components/shell/Dock";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import * as controlsModule from "./controls";
@@ -47,6 +49,7 @@ const NAMES: Record<string, unknown> = {
   Plaque,
   plaqueState,
   GalleryCard,
+  Dock,
   Check,
 };
 

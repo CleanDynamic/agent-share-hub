@@ -258,6 +258,51 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "raised it, which may be any route in either theme. Same unresolved " +
       "question as the other two scrims — see the note below them.",
   },
+  /* Added in SV-26 with the reasons each has; the literals came in with CA-20 to SV-25 and the sweep had not been run. */
+  "src/dev/fixtures/parts.ts": {
+    max: 5,
+    why:
+      "The five colours a maker chose in the dev parts fixture (two workstreams, three sessions), written as a build " +
+      "stores them: payload and making colours are \"#RRGGBB\" strings the maker picked, the same data postLinks.ts holds, " +
+      "so they cannot be tokens. Only the dev boards and the tests read the fixture.",
+  },
+  "src/dev/fixtures/references.ts": {
+    max: 3,
+    why:
+      "The three colours a maker gave the reference groups in the dev references fixture, stored as a build stores a " +
+      "group's colour (a \"#RRGGBB\" string the maker picked, not the page's paint). Only the dev boards and tests read it.",
+  },
+  "src/pages/site/compose/ca20Fixture.ts": {
+    max: 2,
+    why:
+      "CA-20's fixture build: a reference group's colour and a tile's colour as the maker chose them, stored as \"#RRGGBB\" " +
+      "in the build's data. It is data under test, read by the CA-20 tests and harness, never paint on a live page.",
+  },
+  "src/lib/build/making.ts": {
+    max: 1,
+    why:
+      "Not a colour that is drawn: the validation message that tells a maker the stored format, \"A colour is written " +
+      "like #7FA7D9.\" The example is one of partColour.ts's suggested colours, so it shows a value the picker offers.",
+  },
+  "src/lib/build/referenceGroups.ts": {
+    max: 1,
+    why:
+      "Not a colour that is drawn: the validation message for a reference group's stored colour, \"A colour is written " +
+      "like #7FA7D9.\", the same wording and example as making.ts uses for a part.",
+  },
+  "src/pages/dev/MotionDemo.tsx": {
+    max: 3,
+    why:
+      "The dev motion harness (only under import.meta.env.DEV): two test hooks that set a tile's colour to a suggested " +
+      "maker colour so the audit can watch it change, and a black bar the audit hides or shows to frame its recordings.",
+  },
+  "src/pages/site/compose/modalRecipes.tsx": {
+    max: 1,
+    why:
+      "The selected segment's 4% white top highlight, inset 0 1px 0 rgba(255,255,255,.04). No token holds that one " +
+      "layer alone (control-shadow adds a drop shadow, surface-shadow is .035), and moving to either changes the look, " +
+      "which SV-26 may not. A later prompt should add the token; this entry goes then.",
+  },
 };
 
 /* THE THREE SCRIMS, together, because they are one unresolved question rather

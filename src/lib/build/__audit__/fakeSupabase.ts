@@ -88,10 +88,18 @@ export const LIVE_SCHEMA: Schema = {
   postMediaCap: 4,
 };
 
-/** Every migration in supabase/migrations applied: post_doc (20261016120000) and colour_swatches (20261020120000). */
+/** The migrations in supabase/migrations applied to the tables this fake serves: post_doc (20261016120000),
+    colour_swatches (20261020120000), and build_nodes.contributor_id (SV-16, 20261028130000) and build_nodes.updated_at
+    (SV-19, 20261030120000). */
 export const REPO_SCHEMA: Schema = {
   ...LIVE_SCHEMA,
-  tables: { ...LIVE_SCHEMA.tables, builds: [...LIVE_BUILDS, "post_doc"], profiles: [...PROFILES, "colour_swatches"], build_sessions: BUILD_SESSIONS },
+  tables: {
+    ...LIVE_SCHEMA.tables,
+    builds: [...LIVE_BUILDS, "post_doc"],
+    build_nodes: [...BUILD_NODES, "contributor_id", "updated_at"],
+    profiles: [...PROFILES, "colour_swatches"],
+    build_sessions: BUILD_SESSIONS,
+  },
   postMediaCap: 40,
 };
 

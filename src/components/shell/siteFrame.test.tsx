@@ -37,11 +37,6 @@ describe("SiteFrameView", () => {
   });
 });
 
-describe("the frame's numbers (UI-P55, the density pass)", () => {
-  const slot = (name: string) => screen.getByTestId("site-frame").querySelector<HTMLElement>(`[data-slot="${name}"]`)!;
-  const main = () => screen.getByTestId("site-frame").querySelector<HTMLElement>("main#main")!;
-});
-
 /* UI-P87 — the refined frame: the root on --frame, one surface wrapping main and the footer. */
 describe("SiteFrameView under the refined look", () => {
   const REFINED = "/dev/kit/pages/home";
