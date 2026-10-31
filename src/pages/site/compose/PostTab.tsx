@@ -50,6 +50,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import type { ComposeThread } from "./useComposeThread";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 export interface PostTabProps {
   thread: ComposeThread;
@@ -392,7 +393,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   useEffect(() => {
     setSelectRefusal(null);
     if (!selecting) return;
-    postTop.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    postTop.current?.scrollIntoView?.({ block: "start", behavior: scrollBehavior() });
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();

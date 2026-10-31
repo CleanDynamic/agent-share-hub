@@ -142,7 +142,7 @@ import { SelectionBar, type SelectionBarProps } from "./removePieces";
 import { outlineOnce, useHeld } from "./buildMotion";
 import { scrollToShow } from "./pageScroll";
 import { MotionChannel, MotionChannelContext } from "./listMotion";
-import { BASE } from "@/lib/theme/motion";
+import { BASE, scrollBehavior } from "@/lib/theme/motion";
 import type { Drawn } from "@/lib/build/buildSelection";
 import { ADDED, HANDLERS_THAT_CHANGE_NOTHING, HANDLERS_THAT_REMOVE, handlerSentence } from "@/lib/build/stepSentences";
 import { NOTICE_COPY } from "@/lib/build/referenceHistory";
@@ -1674,7 +1674,7 @@ function SandboxPageBody() {
     (keys: readonly string[]) => {
       selection.selectSessions(keys);
       const first = keys.find((key) => document.querySelector(`[data-session-key="${key}"]`));
-      if (first) document.querySelector(`[data-session-key="${first}"]`)?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      if (first) document.querySelector(`[data-session-key="${first}"]`)?.scrollIntoView?.({ block: "center", behavior: scrollBehavior() });
     },
     [selection],
   );
