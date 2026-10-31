@@ -1254,6 +1254,14 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/tools/registry.ts",
   "src/lib/build/setupFolder.ts",
   "src/lib/build/forkRules.ts",
+  "src/pages/site/compose/DeploymentDialog.tsx",
+  "src/pages/site/compose/DeploymentSection.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/lib/build/making.ts",
+  "src/hooks/useNodeType.ts",
+  "src/pages/site/compose/useComposePrompts.ts",
+  "src/lib/build/partnership.ts",
 ];
 
 /**

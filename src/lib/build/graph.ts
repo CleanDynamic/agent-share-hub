@@ -13,6 +13,7 @@
 // EVERY WRITE refuses bad input through buildLayerError with a message made of
 // identifiers and fixed words only, never the text the maker wrote (CONTRACT §9).
 
+import { DEPLOYMENT_KIND_NAME, cleanDeployment, deploymentKindOf, moveMemoryNote, typeOfKind, type DeploymentKind } from "./deployment";
 import { agentFieldsRefusal } from "./agentFields";
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
@@ -3094,4 +3095,50 @@ export async function setExtras(node: BuildNode, patch: Record<string, unknown>)
     else payload[key] = value;
   }
   return upsertNode(withPayload(node, payload));
+}
+
+// --- SV-27 P7: deployment tiles ------------------------------------------------------------------------------------------
+
+/** A deployment tile to add: its kind, its payload (Part 3's fields), and its title, if the maker gave one. */
+export interface DeploymentTileInput {
+  kind: DeploymentKind;
+  payload: Record<string, unknown>;
+  title?: string | null;
+}
+
+/**
+ * Add a deployment tile at the top level. Not a step: it takes no number (`isStepNode` leaves it out). Refused while its node type
+ * is not live (the migration), and for any payload `deploymentRefusal` refuses (an address, a key, a relay with one agent).
+ */
+export async function addDeploymentTile(buildId: string, tree: readonly NodeTree[], input: DeploymentTileInput): Promise<BuildNode> {
+  const type = typeOfKind(input.kind);
+  if (input.kind !== "front_end") await requireLiveType("addDeploymentTile", type, `${DEPLOYMENT_KIND_NAME[input.kind]} is not available yet: its node type is not switched on in the database.`);
+  // Part 3.4: a Memory tile for an agent that has the old Memory note takes the note into `keeps`, and the agent's note goes.
+  const agentId = typeof input.payload.agent === "string" ? input.payload.agent : null;
+  const agent = input.kind === "memory" && agentId ? flattenTree(tree).find((node) => node.id === agentId && node.type === AGENT_TYPE) : undefined;
+  const moved = agent && typeof payloadOf(agent).memory === "string" ? moveMemoryNote(payloadOf(agent), input.payload) : null;
+  let payload: Record<string, unknown>;
+  try {
+    payload = cleanDeployment(input.kind, moved ? moved.memory : input.payload) as unknown as Record<string, unknown>;
+  } catch (cause) {
+    throw refuse("addDeploymentTile", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  const created = await placeTopNode(buildId, tree, { type, title: titleOrNull(input.title), payload: payload as Json });
+  if (agent && moved) await upsertNode(withPayload(agent, moved.agent as Payload));
+  return created;
+}
+
+const flattenTree = (nodes: readonly NodeTree[]): NodeTree[] => nodes.flatMap((node) => [node, ...flattenTree(node.children ?? [])]);
+
+/** Change a deployment tile's payload: checked as on add; the rest of the tile is kept. */
+export async function setDeploymentTile(node: BuildNode, payload: Record<string, unknown>): Promise<BuildNode> {
+  const kind = deploymentKindOf({ type: node.type, payload: { ...payloadOf(node), ...payload } });
+  if (!kind) throw refuse("setDeploymentTile", "That is not part of the deployment.");
+  let cleaned: Record<string, unknown>;
+  try {
+    cleaned = cleanDeployment(kind, { ...payloadOf(node), ...payload }) as unknown as Record<string, unknown>;
+  } catch (cause) {
+    throw refuse("setDeploymentTile", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  return upsertNode(withPayload(node, cleaned as unknown as Payload));
 }

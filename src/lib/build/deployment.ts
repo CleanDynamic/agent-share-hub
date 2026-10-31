@@ -546,3 +546,43 @@ export function deploymentLineText(entries: readonly { kind: DeploymentKind; nam
 export function runChannelsOf(tiles: readonly DeploymentTile[]): { id: string; name: string }[] {
   return tiles.flatMap((tile) => (tile.kind === "channel" && tile.payload.starts_runs ? [{ id: tile.id, name: deploymentName(tile) }] : []));
 }
+
+/** SV-27 P7: the build's agents and teams, as a deployment tile's For offers them: "2 · Assistant", "3 · Team 3", "3.1 · Researcher". */
+export function agentChoicesOf(steps: readonly { id: string; kind: string; number: string; title: string | null; defaultTitle: string; children?: readonly unknown[] }[]): { id: string; label: string }[] {
+  const out: { id: string; label: string }[] = [];
+  const walk = (list: readonly { id: string; kind: string; number: string; title: string | null; defaultTitle: string; children?: readonly unknown[] }[]) => {
+    for (const step of list) {
+      if (step.kind === "agent" || step.kind === "team") out.push({ id: step.id, label: [step.number, step.title ?? step.defaultTitle].filter(Boolean).join(" · ") });
+      if (step.kind === "team" && step.children) walk(step.children as typeof list);
+    }
+  };
+  walk(steps);
+  return out;
+}
+
+/** SV-27 P7: "Runs on Mac Mini · 6 parts": the host, then how many deployment tiles. */
+export function deploymentSectionMeta(tiles: readonly DeploymentTile[]): string {
+  const host = tiles.find((tile) => tile.kind === "host");
+  return [host ? `Runs on ${deploymentName(host)}` : null, `${tiles.length} ${tiles.length === 1 ? "part" : "parts"}`].filter(Boolean).join(" · ");
+}
+
+/**
+ * SV-27 P7: the section's groups: one, unlabelled, when the build has one agent or team; else one per agent or team (headed by its
+ * title and step number), then the whole build's. Each group keeps DEPLOYMENT_ORDER.
+ */
+export function groupDeployment(tiles: readonly DeploymentTile[], agents: readonly { id: string; label: string }[]): { key: string; label: string | null; tiles: DeploymentTile[] }[] {
+  if (agents.length <= 1) return [{ key: "all", label: null, tiles: [...tiles] }];
+  const owner = (tile: DeploymentTile): string | null => (tile.kind === "front_end" ? tile.payload.front_end_of : tile.payload.agent) || null;
+  const groups = agents.map((agent) => ({ key: agent.id, label: agent.label, tiles: tiles.filter((tile) => owner(tile) === agent.id) }));
+  const rest = tiles.filter((tile) => !agents.some((agent) => agent.id === owner(tile)));
+  return [...groups, { key: "build", label: "The whole build", tiles: rest }].filter((group) => group.tiles.length > 0);
+}
+
+/** SV-27 P7: why a move cannot be made: deployment tiles stay in Deployment, and nothing from a session moves into it. */
+export const DEPLOYMENT_MOVE_REFUSAL = "Deployment parts stay in Deployment";
+export function deploymentMoveRefusal(moving: { type: string; payload?: unknown }, into: "session" | "deployment"): string | null {
+  const isDeployment = deploymentKindOf(moving) !== null;
+  if (isDeployment && into === "session") return DEPLOYMENT_MOVE_REFUSAL;
+  if (!isDeployment && into === "deployment") return DEPLOYMENT_MOVE_REFUSAL;
+  return null;
+}

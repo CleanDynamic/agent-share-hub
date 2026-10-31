@@ -13,6 +13,7 @@
    A PROMPT FROM A SESSION is refused when it is already in the build, and
    while it is on its way, so a double press adds it once. */
 
+import { DEPLOYMENT_KIND_NAME } from "@/lib/build/deployment";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -55,6 +56,9 @@ import {
   addMadeFile as writeMadeFile,
   addTool,
   addToolTile as addToolStep,
+  addDeploymentTile as addDeploymentStep,
+  setDeploymentTile,
+  type DeploymentTileInput,
   type ToolTileInput,
   addSystemPromptTile as addSystemPromptStep,
   addDatasetTile as addDatasetStep,
@@ -262,6 +266,10 @@ export interface ComposePrompts {
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
   addToolTile: (input: ToolTileInput) => Promise<string | null>;
+  /** SV-27 P7: a deployment tile (Host, Memory, Channel ...); resolves its id, or null if it failed. */
+  addDeploymentTile: (input: DeploymentTileInput) => Promise<string | null>;
+  /** SV-27 P7: change a deployment tile's fields. */
+  setDeployment: (id: string, payload: Record<string, unknown>) => void;
   /** CA-15 P9: a system prompt, a dataset and a GitHub repository as tiles; each resolves its id, or null if it failed. */
   addSystemPromptTile: (input: SystemPromptInput) => Promise<string | null>;
   addDatasetTile: (input: DatasetInput) => Promise<string | null>;
@@ -632,6 +640,8 @@ export function useComposePrompts({
     void writeStep(id, "Response not saved", (node) => setPromptReply(node, reply.trim() || null));
   const setExtrasOf = (id: string, patch: Record<string, unknown>) =>
     void writeStep(id, "Optional fields not saved", (node) => setExtras(node, patch));
+  const setDeployment = (id: string, payload: Record<string, unknown>) =>
+    void writeStep(id, "Deployment not saved", (node) => setDeploymentTile(node, payload));
   const setTextOf = (id: string, text: string) =>
     void writeStep(id, "Prompt not saved", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
@@ -719,6 +729,15 @@ export function useComposePrompts({
     attempt("Tool not added", async () => {
       const build = await latest.current.ensureBuild();
       const created = await addToolStep(build, nodes.current(), input);
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
+
+  /** SV-27 P7: Add › Deployment: one queued write through the composer's node writer. */
+  const addDeploymentTile = (input: DeploymentTileInput) =>
+    attempt(`${DEPLOYMENT_KIND_NAME[input.kind]} not added`, async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await addDeploymentStep(build, nodes.current(), input);
       nodes.record(created.id, created);
       return created.id;
     }, null);
@@ -941,5 +960,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

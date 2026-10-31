@@ -7,7 +7,7 @@
 
    A prompt opens in `FullPromptWindow`; a session is `SessionDialog`; this takes every other kind that has a window. */
 
-import { useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { asksHowRun } from "@/lib/build/modelRun";
@@ -30,7 +30,6 @@ import { bufferedHandlers } from "./editHandlers";
 import { useBuildHistoryContext } from "./useBuildHistory";
 import { GoesBlock, InsideBlock, MakesBlock, PicturesBlock, RuntimeBlocks, SummaryRow, TitleRow, ToolsUsedBlock, TrainedBlock, UsesBlock, WhereRanBlock } from "./editKit";
 import { ModelRunFields } from "./ModelRunFields";
-import { AgentRuntimeFields } from "./AgentRuntimeFields";
 import { SessionDialog } from "./SessionDialog";
 import { RunsGroup } from "./RunsFields";
 import {
@@ -82,6 +81,10 @@ interface Session {
   /** Close, dropping what is queued. */
   discard: (open: boolean) => void;
 }
+
+
+/** SV-27 P5: the agent's deployment fields, their own chunk (the composer's stays within its budget). */
+const AgentRuntimeFields = lazy(() => import("./AgentRuntimeFields").then((m) => ({ default: m.AgentRuntimeFields })));
 
 function useEditing(handlers: DetailsHandlers, onClose: () => void, view?: DetailsView | null): Session {
   const [buffer] = useState(() => new WriteBuffer());
@@ -288,6 +291,7 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
           <>
             {view.kind === "agent" && h.onModelRun && asksHowRun(input.harness, input.model) ? <ModelRunFields id={view.id} run={view.modelRun ?? null} hosts={view.runHosts} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
             {/* SV-27 P5: framework, compatible models, model routing, approvals, sandbox, role, tool permissions, the Deployment line. */}
+            <Suspense fallback={null}>
             <AgentRuntimeFields
               id={view.id}
               kind={view.kind}
@@ -302,6 +306,7 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
               onOpenTile={h.onSelect}
               onAddDeployment={h.onAddDeployment}
             />
+            </Suspense>
             <InsideBlock label={view.inside} rows={view.insideRows} phone={phone} handlers={h} />
             {inputs(view, h, phone, false)}
             <RuntimeBlocks view={view} phone={phone} handlers={h} />
