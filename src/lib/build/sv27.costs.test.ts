@@ -8,6 +8,7 @@ import { selfHostedTree } from "@/dev/fixtures/deployment/self-hosted";
 import { totalsRows, differences, type SideTotals } from "./compare";
 import { apiEstimateLine, apiEstimateOf, deploymentRunLines, measuredLine, measuredOf, setupCostsOf, setupLine } from "./deploymentCost";
 import { methodOf } from "./forkRules";
+import "./costFields";
 import { cleanExtras } from "./tileExtras";
 import type { NodeTree } from "./types";
 

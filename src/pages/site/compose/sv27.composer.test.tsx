@@ -109,7 +109,7 @@ describe("the List's Deployment section", () => {
 
   it("is unnumbered, in order, with its meta line", () => {
     expect(deploymentSectionMeta(tiles)).toBe("Runs on Mac Mini · 3 parts");
-    render(<DeploymentSection tiles={tiles} agents={[{ id: "a1", label: "1 · Assistant" }]} sessionNumber={() => 3} selectedId={null} phone={false} onOpen={vi.fn()} />);
+    render(<DeploymentSection tiles={tiles} steps={[{ id: "a1", kind: "agent", number: "1", title: "Assistant", defaultTitle: "Agent 1" }]} sessionNumber={() => 3} selectedId={null} phone={false} onOpen={vi.fn()} />);
     const section = screen.getByRole("region", { name: "Deployment" });
     expect(within(section).getAllByTestId("deployment-row").map((row) => row.getAttribute("data-tile-id"))).toEqual(["h1", "k1", "c1"]);
     expect(within(section).getByRole("button", { name: "Made in Session 3" })).toBeTruthy();
@@ -122,7 +122,7 @@ describe("the List's Deployment section", () => {
 
   it("opens a tile from its row", () => {
     const onOpen = vi.fn();
-    render(<DeploymentSection tiles={tiles} agents={[]} sessionNumber={() => null} selectedId={null} phone={false} onOpen={onOpen} />);
+    render(<DeploymentSection tiles={tiles} steps={[]} sessionNumber={() => null} selectedId={null} phone={false} onOpen={onOpen} />);
     fireEvent.click(screen.getByRole("button", { name: "Host: Mac Mini" }));
     expect(onOpen).toHaveBeenCalledWith("h1");
   });

@@ -1270,6 +1270,9 @@ export const CA03_FILES: readonly string[] = [
   "src/dev/fixtures/deployment/self-hosted.ts",
   "src/dev/fixtures/deployment/agent-team.ts",
   "src/dev/fixtures/deployment/node.ts",
+  "src/lib/build/architectureMap.ts",
+  "src/pages/site/compose/ArchitectureMap.tsx",
+  "src/lib/build/costFields.ts",
 ];
 
 /**

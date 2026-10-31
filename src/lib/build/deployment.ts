@@ -1,4 +1,4 @@
-// SV-27 — a build's deployment: everything a finished agent runs on and with, beyond its prompts.
+// SV-27: a build's deployment: everything a finished agent runs on and with, beyond its prompts.
 //
 // A DEPLOYMENT TILE is a top-level node of one of the nine deployment node types (host, inference_server, memory, channel,
 // voice, monitoring, billing, knowledge_base, relay), or a `live_app` that names an agent (`front_end_of`), shown as Front end.
@@ -585,4 +585,25 @@ export function deploymentMoveRefusal(moving: { type: string; payload?: unknown 
   if (isDeployment && into === "session") return DEPLOYMENT_MOVE_REFUSAL;
   if (!isDeployment && into === "deployment") return DEPLOYMENT_MOVE_REFUSAL;
   return null;
+}
+
+/** SV-27 P8: the providers a deployment names, with the tile each comes from, for Classification's Tools and stack. */
+export function deploymentStack(tree: readonly { id: string; type: string; title?: string | null; payload?: unknown; parent_id: string | null; position?: number | null }[]): { name: string; id: string }[] {
+  return deploymentTilesOf(tree).flatMap((tile) => {
+    const named = tile.kind === "knowledge_base" ? tile.payload.app : tile.kind === "front_end" ? tile.payload.built_with : "provider" in tile.payload ? tile.payload.provider : "";
+    return named ? [{ name: toolName(named) ?? named, id: tile.id }] : [];
+  });
+}
+
+/** SV-27 P7: the Add menu's Deployment items, wired: the group head on the first, each enabled once its node type is live. */
+export function deploymentMenuEntries(live: (type: string) => boolean, onAdd: ((kind: DeploymentKind) => void) | undefined, onWarm: (() => void) | undefined, offLine: string): { key: `deploy:${DeploymentKind}`; name: string; line: string; enabled: boolean; onSelect?: () => void; group?: string; onWarm?: () => void }[] {
+  return deploymentAddReadiness(live).map((item, at) => ({
+    key: `deploy:${item.kind}` as const,
+    name: item.name,
+    line: item.ready ? item.line : offLine,
+    enabled: item.ready && Boolean(onAdd),
+    onSelect: onAdd ? () => onAdd(item.kind) : undefined,
+    ...(at === 0 ? { group: DEPLOYMENT_GROUP_HEAD } : null),
+    ...(onWarm ? { onWarm } : null),
+  }));
 }

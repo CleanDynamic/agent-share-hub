@@ -1,4 +1,4 @@
-// SV-27 Part 5 — the agent and team fields a deployment needs: the framework an agent built in code uses, the models the maker
+// SV-27 Part 5: the agent and team fields a deployment needs: the framework an agent built in code uses, the models the maker
 // says it also works with, how its model is chosen, when it must ask before acting, where its commands run, its role in a team,
 // and what it may do with each of its tools.
 //
@@ -178,4 +178,33 @@ export function agentFieldsRefusal(node: { type: string; parent_id: string | nul
 /** The patch Approvals writes: the mode, and the reviewer model only with `reviewer` (any other mode takes it off). */
 export function approvalsPatch(mode: ApprovalMode | null, reviewerModel?: string | null): Record<string, unknown> {
   return { approval_mode: mode, reviewer_model: mode === "reviewer" ? (reviewerModel ?? null) : null };
+}
+
+/* ── SV-27 P8: Classification's reading of approvals (derive.ts calls these) ── */
+
+/** A Limits line that names approvals ("Ask before sending"); a budget or a step cap does not. */
+export const namesApproval = (value: unknown): boolean =>
+  (Array.isArray(value) ? value : typeof value === "string" ? [value] : []).some((line) => typeof line === "string" && /\b(approve|approval|approvals|ask|asks)\b/i.test(line));
+
+/** Autonomy from the approval modes said, the least guarded agent deciding; null when no agent says one. */
+export function autonomyFromApprovals(tiles: readonly { id: string; payload: Record<string, unknown> }[]): { value: "fully-autonomous" | "ai-acts-with-approval-gates" | "ai-suggests-and-you-approve"; ids: string[] } | null {
+  const moded = tiles.filter((tile) => APPROVAL_MODES.includes(tile.payload.approval_mode as ApprovalMode));
+  if (moded.length === 0) return null;
+  const of = (mode: ApprovalMode | ApprovalMode[]) => moded.filter((tile) => ([] as ApprovalMode[]).concat(mode).includes(tile.payload.approval_mode as ApprovalMode)).map((tile) => tile.id);
+  if (of("full").length > 0) return { value: "fully-autonomous", ids: of("full") };
+  if (of(["risky", "reviewer"]).length > 0) return { value: "ai-acts-with-approval-gates", ids: of(["risky", "reviewer"]) };
+  return { value: "ai-suggests-and-you-approve", ids: moded.map((tile) => tile.id) };
+}
+
+/** The engine a model run names and the framework an agent is built with, as Tools and stack reads them. */
+export function engineAndFramework(payload: Record<string, unknown>, engine?: string): string[] {
+  const run = payload.modelRun && typeof payload.modelRun === "object" ? (payload.modelRun as Record<string, unknown>) : {};
+  return [engine ?? (typeof run.engine === "string" ? run.engine : ""), typeof payload.framework === "string" ? payload.framework : ""].filter(Boolean);
+}
+
+/** Human oversight from the approval modes: an AI reviewer is a spot check; asking before every action, every output reviewed. */
+export function oversightFromApprovals(tiles: readonly { id: string; payload: Record<string, unknown> }[]): { value: "spot-checks" | "every-output-reviewed"; ids: string[] }[] {
+  const reviewed = tiles.filter((tile) => tile.payload.approval_mode === "reviewer").map((tile) => tile.id);
+  const every = tiles.filter((tile) => tile.payload.approval_mode === "every").map((tile) => tile.id);
+  return [...(reviewed.length > 0 ? [{ value: "spot-checks" as const, ids: reviewed }] : []), ...(every.length > 0 ? [{ value: "every-output-reviewed" as const, ids: every }] : [])];
 }

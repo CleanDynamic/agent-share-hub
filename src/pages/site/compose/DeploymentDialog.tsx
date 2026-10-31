@@ -24,6 +24,7 @@ import {
   SERVER_APIS,
   VOICE_MODE_LABEL,
   VOICE_MODES,
+  agentChoicesOf,
   deploymentRefusal,
   type DeploymentKind,
 } from "@/lib/build/deployment";
@@ -215,6 +216,21 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
         </div>
       </ModalForm>
     </ModalShell>
+  );
+}
+
+/** The window as the composer opens it: the build's agents worked out here, the tile written through `add`. */
+export function DeploymentWindow({ steps, add, onAdded, ...rest }: Omit<DeploymentDialogProps, "agents" | "onSave"> & { steps: Parameters<typeof agentChoicesOf>[0]; add: (input: { kind: DeploymentKind; payload: Payload }) => Promise<string | null>; onAdded: (id: string) => void }) {
+  return (
+    <DeploymentDialog
+      {...rest}
+      agents={agentChoicesOf(steps)}
+      onSave={(payload) => {
+        void add({ kind: rest.kind, payload }).then((id) => {
+          if (id) onAdded(id);
+        });
+      }}
+    />
   );
 }
 

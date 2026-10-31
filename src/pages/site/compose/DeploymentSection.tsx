@@ -3,7 +3,7 @@
    team when the build has more than one. A row opens its tile; "Made in Session 3" goes to the session. Rows use the existing
    plain row look: label left, value right, a hairline between rows. */
 
-import { DEPLOYMENT_GROUP_HEAD, DEPLOYMENT_KIND_NAME, deploymentName, deploymentSectionMeta, groupDeployment, type DeploymentTile } from "@/lib/build/deployment";
+import { agentChoicesOf, DEPLOYMENT_GROUP_HEAD, DEPLOYMENT_KIND_NAME, deploymentName, deploymentSectionMeta, groupDeployment, type DeploymentTile } from "@/lib/build/deployment";
 import { t } from "@/lib/theme/tokens";
 import { text } from "./refinedStyles";
 
@@ -11,7 +11,8 @@ import { TextButton } from "./composeControls";
 
 export interface DeploymentSectionProps {
   tiles: readonly DeploymentTile[];
-  agents: readonly { id: string; label: string }[];
+  /** The build's steps: its agents and teams head the groups. */
+  steps: Parameters<typeof agentChoicesOf>[0];
   /** A session's number, by key, for "Made in Session n". */
   sessionNumber: (key: string) => number | null;
   selectedId: string | null;
@@ -20,9 +21,9 @@ export interface DeploymentSectionProps {
   onSession?: (key: string) => void;
 }
 
-export function DeploymentSection({ tiles, agents, sessionNumber, selectedId, phone, onOpen, onSession }: DeploymentSectionProps) {
+export function DeploymentSection({ tiles, steps, sessionNumber, selectedId, phone, onOpen, onSession }: DeploymentSectionProps) {
   if (tiles.length === 0) return null;
-  const groups = groupDeployment(tiles, agents);
+  const groups = groupDeployment(tiles, agentChoicesOf(steps));
   return (
     <section aria-label={DEPLOYMENT_GROUP_HEAD} data-testid="deployment-section" style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 32, minWidth: 0 }}>
       <h3 style={{ ...text(14, 500, t.text), margin: 0, lineHeight: 1.3 }}>{DEPLOYMENT_GROUP_HEAD}</h3>

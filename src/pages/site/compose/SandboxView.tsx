@@ -22,7 +22,7 @@
    between `--hairline-module` dividers 28 wide. Build becomes a module (`flex: 999 1 560px`) holding its head, the
    Map's legend, the map well and its footer line. */
 
-import { DEPLOYMENT_GROUP_HEAD, deploymentAddReadiness, type DeploymentKind } from "@/lib/build/deployment";
+import { deploymentMenuEntries, type DeploymentKind } from "@/lib/build/deployment";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
 import { MoreHorizontal, X } from "lucide-react";
@@ -324,18 +324,7 @@ export function addEntries(props: AddMenuProps): AddEntry[] {
 }
 
 /** SV-27 P7: the Deployment group, after the existing items; each kind ready once its node type is live (Front end already is). */
-function deploymentEntries({ deploymentLive, onAddDeployment, onWarmDeployment }: AddMenuProps): AddEntry[] {
-  if (!deploymentLive) return [];
-  return deploymentAddReadiness(deploymentLive).map((item, at) => ({
-    key: `deploy:${item.kind}` as const,
-    name: item.name,
-    line: item.ready ? item.line : TILE_OFF_LINE,
-    enabled: item.ready && Boolean(onAddDeployment),
-    onSelect: onAddDeployment ? () => onAddDeployment(item.kind) : undefined,
-    ...(at === 0 ? { group: DEPLOYMENT_GROUP_HEAD } : null),
-    ...(onWarmDeployment ? { onWarm: onWarmDeployment } : null),
-  }));
-}
+const deploymentEntries = ({ deploymentLive, onAddDeployment, onWarmDeployment }: AddMenuProps): AddEntry[] => (deploymentLive ? deploymentMenuEntries(deploymentLive, onAddDeployment, onWarmDeployment, TILE_OFF_LINE) : []);
 
 function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false, onAddFromLibrary, onWarmLibrary }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {

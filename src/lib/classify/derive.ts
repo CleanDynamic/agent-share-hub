@@ -12,8 +12,8 @@
    WHERE A RULE'S EVIDENCE IS NOT BUILT YET (CA-15's Required plan on a Tool tile, a repository's "created here", a
    dataset's use), it is read from the payload key it will use and counts as absent until it is there. */
 
-import { APPROVAL_MODES, type ApprovalMode } from "@/lib/build/agentFields";
-import { deploymentTilesOf } from "@/lib/build/deployment";
+import { autonomyFromApprovals, engineAndFramework, namesApproval, oversightFromApprovals } from "@/lib/build/agentFields";
+import { deploymentStack } from "@/lib/build/deployment";
 import { toolFor, toolName } from "@/lib/tools/registry";
 import type { Making } from "@/lib/build/making";
 import {
@@ -399,24 +399,18 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
   if (ownCode.length > 0) out.add("method", "direct-api", ids(ownCode));
 
   /* ── Autonomy ── */
+  const approvalAutonomy = autonomyFromApprovals([...agents, ...teams]);
   if (prompts.length + agents.length + teams.length + codes.length + decisions.length + tiles.filter((t) => t.kind === "manual").length > 0) {
     const everyAgent = [...agents, ...teams];
     if (everyAgent.length === 0) {
       out.add("autonomy", "you-do-each-step", ids(prompts));
-    } else if (everyAgent.some((tile) => APPROVAL_MODES.includes(tile.payload.approval_mode as ApprovalMode))) {
+    } else if (approvalAutonomy) {
       // SV-27 P8: an agent's approval mode says how it is guarded; the least guarded agent decides, its tiles the source.
-      const moded = everyAgent.filter((tile) => APPROVAL_MODES.includes(tile.payload.approval_mode as ApprovalMode));
-      const modeOf = (tile: Tile) => tile.payload.approval_mode as ApprovalMode;
-      const full = moded.filter((tile) => modeOf(tile) === "full");
-      const gated = moded.filter((tile) => modeOf(tile) === "risky" || modeOf(tile) === "reviewer");
-      if (full.length > 0) out.add("autonomy", "fully-autonomous", ids(full));
-      else if (gated.length > 0) out.add("autonomy", "ai-acts-with-approval-gates", ids(gated));
-      else out.add("autonomy", "ai-suggests-and-you-approve", ids(moded));
+      out.add("autonomy", approvalAutonomy.value, approvalAutonomy.ids);
     } else if (scheduled.length === 0) {
       out.add("autonomy", "ai-suggests-and-you-approve", ids(everyAgent));
     } else {
       // SV-27 P8: a Limits line is a gate only when it names approvals; a budget or a step cap is not one.
-      const namesApproval = (value: unknown) => (Array.isArray(value) ? value : typeof value === "string" ? [value] : []).some((line) => typeof line === "string" && /\b(approve|approval|approvals|ask|asks)\b/i.test(line));
       const guarded = (tile: Tile) => truthy(tile.payload.approvals, tile.payload.approval, tile.payload.needs_approval) || namesApproval(tile.payload.limits) || namesApproval(tile.payload.limit);
       const unguarded = scheduled.filter((tile) => !guarded(tile));
       out.add("autonomy", unguarded.length > 0 ? "fully-autonomous" : "ai-acts-with-approval-gates", ids(scheduled));
@@ -425,10 +419,7 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
 
   /* ── Human oversight ── */
   // SV-27 P8: an AI reviewer is a spot check, from the agent's tile; asking before every action is every output reviewed.
-  const reviewed = [...agents, ...teams].filter((tile) => tile.payload.approval_mode === "reviewer");
-  const everyAction = [...agents, ...teams].filter((tile) => tile.payload.approval_mode === "every");
-  if (reviewed.length > 0) out.add("oversight", "spot-checks", ids(reviewed));
-  if (everyAction.length > 0) out.add("oversight", "every-output-reviewed", ids(everyAction));
+  for (const said of oversightFromApprovals([...agents, ...teams])) out.add("oversight", said.value, said.ids);
   const autonomy = out.result().autonomy?.values[0];
   if (autonomy === "you-do-each-step" || autonomy === "ai-suggests-and-you-approve") out.add("oversight", "every-output-reviewed", ids(prompts));
   else if (checks.length > 0) out.add("oversight", "spot-checks", ids(checks));
@@ -482,16 +473,8 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
   }
   for (const tile of codes) noteStack(tile.step?.language ?? str(tile.payload.language), "language", [tile.id]);
   // SV-27 P8: deployment providers, inference engines and agent frameworks, each from its tiles.
-  for (const tile of deploymentTilesOf(build.tree ?? [])) {
-    const named = tile.kind === "knowledge_base" ? tile.payload.app : tile.kind === "front_end" ? tile.payload.built_with : "provider" in tile.payload ? tile.payload.provider : "";
-    if (named) noteStack(toolName(named) ?? named, "app", [tile.id]);
-  }
-  for (const tile of [...agents, ...teams, ...prompts, ...codes]) {
-    const engine = tile.step?.modelRun?.engine ?? (isRecord(tile.payload.modelRun) ? str(tile.payload.modelRun.engine) : "");
-    if (engine) noteStack(toolName(engine) ?? engine, "app", [tile.id]);
-    const framework = str(tile.payload.framework);
-    if (framework) noteStack(toolName(framework) ?? framework, "app", [tile.id]);
-  }
+  for (const entry of deploymentStack(build.tree ?? [])) noteStack(entry.name, "app", [entry.id]);
+  for (const tile of [...agents, ...teams, ...prompts, ...codes]) for (const name of engineAndFramework(tile.payload, tile.step?.modelRun?.engine)) noteStack(toolName(name) ?? name, "app", [tile.id]);
   for (const [value, entry] of stackFrom) out.add("stack", value, [...entry.from]);
 
   /* ── The gap questions ── */
