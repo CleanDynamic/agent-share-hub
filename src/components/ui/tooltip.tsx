@@ -18,9 +18,28 @@ import { tooltipStyle } from "@/lib/theme/controls";
    measurement. That is also the right call for 12px type that has to be read in
    under a second. */
 
-const TooltipProvider = TooltipPrimitive.Provider;
+/* SV-26 P2: no provider sits around the whole app any more (it put this library into the first download, and nothing on
+   the first page draws a tooltip). A `Tooltip` with no `TooltipProvider` above it brings its own, with the same default
+   delays the app's one had; a component that draws several sits them under one `TooltipProvider`, so moving from one to
+   the next still skips the delay. A `TooltipProvider` with no props inside another passes through to the outer one, as
+   it shared the app's before; one with its own delays starts its own, as before. */
+const TooltipScope = React.createContext(false);
 
-const Tooltip = TooltipPrimitive.Root;
+const TooltipProvider = ({ children, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => {
+  const inScope = React.useContext(TooltipScope);
+  if (inScope && Object.keys(props).length === 0) return <>{children}</>;
+  return (
+    <TooltipPrimitive.Provider {...props}>
+      <TooltipScope.Provider value={true}>{children}</TooltipScope.Provider>
+    </TooltipPrimitive.Provider>
+  );
+};
+
+const Tooltip = (props: React.ComponentProps<typeof TooltipPrimitive.Root>) => {
+  const inScope = React.useContext(TooltipScope);
+  const root = <TooltipPrimitive.Root {...props} />;
+  return inScope ? root : <TooltipPrimitive.Provider>{root}</TooltipPrimitive.Provider>;
+};
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 

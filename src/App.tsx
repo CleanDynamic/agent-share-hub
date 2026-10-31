@@ -2,10 +2,7 @@ import { Suspense, lazy } from "react";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Navigate, Route, useParams, Routes } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AddToCollectionHost } from "@/components/library/AddToCollectionHost";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { isPermissionError } from "@/lib/errors/permission";
 import { connectErrorReporting } from "@/lib/errors/wire";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -36,6 +33,8 @@ import { SignInSite } from "./pages/site/signin/SignInRoutes";
 const ComposeRoute = lazy(() => preloadComposeRoute().then((m) => ({ default: m.ComposeRoute })));
 /** SV-26 P2: these draw nothing when the page opens; each loads once the browser is idle (IdleMount). */
 const Toaster = lazy(() => import("@/components/ui/toaster").then((m) => ({ default: m.Toaster })));
+/* The second toaster (sonner) too: `IdleSonner` shows any toast raised before it arrived, so none is lost. */
+const Sonner = lazy(() => import("@/components/ui/idleSonner").then((m) => ({ default: m.IdleSonner })));
 const PresenceProvider = lazy(() => import("@/components/PresenceProvider").then((m) => ({ default: m.PresenceProvider })));
 const QuotableSelectionProvider = lazy(() =>
   import("@/components/quoting/QuotableSelectionProvider").then((m) => ({ default: m.QuotableSelectionProvider })),
@@ -225,7 +224,8 @@ const App = () => (
         against; removing it is a structural change to an existing layout
         element for no visual gain. */}
     <div style={{ position: "relative", zIndex: 1 }}>
-    <HelmetProvider>
+    {/* SV-26 P2: no HelmetProvider. On React 19 react-helmet-async's provider draws its children and nothing else (each
+        Helmet hoists its own tags), so it only put the library into the first download. */}
     <PersistQueryClientProvider
       client={queryClient}
       persistOptions={{
@@ -235,11 +235,14 @@ const App = () => (
         dehydrateOptions: { shouldDehydrateQuery: shouldKeep },
       }}
     >
-      <TooltipProvider>
+      {/* SV-26 P2: no app-wide TooltipProvider: a Tooltip brings its own when none is above it (components/ui/tooltip.tsx). */}
+      <>
         <IdleMount>
           <Toaster />
         </IdleMount>
-        <Sonner />
+        <IdleMount>
+          <Sonner />
+        </IdleMount>
         {/* SV-04: navigation runs as a transition, so the page on screen stays while the next one's code loads. */}
         <BrowserRouter future={{ v7_startTransition: true }}>
           <ThemeProvider>
@@ -602,9 +605,8 @@ const App = () => (
           </AuthProvider>
           </ThemeProvider>
         </BrowserRouter>
-      </TooltipProvider>
+      </>
     </PersistQueryClientProvider>
-    </HelmetProvider>
     </div>
   </ErrorBoundary>
 );
