@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 
 const MIN_POSTS = 3;
 
@@ -70,6 +71,6 @@ export async function recomputeDerivedBio(userId: string): Promise<void> {
       .eq("id", userId);
     if (upErr) throw upErr;
   } catch (err) {
-    console.error("[recomputeDerivedBio] failed for", userId, err);
+    reportError(err, { source: "console", context: "recomputeDerivedBio failed for" });
   }
 }

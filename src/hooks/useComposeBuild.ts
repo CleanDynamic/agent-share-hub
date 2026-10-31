@@ -50,6 +50,7 @@ import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
 import { canSucceedLater, errorCode, errorLine, shortReason } from "@/lib/errors/code";
 import { composeBuildQueryKey } from "./composeBuildQueryKey";
 import { fetchNodeTypes } from "./useNodeType";
+import { reportError } from "@/lib/errors/report";
 
 /** Quiet enough that a sentence of typing is one write, short enough that the
  *  indicator settles while the creator is still looking at the field. */
@@ -296,7 +297,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       } else {
         stoppedRef.current = true;
         setSaveFailure({ reason: shortReason(cause), code: errorCode(cause) });
-        console.error(errorLine("[Compose] header save failed", cause));
+        reportError(errorLine("[Compose] header save failed", cause), { source: "console", context: "useComposeBuild" });
       }
     } finally {
       inFlightRef.current = false;

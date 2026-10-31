@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 
 const BOT_REGEX =
   /(googlebot|bingbot|duckduckbot|yandex|baiduspider|slurp|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|openai|gptbot|chatgpt-user|anthropic|claudebot|perplexity|cohere|applebot|crawler|spider|bot\/)/i;
@@ -33,13 +34,13 @@ export async function recordPostView({
       referrer: ref,
       is_bot_or_crawler: isBot,
     });
-  if (error) console.warn("[recordPostView] log insert failed", error);
+  if (error) reportError(error, { source: "console", context: "recordPostView log insert failed" });
 
   if (!isBot) {
     try {
       await supabase.rpc("increment_content_view_count", { _content_id: postId });
     } catch (e) {
-      console.warn("[recordPostView] view count rpc failed", e);
+      reportError(e, { source: "console", context: "recordPostView view count rpc failed" });
     }
   }
 }

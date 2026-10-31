@@ -21,8 +21,8 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      // SV-01: errors go through reportError (src/lib/errors/report.ts). A warning for now; SV-26 makes it an error.
-      "no-console": "warn",
+      // SV-01: errors go through reportError (src/lib/errors/report.ts). SV-26: an error.
+      "no-console": "error",
     },
   },
   {

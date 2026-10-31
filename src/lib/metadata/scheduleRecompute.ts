@@ -10,6 +10,7 @@
  */
 
 import { recomputeMetadata } from "./recomputeMetadata";
+import { reportError } from "@/lib/errors/report";
 
 const DEBOUNCE_MS = 5000;
 
@@ -22,7 +23,7 @@ export function scheduleRecompute(contentItemId: string): void {
   const t = setTimeout(() => {
     queue.delete(contentItemId);
     recomputeMetadata(contentItemId).catch((err) => {
-      console.error("[scheduleRecompute] recompute failed", contentItemId, err);
+      reportError(err, { source: "console", context: "scheduleRecompute recompute failed" });
     });
   }, DEBOUNCE_MS);
   queue.set(contentItemId, t);
@@ -39,6 +40,6 @@ export async function flushRecompute(contentItemId: string): Promise<void> {
   try {
     await recomputeMetadata(contentItemId);
   } catch (err) {
-    console.error("[flushRecompute] recompute failed", contentItemId, err);
+    reportError(err, { source: "console", context: "flushRecompute recompute failed" });
   }
 }

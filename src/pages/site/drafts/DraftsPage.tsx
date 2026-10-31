@@ -42,6 +42,7 @@ import { PageArrival } from "@/components/shell/PageArrival";
 import { DraftsLoadingView } from "./DraftsFrame";
 import { DraftsView } from "./DraftsView";
 import { draftTitle } from "./draftsModel";
+import { reportError } from "@/lib/errors/report";
 
 const STALE_MS = LIST_STALE_MS;
 
@@ -92,7 +93,7 @@ export function DraftsPage() {
         void refresh();
         toast("New build started.", { action: { label: "Open", onClick: () => navigate(`/compose/${id}`) } });
       } catch (error) {
-        console.error("[Drafts] attachSession (new) failed", error);
+        reportError(error, { source: "console", context: "Drafts attachSession (new) failed" });
         void refresh();
         failed("Couldn't start a build from that session.");
       }
@@ -107,7 +108,7 @@ export function DraftsPage() {
         void refresh();
         toast(`Added to ${draftTitle(draft.title)}.`);
       } catch (error) {
-        console.error("[Drafts] attachSession (existing) failed", error);
+        reportError(error, { source: "console", context: "Drafts attachSession (existing) failed" });
         void refresh();
         failed("Couldn't add that session.");
       }
@@ -120,7 +121,7 @@ export function DraftsPage() {
       const removed = await removeEmptyDrafts(userId);
       toast(removed === 1 ? "Removed 1 empty draft." : `Removed ${removed} empty drafts.`);
     } catch (error) {
-      console.error("[Drafts] removeEmptyDrafts failed", error);
+      reportError(error, { source: "console", context: "Drafts removeEmptyDrafts failed" });
       failed("Couldn't remove the empty drafts.");
     } finally {
       void refresh();

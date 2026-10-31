@@ -18,6 +18,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { bountyLayerError } from "./types";
+import { reportError } from "@/lib/errors/report";
 
 /** The table the mark lands in. Named once; nothing else spells it out. */
 const MARKS_TABLE = "bounty_me_too_marks";
@@ -88,7 +89,7 @@ export async function myMeToo(
   // to render because the thing that says "me too" is not there. An unmarked
   // button is a smaller wrong answer than no panel.
   if (error) {
-    console.warn("[myMeToo] marks unreadable", error);
+    reportError(error, { source: "console", context: "myMeToo marks unreadable" });
     return out;
   }
 

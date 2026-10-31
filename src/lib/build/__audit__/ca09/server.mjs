@@ -722,5 +722,5 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`CA-09 stand-in on ${TLS ? "https (h2)" : "http"}://127.0.0.1:${PORT} (${Object.keys(SCHEMA.tables).length} tables from types.ts)`);
+
 });

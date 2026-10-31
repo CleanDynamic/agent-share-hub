@@ -21,6 +21,7 @@ import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
 import { uiTransition } from "@/lib/theme/controls";
 import { Skeleton } from "@/components/ui/skeleton";
+import { reportError } from "@/lib/errors/report";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -423,7 +424,7 @@ export default function MessagesPage() {
         } as any)
         .select("id")
         .single();
-      if (error) { console.error(error); return; }
+      if (error) { reportError(error, { source: "console", context: "Messages" }); return; }
       threadId = (created as any).id as string;
     }
     refetchAll();

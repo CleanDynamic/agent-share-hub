@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { legacyItemForBounty } from "@/lib/bounty/resolveLegacy";
 import { createNotification } from "@/lib/notifications/createNotification";
 import type { Solution } from "./types";
+import { reportError } from "@/lib/errors/report";
 
 function isEmptyPayload(p: any): boolean {
   if (!p) return true;
@@ -75,7 +76,7 @@ export async function submitSolution(solutionId: string): Promise<Solution> {
         .update({ bounty_solutions_submitted: cur + 1 } as any)
         .eq("id", sol.solver_id);
     } catch (e) {
-      console.warn("[submitSolution] notification/stat update failed", e);
+      reportError(e, { source: "console", context: "submitSolution notification/stat update failed" });
     }
   })();
 

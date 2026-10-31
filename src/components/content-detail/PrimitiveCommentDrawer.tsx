@@ -800,6 +800,7 @@ const menuItemStyle: React.CSSProperties = {
 };
 import type { Comment as TCComment, CommentNode as TCNode } from "@/components/comments/types";
 import { feedback } from "@/lib/theme/motion";
+import { reportError } from "@/lib/errors/report";
 
 function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
   const tc: TCComment = {
@@ -976,7 +977,7 @@ export function PrimitiveCommentDrawer({
         await onEdit?.(commentId, text);
         setEditingId(null);
       } catch (e) {
-        console.warn("[drawer] edit failed", e);
+        reportError(e, { source: "console", context: "drawer edit failed" });
       }
     },
     [onEdit],
@@ -1118,7 +1119,7 @@ export function PrimitiveCommentDrawer({
                   setMenu(null);
                   if (window.confirm("Delete this comment?")) {
                     try { await onDelete?.(menu.commentId); }
-                    catch (e) { console.warn("[drawer] delete failed", e); }
+                    catch (e) { reportError(e, { source: "console", context: "drawer delete failed" }); }
                   }
                 }}
                 style={{ ...menuItemStyle, color: "color-mix(in srgb, var(--cat-breakage) 90%, transparent)" }}
@@ -1129,7 +1130,7 @@ export function PrimitiveCommentDrawer({
                 onClick={async () => {
                   setMenu(null);
                   try { await onReport?.(menu.commentId); }
-                  catch (e) { console.warn("[drawer] report failed", e); }
+                  catch (e) { reportError(e, { source: "console", context: "drawer report failed" }); }
                 }}
                 style={menuItemStyle}
               >Report</button>

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications/createNotification";
 import type { AnchorType } from "./types";
+import { reportError } from "@/lib/errors/report";
 
 /** Walk a TipTap JSON doc and collect plain text. */
 function extractPlainText(node: any): string {
@@ -127,7 +128,7 @@ export async function postComment({
         targetType: "comment",
         targetId: data.id,
         metadata: { anchor_type: anchorType, anchor_id: anchorId },
-      }).catch((e) => console.warn("[postComment] mention notify failed", e)),
+      }).catch((e) => reportError(e, { source: "console", context: "postComment mention notify failed" })),
     ),
   );
 
@@ -167,7 +168,7 @@ export async function postComment({
       }
     }
   } catch (e) {
-    console.warn("[postComment] author notify failed", e);
+    reportError(e, { source: "console", context: "postComment author notify failed" });
   }
 
   // Reference notifications (best-effort)
@@ -191,7 +192,7 @@ export async function postComment({
           });
         }
       } catch (e) {
-        console.warn("[postComment] reference notify failed", e);
+        reportError(e, { source: "console", context: "postComment reference notify failed" });
       }
     }),
   );

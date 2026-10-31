@@ -34,6 +34,7 @@ import { getSessionOrder, setCollapsed, setSessionOrder } from "./sessionLayout"
 import { getNodeTree } from "./nodes";
 import { recordCreatedVia } from "./provenance";
 import { buildLayerError, type BuildNodeInsert, type NodeTree } from "./types";
+import { reportError } from "@/lib/errors/report";
 
 /** Tiles written in one request. */
 export const TILE_BATCH = 100;
@@ -181,7 +182,7 @@ async function insertTiles(rows: BuildNodeInsert[], onProgress?: TileProgress): 
 async function removeTiles(ids: readonly string[]): Promise<void> {
   for (let at = 0; at < ids.length; at += TILE_BATCH) {
     const { error } = await supabase.from("build_nodes").delete().in("id", ids.slice(at, at + TILE_BATCH));
-    if (error) console.error("[addSession] tiles not taken back", error);
+    if (error) reportError(error, { source: "console", context: "addSession tiles not taken back" });
   }
 }
 
@@ -324,7 +325,7 @@ async function writeSession({ buildId, sessionKey: importId, model, prompts, isN
     } catch (cause) {
       // The table is not applied yet: the tiles alone make the session (the group is read from them), without an order.
       if (!isMissingTable((cause as { cause?: unknown } | null)?.cause ?? cause)) throw cause;
-      console.warn("[addSession] build_sessions is not applied; the session is in the draft by its tiles");
+      reportError(new Error("addSession build_sessions is not applied; the session is in"), { source: "console", context: "addSession build_sessions is not applied; the session is in" });
     }
 
     // CA-14 P1: the order and the fold are also kept in `making`, so a draft without the table still has them. SV-07 P1: the
@@ -342,11 +343,11 @@ async function writeSession({ buildId, sessionKey: importId, model, prompts, isN
       const [afterTree, afterMaking] = await Promise.all([getNodeTree(buildId), readMaking(buildId)]);
       const moves = planLayout(afterTree, afterMaking, sessionsMetaOf(afterMaking), grouped).moves;
       if (moves.length > 0) await reorderNodes(buildId, moves);
-    } else await patchMaking(buildId, (made) => ({ session_order: orderNow(made, rows) })).catch((cause) => console.warn("[addSession] order not kept in making", cause));
-    if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => console.warn("[addSession] fold not kept in making", cause));
+    } else await patchMaking(buildId, (made) => ({ session_order: orderNow(made, rows) })).catch((cause) => reportError(cause, { source: "console", context: "addSession order not kept in making" }));
+    if (collapsed) await setCollapsed(buildId, importId, true).catch((cause) => reportError(cause, { source: "console", context: "addSession fold not kept in making" }));
 
     await beforeStats?.();
-    await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
+    await refreshMakingStats(buildId).catch((cause) => reportError(cause, { source: "console", context: "addSession making stats not refreshed" }));
     return { buildId, sessionKey: importId, tiles: prompts.length, collapsed, replaced };
   } catch (cause) {
     // Leave nothing half-added: the tiles go, and an empty Session 1 that was taken down comes back.
@@ -403,7 +404,7 @@ export async function fillMissingTiles(importId: string, buildId: string): Promi
   }
   const moves = planLayout(await getNodeTree(buildId), making, sessionsMetaOf(making), getSessionOrder(making, rows)).moves;
   if (moves.length > 0) await reorderNodes(buildId, moves);
-  await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
+  await refreshMakingStats(buildId).catch((cause) => reportError(cause, { source: "console", context: "addSession making stats not refreshed" }));
   return missing.length;
 }
 
@@ -460,7 +461,7 @@ export async function addSessionCopy(buildId: string, copy: SessionCopy, workstr
     await deleteBuildSession(buildId, copy.key).catch(() => undefined);
     throw cause;
   }
-  await refreshMakingStats(buildId).catch((cause) => console.warn("[addSession] making stats not refreshed", cause));
+  await refreshMakingStats(buildId).catch((cause) => reportError(cause, { source: "console", context: "addSession making stats not refreshed" }));
   return { buildId, sessionKey: copy.key, tiles: ids.length, collapsed: false, replaced: null };
 }
 

@@ -35,6 +35,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveBountiesByLegacyItems } from "./resolveLegacy";
+import { reportError } from "@/lib/errors/report";
 
 /** A screenful of bounty cards is a handful; anything past this is a bug. */
 const COUNT_LIMIT = 200;
@@ -91,7 +92,7 @@ export async function legacyMeTooCounts(
     // Not thrown: the caller has a frozen number to fall back on, and a bounty
     // header table that is not there yet (PGRST205 on the project this
     // repository points at) must not empty a feed card's stats row.
-    console.warn("[legacyMeTooCounts] unreadable", e);
+    reportError(e, { source: "console", context: "legacyMeTooCounts unreadable" });
     return out;
   }
 }

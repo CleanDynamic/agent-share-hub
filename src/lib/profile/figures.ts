@@ -18,6 +18,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getMakerStats } from "./makerStats";
+import { reportError } from "@/lib/errors/report";
 
 /** What a maker has done and earned, as the Profile stats row shows it. */
 export interface MakerFigures {
@@ -101,7 +102,7 @@ async function getBountyEarningsGbp(userId: string): Promise<number> {
   const rows = (accepted.data ?? []) as Array<{ bounty_id: string }>;
   if (rows.length >= ACCEPTED_LIMIT) {
     // TODO: an aggregate RPC (security invoker) beside maker_stats, with no cap.
-    console.warn(`[getMakerFigures] read the ${ACCEPTED_LIMIT}-row cap; the earnings are partial`);
+    reportError(new Error("getMakerFigures read the"), { source: "console", context: "getMakerFigures read the" });
   }
 
   const ids = [...new Set(rows.map((row) => row.bounty_id))];

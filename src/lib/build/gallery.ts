@@ -51,6 +51,7 @@ import {
   type BuildShape,
   type NodeCategory,
 } from "./types";
+import { reportError } from "@/lib/errors/report";
 
 // =============================================================================
 // The threshold
@@ -891,7 +892,7 @@ export async function countOpenBountyBuilds(): Promise<number> {
       return count ?? 0;
     });
   } catch (error) {
-    console.warn("[countOpenBountyBuilds] count unavailable", error);
+    reportError(error, { source: "console", context: "countOpenBountyBuilds count unavailable" });
     return 0;
   }
 }
@@ -953,7 +954,7 @@ export async function getFeaturedBuild(now: Date = new Date()): Promise<Featured
     // TODO: replace with an RPC that groups build_reproductions by build_id in
     // SQL (a `most_reproduced_builds(since, limit)` function, security invoker),
     // which has no row cap to rank around.
-    console.warn(`[getFeaturedBuild] read the ${FEATURED_ROWS_LIMIT}-row cap; the ranking is partial`);
+    reportError(new Error("getFeaturedBuild read the"), { source: "console", context: "getFeaturedBuild read the" });
   }
 
   const counts = new Map<string, number>();

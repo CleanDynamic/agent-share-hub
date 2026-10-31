@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
+import { reportError } from "@/lib/errors/report";
 
 /**
  * WHY BOTH HOOKS RESOLVE BEFORE THEY SUBSCRIBE (NS-P50).
@@ -29,7 +30,7 @@ export function useBountyDiscussionUpdates(
       try {
         bountyRowId = await resolveBountyByLegacyItem(bountyId);
       } catch (e) {
-        console.warn("[useBountyDiscussionUpdates] no bounties header", e);
+        reportError(e, { source: "console", context: "useBountyDiscussionUpdates no bounties header" });
         return;
       }
       if (cancelled) return;
@@ -69,7 +70,7 @@ export function useBountySolutionUpdates(
       try {
         bountyRowId = await resolveBountyByLegacyItem(bountyId);
       } catch (e) {
-        console.warn("[useBountySolutionUpdates] no bounties header", e);
+        reportError(e, { source: "console", context: "useBountySolutionUpdates no bounties header" });
         return;
       }
       if (cancelled) return;

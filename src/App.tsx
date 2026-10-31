@@ -109,18 +109,18 @@ function OldLineageRedirect() {
 const HomePage = lazy(ROUTE_TABLE.home.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P28: the Gallery in the site frame; its own chunk, rendered directly. SV-11: it is Builds.
 const BuildsPage = lazy(ROUTE_TABLE.gallery.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P29 — the Build page in the site frame; its own chunk, rendered directly.
+// UI-P29: the Build page in the site frame; its own chunk, rendered directly.
 const BuildSitePage = lazy(ROUTE_TABLE.build.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P31 — Rebuild and lineage in the site frame; their own chunks, rendered directly.
+// UI-P31: Rebuild and lineage in the site frame; their own chunks, rendered directly.
 const RebuildSitePage = lazy(() => import("./pages/site/rebuild/RebuildPage"));
 const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
 // CA-13 P9 — two builds of the same thing, side by side.
 const CompareSitePage = lazy(() => import("./pages/site/compare/ComparePage"));
-// UI-P34 — the Profile in the site frame; its own chunk, rendered directly.
+// UI-P34: the Profile in the site frame; its own chunk, rendered directly.
 const ProfileSitePage = lazy(ROUTE_TABLE.profile.load as () => Promise<{ default: React.ComponentType }>);
-// UI-P35 — Activity in the site frame; its own chunk (it draws a chart), rendered directly.
+// UI-P35: Activity in the site frame; its own chunk (it draws a chart), rendered directly.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
-// UI-P36 — Sign in, Join, reset and verify in the entrance's frame; each its own chunk, rendered directly.
+// UI-P36: Sign in, Join, reset and verify in the entrance's frame; each its own chunk, rendered directly.
 const LoginSitePage = lazy(() => import("./pages/site/signin/LoginPage"));
 const SignupSitePage = lazy(() => import("./pages/site/signin/SignupPage"));
 const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswordPage"));

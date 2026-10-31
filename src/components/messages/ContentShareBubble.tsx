@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Target, ArrowRight, AlertCircle } from "lucide-react";
 import { type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { visibleInterval } from "@/lib/visibleInterval";
 
 function relativeOpenedLabel(iso: string | null | undefined): string {
   if (!iso) return "Opened";
@@ -237,8 +238,7 @@ export function ContentShareBubble({
   // Re-render the relative "Opened Xm ago" label every 30s
   useEffect(() => {
     if (!viewedAt) return;
-    const t = setInterval(() => forceTick((x) => x + 1), 30000);
-    return () => clearInterval(t);
+    return visibleInterval(() => forceTick((x) => x + 1), 30000);
   }, [viewedAt]);
 
   const bubbleBg = isFromCurrentUser

@@ -19,6 +19,7 @@ import {
   type SolutionBuild,
 } from "./solutionRebuild";
 import { SOLUTION_COLUMNS, bountyLayerError, type Bounty } from "./types";
+import { reportError } from "@/lib/errors/report";
 
 // Moved to types.ts by NS-P53 so the rebuild path can write a solutions row
 // without importing this module, which imports it. Re-exported unchanged: every
@@ -174,7 +175,7 @@ export async function submitSolution({
         },
       });
     } catch (e) {
-      console.warn("[submitSolution] author notification failed", e);
+      reportError(e, { source: "console", context: "submitSolution author notification failed" });
     }
   })();
 
@@ -319,7 +320,7 @@ export async function acceptSolution(
   // Outside the transaction on purpose: a credit that could not be written (no column yet) must not undo an acceptance.
   const credit = creditFor(accepted.solverId, result.author_id ?? "");
   if (credit) {
-    await setTileContributor([accepted.nodeId], credit).catch((e) => console.warn("[acceptSolution] credit not written", e));
+    await setTileContributor([accepted.nodeId], credit).catch((e) => reportError(e, { source: "console", context: "acceptSolution credit not written" }));
   }
 
   // Best-effort, non-blocking, and outside the transaction on purpose: a
@@ -339,7 +340,7 @@ export async function acceptSolution(
         },
       });
     } catch (e) {
-      console.warn("[acceptSolution] solver notification failed", e);
+      reportError(e, { source: "console", context: "acceptSolution solver notification failed" });
     }
   })();
 
@@ -481,7 +482,7 @@ export async function listSolutions({
   // A failed profile read costs the bylines their names, not the panel its
   // answers: the payloads are the substance and they are already in hand.
   if (profiles.error) {
-    console.warn("[listSolutions] solver profiles failed", profiles.error);
+    reportError(profiles.error, { source: "console", context: "listSolutions solver profiles failed" });
   }
   if (votes.error) throw bountyLayerError("listSolutions (votes)", votes.error);
 

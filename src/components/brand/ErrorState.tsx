@@ -37,6 +37,7 @@ import { errorCode, errorLine } from "@/lib/errors/code";
 import { t } from "@/lib/theme/tokens";
 
 import { Button } from "./Button";
+import { reportError } from "@/lib/errors/report";
 
 export const DEFAULT_ERROR_LINE = "That didn't load.";
 
@@ -76,8 +77,8 @@ function useLogOnce(error: unknown, panel: string, log?: string) {
   useEffect(() => {
     if (error === undefined || logged.current === error) return;
     logged.current = error;
-    if (log) console.error(errorLine(log, error));
-    else console.error(`[${panel}] did not load`, error);
+    if (log) reportError(errorLine(log, error), { source: "console", context: "ErrorState" });
+    else reportError(error, { source: "console", context: "ErrorState" });
   }, [error, panel, log]);
 }
 

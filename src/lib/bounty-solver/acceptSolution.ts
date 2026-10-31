@@ -3,6 +3,7 @@ import { legacyItemForBounty } from "@/lib/bounty/resolveLegacy";
 import { createNotification } from "@/lib/notifications/createNotification";
 import { recomputeMetadata } from "@/lib/metadata/recomputeMetadata";
 import type { Solution } from "./types";
+import { reportError } from "@/lib/errors/report";
 
 /**
  * Accept a solution on a LEGACY content_items bounty: the stage_grids merge.
@@ -161,7 +162,7 @@ export async function acceptSolution(args: {
         } as any)
         .eq("id", solution.solver_id);
     } catch (e) {
-      console.warn("[acceptSolution] solver stat update failed", e);
+      reportError(e, { source: "console", context: "acceptSolution solver stat update failed" });
     }
   })();
 

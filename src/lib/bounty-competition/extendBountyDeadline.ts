@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications/createNotification";
 import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
+import { reportError } from "@/lib/errors/report";
 
 interface ExtendArgs {
   bountyId: string;
@@ -86,7 +87,7 @@ export async function extendBountyDeadline({
         ),
       );
     } catch (e) {
-      console.warn("[extendBountyDeadline] notification fan-out failed", e);
+      reportError(e, { source: "console", context: "extendBountyDeadline notification fan-out failed" });
     }
   })();
 }

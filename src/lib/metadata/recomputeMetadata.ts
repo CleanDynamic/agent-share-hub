@@ -4,6 +4,7 @@ import { extractModels, extractTools } from "./extractModelsAndTools";
 import { extractStats, type ContentStats } from "./extractStats";
 import { countMissingInStageGrids } from "@/lib/bounty/countMissing";
 import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
+import { reportError } from "@/lib/errors/report";
 
 /**
  * Run any async extractor with a label. If it throws, log + return `fallback`
@@ -18,10 +19,7 @@ async function safeRun<T>(
   try {
     return await fn();
   } catch (err) {
-    console.error(
-      `[recomputeMetadata] ${label} failed for ${contentItemId}:`,
-      err
-    );
+    reportError(err, { source: "console", context: "recomputeMetadata" });
     return fallback;
   }
 }
@@ -112,10 +110,7 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
     .eq("id", contentItemId);
 
   if (updateErr) {
-    console.error(
-      `[recomputeMetadata] update failed for ${contentItemId}:`,
-      updateErr
-    );
+    reportError(updateErr, { source: "console", context: "recomputeMetadata update failed for" });
   }
 
   // Refresh the author's derived bio in the background. Non-blocking.
@@ -129,9 +124,6 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
   void import("@/lib/content-detail/recomputeCanonicalPayload")
     .then((m) => m.recomputeCanonicalPayload(contentItemId))
     .catch((err) =>
-      console.warn(
-        `[recomputeMetadata] canonical payload refresh failed for ${contentItemId}:`,
-        err,
-      ),
+      reportError(err, { source: "console", context: "recomputeMetadata canonical payload refresh failed for" }),
     );
 }

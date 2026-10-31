@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { reportError } from "@/lib/errors/report";
 
 export type CommentAnchorType = 'prose' | 'block' | 'stage' | 'arrow';
 
@@ -132,7 +133,7 @@ export function useDocumentComments(documentId: string | null) {
         .select()
         .single();
       if (error) {
-        console.error('addComment failed', error);
+        reportError(error, { source: "console", context: "addComment failed" });
         return null;
       }
       return data as DocumentComment;

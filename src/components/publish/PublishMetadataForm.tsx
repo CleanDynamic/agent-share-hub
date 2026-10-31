@@ -24,6 +24,7 @@ import {
 } from "./BountyDetailsCard";
 import { colourAlpha } from "@/lib/theme/tokens";
 import { scrollBehavior } from "@/lib/theme/motion";
+import { reportError } from "@/lib/errors/report";
 
 export type PostType = "blueprint" | "blog" | "bounty";
 
@@ -941,7 +942,7 @@ function BlogAutoDetectedCard({
         .in("id", referencedPostIds);
       if (cancelled) return;
       if (error) {
-        console.warn("[BlogAutoDetectedCard] failed to load refs", error);
+        reportError(error, { source: "console", context: "BlogAutoDetectedCard failed to load refs" });
         setRefs([]);
       } else {
         setRefs(

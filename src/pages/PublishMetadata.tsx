@@ -31,6 +31,7 @@ import {
   recomputeUserLevel,
 } from "@/lib/notifications";
 import { toast as sonnerToast } from "sonner";
+import { reportError } from "@/lib/errors/report";
 
 const buildPayload = (
   values: PublishFormValues,
@@ -135,7 +136,7 @@ export default function PublishMetadata() {
         .update(payload as any)
         .eq("id", contentItemId);
       if (error) {
-        console.warn("[PublishMetadata] save failed", error);
+        reportError(error, { source: "console", context: "PublishMetadata save failed" });
         return false;
       }
       lastSavedRef.current = fingerprint;
@@ -274,7 +275,7 @@ export default function PublishMetadata() {
           void recomputeDerivedBio(profile.id);
           // Recompute creator level — fires a system notification when the
           // user crosses a threshold (reader → builder → creator → curator).
-          void recomputeUserLevel(profile.id).catch(console.error);
+          void recomputeUserLevel(profile.id).catch((error) => reportError(error, { source: "console", context: "PublishMetadata" }));
         }
 
         // Reference notifications: fan out to every referenced item's owner
@@ -292,10 +293,10 @@ export default function PublishMetadata() {
               blogId: contentItemId!,
               blogAuthorId: profile.id,
               referencedContentIds: refIds,
-            }).catch(console.error);
+            }).catch((error) => reportError(error, { source: "console", context: "PublishMetadata" }));
           }
         } catch (e) {
-          console.error("[publish] reference notification failed", e);
+          reportError(e, { source: "console", context: "publish reference notification failed" });
         }
 
         lastSavedRef.current = JSON.stringify(buildPayload(values, pt));
@@ -306,7 +307,7 @@ export default function PublishMetadata() {
         });
         navigate(`/content/${contentItemId}`);
       } catch (err: any) {
-        console.error("[PublishMetadata] publish failed", err);
+        reportError(err, { source: "console", context: "PublishMetadata publish failed" });
         toast({
           title: isUpdateMode ? "Could not update" : "Could not publish",
           description: err?.message ?? "Unknown error",

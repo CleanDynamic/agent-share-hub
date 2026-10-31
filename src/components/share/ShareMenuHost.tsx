@@ -13,6 +13,7 @@ import { sendContentShareToThread } from "@/lib/share/sendContentShareToThread";
 import { saveToCollection, removeFromCollection } from "@/lib/library/saveToCollection";
 import { createCollection } from "@/lib/library/createCollection";
 import { supabase } from "@/integrations/supabase/client";
+import { reportError } from "@/lib/errors/report";
 
 function buildDeepLink(args: {
   contentType: ShareableType;
@@ -97,7 +98,7 @@ export default function ShareMenuHost({
           }))
         );
       } catch (e) {
-        console.error("[ShareMenu] failed to load targets", e);
+        reportError(e, { source: "console", context: "ShareMenu failed to load targets" });
       }
     },
     [user?.id]
@@ -123,7 +124,7 @@ export default function ShareMenuHost({
         });
         toast.success("Sent");
       } catch (e: any) {
-        console.error(e);
+        reportError(e, { source: "console", context: "ShareMenuHost" });
         toast.error(e?.message ?? "Failed to send");
       }
     },
@@ -141,7 +142,7 @@ export default function ShareMenuHost({
           toast.success("Saved");
         }
       } catch (e: any) {
-        console.error(e);
+        reportError(e, { source: "console", context: "ShareMenuHost" });
         toast.error(e?.message ?? "Failed to save");
       }
     },
@@ -159,7 +160,7 @@ export default function ShareMenuHost({
         await saveToCollection(c.id, contentType as any, contentId);
         toast.success(`Saved to ${name}`);
       } catch (e: any) {
-        console.error(e);
+        reportError(e, { source: "console", context: "ShareMenuHost" });
         toast.error(e?.message ?? "Failed to create collection");
       }
     },
