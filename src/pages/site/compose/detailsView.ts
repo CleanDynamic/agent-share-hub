@@ -28,6 +28,7 @@ import type { SessionPrompt } from "@/lib/build/sessions";
 import type { NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
 import { asksHowRun, modelRunLine } from "@/lib/build/modelRun";
+import { runHostsOf } from "@/lib/build/deployment";
 import { toolFor } from "@/lib/tools/registry";
 
 import {
@@ -121,6 +122,9 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   const model = step.model ? modelLabel(step.model) : null;
   const when = inSession && group ? shortDate(group.startedAt) : "";
   const place = promptPlace(step, ctx.steps);
+  // SV-27 P4: the build's Host tiles, for Where and the line's GPUs.
+  const hosts = runHostsOf(ctx.tree);
+  const runHost = step.modelRun?.host ? (hosts.find((entry) => entry.id === step.modelRun?.host) ?? null) : null;
   return {
     kind: "prompt",
     ...insideOf(step),
@@ -131,7 +135,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     editable: !instructions,
     ...(instructions ? null : { place: placeOfPrompt(step.number, inSession && number ? number : null) }),
     sessionLine: instructions ? "Instructions" : typed && !inSession ? (tool ?? "Prompt") : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
-    detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun) : null, when, place].filter(Boolean).join(" · "),
+    detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun, { host: runHost }) : null, when, place].filter(Boolean).join(" · "),
     typed,
     model,
     // CA-02 P8: the tool a typed prompt names, as saved, for its model menu and the note on a pair that breaks the rules.
@@ -140,7 +144,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     words: step.words,
     ...(step.changes ? { changes: step.changes } : null),
     // CA-05 P8: asked of a prompt whose model runs on the maker's computer or has open weights.
-    ...(!instructions && asksHowRun(tool, step.model) ? { modelRun: { run: step.modelRun ?? null } } : null),
+    ...(!instructions && asksHowRun(tool, step.model) ? { modelRun: { run: step.modelRun ?? null, ...(hosts.length > 0 ? { hosts } : null) } } : null),
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: instructions ? [] : inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: instructions ? [] : goesIntoRows(ctx.steps, step.id, ctx.intoResult),
@@ -221,6 +225,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     defaultName: step.defaultTitle,
     model: step.model ? modelLabel(step.model) : null,
     ...(step.modelRun ? { modelRun: step.modelRun } : null),
+    ...(runHostsOf(ctx.tree).length > 0 ? { runHosts: runHostsOf(ctx.tree) } : null),
     ...(step.kind === "agent" && step.memoryTidy ? { memoryTidy: step.memoryTidy } : null),
     ...(step.kind === "agent" && step.changesEachRound ? { changesEachRound: step.changesEachRound } : null),
     runs: step.runs,

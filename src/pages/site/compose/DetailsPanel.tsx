@@ -71,6 +71,7 @@ import {
   VALUE,
 } from "./detailsRecipes";
 import type { ModelRun } from "@/lib/build/modelRun";
+import type { RunHostChoice } from "./ModelRunFields";
 import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnection, ToolRunsAt, ManualWhere } from "@/lib/build/graph";
 import type { AgentSetupValue } from "./AgentSetupFields";
 import type { OtherSession } from "./SessionExtrasFields";
@@ -111,7 +112,7 @@ export interface PromptView extends InputsView {
   /** CA-05 P1: the words a reader changes, when the maker marked any. */
   changes?: readonly ChangeRange[];
   /** CA-05 P8: the model runs on the maker's own computer or has open weights: How it was run and Where are asked, with what is said so far. */
-  modelRun?: { run: ModelRun | null };
+  modelRun?: { run: ModelRun | null; hosts?: RunHostChoice[] };
   /** The files it makes; empty for an agent's instructions. */
   makes: readonly MakesRow[];
 }
@@ -224,6 +225,8 @@ export interface AgentView extends InputsView {
   sessionGoal?: boolean;
   /** CA-05 P8, an agent only: how its main model was run, when the maker said. */
   modelRun?: ModelRun | null;
+  /** SV-27 P4: the build's Host tiles, offered under Where. */
+  runHosts?: RunHostChoice[];
   /** CA-05 P9, an agent only: how it tidies its notes, and what it changes each round. */
   memoryTidy?: string;
   changesEachRound?: string;

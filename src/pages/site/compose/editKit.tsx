@@ -429,7 +429,7 @@ export function PromptEdits({ view, handlers, phone }: { view: Extract<DetailsVi
       ) : null}
       {view.modelRun && handlers.onModelRun ? (
         <Block label="How it was run" testId="edit-model-run">
-          <ModelRunFields id={view.id} run={view.modelRun.run} phone={phone} onChange={(run) => handlers.onModelRun?.(view.id, run)} />
+          <ModelRunFields id={view.id} run={view.modelRun.run} hosts={view.modelRun.hosts} phone={phone} onChange={(run) => handlers.onModelRun?.(view.id, run)} />
         </Block>
       ) : null}
       <UsesBlock id={view.id} rows={view.uses} options={view.options} phone={phone} handlers={handlers} />

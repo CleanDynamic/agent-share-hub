@@ -491,3 +491,10 @@ export function detachFromAgent(tiles: readonly DeploymentTile[], agentId: strin
     return { id: tile.id, payload };
   });
 }
+
+/* ── the model run's host (Part 4) ── */
+
+/** The build's Host tiles as Where offers them: id, name, GPUs. */
+export function runHostsOf(tree: readonly { id: string; type: string; title?: string | null; payload?: unknown; parent_id: string | null; position?: number | null }[]): { id: string; name: string; gpus?: Gpu[] }[] {
+  return deploymentTilesOf(tree).flatMap((tile) => (tile.kind === "host" ? [{ id: tile.id, name: tile.payload.name || tile.title || DEPLOYMENT_KIND_NAME.host, ...(tile.payload.gpus ? { gpus: tile.payload.gpus } : null) }] : []));
+}

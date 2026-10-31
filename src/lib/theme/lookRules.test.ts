@@ -1239,6 +1239,11 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/fork.ts",
   "src/lib/build/duplicate.ts",
   "src/lib/build/buildUpdates.ts",
+  "src/lib/build/modelRun.ts",
+  "src/pages/site/compose/ModelRunFields.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/editKit.tsx",
+  "src/pages/site/compose/TileEditDialog.tsx",
 ];
 
 /**
