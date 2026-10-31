@@ -8,7 +8,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ALLOWED = new Set([
-  join("src", "components", "ui", "chart.tsx"),
   join("src", "pages", "site", "compose", "listNest.tsx"),
   join("src", "pages", "site", "compose", "mapMorph.tsx"),
   join("src", "pages", "ContentDetail.tsx"),
