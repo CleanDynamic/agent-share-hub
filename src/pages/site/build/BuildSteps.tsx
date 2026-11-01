@@ -40,6 +40,7 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
+import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
 import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
 import { PartWindow } from "@/components/build/PartWindow";
 import { drawBranches } from "@/components/build/BranchRows";
@@ -410,6 +411,11 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
   if (!step.text) return null;
   return (
     <>
+      {step.origin || step.asksFor ? (
+        <p data-testid="prompt-origin" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent }}>
+          {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
+        </p>
+      ) : null}
       <p
         data-testid="step-text"
         style={{

@@ -82,6 +82,7 @@ import {
 import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 import { isSummaryPayload, SUMMARY_COPY } from "./summaryTurn";
+import { asksForOf, originOf, type AsksFor, type PromptOrigin } from "./promptOrigin";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -211,6 +212,9 @@ export interface Step {
   reply?: string;
   /** CA-15 P2, a prompt or a system prompt: what it ran with (`payload.settings`), and the descriptions given to its `{variables}` (`payload.variables`). */
   settings?: PromptSettings;
+  /** SV-30 P3, a prompt: how it was sent when not by the maker, and what the maker says it asks for. */
+  origin?: PromptOrigin;
+  asksFor?: AsksFor;
   variables?: PromptVariable[];
   /** CA-15 P9, a system prompt only: where it applies and its version; `appliesTo` is how many of the build's prompts that reaches. */
   systemPrompt?: SystemPromptFacts & { appliesTo: number };
@@ -991,6 +995,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
     ...(kind === "prompt" && settingsOf(payload.settings) ? { settings: settingsOf(payload.settings) as PromptSettings } : null),
+    ...(kind === "prompt" && originOf(payload) ? { origin: originOf(payload) as PromptOrigin } : null),
+    ...(kind === "prompt" && asksForOf(payload) ? { asksFor: asksForOf(payload) as AsksFor } : null),
     ...((kind === "prompt" || kind === "system_prompt") && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
     ...(kind === "system_prompt" ? { systemPrompt: { ...systemPromptOf(payload), appliesTo: 0 } } : null),
     ...(kind === "dataset" ? { dataset: datasetOf(payload) } : null),

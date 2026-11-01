@@ -29,6 +29,7 @@ import {
   variableNamesIn,
   variablesOf,
 } from "@/lib/build/tileExtras";
+import { ASKS_FOR, ASKS_FOR_LABEL, EVENT_MAX, INTERVAL_MAX, SENT_BY_CHOICES, asksForOf, originLine, originOf } from "@/lib/build/promptOrigin";
 import { toolName } from "@/lib/tools/registry";
 
 import {
@@ -197,6 +198,8 @@ export function promptRows(payload: Raw, promptText: string): ExtraRow[] {
   const names = variableNamesIn(promptText);
   const described = Object.fromEntries(names.map((name) => [name, saved.find((entry) => entry.name === name)?.description ?? ""]));
   const effortHeld = settings.effort !== "default";
+  const origin = originOf(payload);
+  const asks = asksForOf(payload);
   return [
     {
       name: FULL_PROMPT_COPY.modelSettings,
@@ -209,6 +212,27 @@ export function promptRows(payload: Raw, promptText: string): ExtraRow[] {
       ],
       values: { model: settings.model, effort: settings.effort === "default" ? "" : settings.effort, instructions: settings.instructions },
       toPatch: (v) => ({ settings: { model: v.model, effort: v.effort || "default", instructions: v.instructions } }),
+    },
+    /* SV-30 P3: how it was sent, and what it asks for. Both are the maker's to say; neither is read from the text. */
+    {
+      name: "How it was sent",
+      description: "",
+      summary: origin ? originLine(origin) : null,
+      fields: [
+        { key: "sent_by", label: "Sent by", kind: "choice", items: SENT_BY_CHOICES.map((choice) => ({ ...choice })) },
+        { key: "interval", label: "How often", kind: "line", max: INTERVAL_MAX, placeholder: "daily 09:00", when: (v) => v.sent_by === "heartbeat" },
+        { key: "event", label: "The event", kind: "line", max: EVENT_MAX, placeholder: "a deploy finished", when: (v) => v.sent_by === "event" },
+      ],
+      values: { sent_by: origin?.sentBy ?? "maker", interval: origin?.interval ?? "", event: origin?.event ?? "" },
+      toPatch: (v) => ({ sent_by: v.sent_by && v.sent_by !== "maker" ? v.sent_by : null, interval: v.sent_by === "heartbeat" ? (v.interval ?? "") : null, event: v.sent_by === "event" ? (v.event ?? "") : null }),
+    },
+    {
+      name: "Asks for",
+      description: "",
+      summary: asks ? ASKS_FOR_LABEL[asks] : null,
+      fields: [{ key: "asks_for", label: "Asks for", kind: "choice", items: ASKS_FOR.map((value) => ({ value, label: ASKS_FOR_LABEL[value] })) }],
+      values: { asks_for: asks ?? "" },
+      toPatch: (v) => ({ asks_for: v.asks_for || null }),
     },
     {
       name: FULL_PROMPT_COPY.variables,

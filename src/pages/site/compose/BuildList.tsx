@@ -56,6 +56,7 @@ import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTil
 import { GlyphButton } from "./ModalFrame";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { SUMMARY_COPY } from "@/lib/build/summaryTurn";
+import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
 import { useAnnounce } from "./BuildAnnouncer";
 import { PREVIEW } from "@/lib/theme/truncate";
 import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
@@ -1306,6 +1307,11 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         ) : null
         }
       />
+      {step.origin || step.asksFor ? (
+        <p data-testid="prompt-origin" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>
+          {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
+        </p>
+      ) : null}
       <p
         ref={textRef}
         style={{ ...text(13.5, 400, t.text), lineHeight: "21px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}

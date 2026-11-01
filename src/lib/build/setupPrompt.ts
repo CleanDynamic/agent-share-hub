@@ -21,6 +21,7 @@ import { buildSteps, type Step } from "./graph";
 import { FIELD_WORDS, harnessEntry, notCarriedLine, skillFolder, type HarnessEntry } from "./harnessMap";
 import { precisionWord } from "./modelRun";
 import { hasPipelineSetup, pipelineSections } from "./pipelineSetup";
+import { originNote } from "./promptOrigin";
 import { setupItemsOf, type SetupItem } from "./setup";
 import {
   DELIVERABLE_ARTICLE,
@@ -248,7 +249,8 @@ function jobSections(step: Step | undefined, all: readonly NodeTree[], into: Col
     const node = all.find((entry) => entry.id === child.id);
     const n = child.number.split(".").pop() ?? child.number;
     const deliver = job.deliverable ? `Deliver ${DELIVERABLE_ARTICLE[job.deliverable.kind]}${job.deliverable.name ? ` named ${job.deliverable.name}` : ""}${job.destination ? ` to ${destinationName(job.destination, all)}` : ""}.` : job.destination ? `Deliver it to ${destinationName(job.destination, all)}.` : "";
-    const lines = [`Job ${n}: ${child.title ?? child.defaultTitle}.`, deliver, job.needsApproval ? "Wait for approval before delivering it." : ""].filter(Boolean).join(" ");
+    const sent = originNote(child.origin ?? null);
+    const lines = [`Job ${n}: ${child.title ?? child.defaultTitle}${sent ? ` ${sent}` : ""}.`, deliver, job.needsApproval ? "Wait for approval before delivering it." : ""].filter(Boolean).join(" ");
     out.push(child.text.trim() ? `${lines}\n\n${fence(child.text.trim())}` : lines);
     noteVariables(into, child.text, variablesOf(payloadOf(node).variables));
   }

@@ -45,10 +45,19 @@ const openRow = (name: string) => void fieldNamed(name);
 describe("the row builders say what each tile holds, with the modals' words (CA-15 P11)", () => {
   it("a prompt: Model settings and Variables", () => {
     const rows = promptRows({ settings: { model: "Opus 5.5", effort: "high", instructions: "Be terse" } }, "Hi {name}");
-    expect(rows.map((r) => r.name)).toEqual(["Model settings", "Variables"]);
+    expect(rows.map((r) => r.name)).toEqual(["Model settings", "How it was sent", "Asks for", "Variables"]);
     expect(rows[0].summary).toBe("Opus 5.5 · High effort · Be terse");
-    expect(rows[1].summary).toBe("{name}");
-    expect(rows[1].toPatch({ name: "First name" })).toEqual({ variables: [{ name: "name", description: "First name" }] });
+    expect(rows[3].summary).toBe("{name}");
+    expect(rows[3].toPatch({ name: "First name" })).toEqual({ variables: [{ name: "name", description: "First name" }] });
+  });
+
+  it("a prompt: how it was sent and what it asks for are the maker's, and typed by the maker is not stored (SV-30 P3)", () => {
+    const rows = promptRows({ sent_by: "heartbeat", interval: "daily 09:00", asks_for: "outcome" }, "Check");
+    expect(rows[1].summary).toBe("Heartbeat · daily 09:00");
+    expect(rows[2].summary).toBe("Asks for an outcome");
+    expect(rows[1].toPatch({ sent_by: "maker" })).toEqual({ sent_by: null, interval: null, event: null });
+    expect(rows[1].toPatch({ sent_by: "event", event: "a deploy finished" })).toEqual({ sent_by: "event", interval: null, event: "a deploy finished" });
+    expect(promptRows({}, "Hi")[1].summary).toBeNull();
   });
 
   it("an agent: Limits, Output and destination, Sample run; a team: Orchestration pattern", () => {

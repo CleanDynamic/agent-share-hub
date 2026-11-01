@@ -346,6 +346,11 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
       return settings ? { model: settings.model, effort: settings.effort, instructions: settings.instructions } : null;
     },
     variables: (value) => cleanVariablesValue(value),
+    /* SV-30 P3: how it was sent (the maker's own is not stored) and what it asks for. */
+    sent_by: (value) => (value === "schedule" || value === "agent_wakeup" || value === "heartbeat" || value === "event" ? value : null),
+    interval: lineCleaner("Interval", 20),
+    event: lineCleaner("Event", 80),
+    asks_for: (value) => (value === "outcome" || value === "procedure" ? value : null),
   },
 };
 
