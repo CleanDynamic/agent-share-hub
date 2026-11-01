@@ -5,7 +5,7 @@ Checked on disk at `92150ce` (main after SV-29).
 ## Assumptions
 
 1. **Do imported turns carry tool calls and results?** No. `supabase/functions/_shared/intake/readers/claude.ts` folds a tool call to one line
-   (`[ran <name>]`, or `[ran <name> — it returned an error]`). Its input and its result are never read (decision 3 in that file). No reader
+   (`[ran <name>]`, or `[ran <name>]`). Its input and its result are never read (decision 3 in that file). No reader
    carries a tool result.
 2. **Can a `git commit` SHA, or a compaction turn, be read?**
    - A commit SHA: no. The result text is not kept, so the import proposes no SHAs. Output commits are entered by the maker only.

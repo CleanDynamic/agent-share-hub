@@ -9,6 +9,7 @@
 import { chiefOfStaffMaking, chiefOfStaffTree } from "@/dev/fixtures/deployment/chief-of-staff";
 import { productCategoriesMaking, productCategoriesTree } from "@/dev/fixtures/pipeline/product-categories";
 import { supportBotEvalsMaking, supportBotEvalsTree } from "@/dev/fixtures/pipeline/support-bot-evals";
+import { sessionsSdlcMaking, sessionsSdlcTree } from "@/dev/fixtures/sessions/sdlc";
 import { setupPromptOf } from "@/lib/build/setupPrompt";
 import { buildCounts, readerMap, readerResults, readerSteps, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
 import type { Making } from "@/lib/build/making";
@@ -18,7 +19,7 @@ import { SHAPES } from "./shapes";
 import { linksBuild, linksMaking, linksTree } from "./postLinks";
 
 /** CA-04 P7: "one-sitting" and "runs-on-github" are the shapes of the same names (src/dev/fixtures/shapes.ts). */
-export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links" | "chief-of-staff" | "pipeline-product-categories" | "pipeline-support-bot-evals";
+export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links" | "chief-of-staff" | "pipeline-product-categories" | "pipeline-support-bot-evals" | "sessions-sdlc";
 
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -152,6 +153,8 @@ const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making
   /* SV-29 P9: a pipeline and its comparison, and a support bot with its eval harness, published. */
   "pipeline-product-categories": { tree: () => productCategoriesTree, making: { sessions: [], ...productCategoriesMaking, sessions_meta: { ...productCategoriesMaking.sessions_meta, [productCategoriesMaking.session_order[0]]: { ...productCategoriesMaking.sessions_meta[productCategoriesMaking.session_order[0]], showCost: true } } } as unknown as Making, title: "Product categories at 10 million a day", outcome: "A pipeline that picks one of 6,000 categories for a product: search the categories, then ask a decision model to choose." },
   "pipeline-support-bot-evals": { tree: () => supportBotEvalsTree, making: { sessions: [], ...supportBotEvalsMaking } as unknown as Making, title: "A shoe shop's support bot, with its evals", outcome: "A support bot that answers from a help centre, and the eval harness that tests it on 20 real questions." },
+  /* SV-30 P10: one background session, with every fact a session can record. */
+  "sessions-sdlc": { tree: () => sessionsSdlcTree, making: { ...sessionsSdlcMaking } as unknown as Making, title: "A VM that boots twice as fast", outcome: "A virtual machine image that boots in under half its old time, made by one agent working on its own in a cloud sandbox." },
   one: { tree: fox, making: foxMaking, title: "Watercolour fox poster", outcome: "A poster-size fox in loose watercolour, made with one prompt." },
   /* CA-06 P7: "A post with links", as a reader gets it. */
   links: {

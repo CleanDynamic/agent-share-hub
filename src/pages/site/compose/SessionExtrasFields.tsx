@@ -511,6 +511,7 @@ export const environmentHeld = (extras: SessionExtras): string | null => (extras
 export function EnvironmentControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
   return (
     <>
+      <span style={text(12.5, 500, t.text2)}>Where it ran</span>
       <ChoiceRows<Environment | "unsaid">
         label="Where it ran"
         name={`environment-${id}`}
@@ -519,6 +520,7 @@ export function EnvironmentControl({ id, extras, phone, onChange }: { id: string
         onChange={(environment) => onChange({ ...extras, environment: environment === "unsaid" ? undefined : environment })}
         rows={[{ value: "unsaid", label: "Not said" }, ...ENVIRONMENTS.map((value) => ({ value, label: ENVIRONMENT_LABEL[value] }))]}
       />
+      <span style={text(12.5, 500, t.text2)}>Isolation</span>
       <ChoiceRows<Isolation | "unsaid">
         label="Isolation"
         name={`isolation-${id}`}
