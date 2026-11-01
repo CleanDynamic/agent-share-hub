@@ -10,6 +10,7 @@
 // Costs are always said as "about". A cost read from a Claude Code result file is in the file's own currency (US
 // dollars) and is shown in it; it is never converted, because no rate is known here.
 
+import { ACCESS_SYSTEMS, ENVIRONMENTS, ISOLATIONS, accessLine, accessOf, environmentLine, type AccessEntry, type Environment, type Isolation } from "./sessionAccess";
 import { traceUrlOf } from "./trace";
 import { EFFORTS, EFFORT_LABEL, type Effort } from "./tileExtras";
 
@@ -43,6 +44,11 @@ export interface SessionExtras {
   model_id?: string;
   /** SV-30 P1: the harness's reasoning effort for the session. */
   effort?: Effort;
+  /** SV-30 P4: where the harness ran, how its changes were kept apart, whether it could install packages, and what it could reach. */
+  environment?: Environment;
+  isolation?: Isolation;
+  can_install?: boolean;
+  access?: AccessEntry[];
 }
 
 export const COST_MAX = 100_000;
@@ -55,7 +61,7 @@ export const MODEL_ID_MAX = 80;
 /** A session over this many words is "long". */
 export const LONG_SESSION_WORDS = 100_000;
 
-const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort"] as const;
+const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -92,6 +98,11 @@ export function extrasOf(entry: unknown): SessionExtras {
   const modelId = typeof entry.model_id === "string" ? entry.model_id.trim() : "";
   if (modelId) out.model_id = modelId.slice(0, MODEL_ID_MAX);
   if (EFFORTS.includes(entry.effort as Effort)) out.effort = entry.effort as Effort;
+  if (ENVIRONMENTS.includes(entry.environment as Environment)) out.environment = entry.environment as Environment;
+  if (ISOLATIONS.includes(entry.isolation as Isolation)) out.isolation = entry.isolation as Isolation;
+  if (typeof entry.can_install === "boolean") out.can_install = entry.can_install;
+  const access = accessOf(entry.access);
+  if (access.length > 0) out.access = access;
   return out;
 }
 
@@ -100,6 +111,21 @@ export function withExtras<T extends object>(entry: T, next: SessionExtras): T {
   const out: Record<string, unknown> = { ...(entry as Record<string, unknown>) };
   for (const key of EXTRA_KEYS) delete out[key];
   return { ...out, ...extrasOf(next) } as T;
+}
+
+/** SV-30: the facts of a session that are METHOD, and travel with a copy of it. */
+export const METHOD_FACT_KEYS = ["model_id", "effort", "environment", "isolation", "can_install", "access"] as const;
+
+/**
+ * SV-30: the facts a copy of a session starts with. How it was run (model, effort, environment, isolation, access) is method and is
+ * kept. What it cost, how long it ran, what it produced and who reviewed it belong to the run that earned them, so they stay with the
+ * original (later parts add the evidence the copy keeps, labelled as the original's).
+ */
+export function copiedFacts(extras: unknown): SessionExtras {
+  const read = extrasOf(extras);
+  const out: Record<string, unknown> = {};
+  for (const key of METHOD_FACT_KEYS) if (read[key] !== undefined) out[key] = read[key];
+  return out as SessionExtras;
 }
 
 /** What the cost well shows and what it takes back: a number with at most two decimals, or nothing. */
@@ -118,6 +144,9 @@ export function extrasRefusal(extras: SessionExtras): string | null {
   if (extras.ownCopy !== undefined && extras.ownCopy.length > OWN_COPY_MAX) return `Name: ${OWN_COPY_MAX} characters max`;
   if (extras.model_id !== undefined && extras.model_id.trim().length > MODEL_ID_MAX) return `Model ID: ${MODEL_ID_MAX} characters max`;
   if (extras.effort !== undefined && !EFFORTS.includes(extras.effort)) return "Reasoning effort is default, low or high.";
+  if (extras.environment !== undefined && !ENVIRONMENTS.includes(extras.environment)) return "Where it ran is the maker's machine, a remote environment or a cloud sandbox.";
+  if (extras.isolation !== undefined && !ISOLATIONS.includes(extras.isolation)) return "Isolation is a worktree, a container, a virtual machine or none.";
+  if (extras.access && (extras.access.length > ACCESS_SYSTEMS.length || accessOf(extras.access).length !== extras.access.length)) return "Access is a system and read or write, once each.";
   if (extras.parallelWith && extras.parallelWith.length > PARALLEL_MAX) return `At most ${PARALLEL_MAX} sessions ran at the same time.`;
   return null;
 }
@@ -172,6 +201,10 @@ export function sessionFactsLine({ extras = {}, words = 0, model = null }: Facts
   }
   if (extras.model_id) parts.push(modelWithId(model, extras.model_id) as string);
   if (extras.effort) parts.push(FACTS_COPY.effort(extras.effort));
+  const environment = environmentLine(extras);
+  if (environment) parts.push(environment);
+  const access = accessLine(extras.access);
+  if (access) parts.push(access);
   if (extras.background) parts.push(FACTS_COPY.background);
   return parts.length > 0 ? parts.join(" · ") : null;
 }

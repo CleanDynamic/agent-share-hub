@@ -20,6 +20,8 @@ import { Checkbox } from "@/components/brand/Checkbox";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, TARGET_METRIC_MAX, TARGET_UNIT_MAX, type GoalTarget, type SessionGoal } from "@/lib/build/making";
 import { isIsoDay } from "@/lib/build/graph";
+import { proposedAccess } from "@/lib/build/sessionAccess";
+import { SETUP_KIND_LABEL } from "@/lib/build/setup";
 import { modelWithId, type SessionExtras } from "@/lib/build/sessionFacts";
 import { modelLabel } from "@/lib/models/registry";
 
@@ -31,8 +33,10 @@ import { MODAL_COPY, ModalForm, ModalShell } from "./ModalFrame";
 import { BODY_TEXT, Block, BlockHead, FieldArea, FieldInput, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, PANEL_LIST, RecipeButton, Row, SegmentedField, TextLink } from "./modalRecipes";
 import { OptionalField, OptionalSection } from "./OptionalSection";
 import {
+  AccessControl,
   CostControl,
   EXTRAS_COPY,
+  EnvironmentControl,
   EffortControl,
   ModelIdControl,
   MethodControl,
@@ -42,8 +46,10 @@ import {
   TogetherControl,
   TokensControl,
   TraceControl,
+  accessHeld,
   costHeld,
   effortHeld,
+  environmentHeld,
   methodHeld,
   modelIdHeld,
   timeHeld,
@@ -299,6 +305,12 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.effort} summary={effortHeld(extras)} phone={phone}>
               <EffortControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Where it ran" summary={environmentHeld(extras)} phone={phone}>
+              <EnvironmentControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Access" summary={accessHeld(extras)} phone={phone}>
+              <AccessControl id={key} extras={extras} proposed={proposedAccess((view.setup ?? []).filter((row) => row.kind === SETUP_KIND_LABEL.server).map((row) => row.name))} phone={phone} onChange={saveExtras} />
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.cost} summary={costHeld(extras)} phone={phone}>
               <CostControl id={key} extras={extras} phone={phone} onChange={saveExtras} />

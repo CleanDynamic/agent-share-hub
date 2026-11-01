@@ -3,6 +3,9 @@
 import { describe, expect, it } from "vitest";
 
 import { sessionsMetaOf } from "./making";
+import { methodOf } from "./forkRules";
+import { proposedAccess } from "./sessionAccess";
+import { copiedFacts } from "./sessionFacts";
 import { modelWithId, togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
 
 describe("the line", () => {
@@ -114,5 +117,35 @@ describe("SV-30 P1: model ID and reasoning effort", () => {
     expect(extrasRefusal({ model_id: "x".repeat(81) })).toBe("Model ID: 80 characters max");
     expect(extrasRefusal({ effort: "max" as never })).toContain("Reasoning effort");
     expect(extrasOf({ effort: "max", model_id: 4 })).toEqual({});
+  });
+});
+
+describe("SV-30 P4: environment, isolation and access", () => {
+  const facts = { environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }, { system: "tests", scope: "write" }, { system: "prod_logs", scope: "read" }, { system: "deploy", scope: "write" }, { system: "feature_flags", scope: "write" }] };
+  it("saves each key through the one path, and says them as facts", () => {
+    expect(extrasOf({ ...facts })).toEqual(facts);
+    expect(sessionFactsLine({ extras: facts as never }, "reader")).toBe(
+      "Cloud sandbox · Isolation: git worktree · Could install packages · Access: code (write) · tests (write) · production logs (read) · deploy (write) · feature flags (write)",
+    );
+    expect(sessionsMetaOf({ sessions_meta: { "typed-1": { tool: null, date: "2026-10-20", ...facts } } })["typed-1"]).toMatchObject(facts);
+  });
+  it("reads nothing it does not know and keeps a system once", () => {
+    expect(extrasOf({ environment: "laptop", isolation: "jail", can_install: "yes", access: [{ system: "code", scope: "admin" }, { system: "fax", scope: "read" }] })).toEqual({});
+    expect(extrasOf({ access: [{ system: "code", scope: "read" }, { system: "code", scope: "write" }] }).access).toEqual([{ system: "code", scope: "write" }]);
+  });
+  it("proposes systems from the tools a session set up, and sets none itself", () => {
+    expect(proposedAccess(["GitHub", "Supabase", "Slack", "Linear"])).toEqual(["code", "issues", "database"]);
+    expect(extrasOf({})).toEqual({});
+  });
+  it("is kept on a fork, as method: the keys are not evidence", () => {
+    expect(Object.keys(methodOf({ environment: "local", isolation: "none", access: [] }))).toEqual(["environment", "isolation", "access"]);
+  });
+});
+
+describe("SV-30: what a copy of a session keeps", () => {
+  it("keeps how it was run and leaves the run's own figures with the original", () => {
+    const run = { model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }], cost: 3.4, currency: "GBP", tokens: 5000, background: true, ms: 60000 };
+    expect(copiedFacts(run)).toEqual({ model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }] });
+    expect(copiedFacts(undefined)).toEqual({});
   });
 });

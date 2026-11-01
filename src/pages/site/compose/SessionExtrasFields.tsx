@@ -18,6 +18,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { COST_MAX, costField, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
 import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
+import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -501,3 +502,68 @@ export function EffortControl({ id, extras, phone, onChange }: { id: string; ext
     />
   );
 }
+
+/* ── SV-30 P4: where it ran, how it was kept apart, and what it could reach ── */
+
+export const environmentHeld = (extras: SessionExtras): string | null => (extras.environment ? ENVIRONMENT_LABEL[extras.environment] : null);
+export function EnvironmentControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <>
+      <ChoiceRows<Environment | "unsaid">
+        label="Where it ran"
+        name={`environment-${id}`}
+        phone={phone}
+        value={extras.environment ?? "unsaid"}
+        onChange={(environment) => onChange({ ...extras, environment: environment === "unsaid" ? undefined : environment })}
+        rows={[{ value: "unsaid", label: "Not said" }, ...ENVIRONMENTS.map((value) => ({ value, label: ENVIRONMENT_LABEL[value] }))]}
+      />
+      <ChoiceRows<Isolation | "unsaid">
+        label="Isolation"
+        name={`isolation-${id}`}
+        phone={phone}
+        value={extras.isolation ?? "unsaid"}
+        onChange={(isolation) => onChange({ ...extras, isolation: isolation === "unsaid" ? undefined : isolation })}
+        rows={[{ value: "unsaid", label: "Not said" }, ...ISOLATIONS.map((value) => ({ value, label: ISOLATION_LABEL[value] }))]}
+      />
+      <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
+        <Checkbox checked={extras.can_install === true} onChange={(event) => onChange({ ...extras, can_install: event.target.checked ? true : undefined })} />
+        <span style={text(13, 400, t.text)}>Could install packages</span>
+      </label>
+    </>
+  );
+}
+
+export const accessHeld = (extras: SessionExtras): string | null => accessLine(extras.access)?.replace(/^Access: /, "") ?? null;
+/** Each system with Read and Write; a system from the session's setup is proposed (marked, unticked) until the maker ticks it. */
+export function AccessControl({ id, extras, proposed = [], phone, onChange }: { id: string; extras: SessionExtras; proposed?: readonly AccessSystem[]; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const held = new Map((extras.access ?? []).map((entry) => [entry.system, entry.scope] as const));
+  const set = (system: AccessSystem, scope: AccessScope | null) => {
+    const next = ACCESS_SYSTEMS.flatMap((candidate) => {
+      const was = candidate === system ? scope : (held.get(candidate) ?? null);
+      return was ? [{ system: candidate, scope: was }] : [];
+    });
+    onChange({ ...extras, access: next.length > 0 ? next : undefined });
+  };
+  return (
+    <div role="group" aria-label="Access" data-testid="access-control" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {ACCESS_SYSTEMS.map((system) => {
+        const scope = held.get(system) ?? null;
+        return (
+          <div key={system} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: phone ? 44 : 28, flexWrap: "wrap" }}>
+            <span style={{ ...text(13, 400, t.text), minWidth: 120 }}>
+              {ACCESS_LABEL[system]}
+              {proposed.includes(system) && !scope ? <span style={text(12, 400, t.label)}> · in this session&apos;s setup</span> : null}
+            </span>
+            {ACCESS_SCOPES_UI.map((candidate) => (
+              <label key={candidate} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <Checkbox aria-label={`${ACCESS_LABEL[system]}: ${candidate}`} checked={scope === candidate} onChange={(event) => set(system, event.target.checked ? candidate : null)} />
+                <span style={text(13, 400, t.text2)}>{candidate === "read" ? "Read" : "Write"}</span>
+              </label>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+const ACCESS_SCOPES_UI: readonly AccessScope[] = ["read", "write"];
