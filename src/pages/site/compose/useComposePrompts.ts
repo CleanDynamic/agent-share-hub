@@ -295,7 +295,7 @@ export interface ComposePrompts {
   /** UI-P69: an agent's instructions (its system prompt). */
   setInstructions: (agentId: string, text: string) => void;
   /** UI-P70: add a manual step, with its picture if given, straight after step `afterId` (the end when null). Resolves its id, or null if it failed. */
-  addManual: (input: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null }) => Promise<string | null>;
+  addManual: (input: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null; gate?: object }) => Promise<string | null>;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
   setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) => void;
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
@@ -641,7 +641,7 @@ export function useComposePrompts({
   const setReply = (id: string, reply: string) =>
     void writeStep(id, "Response not saved", (node) => setPromptReply(node, reply.trim() || null));
   const setExtrasOf = (id: string, patch: Record<string, unknown>) =>
-    void writeStep(id, "Optional fields not saved", (node) => setExtras(node, patch));
+    void writeStep(id, "Optional fields not saved", (node) => setExtras(node, patch, nodes.current()));
   const setDeployment = (id: string, payload: Record<string, unknown>) =>
     void writeStep(id, "Deployment not saved", (node) => setDeploymentTile(node, payload));
   const setTextOf = (id: string, text: string) =>
@@ -837,13 +837,13 @@ export function useComposePrompts({
   const setInstructionsOf = (agentId: string, text: string) =>
     void writeStep(agentId, "Instructions not saved", (node) => setInstructions(node, text));
 
-  const addManual = ({ tool, text, where, lines, file, afterId, session }: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null }) =>
+  const addManual = ({ tool, text, where, lines, file, afterId, session, gate }: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null; gate?: object }) =>
     attempt("Manual step not added", async () => {
       const build = await latest.current.ensureBuild();
       let mediaId: string | undefined;
       if (file) mediaId = (await uploadMedia({ buildId: build, file })).id;
       // `addManualStep` places it last; then it moves straight after the selected step.
-      const created = await addManualStep(build, nodes.current(), { tool, text, where, lines, media_id: mediaId, session });
+      const created = await addManualStep(build, nodes.current(), { tool, text, where, lines, media_id: mediaId, session, gate });
       nodes.record(created.id, created);
       if (where?.kind === "app" && where.name) noteTool(build, where.name);
       else if (tool) noteTool(build, tool);

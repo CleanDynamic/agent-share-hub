@@ -89,7 +89,8 @@ describe("What you need", () => {
 
 describe("Before you copy", () => {
   it("says each warning once", () => {
-    expect(beforeYouCopy(ASSISTANT)).toEqual([BEFORE_COPY.full, BEFORE_COPY.noSandbox]);
+    // SV-28 P6: OpenClaw reads outside content and full access can send or spend, so the crossing is said too, once.
+    expect(beforeYouCopy(ASSISTANT)).toEqual([BEFORE_COPY.full, BEFORE_COPY.noSandbox, "Agent reads outside content and can send or spend, with no approval between."]);
     expect(beforeYouCopy([node("r1", 0, "relay", { joins: ["a", "b"], network: "public internet" })])).toEqual([BEFORE_COPY.publicRelay]);
     expect(beforeYouCopy([node("a1", 0, "agent_config", {})])).toEqual([]);
     // The assistant fixture leaves Approvals unset on OpenClaw, so its docs' default is said, as the vendor's.

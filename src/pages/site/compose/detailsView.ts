@@ -171,6 +171,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     ...(step.where ? { where: step.where } : null),
     text: step.text,
     picture: step.mediaId ? { id: step.mediaId, name: facts?.name ?? "Picture" } : null,
+    ...(step.gate ? { gate: step.gate, steps: ctx.steps } : null),
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
@@ -236,7 +237,8 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
     inside: insideCounts(step),
     ...(groupOfStep(ctx.groups, step)?.goal ? { sessionGoal: true } : null),
-    instructions: step.kind === "agent" ? step.text : "",
+    // SV-28 P1: a team's instructions are its own (`payload.system_prompt`).
+    instructions: step.kind === "agent" ? step.text : (step.teamInstructions ?? ""),
     parent: parentLine(step.id, ctx.steps),
     // CA-02 P5: what it ran in, its models and its tools, as the setup controls hold them.
     ...(step.kind === "agent"

@@ -31,6 +31,7 @@ import { useBuildHistoryContext } from "./useBuildHistory";
 import { GoesBlock, InsideBlock, MakesBlock, PicturesBlock, RuntimeBlocks, SummaryRow, TitleRow, ToolsUsedBlock, TrainedBlock, UsesBlock, WhereRanBlock } from "./editKit";
 import { ModelRunFields } from "./ModelRunFields";
 import { SessionDialog } from "./SessionDialog";
+import { TeamWorkFields } from "./TeamWorkFields";
 import { RunsGroup } from "./RunsFields";
 import {
   agentCurrent,
@@ -164,6 +165,7 @@ function ManualEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & 
       available
       inBuild={inBuild}
       seed={manualCurrent(view)}
+      approval={view.gate ? { steps: view.steps ?? [], afterId: view.id, gate: view.gate, self: view.id } : undefined}
       edit={{
         title: editTitle(view),
         before: () => <TitleRow id={view.id} title={view.title} defaultTitle={view.defaultTitle} phone={phone} handlers={h} />,
@@ -306,6 +308,8 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
               onAddDeployment={h.onAddDeployment}
             />
             </Suspense>
+            {/* SV-28 P5: a team's shared workspace and example run. */}
+            {view.kind === "team" ? <TeamWorkFields id={view.id} tree={view.deploymentTree ?? []} phone={phone} onExtras={h.onExtras} /> : null}
             <InsideBlock label={view.inside} rows={view.insideRows} phone={phone} handlers={h} />
             {inputs(view, h, phone, false)}
             <RuntimeBlocks view={view} phone={phone} handlers={h} />

@@ -19,6 +19,8 @@ import { agentFieldsOf, APPROVAL_LABEL } from "./agentFields";
 import { deploymentName, deploymentTilesOf, idOfRef, providerName, VOICE_MODE_LABEL, type DeploymentTile } from "./deployment";
 import { gpusWord, modelRunOf } from "./modelRun";
 import { agentSetupItemsOf } from "./setup";
+import { mentionsOf } from "./mentions";
+import { agentsOfTeam, handoffsOf, HANDOFF_COPY } from "./teamFields";
 import { AGENT_PATTERN_LABEL, patternOf } from "./tileExtras";
 import type { NodeTree } from "./types";
 
@@ -43,6 +45,10 @@ export interface ArchLine {
   from: string;
   to: string;
   label: string;
+  /** SV-28 P2: a mention with no handoff rule is drawn dotted. */
+  dotted?: true;
+  /** SV-28 P1: a handoff's condition, for the line's tooltip and Details. */
+  when?: string;
   /** Start and end, on the boxes' edges. */
   x1: number;
   y1: number;
@@ -131,10 +137,10 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
   const agents = tree.filter((node) => node.parent_id === null && (node.type === "agent_config" || node.type === "team")).flatMap((node) => [node, ...(node.type === "team" ? (node.children ?? []).filter((child) => child.type === "agent_config") : [])]);
   const parentOf = new Map(agents.flatMap((node) => (node.children ?? []).map((child) => [child.id, node.id] as const)));
   const drafts: Draft[] = [];
-  const edges: { from: string; to: string; label: string }[] = [];
-  const edge = (from: string, to: string, label: string) => {
+  const edges: { from: string; to: string; label: string; dotted?: true; when?: string }[] = [];
+  const edge = (from: string, to: string, label: string, extra?: { dotted?: true; when?: string }) => {
     if (from === to || !drafts.some((draft) => draft.id === from) || !drafts.some((draft) => draft.id === to)) return;
-    if (!edges.some((entry) => entry.from === from && entry.to === to && entry.label === label)) edges.push({ from, to, label });
+    if (!edges.some((entry) => entry.from === from && entry.to === to && entry.label === label)) edges.push({ from, to, label, ...extra });
   };
 
   // Column 1: channels, then what starts each agent.
@@ -175,6 +181,16 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
     for (const item of agentSetupItemsOf(tree as NodeTree[], agent.id)) if (item.kind === "server" || item.kind === "skill") edge(agent.id, `setup:${item.id}`, item.kind === "server" ? "calls" : "reads");
     const tools = Array.isArray(record(agent.payload).tools) ? (record(agent.payload).tools as unknown[]) : [];
     for (const tool of tools) if (typeof tool === "string") edge(agent.id, `tool:${tool}`, "calls");
+  }
+  // SV-28 P1 and P2: inside a team, one line per handoff rule; a mention of another agent with no rule from A to B, dotted.
+  for (const team of agents.filter((node) => node.type === "team")) {
+    const members = agentsOfTeam(tree as NodeTree[], team.id);
+    for (const agent of members) {
+      const rules = handoffsOf(agent.payload);
+      for (const rule of rules) edge(agent.id, rule.to, HANDOFF_COPY.line, { when: rule.when });
+      const said = mentionsOf(str(record(agent.payload).system_prompt), members.map((member) => ({ id: member.id, role: str(record(member.payload).role), title: member.title ?? null })));
+      for (const mention of said.mentions) if (!rules.some((rule) => rule.to === mention.id)) edge(agent.id, mention.id, "mentions", { dotted: true });
+    }
   }
   for (const tile of tiles) {
     const owner = ownerOf(tile);
@@ -256,6 +272,12 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
     const a = byId.get(entry.from) as ArchBox;
     const b = byId.get(entry.to) as ArchBox;
     const horizontal = direction === "horizontal";
+    // SV-28: two agents of one team sit in the same column (a row, drawn vertically): the line joins their facing edges.
+    if (horizontal ? a.x === b.x : a.y === b.y) {
+      const [p, q] = (horizontal ? a.y <= b.y : a.x <= b.x) ? [a, b] : [b, a];
+      const ends = horizontal ? { x1: p.x + p.w / 2, y1: p.y + p.h, x2: q.x + q.w / 2, y2: q.y } : { x1: p.x + p.w, y1: p.y + p.h / 2, x2: q.x, y2: q.y + q.h / 2 };
+      return { ...entry, x1: round(ends.x1), y1: round(ends.y1), x2: round(ends.x2), y2: round(ends.y2) };
+    }
     const forward = horizontal ? a.x <= b.x : a.y <= b.y;
     const [p, q] = forward ? [a, b] : [b, a];
     const x1 = horizontal ? p.x + p.w : p.x + p.w / 2;

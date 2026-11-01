@@ -39,6 +39,26 @@ import {
   type Sandbox,
 } from "@/lib/build/agentFields";
 import { harnessDefaultLine, sandboxShown } from "@/lib/build/harnessFacts";
+import { Checkbox } from "@/components/brand/Checkbox";
+import {
+  HANDOFF_COPY,
+  HANDOFF_WHEN_MAX,
+  HANDOFFS_MAX,
+  OUTPUT_RULE_MAX,
+  OUTPUT_RULES_MAX,
+  RULE_TEXT_MAX,
+  RULES_COPY,
+  RULES_FOLLOWED_MAX,
+  agentLabel,
+  agentsOfTeam,
+  handoffsOf,
+  httpsUrl,
+  outputRulesOf,
+  rulesFollowedOf,
+  teamOfAgent,
+  type Handoff,
+  type RuleFollowed,
+} from "@/lib/build/teamFields";
 import { TOOL_PERMISSION_LABEL, TOOL_PERMISSIONS, type ToolPermission } from "@/lib/build/tileExtras";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -143,7 +163,15 @@ export function AgentRuntimeSection({ tree, ...rest }: Omit<AgentRuntimeFieldsPr
     return null;
   };
   const ownSetup = agentSetupItemsOf(tree as NodeTree[], rest.id).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, origin: skillOriginLine(item) }));
-  return <AgentRuntimeFields {...rest} fields={agentFieldsOf(find(tree)?.payload)} deployment={deploymentLineOf(deploymentTilesOf(tree), rest.id)} ownSetup={ownSetup} />;
+  const payload = find(tree)?.payload;
+  const team = teamOfAgent(tree, rest.id);
+  const mates = team ? agentsOfTeam(tree, team.id).filter((agent) => agent.id !== rest.id).map((agent) => ({ id: agent.id, label: agentLabel(agent) })) : [];
+  return (
+    <>
+      <AgentRuntimeFields {...rest} fields={agentFieldsOf(payload)} deployment={deploymentLineOf(deploymentTilesOf(tree), rest.id)} ownSetup={ownSetup} />
+      {rest.kind === "agent" ? <AgentTeamFields id={rest.id} phone={rest.phone} mates={mates} handoffs={handoffsOf(payload)} rules={outputRulesOf(payload)} follows={rulesFollowedOf(payload)} onExtras={rest.onExtras} /> : null}
+    </>
+  );
 }
 
 export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCode = false, tools, inTeam, deployment, ownSetup = [], onExtras, onOpenTile, onAddDeployment }: AgentRuntimeFieldsProps) {
@@ -323,6 +351,150 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCo
           })}
         </Field>
       ) : null}
+    </>
+  );
+}
+
+/* ── SV-28 P1 and P3: Hands off to, Output rules, Follows ── */
+
+/**
+ * The agent's handoff rules (an agent in a team: one line per rule, an agent picker then the condition, and "A person approves
+ * first"), its output rules (one per line) and the published guidance it follows (text and an https link). Writes go through
+ * `onExtras`, held by the window until Save; the writer refuses a rule to an agent outside the team.
+ */
+export function AgentTeamFields({ id, phone, mates, handoffs, rules, follows, onExtras }: { id: string; phone: boolean; mates: readonly { id: string; label: string }[]; handoffs: readonly Handoff[]; rules: readonly string[]; follows: readonly RuleFollowed[]; onExtras?: (id: string, patch: Record<string, unknown>) => void }) {
+  const [shownHandoffs, setHandoffs] = useState<Handoff[]>([...handoffs]);
+  const [draftRule, setDraftRule] = useState<{ to: string; when: string } | null>(null);
+  const [shownRules, setRules] = useState(rules.join("\n"));
+  const [shownFollows, setFollows] = useState<RuleFollowed[]>([...follows]);
+  const [draftFollow, setDraftFollow] = useState<{ text: string; url: string } | null>(null);
+  const writeHandoffs = (next: Handoff[]) => {
+    setHandoffs(next);
+    onExtras?.(id, { handoffs: next.length > 0 ? next : null });
+  };
+  const writeFollows = (next: RuleFollowed[]) => {
+    setFollows(next);
+    onExtras?.(id, { rules_followed: next.length > 0 ? next : null });
+  };
+  const nameOf = (to: string) => mates.find((mate) => mate.id === to)?.label ?? "Agent";
+  const ruleLines = shownRules.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const followUrl = draftFollow ? httpsUrl(draftFollow.url) : null;
+  return (
+    <>
+      {mates.length > 0 ? (
+        <Field id={`${id}-handoffs`} label={HANDOFF_COPY.label} group>
+          {shownHandoffs.map((rule, at) => (
+            <div key={`${rule.to}-${at}`} data-testid="handoff-row" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <PickMenu<string>
+                  label={`${HANDOFF_COPY.label}: ${HANDOFF_COPY.to}`}
+                  options={mates.map((mate) => ({ value: mate.id, label: mate.label }))}
+                  value={rule.to}
+                  phone={phone}
+                  onChange={(to) => writeHandoffs(shownHandoffs.map((entry, i) => (i === at ? { ...entry, to } : entry)))}
+                />
+                <span style={{ flexGrow: 1, minWidth: 160 }}>
+                  <Typed label={`${HANDOFF_COPY.when} ${nameOf(rule.to)}`} value={rule.when} max={HANDOFF_WHEN_MAX} placeholder={HANDOFF_COPY.whenPlaceholder} phone={phone} onCommit={(when) => when && writeHandoffs(shownHandoffs.map((entry, i) => (i === at ? { ...entry, when } : entry)))} />
+                </span>
+                <TextButton target={phone} aria-label={HANDOFF_COPY.remove} onClick={() => writeHandoffs(shownHandoffs.filter((_, i) => i !== at))}>
+                  Remove
+                </TextButton>
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: t.text2 }}>
+                <Checkbox
+                  checked={rule.needs_approval === true}
+                  onChange={(event) => {
+                    const { needs_approval: _was, ...rest } = rule;
+                    writeHandoffs(shownHandoffs.map((entry, i) => (i === at ? (event.target.checked ? { ...rest, needs_approval: true } : rest) : entry)));
+                  }}
+                />
+                {HANDOFF_COPY.approval}
+              </label>
+            </div>
+          ))}
+          {draftRule ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <PickMenu<string> label={`${HANDOFF_COPY.label}: ${HANDOFF_COPY.to}`} options={mates.map((mate) => ({ value: mate.id, label: mate.label }))} value={draftRule.to} placeholder={HANDOFF_COPY.pick} phone={phone} onChange={(to) => setDraftRule({ ...draftRule, to })} />
+              <span style={{ flexGrow: 1, minWidth: 160 }}>
+                <Typed
+                  label={HANDOFF_COPY.when}
+                  value=""
+                  max={HANDOFF_WHEN_MAX}
+                  placeholder={HANDOFF_COPY.whenPlaceholder}
+                  phone={phone}
+                  onCommit={(when) => {
+                    if (!when || !draftRule.to) return setDraftRule({ ...draftRule, when });
+                    writeHandoffs([...shownHandoffs, { to: draftRule.to, when }]);
+                    setDraftRule(null);
+                  }}
+                />
+              </span>
+            </div>
+          ) : shownHandoffs.length < HANDOFFS_MAX ? (
+            <span>
+              <TextButton underline target={phone} onClick={() => setDraftRule({ to: "", when: "" })}>
+                {HANDOFF_COPY.add}
+              </TextButton>
+            </span>
+          ) : null}
+        </Field>
+      ) : null}
+
+      <Field id={`${id}-output-rules`} label={RULES_COPY.output} hint={RULES_COPY.outputHint}>
+        <textarea
+          id={`${id}-output-rules`}
+          rows={3}
+          value={shownRules}
+          placeholder={RULES_COPY.outputPlaceholder}
+          onChange={(event) => setRules(event.target.value)}
+          onBlur={() => {
+            if (ruleLines.join("\n") === rules.join("\n")) return;
+            if (ruleLines.length > OUTPUT_RULES_MAX || ruleLines.some((line) => line.length > OUTPUT_RULE_MAX)) return;
+            onExtras?.(id, { output_rules: ruleLines.length > 0 ? ruleLines : null });
+          }}
+          style={{ ...typedField(phone, {}), height: "auto", minHeight: 72, resize: "vertical", padding: 8 }}
+        />
+        {ruleLines.length > OUTPUT_RULES_MAX ? <span role="alert" style={{ fontSize: 12, color: t.text }}>{`Output rules: ${OUTPUT_RULES_MAX} max, one per line`}</span> : null}
+        {ruleLines.some((line) => line.length > OUTPUT_RULE_MAX) ? <span role="alert" style={{ fontSize: 12, color: t.text }}>{`Each output rule: ${OUTPUT_RULE_MAX} characters max`}</span> : null}
+      </Field>
+
+      <Field id={`${id}-follows`} label={RULES_COPY.follows} hint={RULES_COPY.followsHint} group>
+        {shownFollows.map((rule, at) => (
+          <div key={rule.url} style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12.5, color: t.text, minWidth: 0, overflowWrap: "anywhere" }}>{rule.text}</span>
+            <TextButton target={phone} aria-label={`${RULES_COPY.remove}: ${rule.text}`} onClick={() => writeFollows(shownFollows.filter((_, i) => i !== at))}>
+              Remove
+            </TextButton>
+          </div>
+        ))}
+        {draftFollow ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <input type="text" aria-label={RULES_COPY.text} maxLength={RULE_TEXT_MAX} value={draftFollow.text} placeholder="GOV.UK style guide" onChange={(event) => setDraftFollow({ ...draftFollow, text: event.target.value })} style={typedField(phone, {})} />
+            <input type="url" aria-label={RULES_COPY.url} value={draftFollow.url} placeholder="https://" onChange={(event) => setDraftFollow({ ...draftFollow, url: event.target.value })} style={typedField(phone, {})} />
+            {draftFollow.url.trim() && !followUrl ? <span role="alert" style={{ fontSize: 12, color: t.text }}>{RULES_COPY.https}</span> : null}
+            <span>
+              <TextButton
+                underline
+                target={phone}
+                disabled={!draftFollow.text.trim() || !followUrl}
+                onClick={() => {
+                  if (!followUrl || !draftFollow.text.trim()) return;
+                  writeFollows([...shownFollows, { text: draftFollow.text.trim(), url: followUrl }]);
+                  setDraftFollow(null);
+                }}
+              >
+                {RULES_COPY.add}
+              </TextButton>
+            </span>
+          </div>
+        ) : shownFollows.length < RULES_FOLLOWED_MAX ? (
+          <span>
+            <TextButton underline target={phone} onClick={() => setDraftFollow({ text: "", url: "" })}>
+              {RULES_COPY.add}
+            </TextButton>
+          </span>
+        ) : null}
+      </Field>
     </>
   );
 }

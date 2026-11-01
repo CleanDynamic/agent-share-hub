@@ -78,6 +78,7 @@ import { modelRunLine } from "@/lib/build/modelRun";
 import { groupByLoaded } from "@/lib/build/setup";
 import { bracketed, changesLine } from "@/lib/build/changes";
 import { copyTogether } from "@/lib/build/copyTogether";
+import { AgentRules, GateLine, JobLine, TeamHead, TeamLinesContext, WaitsLine } from "@/components/build/teamLines";
 import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
 
@@ -916,6 +917,8 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       >
         <Title entry={entry} right={null} />
         <TypeLine step={step} indent={INDENT} />
+        {step.gate ? <GateLine gate={step.gate} style={{ paddingLeft: INDENT }} /> : null}
+        {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
         <ManualTileBody step={step} indent={INDENT} picture={false} lean all />
         <SaveLines files={entry.makes} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
@@ -933,6 +936,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
       <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
       <TypeLine step={step} indent={INDENT} />
+      {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {step.kind === "code" ? <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} /> : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
@@ -986,6 +990,8 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         {/* CA-03 P7: an agent that reads content it doesn't control says so. */}
         <OutsideWarning names={entry.outside} />
         <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
+        {step.job ? <JobLine job={step.job} /> : null}
+        {step.kind === "agent" ? <AgentRules agent={step} /> : null}
         <SaveLines files={entry.makes} indent={0} />
         {entry.uses.length > 0 ? (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
@@ -1038,7 +1044,9 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <SaveMark kind="step" id={step.id} />
       </div>
       <TypeLine step={step} indent={INDENT} />
+      {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {line ? <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div> : null}
+      {team ? <TeamHead team={step} style={{ paddingLeft: INDENT }} /> : <AgentRules agent={step} style={{ paddingLeft: INDENT }} />}
       {entry.runs ? <DotLine testId="runs-line" style={{ paddingLeft: INDENT }}>{entry.runs}</DotLine> : null}
       {step.helpers?.length ? <HelperChips helpers={step.helpers} indent={INDENT} decisionName={(id) => ctx.view.steps.map((candidate) => candidate.step).find((candidate) => candidate.id === id)?.title ?? undefined} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
@@ -1355,6 +1363,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   };
 
   return (
+    <TeamLinesContext.Provider value={{ open: go, names, phone, steps: steps.flatMap((entry) => [entry.step, ...entry.step.children]) }}>
     <div data-testid="build-steps" style={column(16)}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
         {view.mapAvailable && !phone ? (
@@ -1464,6 +1473,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
         onCloseAutoFocus={onCloseAutoFocus}
       />
     </div>
+    </TeamLinesContext.Provider>
   );
 }
 

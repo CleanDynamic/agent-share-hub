@@ -36,7 +36,7 @@ import { orderKeys } from "@/lib/build/sessionLayout";
 import { refTo } from "@/lib/build/thread";
 
 import { ClearBuildDialog } from "./ClearBuildDialog";
-import { RecentlyRemovedDialog } from "./RecentlyRemovedDialog";
+import { RecentlyRemovedWindow as RecentlyRemovedDialog } from "./composerWindows";
 import { SessionRemoveWindow, type SessionRemoval } from "./removePieces";
 import { buildSessionRowsKey } from "./useComposeSessions";
 import type { BuildHistoryApi } from "./useBuildHistory";

@@ -108,6 +108,7 @@ import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
+import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
 import { FOOT_LINK, LIST_BOX, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
@@ -1046,6 +1047,8 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu }: { 
           {typeLine}
         </span>
         {title}
+        {step.gate ? <GateLine gate={step.gate} /> : null}
+        {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} /> : null}
       </div>
       <CardColour step={step} phone={phone} inMenu />
       {menu}
@@ -1319,7 +1322,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
 const outsideOf = (agent: Step, names: BuildListProps["names"]): string[] =>
   readsOutsideContent(agent, (agent.toolRefs ?? []).flatMap((id) => (names[id] ? [{ id, type: TOOL_TYPE, payload: { service: names[id] } }] : [])));
 
-function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = false }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[]; outside?: readonly string[]; phone?: boolean }) {
+function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = false, team }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[]; outside?: readonly string[]; phone?: boolean; team?: readonly Step[] }) {
   // An agent's instructions are its own text, not a part of their own.
   const to = step.id.endsWith(":instructions") ? null : refTo({ kind: "node", id: step.id });
   const part = usePartRef(to);
@@ -1336,9 +1339,13 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
       {step.kind === "agent" && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
       {step.id.endsWith(":instructions") && !step.text.trim() ? (
         <span data-testid="agent-instructions" style={text(12.5, 400, t.label)}>{TILE_COPY.noInstructions}</span>
+      ) : team ? (
+        <MentionText value={step.text} team={mentionTeam(team)} style={clamp3} />
       ) : (
         <p data-testid={step.id.endsWith(":instructions") ? "agent-instructions" : undefined} style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", whiteSpace: step.id.endsWith(":instructions") ? "pre-wrap" : undefined, ...(step.id.endsWith(":instructions") ? clamp3 : clamp2) }}>{step.text}</p>
       )}
+      {step.job ? <JobLine job={step.job} /> : null}
+      <AgentRules agent={step} />
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
       <OutsideWarning names={outside} />
       {to ? <MentionedLine to={to} phone={phone} /> : null}
@@ -1501,7 +1508,10 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
         menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
       />
       {isTeam ? (
-        <TeamAgents team={step} />
+        <>
+          <TeamAgents team={step} />
+          <TeamHead team={step} style={{ paddingLeft: INDENT }} />
+        </>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: INDENT, minWidth: 0 }}>
           {instructions ? (
@@ -1509,6 +1519,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
               {instructions}
             </span>
           ) : null}
+          <AgentRules agent={step} />
           <DotLine testId="runs-line">{triggerLine(step)}</DotLine>
           {toolNames.length > 0 ? (
             <span data-testid="agent-tools" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
@@ -1545,6 +1556,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
                 outside={isTeam ? outsideOf(child, props.names) : []}
                 made={props.madeNames?.[child.id]}
                 phone={props.phone}
+                team={isTeam ? step.children : undefined}
               />
               {own.length > 0 ? (
                 <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2539,12 +2551,14 @@ export function BuildList(raw: BuildListProps) {
   };
   /* Sessions move once there are two to put in order, even when no tile can move yet. */
   const sessionsMove = (Boolean(props.onDropSession) && headOrder.length > 1) || Boolean(parts?.ops);
-  if (!nest && !sessionsMove) return <ListRefsContext.Provider value={refs}>{body}</ListRefsContext.Provider>;
+  // SV-28: a team's, an agent's, a job's and an Approval step's lines open steps and name tools through this.
+  const lines = <TeamLinesContext.Provider value={{ open: props.onSelect, names: props.names, phone: props.phone, steps: props.steps.flatMap((step) => [step, ...step.children]) }}>{body}</TeamLinesContext.Provider>;
+  if (!nest && !sessionsMove) return <ListRefsContext.Provider value={refs}>{lines}</ListRefsContext.Provider>;
   return (
     <ListRefsContext.Provider value={refs}>
       <ListNestContext.Provider value={nest}>
         <NestList phone={props.phone} sorting={sorting}>
-          {body}
+          {lines}
         </NestList>
       </ListNestContext.Provider>
     </ListRefsContext.Provider>

@@ -161,7 +161,8 @@ describe("the Optional section in a tile's window (CA-15 P11, CA-18 P2)", () => 
 
   it("a team has Orchestration pattern, an agent Limits, Output and destination and Sample run", () => {
     windowFor([node("tm", "team", { pattern: "lead" }, { children: [node("tm1", "agent_config", { system_prompt: "Lead", model: "Opus 5.5" }, { parent_id: "tm" })] })], "tm");
-    expect(rowNames().map((name) => name?.replace("Multi-agent only", ""))).toEqual(["Trigger", "Orchestration pattern"]);
+    // SV-28 P1: a team's window also edits the team's own instructions.
+    expect(rowNames().map((name) => name?.replace("Multi-agent only", ""))).toEqual(["Team instructions", "Trigger", "Orchestration pattern"]);
     cleanup();
     const { props } = windowFor([node("ag", "agent_config", { system_prompt: "Review", model: "Opus 5.5", limits: ["Never deploys"] })], "ag");
     expect(rowNames()).toEqual(expect.arrayContaining(["Limits", "Output and destination", "Sample run"]));

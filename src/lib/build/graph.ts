@@ -15,6 +15,27 @@
 
 import { DEPLOYMENT_KIND_NAME, cleanDeployment, deploymentKindOf, moveMemoryNote, typeOfKind, type DeploymentKind } from "./deployment";
 import { agentFieldsRefusal } from "./agentFields";
+import {
+  GATE_COPY,
+  exampleRunOf,
+  gateOf,
+  handoffsOf,
+  hasJob,
+  jobOf,
+  outputRulesOf,
+  rulesFollowedOf,
+  teamFieldsRefusal,
+  teamInstructionsOf,
+  teamWorkFixes,
+  waitsForOf,
+  workspaceOf,
+  type ExampleEntry,
+  type Gate,
+  type Handoff,
+  type Job,
+  type RuleFollowed,
+  type Workspace,
+} from "./teamFields";
 // SV-27 P9: the API estimate and measured speed cleaners, registered for `setExtras`.
 import "./costFields";
 import type { Json } from "@/integrations/supabase/types";
@@ -212,6 +233,23 @@ export interface Step {
   sample?: string;
   /** CA-15 P7, a team only: how its agents work together (`payload.pattern`). */
   pattern?: AgentPattern;
+  /** SV-28 P1, a team only: the rules every agent in it follows (`payload.system_prompt`). Drawn in the team's head, unnumbered. */
+  teamInstructions?: string;
+  /** SV-28 P5, a team only: how its agents share files and merge work, and one worked example of work passing between them. */
+  workspace?: Workspace;
+  exampleRun?: ExampleEntry[];
+  /** SV-28 P1, an agent in a team: who it passes work to, and when; and its role (SV-27's `payload.role`), which mentions resolve first. */
+  handoffs?: Handoff[];
+  role?: string;
+  /** SV-28 P3, an agent only: the rules it follows for everything it produces, and the published guidance it follows. */
+  outputRules?: string[];
+  rulesFollowed?: RuleFollowed[];
+  /** SV-28 P3, a prompt inside an agent: what it delivers, where, and whether a person approves it first. */
+  job?: Job;
+  /** SV-28 P4, a manual step made by Add > Approval: who approves what, and the steps that wait. */
+  gate?: Gate;
+  /** SV-28 P4: the Approval step this step waits for: its id and its number. */
+  waitsFor?: { id: string; number: string };
   /** CA-13 P7, a prompt or an agent: the shape its answer is forced into. */
   outputShape?: OutputShape;
   /** CA-13 P8: what it took to make (any tile) and what it costs to run (a runtime tile): never added together. */
@@ -726,6 +764,7 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
     case "code":
       return named(str("filename") || firstLineOf(str("source")));
     case "manual":
+      if (gateOf(payload)) return GATE_COPY.title;
       return named(firstLineOf(Array.isArray(payload.lines) ? String(payload.lines.find((l) => typeof l === "string" && l.trim()) ?? "") : str("text")));
     case "agent":
       return named(firstLineOf(str("system_prompt")));
@@ -896,6 +935,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "team" && patternOf(payload.pattern) ? { pattern: patternOf(payload.pattern) as AgentPattern } : null),
+    ...(kind === "team" || kind === "agent" ? teamFactsOf(kind, payload) : null),
+    ...(kind === "manual" && gateOf(payload) ? { gate: gateOf(payload) as Gate } : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload, cases) } : null),
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
@@ -916,6 +957,27 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     // CA-06 P4: the maker's colour, when it reads as one.
     ...(normaliseHex(payload.colour) ? { colour: normaliseHex(payload.colour) as string } : null),
   };
+}
+
+/** SV-28: a team's instructions, workspace and example run; an agent's handoffs, output rules and rules followed. Each only when said. */
+function teamFactsOf(kind: "team" | "agent", payload: Payload): Partial<Step> {
+  if (kind === "team") {
+    const instructions = teamInstructionsOf(payload);
+    const workspace = workspaceOf(payload);
+    const run = exampleRunOf(payload);
+    return { ...(instructions ? { teamInstructions: instructions } : null), ...(workspace ? { workspace } : null), ...(run.length > 0 ? { exampleRun: run } : null) };
+  }
+  const handoffs = handoffsOf(payload);
+  const rules = outputRulesOf(payload);
+  const follows = rulesFollowedOf(payload);
+  const role = stringOf(payload.role)?.trim().slice(0, 30);
+  return { ...(role ? { role } : null), ...(handoffs.length > 0 ? { handoffs } : null), ...(rules.length > 0 ? { outputRules: rules } : null), ...(follows.length > 0 ? { rulesFollowed: follows } : null) };
+}
+
+/** SV-28 P3: a prompt inside an agent with its job, when it has one. */
+function withJob(step: Step, node: NodeTree): Step {
+  const job = jobOf(node.payload);
+  return hasJob(job) ? { ...step, job } : step;
 }
 
 /** CA-13: the runtime facts a tile's payload holds, each only on the tiles that can have it. */
@@ -978,6 +1040,10 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     outputShape: undefined,
     buildCost: undefined,
     runCost: undefined,
+    handoffs: undefined,
+    role: undefined,
+    outputRules: undefined,
+    rulesFollowed: undefined,
   };
 }
 
@@ -1006,7 +1072,7 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
   if (kind === "agent") {
     const prompts = byPosition((node.children ?? []).filter((child) => child.type === PROMPT_TYPE));
     if (inTeam && prompts.length === 0) return stepFor(node, number, kind, []);
-    return stepFor(node, number, kind, [instructionsOf(node, sub(number, 1)), ...prompts.map((child, i) => stepFor(child, sub(number, i + 2), "prompt"))]);
+    return stepFor(node, number, kind, [instructionsOf(node, sub(number, 1)), ...prompts.map((child, i) => withJob(stepFor(child, sub(number, i + 2), "prompt"), child))]);
   }
   if (kind === "team") {
     const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
@@ -1036,7 +1102,19 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0)));
+  return withWaits(withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0))), tree, top.map((node) => node.id));
+}
+
+/** SV-28 P4: each step an Approval step blocks says which one it waits for. Untouched when the build has no gate. */
+function withWaits(steps: Step[], tree: readonly NodeTree[], order: readonly string[]): Step[] {
+  if (!steps.some((step) => step.gate)) return steps;
+  const waits = waitsForOf(tree, order);
+  const numberOf = new Map(steps.map((step) => [step.id, step.number]));
+  const apply = (step: Step): Step => {
+    const gate = waits.get(step.id);
+    return { ...step, ...(gate ? { waitsFor: { id: gate, number: numberOf.get(gate) ?? "" } } : null), children: step.children.map(apply) };
+  };
+  return steps.map(apply);
 }
 
 /**
@@ -1869,9 +1947,20 @@ const wherePayload = (where: ManualWhere): Json => ({ kind: where.kind, ...(wher
 export async function addManualStep(
   buildId: string,
   tree: readonly NodeTree[],
-  input: { tool?: string; text?: string; lines?: readonly string[]; where?: ManualWhere | null; media_id?: string | null; session?: string | null },
+  input: { tool?: string; text?: string; lines?: readonly string[]; where?: ManualWhere | null; media_id?: string | null; session?: string | null; gate?: object },
 ): Promise<BuildNode> {
   await requireLiveType("addManualStep", MANUAL_STEP_TYPE);
+  // SV-28 P4: Add > Approval is a manual step that holds a gate and no lines: titled "Approval", numbered like any step. It is made
+  // last and then moved into place, so its blocked steps are checked once it is there (`tidyTeamWork`).
+  if (input.gate) {
+    let gate: Json | null;
+    try {
+      gate = cleanExtras(MANUAL_STEP_TYPE, { gate: input.gate }).gate;
+    } catch (cause) {
+      throw refuse("addManualStep", cause instanceof Error ? cause.message : "That value is not allowed.");
+    }
+    return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload: { gate, ...(input.session ? { session: input.session } : null) } as Json });
+  }
   const { tool, text, where } = manualKeys("addManualStep", input);
   const payload: Payload = { tool, text };
   if (where) payload.where = wherePayload(where);
@@ -3094,9 +3183,10 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
  * method. Only the keys `cleanExtras` knows for the node's type are accepted; each is cleaned and range-checked there. A null
  * value takes the key off; every other key of the payload is written back as it was read.
  */
-export async function setExtras(node: BuildNode, patch: Record<string, unknown>): Promise<BuildNode> {
-  // SV-27 P5: a role is only for an agent inside a team.
-  const notHere = agentFieldsRefusal(node, patch);
+export async function setExtras(node: BuildNode, patch: Record<string, unknown>, tree?: readonly NodeTree[]): Promise<BuildNode> {
+  // SV-27 P5: a role is only for an agent inside a team. SV-28: a handoff goes to another agent of the same team, a job is a
+  // prompt inside an agent, an Approval step's blocked steps come after it (checked against the tree when the caller gives it).
+  const notHere = agentFieldsRefusal(node, patch) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
   if (notHere) throw refuse("setExtras", notHere);
   let cleaned: Record<string, Json | null>;
   try {
@@ -3110,6 +3200,21 @@ export async function setExtras(node: BuildNode, patch: Record<string, unknown>)
     else payload[key] = value;
   }
   return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * SV-28: after a move or a removal, what no longer holds is taken off, through the node writer, in the same undo step: a handoff to
+ * or from an agent that left its team, an example run's entry for it, who merges when that agent left, and a blocked step that now
+ * comes before its Approval step. Resolves with the rows written and whether a blocked step was moved before its approval.
+ */
+export async function tidyTeamWork(tree: readonly NodeTree[]): Promise<{ rows: BuildNode[]; movedBeforeGate: boolean }> {
+  const fixes = teamWorkFixes(tree, topSteps(tree).map((step) => step.id));
+  const rows: BuildNode[] = [];
+  for (const fix of fixes) {
+    const node = locate(tree, fix.id)?.node;
+    if (node) rows.push(await upsertNode(withPayload(node as unknown as BuildNode, fix.payload as Payload)));
+  }
+  return { rows, movedBeforeGate: fixes.some((fix) => fix.movedBeforeGate) };
 }
 
 // --- SV-27 P7: deployment tiles ------------------------------------------------------------------------------------------

@@ -35,7 +35,9 @@ export function ArchitectureMap({ tree, direction, onOpen }: ArchitectureMapProp
           ))}
           {map.lines.map((line) => (
             <g key={`${line.from}>${line.to}>${line.label}`}>
-              <line x1={line.x1 + PAD} y1={line.y1 + PAD} x2={line.x2 + PAD} y2={line.y2 + PAD} stroke={t.line} strokeWidth={1} />
+              {/* SV-28: a handoff's condition is the line's tooltip; a mention with no handoff rule is dotted. */}
+              {line.when ? <title>{`${line.label} when ${line.when}`}</title> : null}
+              <line x1={line.x1 + PAD} y1={line.y1 + PAD} x2={line.x2 + PAD} y2={line.y2 + PAD} stroke={t.line} strokeWidth={1} strokeDasharray={line.dotted ? "2 3" : undefined} data-testid={line.dotted ? "arch-line-dotted" : undefined} />
               <text x={(line.x1 + line.x2) / 2 + PAD} y={(line.y1 + line.y2) / 2 + PAD - 4} textAnchor="middle" fontFamily={DM_MONO} fontSize={10} fill={t.label}>
                 {line.label}
               </text>

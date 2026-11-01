@@ -21,6 +21,8 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { EMPTY_BUILD_HISTORY, HISTORY_COPY, afterRedone, afterUndone, canRedoStep, canUndoStep, groupSteps, nextRedo, nextUndo, recordStep, type BuildHistory, type BuildStep } from "@/lib/build/buildHistory";
 import type { BuildSessionRow } from "@/lib/build/buildSessions";
 import { currentSnapshot, deltaTarget, restoreSnapshot, snapshotOf, type BuildSnapshot } from "@/lib/build/buildSnapshot";
+import { tidyTeamWork } from "@/lib/build/graph";
+import { GATE_COPY } from "@/lib/build/teamFields";
 import { REMOVED_COPY, restoreTarget, type RemovedEntry, type RemovedMeta } from "@/lib/build/removedLog";
 import type { ReferenceBridge } from "@/lib/build/referenceBridge";
 import type { MotionChannel, MotionKind } from "./listMotion";
@@ -236,6 +238,13 @@ export function useBuildHistory({ buildId, nodes, peek, getBridge, motion }: { b
       const done = started.then(
         async (result) => {
           collector.current = null;
+          // SV-28: what the change left pointing nowhere (a handoff to an agent that left its team, a blocked step moved before its
+          // approval) is taken off now, so it is part of this step and undone with it.
+          if (id) {
+            const tidy = await queue.run(() => tidyTeamWork(queue.current())).catch(() => ({ rows: [], movedBeforeGate: false }));
+            for (const row of tidy.rows) queue.record(row.id, row);
+            if (tidy.movedBeforeGate) notify(GATE_COPY.movedBefore);
+          }
           const after = await capture();
           const own = buildStep(before, after);
           if (own) children.push(own);

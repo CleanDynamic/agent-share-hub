@@ -16,14 +16,8 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, display } from "@/lib/theme/type";
 
-export const OPEN_REQUEST_COPY = {
-  openSession: (number: number) => `Open Session ${number} as a request`,
-  askNext: (part: string) => `Ask for the next session in ${part}`,
-  description: "Say what you want. Nothing is asked of anyone until you publish, and you can take it back before then.",
-  label: "What do you want?",
-  submit: "Open request",
-  empty: "Say what the request is for.",
-} as const;
+export { OPEN_REQUEST_COPY } from "./openRequestCopy";
+import { OPEN_REQUEST_COPY } from "./openRequestCopy";
 
 export interface OpenRequestDialogProps {
   open: boolean;

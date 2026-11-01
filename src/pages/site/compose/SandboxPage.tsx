@@ -484,7 +484,7 @@ function SandboxPageBody() {
     },
     [settleSeed],
   );
-  const [addManualOpen, setAddManualOpen] = useState(false);
+  const [addManualOpen, setAddManualOpen] = useState<boolean | "approval">(false);
   /** CA-03 P5: Add › Check. */
   const [addCheckOpen, setAddCheckOpen] = useState(false);
   /** CA-02 P6: Add › Tool names its tool first. */
@@ -2106,7 +2106,7 @@ function SandboxPageBody() {
     systemPromptAvailable,
     datasetAvailable,
     repoAvailable,
-    onAddManual: () => setAddManualOpen(true),
+    onAddManual: (kind) => setAddManualOpen(kind ?? true),
     onAddCode: () => setAddCodeOpen(true),
     onAddCheck: () => setAddCheckOpen(true),
     checkable: canCheck(steps),
@@ -2363,6 +2363,7 @@ function SandboxPageBody() {
     agent: asStep(ADDED.agent, onAddAgentOrTeam),
     decision: asStep(ADDED.decision, onAddDecision),
     manual: asStep(ADDED.manual, onAddManual),
+    approval: asStep(ADDED.approval, onAddManual),
     code: asStep(ADDED.code, onAddCode),
     check: asStep(ADDED.check, onAddCheck),
     result: asStep(ADDED.result, onAddResultInput),
@@ -2714,12 +2715,13 @@ function SandboxPageBody() {
       <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void stepOf.sourceTile(ADDED.dataset)((session) => prompts.addDatasetTile({ ...input, session }))} />
       <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void stepOf.sourceTile(ADDED.repo)((session) => prompts.addRepoTile({ ...input, session }))} />
       <AddManualStepDialog
-        open={addManualOpen}
+        open={Boolean(addManualOpen)}
         onOpenChange={setAddManualOpen}
         after={afterStep ? `${afterStep.number} · ${afterStep.title ?? afterStep.defaultTitle}` : null}
         available={manualAvailable}
         inBuild={inBuild}
-        onAdd={(input) => void stepOf.manual(input)}
+        approval={addManualOpen === "approval" ? { steps, afterId: afterStep?.id ?? null } : undefined}
+        onAdd={(input) => void (input.gate ? stepOf.approval : stepOf.manual)(input)}
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void stepOf.check(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void stepOf.code(input)} />

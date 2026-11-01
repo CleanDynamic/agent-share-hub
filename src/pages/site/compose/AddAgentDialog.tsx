@@ -22,6 +22,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TITLE_MAX, WHEN_DETAIL_MAX, firstLineOf, type AgentModel, type Runs } from "@/lib/build/graph";
 import type { Helper } from "@/lib/build/helpers";
 import { AGENT_PATTERNS, AGENT_PATTERN_LABEL, LIMITS_MAX, LIMIT_LINE_MAX, OUTPUT_MAX, SAMPLE_MAX, linesOf, type AgentPattern } from "@/lib/build/tileExtras";
+import { TEAM_INSTRUCTIONS_COPY } from "@/lib/build/teamFields";
 import { traceRefusal } from "@/lib/build/trace";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { startingModel } from "@/lib/tools/modelRules";
@@ -247,11 +248,10 @@ function Form({
       {team ? null : parts.models}
 
       <OptionalSection>
-        {team ? null : (
-        <OptionalField name={AGENT_DIALOG_COPY.instructions} summary={summaryOf(firstLineOf(instructions, 120))} phone={phone}>
-          <FieldArea phone={phone} rows={4} aria-label={AGENT_DIALOG_COPY.instructions} value={instructions} placeholder={AGENT_DIALOG_COPY.instructionsPlaceholder} onChange={(event) => setInstructions(event.target.value)} />
+        {/* SV-28 P1: a team's window edits the team's own instructions, which every agent in it follows; `{name}` variables allowed. */}
+        <OptionalField name={team ? TEAM_INSTRUCTIONS_COPY.label : AGENT_DIALOG_COPY.instructions} summary={summaryOf(firstLineOf(instructions, 120))} phone={phone}>
+          <FieldArea phone={phone} rows={4} aria-label={team ? TEAM_INSTRUCTIONS_COPY.label : AGENT_DIALOG_COPY.instructions} value={instructions} placeholder={team ? TEAM_INSTRUCTIONS_COPY.placeholder : AGENT_DIALOG_COPY.instructionsPlaceholder} onChange={(event) => setInstructions(event.target.value)} />
         </OptionalField>
-        )}
 
         {team ? null : (
         <OptionalField name="Available tools" description={AGENT_DIALOG_COPY.toolsLine} summary={summaryOf(toolNames)} phone={phone}>

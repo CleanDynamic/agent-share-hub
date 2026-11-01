@@ -82,6 +82,7 @@ import {
 import type { PromptView } from "@/pages/site/compose/DetailsPanel";
 import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editKit";
 
+import { JobFields, agentOfPrompt } from "./JobFields";
 import { FromPostNote } from "./PartWindow";
 import { PromptName } from "./tileBodies";
 
@@ -450,8 +451,11 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
     );
   }
 
+  // SV-28 P3: a prompt inside an agent is a job: what it delivers, where, and whether a person approves it first.
+  const agent = agentOfPrompt(props.steps, step.id);
   return (
     <OptionalSection>
+      {agent && onExtras ? <JobFields step={step} agent={agent} names={props.names ?? {}} phone={phone} onExtras={onExtras} /> : null}
       <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
         <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />
         <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
