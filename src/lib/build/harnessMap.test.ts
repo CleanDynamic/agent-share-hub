@@ -73,6 +73,21 @@ describe("harnessMap", () => {
     expect(prompt.text).toContain("Create AGENTS.md with this content:");
   });
 
+  it("Claude Code's reviewer is auto: it says auto blocks rather than asks, and the reviewer model does not carry over", () => {
+    const tree = assistantTree.map((node) => (node.id === "as-a1" ? { ...node, payload: { ...(node.payload as object), approval_mode: "reviewer", reviewer_model: "haiku-5-5" } } : node)) as never;
+    const prompt = setupPromptOf("as-a1", { tree }, "claude-code");
+    expect(prompt.text).toContain("Have an AI reviewer check each action, and ask a person when it is unsure (in Claude Code: auto; it blocks risky actions rather than asking, and asks again after 3 blocks in a row or 20 in total).");
+    expect(prompt.text).not.toContain("reviewer model: Haiku");
+    expect(prompt.notCarried).toEqual(["Reviewer model: Claude Code's auto mode uses its own classifier, which can't be chosen"]);
+    expect(harnessEntry("claude-code")?.approvalModes).toEqual({ full: "bypassPermissions", risky: "acceptEdits", every: "default", reviewer: "auto" });
+    // Hermes Agent's smart reviewer is its own too, but the maker's reviewer model is said there: its docs don't say it can't be chosen.
+    expect(setupPromptOf("as-a1", { tree }, "hermes-agent").text).toContain("(reviewer model: Haiku 5.5) (in Hermes Agent: smart)");
+  });
+
+  it("Claude Code's harness facts: auto (our reviewer) is its default, from the permission modes page", () => {
+    expect(TOOLS.find((tool) => tool.id === "claude-code")?.facts).toMatchObject({ defaults: { approval_mode: "reviewer" }, checked: "2026-11", source: "https://code.claude.com/docs/en/permission-modes" });
+  });
+
   it("the setup prompt names the target harness and its own words for a mode", () => {
     const prompt = setupPromptOf("as-a1", { tree: assistantTree.map((node) => (node.id === "as-a1" ? { ...node, payload: { ...(node.payload as object), approval_mode: "full" } } : node)) as never }, "claude-code");
     expect(prompt.text.startsWith("Use Claude Code on an always-on machine (Mac Mini).")).toBe(true);

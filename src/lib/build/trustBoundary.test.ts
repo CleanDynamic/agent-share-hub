@@ -20,17 +20,29 @@ describe("trustBoundaryOf", () => {
   it("an agent with Gmail (read) and Slack (write) gives one crossing", () => {
     const tree = [node("a", 1, "agent_config", { model: "m", role: "Assistant", tools: ["gmail", "slack"], tool_permissions: { gmail: "read", slack: "write" } })];
     const crossings = trustBoundaryOf({ tree });
-    expect(crossings).toEqual([{ from: "a", to: "a", reads: ["Gmail"], acts: ["Slack", "write"] }]);
-    expect(crossingDetail(crossings[0], tree)).toBe("Reads outside content (Gmail) and can send (Slack, write). No approval between.");
+    expect(crossings).toEqual([{ from: "a", to: "a", reads: ["Gmail", "Slack"], acts: ["Slack", "write"] }]);
+    expect(crossingDetail(crossings[0], tree)).toBe("Reads outside content (Gmail and Slack) and can send (Slack, write). No approval between.");
+    expect(crossingLine(crossings[0], tree)).toBe("Assistant reads outside content and can send in Slack, with no approval between.");
   });
 
-  it("a handoff from a Gmail reader to a Slack writer gives one crossing, and none once the rule has needs_approval", () => {
+  it("an agent that reads and writes through the same tool is a crossing (an email that makes it forward the inbox)", () => {
+    const tree = [node("a", 1, "agent_config", { model: "m", role: "Inbox", tools: ["gmail"], tool_permissions: { gmail: "write" } })];
+    const crossings = trustBoundaryOf({ tree });
+    expect(crossings).toEqual([{ from: "a", to: "a", reads: ["Gmail"], acts: ["Gmail", "write"] }]);
+    expect(crossingLine(crossings[0], tree)).toBe("Inbox reads outside content and can send in Gmail, with no approval between.");
+  });
+
+  it("a handoff from a Gmail reader to a Slack writer is a crossing, and goes once the rule has needs_approval; the Slack writer is one of its own", () => {
     const tree = team(reader({ handoffs: [{ to: "o", when: "a request needs action" }] }), writer());
     const crossings = trustBoundaryOf({ tree });
-    expect(crossings).toEqual([{ from: "r", to: "o", reads: ["Gmail"], acts: ["Slack", "write"] }]);
+    // Slack is outside content too, so Operations reads and can send in it: a crossing of its own, which no handoff approval removes.
+    expect(crossings).toEqual([
+      { from: "r", to: "o", reads: ["Gmail"], acts: ["Slack", "write"] },
+      { from: "o", to: "o", reads: ["Slack"], acts: ["Slack", "write"] },
+    ]);
     expect(crossingDetail(crossings[0], tree)).toBe("Reads outside content (Gmail) and passes work to Operations, which can send (Slack, write). No approval between.");
     expect(crossingLine(crossings[0], tree)).toBe("Research reads outside content and passes work to Operations, which can send or spend, with no approval between.");
-    expect(trustBoundaryOf({ tree: team(reader({ handoffs: [{ to: "o", when: "x", needs_approval: true }] }), writer()) })).toEqual([]);
+    expect(trustBoundaryOf({ tree: team(reader({ handoffs: [{ to: "o", when: "x", needs_approval: true }] }), writer()) })).toEqual([{ from: "o", to: "o", reads: ["Slack"], acts: ["Slack", "write"] }]);
   });
 
   it("an Approval step blocking the receiver removes the crossing", () => {
@@ -62,6 +74,6 @@ describe("trustBoundaryOf", () => {
       ...team(reader({ tools: [{ tool_ref: "gm" }], handoffs: [{ to: "o", when: "x" }, { to: "o", when: "y" }] }), writer()),
     ];
     const lines = beforeYouCopy(tree).filter((line) => line.includes("outside content"));
-    expect(lines).toEqual(["Research reads outside content and passes work to Operations, which can send or spend, with no approval between."]);
+    expect(lines).toEqual(["Research reads outside content and passes work to Operations, which can send or spend, with no approval between.", "Operations reads outside content and can send in Slack, with no approval between."]);
   });
 });

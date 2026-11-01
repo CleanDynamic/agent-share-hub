@@ -5,9 +5,9 @@
 // Operations. Team instructions mention all three. Jobs: Research delivers a report to Google Drive; Sales a draft to Gmail, approved
 // first; Operations a sheet to Google Sheets. Sales has output rules and follows one published guide. An Approval step (the maker
 // approves the client email draft) blocks the step after it. A knowledge base of markdown notes in Obsidian, synced with git, with
-// three templates; a shared Memory (Mem0) tagged by agent, reviewed after 90 days; a relay on Tailscale that queues. Research reads
-// Gmail and hands work to Operations, which writes to Slack, with no approval on that handoff: one trust boundary crossing. An
-// example run of five entries, and a paid partnership with "Example Partner".
+// three templates; a shared Memory (Mem0) tagged by agent, reviewed after 90 days; a relay on Tailscale that queues. Two trust
+// boundary crossings: Research reads Gmail and hands work to Operations with no approval on that handoff, and Operations reads Slack
+// and can send in it. An example run of five entries, and a paid partnership with "Example Partner".
 
 import type { NodeTree } from "@/lib/build/types";
 

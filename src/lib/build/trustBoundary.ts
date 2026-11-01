@@ -6,8 +6,9 @@
 //                          registry entry has `readsOutside: true`). `reads` holds those names.
 //   Can send or spend      any `tool_permissions` value is `write` or `delegated`, or `approval_mode` is `full`. `acts` holds the
 //                          tools and what they may do ("Slack", "write"), or "full access".
-//   A crossing             one agent that does both (reading through a tool other than the ones it acts through), or a handoff
-//                          rule from an agent that reads to one that acts.
+//   A crossing             one agent that does both, or a handoff rule from an agent that reads to one that acts. One agent that
+//                          reads and writes through the same tool is a crossing: it is the commonest injection path (an email that
+//                          makes the agent forward the inbox; a Slack message that makes it post private content elsewhere).
 //   Not a crossing         when an approval sits between: the handoff rule has `needs_approval`; every job of the receiving agent
 //                          has `needs_approval`; an Approval step blocks the receiving agent (or the team it is in); or the
 //                          receiving agent's `approval_mode` is `every` or `reviewer`.
@@ -94,10 +95,8 @@ export function trustBoundaryOf(build: Pick<BuildRecord, "tree"> | { tree: reado
     const reads = readsOf(agent, all);
     if (reads.length === 0) continue;
     const acts = actsOf(agent);
-    // One agent that does both: what it reads from one place reaches another it can act on. A tool it reads and writes itself (a
-    // Slack it reads and posts in) is not, on its own, a crossing: the content goes back where it came from.
-    const elsewhere = reads.filter((name) => !acts.includes(name));
-    if (acts.length > 0 && elsewhere.length > 0 && !approvedBefore(agent, all)) add({ from: agent.id, to: agent.id, reads: elsewhere, acts });
+    // One agent that does both, including through the same tool.
+    if (acts.length > 0 && !approvedBefore(agent, all)) add({ from: agent.id, to: agent.id, reads, acts });
     for (const rule of handoffsOf(agent.payload)) {
       if (rule.needs_approval) continue;
       const to = agents.find((node) => node.id === rule.to);
@@ -112,6 +111,12 @@ export function trustBoundaryOf(build: Pick<BuildRecord, "tree"> | { tree: reado
 /* ── the words ── */
 
 export const TRUST_COPY = { head: "Trust boundary" } as const;
+
+/** What `acts` says that is not a tool's name. */
+const ACT_WORDS = ["write", "acts as the maker", "full access"];
+
+/** The tools a crossing can send in: its `acts` without the permission words. */
+export const sendsIn = (crossing: Pick<Crossing, "acts">): string[] => crossing.acts.filter((word) => !ACT_WORDS.includes(word));
 
 const join = (names: readonly string[]): string => (names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
 
@@ -134,6 +139,6 @@ export function crossingDetail(crossing: Crossing, tree: readonly TeamNode[]): s
 export function crossingLine(crossing: Crossing, tree: readonly TeamNode[]): string {
   const { from, to } = crossingNames(crossing, tree);
   return crossing.from === crossing.to
-    ? `${from} reads outside content and can send or spend, with no approval between.`
+    ? `${from} reads outside content and can ${sendsIn(crossing).length > 0 ? `send in ${join(sendsIn(crossing))}` : "send or spend"}, with no approval between.`
     : `${from} reads outside content and passes work to ${to}, which can send or spend, with no approval between.`;
 }

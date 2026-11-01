@@ -103,6 +103,8 @@ export interface ToolFacts {
   checked: string;
   /** The page the facts were read from. */
   source: string;
+  /** SV-28: the default in the source's own words, where SV-27's words for the mode would say something else. */
+  defaultWords?: string;
 }
 
 export interface Tool {
@@ -306,6 +308,10 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
     status: "current",
     source: "https://code.claude.com/docs/en/model-config",
     checked: "2026-10-19",
+    // SV-28: from https://code.claude.com/docs/en/permission-modes, read 2026-11: from v2.1.283, auto is the mode new interactive
+    // terminal and VS Code sessions start in. In auto, a separate classifier model reviews each action before it runs (our
+    // "reviewer"). The page names no default sandbox.
+    facts: { defaults: { approval_mode: "reviewer" }, checked: "2026-11", source: "https://code.claude.com/docs/en/permission-modes", defaultWords: "auto, an AI reviewer that blocks risky actions rather than asking" },
   },
   {
     id: "github-copilot", name: "GitHub Copilot", group: "coding", logo: "githubcopilot", aliases: ["gh copilot"], projectFiles: [".github/copilot-instructions.md"],

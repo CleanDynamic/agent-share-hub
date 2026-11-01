@@ -31,7 +31,7 @@ export function harnessDefaultLine(harness: string | null | undefined): string |
   const facts = harnessFacts(harness);
   const mode = facts?.defaults?.approval_mode;
   if (!facts || !mode) return null;
-  return `${facts.name}'s default: ${DEFAULT_WORDS[mode] ?? APPROVAL_LABEL[mode]} (its docs, ${monthWord(facts.checked)})`;
+  return `${facts.name}'s default: ${facts.defaultWords ?? DEFAULT_WORDS[mode] ?? APPROVAL_LABEL[mode]} (its docs, ${monthWord(facts.checked)})`;
 }
 
 /** The harness runs actions without asking by default, by its own docs. */

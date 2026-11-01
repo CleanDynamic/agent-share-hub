@@ -50,9 +50,9 @@ describe("setupPromptOf: what it says", () => {
   });
 
   it("says each trust boundary crossing once, under Before you run", () => {
-    expect(trustBoundaryOf({ tree: chiefOfStaffTree })).toHaveLength(1);
-    const line = "Research reads outside content and passes work to Operations, which can send. Add an approval between them before running.";
-    expect(cos.text.split(line)).toHaveLength(2);
+    // Two: Research hands Gmail's content to Operations, and Operations reads Slack and can send in it.
+    expect(trustBoundaryOf({ tree: chiefOfStaffTree })).toHaveLength(2);
+    for (const line of ["Research reads outside content and passes work to Operations, which can send. Add an approval between them before running.", "Operations reads outside content and can send in Slack and Google Sheets. Add an approval before it acts."]) expect(cos.text.split(line)).toHaveLength(2);
   });
 
   it("says the Approval step before the step it holds back", () => {

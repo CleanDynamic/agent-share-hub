@@ -19,7 +19,7 @@ Facts in this prompt that were wrong on disk:
   - The registry `source` of Codex, GitHub Copilot, Antigravity, Muse Code, Manus and Muse is not the harness's documentation
     (a third-party page, a release of another project, Wikipedia, a news story). They get no harness map entry.
   - Human oversight had no "Approved before continuing"; it is added to taxonomy.ts (no SQL holds these values).
-Baseline → end: tests 10,266 → 10,357 (one failure at the end, sv18.insert, the same timing flake as on main and in SV-27)
+Baseline → end: tests 10,266 → 10,366, all passing
 Compared boards: not comparable: SV-28 has no vision board; 80 screens in design/audits/composer/sv-28/
 Request rounds and requests for the page, before → after: not measured (audit:pages not run, see Checks). setupPrompt.ts,
   harnessMap.ts and trustBoundary.ts fetch nothing; the assembler is its own chunk (6,129 bytes) loaded on the click.
@@ -27,7 +27,7 @@ Web Vitals against the last after numbers: not measured this session
 Built but not live yet: none (no migration; everything is in build_nodes.payload)
 Layers built only because a target failed: the composer chunk went to 121,730 bytes with SV-28's List lines; three windows the
   composer carried (Open as a request, Recently removed, Publish confirm) now load when first opened (SV-26's lazyWindow), and the
-  List's new lines are shared with the build page (src/components/build/teamLines.tsx). 119,940 → 117,926 bytes.
+  List's new lines are shared with the build page (src/components/build/teamLines.tsx). 119,940 → 117,931 bytes.
 Names that differed from this prompt: Tool `facts.hosting` (prompt: `hosting`); `setupFolderFor(items, load, entry)` beside the
   unchanged `setupFolder(items, load)`; the Approval step's notice goes through useBuildHistory's `notify`
 Raw values without a token: none
@@ -47,7 +47,7 @@ Mentions: resolved by role then title yes · unmatched listed yes
 Jobs: deliverable, destination and approval saved yes · output rules and rules followed yes
 Approval step: built on manual_step yes · blocks validated yes · Autonomy reads it yes
 Team: workspace yes · example run 2 to 12 yes
-Trust boundary: crossings found in the chief-of-staff fixture (1) · removed by each approval kind yes · blocks nothing yes
+Trust boundary: crossings found in the chief-of-staff fixture (2) · removed by each approval kind yes · blocks nothing yes
 Setup prompt: deterministic yes · private data absent yes · vendor-hosted form yes
 Target harness: entries (harness · source · checked):
   Claude Code · code.claude.com/docs/en/{model-config, memory, skills, mcp, hooks, permission-modes, sandboxing} · 2026-11
@@ -81,15 +81,25 @@ Target harness: entries (harness · source · checked):
 - **P5.** Workspace and example run in the team window (`TeamWorkFields.tsx`, entries move with Up and Down buttons); the team head
   shows the workspace line and "Example run · n steps", which opens the timeline headed "Entered by the maker, not recorded from a
   run."
-- **P6.** `trustBoundaryOf(build)`. One refinement, said here because the prompt's tests needed it: one agent counts as a crossing
-  only when it reads outside content through a tool other than the ones it acts through (an agent that reads and posts in the same
-  Slack is not, on its own, a crossing). Without it, "a handoff from a Gmail reader to a Slack writer ... none once the rule has
-  needs_approval" could not hold, since Slack is marked `readsOutside` in the registry. Before you copy gains one line per crossing
-  (an SV-27 test is updated for its assistant fixture, whose OpenClaw harness reads outside content with full access).
+- **P6.** `trustBoundaryOf(build)`. One agent that reads outside content through a tool and can write through the same tool is a
+  crossing: it is the commonest injection path (an email that makes the agent forward the inbox; a Slack message that makes it post
+  private content elsewhere). It reads "<agent> reads outside content and can send in <tool>, with no approval between." An earlier
+  version of this branch left same-tool crossings out to fit the prompt's fixture; Miles corrected it: the fixture spec was wrong,
+  not the rule. The chief-of-staff fixture has two crossings (Research to Operations, and Operations itself, which reads Slack and
+  can write to it), and the tests say two, one line each. Before you copy gains one line per crossing (an SV-27 test is updated for
+  its assistant fixture, whose OpenClaw harness reads outside content with full access).
 - **P7.** `setupPromptOf` in `setupPrompt.ts`; Copy setup prompt and Show setup prompt on an agent's and a team's menu, and Copy
   setup prompt beside each agent and team on the build page. Copy shows the notice "Setup prompt copied".
 - **P8.** `harnessMap.ts`; Rebuild in on the setup prompt window and on Download (one entry per mapped harness). A harness whose
-  MCP or hooks file does not take Claude Code's shape is not written to; NOT-CARRIED.md says where to declare them.
+  MCP or hooks file does not take Claude Code's shape is not written to; NOT-CARRIED.md says where to declare them. Claude Code's
+  modes, from https://code.claude.com/docs/en/permission-modes (2026-11): full is bypassPermissions, risky is acceptEdits, every is
+  default (labelled Manual; it runs reads without asking), reviewer is auto (a separate classifier model reviews each action before
+  it runs, blocks risky ones rather than asking, and goes back to asking after 3 blocks in a row or 20 in total). The setup prompt
+  says that difference beside the mode, and a reviewer model the maker named goes under Doesn't carry over ("Reviewer model: Claude
+  Code's auto mode uses its own classifier, which can't be chosen"). Claude Code's harness facts (SV-27 Part 8) now hold
+  `defaults.approval_mode: reviewer`, from the same page (auto is the starting mode for interactive terminal and VS Code sessions
+  from v2.1.283); sandbox stays empty. The agent window's Approvals hint says it in the page's terms ("Claude Code's default: auto,
+  an AI reviewer that blocks risky actions rather than asking"), through a new optional `facts.defaultWords`.
 - **P9.** Fixtures, dev pages (`/dev/kit/pages/sandbox?build=deployment-chief-of-staff` and the other three;
   `/dev/kit/pages/build-steps?build=chief-of-staff`), 80 screens (`e2e/audit/composer-sv28-shots.spec.ts`).
 
@@ -104,7 +114,7 @@ parts; Part 0 and Part 9 have their own.
 | --- | --- |
 | Composer, main (SV-27) | 119,940 |
 | Composer, SV-28 Lines in the List before the size pass | 121,730 |
-| Composer, end | **117,926** |
+| Composer, end | **117,931** |
 | setupPrompt (on click) | 6,129 |
 | SetupPromptWindow | 1,835 |
 | harnessMap | 1,138 |
@@ -116,21 +126,26 @@ The first download is 230.7 KB (230.4 KB on main), over its 200 KB budget as SV-
 ## Checks
 
 - `npx tsc --noEmit -p tsconfig.app.json`: clean.
-- `npm test`: 10,357 tests, 10,356 passed; sv18.insert fails under load and passes alone, as on main.
+- `npm test`: 10,366 tests, all passed (sv18.insert, a timing flake on main, failed in earlier runs under load and passes alone).
 - `npm run lint`: 1,927 problems (1,921 on main); 0 errors in the files this prompt changed (the 6 more are fast-refresh warnings).
 - `npm run build`: passes; composer chunk 117.9 KB within 120 KB.
-- `npx playwright test e2e/tier1`: see the PR description (the config's server binds to IPv6, which this container lacks, so it was
-  run against a server started on 127.0.0.1).
+- `npx playwright test e2e/tier1 --project=desktop --project=mobile`: 318 passed, 4 skipped, 96 failed. The 96 are in
+  auth-entry, backdrop, build-, home-, profile- and rebuild-site-frame, post-thread and wide-layout; the same files run on main
+  (`9064130`) fail the same 96 (171 passed, 1 skipped, 96 failed), so none comes from this branch. The config's server binds to
+  IPv6, which this container lacks, so both runs used a server started on 127.0.0.1.
 - Not run: `audit:pages`, `audit:perf`, `audit:themes`, `audit:contrast`, `audit:motion`.
 - Theme guards (`src/lib/theme/*.test.ts`) pass, with every changed file in `lookRules.test.ts`.
 - Em dash search of the diff: none.
 
-## Seen while watching the screens
+## Seen while watching the screens, and fixed
 
-- On the architecture map, a handoff or mention line between two agents of one team runs straight down the agents' column, so it
-  passes behind a relay drawn between them and its label can be covered. Not changed: the map's layout is SV-27's.
-- The agent window's SV-27 fields (Deployment to Role) sit flush with the window's edge rather than inside its padding; SV-28's
-  Hands off to, Output rules and Follows follow them, so they share it. Pre-existing.
+- The architecture map drew a relay between the agents it joins (SV-27 Part 10), in the path of the handoff lines between stacked
+  agents. A relay is now the first box of the next column, beside the agents, with one `relays` line to each. Test: no handoff line
+  crosses the relay box, laid out either way. A handoff between two agents that are not next to each other in the column (the
+  chief of staff to Sales) still passes behind the agents between them: a straight line has no other way down that column.
+- The agent window's SV-27 fields (Deployment to Role) and SV-28's (Hands off to, Output rules, Follows, a team's workspace and
+  example run) sat flush with the window's edge. They are now one `Block` from modalRecipes, so they take the window's inset.
+  Before and after screens: `before/` and the screens beside it.
 
 ## Parts not done
 
@@ -139,9 +154,5 @@ The first download is 230.7 KB (230.4 KB on main), over its 200 KB budget as SV-
 
 ## Questions for Miles
 
-1. The self-crossing refinement in Part 6 (above): keep it, or count an agent that reads and writes the same tool as a crossing
-   too? The second makes one prompt test impossible as written.
-2. Claude Code's approval names: bypassPermissions for full, acceptEdits for "asks before risky actions" and default for "asks
-   before every action" are read from the permission-modes page's descriptions; no Claude Code mode is "an AI reviewer that asks
-   when unsure", so that one does not carry over. Confirm the mapping, or say which to drop.
-3. Cursor's documentation could not be read this session (every page returned "not found"); a later session can add its entry.
+1. Answered: same-tool crossings count (Part 6), and Claude Code's reviewer is auto (Part 8).
+2. Cursor's documentation could not be read this session (every page returned "not found"); a later session can add its entry.

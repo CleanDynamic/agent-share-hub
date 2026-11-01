@@ -171,6 +171,7 @@ Research found the open deal in the inbox and passed on the deal details.
 Operations added the deal to the pipeline sheet and passed on the updated sheet.
 
 Research reads outside content and passes work to Operations, which can send. Add an approval between them before running.
+Operations reads outside content and can send in Slack and Google Sheets. Add an approval before it acts.
 
 Replace {sender_name} before running.
 Replace {client_name} before running.

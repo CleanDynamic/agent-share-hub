@@ -35,7 +35,7 @@ import {
   type TeamNode,
 } from "./teamFields";
 import { variableNamesIn, variablesOf, type PromptVariable } from "./tileExtras";
-import { crossingNames, trustBoundaryOf } from "./trustBoundary";
+import { crossingNames, sendsIn, trustBoundaryOf } from "./trustBoundary";
 import type { BuildRecord, NodeTree } from "./types";
 
 export type AgentOrTeam = string | { id: string };
@@ -353,8 +353,12 @@ function approvalLines(payload: Raw, entry: HarnessEntry | null, into: Collect):
   const out: string[] = [];
   if (fields.approvalMode) {
     const own = entry?.approvalModes?.[fields.approvalMode];
-    out.push(`${APPROVAL_WORDS[fields.approvalMode]}${fields.approvalMode === "reviewer" && fields.reviewerModel ? ` (reviewer model: ${modelLabel(fields.reviewerModel)})` : ""}${own ? ` (in ${entry?.name}: ${own})` : ""}.`);
+    const note = entry?.approvalNotes?.[fields.approvalMode];
+    // A reviewer model the harness's own reviewer cannot use does not carry over; said under Doesn't carry over, not in the text.
+    const reviewerCarried = !(own && fields.approvalMode === "reviewer" && fields.reviewerModel && entry?.reviewerModel);
+    out.push(`${APPROVAL_WORDS[fields.approvalMode]}${fields.approvalMode === "reviewer" && fields.reviewerModel && reviewerCarried ? ` (reviewer model: ${modelLabel(fields.reviewerModel)})` : ""}${own ? ` (in ${entry?.name}: ${own}${note ? `; ${note}` : ""})` : ""}.`);
     if (entry && !own) into.notCarried.push(notCarriedLine("approvalModes", entry));
+    if (!reviewerCarried && entry?.reviewerModel) into.notCarried.push(entry.reviewerModel);
   }
   if (fields.sandbox) {
     const own = entry?.sandbox?.[fields.sandbox];
@@ -479,7 +483,7 @@ export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tre
   add(
     ...crossings.map((crossing) => {
       const names = crossingNames(crossing, tree as readonly TeamNode[]);
-      return crossing.from === crossing.to ? `${names.from} reads outside content and can send. Add an approval before it acts.` : `${names.from} reads outside content and passes work to ${names.to}, which can send. Add an approval between them before running.`;
+      return crossing.from === crossing.to ? `${names.from} reads outside content and can ${sendsIn(crossing).length > 0 ? `send in ${join(sendsIn(crossing))}` : "send"}. Add an approval before it acts.` : `${names.from} reads outside content and passes work to ${names.to}, which can send. Add an approval between them before running.`;
     }),
   );
   return finish(sections, into);

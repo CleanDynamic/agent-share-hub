@@ -42,7 +42,11 @@ describe("the registry", () => {
     expect(harnessDefaultLine("hermes-agent")).toBe("Hermes Agent's default: an AI reviewer, then asks you (its docs, October 2026)");
     // No hosting or licence is stated on either page, so neither is filled.
     expect(hostingLine("hermes-agent")).toBeNull();
-    expect(harnessFacts("claude-code")).toBeNull();
+    // SV-28: Claude Code's permission modes page states auto (our reviewer) as the starting mode from v2.1.283; no sandbox default.
+    expect(harnessFacts("claude-code")).toMatchObject({ defaults: { approval_mode: "reviewer" }, checked: "2026-11", source: "https://code.claude.com/docs/en/permission-modes" });
+    expect(harnessFacts("claude-code")?.defaults?.sandbox).toBeUndefined();
+    expect(harnessDefaultLine("claude-code")).toBe("Claude Code's default: auto, an AI reviewer that blocks risky actions rather than asking (its docs, November 2026)");
+    expect(harnessFacts("cursor")).toBeNull();
     expect(monthWord("2026-10")).toBe("October 2026");
   });
 });

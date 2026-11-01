@@ -4,8 +4,10 @@
 //   Column 1 · In      channels, and what How did it run? says starts the agent (On a schedule, When something happened,
 //                      All the time, Ongoing goal)
 //   Column 2 · Agents  each agent or team (harness or framework, model used, approvals; a team its pattern, each agent its
-//                      role), and a relay between the agents it joins, its network under it
-//   Column 3 · Uses    inference servers (the model they serve and its quant type), knowledge base, memory, MCP servers,
+//                      role)
+//   Column 3 · Uses    first a relay, beside the agents it joins (never between them, so the handoff lines between stacked
+//                      agents stay clear), its network under it and one `relays` line to each; then
+//                      inference servers (the model they serve and its quant type), knowledge base, memory, MCP servers,
 //                      tools from Available tools, skills
 //   Column 4 · Out     voice, front end, billing
 //   Below              monitoring, with `watches` lines to what it watches
@@ -127,7 +129,7 @@ function tileDraft(tile: DeploymentTile, column: ArchColumn, all: readonly Node[
   return { id: tile.id, tile: tile.id, kind: tile.kind, column, title: deploymentName(tile), lines: lines.filter(Boolean) };
 }
 
-const COLUMN_OF: Partial<Record<DeploymentTile["kind"], ArchColumn>> = { channel: 1, relay: 2, inference_server: 3, knowledge_base: 3, memory: 3, voice: 4, front_end: 4, billing: 4, monitoring: 5 };
+const COLUMN_OF: Partial<Record<DeploymentTile["kind"], ArchColumn>> = { channel: 1, relay: 3, inference_server: 3, knowledge_base: 3, memory: 3, voice: 4, front_end: 4, billing: 4, monitoring: 5 };
 
 /** The deployment of a build as boxes, lines and host frames. */
 export function layoutArchitecture(tree: readonly Node[], direction: ArchDirection = "horizontal"): ArchitectureLayout {
@@ -149,17 +151,11 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
     const how = str(record(record(agent.payload).runs).how);
     if (TRIGGER_LABEL[how] && !drafts.some((draft) => draft.id === `trigger:${how}`)) drafts.push({ id: `trigger:${how}`, tile: null, kind: "trigger", column: 1, title: TRIGGER_LABEL[how], lines: how === "ongoing" && str(record(record(agent.payload).runs).detail) ? [str(record(record(agent.payload).runs).detail)] : [] });
   }
-  // Column 2: agents and teams, relays between them.
-  const relays = tiles.filter((tile) => tile.kind === "relay");
-  agents.forEach((agent, at) => {
-    drafts.push(agentDraft(agent));
-    // A relay sits between the agents it joins: after the first of them.
-    for (const relay of relays) if (relay.kind === "relay" && relay.payload.joins[0] === agent.id && !drafts.some((draft) => draft.id === relay.id)) drafts.push(tileDraft(relay, 2, all));
-    void at;
-  });
-  for (const relay of relays) if (!drafts.some((draft) => draft.id === relay.id)) drafts.push(tileDraft(relay, 2, all));
-  // Column 3: what the agents use.
-  for (const tile of tiles) if (COLUMN_OF[tile.kind] === 3) drafts.push(tileDraft(tile, 3, all));
+  // Column 2: agents and teams.
+  for (const agent of agents) drafts.push(agentDraft(agent));
+  // Column 3: a relay first, beside the agents it joins (SV-28: never between them), then what the agents use.
+  for (const tile of tiles) if (tile.kind === "relay") drafts.push(tileDraft(tile, 3, all));
+  for (const tile of tiles) if (COLUMN_OF[tile.kind] === 3 && tile.kind !== "relay") drafts.push(tileDraft(tile, 3, all));
   for (const agent of agents) {
     for (const item of agentSetupItemsOf(tree as NodeTree[], agent.id)) if (item.kind === "server" || item.kind === "skill") drafts.push({ id: `setup:${item.id}`, tile: item.id, kind: item.kind, column: 3, title: item.name, lines: [item.kind === "server" ? "MCP server" : "Skill"] });
     const tools = Array.isArray(record(agent.payload).tools) ? (record(agent.payload).tools as unknown[]).filter((tool): tool is string => typeof tool === "string") : [];

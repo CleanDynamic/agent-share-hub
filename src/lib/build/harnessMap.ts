@@ -29,6 +29,10 @@ export interface HarnessEntry {
   hooksJson?: true;
   /** The approval modes it documents, by SV-27's names, each with the harness's own name for it. */
   approvalModes: Partial<Record<ApprovalMode, string>> | null;
+  /** Where a documented mode behaves differently from SV-27's words for it, what the documentation says it does. */
+  approvalNotes?: Partial<Record<ApprovalMode, string>>;
+  /** Why a reviewer model the maker named does not carry over, when the harness's reviewer cannot be chosen. */
+  reviewerModel?: string;
   /** The sandboxes it documents, by SV-27's names, each with its own name. */
   sandbox: Partial<Record<Sandbox, string>> | null;
   /** The URLs read. */
@@ -54,8 +58,12 @@ export const HARNESS_MAP: readonly HarnessEntry[] = [
     hooks: ".claude/settings.json",
     hooksJson: true,
     // permission-modes: bypassPermissions runs "Everything"; acceptEdits runs reads, file edits and common filesystem commands and
-    // asks before the rest; default ("Manual") runs reads only. No mode is an AI reviewer that asks when unsure.
-    approvalModes: { full: "bypassPermissions", risky: "acceptEdits", every: "default" },
+    // asks before the rest; default (labelled Manual) runs reads without asking and asks before everything else; in auto a separate
+    // classifier model reviews each action before it runs, blocks risky ones, and goes back to asking after 3 blocks in a row or 20
+    // in total. Its classifier cannot be chosen.
+    approvalModes: { full: "bypassPermissions", risky: "acceptEdits", every: "default", reviewer: "auto" },
+    approvalNotes: { reviewer: "it blocks risky actions rather than asking, and asks again after 3 blocks in a row or 20 in total" },
+    reviewerModel: "Reviewer model: Claude Code's auto mode uses its own classifier, which can't be chosen",
     // sandboxing: "The sandbox is off by default"; containers and virtual machines run the whole Claude Code process.
     sandbox: { none: "sandbox off (its default)", container: "run Claude Code in a container", vm: "run Claude Code in a virtual machine" },
     source: [
@@ -65,6 +73,7 @@ export const HARNESS_MAP: readonly HarnessEntry[] = [
       "https://code.claude.com/docs/en/mcp.md",
       "https://code.claude.com/docs/en/hooks.md",
       "https://code.claude.com/docs/en/permission-modes.md",
+      "https://code.claude.com/docs/en/permission-modes",
       "https://code.claude.com/docs/en/sandboxing.md",
     ],
     checked: "2026-11",

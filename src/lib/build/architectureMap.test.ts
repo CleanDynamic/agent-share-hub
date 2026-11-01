@@ -50,10 +50,11 @@ describe("the architecture map", () => {
     expect(keys).toContain("sh-a1>sh-s1>calls");
   });
 
-  it("draws the agent team's relay between its three agents, and the knowledge base reading to all three", () => {
+  it("draws the agent team's relay beside its three agents (SV-28), and the knowledge base reading to all three", () => {
     const map = layoutArchitecture(agentTeamTree);
     const order = map.boxes.filter((box) => box.column === 2).map((box) => box.id);
-    expect(order).toEqual(["at-t1", "at-a1", "at-r1", "at-a2", "at-a3"]);
+    expect(order).toEqual(["at-t1", "at-a1", "at-a2", "at-a3"]);
+    expect(map.boxes.filter((box) => box.column === 3)[0].id).toBe("at-r1");
     expect(map.boxes.find((box) => box.id === "at-r1")?.lines).toEqual(["Tailscale"]);
     expect(map.lines.filter((line) => line.from === "at-r1" && line.label === "relays").map((line) => line.to)).toEqual(["at-a1", "at-a2", "at-a3"]);
     expect(map.lines.filter((line) => line.from === "at-kb" && line.label === "reads").map((line) => line.to)).toEqual(["at-a1", "at-a2", "at-a3"]);
@@ -85,4 +86,39 @@ describe("the Map's view", () => {
     expect(mapViewOf({}, true, 3)).toBe("sessions");
     expect(mapViewOf({ map: { on: true, direction: "horizontal", onBuildPage: true, view: "sessions" } }, true, 1)).toBe("sessions");
   });
+});
+
+describe("SV-28: the relay and the handoff lines", () => {
+  /** Whether a segment passes through a box (Liang-Barsky clipping, the box shrunk by a pixel so touching an edge does not count). */
+  const crosses = (line: { x1: number; y1: number; x2: number; y2: number }, box: { x: number; y: number; w: number; h: number }): boolean => {
+    const [minX, minY, maxX, maxY] = [box.x + 1, box.y + 1, box.x + box.w - 1, box.y + box.h - 1];
+    let t0 = 0;
+    let t1 = 1;
+    const dx = line.x2 - line.x1;
+    const dy = line.y2 - line.y1;
+    for (const [p, q] of [[-dx, line.x1 - minX], [dx, maxX - line.x1], [-dy, line.y1 - minY], [dy, maxY - line.y1]] as const) {
+      if (p === 0) {
+        if (q < 0) return false;
+        continue;
+      }
+      const r = q / p;
+      if (p < 0) t0 = Math.max(t0, r);
+      else t1 = Math.min(t1, r);
+      if (t0 > t1) return false;
+    }
+    return true;
+  };
+
+  for (const direction of ["horizontal", "vertical"] as const) {
+    it(`no handoff line crosses the relay box (${direction})`, () => {
+      const map = layoutArchitecture(agentTeamTree, direction);
+      const relay = map.boxes.find((box) => box.kind === "relay");
+      const handoffs = map.lines.filter((line) => line.label === "hands off to");
+      expect(relay).toBeTruthy();
+      expect(handoffs).toHaveLength(3);
+      for (const line of handoffs) expect(crosses(line, relay as NonNullable<typeof relay>)).toBe(false);
+      // The relay keeps one line to each agent it joins.
+      expect(map.lines.filter((line) => line.from === relay?.id && line.label === "relays")).toHaveLength(3);
+    });
+  }
 });
