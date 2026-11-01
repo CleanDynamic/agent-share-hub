@@ -11,6 +11,7 @@
 
    `DetailsHandlers` stays: the handlers are the ones the windows call (CA-18 P2), written here once and typed here. */
 
+import type { NodeTree } from "@/lib/build/types";
 import { useAnnounce } from "./BuildAnnouncer";
 import { Copy } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
@@ -71,7 +72,6 @@ import {
   VALUE,
 } from "./detailsRecipes";
 import type { ModelRun } from "@/lib/build/modelRun";
-import type { AgentFields } from "@/lib/build/agentFields";
 import type { RunHostChoice } from "./ModelRunFields";
 import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnection, ToolRunsAt, ManualWhere } from "@/lib/build/graph";
 import type { AgentSetupValue } from "./AgentSetupFields";
@@ -228,14 +228,11 @@ export interface AgentView extends InputsView {
   modelRun?: ModelRun | null;
   /** SV-27 P4: the build's Host tiles, offered under Where. */
   runHosts?: RunHostChoice[];
-  /** SV-27 P5: the Channel tiles that start runs, offered under How did it run?. */
-  runChannels?: readonly { id: string; name: string }[];
-  /** SV-27 P5: the agent's or team's deployment fields (framework, approvals, sandbox, role ...), as stored. */
-  fields?: AgentFields;
-  /** SV-27 P6: the agent's own setup items: context files, skills, MCP servers and hooks. */
-  ownSetup?: readonly { id: string; kind: string; name: string; origin: string | null }[];
-  /** SV-27 P5: the agent's deployment, one entry per tile, for its Deployment line. */
-  deployment?: readonly { id: string; kind: string; name: string }[];
+  /**
+   * SV-27: the build's tiles. The agent's deployment fields, its Deployment line, its own setup and the channels that can start it
+   * are worked out from them where they are drawn (its window, How did it run?), not when Details resolves a view.
+   */
+  deploymentTree?: readonly NodeTree[];
   /** CA-05 P9, an agent only: how it tidies its notes, and what it changes each round. */
   memoryTidy?: string;
   changesEachRound?: string;

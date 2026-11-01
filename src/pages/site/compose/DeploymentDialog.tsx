@@ -219,14 +219,23 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
   );
 }
 
-/** The window as the composer opens it: the build's agents worked out here, the tile written through `add`. */
-export function DeploymentWindow({ steps, add, onAdded, ...rest }: Omit<DeploymentDialogProps, "agents" | "onSave"> & { steps: Parameters<typeof agentChoicesOf>[0]; add: (input: { kind: DeploymentKind; payload: Payload }) => Promise<string | null>; onAdded: (id: string) => void }) {
+/**
+ * The window as the composer opens it, all its wiring in this chunk: open while a kind is asked for, the build's agents worked out
+ * here, the tile written through `add`. The composer keeps only which kind was asked for.
+ */
+export function DeploymentWindow({ kind, onClose, steps, add, onAdded }: { kind: DeploymentKind | null; onClose: () => void; steps: Parameters<typeof agentChoicesOf>[0]; add: (input: { kind: DeploymentKind; payload: Payload }) => Promise<string | null>; onAdded: (id: string) => void }) {
   return (
     <DeploymentDialog
-      {...rest}
+      key={kind ?? "closed"}
+      open={kind !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      kind={kind ?? "host"}
       agents={agentChoicesOf(steps)}
       onSave={(payload) => {
-        void add({ kind: rest.kind, payload }).then((id) => {
+        if (!kind) return;
+        void add({ kind, payload }).then((id) => {
           if (id) onAdded(id);
         });
       }}

@@ -10,6 +10,9 @@
    - A permission on each of its Available tools.
    Every write goes through `onExtras` (the existing extras writer), held by the window until Save. */
 
+import { deploymentLineOf, deploymentTilesOf } from "@/lib/build/deployment";
+import { agentSetupItemsOf, SETUP_KIND_LABEL, skillOriginLine } from "@/lib/build/setup";
+import type { NodeTree } from "@/lib/build/types";
 import { Fragment, useState, type ReactNode } from "react";
 
 import {
@@ -28,6 +31,7 @@ import {
   SANDBOX_COPY,
   SANDBOX_LABEL,
   SANDBOXES,
+  agentFieldsOf,
   approvalsPatch,
   type AgentFields,
   type ApprovalMode,
@@ -126,6 +130,20 @@ export interface AgentRuntimeFieldsProps {
   onExtras?: (id: string, patch: Record<string, unknown>) => void;
   onOpenTile?: (id: string) => void;
   onAddDeployment?: (agentId: string) => void;
+}
+
+/** The agent's deployment data, worked out from the build's tiles: its fields, its Deployment line and its own setup. */
+export function AgentRuntimeSection({ tree, ...rest }: Omit<AgentRuntimeFieldsProps, "fields" | "deployment" | "ownSetup"> & { tree: readonly NodeTree[] }) {
+  const find = (nodes: readonly NodeTree[]): NodeTree | null => {
+    for (const node of nodes) {
+      if (node.id === rest.id) return node;
+      const inner = find(node.children ?? []);
+      if (inner) return inner;
+    }
+    return null;
+  };
+  const ownSetup = agentSetupItemsOf(tree as NodeTree[], rest.id).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, origin: skillOriginLine(item) }));
+  return <AgentRuntimeFields {...rest} fields={agentFieldsOf(find(tree)?.payload)} deployment={deploymentLineOf(deploymentTilesOf(tree), rest.id)} ownSetup={ownSetup} />;
 }
 
 export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCode = false, tools, inTeam, deployment, ownSetup = [], onExtras, onOpenTile, onAddDeployment }: AgentRuntimeFieldsProps) {

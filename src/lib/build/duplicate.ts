@@ -46,10 +46,12 @@ export function duplicateTiles(snapshot: BuildSnapshot, ids: readonly string[], 
   const rows = snapshot.nodes;
   const tops = topsOf(rows, ids);
   const made: BuildNode[] = [];
+  const copiedIds = new Map<string, string>();
   const out: string[] = [];
   const childrenOf = (id: string) => rows.filter((row) => row.parent_id === id).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const copy = (row: BuildNode, parent: string | null, top: boolean): string => {
     const id = newId();
+    copiedIds.set(row.id, id);
     const payload = JSON.parse(JSON.stringify(row.payload ?? null)) as Json;
     made.push({ ...row, id, parent_id: parent, position: top ? (row.position ?? 0) + 0.5 : (row.position ?? 0), title: top ? copyTitle(row.title) : row.title, source_ref: null, event_id: null, payload });
     for (const inner of childrenOf(row.id)) copy(inner, id, false);
@@ -57,17 +59,8 @@ export function duplicateTiles(snapshot: BuildSnapshot, ids: readonly string[], 
   };
   for (const row of tops) out.push(copy(row, row.parent_id, true));
 
-  // SV-27 P3: a deployment line, a served model, a relay's agents, a knowledge base's readers and a channel picked under How did
-  // it run? point at the copies of tiles copied together; a tile not copied is still pointed at as it was.
-  const copiedIds = new Map<string, string>();
-  // `copy` made the rows in this same order: each top, then what is inside it.
-  let at = 0;
-  const walk = (row: BuildNode) => {
-    copiedIds.set(row.id, made[at].id);
-    at += 1;
-    for (const inner of childrenOf(row.id)) walk(inner);
-  };
-  for (const row of tops) walk(row);
+  // SV-27 P3: refs to tiles copied together (a deployment line, a served model, a relay's agents, a channel under How did it run?)
+  // point at the copies; a tile not copied is still pointed at as it was.
   for (const row of made) row.payload = rewriteDeploymentRefs(row.payload, copiedIds) as Json;
 
   // Each top copy sits directly after its original; the siblings are numbered again, so no two share a place.

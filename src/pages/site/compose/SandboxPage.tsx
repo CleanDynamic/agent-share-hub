@@ -198,7 +198,7 @@ const AddManualStepDialog = lazyWindow<ComponentProps<typeof AddManualStepDialog
 const AddResultDialog = lazyWindow<ComponentProps<typeof AddResultDialogImpl>>(() => import("./AddResultDialog").then((m) => ({ default: m.AddResultDialog })), (p) => p.open);
 /** SV-27 P7: the deployment window, its own chunk. */
 const loadDeploymentDialog = () => import("./DeploymentDialog").then((m) => ({ default: m.DeploymentWindow }));
-const DeploymentDialog = lazyWindow<ComponentProps<typeof DeploymentWindowImpl>>(loadDeploymentDialog, (p) => p.open);
+const DeploymentDialog = lazyWindow<ComponentProps<typeof DeploymentWindowImpl>>(loadDeploymentDialog, (p) => p.kind !== null);
 const warmDeployment = () => void loadDeploymentDialog();
 const MapViews = lazy(() => import("./ArchitectureMap").then((m) => ({ default: m.MapViews })));
 const DeploymentSection = lazy(() => import("./DeploymentSection").then((m) => ({ default: m.DeploymentSection })));
@@ -447,8 +447,7 @@ function SandboxPageBody() {
   const repoAvailable = Boolean(repoType?.is_active);
   const [addSystemPromptOpen, setAddSystemPromptOpen] = useState(false);
   /** SV-27 P7: the deployment window: which kind, and the agent it is aimed at (Add deployment on an agent). */
-  const [deploymentOpen, setDeploymentOpen] = useState<{ kind: DeploymentKind; forAgent: string | null } | null>(null);
-  const [deploymentAim, setDeploymentAim] = useState<string | null>(null);
+  const [deploymentOpen, setDeploymentOpen] = useState<DeploymentKind | null>(null);
   const nodeTypeList = useNodeTypes(compose.nodeTypes);
   /** SV-27 P7: the build's agents and teams, for a deployment tile's For. */
   const deploymentTiles = deploymentTilesOf(tree);
@@ -2115,7 +2114,7 @@ function SandboxPageBody() {
     onWarmLibrary: warmLibrary,
     // SV-27 P7: Add › Deployment. Each kind is ready once its node type is live; Front end is `live_app`, live already.
     deploymentLive,
-    onAddDeployment: (kind: DeploymentKind) => setDeploymentOpen({ kind, forAgent: deploymentAim }),
+    onAddDeployment: setDeploymentOpen,
     onWarmDeployment: warmDeployment,
   };
   /** Choosing a session for the next tile: at once, and a folded session is opened so the tile lands where it can be seen. */
@@ -2727,16 +2726,9 @@ function SandboxPageBody() {
       <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void stepOf.result(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void stepOf.tool(input)} />
       <DeploymentDialog
-        open={deploymentOpen !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeploymentOpen(null);
-            setDeploymentAim(null);
-          }
-        }}
-        kind={deploymentOpen?.kind ?? "host"}
+        kind={deploymentOpen}
+        onClose={() => setDeploymentOpen(null)}
         steps={steps}
-        forAgent={deploymentOpen?.forAgent ?? null}
         add={prompts.addDeploymentTile}
         onAdded={(id) => {
           motion.expect({ kind: "add", keys: [id] });

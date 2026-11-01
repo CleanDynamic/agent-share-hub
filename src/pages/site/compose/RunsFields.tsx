@@ -3,6 +3,7 @@
    The same choice rows, fields and writes as Details had (CA-03 P3, CA-04 P6): `onRuns(id, runs)`, and `onAgentNotes` for
    what an agent changes each round. Nothing new is stored: `payload.runs` keeps its shape. */
 
+import { deploymentTilesOf, runChannelsOf } from "@/lib/build/deployment";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
@@ -80,6 +81,7 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
 
   /** SV-27 P5: the Channel tiles that start runs, kept through a change of detail. */
   const channels = runsTakeChannels(how) ? (view.runs?.channels ?? []) : [];
+  const runChannels = runsTakeChannels(how) ? runChannelsOf(deploymentTilesOf(view.deploymentTree ?? [])) : [];
   const keepChannels = channels.length > 0 ? { channels } : null;
 
   /** Write a detail when it changed. */
@@ -227,10 +229,10 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
         {runsTakeChannels(how) ? (
           <div role="group" aria-labelledby={`${ids}-channels`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <GroupLabel id={`${ids}-channels`}>{RUNS_HELP.channels}</GroupLabel>
-            {(view.runChannels ?? []).length === 0 ? (
+            {runChannels.length === 0 ? (
               <span style={quiet()}>{RUNS_HELP.noChannel}</span>
             ) : (
-              (view.runChannels ?? []).map((channel) => (
+              runChannels.map((channel) => (
                 <label key={channel.id} style={{ display: "flex", alignItems: "center", gap: 8, ...text(12.5, 400, t.text) }}>
                   <Checkbox checked={channels.includes(channel.id)} onChange={(event) => toggleChannel(channel.id, event.target.checked)} />
                   {channel.name}

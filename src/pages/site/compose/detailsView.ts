@@ -28,8 +28,7 @@ import type { SessionPrompt } from "@/lib/build/sessions";
 import type { NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
 import { asksHowRun, modelRunLine } from "@/lib/build/modelRun";
-import { deploymentLineOf, deploymentTilesOf, runChannelsOf, runHostsOf } from "@/lib/build/deployment";
-import { agentFieldsOf } from "@/lib/build/agentFields";
+import { runHostsOf } from "@/lib/build/deployment";
 import { toolFor } from "@/lib/tools/registry";
 
 import {
@@ -47,7 +46,7 @@ import {
   type NamedPiece,
 } from "./detailsModel";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
-import { agentSetupItemsOf, isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode, skillOriginLine } from "@/lib/build/setup";
+import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/lib/build/setup";
 import { runtimeViewOf } from "./runtimeView";
 import { draftFromFacts } from "@/lib/build/decisionDraft";
 import type { AgentView, CheckView, DatasetView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, RepoView, ResultView, SessionView, SystemPromptView, ToolView } from "./DetailsPanel";
@@ -216,25 +215,6 @@ function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
   };
 }
 
-/** SV-27 P5: an agent's or team's deployment fields, the channels that can start it, and its Deployment line. */
-function deploymentOfAgent(id: string, tree: readonly NodeTree[]): Pick<AgentView, "fields" | "runChannels" | "deployment" | "ownSetup"> {
-  const find = (nodes: readonly NodeTree[]): NodeTree | null => {
-    for (const node of nodes) {
-      if (node.id === id) return node;
-      const inner = find(node.children ?? []);
-      if (inner) return inner;
-    }
-    return null;
-  };
-  const node = find(tree);
-  const tiles = deploymentTilesOf(tree);
-  const fields = agentFieldsOf(node?.payload);
-  const runChannels = runChannelsOf(tiles);
-  const deployment = deploymentLineOf(tiles, id);
-  const ownSetup = agentSetupItemsOf(tree as NodeTree[], id).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, origin: skillOriginLine(item) }));
-  return { ...(Object.keys(fields).length > 0 ? { fields } : null), ...(runChannels.length > 0 ? { runChannels } : null), ...(deployment.length > 0 ? { deployment } : null), ...(ownSetup.length > 0 ? { ownSetup } : null) };
-}
-
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {
   return {
     kind: step.kind === "team" ? "team" : "agent",
@@ -246,7 +226,8 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     model: step.model ? modelLabel(step.model) : null,
     ...(step.modelRun ? { modelRun: step.modelRun } : null),
     ...(runHostsOf(ctx.tree).length > 0 ? { runHosts: runHostsOf(ctx.tree) } : null),
-    ...deploymentOfAgent(step.id, ctx.tree),
+    // SV-27: the build's tiles, for the agent's deployment fields, worked out in their own chunk when its window opens.
+    deploymentTree: ctx.tree,
     ...(step.kind === "agent" && step.memoryTidy ? { memoryTidy: step.memoryTidy } : null),
     ...(step.kind === "agent" && step.changesEachRound ? { changesEachRound: step.changesEachRound } : null),
     runs: step.runs,
