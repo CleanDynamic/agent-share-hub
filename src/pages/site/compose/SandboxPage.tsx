@@ -2227,7 +2227,7 @@ function SandboxPageBody() {
   /* SV-27 P10: Sessions or Architecture. The Map stays open to a build with deployment tiles even under two sessions; the choice
      is stored through the making writer (`making.map.view`) and changes at once. The architecture view is its own chunk. */
   const architectureColumn =
-    mapSettings && deploymentTiles.length > 0 ? (
+    mapSettings && (deploymentTiles.length > 0 || steps.some((step) => step.kind === "retrieval" || step.kind === "decision")) ? (
       <Suspense fallback={mapColumn}>
         <MapViews made={made} sessions={savedGroups.length} tree={tree} direction={mapSettings.direction} sessionsMap={mapColumn} onView={(view) => changeMap({ ...mapSettings, view })} onOpen={setSelectedId} />
       </Suspense>

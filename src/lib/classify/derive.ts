@@ -32,6 +32,7 @@ import {
 } from "@/lib/build/graph";
 import { PROMPT_TYPE } from "@/lib/build/composePrompts";
 import { DECISION_TYPE } from "@/lib/build/decision";
+import { RETRIEVAL_TYPE } from "@/lib/build/retrieval";
 import type { NodeTree } from "@/lib/build/types";
 
 import { CUSTOM_PREFIX } from "./facets";
@@ -75,7 +76,7 @@ export interface Derivation {
 /** The longest a Code tile may be and still count as short. */
 export const SHORT_CODE_LINES = 30;
 
-type TileKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "result";
+type TileKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "result" | "retrieval";
 
 interface Tile {
   id: string;
@@ -100,6 +101,7 @@ const KIND_OF_TYPE: Record<string, TileKind> = {
   [TOOL_TYPE]: "tool",
   [DECISION_TYPE]: "decision",
   [RESULT_TYPE]: "result",
+  [RETRIEVAL_TYPE]: "retrieval",
 };
 
 function flattenSteps(steps: readonly Step[], out: Step[] = []): Step[] {
@@ -131,6 +133,8 @@ function tilesOf(steps: readonly Step[], build: DeriveBuild): Tile[] {
       const payload = isRecord(node.payload) ? node.payload : {};
       // An eval run with nothing it tested is an old run, not a check.
       if (kind === "check" && !str(payload.tested).trim()) continue;
+      // SV-29 P7: a Retrieval tile is a tile only when it says so (`step: true`); a configuration saved before is not one.
+      if (kind === "retrieval" && payload.step !== true) continue;
       tiles.push({ id: node.id, kind, payload, node, step: stepById.get(node.id) ?? null, topLevel: node.parent_id === null });
     }
     return tiles;
@@ -332,11 +336,24 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
   if (prompts.length >= 2) out.add("technique", "prompt-chain", ids(prompts));
   const withSystemInstructions = [...agents.filter((tile) => (tile.step?.text ?? str(tile.payload.system_prompt)).trim() !== ""), ...systemTiles];
   if (withSystemInstructions.length > 0) out.add("technique", "system-prompt", ids(withSystemInstructions));
-  const fewShot = decisions.filter((tile) => truthy(tile.payload.examples));
+  // SV-29 P7: a Decision that says how it was adapted is read by that; one that does not keeps the older reading of its examples.
+  const adaptationOf = (tile: Tile): string => (isRecord(tile.payload.adaptation) ? str(tile.payload.adaptation.kind) : str(tile.payload.adaptation));
+  const fewShot = decisions.filter((tile) => (adaptationOf(tile) ? adaptationOf(tile) === "few_shot" : truthy(tile.payload.examples)));
   if (fewShot.length > 0) out.add("technique", "few-shot-examples", ids(fewShot));
+  const zeroShot = decisions.filter((tile) => adaptationOf(tile) === "zero_shot");
+  if (zeroShot.length > 0) out.add("technique", "zero-shot", ids(zeroShot));
+  const tuned = decisions.filter((tile) => adaptationOf(tile) === "fine_tuned");
   if (variableTiles.length > 0) out.add("technique", "prompt-variables", ids(variableTiles));
   const retrieval = datasets.filter((tile) => ["retrieval", "rag"].includes(str(tile.payload.use).toLowerCase()) || truthy(tile.payload.chunking, tile.payload.chunk_size));
   if (retrieval.length > 0) out.add("technique", "retrieval-rag", ids(retrieval));
+  // SV-29 P7: a Retrieval tile is Embeddings; it is Retrieval (RAG) only when what it finds feeds a prompt or an agent that writes text.
+  const retrievals = of("retrieval");
+  if (retrievals.length > 0) out.add("technique", "embeddings", ids(retrievals));
+  const retrievalIds = new Set(retrievals.map((tile) => tile.id));
+  const generating = flattenSteps(steps).filter((step) => (step.kind === "prompt" || step.kind === "agent" || step.kind === "team") && step.uses.some((use) => retrievalIds.has(use.node_id)));
+  if (generating.length > 0) out.add("technique", "retrieval-rag", [...retrievalIds, ...generating.map((step) => step.id)]);
+  const reranking = decisions.filter((tile) => isRecord(tile.payload.candidates_from));
+  if (reranking.length > 0) out.add("technique", "reranking", ids(reranking));
   const attached = flattenSteps(steps).flatMap((step) => (step.kind === "prompt" ? (step.sentWith ?? []).filter((child) => child.kind === "file") : []));
   if (attached.length > 0) out.add("technique", "long-documents", attached.map((step) => step.id));
   const remembering = agents.filter((tile) => Boolean(tile.step?.memory) || truthy(tile.payload.memory));
@@ -350,13 +367,15 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
   if (approvals.length > 0 || suggestsOnly.length > 0) out.add("technique", "human-approval-steps", ids([...approvals, ...suggestsOnly]));
   const shaped = [...decisions, ...[...prompts, ...agents].filter((tile) => Boolean(tile.step?.outputShape) || isRecord(tile.payload.output_shape))];
   if (shaped.length > 0) out.add("technique", "structured-output", ids(shaped));
-  if (decisions.length > 0) out.add("technique", "classification", ids(decisions));
+  // SV-29 P7: Classification is a Decision with a single or multiple choice question (the question's `type`).
+  const classifying = decisions.filter((tile) => (Array.isArray(tile.payload.questions) ? tile.payload.questions : []).some((question) => isRecord(question) && (str(question.type) === "choice" || str(question.type) === "multi")));
+  if (classifying.length > 0) out.add("technique", "classification", ids(classifying));
   const extracting = decisions.filter((tile) => {
     const questions = Array.isArray(tile.payload.questions) ? tile.payload.questions : [];
-    return questions.some((question) => isRecord(question) && (str(question.kind) === "extract" || /\bextract/i.test(str(question.instructions))));
+    return questions.some((question) => isRecord(question) && (str(question.type) === "extract" || str(question.kind) === "extract" || /\bextract/i.test(str(question.instructions))));
   });
   if (extracting.length > 0) out.add("technique", "extraction", ids(extracting));
-  if (modelResults.length > 0) out.add("technique", "fine-tuning", ids(modelResults.map((result) => result.tile)));
+  if (modelResults.length > 0 || tuned.length > 0) out.add("technique", "fine-tuning", [...ids(modelResults.map((result) => result.tile)), ...ids(tuned)]);
   if (checks.length > 0) out.add("technique", "evaluations", ids(checks));
   const limited = agents.filter((tile) => truthy(tile.payload.limits, tile.payload.limit, tile.payload.max_steps, tile.payload.max_turns, tile.payload.budget));
   if (limited.length > 0) out.add("technique", "guardrails", ids(limited));
