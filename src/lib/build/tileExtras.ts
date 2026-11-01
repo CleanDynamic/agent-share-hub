@@ -173,7 +173,7 @@ export const CHECK_REVIEWER_LABEL: Record<CheckReviewer, string> = { you: "Maker
 
 export const SCORING_HOWS = ["pass_fail", "metric", "rating", "ab"] as const;
 export type ScoringHow = (typeof SCORING_HOWS)[number];
-export const SCORING_LABEL: Record<ScoringHow, string> = { pass_fail: "Pass or fail", metric: "Metric against a target", rating: "Rating", ab: "A/B comparison" };
+export const SCORING_LABEL: Record<ScoringHow, string> = { pass_fail: "Pass or fail", metric: "Metric against a target", rating: "Rating", ab: "Comparison of approaches" };
 export const SCORING_TARGET_MAX = 80;
 
 export const MODEL_TESTED_MAX = 80;

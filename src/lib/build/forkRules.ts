@@ -43,6 +43,18 @@ export function methodOf<T extends object | null | undefined>(payload: T): T {
   }
   // SV-29 P2: a Retrieval tile's measured Recall@k is the original's evidence: it stays, labelled as the original's.
   if (Array.isArray(out.recall)) out.recall = out.recall.map((point) => (isRecord(point) ? { ...point, source: "original" } : point));
+  // SV-29 P3: a comparison's rows, test set and design are the original's measured results: kept, and labelled as the original's.
+  if (Array.isArray(out.rows) && out.rows.length > 0) {
+    out.rows = out.rows.map((row) => {
+      if (!isRecord(row)) return row;
+      return {
+        ...row,
+        ...(isRecord(row.value) ? { value: { ...row.value, source: "original" } } : null),
+        ...(isRecord(row.cost_per_item) ? { cost_per_item: { ...row.cost_per_item, source: "original" } } : null),
+      };
+    });
+    out.from_original = true;
+  } else if (isRecord(out.test_set) || isRecord(out.design)) out.from_original = true;
   // A decision's answer is the original's: it stays, as what the copy is checked against.
   if (isRecord(out.answer) && Array.isArray(out.questions)) {
     out.expected = out.answer;

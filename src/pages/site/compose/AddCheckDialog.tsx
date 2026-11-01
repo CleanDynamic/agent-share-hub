@@ -19,6 +19,7 @@ import { useId, useState } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CHECK_FAIL_MAX, CHECK_TEXT_MAX, checkRefusal, type CheckCase, type CheckInput } from "@/lib/build/graph";
+import { comparisonPatchRefusal } from "@/lib/build/comparison";
 import { MEDIA_MAX_BYTES, fileKindFor } from "@/lib/build/media";
 import {
   CHECK_METHODS,
@@ -29,6 +30,7 @@ import {
   SCORING_HOWS,
   SCORING_LABEL,
   SCORING_TARGET_MAX,
+  cleanExtras,
   cleanUrl,
   type CheckMethod,
   type CheckReviewer,
@@ -36,6 +38,7 @@ import {
 } from "@/lib/build/tileExtras";
 
 import { CheckCasesField, keptCases } from "./CheckCasesField";
+import { comparisonFields, type EvalChoices, type Extras } from "./EvalHarnessFields";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, Count, FieldArea, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, Panel, PanelBody, RateBar, SegmentedField, Spread } from "./modalRecipes";
@@ -106,6 +109,8 @@ export interface CheckSeed {
   evidenceUrl: string;
   /** The file kept as the evidence, by name. */
   evidenceName: string | null;
+  /** SV-29: the comparison's and the eval harness's payload keys, as stored. */
+  extras?: Extras;
 }
 
 export interface AddCheckDialogProps {
@@ -114,12 +119,26 @@ export interface AddCheckDialogProps {
   onAdd?: (input: AddCheckInput) => void;
   seed?: CheckSeed | null;
   edit?: EditMode<AddCheckInput>;
+  /** SV-29: the tiles a comparison row can name, and the kind of the tile under test. */
+  evalChoices?: EvalChoices;
+}
+
+/** Why the comparison's and the eval harness's keys cannot be saved, in the writer's own words; null when they can. */
+function extrasRefusal(extras: Extras, scoring: ScoringHow | null): string | null {
+  const given = Object.fromEntries(Object.entries(extras).filter(([, value]) => value !== null && value !== undefined));
+  if (Object.keys(given).length === 0) return null;
+  try {
+    cleanExtras("eval_run", given);
+  } catch (cause) {
+    return cause instanceof Error ? cause.message : "That value is not allowed.";
+  }
+  return comparisonPatchRefusal({ scoring: scoring ? { how: scoring } : undefined }, given);
 }
 
 /** A count as typed: digits only, and empty reads as nothing yet. */
 const countOf = (raw: string): number => (raw.trim() === "" ? Number.NaN : Number(raw));
 
-function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, "onAdd" | "seed" | "edit"> & { onCancel: () => void; phone: boolean }) {
+function Form({ onAdd, onCancel, phone, seed, edit, evalChoices }: Pick<AddCheckDialogProps, "onAdd" | "seed" | "edit" | "evalChoices"> & { onCancel: () => void; phone: boolean }) {
   const [tested, setTested] = useState(seed?.tested ?? "");
   const [passing, setPassing] = useState(seed?.passing ?? "");
   const [failed, setFailed] = useState(seed?.failed ?? "");
@@ -137,6 +156,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [fileWrong, setFileWrong] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
+  const [extras, setExtras] = useState<Extras>(seed?.extras ?? {});
   const uid = useId();
 
   const given = keptCases(cases);
@@ -146,7 +166,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
   const shownTotal = fromCases ? String(given.length) : total;
   const input = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt, ...(fromCases ? { cases: given } : null) };
   // A check that is there keeps its counts as they are, so only its text and date are held to the Add rules.
-  const why = (edit ? checkRefusal({ ...input, passed: 0, total: 0, cases: undefined }) : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null);
+  const why = (edit ? checkRefusal({ ...input, passed: 0, total: 0, cases: undefined }) : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null) ?? extrasRefusal(extras, scoring);
   const missing = missingLabels([
     [tested.trim().length > 0, "Test description"],
     [passing.trim().length > 0, "Pass criteria"],
@@ -189,6 +209,7 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
       ...(scoring ? { scoring: { how: scoring, ...(scoring === "metric" && target.trim() ? { target: target.trim() } : null) } } : null),
       ...(model?.trim() || version.trim() ? { modelTested: { model: (model ?? "").trim(), version: version.trim() } } : null),
       ...(evidenceFile ? { evidenceFile } : evidenceUrl.trim() ? { evidenceUrl: evidenceUrl.trim() } : null),
+      ...(Object.keys(extras).length > 0 ? { extras } : null),
     });
   };
 
@@ -269,13 +290,14 @@ function Form({ onAdd, onCancel, phone, seed, edit }: Pick<AddCheckDialogProps, 
           {evidenceFile ? <FileLine name={evidenceFile.name} removeLabel={`${CHECK_DIALOG_COPY.remove} ${evidenceFile.name}`} onRemove={() => setEvidenceFile(null)} phone={phone} /> : null}
           {fileWrong ? <Alert>{fileWrong}</Alert> : null}
         </OptionalField>
+        {comparisonFields({ extras, onChange: setExtras, phone, comparing: scoring === "ab", choices: evalChoices ?? { testedKind: "other", tiles: [] } })}
       </OptionalSection>
       {edit?.after ? edit.after(input as never) : null}
     </ModalForm>
   );
 }
 
-export function AddCheckDialog({ open, onOpenChange, onAdd, seed, edit }: AddCheckDialogProps) {
+export function AddCheckDialog({ open, onOpenChange, onAdd, seed, edit, evalChoices }: AddCheckDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddCheckInput) => {
@@ -284,7 +306,7 @@ export function AddCheckDialog({ open, onOpenChange, onAdd, seed, edit }: AddChe
   };
   return (
     <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : CHECK_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={CHECK_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-check-dialog" : "add-check-dialog"}>
-      <Form seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
+      <Form seed={seed} evalChoices={evalChoices} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
     </ModalShell>
   );
 }

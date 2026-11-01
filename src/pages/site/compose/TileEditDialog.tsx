@@ -222,6 +222,7 @@ function CheckEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<
       open
       onOpenChange={discard}
       seed={checkCurrent(view)}
+      evalChoices={view.evalChoices}
       edit={{
         title: editTitle(view),
         before: () => <TitleRow id={view.id} title={view.title} defaultTitle={view.defaultTitle} phone={phone} handlers={h} />,

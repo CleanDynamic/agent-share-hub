@@ -12,6 +12,7 @@
    `DetailsHandlers` stays: the handlers are the ones the windows call (CA-18 P2), written here once and typed here. */
 
 import type { NodeTree } from "@/lib/build/types";
+import type { TestedKind } from "@/lib/build/comparison";
 import { useAnnounce } from "./BuildAnnouncer";
 import { Copy } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
@@ -284,6 +285,8 @@ export interface CheckView extends InputsView {
   title: string | null;
   defaultTitle: string;
   check: CheckFacts;
+  /** SV-29: the tiles a comparison row can name, and the kind of the tile under test (its metric defaults from it). */
+  evalChoices?: { testedKind: TestedKind; tiles: readonly { id: string; label: string }[] };
 }
 
 /** CA-13 P2: a decision, as the Details panel edits it: its whole form is a draft. */

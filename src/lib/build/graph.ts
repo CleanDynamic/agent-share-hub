@@ -52,6 +52,7 @@ import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
 import { numberSessions } from "./sessionNumbers";
+import { comparisonOf, comparisonPatchRefusal, hasComparison, type Comparison } from "./comparison";
 import { isRetrievalTile, retrievalOf, retrievalPayload, retrievalRefusal, RETRIEVAL_TYPE, type RetrievalFacts } from "./retrieval";
 import { PIPELINE_KEYS, accuracyCeiling, pipelinePatchRefusal, pipelinePayload, pipelineRefusal, type PipelineFields } from "./pipelineFields";
 import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } from "./cost";
@@ -326,6 +327,10 @@ export interface CheckFacts {
   scoring?: CheckScoring;
   modelTested?: CheckModelTested;
   evidence?: CheckEvidence;
+  /** SV-29 P3: the test set, the metric, the rows of a comparison of approaches and the design of a controlled experiment. Each only when given. */
+  comparison?: Comparison;
+  /** SV-29: this Check's measured results came from the build it was copied from: they are the original's, never the copier's. */
+  fromOriginal?: true;
 }
 
 /** CA-05 P7: one run of a check: the day and how many passed of how many. */
@@ -677,6 +682,8 @@ function checkFacts(payload: Payload, cases: readonly CheckCase[] = []): CheckFa
     ...(runs.length > 0 ? { runs } : null),
     ...(cases.length > 0 ? { caseList: [...cases] } : null),
     ...checkExtrasOf(payload),
+    ...(hasComparison(payload) ? { comparison: comparisonOf(payload) } : null),
+    ...(payload.from_original === true ? { fromOriginal: true as const } : null),
   };
 }
 
@@ -2129,6 +2136,8 @@ export interface CheckInput {
   modelTested?: { model: string; version: string } | null;
   /** A URL, or the id and name of one file already stored. */
   evidence?: { url?: string; mediaId?: string; name?: string } | null;
+  /** SV-29 P3, P4: the Check's other payload keys (test set, metric, rows, design, failure types, graders, runs per case, gate), each a stored shape; null leaves it out. Cleaned by the extras writer. */
+  extras?: Record<string, unknown>;
 }
 
 /**
@@ -2340,7 +2349,10 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
       scoring: input.scoring ?? null,
       model_tested: input.modelTested ?? null,
       evidence: input.evidence ? { url: input.evidence.url, media_id: input.evidence.mediaId, name: input.evidence.name } : null,
+      ...Object.fromEntries(Object.entries(input.extras ?? {}).filter(([, value]) => value !== null && value !== undefined)),
     });
+    const crossWhy = comparisonPatchRefusal({ scoring: input.scoring ? { how: input.scoring.how } : undefined }, input.extras ?? {});
+    if (crossWhy) throw refuse(operation, crossWhy);
   } catch (cause) {
     throw refuse(operation, cause instanceof Error ? cause.message : "That value is not allowed.");
   }
@@ -3234,7 +3246,7 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
 export async function setExtras(node: BuildNode, patch: Record<string, unknown>, tree?: readonly NodeTree[]): Promise<BuildNode> {
   // SV-27 P5: a role is only for an agent inside a team. SV-28: a handoff goes to another agent of the same team, a job is a
   // prompt inside an agent, an Approval step's blocked steps come after it (checked against the tree when the caller gives it).
-  const notHere = agentFieldsRefusal(node, patch) ?? (node.type === DECISION_TYPE ? pipelinePatchRefusal(payloadOf(node), patch) : null) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
+  const notHere = agentFieldsRefusal(node, patch) ?? (node.type === DECISION_TYPE ? pipelinePatchRefusal(payloadOf(node), patch) : null) ?? (node.type === CHECK_TYPE ? comparisonPatchRefusal(payloadOf(node), patch) : null) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
   if (notHere) throw refuse("setExtras", notHere);
   let cleaned: Record<string, Json | null>;
   try {

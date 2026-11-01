@@ -129,8 +129,13 @@ export function checkCurrent(view: V<"check">): CheckSeed {
     version: value("Model tested", "version"),
     evidenceUrl: evidence?.note ? "" : (evidence?.values.url ?? ""),
     evidenceName: evidence?.note ? evidence.note.replace(/ is kept as the evidence\.$/, "") : null,
+    extras: extrasOf(payloadOf(view)),
   };
 }
+
+/** SV-29: the Check's comparison and eval harness keys, as stored; the window edits these and Save writes what changed. */
+const EVAL_KEYS = ["test_set", "metric", "rows", "design", "failure_types", "graders", "judge_model", "framework", "runs_per_case", "gate"] as const;
+const extrasOf = (payload: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(EVAL_KEYS.flatMap((key) => (payload[key] !== undefined && payload[key] !== null ? [[key, payload[key]]] : [])));
 
 export function agentCurrent(view: V<"agent" | "team">): AgentCurrent {
   const extras = Object.fromEntries(agentRows(payloadOf(view), view.kind === "team").map((row) => [row.name, row.values]));
@@ -285,6 +290,11 @@ export function saveCheck(view: V<"check">, input: AddCheckInput, h: H): void {
   };
   if (Object.keys(text_).length > 0) h.onCheckText?.(id, text_);
   if (!same(cases, keptCases(before.cases))) h.onCheckCases?.(id, cases);
+  // SV-29: the keys of the comparison and the eval harness that changed, written through the extras writer; a key taken out goes off.
+  const was = before.extras ?? {};
+  const now = input.extras ?? {};
+  const changed = Object.fromEntries(EVAL_KEYS.flatMap((key) => (same(was[key] ?? null, now[key] ?? null) ? [] : [[key, now[key] ?? null]])));
+  if (Object.keys(changed).length > 0) h.onExtras?.(id, changed);
   saveRows(h, id, checkRows(payloadOf(view)), {
     "Test method": { method: input.method ?? "" },
     Reviewer: { reviewer: input.reviewer ?? "" },

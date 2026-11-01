@@ -49,6 +49,7 @@ import { readsOutsideContent } from "@/lib/build/outsideContent";
 import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/lib/build/setup";
 import { runtimeViewOf } from "./runtimeView";
 import { draftFromFacts } from "@/lib/build/decisionDraft";
+import { evalChoicesOf } from "@/lib/build/comparison";
 import type { AgentView, CheckView, DatasetView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, RepoView, ResultView, SessionView, SystemPromptView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import type { BuildFacts } from "@/lib/build/tileSections";
@@ -210,6 +211,7 @@ function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     title: step.title,
     defaultTitle: step.defaultTitle,
     check: step.check ?? { tested: step.text, passing: "", onFail: null, passed: null, total: null, runAt: null },
+    evalChoices: evalChoicesOf(ctx.steps, step.uses.find((use) => use.kind === "output")?.node_id),
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
