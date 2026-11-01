@@ -8,7 +8,11 @@
 import type { CSSProperties } from "react";
 
 import { chartPoints, chartSummary, costWords, designLine, figureSourceWord, metricName, metricValue, OUTCOME_LABEL, ROW_KIND_LABEL, sortedRows, testSetLine, type Comparison } from "@/lib/build/comparison";
-import type { CheckFacts } from "@/lib/build/graph";
+import { checkDay, type CheckFacts, type CheckCase } from "@/lib/build/graph";
+import { FIX_IN_LABEL, failureCountLine, gateDroppedLines, gateLine, graderLine, harnessSourceWord, needsDecisionLine, runHistoryLine, stabilityLine, validatedLine } from "@/lib/build/evalHarness";
+import { testSetSourceLine } from "@/lib/build/comparison";
+import { money } from "@/lib/build/cost";
+import { toolName } from "@/lib/tools/registry";
 import { text } from "@/pages/site/compose/refinedStyles";
 import { t } from "@/lib/theme/tokens";
 
@@ -107,6 +111,103 @@ export function ComparisonBlock({ check, indent = 0 }: { check: CheckFacts; inde
       ) : null}
       <CostChart comparison={comparison} />
       {comparison.design ? <span data-testid="comparison-design" style={text(12.5, 400, t.text2)}>{designLine(comparison.design)}</span> : null}
+    </div>
+  );
+}
+
+export const HARNESS_COPY = {
+  title: "Eval harness",
+  original: "The original measured",
+  example: "Example test case",
+  failureTypes: "Failure types",
+  graders: "Graders",
+  stability: "Across runs",
+  history: "Run history",
+  fixIn: "Fix in",
+  judge: "Judge model",
+  framework: "Framework",
+  runsPerCase: (n: number) => `Each case run ${n} ${n === 1 ? "time" : "times"}`,
+  mixed: "Treat mixed results as flaky and read them before trusting a score.",
+} as const;
+
+const SUB: CSSProperties = text(11.5, 400, t.label);
+
+/** The example case in full: what went in, what was expected, the rule behind it and the failure it showed. */
+function ExampleCase({ entry }: { entry: CheckCase }) {
+  return (
+    <div data-testid="harness-example" style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 12px", border: `1px solid ${t.hairline}`, borderRadius: 6 }}>
+      <span style={SUB}>{HARNESS_COPY.example}</span>
+      <span style={text(12.5, 400, t.text)}>{entry.input}</span>
+      <span style={text(12.5, 400, t.text2)}>{`Expected: ${entry.expected}`}</span>
+      {entry.rule ? <span style={text(12.5, 400, t.text2)}>{`Rule: ${entry.rule}`}</span> : null}
+      {entry.failure_type ? <span style={text(12.5, 400, t.text2)}>{`Failure type: ${entry.failure_type}`}</span> : null}
+    </div>
+  );
+}
+
+/** What a Check shows of its eval harness: where the cases came from, failure types, graders, runs per case and stability, the run history and the CI gate. */
+export function EvalHarnessBlock({ check, indent = 0 }: { check: CheckFacts; indent?: number }) {
+  const harness = check.harness;
+  const set = check.comparison?.testSet;
+  const source = set ? testSetSourceLine(set) : null;
+  const example = check.caseList?.find((entry) => entry.example === true);
+  const runs = (check.runs ?? []).filter((run) => run.id || run.compare || run.cost || run.minutes !== undefined);
+  const stability = stabilityLine(check.stability ?? null);
+  if (!harness && !source && !stability && runs.length === 0) return null;
+  const original = check.fromOriginal ? ` · ${HARNESS_COPY.original}` : "";
+  const gate = harness?.gate;
+  return (
+    <div data-testid="eval-harness" style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: indent, minWidth: 0 }}>
+      <span style={text(13, 500, t.text)}>{HARNESS_COPY.title}</span>
+      {source ? <span data-testid="harness-source" style={text(12.5, 400, t.text2)}>{source}</span> : null}
+      {example ? <ExampleCase entry={example} /> : null}
+      {harness && harness.failureTypes.length > 0 ? (
+        <div data-testid="harness-failure-types" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={SUB}>{`${HARNESS_COPY.failureTypes}${original}`}</span>
+          {harness.failureTypes.map((type) => (
+            <span key={type.name} data-testid="harness-failure-type" style={text(12.5, 400, t.text)}>
+              {`${type.name} · ${failureCountLine(type)} · ${HARNESS_COPY.fixIn.toLowerCase()} ${FIX_IN_LABEL[type.fixIn].toLowerCase()}`}
+              {needsDecisionLine(type) ? <span style={{ display: "block", ...text(12.5, 400, t.text2) }}>{needsDecisionLine(type)}</span> : null}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {harness && harness.graders.length > 0 ? (
+        <div data-testid="harness-graders" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={SUB}>{HARNESS_COPY.graders}</span>
+          {harness.graders.map((grader) => (
+            <span key={grader.name} data-testid="harness-grader" style={text(12.5, 400, t.text)}>
+              {graderLine(grader)}
+              {grader.criteria ? <span style={{ display: "block", ...text(12, 400, t.text2) }}>{grader.criteria}</span> : null}
+              {grader.validated ? <span style={{ display: "block", ...text(12, 400, t.text2) }}>{validatedLine(grader.validated)}</span> : null}
+            </span>
+          ))}
+          {harness.judgeModel ? <span style={text(12, 400, t.text2)}>{`${HARNESS_COPY.judge}: ${harness.judgeModel}`}</span> : null}
+          {harness.framework ? <span style={text(12, 400, t.text2)}>{`${HARNESS_COPY.framework}: ${toolName(harness.framework) ?? harness.framework}`}</span> : null}
+        </div>
+      ) : null}
+      {harness?.runsPerCase ? <span data-testid="harness-runs-per-case" style={text(12.5, 400, t.text2)}>{HARNESS_COPY.runsPerCase(harness.runsPerCase)}</span> : null}
+      {stability ? <span data-testid="harness-stability" style={text(12.5, 400, t.text2)}>{`${HARNESS_COPY.stability}${original}: ${stability}`}</span> : null}
+      {runs.length > 0 ? (
+        <div data-testid="harness-history" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={SUB}>{`${HARNESS_COPY.history}${original}`}</span>
+          {runs.map((run, index) => (
+            <span key={`${run.id ?? run.at}-${index}`} data-testid="harness-run" style={{ ...text(12.5, 400, t.text), fontVariantNumeric: "tabular-nums", overflowWrap: "anywhere" }}>
+              {runHistoryLine(run, checkDay)}
+              {run.cost ? <span style={{ display: "block", ...text(12, 400, t.label) }}>{`${money(run.cost.cost, run.cost.currency)} per run · ${harnessSourceWord(run.cost.source)}`}</span> : null}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {gate ? (
+        <div data-testid="harness-gate" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={text(12.5, 400, t.text)}>{gateLine(gate, (id) => toolName(id) ?? id)}</span>
+          {gate.minutes || gate.costPerRun ? <span style={text(12, 400, t.label)}>{[gate.minutes ? harnessSourceWord(gate.minutes.source) : null, gate.costPerRun ? `${money(gate.costPerRun.cost, gate.costPerRun.currency)} per run` : null].filter(Boolean).join(" · ")}</span> : null}
+          {gateDroppedLines(gate).map((line) => (
+            <span key={line} data-testid="harness-dropped" style={text(12.5, 400, t.text2)}>{line}</span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

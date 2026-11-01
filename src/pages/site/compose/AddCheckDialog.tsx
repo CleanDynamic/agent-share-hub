@@ -20,6 +20,7 @@ import { useId, useState } from "react";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CHECK_FAIL_MAX, CHECK_TEXT_MAX, checkRefusal, type CheckCase, type CheckInput } from "@/lib/build/graph";
 import { comparisonPatchRefusal } from "@/lib/build/comparison";
+import { failureTypesOf } from "@/lib/build/evalHarness";
 import { MEDIA_MAX_BYTES, fileKindFor } from "@/lib/build/media";
 import {
   CHECK_METHODS,
@@ -38,7 +39,7 @@ import {
 } from "@/lib/build/tileExtras";
 
 import { CheckCasesField, keptCases } from "./CheckCasesField";
-import { comparisonFields, type EvalChoices, type Extras } from "./EvalHarnessFields";
+import { comparisonFields, harnessFields, type EvalChoices, type Extras } from "./EvalHarnessFields";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, Count, FieldArea, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, Panel, PanelBody, RateBar, SegmentedField, Spread } from "./modalRecipes";
@@ -248,7 +249,7 @@ function Form({ onAdd, onCancel, phone, seed, edit, evalChoices }: Pick<AddCheck
 
       <OptionalSection>
         <OptionalField name="Test cases" description={CHECK_DIALOG_COPY.casesLine} summary={fromCases ? `${given.length} ${given.length === 1 ? "test case" : "test cases"}, ${casesCount} passed` : null} phone={phone}>
-          <CheckCasesField id={uid} cases={cases} phone={phone} onChange={setCases} bare />
+          <CheckCasesField id={uid} cases={cases} phone={phone} onChange={setCases} bare failureTypes={failureTypesOf(extras.failure_types).map((type) => type.name)} />
         </OptionalField>
 
         <OptionalField name={CHECK_DIALOG_COPY.failed} description={CHECK_DIALOG_COPY.failedLine} summary={summaryOf(failed)} phone={phone}>
@@ -291,6 +292,7 @@ function Form({ onAdd, onCancel, phone, seed, edit, evalChoices }: Pick<AddCheck
           {fileWrong ? <Alert>{fileWrong}</Alert> : null}
         </OptionalField>
         {comparisonFields({ extras, onChange: setExtras, phone, comparing: scoring === "ab", choices: evalChoices ?? { testedKind: "other", tiles: [] } })}
+        {harnessFields({ extras, onChange: setExtras, phone, comparing: scoring === "ab", choices: evalChoices ?? { testedKind: "other", tiles: [] } })}
       </OptionalSection>
       {edit?.after ? edit.after(input as never) : null}
     </ModalForm>

@@ -52,6 +52,8 @@ import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
 import { numberSessions } from "./sessionNumbers";
+import { failureTypesOf } from "./evalHarness";
+import { runsOfCasesLine, evalHarnessOf, evalHarnessPatchRefusal, exampleCaseOf, runExtrasOf, runExtrasRefusal, stabilityCounts, STABILITIES, FLAKY_CAUSES, type EvalHarness, type FlakyCause, type RunExtras, type Stability, type StabilityCounts } from "./evalHarness";
 import { comparisonOf, comparisonPatchRefusal, hasComparison, type Comparison } from "./comparison";
 import { isRetrievalTile, retrievalOf, retrievalPayload, retrievalRefusal, RETRIEVAL_TYPE, type RetrievalFacts } from "./retrieval";
 import { PIPELINE_KEYS, accuracyCeiling, pipelinePatchRefusal, pipelinePayload, pipelineRefusal, type PipelineFields } from "./pipelineFields";
@@ -304,6 +306,15 @@ export interface CheckCase {
   expected: string;
   actual: string;
   passed: boolean;
+  /** SV-29 P4: the rule behind the expected answer ("Returns within 30 days of purchase"), up to 160 characters. */
+  rule?: string;
+  /** SV-29 P4: the name of one of the Check's failure types. */
+  failure_type?: string;
+  /** SV-29 P4: one case can be marked as the example the build page shows in full. */
+  example?: true;
+  /** SV-29 P4: the case's result across its runs; with `flaky`, why. */
+  stability?: Stability;
+  flaky_cause?: FlakyCause;
 }
 
 /** CA-03 P5: what a check says, read from its payload. */
@@ -329,12 +340,19 @@ export interface CheckFacts {
   evidence?: CheckEvidence;
   /** SV-29 P3: the test set, the metric, the rows of a comparison of approaches and the design of a controlled experiment. Each only when given. */
   comparison?: Comparison;
+  /** SV-29 P4: how many cases and how many runs of each make up "passed of total", when both are given. */
+  casesPerRun?: number;
+  runsPerCase?: number;
+  /** SV-29 P4: the eval harness: failure types, graders, the judge model, the framework, the CI gate. */
+  harness?: EvalHarness;
+  /** SV-29 P4: how many cases always pass, always fail, are flaky or errored. */
+  stability?: StabilityCounts;
   /** SV-29: this Check's measured results came from the build it was copied from: they are the original's, never the copier's. */
   fromOriginal?: true;
 }
 
 /** CA-05 P7: one run of a check: the day and how many passed of how many. */
-export interface CheckRun {
+export interface CheckRun extends RunExtras {
   at: string;
   passed: number;
   total: number;
@@ -651,7 +669,7 @@ export function checkRunsOf(value: unknown): CheckRun[] {
       const { passed, total } = entry;
       if (typeof passed !== "number" || typeof total !== "number" || !Number.isInteger(passed) || !Number.isInteger(total)) return [];
       if (passed < 0 || total < 0 || total > CHECK_RUNS_MAX || passed > total) return [];
-      return [{ at: entry.at, passed, total }];
+      return [{ at: entry.at, passed, total, ...runExtrasOf(entry) }];
     })
     .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
     .slice(0, CHECK_RUNS_KEPT);
@@ -670,14 +688,21 @@ export function checkHistoryLine(runs: readonly CheckRun[] | undefined): string 
 /** A check's facts, read defensively. */
 function checkFacts(payload: Payload, cases: readonly CheckCase[] = []): CheckFacts {
   const runs = checkRunsOf(payload.runs);
+  const harness = evalHarnessOf(payload);
+  const stability = stabilityCounts(cases);
+  // SV-29 P4: with cases and runs per case, the total is cases × runs per case and the passed count is the runs' (the newest run's).
+  const perCase = cases.length > 0 && harness?.runsPerCase ? harness.runsPerCase : null;
   // CA-12 P12: when cases are given, "passed of total" is worked out from them.
-  const counted = cases.length > 0 ? casesTotals(cases) : null;
+  const counted = cases.length > 0 && !perCase ? casesTotals(cases) : null;
   return {
     tested: stringOf(payload.tested)?.trim() ?? "",
     passing: stringOf(payload.passing)?.trim() ?? "",
     onFail: stringOf(payload.on_fail)?.trim() || null,
     passed: counted ? counted.passed : numberOf(payload.passed),
-    total: counted ? counted.total : numberOf(payload.total),
+    total: counted ? counted.total : perCase ? cases.length * perCase : numberOf(payload.total),
+    ...(perCase ? { casesPerRun: cases.length, runsPerCase: perCase } : null),
+    ...(harness ? { harness } : null),
+    ...(stability ? { stability } : null),
     runAt: stringOf(payload.run_at)?.trim() || null,
     ...(runs.length > 0 ? { runs } : null),
     ...(cases.length > 0 ? { caseList: [...cases] } : null),
@@ -852,6 +877,7 @@ export function manualWhereLabel(where: ManualWhere | null): string {
 
 /** The most of a check's case text, and its most cases. */
 export const CASE_TEXT_MAX = 280;
+export const CASE_RULE_MAX = 160;
 export const CASES_MAX = 50;
 
 /** A check's cases, read defensively. */
@@ -863,7 +889,12 @@ export function checkCasesOf(value: unknown): CheckCase[] {
     const input = text("input");
     const expected = text("expected");
     if (!input && !expected) return [];
-    return [{ input, expected, actual: text("actual"), passed: entry.passed }];
+    // SV-29 P4: the case's rule, failure type, example mark and stability, each only when given.
+    const rule = typeof entry.rule === "string" ? entry.rule.trim().slice(0, CASE_RULE_MAX) : "";
+    const failureType = typeof entry.failure_type === "string" ? entry.failure_type.trim().slice(0, 40) : "";
+    const stability = STABILITIES.includes(entry.stability as Stability) ? (entry.stability as Stability) : undefined;
+    const cause = stability === "flaky" && FLAKY_CAUSES.includes(entry.flaky_cause as FlakyCause) ? (entry.flaky_cause as FlakyCause) : undefined;
+    return [{ input, expected, actual: text("actual"), passed: entry.passed, ...(rule ? { rule } : null), ...(failureType ? { failure_type: failureType } : null), ...(entry.example === true ? { example: true as const } : null), ...(stability ? { stability } : null), ...(cause ? { flaky_cause: cause } : null) }];
   }).slice(0, CASES_MAX);
 }
 
@@ -2146,15 +2177,18 @@ export interface CheckInput {
  */
 export async function setCheckCases(node: BuildNode, cases: readonly CheckCase[]): Promise<BuildNode> {
   if (node.type !== CHECK_TYPE) throw refuse("setCheckCases", "Only a check has cases.");
-  const why = casesRefusal(cases);
+  const why = casesRefusal(cases, failureTypesOf(payloadOf(node).failure_types).map((type) => type.name));
   if (why) throw refuse("setCheckCases", why);
   const payload = { ...payloadOf(node) };
   const kept = checkCasesOf(cases);
   if (kept.length > 0) {
     const { passed, total } = casesTotals(kept);
     payload.cases = kept as unknown as Json;
-    payload.passed = passed;
-    payload.total = total;
+    // SV-29 P4: with runs per case the counts are the runs', not the cases': the newest run holds them.
+    if (!evalHarnessOf(payload)?.runsPerCase) {
+      payload.passed = passed;
+      payload.total = total;
+    }
   } else delete payload.cases;
   return upsertNode(withPayload(node, payload));
 }
@@ -2174,13 +2208,18 @@ export async function addCheck(buildId: string, tree: readonly NodeTree[], input
 
 /** A check's payload, checked; exported for the dialog, which says the same refusals before anything is written. */
 /** CA-12 P12: why a check's cases cannot be saved, or null. A case says what went in or what was expected. */
-export function casesRefusal(cases: readonly CheckCase[] | undefined): string | null {
+export function casesRefusal(cases: readonly CheckCase[] | undefined, failureTypes?: readonly string[]): string | null {
   if (!cases || cases.length === 0) return null;
   if (cases.length > CASES_MAX) return `Test cases: ${CASES_MAX} max`;
   for (const c of cases) {
     if (!c.input.trim() && !c.expected.trim()) return "Each case says what went in or what was expected.";
     for (const value of [c.input, c.expected, c.actual]) if (value.trim().length > CASE_TEXT_MAX) return `Case text: ${CASE_TEXT_MAX} characters max`;
+    if ((c.rule ?? "").trim().length > CASE_RULE_MAX) return `Rule: ${CASE_RULE_MAX} characters max`;
+    // SV-29 P4: a case's failure type names a listed one; a cause is for a flaky case; one case is the example.
+    if (c.failure_type && failureTypes && !failureTypes.includes(c.failure_type)) return `A test case is marked '${c.failure_type}', which is not a failure type listed here.`;
+    if (c.flaky_cause && c.stability !== "flaky") return "A cause is for a flaky case.";
   }
+  if (cases.filter((c) => c.example).length > 1) return "Only one case can be the example.";
   return null;
 }
 
@@ -2204,7 +2243,7 @@ export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | nu
 }
 
 /** Why a check's runs cannot be kept, or null. Pure, so the composer can say it before anything is written. */
-export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
+export function checkRunsRefusal(runs: readonly CheckRun[], context?: { cases: number; runsPerCase: number | null }): string | null {
   if (runs.length > CHECK_RUNS_KEPT) return `Runs: ${CHECK_RUNS_KEPT} max`;
   for (const run of runs) {
     if (!isIsoDay(run.at)) return "Format: 2026-10-12";
@@ -2213,7 +2252,9 @@ export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
     }
     if (run.passed > run.total) return "Passed: no more than total";
   }
-  return null;
+  // SV-29 P4: ids are named once, a comparison names an earlier run, and with cases and runs per case the total is cases × runs.
+  const newestFirst = [...runs].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  return runExtrasRefusal(newestFirst, context);
 }
 
 /** The four text fields of the Add Check window that a check that is there can change; each key only when it is in the patch. */
@@ -2282,7 +2323,9 @@ export async function setCodeSource(node: BuildNode, patch: { source?: string; l
  */
 export async function setCheckRuns(node: BuildNode, runs: readonly CheckRun[]): Promise<BuildNode> {
   if (node.type !== CHECK_TYPE) throw refuse("setCheckRuns", "Only a check has runs.");
-  const why = checkRunsRefusal(runs);
+  const before = checkCasesOf(payloadOf(node).cases);
+  const perCase = evalHarnessOf(payloadOf(node))?.runsPerCase ?? null;
+  const why = checkRunsRefusal(runs, { cases: before.length, runsPerCase: perCase });
   if (why) throw refuse("setCheckRuns", why);
   const payload = { ...payloadOf(node) };
   const sorted = checkRunsOf(runs);
@@ -2305,9 +2348,11 @@ export const checkDay = (day: string): string => (isIsoDay(day) ? `${Number(day.
  * CA-03 P5: a check's one status line, "Passed 14 of 14 runs · since 12 Oct", and whether every run passed (the dot is
  * `--evidence` then, `--cat-breakage` otherwise). Null when it has no runs to count.
  */
-export function checkStatus(check: Pick<CheckFacts, "passed" | "total" | "runAt">): { allPassed: boolean; line: string } | null {
+export function checkStatus(check: Pick<CheckFacts, "passed" | "total" | "runAt"> & Partial<Pick<CheckFacts, "casesPerRun" | "runsPerCase">>): { allPassed: boolean; line: string } | null {
   if (check.passed === null || check.total === null) return null;
   const since = check.runAt ? ` · since ${checkDay(check.runAt)}` : "";
+  // SV-29 P4: "Passed 41 of 60 runs (20 cases × 3)", never "41 of 60" alone.
+  if (check.casesPerRun && check.runsPerCase) return { allPassed: check.passed === check.total, line: `Passed ${runsOfCasesLine(check.passed, check.casesPerRun, check.runsPerCase)}${since}` };
   return { allPassed: check.passed === check.total, line: `Passed ${check.passed} of ${check.total} ${check.total === 1 ? "run" : "runs"}${since}` };
 }
 
@@ -2328,8 +2373,17 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
   const why = checkRefusal(input);
   if (why) throw refuse(operation, why);
   const given = input.cases && input.cases.length > 0 ? checkCasesOf(input.cases) : [];
-  const counted = given.length > 0 ? casesTotals(given) : null;
-  const out: Payload = { tested: input.tested.trim(), passing: input.passing.trim(), passed: counted ? counted.passed : input.passed, total: counted ? counted.total : input.total };
+  const caseWhy = casesRefusal(given, failureTypesOf((input.extras ?? {}).failure_types).map((type) => type.name));
+  if (caseWhy) throw refuse(operation, caseWhy);
+  const counted = given.length > 0 && !(input.extras && Number(input.extras.runs_per_case) >= 1) ? casesTotals(given) : null;
+  const perCase = given.length > 0 && input.extras && Number(input.extras.runs_per_case) >= 1 ? Number(input.extras.runs_per_case) : null;
+  const out: Payload = {
+    tested: input.tested.trim(),
+    passing: input.passing.trim(),
+    // SV-29 P4: with runs per case, the total is cases × runs per case and the passed count is the one typed (the run's), else 0.
+    passed: counted ? counted.passed : perCase ? (Number.isInteger(input.passed) ? input.passed : 0) : input.passed,
+    total: counted ? counted.total : perCase ? given.length * perCase : input.total,
+  };
   if (given.length > 0) out.cases = given as unknown as Json;
   const onFail = (input.onFail ?? "").trim();
   if (onFail) out.on_fail = onFail;
@@ -2351,7 +2405,7 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
       evidence: input.evidence ? { url: input.evidence.url, media_id: input.evidence.mediaId, name: input.evidence.name } : null,
       ...Object.fromEntries(Object.entries(input.extras ?? {}).filter(([, value]) => value !== null && value !== undefined)),
     });
-    const crossWhy = comparisonPatchRefusal({ scoring: input.scoring ? { how: input.scoring.how } : undefined }, input.extras ?? {});
+    const crossWhy = comparisonPatchRefusal({ scoring: input.scoring ? { how: input.scoring.how } : undefined }, input.extras ?? {}) ?? evalHarnessPatchRefusal({ cases: given }, input.extras ?? {});
     if (crossWhy) throw refuse(operation, crossWhy);
   } catch (cause) {
     throw refuse(operation, cause instanceof Error ? cause.message : "That value is not allowed.");
@@ -3246,7 +3300,7 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
 export async function setExtras(node: BuildNode, patch: Record<string, unknown>, tree?: readonly NodeTree[]): Promise<BuildNode> {
   // SV-27 P5: a role is only for an agent inside a team. SV-28: a handoff goes to another agent of the same team, a job is a
   // prompt inside an agent, an Approval step's blocked steps come after it (checked against the tree when the caller gives it).
-  const notHere = agentFieldsRefusal(node, patch) ?? (node.type === DECISION_TYPE ? pipelinePatchRefusal(payloadOf(node), patch) : null) ?? (node.type === CHECK_TYPE ? comparisonPatchRefusal(payloadOf(node), patch) : null) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
+  const notHere = agentFieldsRefusal(node, patch) ?? (node.type === DECISION_TYPE ? pipelinePatchRefusal(payloadOf(node), patch) : null) ?? (node.type === CHECK_TYPE ? (comparisonPatchRefusal(payloadOf(node), patch) ?? evalHarnessPatchRefusal(payloadOf(node), patch)) : null) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
   if (notHere) throw refuse("setExtras", notHere);
   let cleaned: Record<string, Json | null>;
   try {

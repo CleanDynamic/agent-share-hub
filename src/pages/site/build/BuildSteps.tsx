@@ -71,7 +71,7 @@ import { listPartsOf } from "../compose/partsModel";
 import { WorkstreamHead } from "../compose/WorkstreamHead";
 import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "../compose/workstreamRecipes";
 import { CheckBlock, DotLine } from "../compose/refinedPieces";
-import { ComparisonBlock } from "@/components/build/evalBlocks";
+import { ComparisonBlock, EvalHarnessBlock } from "@/components/build/evalBlocks";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
@@ -833,6 +833,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <TypeLine step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
         <ComparisonBlock check={step.check} indent={INDENT} />
+        <EvalHarnessBlock check={step.check} indent={INDENT} />
         <CheckCasesBody cases={step.check.caseList} indent={INDENT} />
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
