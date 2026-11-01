@@ -102,7 +102,8 @@ import {
 import { BUILD_PAGE_STEPS_ENABLED } from "@/lib/build/flags";
 import { toMarkdown, toPortable } from "@/lib/build/portable";
 import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia, type ReaderSetupItem } from "@/lib/build/readerSteps";
-import { setupFolder } from "@/lib/build/setupFolder";
+import { setupFolderFor } from "@/lib/build/setupFolder";
+import { harnessEntry } from "@/lib/build/harnessMap";
 import { runtimeFolder } from "@/lib/build/runtimeFolder";
 import { hasRuntimeFacts } from "@/lib/build/runSequence";
 import { shownGroups, type Step } from "@/lib/build/graph";
@@ -220,12 +221,13 @@ function downloadPortable(record: BuildRecord) {
 }
 
 /** CA-04 P4: every session's setup, as the folder its tool expects, in one ZIP. A file that cannot be fetched is left out and said. */
-async function downloadSetup(slug: string, items: readonly ReaderSetupItem[], steps: readonly Step[] = []) {
+async function downloadSetup(slug: string, items: readonly ReaderSetupItem[], steps: readonly Step[] = [], harness?: string) {
   const load = async (url: string) => {
     const response = await fetch(url);
     return response.ok ? new Uint8Array(await response.arrayBuffer()) : null;
   };
-  const { entries: setupEntries, missing } = await setupFolder(items, load);
+  // SV-28 P8: "Rebuild in" another harness writes its layout, with NOT-CARRIED.md for what has no equivalent there.
+  const { entries: setupEntries, missing } = await setupFolderFor(items, load, harnessEntry(harness));
   const taken = new Set(setupEntries.map((entry) => entry.path));
   const entries = [...setupEntries, ...runtimeFolder(steps).entries.filter((entry) => !taken.has(entry.path))];
   const zip = writeZip(entries);
@@ -1074,6 +1076,11 @@ export function BuildPage() {
     ? {
         ...reader,
         onCopy: copyText,
+        // SV-28 P7: Copy setup prompt, from the build's tiles, with no model call; the assembler loads on the click.
+        setupPrompt: async (id) => {
+          const { setupPromptOf, setupPromptRefusal } = await import("@/lib/build/setupPrompt");
+          return setupPromptRefusal(id, record) ? null : setupPromptOf(id, record).text || null;
+        },
         resolveMedia,
         otherBody: (id) => {
           const node = nodesById.get(id);
@@ -1190,7 +1197,7 @@ export function BuildPage() {
                 : toMarkdown(toPortable(record)),
             ),
           onDownload: () => downloadPortable(record),
-          ...(setupItems.length > 0 || hasRuntime ? { onDownloadSetup: () => void downloadSetup(build.slug, setupItems, (reader?.steps ?? []).map((entry) => entry.step)) } : null),
+          ...(setupItems.length > 0 || hasRuntime ? { onDownloadSetup: (harness?: string) => void downloadSetup(build.slug, setupItems, (reader?.steps ?? []).map((entry) => entry.step), harness) } : null),
           onRebuild: () => navigate(isLoggedIn ? `/rebuild/${build.slug}` : loginBack(`/rebuild/${build.slug}`)),
           lineageTo: `/b2/${build.slug}/lineage`,
           // CA-13 P9: a rebuild whose source is still here can be set beside it.

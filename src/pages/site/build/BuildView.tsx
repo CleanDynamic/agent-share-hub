@@ -18,6 +18,7 @@
    PHONE keeps today's stacking order: the hero, the action row, the reproduction, the sections as chips, then the
    steps and What you need (or the anatomy, the viewer and the timeline). */
 
+import { mappedHarnesses } from "@/lib/build/harnessMap";
 import { useRef, useState, type CSSProperties, type ReactNode, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import * as Menu from "@radix-ui/react-dropdown-menu";
@@ -558,10 +559,13 @@ function dockItemStyle(first: boolean, phone: boolean, height: number, state: { 
 export const DOWNLOAD_COPY = {
   build: "The build",
   setup: "The setup, as a folder",
+  /** SV-28 P8: the same folder in another harness's layout. */
+  rebuildIn: "Rebuild in",
+  setupFor: (name: string) => `The setup for ${name}`,
 } as const;
 
 /** CA-04 P4: Download as a menu once the build has a session setup: the build as before, or the setup as a folder. */
-function DownloadMenu({ phone, height, onBuild, onSetup }: { phone: boolean; height: number; onBuild: () => void; onSetup: () => void }) {
+function DownloadMenu({ phone, height, onBuild, onSetup }: { phone: boolean; height: number; onBuild: () => void; onSetup: (harness?: string) => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -575,9 +579,17 @@ function DownloadMenu({ phone, height, onBuild, onSetup }: { phone: boolean; hei
           <Menu.Item onSelect={onBuild} style={menuItem(true, phone)}>
             {DOWNLOAD_COPY.build}
           </Menu.Item>
-          <Menu.Item onSelect={onSetup} style={menuItem(true, phone)}>
+          <Menu.Item onSelect={() => onSetup()} style={menuItem(true, phone)}>
             {DOWNLOAD_COPY.setup}
           </Menu.Item>
+          <Menu.Label style={{ ...menuItem(false, phone), cursor: "default" }}>{DOWNLOAD_COPY.rebuildIn}</Menu.Label>
+          {mappedHarnesses()
+            .filter((entry) => entry.harness !== "claude-code")
+            .map((entry) => (
+              <Menu.Item key={entry.harness} onSelect={() => onSetup(entry.harness)} style={menuItem(true, phone)}>
+                {DOWNLOAD_COPY.setupFor(entry.name)}
+              </Menu.Item>
+            ))}
         </Menu.Content>
       </Menu.Portal>
     </Menu.Root>

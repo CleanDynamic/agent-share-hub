@@ -1041,6 +1041,22 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <h3 style={{ ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0, letterSpacing: "-0.005em" }}>{entry.title}</h3>
         <span style={{ flexGrow: 1 }} />
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
+        {view.setupPrompt ? (
+          <Button
+            variant="secondary"
+            size={phone ? 44 : 28}
+            fontSize={12}
+            style={phone ? undefined : { height: 26 }}
+            disabled={!(step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()))}
+            title={step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()) ? undefined : "Add instructions first"}
+            onClick={async () => {
+              const words = await view.setupPrompt?.(step.id);
+              if (words && (await view.onCopy(words))) announce("Setup prompt copied");
+            }}
+          >
+            Copy setup prompt
+          </Button>
+        ) : null}
         <SaveMark kind="step" id={step.id} />
       </div>
       <TypeLine step={step} indent={INDENT} />

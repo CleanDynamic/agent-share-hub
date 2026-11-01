@@ -279,6 +279,8 @@ export interface BuildListProps {
    * `index` among the top-level steps. Resolves true once written. Absent: no handles, no drops, no buttons.
    */
   onNest?: (id: string, parentId: string | null, index: number) => Promise<boolean>;
+  /** SV-28 P7: an agent's or a team's setup prompt, copied or shown. */
+  onSetupPrompt?: (id: string, how: "copy" | "show") => void;
   /** CA-04 P2: whether a tile can go inside a step (`nestRefusal` says no to none of it). */
   canNest?: (id: string, parentId: string) => boolean;
   /** CA-04 P2: a tile dropped on another session's head goes into that session. Resolves true once written. */
@@ -637,6 +639,21 @@ function CopyTogetherRow({ step, phone }: { step: Step; phone: boolean }) {
     <MenuRow phone={phone} onSelect={() => nest.copy(step)}>
       {NEST_LIST_COPY.copyTogether}
     </MenuRow>
+  );
+}
+
+/** SV-28 P7: Copy setup prompt, off with its reason while the agent (or every agent of the team) has no instructions. */
+function SetupPromptRows({ step, phone, on }: { step: Step; phone: boolean; on: (id: string, how: "copy" | "show") => void }) {
+  const said = Boolean(step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim())) || toolFor(step.harness ?? step.children[0]?.harness)?.facts?.hosting === "vendor";
+  return (
+    <>
+      <MenuRow phone={phone} disabled={!said} reason={said ? undefined : "Add instructions first"} onSelect={() => on(step.id, "copy")}>
+        Copy setup prompt
+      </MenuRow>
+      <MenuRow phone={phone} onSelect={() => on(step.id, "show")}>
+        Show setup prompt
+      </MenuRow>
+    </>
   );
 }
 
@@ -1020,6 +1037,7 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
           <ConvertRows step={step} phone={phone} />
           <CopyTogetherRow step={step} phone={phone} />
+          {props.onSetupPrompt && (step.kind === "agent" || step.kind === "team") ? <SetupPromptRows step={step} phone={phone} on={props.onSetupPrompt} /> : null}
           <MenuRow phone={phone} disabled={!can(-1)} shortcut="moveUp" reason={moveReason("tile", -1, !can(-1))} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
           <MenuRow phone={phone} disabled={!can(1)} shortcut="moveDown" reason={moveReason("tile", 1, !can(1))} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />

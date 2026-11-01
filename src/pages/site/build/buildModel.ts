@@ -154,7 +154,8 @@ export interface BuildActionsView {
   onCopyForAI: () => Promise<boolean>;
   onDownload: () => void;
   /** CA-04 P4: the build's session setup as a folder. Absent while the build has none: Download stays one button. */
-  onDownloadSetup?: () => void;
+  /** SV-28 P8: with a harness, the setup in that harness's layout ("Rebuild in"). */
+  onDownloadSetup?: (harness?: string) => void;
   onRebuild: () => void;
   lineageTo: string;
   /** CA-13 P9: "Compare with the original", for a rebuild whose source is still here. Absent: no such link. */
@@ -244,6 +245,8 @@ export interface BuildViewerView {
  */
 export interface BuildStepsView {
   steps: readonly ReaderStep[];
+  /** SV-28 P7: an agent's or team's setup prompt, assembled on the click (its module loads then); null when it has none. */
+  setupPrompt?: (id: string) => Promise<string | null>;
   results: readonly ReaderResult[];
   need: readonly NeedGroup[];
   /** `buildCounts(steps)`. */

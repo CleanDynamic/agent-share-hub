@@ -285,10 +285,22 @@ describe("Download, once the build has a session setup (CA-04 P4)", () => {
     expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
     fireEvent.keyDown(trigger, { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent)).toEqual(["The build", "The setup, as a folder"]);
+    // SV-28 P8: then "Rebuild in", one entry per harness whose documentation was read (Claude Code is the folder itself).
+    expect(items.map((item) => item.textContent)).toEqual(["The build", "The setup, as a folder", "The setup for OpenClaw", "The setup for Hermes Agent", "The setup for Devin Desktop"]);
     fireEvent.click(items[1]);
     expect(onDownloadSetup).toHaveBeenCalledTimes(1);
+    expect(onDownloadSetup).toHaveBeenCalledWith();
     expect(onDownload).not.toHaveBeenCalled();
+  });
+
+  it("SV-28 P8: Rebuild in downloads the setup in that harness's layout", async () => {
+    const onDownloadSetup = vi.fn();
+    const props = stepsProps();
+    mount({ ...props, actions: { ...props.actions, onDownload: vi.fn(), onDownloadSetup } });
+    fireEvent.keyDown(within(screen.getByRole("group", { name: "Take this build" })).getByRole("button", { name: "Download" }), { key: "Enter" });
+    expect(await screen.findByText("Rebuild in")).toBeTruthy();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "The setup for Hermes Agent" }));
+    expect(onDownloadSetup).toHaveBeenCalledWith("hermes-agent");
   });
 
   it("stays one button while the build has none", () => {
