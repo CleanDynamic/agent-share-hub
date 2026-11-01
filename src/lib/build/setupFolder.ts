@@ -5,7 +5,7 @@
 // as a hook. Nothing marked Not shared is written. File contents are fetched through `load` (a download link to its
 // bytes); a file that cannot be loaded is left out and named in `missing`.
 
-import { HOOK_EVENTS, type SetupRule, type SetupServer } from "./setup";
+import { HOOK_EVENTS, pluginInstallLine, type SetupRule, type SetupServer } from "./setup";
 import type { ReaderSetupItem } from "./readerSteps";
 import type { ZipEntry } from "./zip";
 import { REBUILD_COPY, notCarriedLine, skillFolder, type HarnessEntry } from "./harnessMap";
@@ -51,6 +51,12 @@ export function settingsJson(rules: readonly SetupRule[]): string {
 /** SV-27 P6: "Install the email-triage skill from ClawHub." */
 export const installLine = (item: Pick<ReaderSetupItem, "name" | "registry" | "skillName">): string => `Install the ${item.skillName ?? item.name} skill from ${item.registry ?? "its registry"}.`;
 
+/** SV-30 P5: the plugins a folder asks to install: each as its install line, never as the plugin's files. Null when there are none. */
+export const pluginsToInstall = (items: readonly ReaderSetupItem[]): string | null => {
+  const lines = items.filter((item) => item.kind === "plugin" && item.plugin && !item.notShared).map((item) => pluginInstallLine(item.name, item.plugin as NonNullable<ReaderSetupItem["plugin"]>));
+  return lines.length > 0 ? `${lines.join("\n")}\n` : null;
+};
+
 /**
  * SV-28 P8: the folder in another harness's layout, from its entry: the context file under its name, each skill in its skills
  * folder, and the MCP servers and hooks only where its file takes the same shape as Claude Code's. Whatever has no documented
@@ -84,6 +90,8 @@ export async function setupFolderFor(items: readonly ReaderSetupItem[], load: (u
   }
   const toInstall = shared.filter((item) => item.kind === "skill" && item.origin === "registry" && !item.download && item.files.length === 0);
   if (toInstall.length > 0) entries.push({ path: "SKILLS-TO-INSTALL.md", data: encoder.encode(`${toInstall.map((item) => installLine(item)).join("\n")}\n`) });
+  const plugins = pluginsToInstall(items);
+  if (plugins) entries.push({ path: "PLUGINS-TO-INSTALL.md", data: encoder.encode(plugins) });
   for (const item of shared.filter((candidate) => candidate.kind === "skill" && !toInstall.includes(candidate))) {
     const folder = skillFolder(entry, safe(item.name));
     if (!folder) {
@@ -133,6 +141,8 @@ export async function setupFolder(items: readonly ReaderSetupItem[], load: (url:
   // SV-27 P6: a skill installed from a registry with no files of its own is a line telling the copier to install it by name.
   const toInstall = shared.filter((entry) => entry.kind === "skill" && entry.origin === "registry" && !entry.download && entry.files.length === 0);
   if (toInstall.length > 0) entries.push({ path: "SKILLS-TO-INSTALL.md", data: encoder.encode(`${toInstall.map((entry) => installLine(entry)).join("\n")}\n`) });
+  const plugins = pluginsToInstall(items);
+  if (plugins) entries.push({ path: "PLUGINS-TO-INSTALL.md", data: encoder.encode(plugins) });
   for (const item of shared.filter((entry) => entry.kind === "skill" && !toInstall.includes(entry))) {
     const folder = `.claude/skills/${safe(item.name)}`;
     await fetchInto(`${folder}/SKILL.md`, item.download, item.name);

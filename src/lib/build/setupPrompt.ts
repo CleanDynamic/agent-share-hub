@@ -22,7 +22,7 @@ import { FIELD_WORDS, harnessEntry, notCarriedLine, skillFolder, type HarnessEnt
 import { precisionWord } from "./modelRun";
 import { hasPipelineSetup, pipelineSections } from "./pipelineSetup";
 import { originNote } from "./promptOrigin";
-import { setupItemsOf, type SetupItem } from "./setup";
+import { pluginInstallLine, setupItemsOf, type SetupItem } from "./setup";
 import {
   DELIVERABLE_ARTICLE,
   MAKER,
@@ -216,6 +216,9 @@ function fileSections(items: readonly SetupItem[], entry: HarnessEntry | null, i
           .join("\n"),
       );
   }
+  // SV-30 P5: a plugin is its install line, never its files.
+  const plugins = items.filter((candidate) => candidate.kind === "plugin" && candidate.plugin);
+  if (plugins.length > 0) out.push(plugins.map((item) => pluginInstallLine(item.name, item.plugin as NonNullable<SetupItem["plugin"]>)).join("\n"));
   const servers = items.filter((candidate) => candidate.kind === "server" && candidate.server);
   if (servers.length > 0) {
     if (entry && !entry.mcpConfig) into.notCarried.push(notCarriedLine("mcpConfig", entry));

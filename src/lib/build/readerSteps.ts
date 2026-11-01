@@ -121,6 +121,8 @@ export interface ReaderSetupItem {
   files: { id: string; name: string; path: string | null; download: string | null }[];
   server: SetupServer | null;
   rule: SetupRule | null;
+  /** SV-30 P5: a plugin's source, what it bundles and its install line. */
+  plugin?: SetupItem["plugin"];
   /** CA-04 P6: a workflow file that runs Claude Code, as written, and what was read of it. */
   workflow: SetupItem["workflow"];
   /** Where it sat ("docs/CLAUDE.md"), when known. */
@@ -472,6 +474,7 @@ function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
       files: item.notShared ? [] : item.files.map((file) => ({ id: file.id, name: file.name, path: file.path, download: download(file.mediaId, null, false) })),
       server: item.notShared && item.server ? { ...item.server, url: null, command: null, args: [] } : item.server,
       rule: item.rule,
+      ...(item.plugin ? { plugin: item.plugin } : null),
       workflow: item.notShared ? null : item.workflow,
       path: item.path,
       loaded: item.loaded,

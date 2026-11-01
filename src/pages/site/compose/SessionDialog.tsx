@@ -21,7 +21,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, TARGET_METRIC_MAX, TARGET_UNIT_MAX, type GoalTarget, type SessionGoal } from "@/lib/build/making";
 import { isIsoDay } from "@/lib/build/graph";
 import { proposedAccess } from "@/lib/build/sessionAccess";
-import { SETUP_KIND_LABEL } from "@/lib/build/setup";
+import { PLUGIN_CONTAINS, PLUGIN_CONTAINS_LABEL, PLUGIN_INSTALL_MAX, PLUGIN_NAME_MAX, PLUGIN_SOURCE_MAX, SETUP_KIND_LABEL, pluginRefusal, type PluginContains, type SetupPlugin } from "@/lib/build/setup";
 import { modelWithId, type SessionExtras } from "@/lib/build/sessionFacts";
 import { modelLabel } from "@/lib/models/registry";
 
@@ -157,6 +157,70 @@ function TargetFields({ phone, goal, onChange }: { phone: boolean; goal: Session
       {field("achieved", SESSION_DIALOG_COPY.achieved, 12, NARROW.count, true)}
       {goal.target ? <Hint>{goal.target.source === "run" ? SESSION_DIALOG_COPY.fromRun : SESSION_DIALOG_COPY.makersFigure}</Hint> : null}
       {wrong ? <Hint>{SESSION_DIALOG_COPY.badTarget}</Hint> : null}
+    </div>
+  );
+}
+
+/** SV-30 P5: a plugin by its install line. Its name, where it comes from, what it bundles, and the line exactly as the maker has it. */
+function PluginForm({ phone, onAdd }: { phone: boolean; onAdd: (plugin: { name: string } & SetupPlugin) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [source, setSource] = useState("");
+  const [install, setInstall] = useState("");
+  const [contains, setContains] = useState<PluginContains[]>([]);
+  const why = pluginRefusal({ name, source, install, contains });
+  if (!open)
+    return (
+      <Inline>
+        <RecipeButton small phone={phone} onClick={() => setOpen(true)}>
+          Add a plugin
+        </RecipeButton>
+      </Inline>
+    );
+  return (
+    <div role="group" aria-label="Add a plugin" data-testid="plugin-form" style={PANEL_LIST}>
+      <Inline>
+        <LabelText>Name</LabelText>
+        <FieldInput phone={phone} width={200} aria-label="Plugin name" maxLength={PLUGIN_NAME_MAX} value={name} onChange={(event) => setName(event.target.value)} />
+      </Inline>
+      <Inline>
+        <LabelText>Source</LabelText>
+        <FieldInput phone={phone} width={260} aria-label="Plugin source" maxLength={PLUGIN_SOURCE_MAX} placeholder="A marketplace name or a repository address" value={source} onChange={(event) => setSource(event.target.value)} />
+      </Inline>
+      <div role="group" aria-label="Plugin contains" style={PANEL_LIST}>
+        {PLUGIN_CONTAINS.map((part) => (
+          <label key={part} style={BODY_TEXT}>
+            <Inline>
+              <Checkbox checked={contains.includes(part)} onChange={(event) => setContains((now) => (event.target.checked ? [...now, part] : now.filter((other) => other !== part)))} />
+              {PLUGIN_CONTAINS_LABEL[part]}
+            </Inline>
+          </label>
+        ))}
+      </div>
+      <Inline>
+        <LabelText>Install line</LabelText>
+        <FieldInput phone={phone} mono width={300} aria-label="Plugin install line" maxLength={PLUGIN_INSTALL_MAX} placeholder="/plugin install review-kit@acme" value={install} onChange={(event) => setInstall(event.target.value)} />
+      </Inline>
+      <Inline>
+        <RecipeButton
+          small
+          phone={phone}
+          disabled={why !== null}
+          onClick={() => {
+            onAdd({ name: name.trim(), source: source.trim(), contains, install });
+            setOpen(false);
+            setName("");
+            setSource("");
+            setInstall("");
+            setContains([]);
+          }}
+        >
+          Add plugin
+        </RecipeButton>
+        <RecipeButton small phone={phone} onClick={() => setOpen(false)}>
+          Cancel
+        </RecipeButton>
+      </Inline>
     </div>
   );
 }
@@ -381,6 +445,7 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
                 </RecipeButton>
               </Inline>
             ) : null}
+            {handlers.onAddPlugin ? <PluginForm phone={phone} onAdd={(plugin) => handlers.onAddPlugin?.(key, plugin)} /> : null}
           </Block>
         ) : null}
 
