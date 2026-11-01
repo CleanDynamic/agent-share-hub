@@ -94,7 +94,22 @@ export interface SessionGoal {
   reached?: "reached" | "limit" | "me";
   /** How many turns it took, when it was reached. */
   turns?: number;
+  /** SV-30 P2: a metric, where it started and the value to reach. */
+  target?: GoalTarget;
 }
+
+/** SV-30 P2: a stopping condition with a measure. `source` says whether the achieved value was read from the run or given by the maker. */
+export interface GoalTarget {
+  metric: string;
+  unit?: string;
+  baseline: number;
+  target: number;
+  achieved?: number;
+  source: "run" | "maker";
+}
+
+export const TARGET_METRIC_MAX = 40;
+export const TARGET_UNIT_MAX = 12;
 
 export const GOAL_CONDITION_MAX = 200;
 export const GOAL_TURNS_MIN = 1;
@@ -116,7 +131,35 @@ export function goalOf(value: unknown): SessionGoal | null {
   if (GOAL_REACHED.includes(raw.reached as SessionGoal["reached"] & string)) goal.reached = raw.reached as SessionGoal["reached"];
   const turns = turnsOf(raw.turns);
   if (turns && goal.reached === "reached") goal.turns = turns;
+  const target = targetOf(raw.target);
+  if (target) goal.target = target;
   return goal;
+}
+
+const finiteNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+
+/** A stored target, read defensively; null when it is not whole (a metric, a baseline and a target value). */
+export function targetOf(value: unknown): GoalTarget | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const metric = typeof raw.metric === "string" ? raw.metric.trim().slice(0, TARGET_METRIC_MAX) : "";
+  if (!metric || !finiteNumber(raw.baseline) || !finiteNumber(raw.target)) return null;
+  const unit = typeof raw.unit === "string" ? raw.unit.trim().slice(0, TARGET_UNIT_MAX) : "";
+  return {
+    metric,
+    ...(unit ? { unit } : null),
+    baseline: raw.baseline,
+    target: raw.target,
+    ...(finiteNumber(raw.achieved) ? { achieved: raw.achieved } : null),
+    source: raw.source === "run" ? "run" : "maker",
+  };
+}
+
+/** "2x", "120 ms", "95%": a value with its unit; `x` and `%` sit against the number. */
+export function withUnit(value: number, unit?: string): string {
+  const said = String(Math.round(value * 1000) / 1000);
+  if (!unit) return said;
+  return unit === "x" || unit === "%" ? `${said}${unit}` : `${said} ${unit}`;
 }
 
 /** Why a goal cannot be saved, or null. */
@@ -127,12 +170,26 @@ export function goalRefusal(goal: SessionGoal): string | null {
   for (const n of [goal.atMost, goal.turns]) {
     if (n !== undefined && turnsOf(n) === undefined) return `Turns: whole number, ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}`;
   }
+  const target = goal.target;
+  if (target) {
+    if (!target.metric.trim()) return "Say what is measured.";
+    if (target.metric.trim().length > TARGET_METRIC_MAX) return `Metric: ${TARGET_METRIC_MAX} characters max`;
+    if ((target.unit ?? "").trim().length > TARGET_UNIT_MAX) return `Unit: ${TARGET_UNIT_MAX} characters max`;
+    if (!finiteNumber(target.baseline) || !finiteNumber(target.target)) return "Baseline and target are numbers.";
+    if (target.achieved !== undefined && !finiteNumber(target.achieved)) return "What it reached is a number.";
+    if (target.source !== "run" && target.source !== "maker") return "The figure is from the run or the maker.";
+  }
   return null;
 }
 
 /** "Worked until the tests pass · at most 40 turns · reached in 12", with the parts that exist. */
 export function goalLine(goal: SessionGoal): string {
-  const parts = [`Worked until ${goal.condition}`];
+  const target = goal.target;
+  const parts = [target ? `Worked until ${target.metric} ${withUnit(target.target, target.unit)}` : `Worked until ${goal.condition}`];
+  if (target) {
+    parts.push(`baseline ${withUnit(target.baseline, target.unit)}`);
+    if (target.achieved !== undefined) parts.push(`reached ${withUnit(target.achieved, target.unit)}`);
+  }
   if (goal.atMost) parts.push(`at most ${goal.atMost} ${goal.atMost === 1 ? "turn" : "turns"}`);
   if (goal.reached === "reached" && goal.turns) parts.push(`reached in ${goal.turns}`);
   return parts.join(" · ");

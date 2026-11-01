@@ -18,7 +18,7 @@ import { useMemo, useState } from "react";
 
 import { Checkbox } from "@/components/brand/Checkbox";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, type SessionGoal } from "@/lib/build/making";
+import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, TARGET_METRIC_MAX, TARGET_UNIT_MAX, type GoalTarget, type SessionGoal } from "@/lib/build/making";
 import { isIsoDay } from "@/lib/build/graph";
 import { modelWithId, type SessionExtras } from "@/lib/build/sessionFacts";
 import { modelLabel } from "@/lib/models/registry";
@@ -73,6 +73,16 @@ export const SESSION_DIALOG_COPY = {
   reached: "Outcome",
   tookTurns: "Reached in",
   removeGoal: "Remove goal",
+  /** SV-30 P2. */
+  target: "Measurable target",
+  metric: "Metric",
+  unit: "Unit",
+  baseline: "Baseline",
+  targetValue: "Target",
+  achieved: "Reached",
+  makersFigure: "Maker's figure",
+  fromRun: "From the run",
+  badTarget: "Metric, baseline and target are needed, and the numbers are numbers.",
   badTurns: `Turns: whole number, ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}`,
   costAndTokens: "Cost and tokens",
   together: "At the same time as",
@@ -97,6 +107,53 @@ const turnsOf = (value: string): number | undefined | null => {
   const n = Number(said);
   return Number.isInteger(n) && n >= GOAL_TURNS_MIN && n <= GOAL_TURNS_MAX ? n : null;
 };
+
+/** A number as typed, undefined for blank, null for anything that is not one. */
+const numberField = (value: string): number | undefined | null => {
+  const said = value.trim().replace(/,/g, "");
+  if (!said) return undefined;
+  const n = Number(said);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** SV-30 P2: the goal's metric, where it started, the value to reach and what it reached. Saved when the first three are whole. */
+function TargetFields({ phone, goal, onChange }: { phone: boolean; goal: SessionGoal; onChange: (target: GoalTarget | undefined) => void }) {
+  const [draft, setDraft] = useState({ metric: goal.target?.metric ?? "", unit: goal.target?.unit ?? "", baseline: goal.target ? String(goal.target.baseline) : "", target: goal.target ? String(goal.target.target) : "", achieved: goal.target?.achieved !== undefined ? String(goal.target.achieved) : "" });
+  const [wrong, setWrong] = useState(false);
+  const commit = (next: typeof draft) => {
+    setDraft(next);
+    if (!next.metric.trim() && !next.baseline.trim() && !next.target.trim() && !next.achieved.trim()) {
+      setWrong(false);
+      if (goal.target) onChange(undefined);
+      return;
+    }
+    const baseline = numberField(next.baseline);
+    const target = numberField(next.target);
+    const achieved = numberField(next.achieved);
+    const whole = next.metric.trim() && baseline !== undefined && baseline !== null && target !== undefined && target !== null && achieved !== null;
+    setWrong(!whole);
+    if (!whole) return;
+    onChange({ metric: next.metric.trim(), ...(next.unit.trim() ? { unit: next.unit.trim() } : null), baseline, target, ...(achieved !== undefined ? { achieved } : null), source: goal.target?.source ?? "maker" });
+  };
+  const field = (key: keyof typeof draft, label: string, max: number, width: number, mono?: boolean) => (
+    <Inline>
+      <LabelText>{label}</LabelText>
+      <FieldInput phone={phone} mono={mono} width={width} aria-label={`${SESSION_DIALOG_COPY.target}: ${label}`} maxLength={max} value={draft[key]} onChange={(event) => setDraft((now) => ({ ...now, [key]: event.target.value }))} onBlur={() => commit(draft)} />
+    </Inline>
+  );
+  return (
+    <div role="group" aria-label={SESSION_DIALOG_COPY.target} data-testid="goal-target" style={PANEL_LIST}>
+      <LabelText>{SESSION_DIALOG_COPY.target}</LabelText>
+      {field("metric", SESSION_DIALOG_COPY.metric, TARGET_METRIC_MAX, 160)}
+      {field("unit", SESSION_DIALOG_COPY.unit, TARGET_UNIT_MAX, NARROW.count, true)}
+      {field("baseline", SESSION_DIALOG_COPY.baseline, 12, NARROW.count, true)}
+      {field("target", SESSION_DIALOG_COPY.targetValue, 12, NARROW.count, true)}
+      {field("achieved", SESSION_DIALOG_COPY.achieved, 12, NARROW.count, true)}
+      {goal.target ? <Hint>{goal.target.source === "run" ? SESSION_DIALOG_COPY.fromRun : SESSION_DIALOG_COPY.makersFigure}</Hint> : null}
+      {wrong ? <Hint>{SESSION_DIALOG_COPY.badTarget}</Hint> : null}
+    </div>
+  );
+}
 
 export interface SessionDialogProps {
   view: SessionView | null;
@@ -230,6 +287,7 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
                 ) : null}
               </>
             ) : null}
+            {goal ? <TargetFields phone={phone} goal={goal} onChange={(target) => saveGoal({ target })} /> : null}
             {wrongTurns ? <Hint>{SESSION_DIALOG_COPY.badTurns}</Hint> : null}
           </Block>
         ) : null}
