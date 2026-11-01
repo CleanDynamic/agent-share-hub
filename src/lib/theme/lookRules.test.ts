@@ -1277,6 +1277,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/toolPickerModel.ts",
   "src/pages/site/compose/tileEdits.ts",
   // SV-28
+  "src/pages/dev/DeploymentDemo.tsx",
+  "src/lib/build/tileLines.ts",
   "src/pages/site/compose/SetupPromptWindow.tsx",
   "src/dev/fixtures/deployment/chief-of-staff.ts",
   "src/pages/site/build/BuildView.tsx",

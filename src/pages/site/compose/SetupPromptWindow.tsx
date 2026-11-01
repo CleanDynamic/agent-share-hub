@@ -26,6 +26,8 @@ export interface SetupPromptWindowProps {
   name?: string;
   onCopy: (text: string) => void;
   onClose: () => void;
+  /** Rebuild in starts at this harness rather than the agent's own (a dev page's screens). */
+  harness?: string;
 }
 
 const record = (value: unknown): Record<string, unknown> => (value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {});
@@ -40,15 +42,15 @@ export function ownHarnessOf(tree: readonly NodeTree[], id: string): string {
   return typeof harness === "string" ? harness : "";
 }
 
-export function SetupPromptWindow({ id, tree, name, onCopy, onClose }: SetupPromptWindowProps) {
+export function SetupPromptWindow({ id, tree, name, onCopy, onClose, harness }: SetupPromptWindowProps) {
   const phone = useIsPhone();
   const own = id ? ownHarnessOf(tree, id) : "";
-  const [target, setTarget] = useState<string>(() => harnessEntry(own)?.harness ?? OWN);
+  const [target, setTarget] = useState<string>(() => harnessEntry(harness ?? own)?.harness ?? OWN);
   if (!id) return null;
   const prompt = setupPromptOf(id, { tree: tree as NodeTree[] }, target === OWN ? undefined : target);
   const vendor = isVendorHosted(own);
   return (
-    <ModalShell open onOpenChange={(next) => !next && onClose()} title={SETUP_PROMPT_COPY.title} subtitle={name ?? SETUP_PROMPT_COPY.title} testId="setup-prompt-window">
+    <ModalShell open onOpenChange={(next) => !next && onClose()} title={SETUP_PROMPT_COPY.title} subtitle={name ?? flat(tree).find((node) => node.id === id)?.title ?? SETUP_PROMPT_COPY.title} testId="setup-prompt-window">
       <div style={{ ...bodyStyle(phone), display: "flex", flexDirection: "column", gap: 12, padding: 20 }}>
         {vendor ? null : (
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

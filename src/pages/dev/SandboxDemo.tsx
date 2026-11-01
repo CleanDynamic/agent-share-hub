@@ -26,6 +26,8 @@
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
    No board image is compared. */
 
+import { lazy, Suspense } from "react";
+const DeploymentDemo = lazy(() => import("./DeploymentDemo"));
 import { useMemo, useState } from "react";
 
 import { AddAgentDialog } from "@/pages/site/compose/AddAgentDialog";
@@ -121,6 +123,8 @@ export default function SandboxDemo(props: DesignPageProps) {
   if (params.get("build") === "ca24") return <Ca24Demo {...props} />;
   if (params.get("build") === "ca25") return <Ca25Demo {...props} />;
   if (params.get("build") === "ca28") return <Ca28Demo {...props} />;
+  // SV-28 P9: the deployment fixtures (SV-27's three and the chief of staff), in their own chunk.
+  if (params.get("build")?.startsWith("deployment-")) return <Suspense fallback={null}><DeploymentDemo {...props} /></Suspense>;
   return <ShapesDemo {...props} />;
 }
 

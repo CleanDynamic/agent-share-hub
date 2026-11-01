@@ -63,6 +63,8 @@ export function typeLineOf(step: Step): string {
     case "file":
       return dotted("File", step.fileFacts ? FILE_WORD[step.fileFacts.kind] : null, step.fileFacts ? formatSize(step.fileFacts.size) : null);
     case "manual":
+      // SV-28 P4: an Approval step says where nothing was done; its gate line says who approves what.
+      if (step.gate) return "Manual step · Approval";
       return dotted("Manual step", manualWhereLabel(step.where ?? (step.tool ? { kind: "app", name: step.tool, url: null } : null)));
     case "decision": {
       const facts = step.decision;

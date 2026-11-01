@@ -19,7 +19,7 @@ const str = (value: unknown): string => (typeof value === "string" ? value : "")
 function Section({ title, testId, lines }: { title: string; testId: string; lines: readonly string[] }) {
   if (lines.length === 0) return null;
   return (
-    <section data-testid={testId} aria-label={title} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <section data-testid={testId} aria-label={title} style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${t.hairline}` }}>
       <h3 style={{ ...text(12, 500, t.label), margin: 0 }}>{title}</h3>
       {lines.map((line, at) => (
         <p key={at} style={{ ...text(13, 400, t.text), lineHeight: "20px", margin: 0, overflowWrap: "anywhere" }}>
