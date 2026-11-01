@@ -6,6 +6,8 @@
    its `builds.making`, put through the same functions the page uses
    (`readerSteps.ts`), so the dev page shows what a reader would be given. */
 
+import { chiefOfStaffMaking, chiefOfStaffTree } from "@/dev/fixtures/deployment/chief-of-staff";
+import { setupPromptOf } from "@/lib/build/setupPrompt";
 import { buildCounts, readerMap, readerResults, readerSteps, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
 import type { Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
@@ -14,7 +16,7 @@ import { SHAPES } from "./shapes";
 import { linksBuild, linksMaking, linksTree } from "./postLinks";
 
 /** CA-04 P7: "one-sitting" and "runs-on-github" are the shapes of the same names (src/dev/fixtures/shapes.ts). */
-export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links";
+export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links" | "chief-of-staff";
 
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -143,6 +145,8 @@ const fox = (): NodeTree[] => [
 const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making; title: string; outcome: string }> = {
   list: { tree: bakery, making: bakeryMaking, title: "Bakery homepage", outcome: "A homepage for a neighbourhood bakery, from brand brief to live site, made across four AI tools." },
   team: { tree: team, making: teamMaking, title: "Weekly research brief", outcome: "A team of agents that writes a one-page brief every Monday." },
+  /* SV-28 P9: a chief of staff and three specialists, published. */
+  "chief-of-staff": { tree: () => chiefOfStaffTree, making: { sessions: [], ...chiefOfStaffMaking } as unknown as Making, title: "A chief of staff and three specialists", outcome: "A team that takes requests in Slack and hands each to research, sales or operations." },
   one: { tree: fox, making: foxMaking, title: "Watercolour fox poster", outcome: "A poster-size fox in loose watercolour, made with one prompt." },
   /* CA-06 P7: "A post with links", as a reader gets it. */
   links: {
@@ -193,6 +197,8 @@ export function buildStepsFixture(which: BuildStepsSample = "list", extra: reado
     making,
     mapAvailable: making.sessions.length >= 2,
     onCopy: async () => true,
+    // SV-28 P7: Copy setup prompt, as the build page assembles it.
+    setupPrompt: async (id) => setupPromptOf(id, { tree }).text || null,
     resolveMedia: () => undefined,
     otherBody: () => null,
     focus: null,

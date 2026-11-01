@@ -12,7 +12,8 @@ import { t } from "@/lib/theme/tokens";
 
 import { bareButton, text } from "./refinedStyles";
 import { SLIDE_ATTR } from "./flip";
-import { OPEN_REQUEST_COPY, OpenRequestDialog } from "./OpenRequestDialog";
+import { OPEN_REQUEST_COPY } from "./openRequestCopy";
+import { OpenRequestWindow as OpenRequestDialog } from "./composerWindows";
 import { TextButton } from "./composeControls";
 
 export const ASK_ROW_COPY = {

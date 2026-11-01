@@ -14,7 +14,7 @@
 import type { NodeTree } from "@/lib/build/types";
 import { useAnnounce } from "./BuildAnnouncer";
 import { Copy } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 
 import { ColourDot } from "@/components/brand/ColourButton";
 import { MemberLabel, useGroupOf } from "./groupLabels";
@@ -73,7 +73,8 @@ import {
 } from "./detailsRecipes";
 import type { ModelRun } from "@/lib/build/modelRun";
 import type { RunHostChoice } from "./ModelRunFields";
-import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnection, ToolRunsAt, ManualWhere } from "@/lib/build/graph";
+import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnection, ToolRunsAt, ManualWhere, Step } from "@/lib/build/graph";
+import type { Gate } from "@/lib/build/teamFields";
 import type { AgentSetupValue } from "./AgentSetupFields";
 import type { OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
@@ -132,6 +133,9 @@ export interface ManualView extends InputsView {
   /** Its picture, with the file's name when it could be read. */
   picture: { id: string; name: string } | null;
   makes: readonly MakesRow[];
+  /** SV-28 P4: an Approval step's gate, and the build's steps its window offers to block. */
+  gate?: Gate;
+  steps?: readonly Step[];
 }
 
 export interface SessionView {
@@ -750,6 +754,9 @@ export function DetailsLoading() {
   );
 }
 
+/** SV-28: an agent's or a team's handoffs, unmatched mentions and trust boundary, in their own chunk. */
+const AgentTeamDetails = lazy(() => import("./AgentTeamDetails"));
+
 export function DetailsPanel({ view, colour = null, build, onEdit, plan, onSelect, onOpenPrompt }: DetailsPanelProps) {
   if (!view) return <DetailsFade view={null}><p style={{ ...EMPTY, userSelect: "none" }}>{DETAILS_COPY.empty}</p></DetailsFade>;
   /* CA-24 P1: a selection that is still loading is six lines of building blocks, scaled to Details' width. */
@@ -758,6 +765,11 @@ export function DetailsPanel({ view, colour = null, build, onEdit, plan, onSelec
     <DetailsFade view={view}>
       <div data-testid="details-panel" data-kind={view.kind} style={{ ...COLUMN, fontSize: 13 }}>
         <Body view={view} plan={plan} colour={colour} build={build} onSelect={onSelect} onEdit={onEdit} onOpenPrompt={onOpenPrompt} />
+        {(view.kind === "agent" || view.kind === "team") && view.deploymentTree ? (
+          <Suspense fallback={null}>
+            <AgentTeamDetails id={view.id} kind={view.kind} tree={view.deploymentTree} />
+          </Suspense>
+        ) : null}
       </div>
     </DetailsFade>
   );

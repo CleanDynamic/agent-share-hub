@@ -104,7 +104,8 @@ describe("the checklist window", () => {
     expect(publish.disabled).toBe(false);
     fireEvent.click(publish);
     expect(screen.queryByTestId("publish-checklist")).toBeNull();
-    expect(screen.getByTestId("publish-confirm")).toBeTruthy();
+    // SV-28: the Confirm window's code loads when it first opens (SV-26's lazyWindow).
+    expect(await screen.findByTestId("publish-confirm")).toBeTruthy();
     expect(props.onPublish).not.toHaveBeenCalled();
   });
 
@@ -112,7 +113,8 @@ describe("the checklist window", () => {
     const { props } = view();
     await press();
     expect(screen.queryByTestId("publish-checklist")).toBeNull();
-    expect(screen.getByTestId("publish-confirm")).toBeTruthy();
+    // SV-28: the Confirm window's code loads when it first opens (SV-26's lazyWindow).
+    expect(await screen.findByTestId("publish-confirm")).toBeTruthy();
     expect(props.onPublish).not.toHaveBeenCalled();
   });
 

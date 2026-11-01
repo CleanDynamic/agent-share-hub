@@ -3,6 +3,7 @@
 // Secrets are only NAMED, never shown or stored. Vendor defaults are said as the vendor's, with the month their docs were read.
 // PURE.
 
+import { crossingLine, trustBoundaryOf } from "./trustBoundary";
 import { toolFor } from "@/lib/tools/registry";
 
 import { agentFieldsOf } from "./agentFields";
@@ -126,5 +127,7 @@ export function beforeYouCopy(tree: readonly Node[]): string[] {
     if (!fields.approvalMode && facts && harnessDefaultsToFull(harness)) say(BEFORE_COPY.harnessDefault(facts.name, facts.checked));
   }
   for (const tile of deploymentTilesOf(tree)) if (tile.kind === "relay" && tile.payload.network === PUBLIC_INTERNET) say(BEFORE_COPY.publicRelay);
+  // SV-28 P6: each trust boundary crossing, one line each.
+  for (const crossing of trustBoundaryOf({ tree: tree as never })) say(crossingLine(crossing, tree as never));
   return out;
 }

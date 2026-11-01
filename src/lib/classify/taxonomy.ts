@@ -826,6 +826,7 @@ const OVERSIGHT = `
 Every output reviewed | all reviewed, human reviewed
 Spot checks | sampling, spot-checked
 No review | unreviewed, unsupervised
+Approved before continuing | approval step, sign-off
 `;
 
 const AGE = `

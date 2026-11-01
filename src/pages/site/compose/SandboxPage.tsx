@@ -104,6 +104,7 @@ import type { FullPromptWindow as FullPromptWindowImpl } from "@/components/buil
 import { attachFiles } from "./attachFiles";
 import { DetailsPanel, type DetailsHandlers } from "./DetailsPanel";
 import type { TileEditDialog as TileEditDialogImpl } from "./TileEditDialog";
+import type { SetupPromptWindow as SetupPromptWindowImpl } from "./SetupPromptWindow";
 import { opensEditDialog } from "./TileEditDialog";
 import { buildFactsOf, pieces, resolveView, type MediaFacts } from "./detailsView";
 import { sessionMapFor, type MapPieceLike } from "@/lib/build/sessionMap";
@@ -227,6 +228,8 @@ const LeaveWindow = lazyWindow<ComponentProps<typeof LeaveWindowImpl>>(() => imp
 
 /** SV-18: the Add from Library window is its own chunk, fetched on hover or focus of Add › From Library and at idle. */
 const AddFromLibrary = lazy(() => import("./AddFromLibrary"));
+/** SV-28 P7: Show setup prompt, its own chunk. */
+const SetupPromptWindow = lazyWindow<ComponentProps<typeof SetupPromptWindowImpl>>(() => import("./SetupPromptWindow").then((m) => ({ default: m.SetupPromptWindow })), (p) => p.id !== null);
 
 /** SV-07 P2: what `insertSession` adds: a chat imported, an empty session started here, or a ready-made copy. */
 type SessionSource =
@@ -484,7 +487,7 @@ function SandboxPageBody() {
     },
     [settleSeed],
   );
-  const [addManualOpen, setAddManualOpen] = useState(false);
+  const [addManualOpen, setAddManualOpen] = useState<boolean | "approval">(false);
   /** CA-03 P5: Add › Check. */
   const [addCheckOpen, setAddCheckOpen] = useState(false);
   /** CA-02 P6: Add › Tool names its tool first. */
@@ -1168,6 +1171,11 @@ function SandboxPageBody() {
 
   /* CA-18: the tile whose own window is open (to change it), seen as Details sees it. */
   const [editId, setEditId] = useState<string | null>(null);
+  /** SV-28 P7: the agent or team whose setup prompt is shown; copying it loads the assembler on the click. */
+  const [promptFor, setPromptFor] = useState<string | null>(null);
+  const copySetup = (text: string) => void navigator.clipboard?.writeText(text).then(() => buildHistory.notify("Setup prompt copied", { undo: false }), () => undefined);
+  const onSetupPrompt = (id: string, how: "copy" | "show") =>
+    how === "show" ? setPromptFor(id) : void import("@/lib/build/setupPrompt").then((m) => copySetup(m.setupPromptOf(id, { tree: nodes.current() }).text));
   const editView = useMemo(
     () =>
       editId
@@ -2106,7 +2114,7 @@ function SandboxPageBody() {
     systemPromptAvailable,
     datasetAvailable,
     repoAvailable,
-    onAddManual: () => setAddManualOpen(true),
+    onAddManual: (kind) => setAddManualOpen(kind ?? true),
     onAddCode: () => setAddCodeOpen(true),
     onAddCheck: () => setAddCheckOpen(true),
     checkable: canCheck(steps),
@@ -2363,6 +2371,7 @@ function SandboxPageBody() {
     agent: asStep(ADDED.agent, onAddAgentOrTeam),
     decision: asStep(ADDED.decision, onAddDecision),
     manual: asStep(ADDED.manual, onAddManual),
+    approval: asStep(ADDED.approval, onAddManual),
     code: asStep(ADDED.code, onAddCode),
     check: asStep(ADDED.check, onAddCheck),
     result: asStep(ADDED.result, onAddResultInput),
@@ -2563,6 +2572,7 @@ function SandboxPageBody() {
             madeNames={madeByStep}
             onDropOnStep={(id, files) => void stepOf.dropOnStep(id, files)}
             onNest={stepOf.nest}
+            onSetupPrompt={onSetupPrompt}
             canNest={canNest}
             onMoveToSession={edits.onMoveTile}
             onKeepSentWith={(suggestion) => {
@@ -2714,12 +2724,13 @@ function SandboxPageBody() {
       <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void stepOf.sourceTile(ADDED.dataset)((session) => prompts.addDatasetTile({ ...input, session }))} />
       <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void stepOf.sourceTile(ADDED.repo)((session) => prompts.addRepoTile({ ...input, session }))} />
       <AddManualStepDialog
-        open={addManualOpen}
+        open={Boolean(addManualOpen)}
         onOpenChange={setAddManualOpen}
         after={afterStep ? `${afterStep.number} · ${afterStep.title ?? afterStep.defaultTitle}` : null}
         available={manualAvailable}
         inBuild={inBuild}
-        onAdd={(input) => void stepOf.manual(input)}
+        approval={addManualOpen === "approval" ? { steps, afterId: afterStep?.id ?? null } : undefined}
+        onAdd={(input) => void (input.gate ? stepOf.approval : stepOf.manual)(input)}
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void stepOf.check(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void stepOf.code(input)} />
@@ -2736,6 +2747,7 @@ function SandboxPageBody() {
         }}
       />
       <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
+      <SetupPromptWindow id={promptFor} tree={nodes.tree} onCopy={copySetup} onClose={() => setPromptFor(null)} />
       <FullPromptWindow
         steps={steps}
         groups={groups}

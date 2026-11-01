@@ -35,6 +35,7 @@ export const ADDED = {
   agent: "Added an agent",
   decision: "Added a decision",
   manual: "Added a manual step",
+  approval: "Added an approval",
   code: "Added code",
   check: "Added a check",
   result: "Added a result",

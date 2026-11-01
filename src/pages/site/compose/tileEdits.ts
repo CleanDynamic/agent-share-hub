@@ -247,6 +247,8 @@ export function saveTool(view: V<"tool">, input: AddToolInput, runsAt: V<"tool">
 
 export function saveManual(view: V<"manual">, input: AddManualStepInput, h: H): void {
   const id = view.id;
+  // SV-28 P4: an Approval step's window writes its gate, and nothing else.
+  if (input.gate) return void (JSON.stringify(input.gate) !== JSON.stringify(view.gate) && h.onExtras?.(id, { gate: input.gate }));
   const before = manualCurrent(view);
   const text_ = input.lines.join("\n");
   const sameWhere = input.where.kind === "app" && (before.where === null || before.where.kind === "app");
@@ -302,7 +304,7 @@ export function saveAgent(view: V<"agent" | "team">, input: AddAgentInput, h: H)
     const changed = !had || had.harness !== input.harness || had.builtInCode !== (!input.harness && input.builtInCode === true) || !same(had.models.map((row) => [row.model, row.role]), (input.models ?? [{ model: input.model, role: "main" }]).map((row) => [row.model, row.role])) || !same(had.tools, input.tools) || (had.memory ?? "") !== (input.memory ?? "");
     if (changed) h.onAgentSetup?.(id, next);
     if ((input.instructions ?? "") !== view.instructions) h.onInstructions?.(id, input.instructions ?? "");
-  }
+  } else if ((input.instructions ?? "").trim() !== view.instructions) h.onExtras?.(id, { system_prompt: input.instructions?.trim() || null });
   const rows = agentRows(payloadOf(view), view.kind === "team");
   saveRows(
     h,

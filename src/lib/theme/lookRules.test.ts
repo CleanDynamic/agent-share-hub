@@ -1276,6 +1276,26 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ToolPicker.tsx",
   "src/pages/site/compose/toolPickerModel.ts",
   "src/pages/site/compose/tileEdits.ts",
+  // SV-28
+  "src/pages/dev/DeploymentDemo.tsx",
+  "src/lib/build/tileLines.ts",
+  "src/pages/site/compose/SetupPromptWindow.tsx",
+  "src/dev/fixtures/deployment/chief-of-staff.ts",
+  "src/pages/site/build/BuildView.tsx",
+  "src/pages/site/build/buildModel.ts",
+  "src/lib/classify/taxonomy.ts",
+  "src/components/build/JobFields.tsx",
+  "src/components/build/teamLines.tsx",
+  "src/lib/build/harnessMap.ts",
+  "src/lib/build/mentions.ts",
+  "src/lib/build/setupPrompt.ts",
+  "src/lib/build/teamFields.ts",
+  "src/lib/build/trustBoundary.ts",
+  "src/pages/site/compose/AgentTeamDetails.tsx",
+  "src/pages/site/compose/ApprovalForm.tsx",
+  "src/pages/site/compose/TeamWorkFields.tsx",
+  "src/pages/site/compose/composerWindows.tsx",
+  "src/pages/site/compose/openRequestCopy.ts",
 ];
 
 /**

@@ -30,7 +30,9 @@ import { bufferedHandlers } from "./editHandlers";
 import { useBuildHistoryContext } from "./useBuildHistory";
 import { GoesBlock, InsideBlock, MakesBlock, PicturesBlock, RuntimeBlocks, SummaryRow, TitleRow, ToolsUsedBlock, TrainedBlock, UsesBlock, WhereRanBlock } from "./editKit";
 import { ModelRunFields } from "./ModelRunFields";
+import { Block } from "./modalRecipes";
 import { SessionDialog } from "./SessionDialog";
+import { TeamWorkFields } from "./TeamWorkFields";
 import { RunsGroup } from "./RunsFields";
 import {
   agentCurrent,
@@ -164,6 +166,7 @@ function ManualEdit({ view, handlers, inBuild, onClose }: TileEditDialogProps & 
       available
       inBuild={inBuild}
       seed={manualCurrent(view)}
+      approval={view.gate ? { steps: view.steps ?? [], afterId: view.id, gate: view.gate, self: view.id } : undefined}
       edit={{
         title: editTitle(view),
         before: () => <TitleRow id={view.id} title={view.title} defaultTitle={view.defaultTitle} phone={phone} handlers={h} />,
@@ -290,22 +293,27 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
         after: (input) => (
           <>
             {view.kind === "agent" && h.onModelRun && asksHowRun(input.harness, input.model) ? <ModelRunFields id={view.id} run={view.modelRun ?? null} hosts={view.runHosts} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
-            {/* SV-27 P5: framework, compatible models, model routing, approvals, sandbox, role, tool permissions, the Deployment line. */}
-            <Suspense fallback={null}>
-            <AgentRuntimeSection
-              id={view.id}
-              tree={view.deploymentTree ?? []}
-              kind={view.kind}
-              phone={phone}
-              harness={input.harness ?? null}
-              builtInCode={!input.harness && input.builtInCode === true}
-              tools={input.tools ?? []}
-              inTeam={Boolean(view.parent)}
-              onExtras={h.onExtras}
-              onOpenTile={h.onSelect}
-              onAddDeployment={h.onAddDeployment}
-            />
-            </Suspense>
+            {/* SV-28: SV-27's and SV-28's fields take the window's inset, as a Block from modalRecipes. */}
+            <Block>
+              {/* SV-27 P5: framework, compatible models, model routing, approvals, sandbox, role, tool permissions, the Deployment line. */}
+              <Suspense fallback={null}>
+              <AgentRuntimeSection
+                id={view.id}
+                tree={view.deploymentTree ?? []}
+                kind={view.kind}
+                phone={phone}
+                harness={input.harness ?? null}
+                builtInCode={!input.harness && input.builtInCode === true}
+                tools={input.tools ?? []}
+                inTeam={Boolean(view.parent)}
+                onExtras={h.onExtras}
+                onOpenTile={h.onSelect}
+                onAddDeployment={h.onAddDeployment}
+              />
+              </Suspense>
+              {/* SV-28 P5: a team's shared workspace and example run. */}
+              {view.kind === "team" ? <TeamWorkFields id={view.id} tree={view.deploymentTree ?? []} phone={phone} onExtras={h.onExtras} /> : null}
+            </Block>
             <InsideBlock label={view.inside} rows={view.insideRows} phone={phone} handlers={h} />
             {inputs(view, h, phone, false)}
             <RuntimeBlocks view={view} phone={phone} handlers={h} />

@@ -400,6 +400,8 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
   if (ownCode.length > 0) out.add("method", "direct-api", ids(ownCode));
 
   /* ── Autonomy ── */
+  // SV-28 P4: an Approval step (a manual step holding a gate) is an approval gate; the step is the source.
+  const gates = tiles.filter((t) => t.kind === "manual" && t.payload.gate && typeof t.payload.gate === "object");
   const approvalAutonomy = autonomyFromApprovals([...agents, ...teams]);
   if (prompts.length + agents.length + teams.length + codes.length + decisions.length + tiles.filter((t) => t.kind === "manual").length > 0) {
     const everyAgent = [...agents, ...teams];
@@ -407,20 +409,22 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
       out.add("autonomy", "you-do-each-step", ids(prompts));
     } else if (approvalAutonomy) {
       // SV-27 P8: an agent's approval mode says how it is guarded; the least guarded agent decides, its tiles the source.
-      out.add("autonomy", approvalAutonomy.value, approvalAutonomy.ids);
+      if (approvalAutonomy.value === "fully-autonomous" && gates.length > 0) out.add("autonomy", "ai-acts-with-approval-gates", ids(gates));
+      else out.add("autonomy", approvalAutonomy.value, approvalAutonomy.ids);
     } else if (scheduled.length === 0) {
       out.add("autonomy", "ai-suggests-and-you-approve", ids(everyAgent));
     } else {
       // SV-27 P8: a Limits line is a gate only when it names approvals; a budget or a step cap is not one.
       const guarded = (tile: Tile) => truthy(tile.payload.approvals, tile.payload.approval, tile.payload.needs_approval) || namesApproval(tile.payload.limits) || namesApproval(tile.payload.limit);
-      const unguarded = scheduled.filter((tile) => !guarded(tile));
-      out.add("autonomy", unguarded.length > 0 ? "fully-autonomous" : "ai-acts-with-approval-gates", ids(scheduled));
+      const unguarded = gates.length > 0 ? [] : scheduled.filter((tile) => !guarded(tile));
+      out.add("autonomy", unguarded.length > 0 ? "fully-autonomous" : "ai-acts-with-approval-gates", ids(gates.length > 0 ? gates : scheduled));
     }
   }
 
   /* ── Human oversight ── */
   // SV-27 P8: an AI reviewer is a spot check, from the agent's tile; asking before every action is every output reviewed.
   for (const said of oversightFromApprovals([...agents, ...teams])) out.add("oversight", said.value, said.ids);
+  if (gates.length > 0) out.add("oversight", "approved-before-continuing", ids(gates));
   const autonomy = out.result().autonomy?.values[0];
   if (autonomy === "you-do-each-step" || autonomy === "ai-suggests-and-you-approve") out.add("oversight", "every-output-reviewed", ids(prompts));
   else if (checks.length > 0) out.add("oversight", "spot-checks", ids(checks));

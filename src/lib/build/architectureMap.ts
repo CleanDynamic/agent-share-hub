@@ -4,8 +4,10 @@
 //   Column 1 · In      channels, and what How did it run? says starts the agent (On a schedule, When something happened,
 //                      All the time, Ongoing goal)
 //   Column 2 · Agents  each agent or team (harness or framework, model used, approvals; a team its pattern, each agent its
-//                      role), and a relay between the agents it joins, its network under it
-//   Column 3 · Uses    inference servers (the model they serve and its quant type), knowledge base, memory, MCP servers,
+//                      role)
+//   Column 3 · Uses    first a relay, beside the agents it joins (never between them, so the handoff lines between stacked
+//                      agents stay clear), its network under it and one `relays` line to each; then
+//                      inference servers (the model they serve and its quant type), knowledge base, memory, MCP servers,
 //                      tools from Available tools, skills
 //   Column 4 · Out     voice, front end, billing
 //   Below              monitoring, with `watches` lines to what it watches
@@ -19,6 +21,8 @@ import { agentFieldsOf, APPROVAL_LABEL } from "./agentFields";
 import { deploymentName, deploymentTilesOf, idOfRef, providerName, VOICE_MODE_LABEL, type DeploymentTile } from "./deployment";
 import { gpusWord, modelRunOf } from "./modelRun";
 import { agentSetupItemsOf } from "./setup";
+import { mentionsOf } from "./mentions";
+import { agentsOfTeam, handoffsOf, HANDOFF_COPY } from "./teamFields";
 import { AGENT_PATTERN_LABEL, patternOf } from "./tileExtras";
 import type { NodeTree } from "./types";
 
@@ -43,6 +47,10 @@ export interface ArchLine {
   from: string;
   to: string;
   label: string;
+  /** SV-28 P2: a mention with no handoff rule is drawn dotted. */
+  dotted?: true;
+  /** SV-28 P1: a handoff's condition, for the line's tooltip and Details. */
+  when?: string;
   /** Start and end, on the boxes' edges. */
   x1: number;
   y1: number;
@@ -121,7 +129,7 @@ function tileDraft(tile: DeploymentTile, column: ArchColumn, all: readonly Node[
   return { id: tile.id, tile: tile.id, kind: tile.kind, column, title: deploymentName(tile), lines: lines.filter(Boolean) };
 }
 
-const COLUMN_OF: Partial<Record<DeploymentTile["kind"], ArchColumn>> = { channel: 1, relay: 2, inference_server: 3, knowledge_base: 3, memory: 3, voice: 4, front_end: 4, billing: 4, monitoring: 5 };
+const COLUMN_OF: Partial<Record<DeploymentTile["kind"], ArchColumn>> = { channel: 1, relay: 3, inference_server: 3, knowledge_base: 3, memory: 3, voice: 4, front_end: 4, billing: 4, monitoring: 5 };
 
 /** The deployment of a build as boxes, lines and host frames. */
 export function layoutArchitecture(tree: readonly Node[], direction: ArchDirection = "horizontal"): ArchitectureLayout {
@@ -131,10 +139,10 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
   const agents = tree.filter((node) => node.parent_id === null && (node.type === "agent_config" || node.type === "team")).flatMap((node) => [node, ...(node.type === "team" ? (node.children ?? []).filter((child) => child.type === "agent_config") : [])]);
   const parentOf = new Map(agents.flatMap((node) => (node.children ?? []).map((child) => [child.id, node.id] as const)));
   const drafts: Draft[] = [];
-  const edges: { from: string; to: string; label: string }[] = [];
-  const edge = (from: string, to: string, label: string) => {
+  const edges: { from: string; to: string; label: string; dotted?: true; when?: string }[] = [];
+  const edge = (from: string, to: string, label: string, extra?: { dotted?: true; when?: string }) => {
     if (from === to || !drafts.some((draft) => draft.id === from) || !drafts.some((draft) => draft.id === to)) return;
-    if (!edges.some((entry) => entry.from === from && entry.to === to && entry.label === label)) edges.push({ from, to, label });
+    if (!edges.some((entry) => entry.from === from && entry.to === to && entry.label === label)) edges.push({ from, to, label, ...extra });
   };
 
   // Column 1: channels, then what starts each agent.
@@ -143,17 +151,11 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
     const how = str(record(record(agent.payload).runs).how);
     if (TRIGGER_LABEL[how] && !drafts.some((draft) => draft.id === `trigger:${how}`)) drafts.push({ id: `trigger:${how}`, tile: null, kind: "trigger", column: 1, title: TRIGGER_LABEL[how], lines: how === "ongoing" && str(record(record(agent.payload).runs).detail) ? [str(record(record(agent.payload).runs).detail)] : [] });
   }
-  // Column 2: agents and teams, relays between them.
-  const relays = tiles.filter((tile) => tile.kind === "relay");
-  agents.forEach((agent, at) => {
-    drafts.push(agentDraft(agent));
-    // A relay sits between the agents it joins: after the first of them.
-    for (const relay of relays) if (relay.kind === "relay" && relay.payload.joins[0] === agent.id && !drafts.some((draft) => draft.id === relay.id)) drafts.push(tileDraft(relay, 2, all));
-    void at;
-  });
-  for (const relay of relays) if (!drafts.some((draft) => draft.id === relay.id)) drafts.push(tileDraft(relay, 2, all));
-  // Column 3: what the agents use.
-  for (const tile of tiles) if (COLUMN_OF[tile.kind] === 3) drafts.push(tileDraft(tile, 3, all));
+  // Column 2: agents and teams.
+  for (const agent of agents) drafts.push(agentDraft(agent));
+  // Column 3: a relay first, beside the agents it joins (SV-28: never between them), then what the agents use.
+  for (const tile of tiles) if (tile.kind === "relay") drafts.push(tileDraft(tile, 3, all));
+  for (const tile of tiles) if (COLUMN_OF[tile.kind] === 3 && tile.kind !== "relay") drafts.push(tileDraft(tile, 3, all));
   for (const agent of agents) {
     for (const item of agentSetupItemsOf(tree as NodeTree[], agent.id)) if (item.kind === "server" || item.kind === "skill") drafts.push({ id: `setup:${item.id}`, tile: item.id, kind: item.kind, column: 3, title: item.name, lines: [item.kind === "server" ? "MCP server" : "Skill"] });
     const tools = Array.isArray(record(agent.payload).tools) ? (record(agent.payload).tools as unknown[]).filter((tool): tool is string => typeof tool === "string") : [];
@@ -175,6 +177,16 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
     for (const item of agentSetupItemsOf(tree as NodeTree[], agent.id)) if (item.kind === "server" || item.kind === "skill") edge(agent.id, `setup:${item.id}`, item.kind === "server" ? "calls" : "reads");
     const tools = Array.isArray(record(agent.payload).tools) ? (record(agent.payload).tools as unknown[]) : [];
     for (const tool of tools) if (typeof tool === "string") edge(agent.id, `tool:${tool}`, "calls");
+  }
+  // SV-28 P1 and P2: inside a team, one line per handoff rule; a mention of another agent with no rule from A to B, dotted.
+  for (const team of agents.filter((node) => node.type === "team")) {
+    const members = agentsOfTeam(tree as NodeTree[], team.id);
+    for (const agent of members) {
+      const rules = handoffsOf(agent.payload);
+      for (const rule of rules) edge(agent.id, rule.to, HANDOFF_COPY.line, { when: rule.when });
+      const said = mentionsOf(str(record(agent.payload).system_prompt), members.map((member) => ({ id: member.id, role: str(record(member.payload).role), title: member.title ?? null })));
+      for (const mention of said.mentions) if (!rules.some((rule) => rule.to === mention.id)) edge(agent.id, mention.id, "mentions", { dotted: true });
+    }
   }
   for (const tile of tiles) {
     const owner = ownerOf(tile);
@@ -256,6 +268,12 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
     const a = byId.get(entry.from) as ArchBox;
     const b = byId.get(entry.to) as ArchBox;
     const horizontal = direction === "horizontal";
+    // SV-28: two agents of one team sit in the same column (a row, drawn vertically): the line joins their facing edges.
+    if (horizontal ? a.x === b.x : a.y === b.y) {
+      const [p, q] = (horizontal ? a.y <= b.y : a.x <= b.x) ? [a, b] : [b, a];
+      const ends = horizontal ? { x1: p.x + p.w / 2, y1: p.y + p.h, x2: q.x + q.w / 2, y2: q.y } : { x1: p.x + p.w, y1: p.y + p.h / 2, x2: q.x, y2: q.y + q.h / 2 };
+      return { ...entry, x1: round(ends.x1), y1: round(ends.y1), x2: round(ends.x2), y2: round(ends.y2) };
+    }
     const forward = horizontal ? a.x <= b.x : a.y <= b.y;
     const [p, q] = forward ? [a, b] : [b, a];
     const x1 = horizontal ? p.x + p.w : p.x + p.w / 2;

@@ -66,7 +66,7 @@ import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { BuildTitleActions } from "./BuildTitleActions";
 import { PublishChecklist } from "./PublishChecklist";
-import { PublishConfirm } from "./PublishConfirm";
+import { PublishConfirmWindow as PublishConfirm } from "./composerWindows";
 import { PUBLISHED_COPY, PublishedOptions } from "./PublishedMenu";
 import { outlineOnce } from "./buildMotion";
 import { confirmRows, publishedWords, type Checklist, type ChecklistItem, type ConfirmInput, type ConfirmRow } from "@/lib/build/publishChecklist";
@@ -204,7 +204,7 @@ export interface SandboxViewProps extends CardProps {
   onAddDeployment?: (kind: DeploymentKind) => void;
   onWarmDeployment?: () => void;
   /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
-  onAddManual?: () => void;
+  onAddManual?: (kind?: "approval") => void;
   /** CA-02 P7: Add › Code opens the code dialog. Absent, the item stays disabled. */
   onAddCode?: () => void;
   /** CA-03 P5: Add › Check opens the check dialog. Absent, or with nothing yet to check, the item stays disabled. */
@@ -232,7 +232,7 @@ export interface SandboxViewProps extends CardProps {
   onEditSelected?: () => void;
 }
 
-export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "code" | "check" | "result" | "library";
+export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "approval" | "code" | "check" | "result" | "library";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -252,6 +252,8 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "tool", name: "Tool", line: "External app the model used", ready: true },
   { key: "repo", name: "GitHub repository", line: "Repository used in this build", ready: false },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
+  /* SV-28 P4: a manual step that holds a gate; no new node type. */
+  { key: "approval", name: "Approval", line: "A person approves before work continues", ready: true },
   { key: "code", name: "Code", line: "Source code written or run", ready: true },
   { key: "check", name: "Check", line: "Test of part of the build", ready: true },
   { key: "result", name: "Result", line: "Output the build produced", ready: true },
@@ -347,6 +349,7 @@ function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAd
       result: onAddResult,
       agent: onAddAgent,
       manual: onAddManual,
+      approval: onAddManual && (() => onAddManual("approval")),
       code: onAddCode,
       library: onAddFromLibrary,
     };

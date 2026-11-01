@@ -430,6 +430,12 @@ export function rewriteDeploymentRefs<T>(payload: T, map: ReadonlyMap<string, st
   if (Array.isArray(out.serves)) out.serves = out.serves.map((entry) => (isRecord(entry) ? { ...entry, tile: swap(entry.tile) } : entry));
   if (Array.isArray(out.connects)) out.connects = out.connects.map((entry) => (isRecord(entry) && typeof entry.to === "string" && idOfRef(entry.to) ? { ...entry, to: refOf(swap(idOfRef(entry.to)) as string) } : entry));
   if (isRecord(out.runs) && Array.isArray(out.runs.channels)) out.runs = { ...out.runs, channels: out.runs.channels.map(swap) };
+  // SV-28: a handoff's agent, a job's destination tool, a gate's blocked steps and reviewer, who merges and an example run's agents.
+  if (Array.isArray(out.handoffs)) out.handoffs = out.handoffs.map((entry) => (isRecord(entry) ? { ...entry, to: swap(entry.to) } : entry));
+  if (typeof out.destination === "string") out.destination = swap(out.destination);
+  if (isRecord(out.gate)) out.gate = { ...out.gate, ...(Array.isArray(out.gate.blocks) ? { blocks: out.gate.blocks.map(swap) } : null), ...(typeof out.gate.reviewer_agent === "string" ? { reviewer_agent: swap(out.gate.reviewer_agent) } : null) };
+  if (isRecord(out.workspace) && typeof out.workspace.merged_by === "string") out.workspace = { ...out.workspace, merged_by: swap(out.workspace.merged_by) };
+  if (Array.isArray(out.example_run)) out.example_run = out.example_run.map((entry) => (isRecord(entry) ? { ...entry, agent: swap(entry.agent) } : entry));
   if (isRecord(out.modelRun)) {
     const run = { ...out.modelRun };
     if (typeof run.server === "string") run.server = swap(run.server);

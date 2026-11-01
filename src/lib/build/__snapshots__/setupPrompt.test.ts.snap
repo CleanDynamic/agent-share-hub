@@ -1,0 +1,196 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`setupPromptOf: the fixtures > the agent team 1`] = `
+"Use Hermes Agent.
+
+Model: Opus 5.5.
+
+Add the skill release-notes.
+Install the skill email-triage from ClawHub.
+
+Create a shared notes folder of markdown files in Obsidian, synced with git, that the agents read. Add these notes:
+
+voice: How the business writes.
+\`\`\`
+Short sentences. No jargon.
+\`\`\`
+
+clients: Who we work for.
+\`\`\`
+{client_name} pays monthly.
+\`\`\`
+
+Give Researcher persistent memory in Mem0, kept in the cloud.
+Tag each memory with the agent that saved it, and review entries after 90 days.
+Give Writer persistent memory in Mem0, kept in the cloud.
+Tag each memory with the agent that saved it.
+Give Reviewer persistent memory in Mem0, kept in the cloud.
+Tag each memory with the agent that saved it.
+Let the agents reach each other through a relay on Tailscale that queues messages while an agent is offline.
+
+Keep working towards this goal: Keep the launch post on track.
+
+Have an AI reviewer check each action, and ask a person when it is unsure (reviewer model: Haiku 5.5).
+Run commands in a container.
+
+Create three agents that talk in one group chat.
+
+Give every agent these team instructions:
+
+\`\`\`
+Write in plain English for {audience}. Keep every source in the shared notes, and say when you are unsure.
+\`\`\`
+
+Researcher: Find three sources for each claim. Hands off to Writer when three sources are found. Model: Opus 5.5. Connect Slack (read and write), GitHub (read and write) and Gmail (read only).
+Writer: Write the post from the sources, then ask @Reviewer to check it. Hands off to Reviewer when the draft is complete. Model: Sonnet 5.5. Connect Slack (read and write), GitHub (read and write) and Gmail (read only).
+Reviewer: Check the draft against the sources. Hands off to Writer when changes are needed. Model: Qwen2.5. Connect Slack (read and write), GitHub (read and write) and Gmail (read only).
+
+Give each agent its own git worktree, and have Reviewer merge one change at a time.
+
+For example:
+Researcher found three sources on the launch and passed on a source list.
+Writer wrote the first draft and passed on the draft.
+Reviewer asked for a shorter opening and passed on two changes.
+Writer made the changes and passed on the final draft.
+
+Replace {client_name} before running.
+Replace {audience} before running."
+`;
+
+exports[`setupPromptOf: the fixtures > the assistant 1`] = `
+"Use OpenClaw on an always-on machine (Mac Mini).
+
+Model: Opus 5.5. The maker reports it also works with GPT and Gemini.
+
+Give it these instructions:
+
+\`\`\`
+You are {your_name}'s assistant.
+\`\`\`
+
+Create AGENTS.md with this content:
+
+\`\`\`
+I am {your_name}. I run {your_business} for {your_clients}.
+\`\`\`
+
+Add the skill inbox-zero: sorts the inbox.
+Add the skill meeting-prep.
+Add the skill weekly-review.
+
+Add the MCP server gmail. It needs \${GMAIL_TOKEN}.
+Add the MCP server google-calendar. It needs \${GOOGLE_TOKEN}.
+
+Connect Gmail and Google Calendar.
+
+Give it persistent memory in Letta, kept in the cloud.
+Receive and send messages on Telegram. It needs \${TELEGRAM_BOT_TOKEN}.
+Receive and send messages on WhatsApp. It needs \${WHATSAPP_ACCESS_TOKEN}.
+Speak replies with ElevenLabs (text-to-speech).
+Give it a front end built with Claude Design.
+
+Run it all the time as a background service, listening for messages on Telegram and WhatsApp.
+
+Replace {your_name} (your first name) before running.
+Replace {your_business} (your business) before running.
+Replace {your_clients} (who you work for) before running."
+`;
+
+exports[`setupPromptOf: the fixtures > the chief of staff 1`] = `
+"Use Claude Code.
+
+Model: Opus 5.5.
+
+Create a shared notes folder of markdown files in Obsidian, synced with git, that every agent reads. Add these notes:
+
+voice: How the agency writes.
+\`\`\`
+Short sentences. Name the next step. Sign off as {sender_name}.
+\`\`\`
+
+clients: Who the agency works for.
+\`\`\`
+{client_name}: what they buy, who decides, when they last heard from us.
+\`\`\`
+
+pipeline: Deals in progress.
+\`\`\`
+{deal_name}, worth {deal_value}, next step on {next_date}.
+\`\`\`
+
+Give the agents persistent memory in Mem0, kept in the cloud.
+Tag each memory with the agent that saved it, and review entries after 90 days.
+Let the agents reach each other through a relay on Tailscale that queues messages while an agent is offline.
+Receive and send messages on Slack. It needs \${SLACK_BOT_TOKEN}.
+
+Run it when a request arrives in Slack.
+
+Ask before risky actions.
+Run commands in a container.
+
+Create four agents led by the first, who hands work to the others.
+
+Give every agent these team instructions:
+
+\`\`\`
+The Chief of staff reads each request and passes it to one specialist: market questions to @Research, client emails to @Sales, and sheets or schedules to @Operations. Every agent writes for {agency_name} and keeps its notes in the shared folder.
+\`\`\`
+
+Chief of staff: Read each request, decide who does it, and say back who has it. Hands off to Research when it needs research. Hands off to Sales when it needs a client email. Hands off to Operations when it needs a sheet updated. Model: Opus 5.5.
+Research: Find what the request needs from the inbox and the web, and cite where each fact came from. Hands off to Operations when a deal needs adding to the pipeline. Model: Sonnet 5.5. Connect Gmail (read only).
+Operations: Keep the pipeline sheet and the team's schedule up to date. Model: Haiku 5.5. Connect Slack (read and write) and Google Sheets (read and write).
+Sales: Draft replies to clients in the agency's voice. Model: Sonnet 5.5. Connect Gmail (read and write).
+
+Research, job 2: Weekly market report. Deliver a report named Weekly market report to Google Drive, Research folder.
+
+\`\`\`
+Write this week's market report for {agency_name}.
+\`\`\`
+
+Operations, job 2: Pipeline sheet. Deliver a sheet named Weekly pipeline sheet to Google Sheets.
+
+\`\`\`
+Update the pipeline sheet with this week's deals.
+\`\`\`
+
+Sales: For everything you produce: drafts only, never send; one question per email.
+
+Sales: Follow this guidance: Plain English guide (https://www.plainenglish.example/guide).
+
+Sales, job 2: Client follow-up. Deliver a draft named Client follow-up email to Gmail. Wait for approval before delivering it.
+
+\`\`\`
+Draft a follow-up to {client_name} about the proposal.
+\`\`\`
+
+For example:
+Chief of staff read a request for a client follow-up and passed on the request.
+Research pulled the client's last three emails and passed on a short brief.
+Sales drafted the follow-up email and passed on the draft.
+Research found the open deal in the inbox and passed on the deal details.
+Operations added the deal to the pipeline sheet and passed on the updated sheet.
+
+Research reads outside content and passes work to Operations, which can send. Add an approval between them before running.
+Operations reads outside content and can send in Slack and Google Sheets. Add an approval before it acts.
+
+Replace {sender_name} before running.
+Replace {client_name} before running.
+Replace {deal_name} before running.
+Replace {deal_value} before running.
+Replace {next_date} before running.
+Replace {agency_name} before running."
+`;
+
+exports[`setupPromptOf: the fixtures > the self-hosted team 1`] = `
+"Build it in code with LangGraph on an always-on machine (Workstation).
+
+Model: Qwen2.5 32B, Q4_K_M, GGUF, served by Ollama (OpenAI-compatible API).
+
+Watch it with Grafana (tokens per second, latency and GPU use).
+Charge the agent's users through Stripe, usage-based per 1M tokens.
+
+Create two agents that hand work to each other.
+
+Triage. Model: Qwen2.5.
+Resolver. Model: Qwen2.5."
+`;

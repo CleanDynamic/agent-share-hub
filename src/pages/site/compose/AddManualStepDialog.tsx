@@ -32,6 +32,8 @@ import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from 
 import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, GROW, Inline, LabelText, MODAL_WIDTH, OptionGrid, PANEL_LIST, TextLink } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
+import { ApprovalForm, type ApprovalChoices } from "./ApprovalForm";
+import { GATE_COPY, type Gate } from "@/lib/build/teamFields";
 
 export const MANUAL_DIALOG_COPY = {
   title: "Add a manual step",
@@ -64,6 +66,8 @@ export interface AddManualStepInput {
   file: File | null;
   /** CA-18: opened on a step that is there: its picture was taken off, and no other put in its place. */
   pictureRemoved?: boolean;
+  /** SV-28 P4: Add > Approval, or an Approval step's window: the gate it holds (and then no lines). */
+  gate?: Gate;
 }
 
 /** CA-18: what the form starts with on a step that is there. */
@@ -86,6 +90,8 @@ export interface AddManualStepDialogProps {
   inBuild?: readonly string[];
   seed?: ManualSeed | null;
   edit?: EditMode<AddManualStepInput>;
+  /** SV-28 P4: the window is for an Approval step: the steps it can hold back, and its gate when it is there. */
+  approval?: ApprovalChoices & { gate?: Gate | null; self?: string };
 }
 
 function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddManualStepDialogProps, "available" | "onAdd" | "inBuild" | "seed" | "edit"> & { onCancel: () => void; phone: boolean }) {
@@ -190,7 +196,7 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
   );
 }
 
-export function AddManualStepDialog({ open, onOpenChange, after, available, onAdd, inBuild, seed, edit }: AddManualStepDialogProps) {
+export function AddManualStepDialog({ open, onOpenChange, after, available, onAdd, inBuild, seed, edit, approval }: AddManualStepDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddManualStepInput) => {
@@ -198,8 +204,26 @@ export function AddManualStepDialog({ open, onOpenChange, after, available, onAd
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : MANUAL_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={after && !edit ? MANUAL_DIALOG_COPY.after(after) : MANUAL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={edit ? "edit-manual-dialog" : "add-manual-dialog"}>
-      <Form available={available} inBuild={inBuild} seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : approval ? "Add an approval" : MANUAL_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={after && !edit ? MANUAL_DIALOG_COPY.after(after) : approval ? GATE_COPY.addLine : MANUAL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={approval ? (edit ? "edit-approval-dialog" : "add-approval-dialog") : edit ? "edit-manual-dialog" : "add-manual-dialog"}>
+      {approval ? (
+        <ApprovalForm
+          choices={approval}
+          gate={approval.gate}
+          self={approval.self}
+          phone={phone}
+          editing={Boolean(edit)}
+          onCancel={close}
+          onSubmit={(gate) => {
+            const input: AddManualStepInput = { where: { kind: "offline", name: null, url: null }, lines: [], file: null, gate };
+            if (edit) {
+              edit.onSave(input);
+              close();
+            } else add(input);
+          }}
+        />
+      ) : (
+        <Form available={available} inBuild={inBuild} seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
+      )}
     </ModalShell>
   );
 }

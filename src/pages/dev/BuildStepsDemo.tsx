@@ -29,7 +29,7 @@ import { useReaderPostLinks, type ReaderFocus } from "@/pages/site/build/useRead
 
 import type { DesignPageProps } from "./KitPages";
 
-const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one", "one-sitting", "runs-on-github", "everything", "links"];
+const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one", "one-sitting", "runs-on-github", "everything", "links", "chief-of-staff"];
 
 export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const [params] = useSearchParams();

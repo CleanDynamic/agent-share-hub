@@ -378,3 +378,19 @@ describe("deriveClassification: nothing built", () => {
     expect(got.derived.technique?.values).toContain("prompt-chain");
   });
 });
+
+describe("deriveClassification: SV-28 P4, an Approval step", () => {
+  it("is an approval gate for Autonomy and says Approved before continuing, with the step as the source", () => {
+    const gate = node("manual_step", { gate: { approves: "The client email draft", by: "maker", blocks: [] } });
+    const scheduled = agent({ runs: { how: "schedule", detail: "Mondays" } });
+    const got = run([scheduled, gate]).derived;
+    expect(got.autonomy?.values).toEqual(["ai-acts-with-approval-gates"]);
+    expect(got.autonomy?.from).toEqual([gate.id]);
+    expect(got.oversight?.values).toContain("approved-before-continuing");
+    expect(got.oversight?.from).toContain(gate.id);
+    // Without the gate the same build is fully autonomous.
+    expect(values([agent({ runs: { how: "schedule", detail: "Mondays" } })], "autonomy")).toEqual(["fully-autonomous"]);
+    const full = agent({ approval_mode: "full" });
+    expect(values([full, node("manual_step", { gate: { approves: "x", by: "client", blocks: [] } })], "autonomy")).toEqual(["ai-acts-with-approval-gates"]);
+  });
+});

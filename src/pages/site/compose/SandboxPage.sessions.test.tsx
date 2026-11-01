@@ -146,8 +146,8 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     await field();
     fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
     const items = (await screen.findAllByRole("menuitem")).map((item) => item.textContent ?? "");
-    // The thirteen tile items, then SV-27's Deployment group of ten.
-    expect(items).toHaveLength(23);
+    // The fourteen tile items (SV-28 adds Approval), then SV-27's Deployment group of ten.
+    expect(items).toHaveLength(24);
     expect(items.join(" ")).not.toMatch(/session/i);
   });
 
