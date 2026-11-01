@@ -288,6 +288,13 @@
       "when": 1793409182692,
       "tag": "0040_sv24_filter_sets",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793531909996,
+      "tag": "0041_sv27_agent_deployment",
+      "breakpoints": true
     }
   ]
 }

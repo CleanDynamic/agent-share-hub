@@ -1040,6 +1040,35 @@ export type Database = {
           },
         ]
       }
+      build_updates: {
+        Row: {
+          build_id: string
+          created_at: string
+          id: string
+          note: string
+        }
+        Insert: {
+          build_id: string
+          created_at?: string
+          id?: string
+          note: string
+        }
+        Update: {
+          build_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_updates_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       builds: {
         Row: {
           agent_count: number | null
