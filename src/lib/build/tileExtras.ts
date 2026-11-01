@@ -212,9 +212,20 @@ export function checkExtrasOf(payload: Raw): { method?: CheckMethod; reviewer?: 
 
 /* ── an agent and a team (P7) ── */
 
-export const AGENT_PATTERNS = ["sequential", "lead", "parallel", "review"] as const;
+export const AGENT_PATTERNS = ["sequential", "lead", "parallel", "review", "handoff", "group"] as const;
 export type AgentPattern = (typeof AGENT_PATTERNS)[number];
-export const AGENT_PATTERN_LABEL: Record<AgentPattern, string> = { sequential: "Sequential", lead: "Lead with delegates", parallel: "Parallel then merged", review: "Writer and reviewer" };
+export const AGENT_PATTERN_LABEL: Record<AgentPattern, string> = {
+  sequential: "Sequential",
+  lead: "Lead with delegates",
+  parallel: "Parallel then merged",
+  review: "Writer and reviewer",
+  /* SV-27 P5. */
+  handoff: "Agents hand off to each other",
+  group: "Agents talk in one group chat",
+};
+
+/** SV-27 P5: a pattern's line under its label, where it has one. */
+export const AGENT_PATTERN_LINE: Partial<Record<AgentPattern, string>> = { handoff: "LangGraph calls this a swarm." };
 
 export const LIMITS_MAX = 12;
 export const LIMIT_LINE_MAX = 200;

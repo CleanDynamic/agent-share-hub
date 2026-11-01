@@ -142,7 +142,7 @@ describe("Start a new session", () => {
     const block = await screen.findByTestId("arriving-session", undefined, { timeout: 10_000 });
     expect(within(block).queryAllByTestId("arriving-place")).toHaveLength(0);
     await waitFor(() => expect(screen.queryByTestId("arriving-session")).toBeNull(), { timeout: 15_000 });
-    expect(screen.getAllByRole("group", { name: /No app chosen$/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("group", { name: /No harness chosen$/ }).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryByTestId("skeleton-layer")).toBeNull(), { timeout: 5000 });
   });
 });

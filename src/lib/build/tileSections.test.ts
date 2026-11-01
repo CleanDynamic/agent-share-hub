@@ -116,7 +116,7 @@ describe("read", () => {
 
 describe("the foot line", () => {
   it("names what is empty once, and says nothing when nothing is", () => {
-    expect(notSetLine(["Host platform", "Memory", "Sample run"])).toBe("Not set: Host platform, Memory, Sample run. Edit to add them.");
+    expect(notSetLine(["Harness", "Memory", "Sample run"])).toBe("Not set: Harness, Memory, Sample run. Edit to add them.");
     expect(notSetLine([])).toBeNull();
   });
 });

@@ -5,6 +5,7 @@
    numbered by its place among the build's top-level steps (`topSteps`, the numbering `buildSteps` gives the composer and
    the build page), so "Step 7" here is "Step 7" there. */
 
+import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { kindOfNode, topSteps, type StepKind } from "@/lib/build/graph";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
@@ -317,11 +318,11 @@ export interface OfferableSession {
   createdAt: string;
 }
 
-/** A session in the offer dialog: its first prompt for a name, and "<app> · <model> · <day> · n prompts" beneath, "No app chosen" when the app is not known. */
+/** A session in the offer dialog: its first prompt for a name, and "<app> · <model> · <day> · n prompts" beneath, NO_HARNESS when the app is not known. */
 export const offerChoice = (session: OfferableSession): { id: string; name: string; detail: string } => ({
   id: session.id,
   name: session.firstPrompt?.trim().slice(0, 120) || "Untitled session",
-  detail: [toolLabel(session.client) ?? "No app chosen", session.modelName, dayOf(session.createdAt), `${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · "),
+  detail: [toolLabel(session.client) ?? NO_HARNESS, session.modelName, dayOf(session.createdAt), `${session.promptCount} ${session.promptCount === 1 ? "prompt" : "prompts"}`].filter(Boolean).join(" · "),
 });
 
 /** One offer as the request draws it: "@kit · Claude Code · Opus 5.5 · 6 prompts", or "You offered …" for the offerer's own. */

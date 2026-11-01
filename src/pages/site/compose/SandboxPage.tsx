@@ -66,7 +66,7 @@ import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } fr
 import { listPartsOf } from "./partsModel";
 import type { Arriving } from "./arrival";
 import { numberedWithArriving, replacedBy, withArrivingPart, withPartFolds, withParts, withoutSession } from "./sessionModel";
-import { useNodeType } from "@/hooks/useNodeType";
+import { useNodeType, useNodeTypes } from "@/hooks/useNodeType";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
 import { runtimeChecks, runtimeFindings } from "@/lib/build/runtimeChecks";
@@ -86,6 +86,8 @@ import type { PanelName } from "./PanelBoundary";
 import type { AddManualStepDialog as AddManualStepDialogImpl, AddManualStepInput } from "./AddManualStepDialog";
 import type { AddResultDialog as AddResultDialogImpl, AddResultInput } from "./AddResultDialog";
 import type { AddToolDialog as AddToolDialogImpl, AddToolInput } from "./AddToolDialog";
+import type { DeploymentWindow as DeploymentWindowImpl } from "./DeploymentDialog";
+import { deploymentTilesOf, type DeploymentKind } from "@/lib/build/deployment";
 import { buildSummary } from "@/lib/build/buildSummary";
 import type { AddCheckDialog as AddCheckDialogImpl, AddCheckInput } from "./AddCheckDialog";
 import type { AddCodeDialog as AddCodeDialogImpl, AddCodeInput } from "./AddCodeDialog";
@@ -194,6 +196,12 @@ const JUMP_GAP = 24;
 /** SV-26 P3: these windows load the first time they open, or at idle once the composer is ready (lazyWindow.tsx). */
 const AddManualStepDialog = lazyWindow<ComponentProps<typeof AddManualStepDialogImpl>>(() => import("./AddManualStepDialog").then((m) => ({ default: m.AddManualStepDialog })), (p) => p.open);
 const AddResultDialog = lazyWindow<ComponentProps<typeof AddResultDialogImpl>>(() => import("./AddResultDialog").then((m) => ({ default: m.AddResultDialog })), (p) => p.open);
+/** SV-27 P7: the deployment window, its own chunk. */
+const loadDeploymentDialog = () => import("./DeploymentDialog").then((m) => ({ default: m.DeploymentWindow }));
+const DeploymentDialog = lazyWindow<ComponentProps<typeof DeploymentWindowImpl>>(loadDeploymentDialog, (p) => p.kind !== null);
+const warmDeployment = () => void loadDeploymentDialog();
+const MapViews = lazy(() => import("./ArchitectureMap").then((m) => ({ default: m.MapViews })));
+const DeploymentSection = lazy(() => import("./DeploymentSection").then((m) => ({ default: m.DeploymentSection })));
 const AddToolDialog = lazyWindow<ComponentProps<typeof AddToolDialogImpl>>(() => import("./AddToolDialog").then((m) => ({ default: m.AddToolDialog })), (p) => p.open);
 const AddCheckDialog = lazyWindow<ComponentProps<typeof AddCheckDialogImpl>>(() => import("./AddCheckDialog").then((m) => ({ default: m.AddCheckDialog })), (p) => p.open);
 const AddCodeDialog = lazyWindow<ComponentProps<typeof AddCodeDialogImpl>>(() => import("./AddCodeDialog").then((m) => ({ default: m.AddCodeDialog })), (p) => p.open);
@@ -438,6 +446,12 @@ function SandboxPageBody() {
   const datasetAvailable = Boolean(datasetType?.is_active);
   const repoAvailable = Boolean(repoType?.is_active);
   const [addSystemPromptOpen, setAddSystemPromptOpen] = useState(false);
+  /** SV-27 P7: the deployment window: which kind, and the agent it is aimed at (Add deployment on an agent). */
+  const [deploymentOpen, setDeploymentOpen] = useState<DeploymentKind | null>(null);
+  const nodeTypeList = useNodeTypes(compose.nodeTypes);
+  /** SV-27 P7: the build's agents and teams, for a deployment tile's For. */
+  const deploymentTiles = deploymentTilesOf(tree);
+  const deploymentLive = (type: string) => Boolean(nodeTypeList.find((entry) => entry.key === type)?.is_active);
   const [addDatasetOpen, setAddDatasetOpen] = useState(false);
   const [addRepoOpen, setAddRepoOpen] = useState(false);
   /** CA-02 P4: "Add as an agent" opens the dialog with the tool and the field's text, and waits to hear it was saved. */
@@ -2098,6 +2112,10 @@ function SandboxPageBody() {
     checkable: canCheck(steps),
     onAddFromLibrary,
     onWarmLibrary: warmLibrary,
+    // SV-27 P7: Add › Deployment. Each kind is ready once its node type is live; Front end is `live_app`, live already.
+    deploymentLive,
+    onAddDeployment: setDeploymentOpen,
+    onWarmDeployment: warmDeployment,
   };
   /** Choosing a session for the next tile: at once, and a folded session is opened so the tile lands where it can be seen. */
   const aimAt = (key: string) => {
@@ -2191,6 +2209,14 @@ function SandboxPageBody() {
     ) : (
       <NoMap onCreate={() => changeMap({ on: true, direction: "horizontal", onBuildPage: false })} />
     );
+  /* SV-27 P10: Sessions or Architecture. The Map stays open to a build with deployment tiles even under two sessions; the choice
+     is stored through the making writer (`making.map.view`) and changes at once. The architecture view is its own chunk. */
+  const architectureColumn =
+    mapSettings && deploymentTiles.length > 0 ? (
+      <Suspense fallback={mapColumn}>
+        <MapViews made={made} sessions={savedGroups.length} tree={tree} direction={mapSettings.direction} sessionsMap={mapColumn} onView={(view) => changeMap({ ...mapSettings, view })} onOpen={setSelectedId} />
+      </Suspense>
+    ) : null;
   const mapPanel = mapSettings && mapActive ? <SessionMapPanel model={mapModel} selected={mapSelected} onOpenInBuild={openInBuild} onOpenTile={openTileInBuild} /> : null;
 
   /** The handlers Details had, which its tiles' windows now call (CA-18). */
@@ -2497,7 +2523,7 @@ function SandboxPageBody() {
         sessionList={sessionList}
         selectionBar={heldBar.value ? <SelectionBar {...heldBar.value} leaving={heldBar.leaving} /> : null}
         summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
-        map={mapColumn}
+        map={architectureColumn ?? mapColumn}
         mapPanel={mapPanel}
         selectedKey={selectedId}
         onEditSelected={selectedId ? () => openTile(selectedId) : undefined}
@@ -2510,6 +2536,7 @@ function SandboxPageBody() {
         panels={panels}
         emptyBuild={emptyBuildProps}
         list={
+          <>
           <BuildList
             phone={phone}
             steps={steps}
@@ -2592,6 +2619,20 @@ function SandboxPageBody() {
               if (status === "failed") setSessionSaid(arriving?.kind === "empty" ? "Session not made" : "Session not added");
             }}
           />
+              {/* SV-27 P7: the Deployment section, after the last part; unnumbered. Its own chunk, fetched only for a build with deployment tiles. */}
+              {deploymentTiles.length > 0 ? (
+              <Suspense fallback={null}>
+              <DeploymentSection
+                tiles={deploymentTiles}
+                steps={steps}
+                sessionNumber={(key) => savedGroups.find((group) => groupKey(group) === key)?.number ?? null}
+                selectedId={selectedId}
+                phone={phone}
+                onOpen={(id) => setSelectedId(id)}
+              />
+              </Suspense>
+              ) : null}
+          </>
         }
         sources={
           <div ref={sourcesAnchor} style={{ minWidth: 0 }}>
@@ -2684,6 +2725,16 @@ function SandboxPageBody() {
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void stepOf.code(input)} />
       <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void stepOf.result(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void stepOf.tool(input)} />
+      <DeploymentDialog
+        kind={deploymentOpen}
+        onClose={() => setDeploymentOpen(null)}
+        steps={steps}
+        add={prompts.addDeploymentTile}
+        onAdded={(id) => {
+          motion.expect({ kind: "add", keys: [id] });
+          setSelectedId(id);
+        }}
+      />
       <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
       <FullPromptWindow
         steps={steps}

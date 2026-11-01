@@ -46,7 +46,7 @@ import { bracketed } from "./changes";
 import { DECISION_TYPE, modelShort, originalAnswer, questionLine, runsWhenLabel } from "./decision";
 import { runtimeNeeds } from "./runtimeNeeds";
 import { copyTogether } from "./copyTogether";
-import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
+import { isSetupPayload, setupOfNode, setupOwnerKey, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "./making";
 import { modelRunLine } from "./modelRun";
 import { runsWhenLine } from "./runsFrom";
@@ -127,6 +127,13 @@ export interface ReaderSetupItem {
   path: string | null;
   /** CA-05 P6: read at the start, or only when needed. Absent in older fixtures: read as at the start. */
   loaded?: SetupLoaded;
+  /** SV-27 P6: a skill's origin ("Written by the agent", "From ClawHub"), and a registry skill's name there. */
+  origin?: SetupItem["origin"];
+  registry?: string | null;
+  skillName?: string | null;
+  /** SV-27 P6: an instructions file's template, published in place of the original (which stays Not shared). */
+  template?: string | null;
+  variables?: { name: string; description: string }[];
 }
 
 export interface ReaderPasteIn {
@@ -468,8 +475,12 @@ function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
       workflow: item.notShared ? null : item.workflow,
       path: item.path,
       loaded: item.loaded,
+      ...(item.origin ? { origin: item.origin, registry: item.registry, skillName: item.skillName } : null),
+      ...(item.template ? { template: item.template, variables: item.variables } : null),
     };
-    out.set(item.session, [...(out.get(item.session) ?? []), entry]);
+    // SV-27 P6: an agent's items are kept under `agent:<id>`, apart from every session's.
+    const key = setupOwnerKey(item);
+    out.set(key, [...(out.get(key) ?? []), entry]);
   }
   return out;
 }
@@ -678,6 +689,9 @@ export function readerSteps(
   const context = contextFor(tree, making, media);
   return context.topSteps.map((step) => readerStep(step, context, false));
 }
+
+/** SV-27 P6: every setup as the reader gets it, by owner: a session's key, or `agent:<id>` for an agent's own setup. */
+export const readerSetup = (tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderMedia> = new Map()): Map<string, ReaderSetupItem[]> => readSetup(tree, media);
 
 /** The build's results, in order, for the last card and the end of Copy for AI. */
 export function readerResults(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderMedia> = new Map()): ReaderResult[] {
@@ -972,7 +986,7 @@ export function setupSentences(setup: readonly ReaderSetupItem[]): string[] {
   const rules = names("rule");
   if (skills.length > 0) out.push(`Skills: ${join(skills)}.`);
   if (servers.length > 0) out.push(`MCP servers: ${join(servers)}.`);
-  if (rules.length > 0) out.push(`Rules: ${rules.join("; ")}.`);
+  if (rules.length > 0) out.push(`Hooks: ${rules.join("; ")}.`);
   return out;
 }
 

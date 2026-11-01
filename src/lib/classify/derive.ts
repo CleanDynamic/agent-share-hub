@@ -12,7 +12,9 @@
    WHERE A RULE'S EVIDENCE IS NOT BUILT YET (CA-15's Required plan on a Tool tile, a repository's "created here", a
    dataset's use), it is read from the payload key it will use and counts as absent until it is there. */
 
-import { toolFor } from "@/lib/tools/registry";
+import { autonomyFromApprovals, engineAndFramework, namesApproval, oversightFromApprovals } from "@/lib/build/agentFields";
+import { deploymentStack } from "@/lib/build/deployment";
+import { toolFor, toolName } from "@/lib/tools/registry";
 import type { Making } from "@/lib/build/making";
 import {
   AGENT_TYPE,
@@ -142,7 +144,8 @@ const promptTextOf = (tile: Tile): string => str(tile.payload.text) || tile.step
 /** An agent's trigger: "schedule", "event", or "manual" for anything else (including none). */
 const triggerOf = (tile: Tile): "schedule" | "event" | "manual" => {
   const how = tile.step?.runs?.how ?? str(isRecord(tile.payload.runs) ? tile.payload.runs.how : "");
-  return how === "schedule" ? "schedule" : how === "event" ? "event" : "manual";
+  // SV-27 P8: a background service and an ongoing goal start on their own too.
+  return how === "schedule" ? "schedule" : how === "event" || how === "background" || how === "ongoing" ? "event" : "manual";
 };
 
 const truthy = (...values: unknown[]): boolean =>
@@ -392,24 +395,32 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
     if (step.kind === "prompt" && step.tool) noteApp(step.tool, [step.id]);
     if (step.kind === "agent" && step.harness) noteApp(step.harness, [step.id]);
   }
-  const ownCode = [...agents.filter((tile) => !tile.step?.harness && !str(tile.payload.harness).trim()), ...toolTiles.filter((tile) => (tile.step?.app?.connection ?? str(tile.payload.connection)) === "code")];
+  // SV-27: only an agent the maker said is built in code; Not said says nothing about a harness.
+  const ownCode = [...agents.filter((tile) => !tile.step?.harness && !str(tile.payload.harness).trim() && (tile.step?.builtInCode === true || tile.payload.built_in_code === true)), ...toolTiles.filter((tile) => (tile.step?.app?.connection ?? str(tile.payload.connection)) === "code")];
   if (ownCode.length > 0) out.add("method", "direct-api", ids(ownCode));
 
   /* ── Autonomy ── */
+  const approvalAutonomy = autonomyFromApprovals([...agents, ...teams]);
   if (prompts.length + agents.length + teams.length + codes.length + decisions.length + tiles.filter((t) => t.kind === "manual").length > 0) {
     const everyAgent = [...agents, ...teams];
     if (everyAgent.length === 0) {
       out.add("autonomy", "you-do-each-step", ids(prompts));
+    } else if (approvalAutonomy) {
+      // SV-27 P8: an agent's approval mode says how it is guarded; the least guarded agent decides, its tiles the source.
+      out.add("autonomy", approvalAutonomy.value, approvalAutonomy.ids);
     } else if (scheduled.length === 0) {
       out.add("autonomy", "ai-suggests-and-you-approve", ids(everyAgent));
     } else {
-      const guarded = (tile: Tile) => truthy(tile.payload.limits, tile.payload.limit, tile.payload.max_steps, tile.payload.max_turns, tile.payload.budget, tile.payload.approvals, tile.payload.approval, tile.payload.needs_approval);
+      // SV-27 P8: a Limits line is a gate only when it names approvals; a budget or a step cap is not one.
+      const guarded = (tile: Tile) => truthy(tile.payload.approvals, tile.payload.approval, tile.payload.needs_approval) || namesApproval(tile.payload.limits) || namesApproval(tile.payload.limit);
       const unguarded = scheduled.filter((tile) => !guarded(tile));
       out.add("autonomy", unguarded.length > 0 ? "fully-autonomous" : "ai-acts-with-approval-gates", ids(scheduled));
     }
   }
 
   /* ── Human oversight ── */
+  // SV-27 P8: an AI reviewer is a spot check, from the agent's tile; asking before every action is every output reviewed.
+  for (const said of oversightFromApprovals([...agents, ...teams])) out.add("oversight", said.value, said.ids);
   const autonomy = out.result().autonomy?.values[0];
   if (autonomy === "you-do-each-step" || autonomy === "ai-suggests-and-you-approve") out.add("oversight", "every-output-reviewed", ids(prompts));
   else if (checks.length > 0) out.add("oversight", "spot-checks", ids(checks));
@@ -462,6 +473,9 @@ export function deriveClassification(steps: readonly Step[], build: DeriveBuild 
     if (tile.step?.model) noteStack(tile.step.model, "model", [tile.id]);
   }
   for (const tile of codes) noteStack(tile.step?.language ?? str(tile.payload.language), "language", [tile.id]);
+  // SV-27 P8: deployment providers, inference engines and agent frameworks, each from its tiles.
+  for (const entry of deploymentStack(build.tree ?? [])) noteStack(entry.name, "app", [entry.id]);
+  for (const tile of [...agents, ...teams, ...prompts, ...codes]) for (const name of engineAndFramework(tile.payload, tile.step?.modelRun?.engine)) noteStack(toolName(name) ?? name, "app", [tile.id]);
   for (const [value, entry] of stackFrom) out.add("stack", value, [...entry.from]);
 
   /* ── The gap questions ── */

@@ -22,10 +22,11 @@
    between `--hairline-module` dividers 28 wide. Build becomes a module (`flex: 999 1 560px`) holding its head, the
    Map's legend, the map well and its footer line. */
 
+import { deploymentMenuEntries, type DeploymentKind } from "@/lib/build/deployment";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
 import { MoreHorizontal, X } from "lucide-react";
-import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
@@ -198,6 +199,10 @@ export interface SandboxViewProps extends CardProps {
   onAddFromLibrary?: () => void;
   /** SV-18: the pointer or focus is on Add › From Library: fetch the window's code and its reads. */
   onWarmLibrary?: () => void;
+  /** SV-27 P7: the Add menu's Deployment group. */
+  deploymentLive?: (type: string) => boolean;
+  onAddDeployment?: (kind: DeploymentKind) => void;
+  onWarmDeployment?: () => void;
   /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
   onAddManual?: () => void;
   /** CA-02 P7: Add › Code opens the code dialog. Absent, the item stays disabled. */
@@ -283,11 +288,21 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable" | "onAddFromLibrary" | "onWarmLibrary">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable" | "onAddFromLibrary" | "onWarmLibrary"> & {
+  /** SV-27 P7: whether a node type is live, for the Deployment group; each kind is ready only once its type is. */
+  deploymentLive?: (type: string) => boolean;
+  /** SV-27 P7: Add › Deployment › a kind. */
+  onAddDeployment?: (kind: DeploymentKind) => void;
+  /** SV-27 P7: warm the deployment window's chunk on hover or focus. */
+  onWarmDeployment?: () => void;
+};
 
 /** One item of the Add menu, wired: what it calls, whether it is enabled. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
-  key: AddKey;
+  /** SV-27 P7: a Deployment item is `deploy:<kind>`. */
+  key: AddKey | `deploy:${DeploymentKind}`;
+  /** SV-27 P7: the group head drawn before the first item of a group ("Deployment"). */
+  group?: string;
   name: string;
   line: string;
   enabled: boolean;
@@ -304,7 +319,14 @@ export const DECISION_OFF_LINE = "Not available yet";
 /** CA-15 P9: the line under Add › System prompt, Dataset or GitHub repository while its node type is not live. */
 export const TILE_OFF_LINE = "Not available yet";
 
-export function addEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false, onAddFromLibrary, onWarmLibrary }: AddMenuProps): AddEntry[] {
+export function addEntries(props: AddMenuProps): AddEntry[] {
+  return [...tileEntries(props), ...deploymentEntries(props)];
+}
+
+/** SV-27 P7: the Deployment group, after the existing items; each kind ready once its node type is live (Front end already is). */
+const deploymentEntries = ({ deploymentLive, onAddDeployment, onWarmDeployment }: AddMenuProps): AddEntry[] => (deploymentLive ? deploymentMenuEntries(deploymentLive, onAddDeployment, onWarmDeployment, TILE_OFF_LINE) : []);
+
+function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false, onAddFromLibrary, onWarmLibrary }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
     if (item.key === "system_prompt" || item.key === "dataset" || item.key === "repo") {
       const live = item.key === "system_prompt" ? systemPromptAvailable : item.key === "dataset" ? datasetAvailable : repoAvailable;
@@ -506,7 +528,12 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
               }}
             />
           ) : (
-            entries.map((item) => <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />)
+            entries.map((item) => (
+              <Fragment key={item.key}>
+                {item.group ? <p style={{ ...text(11.5, 500, t.label), margin: "12px 16px 4px" }}>{item.group}</p> : null}
+                <SheetRow name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
+              </Fragment>
+            ))
           )}
         </BrandBottomSheet>
       </>
@@ -520,8 +547,9 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
         <MenuContent align={variant === "row" ? "start" : "end"} sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={asking ? (event) => event.preventDefault() : backToAdd}>
           {entries.map((item) => {
             return (
+              <Fragment key={item.key}>
+              {item.group ? <Menu.Label style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{item.group}</Menu.Label> : null}
               <Menu.Item
-                key={item.key}
                 disabled={!item.enabled}
                 onPointerEnter={item.onWarm}
                 onFocus={item.onWarm}
@@ -537,6 +565,7 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
               >
                 <AddLabel name={item.name} line={item.line} />
               </Menu.Item>
+              </Fragment>
             );
           })}
         </MenuContent>
@@ -1172,6 +1201,9 @@ function SandboxBody(props: SandboxViewProps) {
       checkable={props.checkable}
       onAddFromLibrary={props.onAddFromLibrary}
       onWarmLibrary={props.onWarmLibrary}
+      deploymentLive={props.deploymentLive}
+      onAddDeployment={props.onAddDeployment}
+      onWarmDeployment={props.onWarmDeployment}
     />
   );
   const buildPanel = (

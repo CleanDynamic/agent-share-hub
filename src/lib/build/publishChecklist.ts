@@ -116,8 +116,8 @@ export function publishChecklist(input: ChecklistInput): Checklist {
       key: "apps",
       section: "recommended",
       done: false,
-      words: `Apps for ${plural(input.appless.length, "session", "sessions")}`,
-      detail: `${numbers.length === 1 ? "Session" : "Sessions"} ${listOf(numbers)} ${numbers.length === 1 ? "has" : "have"} no app`,
+      words: "Sessions with no harness",
+      detail: `${numbers.length === 1 ? "Session" : "Sessions"} ${listOf(numbers)} ${numbers.length === 1 ? "has" : "have"} no harness`,
       action: { id: "show_apps", label: "Show" },
       sessions: input.appless.map((session) => session.key),
     });

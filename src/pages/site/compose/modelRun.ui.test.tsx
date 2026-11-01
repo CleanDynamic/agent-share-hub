@@ -60,28 +60,28 @@ describe("the windows", () => {
   it("asks How it was run and Where for a prompt on Ollama, and says the model line", () => {
     const { view } = promptWindow("p1");
     expect((view as PromptView).detailLine).toContain("Muse Spark Open · 4-bit · on my own computer");
-    expect(screen.getByRole("button", { name: "How it was run" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Precision" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Where" })).toBeTruthy();
   });
 
   it("does not ask for a prompt on a hosted model", () => {
     promptWindow("p2");
-    expect(screen.queryByRole("button", { name: "How it was run" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Precision" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Where" })).toBeNull();
   });
 
   it("saves the size from the menu, keeping where", () => {
     const { props } = promptWindow("p1");
-    fireEvent.keyDown(screen.getByRole("button", { name: "How it was run" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Precision" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "8-bit" }));
     expect(props.onModelRun).toHaveBeenCalledWith("p1", { precision: "8-bit", where: "computer" });
   });
 
   it("takes an Other size of up to 20 characters", () => {
     const { props } = promptWindow("p1", null);
-    fireEvent.keyDown(screen.getByRole("button", { name: "How it was run" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Precision" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Other" }));
-    const field = screen.getByRole("textbox", { name: "How it was run: Other" }) as HTMLInputElement;
+    const field = screen.getByRole("textbox", { name: "Precision: Other" }) as HTMLInputElement;
     expect(field.maxLength).toBe(20);
     fireEvent.change(field, { target: { value: "Q5_K_M" } });
     fireEvent.keyDown(field, { key: "Enter" });
@@ -97,7 +97,7 @@ describe("the windows", () => {
 
   it("asks for an agent that runs in Ollama, and writes it on Save", () => {
     const props = agentWindow("a1");
-    fireEvent.keyDown(screen.getByRole("button", { name: "How it was run" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Precision" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitemradio", { name: "8-bit" }));
     expect(props.onModelRun).not.toHaveBeenCalled();
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
@@ -128,5 +128,60 @@ describe("the model line elsewhere", () => {
     const tools = whatYouNeed(readerSteps(t, null), t, null).find((group) => group.key === "tools");
     expect(tools?.rows.map((row) => row.title)).toContain("Muse Spark Open");
     expect(tools?.rows.map((row) => row.title).join()).not.toContain("4-bit");
+  });
+});
+
+// SV-27 Part 4: the new fields, under "More about how it was served"; Where offers the build's Host tiles by name; Split shows
+// only when the chosen host has two or more GPUs.
+describe("SV-27 P4: how it was served", () => {
+  const withHost = (gpus: number): NodeTree[] => [
+    ...tree({ precision: "Q4_K_M", host: "h1" }),
+    node("h1", "host", { machine: "workstation", name: "Workstation", always_on: true, ...(gpus > 0 ? { gpus: [{ model: "RTX 5090", count: gpus, vram_gb: 32 }] } : null) }, 4),
+  ];
+  function hostWindow(gpus: number) {
+    const t = withHost(gpus);
+    const steps = buildSteps(t);
+    const view = resolveView({ selectedId: "p1", steps, groups: [], tree: t, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined });
+    const handlers = { onModel: vi.fn(), onModelRun: vi.fn(), onAddUse: vi.fn(), onAttach: vi.fn(), onRemoveUse: vi.fn(), onAddMade: vi.fn(), onRemoveMade: vi.fn(), onFields: vi.fn() };
+    render(<FullPromptWindow steps={steps} openId="p1" mode="maker" onClose={vi.fn()} onTitle={vi.fn()} details={() => view as PromptView} handlers={handlers} />);
+    return { handlers, view: view as PromptView };
+  }
+
+  it("saves each new key from its field", () => {
+    const { props } = promptWindow("p1");
+    fireEvent.click(screen.getByRole("button", { name: "More about how it was served" }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Weights format" }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "GGUF" }));
+    expect(props.onModelRun).toHaveBeenLastCalledWith("p1", { ...RUN, weights_format: "GGUF" });
+    const typed = (name: string, value: string) => {
+      const field = screen.getByRole("textbox", { name });
+      fireEvent.change(field, { target: { value } });
+      fireEvent.keyDown(field, { key: "Enter" });
+    };
+    typed("Parameter count", "32B");
+    expect(props.onModelRun).toHaveBeenLastCalledWith("p1", expect.objectContaining({ parameters: "32B" }));
+    typed("Context length", "32768");
+    expect(props.onModelRun).toHaveBeenLastCalledWith("p1", expect.objectContaining({ context_length: 32768 }));
+    typed("Inference engine", "llama.cpp");
+    expect(props.onModelRun).toHaveBeenLastCalledWith("p1", expect.objectContaining({ engine: "llama.cpp" }));
+    typed("Draft model (speculative decoding)", "Qwen 0.5B");
+    expect(props.onModelRun).toHaveBeenLastCalledWith("p1", expect.objectContaining({ draft_model: "Qwen 0.5B" }));
+  });
+
+  it("offers the Host tile by name under Where, and the line names its GPUs", () => {
+    const { view } = hostWindow(2);
+    expect(view.detailLine).toContain("Muse Spark Open · Q4_K_M · 2 × RTX 5090");
+    fireEvent.keyDown(screen.getByRole("button", { name: "Where" }), { key: "Enter" });
+    expect(screen.getByRole("menuitemradio", { name: "Workstation" })).toBeTruthy();
+  });
+
+  it("shows Split across GPUs only for a host with two or more GPUs", () => {
+    hostWindow(2);
+    fireEvent.click(screen.getByRole("button", { name: "More about how it was served" }));
+    expect(screen.getByRole("button", { name: "Split across GPUs" })).toBeTruthy();
+    cleanup();
+    hostWindow(1);
+    fireEvent.click(screen.getByRole("button", { name: "More about how it was served" }));
+    expect(screen.queryByRole("button", { name: "Split across GPUs" })).toBeNull();
   });
 });

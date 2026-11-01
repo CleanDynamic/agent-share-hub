@@ -48,6 +48,8 @@ export const TYPED_TOOL_MAX = 40;
 
 export type PickerRow =
   | { kind: "none" }
+  /** SV-27: an agent's "Built in code (no harness)", a choice of its own beside "Not sure" (the none row). */
+  | { kind: "code" }
   | { kind: "heading"; label: string }
   /** `line` is a quiet line under the name; `unavailable` draws the row as one that does not fit, and `pickable` says whether it can still be picked. */
   | { kind: "tool"; tool: Tool; line?: string; unavailable?: boolean; pickable?: boolean }
@@ -72,6 +74,8 @@ export interface PickerInput {
    * helpers, an agent's "Runs in" and answer shapes set it; every other picker leaves runtime models out (`excludeRuntime`).
    */
   runtime?: boolean;
+  /** SV-27: offer "Built in code (no harness)" after the none row (an agent's Harness). */
+  codeRow?: boolean;
 }
 
 /** Whether a tool runs prompts by itself and is never named on a prompt (Hermes Agent, Manus). */
@@ -168,11 +172,11 @@ function allGrouped(step: StepKey, list: ToolList, runtime: boolean): PickerRow[
   return runtime ? [...runtimeRows(), ...rest] : rest;
 }
 
-export function pickerRows({ query, inBuild, expanded, allowNone, step, list = "ai", runtime = false }: PickerInput): PickerRow[] {
+export function pickerRows({ query, inBuild, expanded, allowNone, step, list = "ai", runtime = false, codeRow = false }: PickerInput): PickerRow[] {
   const ok = fits(step, list);
   const inList = (tool: Tool) => tool.lists.includes(list) && (runtime || tool.category !== "runtime");
   const toolRows = (tools: readonly Tool[]): PickerRow[] => tools.map((tool) => fittingRow(tool, step));
-  const rows: PickerRow[] = allowNone ? [{ kind: "none" }] : [];
+  const rows: PickerRow[] = [...(allowNone ? [{ kind: "none" } as const] : []), ...(codeRow ? [{ kind: "code" } as const] : [])];
   const typed = query.trim();
 
   if (!typed) {

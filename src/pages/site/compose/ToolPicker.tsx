@@ -44,6 +44,10 @@ export interface ToolPickerProps {
   placeholder?: string;
   /** CA-12 P13: the list offered: AI tools (the default) or apps and services. */
   list?: ToolList;
+  /** SV-27: an agent's Harness: the "Built in code (no harness)" row's words, whether it is the choice, and what choosing it does. */
+  code?: { label: string; chosen: boolean; onChoose: () => void };
+  /** SV-27: what the trigger says when the none row is the choice, when that differs from the row's words ("Not said"). */
+  noneShown?: string;
   /** CA-12 P11: nothing has been chosen yet, even though "none" is a choice: the trigger shows the placeholder, not the none row's words. */
   unpicked?: boolean;
   /** CA-13 rule 5: offer the Runtime models and services subcategory first (Decision dialog, helpers, "Runs in", answer shapes). */
@@ -62,10 +66,12 @@ const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.ki
 export const FLOATING_Z = 52;
 
 /** The words a row reads as. */
-function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): string {
+function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai", codeLabel = ""): string {
   switch (row.kind) {
     case "none":
       return noneLabel;
+    case "code":
+      return codeLabel;
     case "tool":
       return row.tool.name;
     case "showAll":
@@ -84,7 +90,7 @@ function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai"): 
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Select a tool", list = "ai", unpicked = false, runtime = false, quiet = false, field: asField = false, small = false }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel, placeholder = "Select a tool", list = "ai", unpicked = false, runtime = false, quiet = false, field: asField = false, small = false, code, noneShown }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -95,15 +101,17 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
 
   const chosen = toolFor(value);
   const typedValue = value && !chosen ? value.trim() : null;
-  const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel && !unpicked ? noneLabel : placeholder);
+  const shown = chosen ? chosen.name : typedValue || (code?.chosen ? code.label : allowNone && noneLabel && !unpicked ? (noneShown ?? noneLabel) : placeholder);
+  const codeRow = Boolean(code);
 
-  const rows = pickerRows({ query, inBuild, expanded, allowNone, step, list, runtime });
+  const rows = pickerRows({ query, inBuild, expanded, allowNone, step, list, runtime, codeRow });
   const pickable = rows.filter(isPickable);
   const current = Math.min(active, Math.max(pickable.length - 1, 0));
   const rowId = (row: PickerRow) => `${uid}-row-${pickable.indexOf(row)}`;
 
   const isChosen = (row: PickerRow): boolean => {
-    if (row.kind === "none") return !value;
+    if (row.kind === "none") return !value && !code?.chosen;
+    if (row.kind === "code") return !value && code?.chosen === true;
     if (row.kind === "tool") return chosen?.id === row.tool.id;
     if (row.kind === "use") return typedValue !== null && typedValue.toLowerCase() === row.name.toLowerCase();
     return false;
@@ -114,7 +122,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     if (!next) return;
     setQuery("");
     setExpanded(false);
-    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone, step, list, runtime }).filter(isPickable);
+    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone, step, list, runtime, codeRow }).filter(isPickable);
     setActive(Math.max(0, first.findIndex(isChosen)));
   };
 
@@ -125,6 +133,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
       return;
     }
     if (row.kind === "none") onChange(null);
+    else if (row.kind === "code") code?.onChoose();
     else if (row.kind === "tool") onChange(row.tool.id);
     else if (row.kind === "use") onChange(row.name.trim().slice(0, TYPED_TOOL_MAX));
     else return;
@@ -275,11 +284,11 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                   {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={16} /> : null}
                   {row.kind === "tool" && row.line ? (
                     <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, padding: "4px 0" }}>
-                      <span>{rowName(row, noneLabel, list)}</span>
+                      <span>{rowName(row, noneLabel, list, code?.label)}</span>
                       <span style={text(11.5, 400, t.label)}>{row.line}</span>
                     </span>
                   ) : (
-                    <span style={{ minWidth: 0 }}>{rowName(row, noneLabel, list)}</span>
+                    <span style={{ minWidth: 0 }}>{rowName(row, noneLabel, list, code?.label)}</span>
                   )}
                 </div>
               ),

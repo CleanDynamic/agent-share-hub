@@ -13,6 +13,10 @@
 // EVERY WRITE refuses bad input through buildLayerError with a message made of
 // identifiers and fixed words only, never the text the maker wrote (CONTRACT §9).
 
+import { DEPLOYMENT_KIND_NAME, cleanDeployment, deploymentKindOf, moveMemoryNote, typeOfKind, type DeploymentKind } from "./deployment";
+import { agentFieldsRefusal } from "./agentFields";
+// SV-27 P9: the API estimate and measured speed cleaners, registered for `setExtras`.
+import "./costFields";
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, REPLY_MAX, swapMoves } from "./composePrompts";
@@ -83,12 +87,18 @@ export interface Use {
 }
 
 /** CA-04 P6: "goal" ran until a goal was reached; "script" ran from a script or GitHub, its command or workflow as the detail. */
-export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event" | "goal" | "script";
+/**
+ * SV-27 P5: "background" runs all the time as a background service (its detail, what it listens for); "ongoing" keeps working on
+ * an ongoing goal (its detail, the goal). `channels`: the Channel tiles that start runs, for "event" and "background".
+ */
+export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event" | "goal" | "script" | "background" | "ongoing";
 
 export interface Runs {
   how: RunsHow;
   count?: number;
   detail?: string;
+  /** SV-27 P5: node ids of Channel tiles with `starts_runs`, for "event" and "background". */
+  channels?: string[];
 }
 
 /** One of an agent's models and what it does there (CA-02 P5). The first is always "main". */
@@ -132,8 +142,10 @@ export interface Step {
   filename?: string | null;
   /** CA-02 P7, code only: "start reading here". */
   entrypoint?: boolean;
-  /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null for its maker's own code. */
+  /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null when it names none. */
   harness?: string | null;
+  /** SV-27: the agent is built in the maker's own code (no harness), as the maker said (`payload.built_in_code`). */
+  builtInCode?: boolean;
   /** CA-02 P5, an agent only: its models with their roles, when it has more than one. */
   models?: AgentModel[];
   /** CA-02 P5, an agent only: the integration nodes it was allowed to call. */
@@ -355,7 +367,16 @@ const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
 export const DECISION_TYPE_MISSING = "Decisions need the CA-13 database change. Ask Lovable to apply it.";
 
 const USE_KINDS: readonly UseKind[] = ["output", "file", "tool"];
-const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event", "goal", "script"];
+const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event", "goal", "script", "background", "ongoing"];
+
+/** SV-27 P5: the longest a background service's detail and an ongoing goal are. */
+export const BACKGROUND_DETAIL_MAX = 80;
+export const ONGOING_DETAIL_MAX = 120;
+/** The most Channel tiles a way of running names. */
+export const RUNS_CHANNELS_MAX = 10;
+
+/** SV-27 P5: the ways of running that a message on a channel can start. */
+export const runsTakeChannels = (how: RunsHow | null | undefined): boolean => how === "event" || how === "background";
 
 /** CA-04 P6: the longest command or workflow a step that ran from a script keeps. */
 export const SCRIPT_DETAIL_MAX = 4000;
@@ -429,9 +450,13 @@ export function parseRuns(value: unknown): Runs | null {
   if (!isRecord(value) || !RUNS_HOWS.includes(value.how as RunsHow)) return null;
   const runs: Runs = { how: value.how as RunsHow };
   if (runs.how === "parallel" && typeof value.count === "number" && Number.isFinite(value.count)) runs.count = value.count;
-  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event" || runs.how === "script") {
+  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event" || runs.how === "script" || runs.how === "background" || runs.how === "ongoing") {
     const detail = stringOf(value.detail)?.trim();
     if (detail) runs.detail = detail;
+  }
+  if (runsTakeChannels(runs.how) && Array.isArray(value.channels)) {
+    const channels = [...new Set(value.channels.filter((id): id is string => typeof id === "string" && id.length > 0))].slice(0, RUNS_CHANNELS_MAX);
+    if (channels.length > 0) runs.channels = channels;
   }
   return runs;
 }
@@ -484,6 +509,10 @@ export function runsLabel(runs: Runs | null | undefined): string {
       return "Until a goal was reached";
     case "script":
       return "From a script or GitHub";
+    case "background":
+      return `All the time, as a background service${detail}`;
+    case "ongoing":
+      return `Keeps working on an ongoing goal${detail}`;
     default:
       return "";
   }
@@ -636,7 +665,7 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
 }
 
 /** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound" | "limits" | "output" | "sample"> {
+function agentFacts(payload: Payload): Pick<Step, "harness" | "builtInCode" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound" | "limits" | "output" | "sample"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
@@ -645,6 +674,7 @@ function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRe
   const changesEachRound = stringOf(payload.changes_each_round)?.trim().slice(0, CHANGES_EACH_ROUND_MAX);
   return {
     harness: harness ? (toolName(harness) ?? harness) : null,
+    ...(!harness && payload.built_in_code === true ? { builtInCode: true } : null),
     ...(models.length > 1 ? { models } : null),
     ...(toolRefs.length ? { toolRefs } : null),
     ...(memory ? { memory } : null),
@@ -1398,9 +1428,14 @@ function runsPayload(operation: string, runs: Runs | null | undefined): Json | n
     // The goal is the session's (making.sessions_meta), never repeated here.
   } else {
     const detail = (runs.detail ?? "").trim();
-    const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : WHEN_DETAIL_MAX;
+    const max = runs.how === "until" ? UNTIL_DETAIL_MAX : runs.how === "script" ? SCRIPT_DETAIL_MAX : runs.how === "background" ? BACKGROUND_DETAIL_MAX : runs.how === "ongoing" ? ONGOING_DETAIL_MAX : WHEN_DETAIL_MAX;
     if (detail.length > max) throw refuse(operation, `Line: ${max} characters max`);
     if (detail) next.detail = detail;
+  }
+  if (runsTakeChannels(runs.how) && runs.channels && runs.channels.length > 0) {
+    const channels = [...new Set(runs.channels.filter((id) => typeof id === "string" && id.length > 0))];
+    if (channels.length > RUNS_CHANNELS_MAX) throw refuse(operation, `Up to ${RUNS_CHANNELS_MAX} channels.`);
+    next.channels = channels;
   }
   return next as unknown as Json;
 }
@@ -1415,8 +1450,13 @@ const titleOrNull = (value: string | null | undefined): string | null => value?.
 
 /** What an agent ran in, the models it used and the tools it could call (CA-02 P5). Every key is optional. */
 export interface AgentSetup {
-  /** A tool id or a typed name; null or absent for the maker's own code. */
+  /** A tool id or a typed name; null or absent when it names none. */
   harness?: string | null;
+  /**
+   * SV-27: Harness has three states: a harness picked; Built in code (no harness), stored as `built_in_code: true`; and Not sure,
+   * which stores neither. An old agent with no harness reads as Not sure: the two cannot be told apart.
+   */
+  builtInCode?: boolean;
   /** Every model with its role, the main one first. Stored only when there is more than one. */
   models?: readonly AgentModel[];
   /** The integration nodes the agent may call. */
@@ -1433,7 +1473,7 @@ export interface AgentSetup {
  * The payload keys an agent's setup writes, checked. `model` is the main model and stays required: everything that
  * reads an agent reads it. A row of `models` with no model is refused; so is a fifth row.
  */
-function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory, memoryTidy, changesEachRound }: AgentSetup): Payload {
+function setupPayload(operation: string, model: string, { harness, builtInCode, models, toolRefs, memory, memoryTidy, changesEachRound }: AgentSetup): Payload {
   const main = model.trim();
   if (!main) throw refuse(operation, "An agent needs a model.");
   const out: Payload = { model: main };
@@ -1441,6 +1481,8 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   if (named) {
     if (named.length > HARNESS_MAX) throw refuse(operation, `Harness: ${HARNESS_MAX} characters max`);
     out.harness = toolFor(named)?.id ?? named;
+  } else if (builtInCode) {
+    out.built_in_code = true;
   }
   if (models && models.length > 0) {
     if (models.length > AGENT_MODELS_MAX) throw refuse(operation, `Models: ${AGENT_MODELS_MAX} max`);
@@ -1704,9 +1746,12 @@ export async function setAgentSetup(node: BuildNode, { model, ...setup }: { mode
   const keys = setupPayload("setAgentSetup", model, setup);
   const payload = { ...payloadOf(node) };
   payload.model = keys.model;
-  if ("harness" in setup) {
+  if ("harness" in setup || "builtInCode" in setup) {
     if (keys.harness) payload.harness = keys.harness;
     else delete payload.harness;
+    // SV-27: Built in code is kept only with no harness; Not sure stores neither.
+    if (keys.built_in_code === true) payload.built_in_code = true;
+    else delete payload.built_in_code;
   }
   if ("models" in setup) {
     if (keys.models) payload.models = keys.models;
@@ -3050,6 +3095,9 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
  * value takes the key off; every other key of the payload is written back as it was read.
  */
 export async function setExtras(node: BuildNode, patch: Record<string, unknown>): Promise<BuildNode> {
+  // SV-27 P5: a role is only for an agent inside a team.
+  const notHere = agentFieldsRefusal(node, patch);
+  if (notHere) throw refuse("setExtras", notHere);
   let cleaned: Record<string, Json | null>;
   try {
     cleaned = cleanExtras(node.type, patch);
@@ -3062,4 +3110,50 @@ export async function setExtras(node: BuildNode, patch: Record<string, unknown>)
     else payload[key] = value;
   }
   return upsertNode(withPayload(node, payload));
+}
+
+// --- SV-27 P7: deployment tiles ------------------------------------------------------------------------------------------
+
+/** A deployment tile to add: its kind, its payload (Part 3's fields), and its title, if the maker gave one. */
+export interface DeploymentTileInput {
+  kind: DeploymentKind;
+  payload: Record<string, unknown>;
+  title?: string | null;
+}
+
+/**
+ * Add a deployment tile at the top level. Not a step: it takes no number (`isStepNode` leaves it out). Refused while its node type
+ * is not live (the migration), and for any payload `deploymentRefusal` refuses (an address, a key, a relay with one agent).
+ */
+export async function addDeploymentTile(buildId: string, tree: readonly NodeTree[], input: DeploymentTileInput): Promise<BuildNode> {
+  const type = typeOfKind(input.kind);
+  if (input.kind !== "front_end") await requireLiveType("addDeploymentTile", type, `${DEPLOYMENT_KIND_NAME[input.kind]} is not available yet: its node type is not switched on in the database.`);
+  // Part 3.4: a Memory tile for an agent that has the old Memory note takes the note into `keeps`, and the agent's note goes.
+  const agentId = typeof input.payload.agent === "string" ? input.payload.agent : null;
+  const agent = input.kind === "memory" && agentId ? flattenTree(tree).find((node) => node.id === agentId && node.type === AGENT_TYPE) : undefined;
+  const moved = agent && typeof payloadOf(agent).memory === "string" ? moveMemoryNote(payloadOf(agent), input.payload) : null;
+  let payload: Record<string, unknown>;
+  try {
+    payload = cleanDeployment(input.kind, moved ? moved.memory : input.payload) as unknown as Record<string, unknown>;
+  } catch (cause) {
+    throw refuse("addDeploymentTile", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  const created = await placeTopNode(buildId, tree, { type, title: titleOrNull(input.title), payload: payload as Json });
+  if (agent && moved) await upsertNode(withPayload(agent, moved.agent as Payload));
+  return created;
+}
+
+const flattenTree = (nodes: readonly NodeTree[]): NodeTree[] => nodes.flatMap((node) => [node, ...flattenTree(node.children ?? [])]);
+
+/** Change a deployment tile's payload: checked as on add; the rest of the tile is kept. */
+export async function setDeploymentTile(node: BuildNode, payload: Record<string, unknown>): Promise<BuildNode> {
+  const kind = deploymentKindOf({ type: node.type, payload: { ...payloadOf(node), ...payload } });
+  if (!kind) throw refuse("setDeploymentTile", "That is not part of the deployment.");
+  let cleaned: Record<string, unknown>;
+  try {
+    cleaned = cleanDeployment(kind, { ...payloadOf(node), ...payload }) as unknown as Record<string, unknown>;
+  } catch (cause) {
+    throw refuse("setDeploymentTile", cause instanceof Error ? cause.message : "That value is not allowed.");
+  }
+  return upsertNode(withPayload(node, cleaned as unknown as Payload));
 }

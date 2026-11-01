@@ -111,7 +111,7 @@ describe.each(SHAPE_KEYS)("the %s shape", (key) => {
       if (typeof payload.model === "string" && entry.type !== "agent_config") expect(text, entry.id).toContain(payload.model);
       if (entry.type === "agent_config") {
         expect(text, entry.id).toContain(String(payload.model));
-        if (payload.harness) expect(text, entry.id).toContain("Host platform");
+        if (payload.harness) expect(text, entry.id).toContain("Harness");
         for (const extra of agentModelsOf(payload).length > 1 ? agentModelsOf(payload) : []) expect(text, entry.id).toContain(`${extra.model} · ${extra.role}`);
         for (const ref of (payload.tools as { tool_ref: string }[] | undefined) ?? []) expect(text, entry.id).toContain(String((byId.get(ref.tool_ref)?.payload as { service?: string }).service));
       }
@@ -312,7 +312,7 @@ describe("CA-04 P7: one sitting, then agents; and a session that runs on GitHub"
     }
     expect(container.querySelectorAll('[data-testid="sent-with-tile"]')).toHaveLength(2);
     const md = stepsMarkdown({ title: "T" }, steps);
-    expect(md).toContain("Skills: order-forms.\nMCP servers: github.\nRules: After a tool runs: npm test.");
+    expect(md).toContain("Skills: order-forms.\nMCP servers: github.\nHooks: After a tool runs: npm test.");
     cleanup();
   });
 

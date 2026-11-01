@@ -297,9 +297,9 @@ export function saveAgent(view: V<"agent" | "team">, input: AddAgentInput, h: H)
   const now = agentCurrent(view);
   if (input.name !== (view.name ?? null) && (input.name ?? "") !== (view.name ?? "")) h.onRename(id, input.name ?? "");
   if (view.kind === "agent") {
-    const next = { model: input.model, harness: input.harness, ...(input.models ? { models: input.models } : null), tools: input.tools, ...(input.memory !== undefined ? { memory: input.memory } : view.setup?.memory ? { memory: "" } : null) };
-    const had = view.setup ? { harness: view.setup.harness, models: view.setup.models, tools: view.setup.tools, memory: view.setup.memory ?? undefined } : null;
-    const changed = !had || had.harness !== input.harness || !same(had.models.map((row) => [row.model, row.role]), (input.models ?? [{ model: input.model, role: "main" }]).map((row) => [row.model, row.role])) || !same(had.tools, input.tools) || (had.memory ?? "") !== (input.memory ?? "");
+    const next = { model: input.model, harness: input.harness, builtInCode: !input.harness && input.builtInCode === true, ...(input.models ? { models: input.models } : null), tools: input.tools, ...(input.memory !== undefined ? { memory: input.memory } : view.setup?.memory ? { memory: "" } : null) };
+    const had = view.setup ? { harness: view.setup.harness, builtInCode: view.setup.builtInCode === true, models: view.setup.models, tools: view.setup.tools, memory: view.setup.memory ?? undefined } : null;
+    const changed = !had || had.harness !== input.harness || had.builtInCode !== (!input.harness && input.builtInCode === true) || !same(had.models.map((row) => [row.model, row.role]), (input.models ?? [{ model: input.model, role: "main" }]).map((row) => [row.model, row.role])) || !same(had.tools, input.tools) || (had.memory ?? "") !== (input.memory ?? "");
     if (changed) h.onAgentSetup?.(id, next);
     if ((input.instructions ?? "") !== view.instructions) h.onInstructions?.(id, input.instructions ?? "");
   }

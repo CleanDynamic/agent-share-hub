@@ -91,6 +91,20 @@ export type ToolModels =
 
 export type StepKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "result" | "code";
 
+/** SV-27 P8: where a provider fits: a deployment kind, the model run's engine, or a model router. */
+export type ProviderFit = "host" | "inference_server" | "memory" | "knowledge_base" | "relay" | "channel" | "voice" | "front_end" | "monitoring" | "billing" | "engine" | "router" | "network";
+
+/** SV-27 P8: facts a harness's source page states. */
+export interface ToolFacts {
+  hosting?: "vendor" | "self-hosted";
+  licence?: string;
+  defaults?: { approval_mode?: "full" | "risky" | "every" | "reviewer"; sandbox?: "none" | "container" | "vm" | "vendor" };
+  /** The month the source was read: "2026-10". */
+  checked: string;
+  /** The page the facts were read from. */
+  source: string;
+}
+
 export interface Tool {
   /** CA-12 P13: the lists it is offered in. */
   lists: readonly ToolList[];
@@ -132,6 +146,19 @@ export interface Tool {
   readsOutside?: true;
   /** CA-05 P8: the tool runs models on the maker's own computer, so how it was run (size, where) is worth saying. */
   local?: true;
+  /**
+   * SV-27 P8: what the tool's own source page states about it, filled only from that page and never from memory: who hosts it,
+   * its licence, its defaults for approvals and sandbox, and the month the page was read. A fact with no source stays empty.
+   * (Named `facts`, not `checked`: `checked` is already the date the model list was read.)
+   */
+  facts?: ToolFacts;
+  /**
+   * SV-27 P8: the deployment kinds the tool is offered on (a Channel's provider, a Memory's, an inference server ...), the model
+   * run's engine, or a model router. Named `deploys`, not `steps`: `steps` are the Add items a tool is named on.
+   */
+  deploys?: readonly ProviderFit[];
+  /** SV-27 P8: the secret a copier needs for it, named and never stored ("TELEGRAM_BOT_TOKEN"). */
+  secret?: string;
   /** CA-16: how a build made in this tool was made, as a Build method id in `lib/classify/taxonomy.ts`. Set for the tools the classification reads. */
   buildMethod?: BuildMethodId;
 }
@@ -413,6 +440,9 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
     status: "current",
     source: "https://docs.openclaw.ai/providers/models",
     checked: "2026-10-19",
+    // SV-27 P8: from https://docs.openclaw.ai/tools/exec-approvals, read 2026-10: "An unconfigured node uses the same `full` /
+    // `off` baseline as the Gateway." (security full, ask off: it runs commands without asking). The page names no default sandbox.
+    facts: { defaults: { approval_mode: "full" }, checked: "2026-10", source: "https://docs.openclaw.ai/tools/exec-approvals" },
   },
   {
     id: "hermes-agent", name: "Hermes Agent", group: "agents", logo: "hermesagent", aliases: [],
@@ -424,6 +454,10 @@ const ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
     status: "current",
     source: "https://hermes-agent.nousresearch.com/docs/integrations/providers",
     checked: "2026-10-19",
+    // SV-27 P8: from https://hermes-agent.nousresearch.com/docs/user-guide/security/, read 2026-10: approvals.mode defaults to
+    // "smart": an auxiliary model approves low-risk commands, denies dangerous ones and asks when uncertain (our "reviewer"). The
+    // page names no default sandbox.
+    facts: { defaults: { approval_mode: "reviewer" }, checked: "2026-10", source: "https://hermes-agent.nousresearch.com/docs/user-guide/security/" },
   },
   {
     id: "muse", name: "Muse", group: "agents", logo: null, aliases: ["meta muse", "muse by meta"],
@@ -659,6 +693,8 @@ const APP_ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   app("shopify", "Shopify", ["shopify.com"]),
   app("twilio", "Twilio", ["twilio.com"]),
   app("resend", "Resend", ["resend.com"]),
+  /* SV-27 P8: an integration an agent's MCP server reaches. */
+  app("google-calendar", "Google Calendar", ["gcal", "calendar"], null, true),
 ];
 
 /** CA-13: a model or service that is part of the finished product. A neutral glyph, no logo; it runs no session, so it fits no Add item. */
@@ -688,7 +724,61 @@ const RUNTIME_ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
   runtime("deep-agents", "LangChain Deep Agents", "runtime-frameworks", ["deep agents", "deepagents", "langchain deep agents"]),
   runtime("langgraph", "LangGraph", "runtime-frameworks", ["lang graph"]),
   runtime("langsmith", "LangSmith", "runtime-tracing", ["lang smith", "smith.langchain.com"]),
+  /* SV-27 P8. */
+  runtime("crewai", "CrewAI", "runtime-frameworks", ["crew ai"]),
 ];
+
+/**
+ * SV-27 P8: providers a deployment names that are not tools anyone works in: offered only on the kinds they fit (`deploys`), in
+ * no tool picker (`lists: []`). A neutral mark: no logo is fetched from outside.
+ */
+const provider = (id: string, name: string, aliases: string[], deploys: readonly ProviderFit[], secret?: string): Omit<Tool, "lists" | "category"> => ({
+  id,
+  name,
+  group: "services",
+  logo: null,
+  aliases,
+  kind: "runtime",
+  models: { mode: "none" },
+  steps: [],
+  status: "current",
+  source: null,
+  checked: null,
+  unverified: true,
+  deploys,
+  ...(secret ? { secret } : null),
+});
+
+const PROVIDER_ENTRIES: readonly Omit<Tool, "lists" | "category">[] = [
+  provider("llama-cpp", "llama.cpp", ["llama-server", "llamacpp", "llama cpp", "llama server"], ["engine", "inference_server"]),
+  provider("vllm", "vLLM", ["vllm server"], ["engine", "inference_server"]),
+  provider("mlx", "MLX", ["mlx-lm", "apple mlx"], ["engine"]),
+  provider("letta", "Letta", ["memgpt"], ["memory"], "LETTA_API_KEY"),
+  provider("mem0", "Mem0", ["mem 0", "mem0ai"], ["memory"], "MEM0_API_KEY"),
+  provider("telegram", "Telegram", ["telegram bot"], ["channel"], "TELEGRAM_BOT_TOKEN"),
+  provider("whatsapp", "WhatsApp", ["whats app", "whatsapp business"], ["channel"], "WHATSAPP_ACCESS_TOKEN"),
+  provider("hume", "Hume", ["hume ai", "evi"], ["voice"], "HUME_API_KEY"),
+  provider("claude-design", "Claude Design", [], ["front_end"]),
+  provider("grafana", "Grafana", [], ["monitoring"]),
+  provider("prometheus", "Prometheus", [], ["monitoring"]),
+  provider("langfuse", "Langfuse", ["lang fuse"], ["monitoring"], "LANGFUSE_SECRET_KEY"),
+  provider("obsidian", "Obsidian", ["obsidian vault"], ["knowledge_base"]),
+  provider("tailscale", "Tailscale", ["tail scale"], ["network"], "TS_AUTHKEY"),
+  provider("openrouter", "OpenRouter", ["open router"], ["router"], "OPENROUTER_API_KEY"),
+];
+
+/** SV-27 P8: tools already in the list that a deployment also names, and where. */
+const ALSO_DEPLOYS: Readonly<Record<string, { deploys: readonly ProviderFit[]; secret?: string }>> = {
+  ollama: { deploys: ["inference_server"] },
+  "lm-studio": { deploys: ["inference_server"] },
+  elevenlabs: { deploys: ["voice"], secret: "ELEVENLABS_API_KEY" },
+  slack: { deploys: ["channel"], secret: "SLACK_BOT_TOKEN" },
+  stripe: { deploys: ["billing"], secret: "STRIPE_SECRET_KEY" },
+  lovable: { deploys: ["front_end"] },
+  notion: { deploys: ["knowledge_base"] },
+  langsmith: { deploys: ["monitoring"], secret: "LANGSMITH_API_KEY" },
+  gmail: { deploys: [] },
+};
 
 /** CA-12 P13: in both lists: an AI workflow or a place work happens. Everything else in the original list is an AI tool, bar the two apps. */
 const IN_BOTH = new Set(["n8n", "zapier", "make", "elevenlabs", "notion", "figma"]);
@@ -697,11 +787,18 @@ const APP_ONLY = new Set(["vercel", "gmail"]);
 const listsOf = (id: string): readonly ToolList[] => (APP_ONLY.has(id) ? ["app"] : IN_BOTH.has(id) ? ["ai", "app"] : ["ai"]);
 
 /** Every entry, AI tool or app, for looking a name up. */
+const withDeploys = (tool: Tool): Tool => (ALSO_DEPLOYS[tool.id] ? { ...tool, ...ALSO_DEPLOYS[tool.id] } : tool);
+
 export const TOOLS: readonly Tool[] = [
-  ...ENTRIES.map((entry): Tool => ({ ...entry, lists: listsOf(entry.id), category: "workspace" })),
-  ...APP_ENTRIES.map((entry): Tool => ({ ...entry, lists: ["app"], category: "workspace" })),
-  ...RUNTIME_ENTRIES.map((entry): Tool => ({ ...entry, lists: ["ai"], category: "runtime" })),
+  ...ENTRIES.map((entry): Tool => withDeploys({ ...entry, lists: listsOf(entry.id), category: "workspace" })),
+  ...APP_ENTRIES.map((entry): Tool => withDeploys({ ...entry, lists: ["app"], category: "workspace" })),
+  ...RUNTIME_ENTRIES.map((entry): Tool => withDeploys({ ...entry, lists: ["ai"], category: "runtime" })),
+  /* SV-27 P8: in no picker list; offered only on the deployment kinds they fit. */
+  ...PROVIDER_ENTRIES.map((entry): Tool => ({ ...entry, lists: [], category: "runtime" })),
 ];
+
+/** SV-27 P8: the providers offered on a deployment kind, the model run's engine or a model router. */
+export const providersFor = (fit: ProviderFit): Tool[] => TOOLS.filter((tool) => tool.deploys?.includes(fit) && tool.status === "current");
 
 /**
  * CA-13 rule 5: THE ONE FILTER. Anything that picks where work was done (a session, a prompt, an agent's tool, "Written

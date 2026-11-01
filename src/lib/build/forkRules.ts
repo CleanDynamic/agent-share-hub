@@ -19,7 +19,8 @@ import { DECISION_TYPE, checkLine, decisionOf } from "./decision";
 
 type Payload = Record<string, unknown>;
 
-export const EVIDENCE_KEYS = ["build_cost", "run_cost", "trace_url"] as const;
+/** SV-27 P9: a Result's or Check's measured speed is evidence too: the copy has not run. */
+export const EVIDENCE_KEYS = ["build_cost", "run_cost", "trace_url", "measured"] as const;
 
 const isRecord = (value: unknown): value is Payload => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
@@ -34,6 +35,11 @@ export function methodOf<T extends object | null | undefined>(payload: T): T {
       const { did: _did, ...rest } = helper;
       return rest;
     });
+  }
+  // SV-27 P6: a context file made into a template travels as its template and variables; the original file (Not shared) does not.
+  if (isRecord(out.setup) && out.setup.kind === "instructions" && typeof out.template === "string" && out.template && out.not_shared === true) {
+    delete out.media_id;
+    delete out.url;
   }
   // A decision's answer is the original's: it stays, as what the copy is checked against.
   if (isRecord(out.answer) && Array.isArray(out.questions)) {

@@ -7,7 +7,7 @@
 
    A prompt opens in `FullPromptWindow`; a session is `SessionDialog`; this takes every other kind that has a window. */
 
-import { useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { asksHowRun } from "@/lib/build/modelRun";
@@ -81,6 +81,10 @@ interface Session {
   /** Close, dropping what is queued. */
   discard: (open: boolean) => void;
 }
+
+
+/** SV-27 P5: the agent's deployment fields, their own chunk (the composer's stays within its budget). */
+const AgentRuntimeSection = lazy(() => import("./AgentRuntimeFields").then((m) => ({ default: m.AgentRuntimeSection })));
 
 function useEditing(handlers: DetailsHandlers, onClose: () => void, view?: DetailsView | null): Session {
   const [buffer] = useState(() => new WriteBuffer());
@@ -285,7 +289,23 @@ function AgentEdit({ view, handlers, inBuild, teamsAvailable = true, onClose }: 
         },
         after: (input) => (
           <>
-            {view.kind === "agent" && h.onModelRun && asksHowRun(input.harness, input.model) ? <ModelRunFields id={view.id} run={view.modelRun ?? null} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
+            {view.kind === "agent" && h.onModelRun && asksHowRun(input.harness, input.model) ? <ModelRunFields id={view.id} run={view.modelRun ?? null} hosts={view.runHosts} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
+            {/* SV-27 P5: framework, compatible models, model routing, approvals, sandbox, role, tool permissions, the Deployment line. */}
+            <Suspense fallback={null}>
+            <AgentRuntimeSection
+              id={view.id}
+              tree={view.deploymentTree ?? []}
+              kind={view.kind}
+              phone={phone}
+              harness={input.harness ?? null}
+              builtInCode={!input.harness && input.builtInCode === true}
+              tools={input.tools ?? []}
+              inTeam={Boolean(view.parent)}
+              onExtras={h.onExtras}
+              onOpenTile={h.onSelect}
+              onAddDeployment={h.onAddDeployment}
+            />
+            </Suspense>
             <InsideBlock label={view.inside} rows={view.insideRows} phone={phone} handlers={h} />
             {inputs(view, h, phone, false)}
             <RuntimeBlocks view={view} phone={phone} handlers={h} />

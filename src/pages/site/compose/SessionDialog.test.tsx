@@ -43,7 +43,7 @@ describe("the Session modal", () => {
     expect(screen.getByRole("dialog", { name: "Session 2 · Claude Code" })).toBeTruthy();
     openOptional();
     const text = dialog().textContent ?? "";
-    const order = ["App and model", "Date", "Worked until", "What it cost", "Started with", "Own copy of the code", "Ran alongside", "Setup", "Prompts shared"].map((label) => text.indexOf(label));
+    const order = ["Harness and model", "Date", "Worked until", "What it cost", "Started with", "Own copy of the code", "Ran alongside", "Setup", "Prompts shared"].map((label) => text.indexOf(label));
     expect(order.every((at) => at >= 0)).toBe(true);
     expect([...order]).toEqual([...order].sort((a, b) => a - b));
   });

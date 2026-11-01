@@ -13,6 +13,7 @@
    A PROMPT FROM A SESSION is refused when it is already in the build, and
    while it is on its way, so a double press adds it once. */
 
+import { DEPLOYMENT_KIND_NAME } from "@/lib/build/deployment";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -55,6 +56,9 @@ import {
   addMadeFile as writeMadeFile,
   addTool,
   addToolTile as addToolStep,
+  addDeploymentTile as addDeploymentStep,
+  setDeploymentTile,
+  type DeploymentTileInput,
   type ToolTileInput,
   addSystemPromptTile as addSystemPromptStep,
   addDatasetTile as addDatasetStep,
@@ -172,6 +176,8 @@ export interface AgentSetupInput {
   /** The main model. */
   model: string;
   harness?: string | null;
+  /** SV-27: Built in code (no harness); absent or false with no harness is Not sure. */
+  builtInCode?: boolean;
   /** Every model with its role, the main one first; only when there is more than one. */
   models?: AgentModel[];
   /** Tool ids or typed names: each becomes a reference to the build's integration node for it, made when missing. */
@@ -262,6 +268,10 @@ export interface ComposePrompts {
   addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** CA-12 P7: a tool as a tile in a session: the app, how it was connected, what it did. Resolves the new node's id. */
   addToolTile: (input: ToolTileInput) => Promise<string | null>;
+  /** SV-27 P7: a deployment tile (Host, Memory, Channel ...); resolves its id, or null if it failed. */
+  addDeploymentTile: (input: DeploymentTileInput) => Promise<string | null>;
+  /** SV-27 P7: change a deployment tile's fields. */
+  setDeployment: (id: string, payload: Record<string, unknown>) => void;
   /** CA-15 P9: a system prompt, a dataset and a GitHub repository as tiles; each resolves its id, or null if it failed. */
   addSystemPromptTile: (input: SystemPromptInput) => Promise<string | null>;
   addDatasetTile: (input: DatasetInput) => Promise<string | null>;
@@ -632,6 +642,8 @@ export function useComposePrompts({
     void writeStep(id, "Response not saved", (node) => setPromptReply(node, reply.trim() || null));
   const setExtrasOf = (id: string, patch: Record<string, unknown>) =>
     void writeStep(id, "Optional fields not saved", (node) => setExtras(node, patch));
+  const setDeployment = (id: string, payload: Record<string, unknown>) =>
+    void writeStep(id, "Deployment not saved", (node) => setDeploymentTile(node, payload));
   const setTextOf = (id: string, text: string) =>
     void writeStep(id, "Prompt not saved", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
@@ -723,6 +735,15 @@ export function useComposePrompts({
       return created.id;
     }, null);
 
+  /** SV-27 P7: Add › Deployment: one queued write through the composer's node writer. */
+  const addDeploymentTile = (input: DeploymentTileInput) =>
+    attempt(`${DEPLOYMENT_KIND_NAME[input.kind]} not added`, async () => {
+      const build = await latest.current.ensureBuild();
+      const created = await addDeploymentStep(build, nodes.current(), input);
+      nodes.record(created.id, created);
+      return created.id;
+    }, null);
+
   /** The build's integration node for each tool, made when there is none yet (CA-02 P5). Runs inside the queue. */
   const toolRefsFor = async (build: string, tools: readonly string[]): Promise<string[]> => {
     const refs: string[] = [];
@@ -739,14 +760,14 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, builtInCode, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
     attempt(`${capital(kind)} not added`, async () => {
       const build = await latest.current.ensureBuild();
       const toolRefs = await toolRefsFor(build, tools ?? []);
       // Only the keys given: an agent made without them is written exactly as before.
       const setup = {
         ...(instructions ? { instructions } : null),
-        ...(harness ? { harness } : null),
+        ...(harness ? { harness } : builtInCode ? { builtInCode: true } : null),
         ...(models && models.length > 1 ? { models } : null),
         ...(toolRefs.length ? { toolRefs } : null),
         ...(memory?.trim() ? { memory } : null),
@@ -803,13 +824,13 @@ export function useComposePrompts({
       return true;
     }, false);
 
-  const setAgent = (id: string, { model, harness, models, tools, memory }: AgentSetupInput) =>
+  const setAgent = (id: string, { model, harness, builtInCode, models, tools, memory }: AgentSetupInput) =>
     void attempt("Agent not saved", async () => {
       const build = await latest.current.ensureBuild();
       const toolRefs = await toolRefsFor(build, tools ?? []);
       const node = findNode(nodes.current(), id);
       if (!node) return;
-      nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs, ...(memory !== undefined ? { memory } : null) }));
+      nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, builtInCode: !harness && builtInCode === true, models: models ?? [], toolRefs, ...(memory !== undefined ? { memory } : null) }));
       noteTool(build, harness);
     }, undefined);
 
@@ -941,5 +962,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

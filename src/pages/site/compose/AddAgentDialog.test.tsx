@@ -65,7 +65,7 @@ describe("the Add dialog", () => {
     expect(screen.getByTestId("optional-count").textContent).toBe("9 fields");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByLabelText("System instructions")).toBeNull();
-    expect(names()).toEqual(["System instructions", "Available tools", "Trigger", "Host platform", "Memory", "Helpers", "Limits", "Output and destination", "Sample run"]);
+    expect(names()).toEqual(["System instructions", "Available tools", "Trigger", "Harness", "Memory", "Helpers", "Limits", "Output and destination", "Sample run"]);
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }));
     expect(names().at(-1)).toBe("Orchestration pattern");
     expect(screen.getByTestId("optional-count").textContent).toBe("10 fields");
@@ -130,17 +130,17 @@ describe("the Add dialog", () => {
 
 describe("the host platform, its models and its tools (CA-02 P5)", () => {
   const pickHarness = (query: string, row: string | RegExp) => {
-    openRow("Host platform");
-    fireEvent.click((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement));
+    openRow("Harness");
+    fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
     fireEvent.click(screen.getByRole("option", { name: row }));
   };
   const openModel = (name: string | RegExp) => fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
 
-  it("has no default for Host platform (it asks), and an unchosen host takes any model", () => {
+  it("has no default for Harness (it asks), and an unchosen host takes any model", () => {
     open();
-    openRow("Host platform");
-    expect((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement).textContent).toBe("Select a platform");
+    openRow("Harness");
+    expect((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement).textContent).toBe("Select a harness");
     openModel(`model ${DEFAULT_AGENT_MODEL}`);
     expect(screen.getByRole("menuitem", { name: "Other model…" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Grok 4.7" })).toBeTruthy();
@@ -245,7 +245,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
   it("opens with Add as an agent's tool and text, the instructions held in their Optional row", () => {
     const props = open({ seed: { harness: "hermes-agent", instructions: "Triage my inbox" } });
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
-    expect(rowOf("Host platform").textContent).toContain("Hermes Agent");
+    expect(rowOf("Harness").textContent).toContain("Hermes Agent");
     expect((within(rowOf("System instructions")).getByRole("textbox") as HTMLTextAreaElement).value).toBe("Triage my inbox");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL, harness: "hermes-agent", tools: [], instructions: "Triage my inbox" });
@@ -302,19 +302,20 @@ describe("the trigger and the system instructions (CA-12 P11, CA-15 P7)", () => 
     expect(box.placeholder).not.toMatch(/^e\.g\./);
   });
 
-  it("hands back the instructions and a schedule, and Not sure leaves the host empty", () => {
+  it("hands back the instructions and a schedule, and Not sure leaves the harness empty", () => {
     const props = open();
     openRow("System instructions");
     fireEvent.change((screen.getAllByLabelText("System instructions").at(-1) as HTMLElement), { target: { value: "Triage my inbox" } });
     openRow("Trigger");
     fireEvent.click(screen.getByRole("radio", { name: "Scheduled" }));
     fireEvent.change(screen.getByLabelText("Schedule"), { target: { value: "Mondays 07:00" } });
-    openRow("Host platform");
-    fireEvent.click((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement));
+    openRow("Harness");
+    fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
     fireEvent.click(screen.getByRole("option", { name: "Not sure" }));
-    expect((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement).textContent).toBe("Not sure");
+    expect((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement).textContent).toBe("Not said");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ instructions: "Triage my inbox", harness: null, runs: { how: "schedule", detail: "Mondays 07:00" } }));
+    expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0]).not.toHaveProperty("builtInCode");
   });
 
   it("an event trigger asks for the triggering event, and is stored as an event", () => {
@@ -367,13 +368,13 @@ describe("limits, output, sample run and orchestration pattern (CA-15 P7)", () =
     expect(props.onAdd).not.toHaveBeenCalled();
   });
 
-  it("shows the orchestration pattern only for a team, with four choices, and never hands one back for a single agent", () => {
+  it("shows the orchestration pattern only for a team, with six choices, and never hands one back for a single agent", () => {
     const props = open();
     expect(screen.queryByText("Orchestration pattern")).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }));
     openRow("Orchestration pattern");
     const grid = screen.getByRole("group", { name: "Orchestration pattern" });
-    expect(within(grid).getAllByRole("button").map((button) => button.textContent)).toEqual(["Sequential", "Lead with delegates", "Parallel then merged", "Writer and reviewer"]);
+    expect(within(grid).getAllByRole("button").map((button) => button.textContent)).toEqual(["Sequential", "Lead with delegates", "Parallel then merged", "Writer and reviewer", "Agents hand off to each other", "Agents talk in one group chat"]);
     fireEvent.click(within(grid).getByRole("button", { name: "Parallel then merged" }));
     expect(within(grid).getByRole("button", { name: "Parallel then merged" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.one) }));
@@ -390,14 +391,14 @@ describe("limits, output, sample run and orchestration pattern (CA-15 P7)", () =
 });
 
 describe("CA-13 · Deep Agents and supporting models in the Add dialog", () => {
-  it("offers the Runtime models and services subcategory first under Host platform, with Deep Agents and LangGraph in Agent frameworks", () => {
+  it("offers the Runtime models and services subcategory first under Harness, with Deep Agents and LangGraph in Agent frameworks", () => {
     open();
-    openRow("Host platform");
-    fireEvent.click((screen.getAllByRole("button", { name: "Host platform" }).at(-1) as HTMLElement));
+    openRow("Harness");
+    fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
     const rows = screen.getAllByRole("option").map((row) => row.textContent ?? "");
     expect(screen.getByText("Runtime models and services")).toBeTruthy();
-    // "Not sure", then the subcategory's own rows before any other tool.
-    expect(rows.slice(0, 3)).toEqual(["Not sure", "TypeSafe Jev", "ScaleDown Summarize"]);
+    // "Not sure" and "Built in code (no harness)", then the subcategory's own rows before any other tool.
+    expect(rows.slice(0, 4)).toEqual(["Not sure", "Built in code (no harness)", "TypeSafe Jev", "ScaleDown Summarize"]);
     expect(screen.getAllByText("Agent frameworks").length).toBeGreaterThan(0);
     expect(screen.getAllByText("LangChain Deep Agents").length).toBeGreaterThan(0);
     expect(screen.getAllByText("LangGraph").length).toBeGreaterThan(0);

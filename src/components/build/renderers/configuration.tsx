@@ -7,6 +7,7 @@
 // configuration types share one code path and a fifth added to the registry
 // renders without a change here. Nothing in this file switches on node.type.
 
+import { HARNESS_COPY } from "@/lib/build/harnessWords";
 import type { ReactNode } from "react";
 import { agentModelsOf } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
@@ -96,6 +97,7 @@ export function AgentConfigRenderer(props: NodeProps) {
     "output",
     "sample",
     "harness",
+    "built_in_code",
     "models",
     ...AGENT_PARAM_KEYS,
     ...AGENT_TEST_KEYS,
@@ -112,9 +114,10 @@ export function AgentConfigRenderer(props: NodeProps) {
 
         <KeyValueGrid pairs={params} />
 
-        {harness ? (
-          <Field label="Host platform">
-            <Prose>{toolName(harness) ?? harness}</Prose>
+        {harness || payload.built_in_code === true ? (
+          <Field label={HARNESS_COPY.label}>
+            {/* SV-27: Built in code is said; Not said shows nothing. */}
+            <Prose>{harness ? (toolName(harness) ?? harness) : HARNESS_COPY.builtInCode}</Prose>
           </Field>
         ) : null}
 

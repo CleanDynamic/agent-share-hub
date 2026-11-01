@@ -24,3 +24,10 @@ export function useNodeType(known: readonly NodeType[], key: string): NodeType |
   const list = needsRegistry ? (registry.data ?? []) : known;
   return list.find((type) => type.key === key) ?? null;
 }
+
+/** SV-27 P7: every node type, from the record or the one registry read, for a check over several keys (the Deployment group). */
+export function useNodeTypes(known: readonly NodeType[]): readonly NodeType[] {
+  const needsRegistry = known.length === 0;
+  const registry = useQuery({ queryKey: nodeTypesKey, queryFn: getNodeTypes, staleTime: Infinity, enabled: needsRegistry });
+  return needsRegistry ? (registry.data ?? []) : known;
+}

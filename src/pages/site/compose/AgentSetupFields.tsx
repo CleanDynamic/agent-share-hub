@@ -29,6 +29,7 @@
    text link under them; Host platform a picker field ("Select a platform"); Available tools a small "Select tools" button
    with the chosen tools as tags; Memory one field. Details keeps its own look. */
 
+import { HARNESS_COPY } from "@/lib/build/harnessWords";
 import { useAnnounce } from "./BuildAnnouncer";
 import { X } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
@@ -47,10 +48,13 @@ import { ToolPicker } from "./ToolPicker";
 import { FieldInput, Hint, IconSquare, PICKER_ROW, RemovableTag, Row, Tag, TagList, TextLink } from "./modalRecipes";
 
 export const AGENT_SETUP_COPY = {
-  runsIn: "Host platform",
+  /** SV-27 P1: was Host platform; `payload.harness` is unchanged. */
+  runsIn: HARNESS_COPY.label,
   runsInLine: "Tool or framework",
-  ownCode: "Own code (API)",
-  notSure: "Not sure",
+  ownCode: HARNESS_COPY.builtInCode,
+  /** SV-27: the none row, and what it reads as once chosen. */
+  notSure: HARNESS_COPY.notSure,
+  notSaid: HARNESS_COPY.notSaid,
   models: "Models",
   addModel: "Add a model",
   tools: "Available tools",
@@ -63,7 +67,7 @@ export const AGENT_SETUP_COPY = {
   memoryPlaceholder: "Which dishes it featured, in a notes file it keeps",
   /** CA-15b: the Add dialog's words. */
   memoryDialogPlaceholder: "Dishes already featured, stored in a notes file",
-  selectPlatform: "Select a platform",
+  selectPlatform: HARNESS_COPY.select,
   selectTools: "Select tools",
   role: (n: number) => `Role of model ${n}`,
   removeModel: (n: number) => `Remove model ${n}`,
@@ -77,8 +81,10 @@ export interface SetupModelRow {
 }
 
 export interface AgentSetupValue {
-  /** A tool id or a typed name; null for the maker's own code. */
+  /** A tool id or a typed name; null when it names none. */
   harness: string | null;
+  /** SV-27: Built in code (no harness). With no harness and this unset, the Harness is Not sure ("Not said"). */
+  builtInCode?: boolean;
   /** The main model first. */
   models: SetupModelRow[];
   /** Tool ids or typed names, in the order they were added. */
@@ -181,6 +187,17 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
   const setRow = (index: number, row: Partial<SetupModelRow>) =>
     onChange({ ...value, models: value.models.map((entry, i) => (i === index ? { ...entry, ...row } : entry)) });
 
+  /** SV-27: "Built in code (no harness)", a choice of its own beside Not sure. */
+  const builtInCodeRow = {
+    label: AGENT_SETUP_COPY.ownCode,
+    chosen: !value.harness && value.builtInCode === true,
+    onChoose: () => {
+      const result = withHarness(value, null);
+      setCleared(result.cleared);
+      setRunsChosen(true);
+      onChange({ ...result.value, builtInCode: true });
+    },
+  };
   const runsInPicker = (
         <span>
           <ToolPicker
@@ -190,12 +207,14 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
               const result = withHarness(value, next);
               setCleared(result.cleared);
               setRunsChosen(true);
-              onChange(result.value);
+              onChange({ ...result.value, builtInCode: false });
             }}
             inBuild={inBuild}
             runtime
             allowNone
-            noneLabel={dialog ? AGENT_SETUP_COPY.notSure : AGENT_SETUP_COPY.ownCode}
+            noneLabel={AGENT_SETUP_COPY.notSure}
+            noneShown={AGENT_SETUP_COPY.notSaid}
+            code={builtInCodeRow}
             unpicked={dialog && !runsChosen}
             phone={phone}
             step="agent"
@@ -211,12 +230,14 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
         const result = withHarness(value, next);
         setCleared(result.cleared);
         setRunsChosen(true);
-        onChange(result.value);
+        onChange({ ...result.value, builtInCode: false });
       }}
       inBuild={inBuild}
       runtime
       allowNone
       noneLabel={AGENT_SETUP_COPY.notSure}
+      noneShown={AGENT_SETUP_COPY.notSaid}
+      code={builtInCodeRow}
       unpicked={!runsChosen}
       phone={phone}
       step="agent"

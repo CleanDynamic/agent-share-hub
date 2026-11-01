@@ -80,8 +80,8 @@ describe("CA-12 P3 · Session 1", () => {
     expect(await screen.findByTestId("empty-build", undefined, { timeout: 10_000 })).toBeTruthy();
     expect(screen.queryByRole("group", { name: /^Session 1/ })).toBeNull();
     await openPromptBox();
-    expect(screen.getByRole("group", { name: "Session 1 · No app chosen" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Pick an app for session 1" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Session 1 · No harness chosen" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Pick a harness for session 1" })).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/Unknown tool|typed here/i);
   });
 
@@ -146,7 +146,8 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     await field();
     fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
     const items = (await screen.findAllByRole("menuitem")).map((item) => item.textContent ?? "");
-    expect(items).toHaveLength(13);
+    // The thirteen tile items, then SV-27's Deployment group of ten.
+    expect(items).toHaveLength(23);
     expect(items.join(" ")).not.toMatch(/session/i);
   });
 
@@ -284,13 +285,13 @@ describe("CA-12 P5 · adding a session", () => {
     expect(screen.getAllByTestId("session-head")).toHaveLength(1);
   });
 
-  it("Start a new session adds an empty Session 2 at once: No app chosen, No tiles yet, kept in the table and the draft", async () => {
+  it("Start a new session adds an empty Session 2 at once: No harness chosen, No tiles yet, kept in the table and the draft", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
     await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
     await startNew();
-    expect(await screen.findByRole("group", { name: "Session 2 · No app chosen" }, { timeout: 10_000 })).toBeTruthy();
+    expect(await screen.findByRole("group", { name: "Session 2 · No harness chosen" }, { timeout: 10_000 })).toBeTruthy();
     // CA-21 P7: until its skeleton fades it shows its place to drop; then "No tiles yet".
     await waitFor(() => expect(screen.queryByText("No tiles yet") ?? screen.queryByText("Drop a tile here")).toBeTruthy());
     await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 10_000 });
@@ -303,7 +304,7 @@ describe("CA-12 P5 · adding a session", () => {
     mount(`/compose/${DRAFT}`, { faults: [{ path: /^\/rest\/v1\/build_sessions/, answer: PG.missingTable("build_sessions") }] });
     await field();
     await startNew();
-    expect(await screen.findByRole("group", { name: "Session 1 · No app chosen" }, { timeout: 10_000 })).toBeTruthy();
+    expect(await screen.findByRole("group", { name: "Session 1 · No harness chosen" }, { timeout: 10_000 })).toBeTruthy();
     // An empty draft shows Session 1's prompt box open, as Prompt 1 of it.
     expect(await field()).toBeTruthy();
     expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toEqual([]);

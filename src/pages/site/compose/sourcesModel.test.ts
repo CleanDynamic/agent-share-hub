@@ -24,7 +24,7 @@ describe("sourceSessions", () => {
 
   it("draws prompts written here as one session with no app chosen", () => {
     const rows = sourceSessions([group({ sessionId: null, tool: null, model: null, startedAt: "typed here", stepNumbers: ["1"] })], [step({})]);
-    expect(rows[0]).toMatchObject({ key: "typed-1", tool: "No app chosen", detail: "" });
+    expect(rows[0]).toMatchObject({ key: "typed-1", tool: "No harness chosen", detail: "" });
     expect(rows[0].prompts).toHaveLength(1);
   });
 
@@ -42,9 +42,9 @@ describe("sourceSessions: a session given its tool (TF-13)", () => {
     expect(rows[0]).toMatchObject({ tool: "Perplexity", pickTool: { value: "perplexity" } });
   });
 
-  it("reads 'No app chosen' until one is chosen, and offers the picker", () => {
+  it("reads 'No harness chosen' until one is chosen, and offers the picker", () => {
     const rows = sourceSessions([group({ tool: null })], steps, [summary({ id: "a", client: "web" })]);
-    expect(rows[0]).toMatchObject({ tool: "No app chosen", pickTool: { value: null } });
+    expect(rows[0]).toMatchObject({ tool: "No harness chosen", pickTool: { value: null } });
   });
 
   it("offers no picker when the client names the tool", () => {
@@ -96,7 +96,7 @@ describe("sourceFiles and librarySources", () => {
       ["3", false, "Also in 2 drafts", false],
       ["4", false, "Also in 1 draft", false],
     ]);
-    // SV-05 P3: the line starts with the app (No app chosen when it is not known), then the model, the day and the count.
+    // SV-05 P3: the line starts with the app (No harness chosen when it is not known), then the model, the day and the count.
     expect(rows[0]).toMatchObject({ label: "Opus 5.5", line: expect.stringMatching(/ · Opus 5\.5 · 1 Mar · 2 prompts$/) });
     expect(JSON.stringify(rows)).not.toMatch(/expired/i);
   });
@@ -171,7 +171,7 @@ describe("projectFileReminders", () => {
   });
 
   it("says nothing for a chat tool, an unknown tool, or a tool with its file in the build", () => {
-    expect(projectFileReminders(tools("ChatGPT", "No app chosen"), [])).toEqual([]);
+    expect(projectFileReminders(tools("ChatGPT", "No harness chosen"), [])).toEqual([]);
     expect(projectFileReminders(tools("Claude Code"), files("docs/claude.md"))).toEqual([]);
     // SKILL.md is a second file: it does not stand in for the first.
     expect(projectFileReminders(tools("Claude Code"), files("SKILL.md"))).toHaveLength(1);

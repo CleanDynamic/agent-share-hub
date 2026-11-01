@@ -17,6 +17,8 @@ import {
   stepTitle,
   UNTIL_DETAIL_MAX,
   WHEN_DETAIL_MAX,
+  BACKGROUND_DETAIL_MAX,
+  ONGOING_DETAIL_MAX,
   type RunsHow,
   type SessionGroup,
   type Step,
@@ -65,7 +67,18 @@ export const RUNS_CHOICES: readonly RunsChoice[] = [
   /* CA-04 P6: chosen for you when the session has a goal. */
   { how: "goal", label: "Until a goal was reached", field: null, more: true },
   { how: "script", label: "From a script or GitHub", field: { kind: "code", label: "The command or workflow", max: SCRIPT_DETAIL_MAX, placeholder: 'claude -p "Fix the failing tests"' }, more: true },
+  /* SV-27 P5. */
+  { how: "background", label: "All the time, as a background service", field: { kind: "text", label: "What it listens for", max: BACKGROUND_DETAIL_MAX, placeholder: "messages on Telegram" }, more: true },
+  { how: "ongoing", label: "Keeps working on an ongoing goal", field: { kind: "text", label: "The goal", max: ONGOING_DETAIL_MAX, placeholder: "Keep my launch on track" }, more: true },
 ];
+
+/** SV-27 P5: the help lines of How did it run?, and the channel picker's words. */
+export const RUNS_HELP = {
+  notRunsWhen: "Runs when decides which branch runs. How did it run? says what starts the agent.",
+  goals: "Until a goal was reached stops once it is reached. An ongoing goal keeps going.",
+  channels: "Channels that start it",
+  noChannel: "Add a channel first",
+} as const;
 
 /** "3 at the same time", for the count beside the number field. */
 export const atOnce = (count: number): string => `${count} at the same time`;

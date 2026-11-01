@@ -26,7 +26,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** The bakery list with its first session reading "No app chosen": its prompt box then starts with no tool. */
+/** The bakery list with its first session reading "No harness chosen": its prompt box then starts with no tool. */
 function noToolFirst(): Partial<BuildListProps> {
   const base = sandboxListProps("bakery");
   const [first, ...rest] = [...base.dividers.entries()];

@@ -207,7 +207,7 @@ describe("what an agent ran in, its models and its tools (CA-02 P5)", () => {
       result.current.setAgent("ag1", { model: "Sonnet 5.5", harness: "claude-code", models: [], tools: ["Gmail"] });
     });
     await vi.waitFor(() => expect(graph.setAgentSetup).toHaveBeenCalled());
-    expect(graph.setAgentSetup.mock.calls[0][1]).toEqual({ model: "Sonnet 5.5", harness: "claude-code", models: [], toolRefs: ["t-gmail"] });
+    expect(graph.setAgentSetup.mock.calls[0][1]).toEqual({ model: "Sonnet 5.5", harness: "claude-code", builtInCode: false, models: [], toolRefs: ["t-gmail"] });
   });
 });
 

@@ -159,7 +159,7 @@ describe("session and part requests (SV-21)", () => {
   it("names a library session by its first prompt, with the app, model, day and prompts beneath", () => {
     const base = { id: "i", client: "claude-code", modelName: "Opus 5.5", firstPrompt: "  Deploy the worker  ", promptCount: 6, createdAt: "2026-10-03T10:00:00Z" };
     expect(offerChoice(base)).toEqual({ id: "i", name: "Deploy the worker", detail: "Claude Code · Opus 5.5 · 3 Oct · 6 prompts" });
-    expect(offerChoice({ ...base, client: null, modelName: null, firstPrompt: null, promptCount: 1 })).toEqual({ id: "i", name: "Untitled session", detail: "No app chosen · 3 Oct · 1 prompt" });
+    expect(offerChoice({ ...base, client: null, modelName: null, firstPrompt: null, promptCount: 1 })).toEqual({ id: "i", name: "Untitled session", detail: "No harness chosen · 3 Oct · 1 prompt" });
   });
 
   it("says who offered what, and 'You' for the reader's own", () => {

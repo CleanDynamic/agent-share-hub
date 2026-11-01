@@ -114,7 +114,9 @@ describe("deriveClassification: Role of AI and Autonomy", () => {
 
   it("reads agents by trigger and guard", () => {
     expect(values([agent()], "autonomy")).toEqual(["ai-suggests-and-you-approve"]);
-    expect(values([agent({ runs: { how: "schedule" }, limits: { steps: 5 } })], "autonomy")).toEqual(["ai-acts-with-approval-gates"]);
+    // SV-27 P8: a step cap is not an approval gate; a Limits line that names approvals is.
+    expect(values([agent({ runs: { how: "schedule" }, limits: { steps: 5 } })], "autonomy")).toEqual(["fully-autonomous"]);
+    expect(values([agent({ runs: { how: "schedule" }, limits: ["Ask before sending"] })], "autonomy")).toEqual(["ai-acts-with-approval-gates"]);
     expect(values([agent({ runs: { how: "schedule" }, approvals: true })], "autonomy")).toEqual(["ai-acts-with-approval-gates"]);
     expect(values([agent({ runs: { how: "event" } })], "autonomy")).toEqual(["fully-autonomous"]);
   });
@@ -224,7 +226,9 @@ describe("deriveClassification: Build method", () => {
   });
 
   it("reads the maker's own code as Direct API", () => {
-    expect(values([agent({ harness: "" })], "method")).toContain("direct-api");
+    // SV-27: only an agent the maker said is Built in code; no harness is Not said, which says nothing about a harness.
+    expect(values([agent({ built_in_code: true })], "method")).toContain("direct-api");
+    expect(values([agent({ harness: "" })], "method")).not.toContain("direct-api");
     expect(values([agent({ harness: "claude-code" })], "method")).toEqual(["ai-coding-agent"]);
   });
 });
@@ -241,7 +245,7 @@ describe("deriveClassification: Human oversight", () => {
 
   it("is No review for Fully autonomous with no checks, and nothing for gated agents with no checks", () => {
     expect(values([agent({ runs: { how: "event" } })], "oversight")).toEqual(["no-review"]);
-    expect(values([agent({ runs: { how: "schedule" }, limits: { a: 1 } })], "oversight")).toEqual([]);
+    expect(values([agent({ runs: { how: "schedule" }, approvals: true })], "oversight")).toEqual([]);
   });
 });
 

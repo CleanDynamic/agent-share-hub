@@ -151,10 +151,10 @@ describe("Drafts, the board's words", () => {
     expect(sessionMeta({ ...s, draftIds: ["d1"] }, draftsFixture, now)).toBe("Claude Code · Opus 5.5 · 30 Sep · in 1 draft");
   });
 
-  it("starts the detail line 'No app chosen' where the tool is unknown", () => {
+  it("starts the detail line 'No harness chosen' where the tool is unknown", () => {
     const s = { ...sessionsFixture[0], client: null, modelName: null };
-    expect(sessionMeta(s, draftsFixture, now)).toBe("No app chosen · 2 Oct");
-    expect(sessionMeta({ ...s, modelName: "Opus 5.5" }, draftsFixture, now)).toBe("No app chosen · Opus 5.5 · 2 Oct");
+    expect(sessionMeta(s, draftsFixture, now)).toBe("No harness chosen · 2 Oct");
+    expect(sessionMeta({ ...s, modelName: "Opus 5.5" }, draftsFixture, now)).toBe("No harness chosen · Opus 5.5 · 2 Oct");
   });
 
   it("lists each connected tool once with the date of its last import", () => {

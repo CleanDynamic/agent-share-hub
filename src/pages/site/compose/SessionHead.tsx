@@ -260,7 +260,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         ·
       </span>
       {session.tool === NO_APP && onPickApp && maker ? (
-        <ToolPicker quiet label={`Pick an app for session ${session.number}`} placeholder={NO_APP} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
+        <ToolPicker quiet label={`Pick a harness for session ${session.number}`} placeholder={NO_APP} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
       ) : (
         <span style={{ whiteSpace: "nowrap", ...(session.tool === NO_APP ? { color: t.text2 } : null) }}><FindHit text={session.tool} /></span>
       )}

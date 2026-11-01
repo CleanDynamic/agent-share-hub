@@ -9,10 +9,11 @@ const squash = (raw: string) => raw.toLowerCase().replace(/[\s._-]+/g, "");
 describe("tool registry", () => {
   it("has 43 AI tools and 24 apps (6 are both), 8 runtime models and services, 69 entries with unique ids (CA-12 P13, CA-13)", () => {
     expect(WORKSPACE_AI_TOOLS).toHaveLength(43);
-    expect(AI_TOOLS).toHaveLength(51);
-    expect(APPS).toHaveLength(24);
-    expect(RUNTIME_TOOLS).toHaveLength(8);
-    expect(TOOLS).toHaveLength(69);
+    // SV-27 P8: CrewAI (a runtime framework), Google Calendar (an app) and fifteen deployment providers in no picker list.
+    expect(AI_TOOLS).toHaveLength(52);
+    expect(APPS).toHaveLength(25);
+    expect(RUNTIME_TOOLS).toHaveLength(9);
+    expect(TOOLS).toHaveLength(86);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
   });
 
@@ -150,7 +151,7 @@ describe("projectFileOf", () => {
 describe("tools that read content their maker doesn't control (CA-03 P7)", () => {
   it("are exactly these, so a change to the list is deliberate", () => {
     expect(TOOLS.filter((tool) => tool.readsOutside).map((tool) => tool.id).sort()).toEqual(
-      ["gmail", "notion", "perplexity", "chatgpt", "gemini", "claude", "grok", "manus", "openclaw", "hermes-agent", "muse", "n8n", "zapier", "make", "gemini-notebook", "github", "gitlab", "slack", "google-drive", "linear", "jira"].sort(),
+      ["gmail", "notion", "perplexity", "chatgpt", "gemini", "claude", "grok", "manus", "openclaw", "hermes-agent", "muse", "n8n", "zapier", "make", "gemini-notebook", "github", "gitlab", "slack", "google-drive", "google-calendar", "linear", "jira"].sort(),
     );
   });
 });
@@ -176,7 +177,7 @@ describe("models run on your own computer (CA-05 P8)", () => {
       const byGroup = (key: string) => RUNTIME_TOOLS.filter((t) => t.group === key).map((t) => t.name);
       expect(byGroup("runtime-decisions")).toEqual(["TypeSafe Jev"]);
       expect(byGroup("runtime-context")).toEqual(["ScaleDown Summarize", "ScaleDown Compress", "ScaleDown Extract", "ScaleDown Classify"]);
-      expect(byGroup("runtime-frameworks")).toEqual(["LangChain Deep Agents", "LangGraph"]);
+      expect(byGroup("runtime-frameworks")).toEqual(["LangChain Deep Agents", "LangGraph", "CrewAI"]);
       expect(byGroup("runtime-tracing")).toEqual(["LangSmith"]);
       for (const tool of RUNTIME_TOOLS) expect(tool.category).toBe("runtime");
     });

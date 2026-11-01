@@ -38,7 +38,7 @@ describe("Compare (CA-13 P9)", () => {
     const cells = screen.getAllByTestId("compare-total-row").map((row) => within(row).getAllByRole("cell").map((cell) => cell.textContent));
     expect(cells[1]).toEqual(["2M tokens", "1.2M tokens"]);
     const labels = screen.getAllByTestId("compare-total-row").map((row) => within(row).getByRole("rowheader").textContent);
-    expect(labels).toEqual(["To build · time", "To build · tokens", "To build · cost", "To run", "Steps", "Models used"]);
+    expect(labels).toEqual(["To build · time", "To build · tokens", "To build · cost", "To run", "To set up", "API estimate", "Steps", "Models used"]);
     expect(screen.getByTestId("compare-sentence").textContent).toMatch(/^This one used a router/);
     expect(screen.getByTestId("compare-sentence").textContent).toContain("40% fewer tokens");
     expect(screen.getByRole("link", { name: "Original" }).getAttribute("href")).toBe("/b2/orig");

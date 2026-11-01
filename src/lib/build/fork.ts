@@ -51,6 +51,7 @@ import { contributorColumnMissing, creditColumn, creditForInsert, noteMissingCon
 import { getEvents } from "./events";
 import { getNodeTree } from "./nodes";
 import { getNodeTypes } from "./nodeTypes";
+import { deploymentMethodOf } from "./deployment";
 import { methodOf, readyChecks } from "./forkRules";
 import type { Json } from "@/integrations/supabase/types";
 import {
@@ -150,7 +151,8 @@ export async function forkBuild({
       title: node.title,
       note: node.note,
       // CA-13 P15: the method, not the evidence: no costs, no "what it did", no trace link; a decision's answer is the original's.
-      payload: methodOf(rewritePayload(node.payload, typesByKey.get(node.type), copiedNodeIds) as object) as Json,
+      // SV-27 P3: a front end's address and screenshot are the original's deployment, and go too.
+      payload: deploymentMethodOf(node.type, methodOf(rewritePayload(node.payload, typesByKey.get(node.type), copiedNodeIds) as object)) as Json,
       // Provenance of the original capture, which is still true of this text.
       source_ref: node.source_ref,
       event_id: null,
@@ -409,7 +411,8 @@ function rewriteRow(
 
 /** Deep-replaces any string that is a copied node's id. Clears nothing. */
 function remap(value: unknown, idMap: Map<string, string>): unknown {
-  if (typeof value === "string") return idMap.get(value) ?? value;
+  // SV-27 P3: a deployment line's ref, `node:<id>`, points at the copied tile too.
+  if (typeof value === "string") return value.startsWith("node:") && idMap.has(value.slice(5)) ? `node:${idMap.get(value.slice(5))}` : (idMap.get(value) ?? value);
   if (Array.isArray(value)) return value.map((item) => remap(item, idMap));
   if (value && typeof value === "object") {
     return Object.fromEntries(

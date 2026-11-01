@@ -189,7 +189,12 @@ export interface MapSettings {
   direction: "horizontal" | "vertical";
   /** Readers see the map only when this is true. */
   onBuildPage: boolean;
+  /** SV-27 P10: Sessions (the default) or Architecture; absent reads as the default the build's shape gives. */
+  view?: MapView;
 }
+
+/** SV-27 P10: what the Map draws. */
+export type MapView = "sessions" | "architecture";
 
 /** A new part's key. */
 export function newWorkstreamKey(): string {
@@ -262,7 +267,22 @@ export function partLabelsOf(making: unknown): PartLabels {
 export function mapOf(making: unknown): MapSettings | null {
   const raw = asObject(asObject(making).map);
   if (typeof raw.on !== "boolean") return null;
-  return { on: raw.on, direction: raw.direction === "vertical" ? "vertical" : "horizontal", onBuildPage: raw.onBuildPage === true };
+  return {
+    on: raw.on,
+    direction: raw.direction === "vertical" ? "vertical" : "horizontal",
+    onBuildPage: raw.onBuildPage === true,
+    ...(raw.view === "sessions" || raw.view === "architecture" ? { view: raw.view } : null),
+  };
+}
+
+/**
+ * SV-27 P10: the view the Map opens on: the stored one, else Architecture for a build with deployment tiles and one session,
+ * else Sessions.
+ */
+export function mapViewOf(making: unknown, hasDeployment: boolean, sessions: number): MapView {
+  const stored = mapOf(making)?.view;
+  if (stored) return stored;
+  return hasDeployment && sessions <= 1 ? "architecture" : "sessions";
 }
 
 /** Whether `making` has a `map` key at all, whatever it holds. A build that predates the map has none. */
@@ -293,6 +313,7 @@ export const readerMapDirection = (making: unknown): MapSettings["direction"] =>
 export function mapRefusal(map: MapSettings): string | null {
   if (typeof map.on !== "boolean" || typeof map.onBuildPage !== "boolean") return "The map settings are on or off.";
   if (map.direction !== "horizontal" && map.direction !== "vertical") return "The map runs horizontally or vertically.";
+  if (map.view !== undefined && map.view !== "sessions" && map.view !== "architecture") return "The map shows sessions or the architecture.";
   return null;
 }
 
@@ -767,7 +788,11 @@ export async function setPartLabels(buildId: string, labels: PartLabels): Promis
 export async function setMapSettings(buildId: string, map: MapSettings): Promise<Record<string, unknown>> {
   const why = mapRefusal(map);
   if (why) throw buildLayerError("setMapSettings", new Error(why));
-  return patchMaking(buildId, { map: { on: map.on, direction: map.direction, onBuildPage: map.onBuildPage } });
+  return patchMaking(buildId, (making) => {
+    // SV-27 P10: a change that does not say the view keeps the stored one.
+    const view = map.view ?? mapOf(making)?.view;
+    return { map: { on: map.on, direction: map.direction, onBuildPage: map.onBuildPage, ...(view ? { view } : null) } };
+  });
 }
 
 /** A code for the log, and only a code. */

@@ -125,10 +125,10 @@ describe("each modal as its board (CA-15b P2)", () => {
       ["System instructions", ""],
       ["Available tools", "Apps the agent can call"],
       ["Trigger", ""],
-      ["Host platform", ""],
+      ["Harness", ""],
       ["Memory", "Stored between runs, and where"],
       ["Helpers", "Models that summarise history or extract fields"],
-      ["Limits", "Steps, budget, run time, approvals, prohibited actions"],
+      ["Limits", "Steps, budget, run time, prohibited actions"],
       ["Output and destination", "Format and destination"],
       ["Sample run", "Transcript or trace of one run"],
     ]);

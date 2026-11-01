@@ -4,6 +4,7 @@
    no data access: `DraftsView` renders what these return and the tests read it.
    The relative time is the feed's own `shortAgo` ("17m", "2d"), not a new one. */
 
+import { NO_HARNESS } from "@/lib/build/harnessWords";
 import type { DraftListItem } from "@/lib/build/drafts";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { shortAgo } from "@/pages/site/home/homeModel";
@@ -72,15 +73,15 @@ export function sessionApp(session: Pick<SessionSummary, "client">): string | nu
 
 /** The model's name, or the client that sent the session when there is none. */
 export function sessionSource(session: Pick<SessionSummary, "modelName" | "client">): string {
-  return session.modelName || CLIENT_LABEL[session.client ?? ""] || "No app chosen";
+  return session.modelName || CLIENT_LABEL[session.client ?? ""] || NO_HARNESS;
 }
 
 /**
  * SV-08: a session's detail line, "<tool> · <model> · <date>", then "for <draft>" when the connector was aimed at one, then
- * "in n drafts". A part that is not known is left out; with no tool the line starts "No app chosen".
+ * "in n drafts". A part that is not known is left out; with no tool the line starts NO_HARNESS.
  */
 export function sessionMeta(session: SessionSummary, drafts: readonly DraftListItem[], now: number): string {
-  const parts = [sessionApp(session) ?? "No app chosen", session.modelName, sessionDate(session.createdAt, now)].filter(Boolean) as string[];
+  const parts = [sessionApp(session) ?? NO_HARNESS, session.modelName, sessionDate(session.createdAt, now)].filter(Boolean) as string[];
   const target = session.targetBuildId ? drafts.find((d) => d.id === session.targetBuildId) : undefined;
   if (target) parts.push(`for ${draftTitle(target.title)}`);
   const inDrafts = (session.draftIds ?? (session.buildId ? [session.buildId] : [])).length;

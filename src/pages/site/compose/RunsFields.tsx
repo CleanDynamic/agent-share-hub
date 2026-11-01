@@ -3,17 +3,19 @@
    The same choice rows, fields and writes as Details had (CA-03 P3, CA-04 P6): `onRuns(id, runs)`, and `onAgentNotes` for
    what an agent changes each round. Nothing new is stored: `payload.runs` keeps its shape. */
 
+import { deploymentTilesOf, runChannelsOf } from "@/lib/build/deployment";
+import { Checkbox } from "@/components/brand/Checkbox";
 import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { CodeEditorField } from "@/components/code/CodeEditorField";
 import { Segmented } from "@/components/brand/Segmented";
-import { AT_MOST_MAX, AT_MOST_MIN, UNTIL_DETAIL_MAX, untilDetail, untilParts, type Runs } from "@/lib/build/graph";
+import { AT_MOST_MAX, AT_MOST_MIN, UNTIL_DETAIL_MAX, runsTakeChannels, untilDetail, untilParts, type Runs } from "@/lib/build/graph";
 import { t } from "@/lib/theme/tokens";
 
 import { ChangesEachRoundField } from "./AgentNotesFields";
 import { ChoiceRows } from "./ChoiceRows";
 import { FIELD_LABEL, TextButton } from "./composeControls";
-import { RUNS_CHOICES, RUNS_COPY, SCHEDULE_PRESETS, atOnce, isClockTime, scheduleDetail, scheduleParts, type RunsChoice } from "./detailsModel";
+import { RUNS_CHOICES, RUNS_COPY, RUNS_HELP, SCHEDULE_PRESETS, atOnce, isClockTime, scheduleDetail, scheduleParts, type RunsChoice } from "./detailsModel";
 import type { AgentView, DetailsHandlers } from "./DetailsPanel";
 import { text, tnum, typedField } from "./refinedStyles";
 
@@ -77,9 +79,18 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
     else onRuns(view.id, { how: next.how, detail: "" });
   };
 
+  /** SV-27 P5: the Channel tiles that start runs, kept through a change of detail. */
+  const channels = runsTakeChannels(how) ? (view.runs?.channels ?? []) : [];
+  const runChannels = runsTakeChannels(how) ? runChannelsOf(deploymentTilesOf(view.deploymentTree ?? [])) : [];
+  const keepChannels = channels.length > 0 ? { channels } : null;
+
   /** Write a detail when it changed. */
   const write = (next: string) => {
-    if (next.trim() !== saved.trim()) onRuns(view.id, { how, detail: next.trim() });
+    if (next.trim() !== saved.trim()) onRuns(view.id, { how, detail: next.trim(), ...keepChannels });
+  };
+  const toggleChannel = (id: string, on: boolean) => {
+    const next = on ? [...channels.filter((entry) => entry !== id), id] : channels.filter((entry) => entry !== id);
+    onRuns(view.id, { how, ...(saved ? { detail: saved } : null), ...(next.length > 0 ? { channels: next } : null) });
   };
 
   const atMostNumber = (): number | null => {
@@ -194,7 +205,7 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
           </div>
         ) : null}
 
-        {how === "event" && field?.kind === "text" ? (
+        {(how === "event" || how === "background" || how === "ongoing") && field?.kind === "text" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <FieldBlock label={field.label}>
               <input
@@ -214,6 +225,25 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
             </span>
           </div>
         ) : null}
+
+        {runsTakeChannels(how) ? (
+          <div role="group" aria-labelledby={`${ids}-channels`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <GroupLabel id={`${ids}-channels`}>{RUNS_HELP.channels}</GroupLabel>
+            {runChannels.length === 0 ? (
+              <span style={quiet()}>{RUNS_HELP.noChannel}</span>
+            ) : (
+              runChannels.map((channel) => (
+                <label key={channel.id} style={{ display: "flex", alignItems: "center", gap: 8, ...text(12.5, 400, t.text) }}>
+                  <Checkbox checked={channels.includes(channel.id)} onChange={(event) => toggleChannel(channel.id, event.target.checked)} />
+                  {channel.name}
+                </label>
+              ))
+            )}
+          </div>
+        ) : null}
+
+        {showMore ? <span style={quiet()}>{RUNS_HELP.goals}</span> : null}
+        <span style={quiet()}>{RUNS_HELP.notRunsWhen}</span>
 
         {how === "script" && field?.kind === "code" ? (
           <FieldBlock label={field.label}>

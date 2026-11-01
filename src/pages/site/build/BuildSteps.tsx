@@ -14,6 +14,7 @@
    WHAT YOU NEED. No module: the column on the surface. Sections are an eyebrow over a hairline and rows 48 high; a
    Tools and models row leads with its mark at 28; a file has Download (secondary 26). */
 
+import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { MemberLabel } from "@/pages/site/compose/groupLabels";
 import {
   Suspense,
@@ -655,7 +656,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
   const marked = markFor({ tool: chat.tool, model: chat.model }) !== null;
   const name = `Session ${chat.session}`;
   return (
-    <div role="group" tabIndex={-1} aria-label={`${name} · ${chat.tool ?? "No app chosen"}`} data-testid="reader-session-head" style={{ outline: "none", display: "flex", flexWrap: fold.phone ? "wrap" : "nowrap", alignItems: "center", columnGap: 8, rowGap: 4, minHeight: 44, minWidth: 0 }}>
+    <div role="group" tabIndex={-1} aria-label={`${name} · ${chat.tool ?? NO_HARNESS}`} data-testid="reader-session-head" style={{ outline: "none", display: "flex", flexWrap: fold.phone ? "wrap" : "nowrap", alignItems: "center", columnGap: 8, rowGap: 4, minHeight: 44, minWidth: 0 }}>
       <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} boxed={false} size={30} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
       {marked ? (
         <span style={{ display: "inline-flex", color: t.text }}>
@@ -1229,7 +1230,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   const jumpItems = runs.flatMap((run) =>
     run.groups.flatMap((group) =>
       group.chat && group.chat.session !== null
-        ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? "No app chosen", ...(partsModel ? { group: partsModel.titles.get(partOfRun(run) ?? partsModel.list[0].view.key) } : null) }]
+        ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? NO_HARNESS, ...(partsModel ? { group: partsModel.titles.get(partOfRun(run) ?? partsModel.list[0].view.key) } : null) }]
         : [],
     ),
   );
