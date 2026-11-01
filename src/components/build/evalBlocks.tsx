@@ -73,7 +73,7 @@ export function ComparisonBlock({ check, indent = 0 }: { check: CheckFacts; inde
   const rows = sortedRows(comparison.rows, metric);
   return (
     <div data-testid="comparison" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
-      <span style={text(13, 500, t.text)}>{COMPARISON_COPY.title}{check.fromOriginal ? ` · ${COMPARISON_COPY.original}` : ""}</span>
+      {rows.length > 0 ? <span style={text(13, 500, t.text)}>{COMPARISON_COPY.title}{check.fromOriginal ? ` · ${COMPARISON_COPY.original}` : ""}</span> : null}
       {comparison.testSet ? <span data-testid="comparison-test-set" style={text(12.5, 400, t.text2)}>{testSetLine(comparison.testSet)}</span> : null}
       {metric ? <span data-testid="comparison-metric" style={text(12.5, 400, t.text2)}>{`Metric: ${metricName(metric)}`}</span> : null}
       {rows.length > 0 ? (

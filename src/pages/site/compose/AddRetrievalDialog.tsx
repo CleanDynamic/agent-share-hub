@@ -14,7 +14,7 @@ import { CORPUS_MAX, EMBEDDING_MODEL_MAX, INDEX_MAX, QUERY_MAX, RECALL_MAX, RETR
 import { toolFor } from "@/lib/tools/registry";
 
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { FieldInput, Hint, Inline, MODAL_WIDTH, NARROW, RecipeButton, Row, SegmentedField, TextLink } from "./modalRecipes";
+import { FieldInput, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, RecipeButton, Row, SegmentedField, TextLink } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 export const RETRIEVAL_DIALOG_COPY = {
@@ -126,8 +126,10 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddRetrievalDialog
           {recall.map((row, at) => (
             <div key={at} role="group" aria-label={`Recall figure ${at + 1}`} data-testid="recall-row">
               <Inline>
+                <LabelText>Recall@</LabelText>
                 <FieldInput phone={phone} mono width={NARROW.date} aria-label={`${RETRIEVAL_DIALOG_COPY.recallK} of figure ${at + 1}`} inputMode="numeric" maxLength={4} value={row.k} placeholder="30" onChange={(event) => setRow(at, { k: digits(event.target.value) })} />
                 <FieldInput phone={phone} mono width={NARROW.date} aria-label={`${RETRIEVAL_DIALOG_COPY.recallValue} of figure ${at + 1}`} inputMode="decimal" maxLength={5} value={row.percent} placeholder="99.2" onChange={(event) => setRow(at, { percent: decimal(event.target.value) })} />
+                <LabelText>%</LabelText>
                 <SegmentedField<"run" | "maker"> label={`Where figure ${at + 1} came from`} phone={phone} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={row.source === "run" ? "run" : "maker"} onChange={(source) => setRow(at, { source })} />
                 <TextLink phone={phone} aria-label={`Remove figure ${at + 1}`} onClick={() => setRecall(recall.filter((_, i) => i !== at))}>
                   Remove

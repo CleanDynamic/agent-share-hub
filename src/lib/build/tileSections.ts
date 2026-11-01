@@ -33,6 +33,7 @@ import {
   variableNamesIn,
   variablesOf,
 } from "@/lib/build/tileExtras";
+import { RETRIEVAL_COPY, corpusText, recallSource, recallText, retrievalOf } from "@/lib/build/retrieval";
 import { DATASET_USE_LABEL, REPO_OWNERSHIP_LABEL, REPO_PIN_LABEL, REPO_USAGE_LABEL, datasetOf, repoOf, scopeOf, systemPromptOf } from "@/lib/build/sourceTiles";
 
 export type TileKind = DetailsView["kind"];
@@ -451,6 +452,33 @@ const SYSTEM_PROMPT: readonly SectionDef[] = [
   GOES,
 ];
 
+/** SV-29 P2: a Retrieval tile's sections, with the words of its window. */
+const RETRIEVAL: readonly SectionDef[] = [
+  S("corpus", RETRIEVAL_COPY.corpus, "", (tile) => (tile.kind === "retrieval" ? one(RETRIEVAL_COPY.corpus, corpusText({ corpus: retrievalOf(tile.payload).corpus })) : null), true),
+  S("embedding_model", RETRIEVAL_COPY.embeddingModel, "", (tile) => (tile.kind === "retrieval" ? one(RETRIEVAL_COPY.embeddingModel, retrievalOf(tile.payload).embeddingModel) : null)),
+  S("index", RETRIEVAL_COPY.index, "", (tile) => (tile.kind === "retrieval" ? one(RETRIEVAL_COPY.index, toolName(retrievalOf(tile.payload).index ?? "") ?? retrievalOf(tile.payload).index) : null)),
+  S("name", "Name", "What this search is called", (tile) => (tile.kind === "retrieval" ? one("Name", tile.title) : null)),
+  S("corpus_size", RETRIEVAL_COPY.corpusSize, "", (tile) => {
+    if (tile.kind !== "retrieval") return null;
+    const size = retrievalOf(tile.payload).corpusSize;
+    return size === undefined ? null : one(RETRIEVAL_COPY.corpusSize, size.toLocaleString("en-GB"));
+  }),
+  S("query", RETRIEVAL_COPY.query, "", (tile) => (tile.kind === "retrieval" ? one(RETRIEVAL_COPY.query, retrievalOf(tile.payload).query) : null)),
+  S("k", RETRIEVAL_COPY.k, "", (tile) => {
+    if (tile.kind !== "retrieval") return null;
+    const k = retrievalOf(tile.payload).k;
+    return k === undefined ? null : one(RETRIEVAL_COPY.k, `top ${k.toLocaleString("en-GB")}`);
+  }),
+  S("recall", RETRIEVAL_COPY.recall, "Share of test items whose answer is in the top k", (tile) => {
+    if (tile.kind !== "retrieval") return null;
+    const facts = retrievalOf(tile.payload);
+    return facts.recall.length === 0 ? null : rows([[RETRIEVAL_COPY.recall, recallText(facts.recall)], ["Where it came from", recallSource(facts.recall)]]);
+  }),
+  S("hybrid", RETRIEVAL_COPY.hybrid, "", (tile) => (tile.kind === "retrieval" && retrievalOf(tile.payload).hybrid ? one(RETRIEVAL_COPY.hybrid, "Yes") : null)),
+  USES,
+  GOES,
+];
+
 const DATASET: readonly SectionDef[] = [
   S("name", "Name", "What this dataset is called", (tile) => (tile.kind === "dataset" ? one("Name", tile.title ?? tile.defaultTitle) : null), true),
   S("description", "Description", "What it holds", (tile) => (tile.kind === "dataset" ? prose(datasetOf(tile.payload).description) : null), true),
@@ -558,6 +586,7 @@ const BY_KIND: Record<TileKind, readonly SectionDef[]> = {
   result: RESULT,
   system_prompt: SYSTEM_PROMPT,
   dataset: DATASET,
+  retrieval: RETRIEVAL,
   repo: REPO,
   session: SESSION,
 };
@@ -632,6 +661,8 @@ export function headOf(tile: DetailsView): TileHead {
       const use = datasetOf(tile.payload).use;
       return { ...named(tile.title, tile.defaultTitle), line: join(`Dataset ${tile.number}`, use ? DATASET_USE_LABEL[use] : null), tool: null, model: null };
     }
+    case "retrieval":
+      return { ...named(tile.title, tile.defaultTitle), line: join(`Retrieval ${tile.number}`, retrievalOf(tile.payload).embeddingModel), tool: null, model: null };
     case "repo": {
       const ownership = repoOf(tile.payload)?.ownership;
       return { ...named(tile.title, tile.defaultTitle), line: join(`GitHub repository ${tile.number}`, ownership ? REPO_OWNERSHIP_LABEL[ownership] : null), tool: null, model: null };

@@ -330,6 +330,16 @@ export interface DatasetView extends InputsView {
   payload: Record<string, unknown>;
 }
 
+/** SV-29 P2: a Retrieval tile as the Details panel shows it. */
+export interface RetrievalView extends InputsView {
+  kind: "retrieval";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  payload: Record<string, unknown>;
+}
+
 /** CA-15 P9, P11: a GitHub repository as the Details panel shows it. */
 export interface RepoView extends InputsView {
   kind: "repo";
@@ -340,7 +350,7 @@ export interface RepoView extends InputsView {
   payload: Record<string, unknown>;
 }
 
-export type DetailsView = (PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView | DecisionView | SystemPromptView | DatasetView | RepoView) & {
+export type DetailsView = (PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView | DecisionView | SystemPromptView | DatasetView | RepoView | RetrievalView) & {
   /** CA-13: the runtime side of the tile: when it runs. */
   runtime?: RuntimeView;
   /** CA-15 P11: what the tile's node stores, for the Optional rows. */

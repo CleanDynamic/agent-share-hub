@@ -50,7 +50,7 @@ import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/l
 import { runtimeViewOf } from "./runtimeView";
 import { draftFromFacts } from "@/lib/build/decisionDraft";
 import { evalChoicesOf } from "@/lib/build/comparison";
-import type { AgentView, CheckView, DatasetView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, RepoView, ResultView, SessionView, SystemPromptView, ToolView } from "./DetailsPanel";
+import type { RetrievalView, AgentView, CheckView, DatasetView, DecisionView, CodeView, DetailsView, FileView, ManualView, PromptView, RepoView, ResultView, SessionView, SystemPromptView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import type { BuildFacts } from "@/lib/build/tileSections";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
@@ -413,7 +413,7 @@ function decisionView(step: Step, ctx: ViewContext): DecisionView | null {
 }
 
 /** CA-15 P11: a system prompt, a dataset or a GitHub repository: its name, its fields from its payload, and what it uses and goes into. */
-function sourceView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): SystemPromptView | DatasetView | RepoView | null {
+function sourceView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): SystemPromptView | DatasetView | RepoView | RetrievalView | null {
   const node = findNode(ctx.tree, step.id);
   if (!node) return null;
   const base = {
@@ -431,7 +431,7 @@ function sourceView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     const prompts = flatten(ctx.steps).filter((candidate) => candidate.kind === "prompt" && !candidate.summary && !candidate.id.endsWith(":instructions") && !candidate.inside);
     return { ...base, kind: "system_prompt", appliesTo: step.systemPrompt?.appliesTo ?? 0, prompts: prompts.map((prompt) => ({ id: prompt.id, label: `${prompt.number} ${stepTitle(prompt)}` })), session: step.session ?? null };
   }
-  return { ...base, kind: step.kind === "dataset" ? "dataset" : "repo" } as DatasetView | RepoView;
+  return { ...base, kind: step.kind === "dataset" ? "dataset" : step.kind === "retrieval" ? "retrieval" : "repo" } as DatasetView | RepoView | RetrievalView;
 }
 
 /** The view of what is selected, or null when nothing is, or what was selected is gone. */
@@ -469,7 +469,7 @@ function resolveBase(ctx: ViewContext): DetailsView | null {
   }
   if (step) {
     if (step.kind === "decision") return decisionView(step, ctx);
-    if (step.kind === "system_prompt" || step.kind === "dataset" || step.kind === "repo") return sourceView(step, ctx, all);
+    if (step.kind === "system_prompt" || step.kind === "dataset" || step.kind === "repo" || step.kind === "retrieval") return sourceView(step, ctx, all);
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);
     if (step.kind === "code") return codeView(step, ctx, all);

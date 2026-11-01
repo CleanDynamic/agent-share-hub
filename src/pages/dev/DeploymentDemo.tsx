@@ -6,6 +6,7 @@
      &lens=map                    the Architecture map
      &window=setup&for=<id>       Show setup prompt (&harness=<id> starts Rebuild in there)
      &window=approval             Add > Approval, after the team
+     &window=retrieval            Add > Retrieval (SV-29; the pipeline-* fixtures are the same page)
      &window=edit&for=<id>        the tile's own window (an agent's Hands off to, a team's workspace and example run)
      &window=prompt&for=<id>      the prompt window, a job's fields open
      &open=<team id>              the List with that team's example run open */
@@ -25,6 +26,7 @@ import { sandboxListProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { buildSteps } from "@/lib/build/graph";
 import type { NodeTree } from "@/lib/build/types";
 import { AddManualStepDialog } from "@/pages/site/compose/AddManualStepDialog";
+import { AddRetrievalDialog } from "@/pages/site/compose/AddRetrievalDialog";
 import { MapViews } from "@/pages/site/compose/ArchitectureMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
 import { DetailsPanel, type DetailsHandlers } from "@/pages/site/compose/DetailsPanel";
@@ -76,6 +78,7 @@ export default function DeploymentDemo({ fit = "board", state = "populated" }: D
         selection={<DetailsPanel {...(HANDLERS as unknown as ComponentProps<typeof DetailsPanel>)} view={view(selected)} phone={phone} />}
       />
       {windowFor?.kind === "setup" ? <SetupPromptWindow key={params.get("harness") ?? "own"} harness={params.get("harness") ?? undefined} id={windowFor.id ?? teamId} tree={tree} onCopy={noop} onClose={() => setWindowFor(null)} /> : null}
+      {windowFor?.kind === "retrieval" ? <AddRetrievalDialog open onOpenChange={() => setWindowFor(null)} onAdd={noop} /> : null}
       {windowFor?.kind === "approval" ? <AddManualStepDialog open onOpenChange={() => setWindowFor(null)} after={null} available approval={{ steps, afterId: teamId }} onAdd={noop} /> : null}
       {windowFor?.kind === "edit" ? <TileEditDialog view={view(windowFor.id)} handlers={HANDLERS} onClose={() => setWindowFor(null)} /> : null}
       <FullPromptWindow steps={steps} names={names} openId={windowFor?.kind === "prompt" ? windowFor.id : null} mode="maker" onExtras={noop} onTitle={noop} onClose={() => setWindowFor(null)} />

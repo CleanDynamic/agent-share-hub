@@ -475,6 +475,7 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
 
         <OptionalField name={DECISION_COPY.labelSet} description={DECISION_COPY.labelSetLine} summary={summaryOf(pipe.labelName, pipe.labelSize ? `${pipe.labelSize} labels` : null)} forceOpen={open.pipeline} phone={phone}>
           <Inline>
+            <LabelText>Labels</LabelText>
             <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.labelSize} inputMode="numeric" value={pipe.labelSize} placeholder="6000" onChange={(e) => setPipe({ labelSize: e.target.value.replace(/[^0-9]/g, "") })} />
             <SegmentedField<LabelStructure> label="Structure" phone={phone} items={[{ value: "flat", label: DECISION_COPY.flat }, { value: "hierarchical", label: DECISION_COPY.hierarchical }]} value={pipe.labelStructure} onChange={(labelStructure) => setPipe({ labelStructure })} />
           </Inline>
@@ -484,7 +485,12 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
 
         <OptionalField name={DECISION_COPY.candidates} description={DECISION_COPY.candidatesLine} summary={summaryOf(stepLabel, pipe.candidatesK ? `top ${pipe.candidatesK}` : null)} forceOpen={open.pipeline} phone={phone}>
           <PickMenu field label={DECISION_COPY.candidatesStep} phone={phone} placeholder="No candidate step" value={pipe.candidatesStep} options={[{ value: NONE, label: "No candidate step" }, ...stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))]} onChange={(next) => setPipe({ candidatesStep: next === NONE ? null : next })} />
-          {pipe.candidatesStep ? <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.candidatesK} inputMode="numeric" value={pipe.candidatesK} placeholder="30" onChange={(e) => setPipe({ candidatesK: e.target.value.replace(/[^0-9]/g, "") })} /> : null}
+          {pipe.candidatesStep ? (
+            <Inline>
+              <LabelText>Top</LabelText>
+              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.candidatesK} inputMode="numeric" value={pipe.candidatesK} placeholder="30" onChange={(e) => setPipe({ candidatesK: e.target.value.replace(/[^0-9]/g, "") })} />
+            </Inline>
+          ) : null}
           <Hint>{DECISION_COPY.candidatesHint}. {CANDIDATES_K_MIN} to {CANDIDATES_K_MAX.toLocaleString("en-GB")}</Hint>
         </OptionalField>
 
@@ -497,7 +503,12 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
             chosen={pipe.selection ? [pipe.selection] : []}
             onPick={(method) => setPipe({ selection: pipe.selection === method ? "" : (method as SelectionMethod) })}
           />
-          {pipe.selection === "beam_search" ? <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.beamWidth} inputMode="numeric" value={pipe.beamWidth} placeholder="5" onChange={(e) => setPipe({ beamWidth: e.target.value.replace(/[^0-9]/g, "") })} /> : null}
+          {pipe.selection === "beam_search" ? (
+            <Inline>
+              <LabelText>Beam width</LabelText>
+              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.beamWidth} inputMode="numeric" value={pipe.beamWidth} placeholder="5" onChange={(e) => setPipe({ beamWidth: e.target.value.replace(/[^0-9]/g, "") })} />
+            </Inline>
+          ) : null}
           {pipe.selection === "beam_search" ? <Hint>{BEAM_WIDTH_MIN} to {BEAM_WIDTH_MAX}</Hint> : null}
         </OptionalField>
 

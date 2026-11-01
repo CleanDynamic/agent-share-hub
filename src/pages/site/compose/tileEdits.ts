@@ -11,6 +11,8 @@ import type { AddCheckInput, CheckSeed } from "./AddCheckDialog";
 import type { AddDatasetInput, DatasetCurrent } from "./AddDatasetDialog";
 import type { AddManualStepInput, ManualSeed } from "./AddManualStepDialog";
 import type { AddRepoInput, RepoCurrent } from "./AddRepoDialog";
+import type { AddRetrievalInput, RetrievalCurrent } from "./AddRetrievalDialog";
+import { retrievalOf } from "@/lib/build/retrieval";
 import type { AddResultInput, ResultCurrent } from "./AddResultDialog";
 import type { AddSystemPromptInput, SystemPromptCurrent } from "./AddSystemPromptDialog";
 import type { AddToolInput } from "./AddToolDialog";
@@ -63,6 +65,8 @@ export function editTitle(view: DetailsView): string {
       return named("System prompt", view.number, view.title ?? view.defaultTitle);
     case "dataset":
       return named("Dataset", view.number, view.title ?? view.defaultTitle);
+    case "retrieval":
+      return named("Retrieval", view.number, view.title ?? view.defaultTitle);
     case "repo":
       return named("GitHub repository", view.number, view.title ?? repoOf(view.payload)?.name ?? view.defaultTitle);
     case "session":
@@ -178,6 +182,21 @@ export function systemPromptCurrent(view: V<"system_prompt">): SystemPromptCurre
     model: text(view.payload.model),
     version: facts.version ?? "",
     described: Object.fromEntries(variableNamesIn(facts.text).map((name) => [name, saved.find((entry) => entry.name === name)?.description ?? ""])),
+  };
+}
+
+export function retrievalCurrent(view: V<"retrieval">): RetrievalCurrent {
+  const facts = retrievalOf(view.payload);
+  return {
+    name: view.title ?? "",
+    embeddingModel: facts.embeddingModel ?? "",
+    index: toolName(facts.index ?? "") ?? facts.index ?? "",
+    corpus: facts.corpus ?? "",
+    corpusSize: facts.corpusSize === undefined ? "" : String(facts.corpusSize),
+    query: facts.query ?? "",
+    k: facts.k === undefined ? "" : String(facts.k),
+    recall: facts.recall.map((point) => ({ k: String(point.k), percent: String(Math.round(point.value * 1000) / 10), source: point.source })),
+    hybrid: facts.hybrid === true,
   };
 }
 
@@ -353,6 +372,25 @@ export function saveSystemPrompt(view: V<"system_prompt">, input: AddSystemPromp
     Version: { version: input.version ?? "" },
     Variables: Object.fromEntries(names.map((name) => [name, input.variables?.find((entry) => entry.name === name)?.description ?? ""])),
   });
+}
+
+/** Save a Retrieval tile: the name through the rename writer, every other key through the extras writer; only what changed is written. */
+export function saveRetrieval(view: V<"retrieval">, input: AddRetrievalInput, h: H): void {
+  const id = view.id;
+  if ((input.name ?? "") !== (view.title ?? "") && (input.name ?? "") !== "") h.onRename(id, input.name ?? "");
+  const was = payloadOf(view);
+  const next: Raw = {
+    embedding_model: input.embeddingModel ?? null,
+    index: input.index ?? null,
+    corpus: input.corpus ?? null,
+    corpus_size: input.corpusSize ?? null,
+    query: input.query ?? null,
+    k: input.k ?? null,
+    recall: input.recall && input.recall.length > 0 ? input.recall.map((point) => ({ k: point.k, value: point.value, source: point.source })) : null,
+    hybrid: input.hybrid ? true : null,
+  };
+  const changed = Object.fromEntries(Object.entries(next).filter(([key, value]) => !same(was[key] ?? null, value)));
+  if (Object.keys(changed).length > 0) h.onExtras?.(id, changed);
 }
 
 export function saveDataset(view: V<"dataset">, input: AddDatasetInput, h: H): void {
