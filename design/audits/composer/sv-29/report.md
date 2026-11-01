@@ -8,7 +8,7 @@ Facts wrong on disk: readers/guide.ts and providers.ts (SV-27) do not exist; ret
   (data renderer, demo seed), so it is a step only with `step: true`.
 Baseline -> end: tests 10,366 -> 10,475 (4 fail in the full run under load: LayerReview fails without my changes too; the other three pass alone)
 Composer chunk 117.9 -> 119.0 KB gz; AddRetrievalDialog 2.1 KB gz new chunk (see size.md)
-Not run: tier1 e2e, audit:themes, audit:contrast, audit:motion, audit:pages, audit:perf
+Audits run here, all three FAILED and not compared with main: audit:themes and audit:contrast stop on `Cannot read properties of null (reading 'click')` in the page script (environment, no signed-in state); audit:motion remove-a-tile saw 6 frame gaps over 25 ms in this container (no motion was added). Not run: tier1 e2e, audit:pages, audit:perf
 Lovable messages: none. No migration.
 
 Decision: label set, candidates, selection, adaptation, known limits yes each · ceiling derived yes
