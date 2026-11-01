@@ -700,6 +700,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
 
 function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }; fold?: Fold | null }) {
   const [open, setOpen] = useState(false);
+  const [outputsOpen, setOutputsOpen] = useState(false);
   const setup = chat.setup;
   // CA-05 P6: under two quiet labels, only when both have rows.
   const grouped = groupByLoaded(setup.map((item) => ({ ...item, loaded: item.loaded ?? ("start" as const) })));
@@ -747,6 +748,28 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
       ) : null}
       {chat.runsWhen && !fold?.folded ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
       {chat.facts && !fold?.folded ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
+      {chat.outputs && !fold?.folded ? (
+        <div data-testid="outputs" style={{ marginLeft: SETUP_INDENT, display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ paddingTop: 2 }}>
+            <ReadAll label="Produced" onRead={() => setOutputsOpen((value) => !value)} expanded={outputsOpen} />
+          </span>
+          {outputsOpen ? (
+            <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>
+              {chat.outputs.map((row) => (
+                <li key={`${row.label}:${row.href ?? ""}`} style={text(12.5, 400, t.text2)}>
+                  {row.href ? (
+                    <a href={row.href} rel="noopener noreferrer" target="_blank" style={{ color: "inherit", textDecoration: "underline" }}>
+                      {row.label}
+                    </a>
+                  ) : (
+                    row.label
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
       {chat.together && !fold?.folded ? <DotLine testId="together-line">{chat.together}</DotLine> : null}
       {open && !fold?.folded ? (
         <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>

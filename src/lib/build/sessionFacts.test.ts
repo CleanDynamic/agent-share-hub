@@ -147,6 +147,10 @@ describe("SV-30: what a copy of a session keeps", () => {
     const run = { model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }], cost: 3.4, currency: "GBP", tokens: 5000, background: true, ms: 60000 };
     expect(copiedFacts(run)).toEqual({ model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }] });
     expect(copiedFacts(undefined)).toEqual({});
+    // What it produced is the original's evidence: kept, labelled, and not shown to readers until the copier ticks Show readers.
+    const outputs = [{ kind: "pull_request", url: "https://github.com/acme/app/pull/9" }];
+    expect(copiedFacts({ outputs, showOutputs: true, environment: "local" })).toEqual({ environment: "local", outputs, from_original: true });
+    expect(sessionFactsLine({ extras: { ...copiedFacts({ outputs }), showOutputs: true } as never }, "reader")).toBe("The original's: 1 pull request");
   });
 });
 

@@ -11,6 +11,7 @@
 // dollars) and is shown in it; it is never converted, because no rate is known here.
 
 import { ACCESS_SYSTEMS, ENVIRONMENTS, ISOLATIONS, accessLine, accessOf, environmentLine, type AccessEntry, type Environment, type Isolation } from "./sessionAccess";
+import { outputsCountLine, outputsOf, outputsRefusal, type OutputLink } from "./sessionOutputs";
 import { traceUrlOf } from "./trace";
 import { EFFORTS, EFFORT_LABEL, type Effort } from "./tileExtras";
 
@@ -52,6 +53,11 @@ export interface SessionExtras {
   /** SV-30 P6: how many turns the session had, and how many times it was compacted. */
   messages?: number;
   compactions?: number;
+  /** SV-30 P7: what the session produced, as the maker gave it, and whether readers see it. */
+  outputs?: OutputLink[];
+  showOutputs?: boolean;
+  /** SV-30: the outputs (and the review) came with a copy of the original: they are the original's evidence, not this build's. */
+  from_original?: boolean;
 }
 
 /** SV-30 P6: what the run itself showed, per session: the import's turn count, and the compaction summaries among its turns. Never stored. */
@@ -81,7 +87,7 @@ export const MODEL_ID_MAX = 80;
 /** A session over this many words is "long". */
 export const LONG_SESSION_WORDS = 100_000;
 
-const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access", "messages", "compactions"] as const;
+const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access", "messages", "compactions", "outputs", "showOutputs", "from_original"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -127,6 +133,10 @@ export function extrasOf(entry: unknown): SessionExtras {
   if (messages !== undefined && messages > 0) out.messages = messages;
   const compactions = whole(entry.compactions, 10_000);
   if (compactions !== undefined && compactions > 0) out.compactions = compactions;
+  const outputs = outputsOf(entry.outputs);
+  if (outputs.length > 0) out.outputs = outputs;
+  if (entry.showOutputs === true) out.showOutputs = true;
+  if (entry.from_original === true) out.from_original = true;
   return out;
 }
 
@@ -149,6 +159,11 @@ export function copiedFacts(extras: unknown): SessionExtras {
   const read = extrasOf(extras);
   const out: Record<string, unknown> = {};
   for (const key of METHOD_FACT_KEYS) if (read[key] !== undefined) out[key] = read[key];
+  // What it produced is the original's evidence: kept, labelled as the original's, and not shown to readers until the copier says so.
+  if (read.outputs) {
+    out.outputs = read.outputs;
+    out.from_original = true;
+  }
   return out as SessionExtras;
 }
 
@@ -173,6 +188,10 @@ export function extrasRefusal(extras: SessionExtras): string | null {
   if (extras.access && (extras.access.length > ACCESS_SYSTEMS.length || accessOf(extras.access).length !== extras.access.length)) return "Access is a system and read or write, once each.";
   if (extras.messages !== undefined && !(Number.isInteger(extras.messages) && extras.messages >= 0)) return "Messages is a whole number.";
   if (extras.compactions !== undefined && !(Number.isInteger(extras.compactions) && extras.compactions >= 0 && extras.compactions <= 10_000)) return "Compactions is a whole number.";
+  if (extras.outputs) {
+    const why = outputsRefusal(extras.outputs);
+    if (why) return why;
+  }
   if (extras.parallelWith && extras.parallelWith.length > PARALLEL_MAX) return `At most ${PARALLEL_MAX} sessions ran at the same time.`;
   return null;
 }
@@ -231,6 +250,9 @@ export function sessionFactsLine({ extras = {}, words = 0, model = null, run = {
   const compactions = figureOf(extras.compactions, run.compactions);
   if (messages) parts.push(countWords.messages(messages.value));
   if (compactions) parts.push(countWords.compactions(compactions.value));
+  // SV-30 P7: the count of what it produced; readers get it only when the maker ticked Show readers.
+  const produced = audience === "maker" || extras.showOutputs === true ? outputsCountLine(extras.outputs ?? []) : null;
+  if (produced) parts.push(extras.from_original ? `The original's: ${produced}` : produced);
   if (extras.model_id) parts.push(modelWithId(model, extras.model_id) as string);
   if (extras.effort) parts.push(FACTS_COPY.effort(extras.effort));
   const environment = environmentLine(extras);

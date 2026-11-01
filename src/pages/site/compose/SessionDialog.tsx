@@ -41,6 +41,7 @@ import {
   EffortControl,
   ModelIdControl,
   MessagesControl,
+  OutputsControl,
   MethodControl,
   OwnCopyControl,
   StartedWithControl,
@@ -56,6 +57,7 @@ import {
   messagesHeld,
   methodHeld,
   modelIdHeld,
+  outputsHeld,
   timeHeld,
   togetherHeld,
   tokensHeld,
@@ -397,6 +399,9 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             </OptionalField>
             <OptionalField name="Compactions" summary={compactionsHeld(extras, view.run)} phone={phone}>
               <CompactionsControl id={key} extras={extras} run={view.run} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Output links" summary={outputsHeld(extras)} phone={phone}>
+              <OutputsControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.how} summary={methodHeld(extras)} phone={phone}>
               <MethodControl id={key} extras={extras} phone={phone} onChange={saveExtras} />

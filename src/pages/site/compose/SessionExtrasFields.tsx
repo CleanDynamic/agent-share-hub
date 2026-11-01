@@ -18,6 +18,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { COST_MAX, costField, countWords, figureOf, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type RunFacts, type SessionExtras } from "@/lib/build/sessionFacts";
 import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
+import { OUTPUT_KINDS, OUTPUT_LABEL, OUTPUTS_MAX, outputRow, outputsCountLine, outputsRefusal, type OutputKind, type OutputLink } from "@/lib/build/sessionOutputs";
 import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
 import { DM_MONO } from "@/lib/theme/type";
@@ -604,3 +605,79 @@ function CountControl({ id, field, label, extras, run, phone, onChange }: { id: 
 }
 export const MessagesControl = (props: Omit<Parameters<typeof CountControl>[0], "field" | "label">) => <CountControl {...props} field="messages" label="Messages" />;
 export const CompactionsControl = (props: Omit<Parameters<typeof CountControl>[0], "field" | "label">) => <CountControl {...props} field="compactions" label="Compactions" />;
+
+/* ── SV-30 P7: what the session produced ── */
+
+export const outputsHeld = (extras: SessionExtras): string | null => outputsCountLine(extras.outputs ?? []);
+/**
+ * Links entered by hand: a kind, then a repository and SHA for a commit or an https address for the rest. The list is kept as typed;
+ * a row that is not whole waits and says why. Show readers is off until the maker ticks it (a private repository stays private).
+ */
+export function OutputsControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const [rows, setRows] = useState<{ kind: OutputKind; a: string; b: string }[]>(() => (extras.outputs ?? []).map((entry) => (entry.kind === "commit" ? { kind: entry.kind, a: entry.repo, b: entry.sha } : { kind: entry.kind, a: entry.url, b: "" })));
+  const [wrong, setWrong] = useState<string | null>(null);
+  const toLinks = (list: typeof rows): OutputLink[] => list.map((row) => (row.kind === "commit" ? { kind: "commit", repo: row.a.trim(), sha: row.b.trim() } : { kind: row.kind, url: row.a.trim() }));
+  const commit = (next: typeof rows) => {
+    setRows(next);
+    const links = toLinks(next.filter((row) => row.a.trim() || row.b.trim()));
+    const why = outputsRefusal(links);
+    setWrong(why);
+    if (why) return;
+    onChange({ ...extras, outputs: links.length > 0 ? links : undefined, ...(links.length === 0 ? { showOutputs: undefined } : null) });
+  };
+  return (
+    <div data-testid="outputs-control" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {rows.map((row, index) => (
+        <div key={index} data-testid="output-row" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minWidth: 0 }}>
+          <select
+            aria-label={`Kind of output ${index + 1}`}
+            value={row.kind}
+            onChange={(event) => commit(rows.map((other, at) => (at === index ? { kind: event.target.value as OutputKind, a: "", b: "" } : other)))}
+            style={{ ...typedField(phone, ring(false)), width: 150 }}
+          >
+            {OUTPUT_KINDS.map((kind) => (
+              <option key={kind} value={kind}>
+                {OUTPUT_LABEL[kind].one.replace(/^./, (c) => c.toUpperCase())}
+              </option>
+            ))}
+          </select>
+          <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+            <ExtrasInput key={`${id}:o${index}a:${row.a}`} label={row.kind === "commit" ? `Repository of output ${index + 1}` : `Link of output ${index + 1}`} value={row.a} placeholder={row.kind === "commit" ? "https://github.com/acme/app" : "https://…"} max={2000} phone={phone} onCommit={(a) => commit(rows.map((other, at) => (at === index ? { ...other, a } : other)))} />
+          </div>
+          {row.kind === "commit" ? (
+            <div style={{ width: 140 }}>
+              <ExtrasInput key={`${id}:o${index}b:${row.b}`} label={`SHA of output ${index + 1}`} value={row.b} placeholder="a1b2c3d" max={40} phone={phone} onCommit={(b) => commit(rows.map((other, at) => (at === index ? { ...other, b } : other)))} />
+            </div>
+          ) : null}
+          <IconButton icon={X} glyph="x" boxed={false} label={`Remove output ${index + 1}`} size={26} onClick={() => commit(rows.filter((_, at) => at !== index))} />
+        </div>
+      ))}
+      {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}
+      {rows.length < OUTPUTS_MAX ? (
+        <span>
+          <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setRows((now) => [...now, { kind: "commit", a: "", b: "" }])}>
+            Add a link
+          </TextButton>
+        </span>
+      ) : (
+        <span style={text(12, 400, t.text2)}>{OUTPUTS_MAX} max</span>
+      )}
+      {(extras.outputs ?? []).length > 0 ? (
+        <>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
+            <Checkbox checked={extras.showOutputs === true} onChange={(event) => onChange({ ...extras, showOutputs: event.target.checked ? true : undefined })} />
+            <span style={text(13, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
+          </label>
+          <span style={text(12, 400, t.text2)}>Off: links hidden from readers. {extras.from_original ? "These came with the original." : ""}</span>
+          <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+            {(extras.outputs ?? []).map((entry, at) => (
+              <li key={at} style={text(12, 400, t.label)}>
+                {outputRow(entry).label}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
