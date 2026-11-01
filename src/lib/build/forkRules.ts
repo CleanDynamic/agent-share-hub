@@ -41,6 +41,8 @@ export function methodOf<T extends object | null | undefined>(payload: T): T {
     delete out.media_id;
     delete out.url;
   }
+  // SV-29 P2: a Retrieval tile's measured Recall@k is the original's evidence: it stays, labelled as the original's.
+  if (Array.isArray(out.recall)) out.recall = out.recall.map((point) => (isRecord(point) ? { ...point, source: "original" } : point));
   // A decision's answer is the original's: it stays, as what the copy is checked against.
   if (isRecord(out.answer) && Array.isArray(out.questions)) {
     out.expected = out.answer;

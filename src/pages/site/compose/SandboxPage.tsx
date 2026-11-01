@@ -92,6 +92,7 @@ import { buildSummary } from "@/lib/build/buildSummary";
 import type { AddCheckDialog as AddCheckDialogImpl, AddCheckInput } from "./AddCheckDialog";
 import type { AddCodeDialog as AddCodeDialogImpl, AddCodeInput } from "./AddCodeDialog";
 import type { AddDatasetDialog as AddDatasetDialogImpl } from "./AddDatasetDialog";
+import type { AddRetrievalDialog as AddRetrievalDialogImpl } from "./AddRetrievalDialog";
 import type { AddDecisionDialog as AddDecisionDialogImpl } from "./AddDecisionDialog";
 import type { AddRepoDialog as AddRepoDialogImpl } from "./AddRepoDialog";
 import type { AddSystemPromptDialog as AddSystemPromptDialogImpl } from "./AddSystemPromptDialog";
@@ -206,6 +207,7 @@ const DeploymentSection = lazy(() => import("./DeploymentSection").then((m) => (
 const AddToolDialog = lazyWindow<ComponentProps<typeof AddToolDialogImpl>>(() => import("./AddToolDialog").then((m) => ({ default: m.AddToolDialog })), (p) => p.open);
 const AddCheckDialog = lazyWindow<ComponentProps<typeof AddCheckDialogImpl>>(() => import("./AddCheckDialog").then((m) => ({ default: m.AddCheckDialog })), (p) => p.open);
 const AddCodeDialog = lazyWindow<ComponentProps<typeof AddCodeDialogImpl>>(() => import("./AddCodeDialog").then((m) => ({ default: m.AddCodeDialog })), (p) => p.open);
+const AddRetrievalDialog = lazyWindow<ComponentProps<typeof AddRetrievalDialogImpl>>(() => import("./AddRetrievalDialog").then((m) => ({ default: m.AddRetrievalDialog })), (p) => p.open);
 const AddDatasetDialog = lazyWindow<ComponentProps<typeof AddDatasetDialogImpl>>(() => import("./AddDatasetDialog").then((m) => ({ default: m.AddDatasetDialog })), (p) => p.open);
 const AddDecisionDialog = lazyWindow<ComponentProps<typeof AddDecisionDialogImpl>>(() => import("./AddDecisionDialog").then((m) => ({ default: m.AddDecisionDialog })), (p) => p.open);
 const AddRepoDialog = lazyWindow<ComponentProps<typeof AddRepoDialogImpl>>(() => import("./AddRepoDialog").then((m) => ({ default: m.AddRepoDialog })), (p) => p.open);
@@ -444,6 +446,8 @@ function SandboxPageBody() {
   /** CA-15 P9: Add › System prompt, Dataset and GitHub repository, each disabled until its node type is live. */
   const systemPromptType = useNodeType(compose.nodeTypes, "system_prompt");
   const datasetType = useNodeType(compose.nodeTypes, "dataset");
+  const retrievalType = useNodeType(compose.nodeTypes, "retrieval_config");
+  const [addRetrievalOpen, setAddRetrievalOpen] = useState(false);
   const repoType = useNodeType(compose.nodeTypes, "repo");
   const systemPromptAvailable = Boolean(systemPromptType?.is_active);
   const datasetAvailable = Boolean(datasetType?.is_active);
@@ -2110,6 +2114,8 @@ function SandboxPageBody() {
     decisionAvailable,
     onAddSystemPrompt: () => setAddSystemPromptOpen(true),
     onAddDataset: () => setAddDatasetOpen(true),
+    onAddRetrieval: () => setAddRetrievalOpen(true),
+    retrievalAvailable: Boolean(retrievalType?.is_active),
     onAddRepo: () => setAddRepoOpen(true),
     systemPromptAvailable,
     datasetAvailable,
@@ -2721,6 +2727,7 @@ function SandboxPageBody() {
         session={currentSession}
         onAdd={(input) => void stepOf.sourceTile(ADDED.systemPrompt)((session) => prompts.addSystemPromptTile({ ...input, session }))}
       />
+      <AddRetrievalDialog open={addRetrievalOpen} onOpenChange={setAddRetrievalOpen} onAdd={(input) => void stepOf.sourceTile(ADDED.retrieval)((session) => prompts.addRetrievalTile({ ...input, session }))} />
       <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void stepOf.sourceTile(ADDED.dataset)((session) => prompts.addDatasetTile({ ...input, session }))} />
       <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void stepOf.sourceTile(ADDED.repo)((session) => prompts.addRepoTile({ ...input, session }))} />
       <AddManualStepDialog

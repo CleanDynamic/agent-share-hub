@@ -191,6 +191,9 @@ export interface SandboxViewProps extends CardProps {
   onAddSystemPrompt?: () => void;
   onAddDataset?: () => void;
   onAddRepo?: () => void;
+  /** SV-29 P2: Add › Retrieval, and whether the `retrieval_config` node type is live. */
+  onAddRetrieval?: () => void;
+  retrievalAvailable?: boolean;
   /** CA-15 P9: the `system_prompt`, `dataset` and `repo` node types are live (active in the registry). */
   systemPromptAvailable?: boolean;
   datasetAvailable?: boolean;
@@ -232,7 +235,7 @@ export interface SandboxViewProps extends CardProps {
   onEditSelected?: () => void;
 }
 
-export type AddKey = "prompt" | "agent" | "decision" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "approval" | "code" | "check" | "result" | "library";
+export type AddKey = "prompt" | "agent" | "decision" | "retrieval" | "system_prompt" | "file" | "dataset" | "tool" | "repo" | "manual" | "approval" | "code" | "check" | "result" | "library";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -246,6 +249,8 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "prompt", name: "Prompt", line: "Message sent to a model", ready: true },
   { key: "agent", name: "Agent", line: "Single agent or multi-agent team", ready: true },
   { key: "decision", name: "Decision", line: "Structured answer from a model", ready: true },
+  /* SV-29 P2: the registry's `retrieval_config`; ready once its node type is live. */
+  { key: "retrieval", name: "Retrieval", line: "Finds candidates by similarity search", ready: false },
   { key: "system_prompt", name: "System prompt", line: "Instructions for several prompts", ready: false },
   { key: "file", name: "File", line: "File the model read", ready: true },
   { key: "dataset", name: "Dataset", line: "Data for training, evaluation or retrieval", ready: false },
@@ -290,7 +295,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable" | "onAddFromLibrary" | "onWarmLibrary"> & {
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "onAddRetrieval" | "retrievalAvailable" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable" | "onAddFromLibrary" | "onWarmLibrary"> & {
   /** SV-27 P7: whether a node type is live, for the Deployment group; each kind is ready only once its type is. */
   deploymentLive?: (type: string) => boolean;
   /** SV-27 P7: Add › Deployment › a kind. */
@@ -328,13 +333,14 @@ export function addEntries(props: AddMenuProps): AddEntry[] {
 /** SV-27 P7: the Deployment group, after the existing items; each kind ready once its node type is live (Front end already is). */
 const deploymentEntries = ({ deploymentLive, onAddDeployment, onWarmDeployment }: AddMenuProps): AddEntry[] => (deploymentLive ? deploymentMenuEntries(deploymentLive, onAddDeployment, onWarmDeployment, TILE_OFF_LINE) : []);
 
-function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false, onAddFromLibrary, onWarmLibrary }: AddMenuProps): AddEntry[] {
+function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, onAddRetrieval, retrievalAvailable = false, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false, onAddFromLibrary, onWarmLibrary }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
     if (item.key === "system_prompt" || item.key === "dataset" || item.key === "repo") {
       const live = item.key === "system_prompt" ? systemPromptAvailable : item.key === "dataset" ? datasetAvailable : repoAvailable;
       const handler = item.key === "system_prompt" ? onAddSystemPrompt : item.key === "dataset" ? onAddDataset : onAddRepo;
       return { ...item, ready: live, line: live ? item.line : TILE_OFF_LINE, enabled: live && Boolean(handler), onSelect: handler };
     }
+    if (item.key === "retrieval") return { ...item, ready: retrievalAvailable, line: retrievalAvailable ? item.line : TILE_OFF_LINE, enabled: retrievalAvailable && Boolean(onAddRetrieval), onSelect: onAddRetrieval };
     if (item.key === "decision") {
       return { ...item, line: decisionAvailable ? item.line : DECISION_OFF_LINE, enabled: item.ready && decisionAvailable && Boolean(onAddDecision), onSelect: onAddDecision };
     }
@@ -1194,6 +1200,8 @@ function SandboxBody(props: SandboxViewProps) {
       decisionAvailable={props.decisionAvailable}
       onAddSystemPrompt={props.onAddSystemPrompt}
       onAddDataset={props.onAddDataset}
+      onAddRetrieval={props.onAddRetrieval}
+      retrievalAvailable={props.retrievalAvailable}
       onAddRepo={props.onAddRepo}
       systemPromptAvailable={props.systemPromptAvailable}
       datasetAvailable={props.datasetAvailable}

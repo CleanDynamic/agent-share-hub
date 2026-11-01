@@ -48,7 +48,7 @@ function Form({ onAdd, onCancel, phone, current, edit, ...fields }: Pick<AddDeci
         const made = draftToInput(draft);
         if ("error" in made) {
           setError(made.error);
-          setInto(/answered with|ranking|yes or no from/.test(made.error) ? { answer: true } : /example/i.test(made.error) ? { examples: true } : /threshold/i.test(made.error) ? { low: true } : {});
+          setInto(/answered with|ranking|yes or no from/.test(made.error) ? { answer: true } : /example/i.test(made.error) ? { examples: true } : /threshold/i.test(made.error) ? { low: true } : /label set|candidates|beam|fine-tuned|few-shot|adapted|known limit|cover the label/i.test(made.error) ? { pipeline: true } : {});
           return;
         }
         if (edit) edit.onSave(made.input);

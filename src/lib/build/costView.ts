@@ -19,7 +19,7 @@ export function buildPartsOf(steps: readonly Step[], groups: readonly SessionGro
 /** The runtime tiles of the build, top level: every one has a place on the main path unless it runs only when a decision went one way. */
 export function runTilesOf(steps: readonly Step[]): RunTile[] {
   return steps
-    .filter((step) => step.kind === "agent" || step.kind === "team" || step.kind === "code" || step.kind === "tool" || step.kind === "decision")
+    .filter((step) => step.kind === "agent" || step.kind === "team" || step.kind === "code" || step.kind === "tool" || step.kind === "decision" || step.kind === "retrieval")
     .map((step) => ({ id: step.id, name: `${step.number} · ${step.title ?? step.defaultTitle}`, run: step.runCost ?? null, mainPath: !step.runsWhen }));
 }
 

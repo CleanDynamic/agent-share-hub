@@ -49,7 +49,7 @@ import { SaveMark, UsedInLine } from "@/components/build/ConnectionMarks";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, TypeLine } from "@/components/build/tileBodies";
+import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody, TypeLine } from "@/components/build/tileBodies";
 import { footerFactsOf, resultTypeLine } from "@/lib/build/tileLines";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
@@ -855,6 +855,20 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
+      </article>
+    );
+  }
+
+  if (step.kind === "retrieval" && step.retrieval) {
+    /* SV-29 P2: a similarity search that finds candidates: what it indexes, how many it returns and its recall. */
+    return (
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}>
+        <Title entry={entry} right={null} />
+        <TypeLine step={step} indent={INDENT} />
+        <RetrievalTileBody step={step} indent={INDENT} />
+        <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
+        <UsedInLine id={step.id} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );

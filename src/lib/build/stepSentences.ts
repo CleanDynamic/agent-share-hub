@@ -43,6 +43,7 @@ export const ADDED = {
   file: "Added a file",
   systemPrompt: "Added a system prompt",
   dataset: "Added a dataset",
+  retrieval: "Added a retrieval",
   repo: "Added a repository",
   session: "Added a session",
   part: "Added a part",

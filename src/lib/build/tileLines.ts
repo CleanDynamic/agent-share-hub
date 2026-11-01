@@ -71,6 +71,8 @@ export function typeLineOf(step: Step): string {
       const service = facts ? (toolName(facts.provider) ?? facts.provider) : "";
       return dotted("Decision", service || null, facts?.model || null);
     }
+    case "retrieval":
+      return dotted("Retrieval", step.retrieval?.embeddingModel ?? null);
     case "system_prompt": {
       const n = step.systemPrompt?.appliesTo ?? 0;
       return dotted("System prompt", `Applies to ${n.toLocaleString("en-GB")} ${n === 1 ? "prompt" : "prompts"}`);

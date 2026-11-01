@@ -62,6 +62,8 @@ import {
   type ToolTileInput,
   addSystemPromptTile as addSystemPromptStep,
   addDatasetTile as addDatasetStep,
+  addRetrieval as addRetrievalStep,
+  type RetrievalInput,
   addRepoTile as addRepoStep,
   type SystemPromptInput,
   type DatasetInput,
@@ -275,6 +277,8 @@ export interface ComposePrompts {
   /** CA-15 P9: a system prompt, a dataset and a GitHub repository as tiles; each resolves its id, or null if it failed. */
   addSystemPromptTile: (input: SystemPromptInput) => Promise<string | null>;
   addDatasetTile: (input: DatasetInput) => Promise<string | null>;
+  /** SV-29 P2: a Retrieval tile. */
+  addRetrievalTile: (input: RetrievalInput) => Promise<string | null>;
   addRepoTile: (input: RepoInput) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
@@ -726,6 +730,7 @@ export function useComposePrompts({
   const addSystemPromptTile = addSourceTile(addSystemPromptStep, "System prompt not added");
   const addDatasetTile = addSourceTile(addDatasetStep, "Dataset not added");
   const addRepoTile = addSourceTile(addRepoStep, "Repository not added");
+  const addRetrievalTile = addSourceTile(addRetrievalStep, "Retrieval not added");
 
   const addToolTile = (input: ToolTileInput) =>
     attempt("Tool not added", async () => {
@@ -962,5 +967,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addRetrievalTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

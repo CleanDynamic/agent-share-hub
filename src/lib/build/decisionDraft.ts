@@ -3,6 +3,8 @@
 import type { DecisionInput } from "./graph";
 import { EXAMPLES_MAX, EXAMPLE_TEXT_MAX, decisionOf, questionsRefusal, sureOf, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type ExtractField, type LowConfidence, type QuestionType } from "./decision";
 import type { DecisionImport } from "./decisionImport";
+import { ADAPTATIONS, BASE_MODEL_MAX, BEAM_WIDTH_MAX, BEAM_WIDTH_MIN, CANDIDATES_K_MAX, CANDIDATES_K_MIN, KNOWN_LIMIT_LINE_MAX, KNOWN_LIMITS_MAX, LABEL_NAME_MAX, LABEL_SIZE_MAX, LABEL_VERSION_MAX, SELECTION_METHODS, pipelineRefusal, type AdaptationKind, type LabelStructure, type PipelineFields, type SelectionMethod } from "./pipelineFields";
+import { linesOf } from "./tileExtras";
 
 export interface QuestionDraft {
   id: string;
@@ -29,6 +31,79 @@ export interface AnswerDraft {
   kept?: DecisionAnswer;
 }
 
+/** SV-29 P1: the pipeline fields as typed. An empty size, step, method or kind is "not given". */
+export interface PipelineDraft {
+  labelSize: string;
+  labelStructure: LabelStructure;
+  labelName: string;
+  labelVersion: string;
+  candidatesStep: string | null;
+  candidatesK: string;
+  selection: "" | SelectionMethod;
+  beamWidth: string;
+  adaptation: "" | AdaptationKind;
+  baseModel: string;
+  /** One limit per line. */
+  limits: string;
+}
+
+export const emptyPipeline = (): PipelineDraft => ({ labelSize: "", labelStructure: "flat", labelName: "", labelVersion: "", candidatesStep: null, candidatesK: "", selection: "", beamWidth: "", adaptation: "", baseModel: "", limits: "" });
+
+export function pipelineDraftOf(facts: PipelineFields): PipelineDraft {
+  return {
+    labelSize: facts.labelSet ? String(facts.labelSet.size) : "",
+    labelStructure: facts.labelSet?.structure ?? "flat",
+    labelName: facts.labelSet?.name ?? "",
+    labelVersion: facts.labelSet?.version ?? "",
+    candidatesStep: facts.candidatesFrom?.step ?? null,
+    candidatesK: facts.candidatesFrom ? String(facts.candidatesFrom.k) : "",
+    selection: facts.selection?.method ?? "",
+    beamWidth: facts.selection?.beamWidth ? String(facts.selection.beamWidth) : "",
+    adaptation: facts.adaptation?.kind ?? "",
+    baseModel: facts.adaptation?.baseModel ?? "",
+    limits: (facts.knownLimits ?? []).join("\n"),
+  };
+}
+
+/** The draft's pipeline fields as the stored shape, or the plain line that says why not. */
+export function pipelineOfDraft(draft: PipelineDraft): { fields: PipelineFields } | { error: string } {
+  const fields: PipelineFields = {};
+  const whole = (text: string): number | null => (/^\d+$/.test(text.trim()) ? Number(text.trim()) : null);
+  if (draft.labelSize.trim()) {
+    const size = whole(draft.labelSize);
+    if (size === null || size < 1 || size > LABEL_SIZE_MAX) return { error: "Label set size: a whole number of labels." };
+    if (draft.labelName.trim().length > LABEL_NAME_MAX) return { error: `Label set name: ${LABEL_NAME_MAX} characters max.` };
+    if (draft.labelVersion.trim().length > LABEL_VERSION_MAX) return { error: `Label set version: ${LABEL_VERSION_MAX} characters max.` };
+    fields.labelSet = { size, structure: draft.labelStructure, ...(draft.labelName.trim() ? { name: draft.labelName.trim() } : null), ...(draft.labelVersion.trim() ? { version: draft.labelVersion.trim() } : null) };
+  }
+  if (draft.candidatesStep) {
+    const k = whole(draft.candidatesK);
+    if (k === null || k < CANDIDATES_K_MIN || k > CANDIDATES_K_MAX) return { error: `Candidates: ${CANDIDATES_K_MIN} to ${CANDIDATES_K_MAX.toLocaleString("en-GB")}.` };
+    fields.candidatesFrom = { step: draft.candidatesStep, k };
+  }
+  if (draft.selection) {
+    if (!SELECTION_METHODS.includes(draft.selection)) return { error: "That is not a way to cover the label set." };
+    if (draft.selection === "beam_search") {
+      const width = whole(draft.beamWidth);
+      if (width === null || width < BEAM_WIDTH_MIN || width > BEAM_WIDTH_MAX) return { error: `Beam width: ${BEAM_WIDTH_MIN} to ${BEAM_WIDTH_MAX}.` };
+      fields.selection = { method: "beam_search", beamWidth: width };
+    } else fields.selection = { method: draft.selection };
+  }
+  if (draft.adaptation) {
+    if (!ADAPTATIONS.includes(draft.adaptation)) return { error: "That is not a way a model was adapted." };
+    if (draft.adaptation === "fine_tuned") {
+      if (!draft.baseModel.trim()) return { error: "Fine-tuned needs the base model." };
+      if (draft.baseModel.trim().length > BASE_MODEL_MAX) return { error: `Base model: ${BASE_MODEL_MAX} characters max.` };
+      fields.adaptation = { kind: "fine_tuned", baseModel: draft.baseModel.trim() };
+    } else fields.adaptation = draft.adaptation === "few_shot" ? { kind: "few_shot", examplesInPrompt: true } : { kind: "zero_shot" };
+  }
+  const limits = linesOf(draft.limits);
+  if (limits.length > KNOWN_LIMITS_MAX) return { error: `Known limits: ${KNOWN_LIMITS_MAX} max, one per line.` };
+  if (limits.some((line) => line.length > KNOWN_LIMIT_LINE_MAX)) return { error: `Each known limit: ${KNOWN_LIMIT_LINE_MAX} characters max.` };
+  if (limits.length > 0) fields.knownLimits = limits;
+  return { fields };
+}
+
 export interface DecisionDraft {
   name: string;
   provider: string;
@@ -45,6 +120,8 @@ export interface DecisionDraft {
   /** CA-15 P8. */
   examples: DecisionExample[];
   lowConfidence: LowConfidenceDraft;
+  /** SV-29 P1. */
+  pipeline: PipelineDraft;
 }
 
 export const blankQuestion = (): QuestionDraft => ({ id: "", type: "choice", instructions: "", options: [{ key: "", line: "" }, { key: "", line: "" }], levels: ["", ""], field: "text" });
@@ -64,6 +141,7 @@ export const emptyDraft = (): DecisionDraft => ({
   install: "",
   examples: [],
   lowConfidence: { mode: "", threshold: "" },
+  pipeline: emptyPipeline(),
 });
 
 const draftOfQuestion = (q: DecisionQuestion): QuestionDraft => ({
@@ -99,6 +177,7 @@ export function draftFromFacts(facts: DecisionFacts, name: string | null = null)
     install: facts.install ?? "",
     examples: (facts.examples ?? []).map((example) => ({ ...example })),
     lowConfidence: draftOfLow(facts.lowConfidence),
+    pipeline: pipelineDraftOf(facts),
   };
 }
 
@@ -142,7 +221,8 @@ export function decisionMissing(draft: DecisionDraft): string | null {
   if (new Set(keys).size !== keys.length) return "Key";
   for (const q of draft.questions) {
     const filled = q.options.filter((o) => o.key.trim());
-    if (takesOptions(q.type) && filled.length < 2) return "Options";
+    // SV-29 P1: with candidates from an earlier step, the fixed options are optional.
+    if (takesOptions(q.type) && filled.length < 2 && !(draft.pipeline.candidatesStep && filled.length === 0)) return "Options";
     if (takesOptions(q.type) && new Set(filled.map((o) => o.key.trim())).size !== filled.length) return "Options";
     if (q.type === "score" && q.levels.filter((level) => level.trim()).length < 2) return "Levels";
   }
@@ -153,7 +233,9 @@ export function decisionMissing(draft: DecisionDraft): string | null {
 export function draftToInput(draft: DecisionDraft): { input: DecisionInput } | { error: string } {
   if (!draft.provider.trim()) return { error: "Select the model or service the decision uses." };
   const questions = questionsOfDraft(draft);
-  const why = questionsRefusal(questions, draft.name.trim() || undefined);
+  const piped = pipelineOfDraft(draft.pipeline);
+  if ("error" in piped) return piped;
+  const why = questionsRefusal(questions, draft.name.trim() || undefined, { candidates: Boolean(piped.fields.candidatesFrom) });
   if (why) return { error: `${why}.` };
   const answer: Record<string, DecisionAnswer> = {};
   for (const q of questions) {
@@ -201,8 +283,12 @@ export function draftToInput(draft: DecisionDraft): { input: DecisionInput } | {
     if (threshold === null || threshold < 0 || threshold > 1) return { error: "The confidence threshold is a number from 0 to 1." };
     lowConfidence = { threshold };
   }
+  const examplesGiven = examples.length;
+  const pipelineWhy = pipelineRefusal(piped.fields, { examples: examplesGiven, takesOptions: questions.some((q) => takesOptions(q.type)) });
+  if (pipelineWhy) return { error: pipelineWhy };
   return {
     input: {
+      ...piped.fields,
       name: draft.name.trim() || null,
       provider: draft.provider.trim(),
       model: draft.model.trim(),

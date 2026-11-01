@@ -52,6 +52,8 @@ import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
 import { numberSessions } from "./sessionNumbers";
+import { isRetrievalTile, retrievalOf, retrievalPayload, retrievalRefusal, RETRIEVAL_TYPE, type RetrievalFacts } from "./retrieval";
+import { PIPELINE_KEYS, accuracyCeiling, pipelinePatchRefusal, pipelinePayload, pipelineRefusal, type PipelineFields } from "./pipelineFields";
 import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } from "./cost";
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
@@ -97,7 +99,7 @@ export const CODE_TYPE = "code";
 export const CHECK_TYPE = "eval_run";
 
 /** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "system_prompt" | "dataset" | "repo";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "system_prompt" | "dataset" | "repo" | "retrieval";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -217,6 +219,8 @@ export interface Step {
   cases?: CheckCase[];
   /** CA-13 P2, a decision only: its questions, what it read and one real answer. */
   decision?: DecisionFacts;
+  /** SV-29 P2, a Retrieval tile only: what it indexes, how many it returns and how well. */
+  retrieval?: RetrievalFacts;
   /** CA-13 P3, a runtime tile only (agent, team, code, tool, decision): the decision it runs after, and the value it ran on. */
   runsWhen?: RunsWhen;
   /** CA-13 P6, an agent only: the helper models that kept it on track (at most 12). */
@@ -583,6 +587,8 @@ const KIND_OF_TYPE: Record<string, StepKind> = {
   [CODE_TYPE]: "code",
   [CHECK_TYPE]: "check",
   [DECISION_TYPE]: "decision",
+  /* SV-29 P2: a Retrieval tile; a configuration saved before has no `step: true` and is not a step (`isStepNode`). */
+  [RETRIEVAL_TYPE]: "retrieval",
 };
 
 const KIND_NAME: Record<StepKind, string> = {
@@ -598,6 +604,7 @@ const KIND_NAME: Record<StepKind, string> = {
   system_prompt: "System prompt",
   dataset: "Dataset",
   repo: "GitHub repository",
+  retrieval: "Retrieval",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -622,7 +629,7 @@ export const kindOfNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }
   node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : node.type in SOURCE_KIND && isStepTile(node) ? SOURCE_KIND[node.type] : KIND_OF_TYPE[node.type];
 
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
-  (node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload)) || isStepTile(node);
+  (node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && (node.type !== RETRIEVAL_TYPE || isRetrievalTile(node.payload)) && !isSetupNode(node.payload)) || isStepTile(node);
 
 const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
@@ -786,6 +793,8 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
       const ids = (Array.isArray(payload.questions) ? payload.questions : []).flatMap((q) => (isRecord(q) && typeof q.id === "string" && q.id ? [q.id] : []));
       return ids.length ? ids.slice(0, 3).join(", ") : KIND_NAME[kind];
     }
+    case "retrieval":
+      return named(str("corpus") ? `Search of ${str("corpus")}` : "");
     default:
       return KIND_NAME[kind];
   }
@@ -951,6 +960,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
     ...(kind === "decision" && decisionOf(payload) ? { decision: decisionOf(payload) as DecisionFacts } : null),
+    ...(kind === "retrieval" ? { retrieval: retrievalOf(payload) } : null),
     ...runtimeFactsOf(kind, payload),
     // CA-13 P3: only a runtime tile runs when a decision went a certain way.
     ...(canRunWhen(kind) && runsWhenOf(payload.runs_when) ? { runsWhen: runsWhenOf(payload.runs_when) as RunsWhen } : null),
@@ -999,7 +1009,7 @@ function runtimeFactsOf(kind: StepKind, payload: Payload): Partial<Step> {
   }
   const built = buildCostOf(payload.build_cost);
   if (built) out.buildCost = built;
-  if (kind === "agent" || kind === "team" || kind === "code" || kind === "tool" || kind === "decision") {
+  if (kind === "agent" || kind === "team" || kind === "code" || kind === "tool" || kind === "decision" || kind === "retrieval") {
     const run = runCostOf(payload.run_cost);
     if (run) out.runCost = run;
   }
@@ -1102,7 +1112,24 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return withWaits(withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0))), tree, top.map((node) => node.id));
+  return withPipeline(withWaits(withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0))), tree, top.map((node) => node.id)));
+}
+
+/**
+ * SV-29 P1: a Decision that takes candidates from a Retrieval tile says that step's number and, where the tile measured Recall@k at
+ * the same k, the accuracy ceiling. Worked out here, never stored. Untouched when no decision has candidates.
+ */
+function withPipeline(steps: Step[]): Step[] {
+  if (!steps.some((step) => step.kind === "decision" && step.decision?.candidatesFrom)) return steps;
+  const all = flattenSteps(steps);
+  const apply = (step: Step): Step => {
+    const from = step.kind === "decision" ? step.decision?.candidatesFrom : undefined;
+    if (!step.decision || !from) return { ...step, children: step.children.map(apply) };
+    const source = all.find((entry) => entry.id === from.step);
+    const ceiling = accuracyCeiling(from, source?.retrieval ? { number: source.number, recall: source.retrieval.recall } : undefined);
+    return { ...step, decision: { ...step.decision, derived: { ...(source ? { candidatesNumber: source.number } : null), ...(ceiling ? { ceiling } : null) } }, children: step.children.map(apply) };
+  };
+  return steps.map(apply);
 }
 
 /** SV-28 P4: each step an Approval step blocks says which one it waits for. Untouched when the build has no gate. */
@@ -1631,7 +1658,7 @@ export async function addTeam(
 // --- CA-13: decisions and "Runs when" ----------------------------------------
 
 /** What a Decision holds when it is added or changed. `answer` is one real answer, when the maker has one. */
-export interface DecisionInput {
+export interface DecisionInput extends PipelineFields {
   /** A blank name saves as null, so the default (its question names) shows. */
   name?: string | null;
   provider: string;
@@ -1658,8 +1685,11 @@ export interface DecisionInput {
 function decisionPayload(operation: string, input: DecisionInput): Payload {
   const provider = input.provider.trim();
   if (!provider) throw refuse(operation, "A decision needs a model or service.");
-  const why = questionsRefusal(input.questions, input.name?.trim() || undefined);
+  const why = questionsRefusal(input.questions, input.name?.trim() || undefined, { candidates: Boolean(input.candidatesFrom) });
   if (why) throw refuse(operation, why);
+  // SV-29 P1: candidates, few-shot and fine-tuning each need what they stand on.
+  const pipelineWhy = pipelineRefusal(input, { examples: (input.examples ?? []).filter((example) => example.input.trim() || example.output.trim()).length, takesOptions: input.questions.some((q) => takesOptions(q.type)) });
+  if (pipelineWhy) throw refuse(operation, pipelineWhy);
   if ((input.stateSample ?? "").length > STATE_SAMPLE_MAX) throw refuse(operation, `State: ${STATE_SAMPLE_MAX.toLocaleString("en-GB")} characters max`);
   const out: Payload = {
     provider: toolFor(provider)?.id ?? provider,
@@ -1686,7 +1716,25 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
   const examples = (input.examples ?? []).map((example) => ({ input: example.input.trim(), output: example.output.trim() })).filter((example) => example.input || example.output);
   if (examples.length > 0) out.examples = examples;
   if (input.lowConfidence) out.low_confidence = input.lowConfidence as unknown as Json;
+  Object.assign(out, pipelinePayload(input));
   return out;
+}
+
+/** SV-29 P2: what a Retrieval tile holds when it is added. */
+export interface RetrievalInput extends Partial<Omit<RetrievalFacts, "recall">> {
+  recall?: readonly RetrievalFacts["recall"][number][];
+  name?: string | null;
+  session?: string | null;
+}
+
+/** SV-29 P2: Add › Retrieval: a numbered runtime tile at the top level. Every field is optional; `step: true` makes it a tile. */
+export async function addRetrieval(buildId: string, tree: readonly NodeTree[], input: RetrievalInput): Promise<BuildNode> {
+  await requireLiveType("addRetrieval", RETRIEVAL_TYPE);
+  const why = retrievalRefusal(input);
+  if (why) throw refuse("addRetrieval", why);
+  const title = titleOrNull(input.name);
+  if (title && title.length > TITLE_MAX) throw refuse("addRetrieval", `Title: ${TITLE_MAX} characters max`);
+  return placeTopNode(buildId, tree, { type: RETRIEVAL_TYPE, title, payload: { ...retrievalPayload(input), ...(input.session ? { session: input.session } : null) } as Json });
 }
 
 /** A Decision: top level, a runtime tile. Refused until the CA-13 database change is live. */
@@ -1705,7 +1753,7 @@ export async function setDecision(node: BuildNode, input: DecisionInput): Promis
   const keys = decisionPayload("setDecision", input);
   const old = payloadOf(node);
   const payload: Payload = { ...old };
-  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install", "examples", "low_confidence"]) delete payload[key];
+  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install", "examples", "low_confidence", ...PIPELINE_KEYS]) delete payload[key];
   Object.assign(payload, keys);
   // The state's Uses link follows "What it reads": the old output link goes, the new one is added.
   const kept = usesOf(node).filter((use) => !(use.kind === "output" && use.node_id === old.state_from));
@@ -1728,7 +1776,7 @@ export interface RuntimePatch {
   runCost?: RunCost | null;
 }
 
-const RUNTIME_TYPES = new Set([AGENT_TYPE, TEAM_TYPE, CODE_TYPE, DECISION_TYPE, TOOL_TYPE]);
+const RUNTIME_TYPES = new Set([AGENT_TYPE, TEAM_TYPE, CODE_TYPE, DECISION_TYPE, TOOL_TYPE, RETRIEVAL_TYPE]);
 
 /**
  * CA-13: the runtime facts of a tile, checked. Helpers, "defined in" and a trace link belong to an agent; an install line to
@@ -3186,7 +3234,7 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
 export async function setExtras(node: BuildNode, patch: Record<string, unknown>, tree?: readonly NodeTree[]): Promise<BuildNode> {
   // SV-27 P5: a role is only for an agent inside a team. SV-28: a handoff goes to another agent of the same team, a job is a
   // prompt inside an agent, an Approval step's blocked steps come after it (checked against the tree when the caller gives it).
-  const notHere = agentFieldsRefusal(node, patch) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
+  const notHere = agentFieldsRefusal(node, patch) ?? (node.type === DECISION_TYPE ? pipelinePatchRefusal(payloadOf(node), patch) : null) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
   if (notHere) throw refuse("setExtras", notHere);
   let cleaned: Record<string, Json | null>;
   try {

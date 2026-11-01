@@ -52,7 +52,7 @@ import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
+import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, RetrievalTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { GlyphButton } from "./ModalFrame";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { SUMMARY_COPY } from "@/lib/build/summaryTurn";
@@ -1726,6 +1726,11 @@ function DecisionCard({ step, index, last, props }: { step: Step; index: number;
   return <PlainCard step={step} index={index} last={last} props={props} noun="Decision" body={(indent) => <DecisionTileBody step={step} lean indent={indent} />} after={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
 }
 
+/** SV-29 P2: a Retrieval tile: what it indexes, how many it returns and how well; the index and query are on the build page and in Details. */
+function RetrievalCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  return <PlainCard step={step} index={index} last={last} props={props} noun="Retrieval" body={(indent) => <RetrievalTileBody step={step} lean indent={indent} />} after={<TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />} />;
+}
+
 /** CA-15 P9: a system prompt as a tile: its text in two lines, with its variables as chips; what it applies to is in its type line. */
 function SystemPromptCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   return <PlainCard step={step} index={index} last={last} props={props} noun="System prompt" body={(indent) => <SystemPromptTileBody step={step} indent={indent} />} />;
@@ -2301,6 +2306,8 @@ export function BuildList(raw: BuildListProps) {
       <ToolCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "decision" ? (
       <DecisionCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "retrieval" ? (
+      <RetrievalCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "system_prompt" ? (
       <SystemPromptCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "dataset" ? (

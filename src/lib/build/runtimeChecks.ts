@@ -45,7 +45,7 @@ export function runtimeFindings(steps: readonly Step[]): RuntimeFindings {
   });
   steps.forEach((step, index) => {
     if (step.kind === "decision") {
-      const why = questionsRefusal(step.decision?.questions ?? [], nameOf(step));
+      const why = questionsRefusal(step.decision?.questions ?? [], nameOf(step), { candidates: Boolean(step.decision?.candidatesFrom) });
       if (why) blockers.push({ line: why, stepId: step.id });
       else
         for (const q of step.decision?.questions ?? [])
