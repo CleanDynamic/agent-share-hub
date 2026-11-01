@@ -89,16 +89,23 @@ describe("each modal as its board (CA-15b P2)", () => {
   it("Add a check", () => {
     mount(<AddCheckDialog open onOpenChange={() => {}} onAdd={() => {}} />);
     header("Add a check", "Test of part of the build");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Test description", "0 / 280", "Pass criteria", "Runs", "passed out of", "Optional", "8 fields"])).toEqual([]);
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Test description", "0 / 280", "Pass criteria", "Runs", "passed out of", "Optional", "14 fields"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Test cases", "Input, expected output, actual output"],
       ["Failure notes", "What failed and what changed"],
       ["Last run date", ""],
       ["Test method", "Manual, automated, test suite, peer review, comparison"],
       ["Reviewer", "Maker, user or client"],
-      ["Scoring method", "Pass or fail, metric vs target, rating, A/B"],
+      ["Scoring method", "Pass or fail, metric vs target, rating, comparison of approaches"],
       ["Model tested", ""],
       ["Evidence", "Log, screenshot or link"],
+      /* SV-29 P3, P4. */
+      ["Test set", "How many items, and who labelled them"],
+      ["Metric", "What the comparison measures"],
+      ["Failure types", "Kinds of failure found by reading real outputs one by one, and how many cases showed each"],
+      ["Graders", "What scores one answer, and what each is shown"],
+      ["Runs per case", "1 to 10. Answers vary between runs"],
+      ["CI gate", "An automated check that fails a change by a stated rule"],
     ]);
     footer("Required: Test description, Pass criteria, Runs");
   });
@@ -142,7 +149,7 @@ describe("each modal as its board (CA-15b P2)", () => {
     mount(<AddDecisionDialog open onOpenChange={() => {}} onAdd={() => {}} codeTiles={[]} stepChoices={[]} />);
     header("Add a decision", "Structured answer from a model");
     expect(
-      inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Model", "Model or service", "Version", "Invocation", "Direct", "Through an adapter", "Questions", "1 question", "Question 1", "Key", "Type", "Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction", "Instructions", "Options", "Add an option", "Add a question", "Optional", "8 fields"]),
+      inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Model", "Model or service", "Version", "Invocation", "Direct", "Through an adapter", "Questions", "1 question", "Question 1", "Key", "Type", "Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction", "Instructions", "Options", "Add an option", "Add a question", "Optional", "13 fields"]),
     ).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Option descriptions", ""],
@@ -150,6 +157,12 @@ describe("each modal as its board (CA-15b P2)", () => {
       ["Calling code", "Code tile that sends the request"],
       ["Input", "Another tile's output, or sample text"],
       ["Recorded answer", "One real answer"],
+      /* SV-29 P1. */
+      ["Label set", "Every label a decision could output"],
+      ["Candidates from", "An earlier step offers this decision a short list"],
+      ["How it covers the label set", "One call, every label, a tree walk, or one call per node"],
+      ["Adaptation", "Zero-shot, few-shot, or fine-tuned"],
+      ["Known limits", "Where the maker says it performs badly, one per line, up to 5"],
       ["Installation command", "As typed"],
       ["Examples", "Real inputs and their outputs"],
       ["Low-confidence handling", "Threshold or escalation"],

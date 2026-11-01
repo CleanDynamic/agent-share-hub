@@ -124,7 +124,7 @@ export default function SandboxDemo(props: DesignPageProps) {
   if (params.get("build") === "ca25") return <Ca25Demo {...props} />;
   if (params.get("build") === "ca28") return <Ca28Demo {...props} />;
   // SV-28 P9: the deployment fixtures (SV-27's three and the chief of staff), in their own chunk.
-  if (params.get("build")?.startsWith("deployment-")) return <Suspense fallback={null}><DeploymentDemo {...props} /></Suspense>;
+  if (params.get("build")?.startsWith("deployment-") || params.get("build")?.startsWith("pipeline-")) return <Suspense fallback={null}><DeploymentDemo {...props} /></Suspense>;
   return <ShapesDemo {...props} />;
 }
 

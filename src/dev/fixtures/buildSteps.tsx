@@ -7,6 +7,8 @@
    (`readerSteps.ts`), so the dev page shows what a reader would be given. */
 
 import { chiefOfStaffMaking, chiefOfStaffTree } from "@/dev/fixtures/deployment/chief-of-staff";
+import { productCategoriesMaking, productCategoriesTree } from "@/dev/fixtures/pipeline/product-categories";
+import { supportBotEvalsMaking, supportBotEvalsTree } from "@/dev/fixtures/pipeline/support-bot-evals";
 import { setupPromptOf } from "@/lib/build/setupPrompt";
 import { buildCounts, readerMap, readerResults, readerSteps, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
 import type { Making } from "@/lib/build/making";
@@ -16,7 +18,7 @@ import { SHAPES } from "./shapes";
 import { linksBuild, linksMaking, linksTree } from "./postLinks";
 
 /** CA-04 P7: "one-sitting" and "runs-on-github" are the shapes of the same names (src/dev/fixtures/shapes.ts). */
-export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links" | "chief-of-staff";
+export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links" | "chief-of-staff" | "pipeline-product-categories" | "pipeline-support-bot-evals";
 
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -147,6 +149,9 @@ const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making
   team: { tree: team, making: teamMaking, title: "Weekly research brief", outcome: "A team of agents that writes a one-page brief every Monday." },
   /* SV-28 P9: a chief of staff and three specialists, published. */
   "chief-of-staff": { tree: () => chiefOfStaffTree, making: { sessions: [], ...chiefOfStaffMaking } as unknown as Making, title: "A chief of staff and three specialists", outcome: "A team that takes requests in Slack and hands each to research, sales or operations." },
+  /* SV-29 P9: a pipeline and its comparison, and a support bot with its eval harness, published. */
+  "pipeline-product-categories": { tree: () => productCategoriesTree, making: { sessions: [], ...productCategoriesMaking, sessions_meta: { ...productCategoriesMaking.sessions_meta, [productCategoriesMaking.session_order[0]]: { ...productCategoriesMaking.sessions_meta[productCategoriesMaking.session_order[0]], showCost: true } } } as unknown as Making, title: "Product categories at 10 million a day", outcome: "A pipeline that picks one of 6,000 categories for a product: search the categories, then ask a decision model to choose." },
+  "pipeline-support-bot-evals": { tree: () => supportBotEvalsTree, making: { sessions: [], ...supportBotEvalsMaking } as unknown as Making, title: "A shoe shop's support bot, with its evals", outcome: "A support bot that answers from a help centre, and the eval harness that tests it on 20 real questions." },
   one: { tree: fox, making: foxMaking, title: "Watercolour fox poster", outcome: "A poster-size fox in loose watercolour, made with one prompt." },
   /* CA-06 P7: "A post with links", as a reader gets it. */
   links: {

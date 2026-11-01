@@ -47,9 +47,9 @@ export interface FailureType {
 }
 
 /** The failure types, read defensively and sorted by count (most first). */
-export function failureTypesOf(raw: unknown): FailureType[] {
+export function failureTypesOf(raw: unknown, sorted = true): FailureType[] {
   if (!Array.isArray(raw)) return [];
-  return raw
+  const read = raw
     .flatMap((entry): FailureType[] => {
       if (!isRecord(entry)) return [];
       const name = clean(entry.name, FAILURE_NAME_MAX);
@@ -59,8 +59,8 @@ export function failureTypesOf(raw: unknown): FailureType[] {
       const note = clean(entry.note, FAILURE_NOTE_MAX);
       return [{ name, count, read, fixIn: entry.fix_in as FixIn, ...(note ? { note } : null) }];
     })
-    .sort((a, b) => b.count - a.count)
     .slice(0, FAILURE_TYPES_MAX);
+  return sorted ? read.sort((a, b) => b.count - a.count) : read;
 }
 
 /** Why these failure types cannot be saved, or null. */
@@ -174,8 +174,8 @@ export function graderLine(grader: Grader): string {
 }
 
 /** "Grade with "Policy correct", an LLM judge (claude-sonnet-5-5): <criteria>. Give it the question, ... Pass at 0.7." */
-export function graderInstruction(grader: Grader, judgeModel?: string): string {
-  const how = grader.kind === "llm_judge" ? `an LLM judge${judgeModel ? ` (${judgeModel})` : ""}` : grader.kind === "built_in" ? "a built-in metric" : "a check in code";
+export function graderInstruction(grader: Grader, judgeModel?: string, framework?: string): string {
+  const how = grader.kind === "llm_judge" ? `an LLM judge${judgeModel ? ` (${judgeModel})` : ""}` : grader.kind === "built_in" ? `a built-in metric${framework ? ` from ${framework}` : ""}` : "a check in code";
   const said = (grader.criteria ?? "").trim();
   const criteria = said ? `: ${said}${/[.?!]$/.test(said) ? "" : "."}` : ".";
   const gives = grader.sees.length > 0 ? ` Give it ${listWords(grader.sees.map((item) => SEES_LABEL[item]))}.` : "";
@@ -431,6 +431,8 @@ export const harnessSourceWord = (source: FigureSource): string => SOURCE_WORD[s
 
 export interface EvalHarness {
   failureTypes: FailureType[];
+  /** The same, in the order the maker wrote them (the setup prompt keeps that order). */
+  failureTypesWritten: FailureType[];
   graders: Grader[];
   judgeModel?: string;
   framework?: string;
@@ -446,7 +448,7 @@ export function evalHarnessOf(payload: Raw): EvalHarness | null {
   const runsPerCase = whole(payload.runs_per_case, 1, RUNS_PER_CASE_MAX);
   const gate = gateOf(payload.gate);
   if (failureTypes.length === 0 && graders.length === 0 && !judgeModel && !framework && runsPerCase === null && !gate) return null;
-  return { failureTypes, graders, ...(judgeModel ? { judgeModel } : null), ...(framework ? { framework } : null), ...(runsPerCase !== null ? { runsPerCase } : null), ...(gate ? { gate } : null) };
+  return { failureTypes, failureTypesWritten: failureTypesOf(payload.failure_types, false), graders, ...(judgeModel ? { judgeModel } : null), ...(framework ? { framework } : null), ...(runsPerCase !== null ? { runsPerCase } : null), ...(gate ? { gate } : null) };
 }
 
 /** For `setExtras`: what needs the Check's other keys. A case names a listed failure type; a grader covers listed ones; a judge model needs an LLM judge. */

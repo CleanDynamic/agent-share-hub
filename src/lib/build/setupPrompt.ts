@@ -20,6 +20,7 @@ import { deploymentTilesOf, providerName, type DeploymentTile } from "./deployme
 import { buildSteps, type Step } from "./graph";
 import { FIELD_WORDS, harnessEntry, notCarriedLine, skillFolder, type HarnessEntry } from "./harnessMap";
 import { precisionWord } from "./modelRun";
+import { hasPipelineSetup, pipelineSections } from "./pipelineSetup";
 import { setupItemsOf, type SetupItem } from "./setup";
 import {
   DELIVERABLE_ARTICLE,
@@ -382,12 +383,14 @@ function agentBlock(node: NodeTree, members: readonly NodeTree[], all: readonly 
 }
 
 /** The whole setup prompt for an agent or a team. */
-export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tree">, harness?: string): SetupPrompt {
+export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tree"> & { showCost?: boolean }, harness?: string): SetupPrompt {
   const id = typeof target === "string" ? target : target.id;
   const tree = build.tree;
   const all = flat(tree);
   const node = all.find((entry) => entry.id === id);
   const into: Collect = { variables: new Map(), secrets: [], notCarried: [] };
+  // SV-29 P8: a Retrieval, Decision or Check tile (or "pipeline") asks for the pipeline's own setup prompt: no agent is needed.
+  if (id === "pipeline" || (node && PIPELINE_TYPES.has(node.type))) return finish(pipelineSections(buildSteps(tree as NodeTree[]), { showCost: build.showCost }), into);
   if (!node || (node.type !== "agent_config" && node.type !== "team")) return { text: "", variables: [], secrets: [], notCarried: [] };
   const team = node.type === "team";
   const members = team ? all.filter((entry) => entry.parent_id === node.id && entry.type === "agent_config").sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) : [];
@@ -486,8 +489,13 @@ export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tre
       return crossing.from === crossing.to ? `${names.from} reads outside content and can ${sendsIn(crossing).length > 0 ? `send in ${join(sendsIn(crossing))}` : "send"}. Add an approval before it acts.` : `${names.from} reads outside content and passes work to ${names.to}, which can send. Add an approval between them before running.`;
     }),
   );
+  // SV-29 P8: the pipeline and its eval harness, when the build has them, before Fill in.
+  const pipeline = buildSteps(tree as NodeTree[]);
+  if (hasPipelineSetup(pipeline)) sections.push(...pipelineSections(pipeline, { showCost: build.showCost }));
   return finish(sections, into);
 }
+
+const PIPELINE_TYPES = new Set(["decision", "retrieval_config", "eval_run"]);
 
 function finish(sections: string[], into: Collect): SetupPrompt {
   const variables = [...into.variables.entries()].map(([name, description]) => ({ name, description }));
@@ -501,6 +509,8 @@ export function setupPromptRefusal(target: AgentOrTeam, build: Pick<BuildRecord,
   const all = flat(build.tree);
   const node = all.find((entry) => entry.id === id);
   if (!node) return SETUP_PROMPT_COPY.needsInstructions;
+  // SV-29 P8: a pipeline tile copies when the build has something of a pipeline to say.
+  if (PIPELINE_TYPES.has(node.type)) return hasPipelineSetup(buildSteps(build.tree as NodeTree[])) ? null : SETUP_PROMPT_COPY.needsInstructions;
   const members = node.type === "team" ? all.filter((entry) => entry.parent_id === id && entry.type === "agent_config") : [];
   const lead = members[0] ?? node;
   if (isVendorHosted(str(payloadOf(lead).harness))) return null;

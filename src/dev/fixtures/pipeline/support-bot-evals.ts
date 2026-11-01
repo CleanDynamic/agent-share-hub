@@ -102,10 +102,7 @@ export const supportBotEvalsTree: NodeTree[] = [
       runs: 3,
       missing_result_fails: true,
       minutes: { value: 8, source: "maker" },
-      rejected: [
-        { rule: "Fail on any regression, one run", why: "A correct answer failed on judge noise." },
-        { rule: "A correct answer failed on judge noise", why: "A single flaky judge score should not block a change." },
-      ],
+      rejected: [{ rule: "Fail on any regression, one run", why: "A correct answer failed on judge noise." }],
     },
   }),
 ];

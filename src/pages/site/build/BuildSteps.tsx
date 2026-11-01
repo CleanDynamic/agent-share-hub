@@ -852,7 +852,25 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-kind="decision"
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
-        <Title entry={entry} right={null} />
+        <Title
+          entry={entry}
+          right={
+            view.setupPrompt ? (
+              <Button
+                variant="secondary"
+                size={phone ? 44 : 28}
+                fontSize={12}
+                style={phone ? undefined : { height: 26 }}
+                onClick={async () => {
+                  const words = await view.setupPrompt?.(step.id);
+                  if (words && (await view.onCopy(words))) announce("Setup prompt copied");
+                }}
+              >
+                Copy setup prompt
+              </Button>
+            ) : null
+          }
+        />
         <TypeLine step={step} indent={INDENT} />
         <DecisionTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />

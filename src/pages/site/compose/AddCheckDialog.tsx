@@ -70,7 +70,7 @@ export const CHECK_DIALOG_COPY = {
   reviewer: "Reviewer",
   reviewerLine: "Maker, user or client",
   scoring: "Scoring method",
-  scoringLine: "Pass or fail, metric vs target, rating, A/B",
+  scoringLine: "Pass or fail, metric vs target, rating, comparison of approaches",
   target: "Target",
   targetPlaceholder: "95% of answers correct",
   modelTested: "Model tested",

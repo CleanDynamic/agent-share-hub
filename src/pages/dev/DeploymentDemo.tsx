@@ -19,6 +19,8 @@ import { agentTeamTree } from "@/dev/fixtures/deployment/agent-team";
 import { assistantTree } from "@/dev/fixtures/deployment/assistant";
 import { chiefOfStaffTree } from "@/dev/fixtures/deployment/chief-of-staff";
 import { selfHostedTree } from "@/dev/fixtures/deployment/self-hosted";
+import { productCategoriesTree } from "@/dev/fixtures/pipeline/product-categories";
+import { supportBotEvalsTree } from "@/dev/fixtures/pipeline/support-bot-evals";
 import { sandboxListProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { buildSteps } from "@/lib/build/graph";
 import type { NodeTree } from "@/lib/build/types";
@@ -38,6 +40,9 @@ export const DEPLOYMENT_FIXTURES: Record<string, { tree: NodeTree[]; title: stri
   "deployment-self-hosted": { tree: selfHostedTree, title: "A self-hosted support swarm" },
   "deployment-agent-team": { tree: agentTeamTree, title: "A launch team" },
   "deployment-chief-of-staff": { tree: chiefOfStaffTree, title: "A chief of staff and three specialists" },
+  /* SV-29 P9: the pipeline fixtures, in the same composer. */
+  "pipeline-product-categories": { tree: productCategoriesTree, title: "Product categories at 10 million a day" },
+  "pipeline-support-bot-evals": { tree: supportBotEvalsTree, title: "A shoe shop's support bot, with its evals" },
 };
 
 const flat = (nodes: readonly NodeTree[]): NodeTree[] => nodes.flatMap((node) => [node, ...flat(node.children ?? [])]);

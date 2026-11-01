@@ -1079,7 +1079,9 @@ export function BuildPage() {
         // SV-28 P7: Copy setup prompt, from the build's tiles, with no model call; the assembler loads on the click.
         setupPrompt: async (id) => {
           const { setupPromptOf, setupPromptRefusal } = await import("@/lib/build/setupPrompt");
-          return setupPromptRefusal(id, record) ? null : setupPromptOf(id, record).text || null;
+          const { showsCost } = await import("@/lib/build/costView");
+          // SV-29 P8: costs in the Results to beat are written only when the maker ticked Show readers.
+          return setupPromptRefusal(id, record) ? null : setupPromptOf(id, { ...record, showCost: showsCost(reader.map.groups ?? []) }).text || null;
         },
         resolveMedia,
         otherBody: (id) => {

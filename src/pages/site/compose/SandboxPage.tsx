@@ -1180,7 +1180,7 @@ function SandboxPageBody() {
   const [promptFor, setPromptFor] = useState<string | null>(null);
   const copySetup = (text: string) => void navigator.clipboard?.writeText(text).then(() => buildHistory.notify("Setup prompt copied", { undo: false }), () => undefined);
   const onSetupPrompt = (id: string, how: "copy" | "show") =>
-    how === "show" ? setPromptFor(id) : void import("@/lib/build/setupPrompt").then((m) => copySetup(m.setupPromptOf(id, { tree: nodes.current() }).text));
+    how === "show" ? setPromptFor(id) : void import("@/lib/build/setupPrompt").then((m) => copySetup(m.setupPromptOf(id, { tree: nodes.current(), showCost: true }).text));
   const editView = useMemo(
     () =>
       editId

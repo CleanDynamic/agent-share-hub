@@ -47,7 +47,7 @@ export function SetupPromptWindow({ id, tree, name, onCopy, onClose, harness }: 
   const own = id ? ownHarnessOf(tree, id) : "";
   const [target, setTarget] = useState<string>(() => harnessEntry(harness ?? own)?.harness ?? OWN);
   if (!id) return null;
-  const prompt = setupPromptOf(id, { tree: tree as NodeTree[] }, target === OWN ? undefined : target);
+  const prompt = setupPromptOf(id, { tree: tree as NodeTree[], showCost: true }, target === OWN ? undefined : target);
   const vendor = isVendorHosted(own);
   return (
     <ModalShell open onOpenChange={(next) => !next && onClose()} title={SETUP_PROMPT_COPY.title} subtitle={name ?? flat(tree).find((node) => node.id === id)?.title ?? SETUP_PROMPT_COPY.title} testId="setup-prompt-window">
