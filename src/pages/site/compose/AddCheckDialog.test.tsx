@@ -52,6 +52,8 @@ describe("Add › Check", () => {
       "Scoring method",
       "Model tested",
       "Evidence",
+      "Test set",
+      "Metric",
     ]);
     // Add is the one primary.
     expect(dialog.querySelectorAll('[data-variant="primary"]')).toHaveLength(1);
