@@ -52,7 +52,12 @@ import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
 import { numberSessions } from "./sessionNumbers";
-import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } from "./cost";
+import { failureTypesOf } from "./evalHarness";
+import { runsOfCasesLine, evalHarnessOf, evalHarnessPatchRefusal, exampleCaseOf, runExtrasOf, runExtrasRefusal, stabilityCounts, STABILITIES, FLAKY_CAUSES, type EvalHarness, type FlakyCause, type RunExtras, type Stability, type StabilityCounts } from "./evalHarness";
+import { comparisonOf, comparisonPatchRefusal, hasComparison, type Comparison } from "./comparison";
+import { isRetrievalTile, retrievalOf, retrievalPayload, retrievalRefusal, RETRIEVAL_TYPE, type RetrievalFacts } from "./retrieval";
+import { PIPELINE_KEYS, accuracyCeiling, pipelinePatchRefusal, pipelinePayload, pipelineRefusal, type PipelineFields } from "./pipelineFields";
+import { buildCostOf, costRefusal, ITEM_NOUN_MAX, runCostOf, VOLUME_MAX, volumeOf, type CostFigures, type RunCost, type Volume } from "./cost";
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
@@ -97,7 +102,7 @@ export const CODE_TYPE = "code";
 export const CHECK_TYPE = "eval_run";
 
 /** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "system_prompt" | "dataset" | "repo";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file" | "tool" | "decision" | "system_prompt" | "dataset" | "repo" | "retrieval";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -217,6 +222,8 @@ export interface Step {
   cases?: CheckCase[];
   /** CA-13 P2, a decision only: its questions, what it read and one real answer. */
   decision?: DecisionFacts;
+  /** SV-29 P2, a Retrieval tile only: what it indexes, how many it returns and how well. */
+  retrieval?: RetrievalFacts;
   /** CA-13 P3, a runtime tile only (agent, team, code, tool, decision): the decision it runs after, and the value it ran on. */
   runsWhen?: RunsWhen;
   /** CA-13 P6, an agent only: the helper models that kept it on track (at most 12). */
@@ -255,6 +262,8 @@ export interface Step {
   /** CA-13 P8: what it took to make (any tile) and what it costs to run (a runtime tile): never added together. */
   buildCost?: CostFigures;
   runCost?: RunCost;
+  /** SV-29 P5, a runtime tile: how many items it processes a day (`payload.volume`). */
+  volume?: Volume;
 }
 
 /** CA-12 P7: a tool tile's facts. */
@@ -299,6 +308,15 @@ export interface CheckCase {
   expected: string;
   actual: string;
   passed: boolean;
+  /** SV-29 P4: the rule behind the expected answer ("Returns within 30 days of purchase"), up to 160 characters. */
+  rule?: string;
+  /** SV-29 P4: the name of one of the Check's failure types. */
+  failure_type?: string;
+  /** SV-29 P4: one case can be marked as the example the build page shows in full. */
+  example?: true;
+  /** SV-29 P4: the case's result across its runs; with `flaky`, why. */
+  stability?: Stability;
+  flaky_cause?: FlakyCause;
 }
 
 /** CA-03 P5: what a check says, read from its payload. */
@@ -322,10 +340,21 @@ export interface CheckFacts {
   scoring?: CheckScoring;
   modelTested?: CheckModelTested;
   evidence?: CheckEvidence;
+  /** SV-29 P3: the test set, the metric, the rows of a comparison of approaches and the design of a controlled experiment. Each only when given. */
+  comparison?: Comparison;
+  /** SV-29 P4: how many cases and how many runs of each make up "passed of total", when both are given. */
+  casesPerRun?: number;
+  runsPerCase?: number;
+  /** SV-29 P4: the eval harness: failure types, graders, the judge model, the framework, the CI gate. */
+  harness?: EvalHarness;
+  /** SV-29 P4: how many cases always pass, always fail, are flaky or errored. */
+  stability?: StabilityCounts;
+  /** SV-29: this Check's measured results came from the build it was copied from: they are the original's, never the copier's. */
+  fromOriginal?: true;
 }
 
 /** CA-05 P7: one run of a check: the day and how many passed of how many. */
-export interface CheckRun {
+export interface CheckRun extends RunExtras {
   at: string;
   passed: number;
   total: number;
@@ -583,6 +612,8 @@ const KIND_OF_TYPE: Record<string, StepKind> = {
   [CODE_TYPE]: "code",
   [CHECK_TYPE]: "check",
   [DECISION_TYPE]: "decision",
+  /* SV-29 P2: a Retrieval tile; a configuration saved before has no `step: true` and is not a step (`isStepNode`). */
+  [RETRIEVAL_TYPE]: "retrieval",
 };
 
 const KIND_NAME: Record<StepKind, string> = {
@@ -598,6 +629,7 @@ const KIND_NAME: Record<StepKind, string> = {
   system_prompt: "System prompt",
   dataset: "Dataset",
   repo: "GitHub repository",
+  retrieval: "Retrieval",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -622,7 +654,7 @@ export const kindOfNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }
   node.type === TOOL_TYPE && isStepTile(node) ? "tool" : node.type === FILE_TYPE ? "file" : node.type in SOURCE_KIND && isStepTile(node) ? SOURCE_KIND[node.type] : KIND_OF_TYPE[node.type];
 
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
-  (node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload)) || isStepTile(node);
+  (node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && (node.type !== RETRIEVAL_TYPE || isRetrievalTile(node.payload)) && !isSetupNode(node.payload)) || isStepTile(node);
 
 const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
@@ -639,7 +671,7 @@ export function checkRunsOf(value: unknown): CheckRun[] {
       const { passed, total } = entry;
       if (typeof passed !== "number" || typeof total !== "number" || !Number.isInteger(passed) || !Number.isInteger(total)) return [];
       if (passed < 0 || total < 0 || total > CHECK_RUNS_MAX || passed > total) return [];
-      return [{ at: entry.at, passed, total }];
+      return [{ at: entry.at, passed, total, ...runExtrasOf(entry) }];
     })
     .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
     .slice(0, CHECK_RUNS_KEPT);
@@ -658,18 +690,27 @@ export function checkHistoryLine(runs: readonly CheckRun[] | undefined): string 
 /** A check's facts, read defensively. */
 function checkFacts(payload: Payload, cases: readonly CheckCase[] = []): CheckFacts {
   const runs = checkRunsOf(payload.runs);
+  const harness = evalHarnessOf(payload);
+  const stability = stabilityCounts(cases);
+  // SV-29 P4: with cases and runs per case, the total is cases × runs per case and the passed count is the runs' (the newest run's).
+  const perCase = cases.length > 0 && harness?.runsPerCase ? harness.runsPerCase : null;
   // CA-12 P12: when cases are given, "passed of total" is worked out from them.
-  const counted = cases.length > 0 ? casesTotals(cases) : null;
+  const counted = cases.length > 0 && !perCase ? casesTotals(cases) : null;
   return {
     tested: stringOf(payload.tested)?.trim() ?? "",
     passing: stringOf(payload.passing)?.trim() ?? "",
     onFail: stringOf(payload.on_fail)?.trim() || null,
     passed: counted ? counted.passed : numberOf(payload.passed),
-    total: counted ? counted.total : numberOf(payload.total),
+    total: counted ? counted.total : perCase ? cases.length * perCase : numberOf(payload.total),
+    ...(perCase ? { casesPerRun: cases.length, runsPerCase: perCase } : null),
+    ...(harness ? { harness } : null),
+    ...(stability ? { stability } : null),
     runAt: stringOf(payload.run_at)?.trim() || null,
     ...(runs.length > 0 ? { runs } : null),
     ...(cases.length > 0 ? { caseList: [...cases] } : null),
     ...checkExtrasOf(payload),
+    ...(hasComparison(payload) ? { comparison: comparisonOf(payload) } : null),
+    ...(payload.from_original === true ? { fromOriginal: true as const } : null),
   };
 }
 
@@ -786,6 +827,8 @@ export function defaultTitleFor(kind: StepKind, payload: Payload): string {
       const ids = (Array.isArray(payload.questions) ? payload.questions : []).flatMap((q) => (isRecord(q) && typeof q.id === "string" && q.id ? [q.id] : []));
       return ids.length ? ids.slice(0, 3).join(", ") : KIND_NAME[kind];
     }
+    case "retrieval":
+      return named(str("corpus") ? `Search of ${str("corpus")}` : "");
     default:
       return KIND_NAME[kind];
   }
@@ -836,6 +879,7 @@ export function manualWhereLabel(where: ManualWhere | null): string {
 
 /** The most of a check's case text, and its most cases. */
 export const CASE_TEXT_MAX = 280;
+export const CASE_RULE_MAX = 160;
 export const CASES_MAX = 50;
 
 /** A check's cases, read defensively. */
@@ -847,7 +891,12 @@ export function checkCasesOf(value: unknown): CheckCase[] {
     const input = text("input");
     const expected = text("expected");
     if (!input && !expected) return [];
-    return [{ input, expected, actual: text("actual"), passed: entry.passed }];
+    // SV-29 P4: the case's rule, failure type, example mark and stability, each only when given.
+    const rule = typeof entry.rule === "string" ? entry.rule.trim().slice(0, CASE_RULE_MAX) : "";
+    const failureType = typeof entry.failure_type === "string" ? entry.failure_type.trim().slice(0, 40) : "";
+    const stability = STABILITIES.includes(entry.stability as Stability) ? (entry.stability as Stability) : undefined;
+    const cause = stability === "flaky" && FLAKY_CAUSES.includes(entry.flaky_cause as FlakyCause) ? (entry.flaky_cause as FlakyCause) : undefined;
+    return [{ input, expected, actual: text("actual"), passed: entry.passed, ...(rule ? { rule } : null), ...(failureType ? { failure_type: failureType } : null), ...(entry.example === true ? { example: true as const } : null), ...(stability ? { stability } : null), ...(cause ? { flaky_cause: cause } : null) }];
   }).slice(0, CASES_MAX);
 }
 
@@ -951,6 +1000,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
     ...(kind === "decision" && decisionOf(payload) ? { decision: decisionOf(payload) as DecisionFacts } : null),
+    ...(kind === "retrieval" ? { retrieval: retrievalOf(payload) } : null),
     ...runtimeFactsOf(kind, payload),
     // CA-13 P3: only a runtime tile runs when a decision went a certain way.
     ...(canRunWhen(kind) && runsWhenOf(payload.runs_when) ? { runsWhen: runsWhenOf(payload.runs_when) as RunsWhen } : null),
@@ -999,9 +1049,11 @@ function runtimeFactsOf(kind: StepKind, payload: Payload): Partial<Step> {
   }
   const built = buildCostOf(payload.build_cost);
   if (built) out.buildCost = built;
-  if (kind === "agent" || kind === "team" || kind === "code" || kind === "tool" || kind === "decision") {
+  if (kind === "agent" || kind === "team" || kind === "code" || kind === "tool" || kind === "decision" || kind === "retrieval") {
     const run = runCostOf(payload.run_cost);
     if (run) out.runCost = run;
+    const volume = volumeOf(payload.volume);
+    if (volume) out.volume = volume;
   }
   return out;
 }
@@ -1102,7 +1154,24 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return withWaits(withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0))), tree, top.map((node) => node.id));
+  return withPipeline(withWaits(withReach(top.map((node, index) => readStep(node, String(index + 1), kindOfNode(node) as StepKind, 0))), tree, top.map((node) => node.id)));
+}
+
+/**
+ * SV-29 P1: a Decision that takes candidates from a Retrieval tile says that step's number and, where the tile measured Recall@k at
+ * the same k, the accuracy ceiling. Worked out here, never stored. Untouched when no decision has candidates.
+ */
+function withPipeline(steps: Step[]): Step[] {
+  if (!steps.some((step) => step.kind === "decision" && step.decision?.candidatesFrom)) return steps;
+  const all = flattenSteps(steps);
+  const apply = (step: Step): Step => {
+    const from = step.kind === "decision" ? step.decision?.candidatesFrom : undefined;
+    if (!step.decision || !from) return { ...step, children: step.children.map(apply) };
+    const source = all.find((entry) => entry.id === from.step);
+    const ceiling = accuracyCeiling(from, source?.retrieval ? { number: source.number, recall: source.retrieval.recall } : undefined);
+    return { ...step, decision: { ...step.decision, derived: { ...(source ? { candidatesNumber: source.number } : null), ...(ceiling ? { ceiling } : null) } }, children: step.children.map(apply) };
+  };
+  return steps.map(apply);
 }
 
 /** SV-28 P4: each step an Approval step blocks says which one it waits for. Untouched when the build has no gate. */
@@ -1631,7 +1700,7 @@ export async function addTeam(
 // --- CA-13: decisions and "Runs when" ----------------------------------------
 
 /** What a Decision holds when it is added or changed. `answer` is one real answer, when the maker has one. */
-export interface DecisionInput {
+export interface DecisionInput extends PipelineFields {
   /** A blank name saves as null, so the default (its question names) shows. */
   name?: string | null;
   provider: string;
@@ -1658,8 +1727,11 @@ export interface DecisionInput {
 function decisionPayload(operation: string, input: DecisionInput): Payload {
   const provider = input.provider.trim();
   if (!provider) throw refuse(operation, "A decision needs a model or service.");
-  const why = questionsRefusal(input.questions, input.name?.trim() || undefined);
+  const why = questionsRefusal(input.questions, input.name?.trim() || undefined, { candidates: Boolean(input.candidatesFrom) });
   if (why) throw refuse(operation, why);
+  // SV-29 P1: candidates, few-shot and fine-tuning each need what they stand on.
+  const pipelineWhy = pipelineRefusal(input, { examples: (input.examples ?? []).filter((example) => example.input.trim() || example.output.trim()).length, takesOptions: input.questions.some((q) => takesOptions(q.type)) });
+  if (pipelineWhy) throw refuse(operation, pipelineWhy);
   if ((input.stateSample ?? "").length > STATE_SAMPLE_MAX) throw refuse(operation, `State: ${STATE_SAMPLE_MAX.toLocaleString("en-GB")} characters max`);
   const out: Payload = {
     provider: toolFor(provider)?.id ?? provider,
@@ -1686,7 +1758,25 @@ function decisionPayload(operation: string, input: DecisionInput): Payload {
   const examples = (input.examples ?? []).map((example) => ({ input: example.input.trim(), output: example.output.trim() })).filter((example) => example.input || example.output);
   if (examples.length > 0) out.examples = examples;
   if (input.lowConfidence) out.low_confidence = input.lowConfidence as unknown as Json;
+  Object.assign(out, pipelinePayload(input));
   return out;
+}
+
+/** SV-29 P2: what a Retrieval tile holds when it is added. */
+export interface RetrievalInput extends Partial<Omit<RetrievalFacts, "recall">> {
+  recall?: readonly RetrievalFacts["recall"][number][];
+  name?: string | null;
+  session?: string | null;
+}
+
+/** SV-29 P2: Add › Retrieval: a numbered runtime tile at the top level. Every field is optional; `step: true` makes it a tile. */
+export async function addRetrieval(buildId: string, tree: readonly NodeTree[], input: RetrievalInput): Promise<BuildNode> {
+  await requireLiveType("addRetrieval", RETRIEVAL_TYPE);
+  const why = retrievalRefusal(input);
+  if (why) throw refuse("addRetrieval", why);
+  const title = titleOrNull(input.name);
+  if (title && title.length > TITLE_MAX) throw refuse("addRetrieval", `Title: ${TITLE_MAX} characters max`);
+  return placeTopNode(buildId, tree, { type: RETRIEVAL_TYPE, title, payload: { ...retrievalPayload(input), ...(input.session ? { session: input.session } : null) } as Json });
 }
 
 /** A Decision: top level, a runtime tile. Refused until the CA-13 database change is live. */
@@ -1705,7 +1795,7 @@ export async function setDecision(node: BuildNode, input: DecisionInput): Promis
   const keys = decisionPayload("setDecision", input);
   const old = payloadOf(node);
   const payload: Payload = { ...old };
-  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install", "examples", "low_confidence"]) delete payload[key];
+  for (const key of ["via", "called_from", "state_from", "state_sample", "answer", "source", "install", "examples", "low_confidence", ...PIPELINE_KEYS]) delete payload[key];
   Object.assign(payload, keys);
   // The state's Uses link follows "What it reads": the old output link goes, the new one is added.
   const kept = usesOf(node).filter((use) => !(use.kind === "output" && use.node_id === old.state_from));
@@ -1726,9 +1816,11 @@ export interface RuntimePatch {
   outputShape?: OutputShape | null;
   buildCost?: CostFigures | null;
   runCost?: RunCost | null;
+  /** SV-29 P5: items a day; null takes it off. */
+  volume?: Volume | null;
 }
 
-const RUNTIME_TYPES = new Set([AGENT_TYPE, TEAM_TYPE, CODE_TYPE, DECISION_TYPE, TOOL_TYPE]);
+const RUNTIME_TYPES = new Set([AGENT_TYPE, TEAM_TYPE, CODE_TYPE, DECISION_TYPE, TOOL_TYPE, RETRIEVAL_TYPE]);
 
 /**
  * CA-13: the runtime facts of a tile, checked. Helpers, "defined in" and a trace link belong to an agent; an install line to
@@ -1787,7 +1879,16 @@ export async function setRuntimeFields(node: BuildNode, patch: RuntimePatch): Pr
       const why = costRefusal(patch.runCost);
       if (why) throw refuse("setRuntimeFields", why);
     }
-    set("run_cost", patch.runCost && runCostOf(patch.runCost) ? patch.runCost : null);
+    if (patch.runCost && patch.runCost.itemNoun && patch.runCost.itemNoun.trim().length > ITEM_NOUN_MAX) throw refuse("setRuntimeFields", `Item: ${ITEM_NOUN_MAX} characters max`);
+    if (patch.runCost && patch.runCost.per === "item" && !patch.runCost.itemNoun?.trim()) throw refuse("setRuntimeFields", "A cost per item says what the item is: a product, a ticket.");
+    // The stored key is `item_noun`; the figures read back through `runCostOf`.
+    const { itemNoun, ...stored } = patch.runCost ?? ({} as RunCost);
+    set("run_cost", patch.runCost && runCostOf(patch.runCost) ? { ...stored, ...(itemNoun?.trim() ? { item_noun: itemNoun.trim() } : null) } : null);
+  }
+  if ("volume" in patch) {
+    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime tile has a daily volume.");
+    if (patch.volume && volumeOf(patch.volume) === null) throw refuse("setRuntimeFields", `Daily volume: a whole number of items, up to ${VOLUME_MAX.toLocaleString("en-GB")}`);
+    set("volume", patch.volume ?? null);
   }
   return upsertNode(withPayload(node, payload));
 }
@@ -2081,6 +2182,8 @@ export interface CheckInput {
   modelTested?: { model: string; version: string } | null;
   /** A URL, or the id and name of one file already stored. */
   evidence?: { url?: string; mediaId?: string; name?: string } | null;
+  /** SV-29 P3, P4: the Check's other payload keys (test set, metric, rows, design, failure types, graders, runs per case, gate), each a stored shape; null leaves it out. Cleaned by the extras writer. */
+  extras?: Record<string, unknown>;
 }
 
 /**
@@ -2089,15 +2192,18 @@ export interface CheckInput {
  */
 export async function setCheckCases(node: BuildNode, cases: readonly CheckCase[]): Promise<BuildNode> {
   if (node.type !== CHECK_TYPE) throw refuse("setCheckCases", "Only a check has cases.");
-  const why = casesRefusal(cases);
+  const why = casesRefusal(cases, failureTypesOf(payloadOf(node).failure_types).map((type) => type.name));
   if (why) throw refuse("setCheckCases", why);
   const payload = { ...payloadOf(node) };
   const kept = checkCasesOf(cases);
   if (kept.length > 0) {
     const { passed, total } = casesTotals(kept);
     payload.cases = kept as unknown as Json;
-    payload.passed = passed;
-    payload.total = total;
+    // SV-29 P4: with runs per case the counts are the runs', not the cases': the newest run holds them.
+    if (!evalHarnessOf(payload)?.runsPerCase) {
+      payload.passed = passed;
+      payload.total = total;
+    }
   } else delete payload.cases;
   return upsertNode(withPayload(node, payload));
 }
@@ -2117,13 +2223,18 @@ export async function addCheck(buildId: string, tree: readonly NodeTree[], input
 
 /** A check's payload, checked; exported for the dialog, which says the same refusals before anything is written. */
 /** CA-12 P12: why a check's cases cannot be saved, or null. A case says what went in or what was expected. */
-export function casesRefusal(cases: readonly CheckCase[] | undefined): string | null {
+export function casesRefusal(cases: readonly CheckCase[] | undefined, failureTypes?: readonly string[]): string | null {
   if (!cases || cases.length === 0) return null;
   if (cases.length > CASES_MAX) return `Test cases: ${CASES_MAX} max`;
   for (const c of cases) {
     if (!c.input.trim() && !c.expected.trim()) return "Each case says what went in or what was expected.";
     for (const value of [c.input, c.expected, c.actual]) if (value.trim().length > CASE_TEXT_MAX) return `Case text: ${CASE_TEXT_MAX} characters max`;
+    if ((c.rule ?? "").trim().length > CASE_RULE_MAX) return `Rule: ${CASE_RULE_MAX} characters max`;
+    // SV-29 P4: a case's failure type names a listed one; a cause is for a flaky case; one case is the example.
+    if (c.failure_type && failureTypes && !failureTypes.includes(c.failure_type)) return `A test case is marked '${c.failure_type}', which is not a failure type listed here.`;
+    if (c.flaky_cause && c.stability !== "flaky") return "A cause is for a flaky case.";
   }
+  if (cases.filter((c) => c.example).length > 1) return "Only one case can be the example.";
   return null;
 }
 
@@ -2147,7 +2258,7 @@ export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | nu
 }
 
 /** Why a check's runs cannot be kept, or null. Pure, so the composer can say it before anything is written. */
-export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
+export function checkRunsRefusal(runs: readonly CheckRun[], context?: { cases: number; runsPerCase: number | null }): string | null {
   if (runs.length > CHECK_RUNS_KEPT) return `Runs: ${CHECK_RUNS_KEPT} max`;
   for (const run of runs) {
     if (!isIsoDay(run.at)) return "Format: 2026-10-12";
@@ -2156,7 +2267,9 @@ export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
     }
     if (run.passed > run.total) return "Passed: no more than total";
   }
-  return null;
+  // SV-29 P4: ids are named once, a comparison names an earlier run, and with cases and runs per case the total is cases × runs.
+  const newestFirst = [...runs].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  return runExtrasRefusal(newestFirst, context);
 }
 
 /** The four text fields of the Add Check window that a check that is there can change; each key only when it is in the patch. */
@@ -2225,7 +2338,9 @@ export async function setCodeSource(node: BuildNode, patch: { source?: string; l
  */
 export async function setCheckRuns(node: BuildNode, runs: readonly CheckRun[]): Promise<BuildNode> {
   if (node.type !== CHECK_TYPE) throw refuse("setCheckRuns", "Only a check has runs.");
-  const why = checkRunsRefusal(runs);
+  const before = checkCasesOf(payloadOf(node).cases);
+  const perCase = evalHarnessOf(payloadOf(node))?.runsPerCase ?? null;
+  const why = checkRunsRefusal(runs, { cases: before.length, runsPerCase: perCase });
   if (why) throw refuse("setCheckRuns", why);
   const payload = { ...payloadOf(node) };
   const sorted = checkRunsOf(runs);
@@ -2248,9 +2363,11 @@ export const checkDay = (day: string): string => (isIsoDay(day) ? `${Number(day.
  * CA-03 P5: a check's one status line, "Passed 14 of 14 runs · since 12 Oct", and whether every run passed (the dot is
  * `--evidence` then, `--cat-breakage` otherwise). Null when it has no runs to count.
  */
-export function checkStatus(check: Pick<CheckFacts, "passed" | "total" | "runAt">): { allPassed: boolean; line: string } | null {
+export function checkStatus(check: Pick<CheckFacts, "passed" | "total" | "runAt"> & Partial<Pick<CheckFacts, "casesPerRun" | "runsPerCase">>): { allPassed: boolean; line: string } | null {
   if (check.passed === null || check.total === null) return null;
   const since = check.runAt ? ` · since ${checkDay(check.runAt)}` : "";
+  // SV-29 P4: "Passed 41 of 60 runs (20 cases × 3)", never "41 of 60" alone.
+  if (check.casesPerRun && check.runsPerCase) return { allPassed: check.passed === check.total, line: `Passed ${runsOfCasesLine(check.passed, check.casesPerRun, check.runsPerCase)}${since}` };
   return { allPassed: check.passed === check.total, line: `Passed ${check.passed} of ${check.total} ${check.total === 1 ? "run" : "runs"}${since}` };
 }
 
@@ -2271,8 +2388,17 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
   const why = checkRefusal(input);
   if (why) throw refuse(operation, why);
   const given = input.cases && input.cases.length > 0 ? checkCasesOf(input.cases) : [];
-  const counted = given.length > 0 ? casesTotals(given) : null;
-  const out: Payload = { tested: input.tested.trim(), passing: input.passing.trim(), passed: counted ? counted.passed : input.passed, total: counted ? counted.total : input.total };
+  const caseWhy = casesRefusal(given, failureTypesOf((input.extras ?? {}).failure_types).map((type) => type.name));
+  if (caseWhy) throw refuse(operation, caseWhy);
+  const counted = given.length > 0 && !(input.extras && Number(input.extras.runs_per_case) >= 1) ? casesTotals(given) : null;
+  const perCase = given.length > 0 && input.extras && Number(input.extras.runs_per_case) >= 1 ? Number(input.extras.runs_per_case) : null;
+  const out: Payload = {
+    tested: input.tested.trim(),
+    passing: input.passing.trim(),
+    // SV-29 P4: with runs per case, the total is cases × runs per case and the passed count is the one typed (the run's), else 0.
+    passed: counted ? counted.passed : perCase ? (Number.isInteger(input.passed) ? input.passed : 0) : input.passed,
+    total: counted ? counted.total : perCase ? given.length * perCase : input.total,
+  };
   if (given.length > 0) out.cases = given as unknown as Json;
   const onFail = (input.onFail ?? "").trim();
   if (onFail) out.on_fail = onFail;
@@ -2292,7 +2418,10 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
       scoring: input.scoring ?? null,
       model_tested: input.modelTested ?? null,
       evidence: input.evidence ? { url: input.evidence.url, media_id: input.evidence.mediaId, name: input.evidence.name } : null,
+      ...Object.fromEntries(Object.entries(input.extras ?? {}).filter(([, value]) => value !== null && value !== undefined)),
     });
+    const crossWhy = comparisonPatchRefusal({ scoring: input.scoring ? { how: input.scoring.how } : undefined }, input.extras ?? {}) ?? evalHarnessPatchRefusal({ cases: given }, input.extras ?? {});
+    if (crossWhy) throw refuse(operation, crossWhy);
   } catch (cause) {
     throw refuse(operation, cause instanceof Error ? cause.message : "That value is not allowed.");
   }
@@ -3186,7 +3315,7 @@ export async function setNodeColour(node: BuildNode, colour: string | null): Pro
 export async function setExtras(node: BuildNode, patch: Record<string, unknown>, tree?: readonly NodeTree[]): Promise<BuildNode> {
   // SV-27 P5: a role is only for an agent inside a team. SV-28: a handoff goes to another agent of the same team, a job is a
   // prompt inside an agent, an Approval step's blocked steps come after it (checked against the tree when the caller gives it).
-  const notHere = agentFieldsRefusal(node, patch) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
+  const notHere = agentFieldsRefusal(node, patch) ?? (node.type === DECISION_TYPE ? pipelinePatchRefusal(payloadOf(node), patch) : null) ?? (node.type === CHECK_TYPE ? (comparisonPatchRefusal(payloadOf(node), patch) ?? evalHarnessPatchRefusal(payloadOf(node), patch)) : null) ?? teamFieldsRefusal(node, patch, tree, tree ? topSteps(tree).map((step) => step.id) : undefined);
   if (notHere) throw refuse("setExtras", notHere);
   let cleaned: Record<string, Json | null>;
   try {

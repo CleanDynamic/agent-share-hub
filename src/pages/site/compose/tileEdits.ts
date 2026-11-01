@@ -11,6 +11,8 @@ import type { AddCheckInput, CheckSeed } from "./AddCheckDialog";
 import type { AddDatasetInput, DatasetCurrent } from "./AddDatasetDialog";
 import type { AddManualStepInput, ManualSeed } from "./AddManualStepDialog";
 import type { AddRepoInput, RepoCurrent } from "./AddRepoDialog";
+import type { AddRetrievalInput, RetrievalCurrent } from "./AddRetrievalDialog";
+import { retrievalOf } from "@/lib/build/retrieval";
 import type { AddResultInput, ResultCurrent } from "./AddResultDialog";
 import type { AddSystemPromptInput, SystemPromptCurrent } from "./AddSystemPromptDialog";
 import type { AddToolInput } from "./AddToolDialog";
@@ -63,6 +65,8 @@ export function editTitle(view: DetailsView): string {
       return named("System prompt", view.number, view.title ?? view.defaultTitle);
     case "dataset":
       return named("Dataset", view.number, view.title ?? view.defaultTitle);
+    case "retrieval":
+      return named("Retrieval", view.number, view.title ?? view.defaultTitle);
     case "repo":
       return named("GitHub repository", view.number, view.title ?? repoOf(view.payload)?.name ?? view.defaultTitle);
     case "session":
@@ -129,8 +133,13 @@ export function checkCurrent(view: V<"check">): CheckSeed {
     version: value("Model tested", "version"),
     evidenceUrl: evidence?.note ? "" : (evidence?.values.url ?? ""),
     evidenceName: evidence?.note ? evidence.note.replace(/ is kept as the evidence\.$/, "") : null,
+    extras: extrasOf(payloadOf(view)),
   };
 }
+
+/** SV-29: the Check's comparison and eval harness keys, as stored; the window edits these and Save writes what changed. */
+const EVAL_KEYS = ["test_set", "metric", "rows", "design", "failure_types", "graders", "judge_model", "framework", "runs_per_case", "gate"] as const;
+const extrasOf = (payload: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(EVAL_KEYS.flatMap((key) => (payload[key] !== undefined && payload[key] !== null ? [[key, payload[key]]] : [])));
 
 export function agentCurrent(view: V<"agent" | "team">): AgentCurrent {
   const extras = Object.fromEntries(agentRows(payloadOf(view), view.kind === "team").map((row) => [row.name, row.values]));
@@ -173,6 +182,21 @@ export function systemPromptCurrent(view: V<"system_prompt">): SystemPromptCurre
     model: text(view.payload.model),
     version: facts.version ?? "",
     described: Object.fromEntries(variableNamesIn(facts.text).map((name) => [name, saved.find((entry) => entry.name === name)?.description ?? ""])),
+  };
+}
+
+export function retrievalCurrent(view: V<"retrieval">): RetrievalCurrent {
+  const facts = retrievalOf(view.payload);
+  return {
+    name: view.title ?? "",
+    embeddingModel: facts.embeddingModel ?? "",
+    index: toolName(facts.index ?? "") ?? facts.index ?? "",
+    corpus: facts.corpus ?? "",
+    corpusSize: facts.corpusSize === undefined ? "" : String(facts.corpusSize),
+    query: facts.query ?? "",
+    k: facts.k === undefined ? "" : String(facts.k),
+    recall: facts.recall.map((point) => ({ k: String(point.k), percent: String(Math.round(point.value * 1000) / 10), source: point.source })),
+    hybrid: facts.hybrid === true,
   };
 }
 
@@ -285,6 +309,11 @@ export function saveCheck(view: V<"check">, input: AddCheckInput, h: H): void {
   };
   if (Object.keys(text_).length > 0) h.onCheckText?.(id, text_);
   if (!same(cases, keptCases(before.cases))) h.onCheckCases?.(id, cases);
+  // SV-29: the keys of the comparison and the eval harness that changed, written through the extras writer; a key taken out goes off.
+  const was = before.extras ?? {};
+  const now = input.extras ?? {};
+  const changed = Object.fromEntries(EVAL_KEYS.flatMap((key) => (same(was[key] ?? null, now[key] ?? null) ? [] : [[key, now[key] ?? null]])));
+  if (Object.keys(changed).length > 0) h.onExtras?.(id, changed);
   saveRows(h, id, checkRows(payloadOf(view)), {
     "Test method": { method: input.method ?? "" },
     Reviewer: { reviewer: input.reviewer ?? "" },
@@ -343,6 +372,25 @@ export function saveSystemPrompt(view: V<"system_prompt">, input: AddSystemPromp
     Version: { version: input.version ?? "" },
     Variables: Object.fromEntries(names.map((name) => [name, input.variables?.find((entry) => entry.name === name)?.description ?? ""])),
   });
+}
+
+/** Save a Retrieval tile: the name through the rename writer, every other key through the extras writer; only what changed is written. */
+export function saveRetrieval(view: V<"retrieval">, input: AddRetrievalInput, h: H): void {
+  const id = view.id;
+  if ((input.name ?? "") !== (view.title ?? "") && (input.name ?? "") !== "") h.onRename(id, input.name ?? "");
+  const was = payloadOf(view);
+  const next: Raw = {
+    embedding_model: input.embeddingModel ?? null,
+    index: input.index ?? null,
+    corpus: input.corpus ?? null,
+    corpus_size: input.corpusSize ?? null,
+    query: input.query ?? null,
+    k: input.k ?? null,
+    recall: input.recall && input.recall.length > 0 ? input.recall.map((point) => ({ k: point.k, value: point.value, source: point.source })) : null,
+    hybrid: input.hybrid ? true : null,
+  };
+  const changed = Object.fromEntries(Object.entries(next).filter(([key, value]) => !same(was[key] ?? null, value)));
+  if (Object.keys(changed).length > 0) h.onExtras?.(id, changed);
 }
 
 export function saveDataset(view: V<"dataset">, input: AddDatasetInput, h: H): void {

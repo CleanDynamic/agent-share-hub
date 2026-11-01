@@ -49,7 +49,7 @@ import { SaveMark, UsedInLine } from "@/components/build/ConnectionMarks";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, TypeLine } from "@/components/build/tileBodies";
+import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody, TypeLine } from "@/components/build/tileBodies";
 import { footerFactsOf, resultTypeLine } from "@/lib/build/tileLines";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
@@ -71,6 +71,7 @@ import { listPartsOf } from "../compose/partsModel";
 import { WorkstreamHead } from "../compose/WorkstreamHead";
 import { WORKSTREAM_BODY, WORKSTREAM_GROUP } from "../compose/workstreamRecipes";
 import { CheckBlock, DotLine } from "../compose/refinedPieces";
+import { ComparisonBlock, EvalHarnessBlock } from "@/components/build/evalBlocks";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
@@ -831,6 +832,8 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <Title entry={entry} right={<SaveMark kind="step" id={step.id} />} />
         <TypeLine step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
+        <ComparisonBlock check={step.check} indent={INDENT} />
+        <EvalHarnessBlock check={step.check} indent={INDENT} />
         <CheckCasesBody cases={step.check.caseList} indent={INDENT} />
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
@@ -849,12 +852,44 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-kind="decision"
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
-        <Title entry={entry} right={null} />
+        <Title
+          entry={entry}
+          right={
+            view.setupPrompt ? (
+              <Button
+                variant="secondary"
+                size={phone ? 44 : 28}
+                fontSize={12}
+                style={phone ? undefined : { height: 26 }}
+                onClick={async () => {
+                  const words = await view.setupPrompt?.(step.id);
+                  if (words && (await view.onCopy(words))) announce("Setup prompt copied");
+                }}
+              >
+                Copy setup prompt
+              </Button>
+            ) : null
+          }
+        />
         <TypeLine step={step} indent={INDENT} />
         <DecisionTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
+      </article>
+    );
+  }
+
+  if (step.kind === "retrieval" && step.retrieval) {
+    /* SV-29 P2: a similarity search that finds candidates: what it indexes, how many it returns and its recall. */
+    return (
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}>
+        <Title entry={entry} right={null} />
+        <TypeLine step={step} indent={INDENT} />
+        <RetrievalTileBody step={step} indent={INDENT} />
+        <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
+        <UsedInLine id={step.id} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );

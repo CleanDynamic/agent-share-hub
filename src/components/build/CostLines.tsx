@@ -9,13 +9,14 @@ import type { SessionGroup, Step } from "@/lib/build/graph";
 import { t } from "@/lib/theme/tokens";
 import { text, tnum } from "@/pages/site/compose/refinedStyles";
 
-export function TileCostLines({ step, audience, groups, indent = 0 }: { step: Pick<Step, "buildCost" | "runCost">; audience: "maker" | "reader"; groups: readonly SessionGroup[]; indent?: number }) {
+export function TileCostLines({ step, audience, groups, indent = 0 }: { step: Pick<Step, "buildCost" | "runCost"> & Partial<Pick<Step, "volume">>; audience: "maker" | "reader"; groups: readonly SessionGroup[]; indent?: number }) {
   const lines = tileCostLines(step, audience, groups);
-  if (!lines.build && !lines.run) return null;
+  if (!lines.build && !lines.run && !lines.daily) return null;
   return (
     <span data-testid="tile-cost" style={{ display: "flex", flexDirection: "column", gap: 2, paddingLeft: indent }}>
       {lines.build ? <span data-testid="cost-build" style={{ ...text(11.5, 400, t.label), ...tnum }}>{lines.build}</span> : null}
       {lines.run ? <span data-testid="cost-run" style={{ ...text(11.5, 400, t.label), ...tnum }}>{lines.run}</span> : null}
+      {lines.daily ? <span data-testid="cost-daily" style={{ ...text(11.5, 400, t.label), ...tnum }}>{lines.daily}</span> : null}
     </span>
   );
 }

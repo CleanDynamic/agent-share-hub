@@ -6,6 +6,7 @@
      &lens=map                    the Architecture map
      &window=setup&for=<id>       Show setup prompt (&harness=<id> starts Rebuild in there)
      &window=approval             Add > Approval, after the team
+     &window=retrieval            Add > Retrieval (SV-29; the pipeline-* fixtures are the same page)
      &window=edit&for=<id>        the tile's own window (an agent's Hands off to, a team's workspace and example run)
      &window=prompt&for=<id>      the prompt window, a job's fields open
      &open=<team id>              the List with that team's example run open */
@@ -19,10 +20,13 @@ import { agentTeamTree } from "@/dev/fixtures/deployment/agent-team";
 import { assistantTree } from "@/dev/fixtures/deployment/assistant";
 import { chiefOfStaffTree } from "@/dev/fixtures/deployment/chief-of-staff";
 import { selfHostedTree } from "@/dev/fixtures/deployment/self-hosted";
+import { productCategoriesTree } from "@/dev/fixtures/pipeline/product-categories";
+import { supportBotEvalsTree } from "@/dev/fixtures/pipeline/support-bot-evals";
 import { sandboxListProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { buildSteps } from "@/lib/build/graph";
 import type { NodeTree } from "@/lib/build/types";
 import { AddManualStepDialog } from "@/pages/site/compose/AddManualStepDialog";
+import { AddRetrievalDialog } from "@/pages/site/compose/AddRetrievalDialog";
 import { MapViews } from "@/pages/site/compose/ArchitectureMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
 import { DetailsPanel, type DetailsHandlers } from "@/pages/site/compose/DetailsPanel";
@@ -38,6 +42,9 @@ export const DEPLOYMENT_FIXTURES: Record<string, { tree: NodeTree[]; title: stri
   "deployment-self-hosted": { tree: selfHostedTree, title: "A self-hosted support swarm" },
   "deployment-agent-team": { tree: agentTeamTree, title: "A launch team" },
   "deployment-chief-of-staff": { tree: chiefOfStaffTree, title: "A chief of staff and three specialists" },
+  /* SV-29 P9: the pipeline fixtures, in the same composer. */
+  "pipeline-product-categories": { tree: productCategoriesTree, title: "Product categories at 10 million a day" },
+  "pipeline-support-bot-evals": { tree: supportBotEvalsTree, title: "A shoe shop's support bot, with its evals" },
 };
 
 const flat = (nodes: readonly NodeTree[]): NodeTree[] => nodes.flatMap((node) => [node, ...flat(node.children ?? [])]);
@@ -71,6 +78,7 @@ export default function DeploymentDemo({ fit = "board", state = "populated" }: D
         selection={<DetailsPanel {...(HANDLERS as unknown as ComponentProps<typeof DetailsPanel>)} view={view(selected)} phone={phone} />}
       />
       {windowFor?.kind === "setup" ? <SetupPromptWindow key={params.get("harness") ?? "own"} harness={params.get("harness") ?? undefined} id={windowFor.id ?? teamId} tree={tree} onCopy={noop} onClose={() => setWindowFor(null)} /> : null}
+      {windowFor?.kind === "retrieval" ? <AddRetrievalDialog open onOpenChange={() => setWindowFor(null)} onAdd={noop} /> : null}
       {windowFor?.kind === "approval" ? <AddManualStepDialog open onOpenChange={() => setWindowFor(null)} after={null} available approval={{ steps, afterId: teamId }} onAdd={noop} /> : null}
       {windowFor?.kind === "edit" ? <TileEditDialog view={view(windowFor.id)} handlers={HANDLERS} onClose={() => setWindowFor(null)} /> : null}
       <FullPromptWindow steps={steps} names={names} openId={windowFor?.kind === "prompt" ? windowFor.id : null} mode="maker" onExtras={noop} onTitle={noop} onClose={() => setWindowFor(null)} />

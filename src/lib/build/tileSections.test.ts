@@ -20,8 +20,8 @@ import { TILE_KINDS, notSetLine, readSections, sectionsOf, type TileKind } from 
 const labelsOf = (kind: TileKind) => sectionsOf(kind).map((section) => section.label);
 
 describe("the list", () => {
-  it("covers the fourteen kinds", () => {
-    expect([...TILE_KINDS].sort()).toEqual(["agent", "check", "code", "dataset", "decision", "file", "manual", "prompt", "repo", "result", "session", "system_prompt", "team", "tool"]);
+  it("covers the fifteen kinds (SV-29 adds retrieval)", () => {
+    expect([...TILE_KINDS].sort()).toEqual(["agent", "check", "code", "dataset", "decision", "file", "manual", "prompt", "repo", "result", "retrieval", "session", "system_prompt", "team", "tool"]);
   });
 
   it("gives every section a key, a label and a hint, once", () => {

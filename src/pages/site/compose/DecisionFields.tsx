@@ -17,6 +17,7 @@
 import { useId, useState, type DragEvent, type KeyboardEvent } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
+import { BEAM_WIDTH_MAX, BEAM_WIDTH_MIN, CANDIDATES_K_MAX, CANDIDATES_K_MIN, KNOWN_LIMITS_MAX, KNOWN_LIMIT_LINE_MAX, SELECTION_LABEL, SELECTION_METHODS, type AdaptationKind, type LabelStructure, type SelectionMethod } from "@/lib/build/pipelineFields";
 import { applyImport, blankQuestion, type AnswerDraft, type DecisionDraft, type QuestionDraft } from "@/lib/build/decisionDraft";
 import { EXAMPLES_MAX, EXAMPLE_TEXT_MAX, EXTRACT_FIELDS, EXTRACT_FIELD_LABEL, QUESTION_TYPES, QUESTIONS_MAX, STATE_SAMPLE_MAX, isTypeSafe, questionTypeLabel, takesOptions, type ExtractField, type QuestionType } from "@/lib/build/decision";
 import { KEY_REMOVED_LINE, parseDecisionCall } from "@/lib/build/decisionImport";
@@ -119,6 +120,31 @@ export const DECISION_COPY = {
   addOption: "Add an option",
   addLevel: "Add a level",
   importCode: "Import from the code",
+  /* SV-29 P1. */
+  labelSet: "Label set",
+  labelSetLine: "Every label a decision could output",
+  labelSize: "Number of labels",
+  labelName: "Label set name",
+  labelVersion: "Label set version",
+  flat: "Flat",
+  hierarchical: "Hierarchical",
+  candidates: "Candidates from",
+  candidatesLine: "An earlier step offers this decision a short list",
+  candidatesStep: "Step that offers them",
+  candidatesK: "Candidates offered (k)",
+  candidatesHint: "The options need not be listed when candidates come from a step",
+  selection: "How it covers the label set",
+  selectionLine: "One call, every label, a tree walk, or one call per node",
+  beamWidth: "Beam width (k)",
+  adaptation: "Adaptation",
+  adaptationLine: "Zero-shot, few-shot, or fine-tuned",
+  zeroShot: "Zero-shot",
+  fewShot: "Few-shot",
+  fineTuned: "Fine-tuned",
+  fewShotHint: "Few-shot sends the examples below in the prompt",
+  baseModel: "Base model",
+  knownLimits: "Known limits",
+  knownLimitsLine: "Where the maker says it performs badly, one per line, up to 5",
 } as const;
 
 export interface DecisionFieldsProps {
@@ -132,7 +158,7 @@ export interface DecisionFieldsProps {
   inBuild?: readonly string[];
   onAddCode?: () => void;
   /** A row opens on its own when told to (an error that points into it). */
-  open?: Partial<Record<"import" | "calling" | "input" | "answer" | "install" | "examples" | "low", boolean>>;
+  open?: Partial<Record<"import" | "calling" | "input" | "answer" | "install" | "examples" | "low" | "pipeline", boolean>>;
 }
 
 /** One option: a drag handle, its key and its remove button (its description is a field of the Optional section). The handle drags; the arrow keys move it too. */
@@ -310,6 +336,9 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
   const described = draft.questions.flatMap((q) => (takesOptions(q.type) ? q.options.filter((option) => option.line.trim()).map((option) => `${option.key.trim()}: ${option.line.trim()}`) : []));
   const setOptionLine = (question: number, option: number, line: string) =>
     set({ questions: draft.questions.map((q, i) => (i === question ? { ...q, options: q.options.map((o, j) => (j === option ? { ...o, line } : o)) } : q)) });
+  const pipe = draft.pipeline;
+  const setPipe = (patch: Partial<DecisionDraft["pipeline"]>) => set({ pipeline: { ...pipe, ...patch } });
+  const stepLabel = stepChoices.find((choice) => choice.id === pipe.candidatesStep)?.label;
   const setExample = (at: number, patch: Partial<{ input: string; output: string }>) => set({ examples: examples.map((example, i) => (i === at ? { ...example, ...patch } : example)) });
 
   return (
@@ -442,6 +471,62 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
           {Object.keys(draft.answer).length > 0 ? (
             <SegmentedField<"run" | "maker"> label="Where the answer came from" phone={phone} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={draft.source} onChange={(source) => set({ source })} />
           ) : null}
+        </OptionalField>
+
+        <OptionalField name={DECISION_COPY.labelSet} description={DECISION_COPY.labelSetLine} summary={summaryOf(pipe.labelName, pipe.labelSize ? `${pipe.labelSize} labels` : null)} forceOpen={open.pipeline} phone={phone}>
+          <Inline>
+            <LabelText>Labels</LabelText>
+            <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.labelSize} inputMode="numeric" value={pipe.labelSize} placeholder="6000" onChange={(e) => setPipe({ labelSize: e.target.value.replace(/[^0-9]/g, "") })} />
+            <SegmentedField<LabelStructure> label="Structure" phone={phone} items={[{ value: "flat", label: DECISION_COPY.flat }, { value: "hierarchical", label: DECISION_COPY.hierarchical }]} value={pipe.labelStructure} onChange={(labelStructure) => setPipe({ labelStructure })} />
+          </Inline>
+          <FieldInput phone={phone} aria-label={DECISION_COPY.labelName} maxLength={80} value={pipe.labelName} placeholder="Shopify product taxonomy" onChange={(e) => setPipe({ labelName: e.target.value })} />
+          <FieldInput phone={phone} mono width={NARROW.version} aria-label={DECISION_COPY.labelVersion} maxLength={40} value={pipe.labelVersion} placeholder="Sept 2026" onChange={(e) => setPipe({ labelVersion: e.target.value })} />
+        </OptionalField>
+
+        <OptionalField name={DECISION_COPY.candidates} description={DECISION_COPY.candidatesLine} summary={summaryOf(stepLabel, pipe.candidatesK ? `top ${pipe.candidatesK}` : null)} forceOpen={open.pipeline} phone={phone}>
+          <PickMenu field label={DECISION_COPY.candidatesStep} phone={phone} placeholder="No candidate step" value={pipe.candidatesStep} options={[{ value: NONE, label: "No candidate step" }, ...stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))]} onChange={(next) => setPipe({ candidatesStep: next === NONE ? null : next })} />
+          {pipe.candidatesStep ? (
+            <Inline>
+              <LabelText>Top</LabelText>
+              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.candidatesK} inputMode="numeric" value={pipe.candidatesK} placeholder="30" onChange={(e) => setPipe({ candidatesK: e.target.value.replace(/[^0-9]/g, "") })} />
+            </Inline>
+          ) : null}
+          <Hint>{DECISION_COPY.candidatesHint}. {CANDIDATES_K_MIN} to {CANDIDATES_K_MAX.toLocaleString("en-GB")}</Hint>
+        </OptionalField>
+
+        <OptionalField name={DECISION_COPY.selection} description={DECISION_COPY.selectionLine} summary={summaryOf(pipe.selection ? SELECTION_LABEL[pipe.selection] : null)} forceOpen={open.pipeline} phone={phone}>
+          <OptionGrid
+            label={DECISION_COPY.selection}
+            phone={phone}
+            columns={2}
+            items={SELECTION_METHODS.map((method) => ({ value: method, label: SELECTION_LABEL[method] }))}
+            chosen={pipe.selection ? [pipe.selection] : []}
+            onPick={(method) => setPipe({ selection: pipe.selection === method ? "" : (method as SelectionMethod) })}
+          />
+          {pipe.selection === "beam_search" ? (
+            <Inline>
+              <LabelText>Beam width</LabelText>
+              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.beamWidth} inputMode="numeric" value={pipe.beamWidth} placeholder="5" onChange={(e) => setPipe({ beamWidth: e.target.value.replace(/[^0-9]/g, "") })} />
+            </Inline>
+          ) : null}
+          {pipe.selection === "beam_search" ? <Hint>{BEAM_WIDTH_MIN} to {BEAM_WIDTH_MAX}</Hint> : null}
+        </OptionalField>
+
+        <OptionalField name={DECISION_COPY.adaptation} description={DECISION_COPY.adaptationLine} summary={summaryOf(pipe.adaptation ? { zero_shot: DECISION_COPY.zeroShot, few_shot: DECISION_COPY.fewShot, fine_tuned: DECISION_COPY.fineTuned }[pipe.adaptation] : null)} forceOpen={open.pipeline} phone={phone}>
+          <SegmentedField<AdaptationKind>
+            label={DECISION_COPY.adaptation}
+            phone={phone}
+            items={[{ value: "zero_shot", label: DECISION_COPY.zeroShot }, { value: "few_shot", label: DECISION_COPY.fewShot }, { value: "fine_tuned", label: DECISION_COPY.fineTuned }]}
+            value={pipe.adaptation === "" ? null : pipe.adaptation}
+            onChange={(next) => setPipe({ adaptation: next === pipe.adaptation ? "" : next })}
+          />
+          {pipe.adaptation === "few_shot" ? <Hint>{DECISION_COPY.fewShotHint}</Hint> : null}
+          {pipe.adaptation === "fine_tuned" ? <FieldInput phone={phone} mono aria-label={DECISION_COPY.baseModel} maxLength={80} value={pipe.baseModel} placeholder="gemma-3-4b" onChange={(e) => setPipe({ baseModel: e.target.value })} /> : null}
+        </OptionalField>
+
+        <OptionalField name={DECISION_COPY.knownLimits} description={DECISION_COPY.knownLimitsLine} summary={summaryOf(pipe.limits)} forceOpen={open.pipeline} phone={phone}>
+          <FieldArea phone={phone} rows={3} aria-label={DECISION_COPY.knownLimits} value={pipe.limits} placeholder="Sequential narrowing over large label sets degrades accuracy" onChange={(e) => setPipe({ limits: e.target.value })} />
+          <Hint>Up to {KNOWN_LIMITS_MAX} lines of {KNOWN_LIMIT_LINE_MAX} characters</Hint>
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.install} description={DECISION_COPY.installLine} summary={summaryOf(draft.install)} forceOpen={open.install} phone={phone}>

@@ -37,6 +37,7 @@ import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
+import { evalChoicesOf } from "@/lib/build/comparison";
 import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
@@ -92,6 +93,7 @@ import { buildSummary } from "@/lib/build/buildSummary";
 import type { AddCheckDialog as AddCheckDialogImpl, AddCheckInput } from "./AddCheckDialog";
 import type { AddCodeDialog as AddCodeDialogImpl, AddCodeInput } from "./AddCodeDialog";
 import type { AddDatasetDialog as AddDatasetDialogImpl } from "./AddDatasetDialog";
+import type { AddRetrievalDialog as AddRetrievalDialogImpl } from "./AddRetrievalDialog";
 import type { AddDecisionDialog as AddDecisionDialogImpl } from "./AddDecisionDialog";
 import type { AddRepoDialog as AddRepoDialogImpl } from "./AddRepoDialog";
 import type { AddSystemPromptDialog as AddSystemPromptDialogImpl } from "./AddSystemPromptDialog";
@@ -206,6 +208,7 @@ const DeploymentSection = lazy(() => import("./DeploymentSection").then((m) => (
 const AddToolDialog = lazyWindow<ComponentProps<typeof AddToolDialogImpl>>(() => import("./AddToolDialog").then((m) => ({ default: m.AddToolDialog })), (p) => p.open);
 const AddCheckDialog = lazyWindow<ComponentProps<typeof AddCheckDialogImpl>>(() => import("./AddCheckDialog").then((m) => ({ default: m.AddCheckDialog })), (p) => p.open);
 const AddCodeDialog = lazyWindow<ComponentProps<typeof AddCodeDialogImpl>>(() => import("./AddCodeDialog").then((m) => ({ default: m.AddCodeDialog })), (p) => p.open);
+const AddRetrievalDialog = lazyWindow<ComponentProps<typeof AddRetrievalDialogImpl>>(() => import("./AddRetrievalDialog").then((m) => ({ default: m.AddRetrievalDialog })), (p) => p.open);
 const AddDatasetDialog = lazyWindow<ComponentProps<typeof AddDatasetDialogImpl>>(() => import("./AddDatasetDialog").then((m) => ({ default: m.AddDatasetDialog })), (p) => p.open);
 const AddDecisionDialog = lazyWindow<ComponentProps<typeof AddDecisionDialogImpl>>(() => import("./AddDecisionDialog").then((m) => ({ default: m.AddDecisionDialog })), (p) => p.open);
 const AddRepoDialog = lazyWindow<ComponentProps<typeof AddRepoDialogImpl>>(() => import("./AddRepoDialog").then((m) => ({ default: m.AddRepoDialog })), (p) => p.open);
@@ -444,6 +447,8 @@ function SandboxPageBody() {
   /** CA-15 P9: Add › System prompt, Dataset and GitHub repository, each disabled until its node type is live. */
   const systemPromptType = useNodeType(compose.nodeTypes, "system_prompt");
   const datasetType = useNodeType(compose.nodeTypes, "dataset");
+  const retrievalType = useNodeType(compose.nodeTypes, "retrieval_config");
+  const [addRetrievalOpen, setAddRetrievalOpen] = useState(false);
   const repoType = useNodeType(compose.nodeTypes, "repo");
   const systemPromptAvailable = Boolean(systemPromptType?.is_active);
   const datasetAvailable = Boolean(datasetType?.is_active);
@@ -1175,7 +1180,7 @@ function SandboxPageBody() {
   const [promptFor, setPromptFor] = useState<string | null>(null);
   const copySetup = (text: string) => void navigator.clipboard?.writeText(text).then(() => buildHistory.notify("Setup prompt copied", { undo: false }), () => undefined);
   const onSetupPrompt = (id: string, how: "copy" | "show") =>
-    how === "show" ? setPromptFor(id) : void import("@/lib/build/setupPrompt").then((m) => copySetup(m.setupPromptOf(id, { tree: nodes.current() }).text));
+    how === "show" ? setPromptFor(id) : void import("@/lib/build/setupPrompt").then((m) => copySetup(m.setupPromptOf(id, { tree: nodes.current(), showCost: true }).text));
   const editView = useMemo(
     () =>
       editId
@@ -2110,6 +2115,8 @@ function SandboxPageBody() {
     decisionAvailable,
     onAddSystemPrompt: () => setAddSystemPromptOpen(true),
     onAddDataset: () => setAddDatasetOpen(true),
+    onAddRetrieval: () => setAddRetrievalOpen(true),
+    retrievalAvailable: Boolean(retrievalType?.is_active),
     onAddRepo: () => setAddRepoOpen(true),
     systemPromptAvailable,
     datasetAvailable,
@@ -2220,7 +2227,7 @@ function SandboxPageBody() {
   /* SV-27 P10: Sessions or Architecture. The Map stays open to a build with deployment tiles even under two sessions; the choice
      is stored through the making writer (`making.map.view`) and changes at once. The architecture view is its own chunk. */
   const architectureColumn =
-    mapSettings && deploymentTiles.length > 0 ? (
+    mapSettings && (deploymentTiles.length > 0 || steps.some((step) => step.kind === "retrieval" || step.kind === "decision")) ? (
       <Suspense fallback={mapColumn}>
         <MapViews made={made} sessions={savedGroups.length} tree={tree} direction={mapSettings.direction} sessionsMap={mapColumn} onView={(view) => changeMap({ ...mapSettings, view })} onOpen={setSelectedId} />
       </Suspense>
@@ -2721,6 +2728,7 @@ function SandboxPageBody() {
         session={currentSession}
         onAdd={(input) => void stepOf.sourceTile(ADDED.systemPrompt)((session) => prompts.addSystemPromptTile({ ...input, session }))}
       />
+      <AddRetrievalDialog open={addRetrievalOpen} onOpenChange={setAddRetrievalOpen} onAdd={(input) => void stepOf.sourceTile(ADDED.retrieval)((session) => prompts.addRetrievalTile({ ...input, session }))} />
       <AddDatasetDialog open={addDatasetOpen} onOpenChange={setAddDatasetOpen} onAdd={(input) => void stepOf.sourceTile(ADDED.dataset)((session) => prompts.addDatasetTile({ ...input, session }))} />
       <AddRepoDialog open={addRepoOpen} onOpenChange={setAddRepoOpen} inBuild={inBuild} onAdd={(input) => void stepOf.sourceTile(ADDED.repo)((session) => prompts.addRepoTile({ ...input, session }))} />
       <AddManualStepDialog
@@ -2732,7 +2740,7 @@ function SandboxPageBody() {
         approval={addManualOpen === "approval" ? { steps, afterId: afterStep?.id ?? null } : undefined}
         onAdd={(input) => void (input.gate ? stepOf.approval : stepOf.manual)(input)}
       />
-      <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void stepOf.check(input)} />
+      <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void stepOf.check(input)} evalChoices={evalChoicesOf(steps, testedStepOf(steps, null))} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void stepOf.code(input)} />
       <AddResultDialog open={addResultOpen} onOpenChange={setAddResultOpen} inBuild={inBuild} onAdd={(input) => void stepOf.result(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(input) => void stepOf.tool(input)} />

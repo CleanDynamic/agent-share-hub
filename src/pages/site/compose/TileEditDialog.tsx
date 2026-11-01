@@ -16,6 +16,7 @@ import { AddAgentDialog } from "./AddAgentDialog";
 import { AddCheckDialog } from "./AddCheckDialog";
 import { AddCodeDialog } from "./AddCodeDialog";
 import { AddDatasetDialog } from "./AddDatasetDialog";
+import { AddRetrievalDialog } from "./AddRetrievalDialog";
 import { AddDecisionDialog } from "./AddDecisionDialog";
 import { AddManualStepDialog } from "./AddManualStepDialog";
 import { AddRepoDialog } from "./AddRepoDialog";
@@ -43,6 +44,7 @@ import {
   manualCurrent,
   repoCurrent,
   resultCurrent,
+  retrievalCurrent,
   saveAgent,
   saveCheck,
   saveCode,
@@ -50,6 +52,7 @@ import {
   saveManual,
   saveRepo,
   saveResult,
+  saveRetrieval,
   saveSystemPrompt,
   saveTool,
   systemPromptCurrent,
@@ -69,7 +72,7 @@ export interface TileEditDialogProps {
 }
 
 /** The kinds this window takes. */
-export const EDITABLE_KINDS: readonly DetailsView["kind"][] = ["manual", "code", "check", "decision", "tool", "agent", "team", "result", "system_prompt", "dataset", "repo", "session"];
+export const EDITABLE_KINDS: readonly DetailsView["kind"][] = ["manual", "code", "check", "decision", "tool", "agent", "team", "result", "system_prompt", "dataset", "retrieval", "repo", "session"];
 
 export function opensEditDialog(view: DetailsView | null): boolean {
   return Boolean(view) && EDITABLE_KINDS.includes((view as DetailsView).kind);
@@ -222,6 +225,7 @@ function CheckEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<
       open
       onOpenChange={discard}
       seed={checkCurrent(view)}
+      evalChoices={view.evalChoices}
       edit={{
         title: editTitle(view),
         before: () => <TitleRow id={view.id} title={view.title} defaultTitle={view.defaultTitle} phone={phone} handlers={h} />,
@@ -373,6 +377,26 @@ function SystemPromptEdit({ view, handlers, onClose }: TileEditDialogProps & { v
   );
 }
 
+function RetrievalEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<"retrieval"> }) {
+  const phone = useIsPhone();
+  const { h, flush, discard } = useEditing(handlers, onClose, view);
+  return (
+    <AddRetrievalDialog
+      open
+      onOpenChange={discard}
+      current={retrievalCurrent(view)}
+      edit={{
+        title: editTitle(view),
+        onSave: (input) => {
+          saveRetrieval(view, input, h);
+          flush();
+        },
+        after: () => inputs(view, h, phone, false),
+      }}
+    />
+  );
+}
+
 function DatasetEdit({ view, handlers, onClose }: TileEditDialogProps & { view: V<"dataset"> }) {
   const phone = useIsPhone();
   const { h, flush, discard } = useEditing(handlers, onClose, view);
@@ -444,6 +468,8 @@ export function TileEditDialog(props: TileEditDialogProps) {
       return <SystemPromptEdit key={key} {...props} view={view} />;
     case "dataset":
       return <DatasetEdit key={key} {...props} view={view} />;
+    case "retrieval":
+      return <RetrievalEdit key={key} {...props} view={view} />;
     case "repo":
       return <RepoEdit key={key} {...props} view={view} />;
     default:

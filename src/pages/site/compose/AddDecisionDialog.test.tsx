@@ -46,14 +46,14 @@ function fillChoice(option = "Option") {
 }
 
 describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
-  it("is the shared frame: a Model block, the Questions block, then eight optional fields, closed", () => {
+  it("is the shared frame: a Model block, the Questions block, then thirteen optional fields, closed (SV-29 adds five)", () => {
     open();
     expect(screen.getByRole("dialog", { name: DECISION_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("Structured answer from a model");
     expect(screen.getByRole("heading", { name: "Model" })).toBeTruthy();
     for (const name of ["Model or service", "Version", "Invocation", "Questions"]) expect(screen.getAllByText(name).length, name).toBeGreaterThan(0);
     expect(within(screen.getByRole("radiogroup", { name: "Invocation" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Direct", "Through an adapter"]);
-    expect(screen.getByTestId("optional-count").textContent).toBe("8 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("13 fields");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(fieldNames()).toEqual([
       "Option descriptions",
@@ -61,6 +61,11 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
       "Calling code",
       "Input",
       "Recorded answer",
+      "Label set",
+      "Candidates from",
+      "How it covers the label set",
+      "Adaptation",
+      "Known limits",
       "Installation command",
       "Examples",
       "Low-confidence handling",

@@ -6,7 +6,7 @@ import { useId, useState } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { Segmented } from "@/components/brand/Segmented";
-import { costRefusal, RUN_PERS, type CostFigures, type RunCost, type RunPer } from "@/lib/build/cost";
+import { costRefusal, ITEM_NOUN_MAX, PRICINGS, PRICING_LABEL, RUN_PERS, VOLUME_LABEL, type CostFigures, type Pricing, type RunCost, type RunPer, type Volume } from "@/lib/build/cost";
 import type { Currency } from "@/lib/build/sessionFacts";
 import { t } from "@/lib/theme/tokens";
 
@@ -15,7 +15,7 @@ import { text, tnum, typedField } from "./refinedStyles";
 
 export const COST_COPY = { build: "Build cost", run: "Running cost", save: "Save", clear: "Clear" } as const;
 
-const PER_LABEL: Record<RunPer, string> = { call: "Each call", run: "Each run", hour: "Per hour", day: "Per day" };
+const PER_LABEL: Record<RunPer, string> = { call: "Each call", run: "Each run", hour: "Per hour", day: "Per day", item: "Each item" };
 
 interface Draft {
   seconds: string;
@@ -25,6 +25,9 @@ interface Draft {
   currency: Currency;
   per: RunPer;
   source: "run" | "maker";
+  /** SV-29 P5: what one item is, and the pricing basis. */
+  itemNoun: string;
+  pricing: Pricing;
 }
 
 const draftOf = (value: CostFigures | RunCost | null | undefined): Draft => ({
@@ -35,6 +38,8 @@ const draftOf = (value: CostFigures | RunCost | null | undefined): Draft => ({
   currency: value?.currency ?? "GBP",
   per: value && "per" in value ? value.per : "call",
   source: value?.source ?? "maker",
+  itemNoun: value && "itemNoun" in value ? (value.itemNoun ?? "") : "",
+  pricing: value && "pricing" in value && value.pricing ? value.pricing : "standard",
 });
 
 const num = (text: string): number | undefined | null => {
@@ -60,10 +65,15 @@ export function figuresFromDraft(d: Draft, run: boolean): { value: CostFigures |
   if (Object.keys(figures).filter((key) => key !== "currency").length === 0) return { value: null };
   const why = costRefusal(figures);
   if (why) return { error: why };
-  return { value: { ...figures, source: d.source, ...(run ? { per: d.per } : null) } as CostFigures | RunCost };
+  if (run && d.per === "item") {
+    if (!d.itemNoun.trim()) return { error: "Say what the item is: a product, a ticket." };
+    if (d.itemNoun.trim().length > ITEM_NOUN_MAX) return { error: `Item: ${ITEM_NOUN_MAX} characters max` };
+  }
+  return { value: { ...figures, source: d.source, ...(run ? { per: d.per } : null), ...(run && d.per === "item" ? { itemNoun: d.itemNoun.trim() } : null), ...(run && d.pricing === "batch" ? { pricing: "batch" as const } : null) } as CostFigures | RunCost };
 }
 
-export function CostFields({ kind, value, phone, onChange }: { kind: "build" | "run"; value: CostFigures | RunCost | null | undefined; phone: boolean; onChange: (next: CostFigures | RunCost | null) => void }) {
+export function CostFields({ kind, value, phone, onChange, volume, onVolume }: { kind: "build" | "run"; value: CostFigures | RunCost | null | undefined; phone: boolean; onChange: (next: CostFigures | RunCost | null) => void; volume?: Volume | null; onVolume?: (next: Volume | null) => void }) {
+  const [daily, setDaily] = useState(volume ? String(volume.count) : "");
   const uid = useId();
   const [open, setOpen] = useState(false);
   const [d, setD] = useState(() => draftOf(value));
@@ -95,6 +105,17 @@ export function CostFields({ kind, value, phone, onChange }: { kind: "build" | "
             <Field id={`${uid}-to`} label="Tokens out"><input id={`${uid}-to`} type="text" inputMode="numeric" value={d.tokensOut} onChange={(e) => set({ tokensOut: e.target.value })} style={typedField(phone, { width: 112, ...tnum })} /></Field>
             <Field id={`${uid}-c`} label="Cost"><input id={`${uid}-c`} type="text" inputMode="decimal" value={d.cost} onChange={(e) => set({ cost: e.target.value })} style={typedField(phone, { width: 112, ...tnum })} /></Field>
           </div>
+          {kind === "run" && d.per === "item" ? (
+            <>
+              <Field id={`${uid}-noun`} label="What one item is" hint="A product, a ticket"><input id={`${uid}-noun`} type="text" maxLength={ITEM_NOUN_MAX} value={d.itemNoun} onChange={(e) => set({ itemNoun: e.target.value })} style={typedField(phone, { width: 160 })} /></Field>
+              <Segmented<Pricing> label="Pricing basis" size={phone ? 50 : 32} fontSize={13} items={PRICINGS.map((value) => ({ value, label: PRICING_LABEL[value] }))} value={d.pricing} onChange={(pricing) => set({ pricing })} />
+            </>
+          ) : null}
+          {kind === "run" && onVolume ? (
+            <Field id={`${uid}-volume`} label={VOLUME_LABEL} hint="Items a day">
+              <input id={`${uid}-volume`} type="text" inputMode="numeric" value={daily} onChange={(e) => { const digits = e.target.value.replace(/[^0-9]/g, ""); setDaily(digits); onVolume(digits && Number(digits) > 0 ? { count: Number(digits), per: "day" } : null); }} style={typedField(phone, { width: 160, ...tnum })} />
+            </Field>
+          ) : null}
           <Segmented<Currency> label="Currency" size={phone ? 50 : 32} fontSize={13} items={[{ value: "GBP", label: "£" }, { value: "USD", label: "$" }]} value={d.currency} onChange={(currency) => set({ currency })} />
           <Segmented<"run" | "maker"> label="Where the figures came from" size={phone ? 50 : 32} fontSize={13} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={d.source} onChange={(source) => set({ source })} />
           {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}

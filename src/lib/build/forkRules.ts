@@ -41,6 +41,35 @@ export function methodOf<T extends object | null | undefined>(payload: T): T {
     delete out.media_id;
     delete out.url;
   }
+  // SV-29 P2: a Retrieval tile's measured Recall@k is the original's evidence: it stays, labelled as the original's.
+  if (Array.isArray(out.recall)) out.recall = out.recall.map((point) => (isRecord(point) ? { ...point, source: "original" } : point));
+  // SV-29 P3: a comparison's rows, test set and design are the original's measured results: kept, and labelled as the original's.
+  if (Array.isArray(out.rows) && out.rows.length > 0) {
+    out.rows = out.rows.map((row) => {
+      if (!isRecord(row)) return row;
+      return {
+        ...row,
+        ...(isRecord(row.value) ? { value: { ...row.value, source: "original" } } : null),
+        ...(isRecord(row.cost_per_item) ? { cost_per_item: { ...row.cost_per_item, source: "original" } } : null),
+      };
+    });
+    out.from_original = true;
+  } else if (isRecord(out.test_set) || isRecord(out.design)) out.from_original = true;
+  // SV-29 P4: graders, runs per case, the gate's rule and the test set's source are method and stay. Failure types, each case's
+  // stability, the run history and the gate's minutes and cost are the original's results: kept, and labelled as the original's.
+  if (Array.isArray(out.failure_types) && out.failure_types.length > 0) out.from_original = true;
+  if (Array.isArray(out.cases) && out.cases.some((c) => isRecord(c) && typeof c.stability === "string")) out.from_original = true;
+  if (Array.isArray(out.runs) && out.runs.some((run) => isRecord(run) && (run.id || run.compare || run.cost))) {
+    out.from_original = true;
+    out.runs = out.runs.map((run) => (isRecord(run) && isRecord(run.cost) ? { ...run, cost: { ...run.cost, source: "original" } } : run));
+  }
+  if (isRecord(out.gate)) {
+    const gate = { ...out.gate };
+    if (isRecord(gate.minutes)) gate.minutes = { ...gate.minutes, source: "original" };
+    if (isRecord(gate.cost_per_run)) gate.cost_per_run = { ...gate.cost_per_run, source: "original" };
+    out.gate = gate;
+    if (gate.minutes || gate.cost_per_run) out.from_original = true;
+  }
   // A decision's answer is the original's: it stays, as what the copy is checked against.
   if (isRecord(out.answer) && Array.isArray(out.questions)) {
     out.expected = out.answer;

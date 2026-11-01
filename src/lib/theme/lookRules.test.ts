@@ -467,6 +467,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AddToolDialog.test.tsx",
   // CA-15b P2
   "src/pages/site/compose/AddDatasetDialog.tsx",
+  // SV-29 P2
+  "src/pages/site/compose/AddRetrievalDialog.tsx",
+  // SV-29 P3
+  "src/pages/site/compose/EvalHarnessFields.tsx",
+  "src/components/build/evalBlocks.tsx",
   "src/pages/site/compose/AddRepoDialog.tsx",
   "src/pages/site/compose/AddResultDialog.tsx",
   "src/pages/site/compose/AddSystemPromptDialog.tsx",
@@ -1303,6 +1308,8 @@ export const CA03_FILES: readonly string[] = [
  * The recipes are the one place a modal's measures live.
  */
 export const MODAL_FILES: readonly string[] = [
+  "src/pages/site/compose/AddRetrievalDialog.tsx",
+  "src/pages/site/compose/EvalHarnessFields.tsx",
   "src/pages/site/compose/ChoiceGrid.tsx",
   "src/pages/site/compose/OptionalSection.tsx",
   "src/pages/site/compose/AddAgentDialog.tsx",

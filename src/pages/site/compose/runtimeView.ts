@@ -4,7 +4,7 @@
    nothing else is offered "Runs when". The panel reads this; it never reads payloads. */
 
 import { decisionRefsOf, topIndexOf, type RuntimePatch, type Step } from "@/lib/build/graph";
-import type { CostFigures, RunCost } from "@/lib/build/cost";
+import type { CostFigures, RunCost, Volume } from "@/lib/build/cost";
 import type { Helper } from "@/lib/build/helpers";
 import { schemaFileNames, type OutputShape } from "@/lib/build/answerShape";
 import { canBranchOn, canRunWhen, runsWhenChoices, runsWhenLabel, runsWhenOf, runsWhenRefusal, type RunsWhen, type RunsWhenIs } from "@/lib/build/decision";
@@ -48,7 +48,7 @@ export interface RuntimeView {
   /** A prompt or an agent: its answer shape, and any `*.schema.json` file in the build. */
   shape?: { shape: OutputShape | null; schemaFiles: string[] };
   /** Any tile: what it took to make; a runtime tile also what it costs to run (rule 3). */
-  costs?: { build: CostFigures | null; run: RunCost | null; runtime: boolean };
+  costs?: { build: CostFigures | null; run: RunCost | null; runtime: boolean; volume?: Volume | null };
 }
 
 /** The kind a step has for `canRunWhen`: a tool tile is "tool"; an agent inside a team is not a top-level tile. */
@@ -96,7 +96,7 @@ export const runtimeViewOf = (step: Step, steps: readonly Step[], names: Readonl
     };
   }
   if ((step.kind === "agent" && top) || step.kind === "prompt") out.shape = { shape: step.outputShape ?? null, schemaFiles: schemaFileNames(fileNames) };
-  if (!step.id.endsWith(":instructions") && (top || step.kind === "prompt")) out.costs = { build: step.buildCost ?? null, run: step.runCost ?? null, runtime: canRunWhen(step.kind) };
+  if (!step.id.endsWith(":instructions") && (top || step.kind === "prompt")) out.costs = { build: step.buildCost ?? null, run: step.runCost ?? null, runtime: canRunWhen(step.kind), volume: step.volume ?? null };
   return Object.keys(out).length ? out : undefined;
 };
 
@@ -117,8 +117,8 @@ export function withRuntimePatch(runtime: RuntimeView, patch: RuntimePatch): Run
   }
   if ("install" in patch && !runtime.agent && runtime.install !== undefined) next.install = patch.install ?? null;
   if ("outputShape" in patch && runtime.shape) next.shape = { ...runtime.shape, shape: patch.outputShape ?? null };
-  if (runtime.costs && ("buildCost" in patch || "runCost" in patch)) {
-    next.costs = { ...runtime.costs, ...("buildCost" in patch ? { build: patch.buildCost ?? null } : null), ...("runCost" in patch ? { run: patch.runCost ?? null } : null) };
+  if (runtime.costs && ("buildCost" in patch || "runCost" in patch || "volume" in patch)) {
+    next.costs = { ...runtime.costs, ...("buildCost" in patch ? { build: patch.buildCost ?? null } : null), ...("runCost" in patch ? { run: patch.runCost ?? null } : null), ...("volume" in patch ? { volume: patch.volume ?? null } : null) };
   }
   return next;
 }

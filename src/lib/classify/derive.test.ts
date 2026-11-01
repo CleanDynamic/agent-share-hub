@@ -171,7 +171,10 @@ describe("deriveClassification: Techniques", () => {
   });
 
   it("finds Structured output, Classification and Extraction from Decisions and shapes", () => {
-    expect(tech([decision()])).toEqual(expect.arrayContaining(["structured-output", "classification"]));
+    expect(tech([decision()])).toContain("structured-output");
+    // SV-29 P7: Classification is a Decision with a single or multiple choice question; a yes or no is not one.
+    expect(tech([decision()])).not.toContain("classification");
+    expect(tech([decision({ questions: [{ id: "team", type: "choice", instructions: "Which team", options: [{ key: "a" }, { key: "b" }] }] })])).toContain("classification");
     expect(tech([prompt("x", { output_shape: { kind: "json", fields: [] } })])).toContain("structured-output");
     expect(tech([decision({ questions: [{ id: "q", type: "choice", instructions: "Extract the name", options: [{ key: "a" }, { key: "b" }] }] })])).toContain("extraction");
   });

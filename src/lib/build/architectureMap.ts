@@ -11,6 +11,10 @@
 //                      tools from Available tools, skills
 //   Column 4 · Out     voice, front end, billing
 //   Below              monitoring, with `watches` lines to what it watches
+//   Pipeline row       SV-29 P6: the runtime steps that are not part of an agent (Retrieval, Decision, the Code that calls them, a Tool),
+//                      left to right in the order their Uses links give, else List order, then a Check that measured them; under
+//                      everything else, and drawn even when the build has no agent. `candidates_from` is a `top k candidates` line,
+//                      and a Check's tiles are a dotted `measured by` line
 //
 // The host is a frame around everything that runs on it, its name and GPUs in its top edge. Lines come from `connects` and the
 // implied ones, each once. Coordinates are rounded to one decimal. PURE.
@@ -18,6 +22,7 @@
 import { toolName } from "@/lib/tools/registry";
 
 import { agentFieldsOf, APPROVAL_LABEL } from "./agentFields";
+import { buildSteps, type Step } from "./graph";
 import { deploymentName, deploymentTilesOf, idOfRef, providerName, VOICE_MODE_LABEL, type DeploymentTile } from "./deployment";
 import { gpusWord, modelRunOf } from "./modelRun";
 import { agentSetupItemsOf } from "./setup";
@@ -26,7 +31,7 @@ import { agentsOfTeam, handoffsOf, HANDOFF_COPY } from "./teamFields";
 import { AGENT_PATTERN_LABEL, patternOf } from "./tileExtras";
 import type { NodeTree } from "./types";
 
-export type ArchColumn = 1 | 2 | 3 | 4 | 5;
+export type ArchColumn = 1 | 2 | 3 | 4 | 5 | 6;
 export type ArchDirection = "horizontal" | "vertical";
 
 export interface ArchBox {
@@ -114,6 +119,59 @@ function agentDraft(node: Node): Draft {
   return { id: node.id, tile: node.id, kind: node.type === "team" ? "team" : "agent", column: 2, title: node.title ?? (node.type === "team" ? "Team" : "Agent"), lines };
 }
 
+/* ── SV-29 P6: the pipeline row ── */
+
+const PIPELINE_KINDS = new Set(["retrieval", "decision", "code", "tool"]);
+
+/**
+ * The runtime steps of a pipeline: every Retrieval and Decision tile, the Code that calls a Decision, and a Code or Tool tile joined to
+ * one by a Uses link; then in order by Uses links (a step comes after what it uses), List order where they say nothing. A Check that
+ * measured them comes last.
+ */
+export function pipelineOf(tree: readonly Node[]): { steps: Step[]; checks: Step[] } {
+  const top = buildSteps(tree as NodeTree[]);
+  const seeds = top.filter((step) => step.kind === "retrieval" || step.kind === "decision");
+  if (seeds.length === 0) return { steps: [], checks: [] };
+  const included = new Set(seeds.map((step) => step.id));
+  for (const step of seeds) for (const id of step.decision?.calledFrom ?? []) if (top.some((other) => other.id === id)) included.add(id);
+  for (const step of top) {
+    if (included.has(step.id) || (step.kind !== "code" && step.kind !== "tool")) continue;
+    const joined = step.uses.some((use) => included.has(use.node_id)) || seeds.some((seed) => seed.uses.some((use) => use.node_id === step.id));
+    if (joined) included.add(step.id);
+  }
+  const picked = top.filter((step) => included.has(step.id) && PIPELINE_KINDS.has(step.kind));
+  // Kahn's order, List order breaking ties: a step comes after the steps it uses.
+  const ordered: Step[] = [];
+  const left = [...picked];
+  while (left.length > 0) {
+    const next = left.find((step) => step.uses.every((use) => !left.some((other) => other.id === use.node_id && other.id !== step.id))) ?? left[0];
+    ordered.push(next);
+    left.splice(left.indexOf(next), 1);
+  }
+  const checks = top.filter((step) => step.kind === "check" && (step.check?.comparison?.rows ?? []).some((row) => row.tiles.some((id) => included.has(id))));
+  return { steps: ordered, checks };
+}
+
+/** Whether a build draws a pipeline: the Map's Architecture view opens for it as it does for a deployment. */
+export const hasPipeline = (tree: readonly Node[]): boolean => pipelineOf(tree).steps.length > 0;
+
+const KIND_NAME_ON_MAP: Record<string, string> = { retrieval: "Retrieval", decision: "Decision", code: "Code", tool: "Tool", check: "Check" };
+
+function pipelineDraft(step: Step): Draft {
+  const lines: string[] = [];
+  if (step.kind === "retrieval" && step.retrieval) {
+    if (step.retrieval.embeddingModel) lines.push(step.retrieval.embeddingModel);
+    if (step.retrieval.k) lines.push(`top ${step.retrieval.k}`);
+  } else if (step.kind === "decision" && step.decision) {
+    if (step.decision.model) lines.push(step.decision.model);
+    if (step.decision.selection) lines.push(step.decision.selection.method.replace("_", " "));
+  } else if (step.kind === "code") {
+    if (step.filename) lines.push(step.filename);
+  } else if (step.kind === "tool" && step.tool) lines.push(step.tool);
+  else if (step.kind === "check" && step.check?.comparison?.metric) lines.push(step.check.comparison.metric.id.replace(/_/g, " "));
+  return { id: step.id, tile: step.id, kind: step.kind, column: 6, title: step.title ?? step.defaultTitle ?? KIND_NAME_ON_MAP[step.kind], lines };
+}
+
 function tileDraft(tile: DeploymentTile, column: ArchColumn, all: readonly Node[]): Draft {
   const lines: string[] = [];
   if (tile.kind === "inference_server") {
@@ -164,6 +222,21 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
   // Column 4: what goes out; then monitoring under the columns.
   for (const tile of tiles) if (COLUMN_OF[tile.kind] === 4) drafts.push(tileDraft(tile, 4, all));
   for (const tile of tiles) if (tile.kind === "monitoring") drafts.push(tileDraft(tile, 5, all));
+  // SV-29 P6: the pipeline row, drawn even when the build has no agent.
+  const pipeline = pipelineOf(tree);
+  for (const step of [...pipeline.steps, ...pipeline.checks]) drafts.push(pipelineDraft(step));
+
+  // SV-29 P6: the pipeline's lines. A Decision's candidates are `top k candidates`; a step that uses another is `feeds`; a Check's tiles are `measured by`, dotted.
+  for (const step of pipeline.steps) {
+    const from = step.kind === "decision" ? step.decision?.candidatesFrom : undefined;
+    if (from) edge(from.step, step.id, `top ${from.k} candidates`);
+    for (const use of step.uses) if (use.kind === "output" && !(from && from.step === use.node_id)) edge(use.node_id, step.id, "feeds");
+    for (const id of step.decision?.calledFrom ?? []) edge(id, step.id, "calls");
+  }
+  for (const check of pipeline.checks) {
+    const named = new Set((check.check?.comparison?.rows ?? []).flatMap((row) => row.tiles));
+    for (const id of named) edge(id, check.id, "measured by", { dotted: true });
+  }
 
   // Lines: the implied ones, then each tile's own `connects`.
   const agentIds = agents.filter((agent) => agent.type === "agent_config").map((agent) => agent.id);
@@ -239,11 +312,28 @@ export function layoutArchitecture(tree: readonly Node[], direction: ArchDirecti
     placed.set(draft.id, { x, y: frameBottom + ARCH.monitorGap, w: ARCH.boxW, h: heightOf(draft) });
     x += ARCH.boxW + ARCH.colGap;
   }
+  // SV-29 P6: the pipeline row under everything else: left to right (top to bottom on a phone).
+  const pipelineDrafts = drafts.filter((entry) => entry.column === 6);
+  if (pipelineDrafts.length > 0) {
+    const bottom = Math.max(frameBottom, ...[...placed.values()].map((box) => box.y + box.h));
+    const gap = placed.size > 0 ? ARCH.monitorGap : 0;
+    let along = vertical ? bottom + gap : left;
+    for (const draft of pipelineDrafts) {
+      const h = heightOf(draft);
+      if (vertical) {
+        placed.set(draft.id, { x: left, y: along, w: ARCH.boxW, h });
+        along += h + ARCH.colGap;
+      } else {
+        placed.set(draft.id, { x: along, y: bottom + gap, w: ARCH.boxW, h });
+        along += ARCH.boxW + ARCH.colGap;
+      }
+    }
+  }
 
   // The host frame: around the boxes that run on it (its agent and that agent's deployment; every agent when it names none).
   const frames: ArchFrame[] = hosts.map((host) => {
     const on = drafts.filter((draft) => {
-      if (draft.column === 5) return false;
+      if (draft.column === 5 || draft.column === 6) return false;
       if (!host.payload.agent) return true;
       const onIt = (id: string | null) => id !== null && (id === host.payload.agent || parentOf.get(id) === host.payload.agent);
       if (onIt(draft.id)) return true;

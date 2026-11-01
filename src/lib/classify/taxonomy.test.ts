@@ -123,7 +123,7 @@ describe("taxonomy: the lists", () => {
     expect(TAXONOMY.task.filter((value) => value.parent === null).map((value) => value.label)).toEqual(["Create", "Analyse", "Assess", "Find", "Organise", "Communicate", "Act"]);
     expect(TAXONOMY.setting.filter((value) => value.parent === null).map((value) => value.label)).toEqual(["Personal", "Education", "Research", "Work", "Public and community"]);
     expect(TAXONOMY.built).toHaveLength(23);
-    expect(TAXONOMY.technique).toHaveLength(22);
+    expect(TAXONOMY.technique).toHaveLength(24); // SV-29 P7 adds Zero-shot and Reranking
     expect(TAXONOMY.modality).toHaveLength(10);
     expect(TAXONOMY.method).toHaveLength(8);
     expect(TAXONOMY.autonomy.map((value) => value.label)).toEqual(["You do each step", "AI suggests and you approve", "AI acts with approval gates", "Fully autonomous"]);

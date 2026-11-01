@@ -34,7 +34,7 @@ function fill() {
 }
 
 describe("Add › Check", () => {
-  it("asks the test description, the pass criteria and the runs, then keeps eight optional fields closed", () => {
+  it("asks the test description, the pass criteria and the runs, then keeps fourteen optional fields closed (SV-29 adds Test set, Metric, Failure types, Graders, Runs per case and CI gate)", () => {
     open();
     const dialog = screen.getByRole("dialog", { name: "Add a check" });
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("Test of part of the build");
@@ -42,7 +42,7 @@ describe("Add › Check", () => {
     expect((screen.getByLabelText("Test description") as HTMLTextAreaElement).rows).toBe(2);
     expect((screen.getByLabelText("Pass criteria") as HTMLTextAreaElement).rows).toBe(2);
     expect(within(dialog).getByText("passed out of")).toBeTruthy();
-    expect(screen.getByTestId("optional-count").textContent).toBe("8 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("14 fields");
     expect(fieldNames()).toEqual([
       "Test cases",
       "Failure notes",
@@ -52,6 +52,12 @@ describe("Add › Check", () => {
       "Scoring method",
       "Model tested",
       "Evidence",
+      "Test set",
+      "Metric",
+      "Failure types",
+      "Graders",
+      "Runs per case",
+      "CI gate",
     ]);
     // Add is the one primary.
     expect(dialog.querySelectorAll('[data-variant="primary"]')).toHaveLength(1);

@@ -10,6 +10,8 @@
 
 import { toolName } from "@/lib/tools/registry";
 
+import { pipelineFieldsOf, type PipelineDerived, type PipelineFields } from "./pipelineFields";
+
 export const DECISION_TYPE = "decision";
 
 /** CA-15 P8: `multi` (Multiple choice), `rank` (Ranking) and `extract` (Extraction) join the three a decision always had. */
@@ -56,7 +58,7 @@ export interface DecisionAnswer {
 /** Where an answer and its figures came from. "original" is the maker's answer on a build someone copied. */
 export type AnswerSource = "run" | "maker" | "original";
 
-export interface DecisionFacts {
+export interface DecisionFacts extends PipelineFields {
   provider: string;
   model: string;
   via?: "api" | "adapter";
@@ -77,6 +79,8 @@ export interface DecisionFacts {
   examples?: DecisionExample[];
   /** CA-15 P8: what to do when it is not confident (`payload.low_confidence`). */
   lowConfidence?: LowConfidence;
+  /** SV-29 P1: worked out from other tiles when the steps are built; never stored. */
+  derived?: PipelineDerived;
 }
 
 /** CA-15 P8: one example: what went in, and the output that was expected. */
@@ -168,6 +172,7 @@ export function decisionOf(payload: unknown): DecisionFacts | null {
   const install = str(payload.install)?.trim().slice(0, INSTALL_MAX);
   const examples = examplesOf(payload.examples);
   const lowConfidence = lowConfidenceOf(payload.low_confidence);
+  const pipeline = pipelineFieldsOf(payload);
   return {
     provider: str(payload.provider)?.trim() ?? "",
     model: str(payload.model)?.trim() ?? "",
@@ -182,6 +187,7 @@ export function decisionOf(payload: unknown): DecisionFacts | null {
     ...(install ? { install } : null),
     ...(examples.length > 0 ? { examples } : null),
     ...(lowConfidence ? { lowConfidence } : null),
+    ...pipeline,
   };
 }
 
@@ -208,7 +214,7 @@ export function lowConfidenceOf(raw: unknown): LowConfidence | null {
 // --- checking -----------------------------------------------------------------
 
 /** Why these questions cannot be saved, or null. Fixed words only. */
-export function questionsRefusal(questions: readonly DecisionQuestion[], name?: string): string | null {
+export function questionsRefusal(questions: readonly DecisionQuestion[], name?: string, context: { candidates?: boolean } = {}): string | null {
   const said = name ? `Decision '${name}'` : "A decision";
   if (questions.length < QUESTIONS_MIN) return `${said} has no questions`;
   if (questions.length > QUESTIONS_MAX) return `Questions: ${QUESTIONS_MAX} max`;
@@ -217,7 +223,8 @@ export function questionsRefusal(questions: readonly DecisionQuestion[], name?: 
     if (!q.id.trim()) return `${said} has a question with no name`;
     if (seen.has(q.id)) return `${said} asks '${q.id}' twice`;
     seen.add(q.id);
-    if (takesOptions(q.type) && (q.options?.length ?? 0) < OPTIONS_MIN) return `${said} has no options`;
+    // SV-29 P1: with candidates from an earlier step the fixed options are optional; the limits below apply to fixed options only.
+    if (takesOptions(q.type) && (q.options?.length ?? 0) < OPTIONS_MIN && !(context.candidates && (q.options?.length ?? 0) === 0)) return `${said} has no options`;
     if (takesOptions(q.type) && (q.options?.length ?? 0) > OPTIONS_MAX) return `Options: ${OPTIONS_MAX} max`;
     if (takesOptions(q.type) && new Set(q.options?.map((o) => o.key)).size !== q.options?.length) return `'${q.id}' has two options with the same name`;
     if (q.type === "score" && (q.levels?.length ?? 0) < LEVELS_MIN) return `${said} has no levels`;
@@ -378,7 +385,7 @@ export interface RunsWhen {
 }
 
 /** CA-13 rule 1: only runtime tiles branch. A prompt, manual step, file, result or session head never shows "Runs when". */
-export const RUNS_WHEN_KINDS = ["agent", "team", "code", "tool", "decision"] as const;
+export const RUNS_WHEN_KINDS = ["agent", "team", "code", "tool", "decision", "retrieval"] as const;
 
 export const canRunWhen = (kind: string): boolean => (RUNS_WHEN_KINDS as readonly string[]).includes(kind);
 

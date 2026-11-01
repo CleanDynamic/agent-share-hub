@@ -657,8 +657,10 @@ const TECHNIQUES = `
 Prompt chain | chained prompts, multi-step prompting
 System prompt | system message, instructions
 Few-shot examples | few shot, examples in prompt
+Zero-shot | zero shot, no examples
 Prompt variables | template variables, placeholders
 Retrieval (RAG) | RAG, retrieval augmented generation
+Reranking | re-ranking, rerank
 Long documents | long context, large files
 Memory | agent memory, remembers
 Tool use | function calling, tool calling

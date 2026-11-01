@@ -13,7 +13,10 @@
 import type { Currency, SessionExtras } from "./sessionFacts";
 
 export type CostSource = "run" | "maker";
-export type RunPer = "call" | "run" | "hour" | "day";
+/** SV-29 P5: `item` is the cost of processing one item (a product, a ticket), with the item's noun. */
+export type RunPer = "call" | "run" | "hour" | "day" | "item";
+/** SV-29 P5: the API's real-time pricing, or its batch pricing. */
+export type Pricing = "standard" | "batch";
 
 export interface CostFigures {
   ms?: number;
@@ -27,9 +30,28 @@ export interface CostFigures {
 
 export interface RunCost extends CostFigures {
   per: RunPer;
+  /** `item` only: what one item is, up to 20 characters ("product"). Stored as `item_noun`. */
+  itemNoun?: string;
+  pricing?: Pricing;
 }
 
-export const RUN_PERS: readonly RunPer[] = ["call", "run", "hour", "day"];
+export const RUN_PERS: readonly RunPer[] = ["call", "run", "hour", "day", "item"];
+export const ITEM_NOUN_MAX = 20;
+export const PRICINGS: readonly Pricing[] = ["standard", "batch"];
+export const PRICING_LABEL: Record<Pricing, string> = { standard: "Standard pricing", batch: "Batch pricing" };
+
+/** SV-29 P5: how many items a day a runtime tile processes (`payload.volume`). */
+export interface Volume {
+  count: number;
+  per: "day";
+}
+export const VOLUME_MAX = 1_000_000_000_000;
+export const VOLUME_LABEL = "Daily volume";
+
+/** `payload.volume`, read defensively. */
+export function volumeOf(raw: unknown): Volume | null {
+  return isRecord(raw) && raw.per === "day" && whole(raw.count, VOLUME_MAX) !== undefined && (raw.count as number) > 0 ? { count: raw.count as number, per: "day" } : null;
+}
 export const COST_LIMITS = { ms: 31_536_000_000, tokens: 1_000_000_000_000, cost: 100_000 } as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -66,7 +88,10 @@ export function buildCostOf(raw: unknown): CostFigures | null {
 export function runCostOf(raw: unknown): RunCost | null {
   if (!isRecord(raw) || !RUN_PERS.includes(raw.per as RunPer)) return null;
   const figures = figuresOf(raw);
-  return hasAny(figures) ? { ...figures, per: raw.per as RunPer, source: raw.source === "run" ? "run" : "maker" } : null;
+  const noun = raw.per === "item" && typeof (raw.item_noun ?? raw.itemNoun) === "string" ? String(raw.item_noun ?? raw.itemNoun).trim().slice(0, ITEM_NOUN_MAX) : "";
+  return hasAny(figures)
+    ? { ...figures, per: raw.per as RunPer, source: raw.source === "run" ? "run" : "maker", ...(noun ? { itemNoun: noun } : null), ...(PRICINGS.includes(raw.pricing as Pricing) ? { pricing: raw.pricing as Pricing } : null) }
+    : null;
 }
 
 /** Why a figure cannot be saved, or null. Fixed words only. */
@@ -123,13 +148,37 @@ export function buildLine(figures: CostFigures | null | undefined, showMoney = t
   return said.length ? `Made in ${said.join(" · ")}` : null;
 }
 
-const PER_LEAD: Record<RunPer, string> = { call: "Each call", run: "Each run", hour: "Per hour", day: "Per day" };
+const PER_LEAD: Record<RunPer, string> = { call: "Each call", run: "Each run", hour: "Per hour", day: "Per day", item: "Each item" };
 
-/** A runtime tile's quiet line: "Each call: 120 ms · £0.0001", "Per hour: £7.00"; null when there is nothing to say. */
+/** "(batch pricing)" after the figure, only for batch. */
+const pricingNote = (figures: Pick<RunCost, "pricing">): string => (figures.pricing === "batch" ? " (batch pricing)" : "");
+
+/**
+ * A runtime tile's quiet line: "Each call: 120 ms · £0.0001", "Per hour: £7.00"; SV-29: a cost per item reads "about $0.0005 per
+ * product (batch pricing)". Null when there is nothing to say.
+ */
 export function runLine(figures: RunCost | null | undefined, showMoney = true): string | null {
   if (!figures) return null;
+  if (figures.per === "item") {
+    const noun = figures.itemNoun ?? "item";
+    const priced = showMoney && figures.cost !== undefined ? `about ${money(figures.cost, figures.currency)} per ${noun}${pricingNote(figures)}` : null;
+    const other = parts({ ...figures, cost: undefined }, false);
+    return priced || other.length ? [priced, ...other].filter(Boolean).join(" · ") : null;
+  }
   const said = parts(figures, showMoney);
-  return said.length ? `${PER_LEAD[figures.per]}: ${said.join(" · ")}` : null;
+  return said.length ? `${PER_LEAD[figures.per]}: ${said.join(" · ")}${pricingNote(figures)}` : null;
+}
+
+/**
+ * SV-29 P5: "About $5,000 a day at 10,000,000 items · worked out from the cost per item": derived from a cost per item and the daily
+ * volume, only when money shows. Never added to another unit (rule 3). Null otherwise.
+ */
+export function dailyLine(figures: RunCost | null | undefined, volume: Volume | null | undefined, showMoney = true): string | null {
+  if (!showMoney || !figures || figures.per !== "item" || figures.cost === undefined || !volume) return null;
+  const day = figures.cost * volume.count;
+  const sign = figures.currency === "USD" ? "$" : "£";
+  const said = day >= 100 ? `${sign}${Math.round(day).toLocaleString("en-GB")}` : money(day, figures.currency);
+  return `About ${said} a day at ${volume.count.toLocaleString("en-GB")} items · worked out from the cost per item`;
 }
 
 /** "The original took 1.2 s to make" and "Each call cost the original £0.0001": the run view's quiet lines, never copied. */
@@ -142,7 +191,7 @@ export function originalRunLine(figures: RunCost | null | undefined, showMoney: 
   if (!figures) return null;
   const said = parts(figures, showMoney);
   if (!said.length) return null;
-  const lead = figures.per === "call" ? "Each call" : figures.per === "run" ? "Each run" : figures.per === "hour" ? "Each hour" : "Each day";
+  const lead = figures.per === "call" ? "Each call" : figures.per === "run" ? "Each run" : figures.per === "hour" ? "Each hour" : figures.per === "item" ? `Each ${figures.itemNoun ?? "item"}` : "Each day";
   return `${lead} took the original ${said.join(" · ")}`;
 }
 

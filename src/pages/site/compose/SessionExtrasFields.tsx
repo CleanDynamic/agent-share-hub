@@ -20,6 +20,7 @@ import { COST_MAX, costField, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
 import { DM_MONO } from "@/lib/theme/type";
 
+import { RUN_CHANGED_MAX, RUN_HISTORY_HELP, RUN_ID_MAX } from "@/lib/build/evalHarness";
 import { checkRunsOf, checkRunsRefusal, CHECK_RUNS_KEPT, type CheckRun } from "@/lib/build/graph";
 
 import { ChoiceRows } from "./ChoiceRows";
@@ -322,14 +323,40 @@ export const RUNS_FIELD_COPY = {
   bad: "Each run: date as 2026-10-12, whole numbers, passed no more than total",
 } as const;
 
-/** One run as the three wells hold it. */
+/** One run as the three wells hold it, and (SV-29 P4, under More) its name, what changed, its baseline, the comparison and its cost. */
 interface RunDraft {
   at: string;
   passed: string;
   total: string;
+  id?: string;
+  changed?: string;
+  vs?: string;
+  fixed?: string;
+  regressions?: string;
+  nowFlaky?: string;
+  stillFailing?: string;
+  cost?: string;
+  costSource?: "run" | "maker" | "original";
+  minutes?: string;
+  more?: boolean;
 }
 
-const draftOf = (run: CheckRun): RunDraft => ({ at: run.at, passed: String(run.passed), total: String(run.total) });
+const draftOf = (run: CheckRun): RunDraft => ({
+  at: run.at,
+  passed: String(run.passed),
+  total: String(run.total),
+  id: run.id ?? "",
+  changed: run.changed ?? "",
+  vs: run.vs ?? "",
+  fixed: run.compare ? String(run.compare.fixed) : "",
+  regressions: run.compare ? String(run.compare.regressions) : "",
+  nowFlaky: run.compare ? String(run.compare.now_flaky) : "",
+  stillFailing: run.compare ? String(run.compare.still_failing) : "",
+  cost: run.cost ? String(run.cost.cost) : "",
+  costSource: run.cost?.source ?? "maker",
+  minutes: run.minutes === undefined ? "" : String(run.minutes),
+  more: Boolean(run.id || run.changed || run.vs || run.cost || run.minutes !== undefined),
+});
 
 /** The runs the drafts spell, newest first, or null when any row is not a whole run. An empty row is left out. */
 function runsFromDrafts(drafts: readonly RunDraft[]): CheckRun[] | null {
@@ -337,7 +364,18 @@ function runsFromDrafts(drafts: readonly RunDraft[]): CheckRun[] | null {
   for (const draft of drafts) {
     if (!draft.at.trim() && !draft.passed.trim() && !draft.total.trim()) continue;
     if (!/^\d+$/.test(draft.passed.trim()) || !/^\d+$/.test(draft.total.trim())) return null;
-    const run = { at: draft.at.trim(), passed: Number(draft.passed), total: Number(draft.total) };
+    const count = (text: string | undefined): number => Number((text ?? "").trim() || 0);
+    const run: CheckRun = {
+      at: draft.at.trim(),
+      passed: Number(draft.passed),
+      total: Number(draft.total),
+      ...(draft.id?.trim() ? { id: draft.id.trim() } : null),
+      ...(draft.changed?.trim() ? { changed: draft.changed.trim() } : null),
+      ...(draft.vs?.trim() ? { vs: draft.vs.trim() } : null),
+      ...(draft.vs?.trim() && (draft.fixed || draft.regressions || draft.nowFlaky || draft.stillFailing) ? { compare: { fixed: count(draft.fixed), regressions: count(draft.regressions), now_flaky: count(draft.nowFlaky), still_failing: count(draft.stillFailing) } } : null),
+      ...(draft.cost?.trim() ? { cost: { cost: Number(draft.cost), currency: "USD" as const, source: draft.costSource ?? "maker" } } : null),
+      ...(draft.minutes?.trim() ? { minutes: Number(draft.minutes) } : null),
+    };
     if (checkRunsRefusal([run])) return null;
     runs.push(run);
   }
@@ -361,7 +399,7 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
     <Field id={`${id}-runs`} label={RUNS_FIELD_COPY.title} hint={RUNS_FIELD_COPY.optional} group>
       <div data-testid="check-runs" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {drafts.map((row, index) => (
-          <div key={index} data-testid="check-run" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <div key={index} data-testid="check-run" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minWidth: 0 }}>
             <div style={{ width: 112, flexShrink: 0 }}>
               <ExtrasInput label={`${RUNS_FIELD_COPY.date} of run ${index + 1}`} value={row.at} placeholder="2026-10-12" max={10} phone={phone} onCommit={(at) => { const next = drafts.map((d, i) => (i === index ? { ...d, at } : d)); setDrafts(next); commit(next); }} />
             </div>
@@ -372,6 +410,9 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
             <div style={{ width: 56, flexShrink: 0 }}>
               <ExtrasInput label={`${RUNS_FIELD_COPY.total} in run ${index + 1}`} value={row.total} max={5} phone={phone} inputMode="numeric" onCommit={(total) => { const next = drafts.map((d, i) => (i === index ? { ...d, total } : d)); setDrafts(next); commit(next); }} />
             </div>
+            <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => edit(index, { more: !row.more })}>
+              {row.more ? "Fewer" : "More"}
+            </TextButton>
             <IconButton
               icon={X}
               glyph="x"
@@ -384,8 +425,33 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
                 commit(next);
               }}
             />
+            {row.more ? (
+              <div data-testid="check-run-more" style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                <ExtrasInput label={`Run ID of run ${index + 1}`} value={row.id ?? ""} placeholder="main-prompt-v3" max={RUN_ID_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, id: value } : d)); setDrafts(next); commit(next); }} />
+                <ExtrasInput label={`What run ${index + 1} changed`} value={row.changed ?? ""} placeholder="Answer only from the docs" max={RUN_CHANGED_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, changed: value } : d)); setDrafts(next); commit(next); }} />
+                <ExtrasInput label={`Baseline run of run ${index + 1}`} value={row.vs ?? ""} placeholder="main-prompt-v2" max={RUN_ID_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, vs: value } : d)); setDrafts(next); commit(next); }} />
+                {row.vs?.trim() ? (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {(["fixed", "regressions", "nowFlaky", "stillFailing"] as const).map((key) => (
+                      <div key={key} style={{ width: 96 }}>
+                        <ExtrasInput label={`${{ fixed: "Fixed", regressions: "Regressions", nowFlaky: "Now flaky", stillFailing: "Still failing" }[key]} in run ${index + 1}`} value={row[key] ?? ""} placeholder={{ fixed: "Fixed", regressions: "Regress.", nowFlaky: "Flaky", stillFailing: "Failing" }[key]} max={4} phone={phone} inputMode="numeric" onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, [key]: value } : d)); setDrafts(next); commit(next); }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ width: 120 }}>
+                    <ExtrasInput label={`Cost of run ${index + 1}, dollars`} value={row.cost ?? ""} placeholder="1.40" max={8} phone={phone} inputMode="decimal" onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, cost: value } : d)); setDrafts(next); commit(next); }} />
+                  </div>
+                  <div style={{ width: 96 }}>
+                    <ExtrasInput label={`Minutes of run ${index + 1}`} value={row.minutes ?? ""} placeholder="8" max={6} phone={phone} inputMode="decimal" onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, minutes: value } : d)); setDrafts(next); commit(next); }} />
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         ))}
+        {drafts.some((row) => row.more) ? <span data-testid="run-history-help" style={text(12, 400, t.label)}>{RUN_HISTORY_HELP}</span> : null}
         {wrong ? <span style={text(12, 400, t.text2)}>{RUNS_FIELD_COPY.bad}</span> : null}
         {full ? (
           <span style={text(12, 400, t.text2)}>{RUNS_FIELD_COPY.more(CHECK_RUNS_KEPT)}</span>

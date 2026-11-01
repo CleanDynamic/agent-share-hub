@@ -99,6 +99,8 @@ export function tileView(kind: TileKind, fill: Fill = "full"): DetailsView {
       return { kind: "result", id: "r1", summary: full ? "The finished homepage" : "", url: full ? "https://plumandrye.example" : "", pictures: full ? [{ id: "pic", name: "home.png" }] : [], what: "link", payload: full ? { caption: "The homepage, as shipped" } : {} };
     case "system_prompt":
       return { kind: "system_prompt", id: "sp1", number: "1", title: "Brand voice", defaultTitle: "System prompt 1", payload: { text: "Write in plain British English with {tone}.", scope: { kind: "all" }, ...(full ? { version: "v2", model: "opus-5-5", variables: [{ name: "tone", description: "Warm" }] } : null) }, appliesTo: 3, prompts: [], session: null, ...io };
+    case "retrieval":
+      return { kind: "retrieval", id: "rt1", number: "3", title: "Search the categories", defaultTitle: "Retrieval 3", payload: { step: true, corpus: "categories", ...(full ? { embedding_model: "text-embedding-3-small", index: "pgvector", corpus_size: 6000, query: "The product's title", k: 30, recall: [{ k: 1, value: 0.38, source: "run" }, { k: 30, value: 0.992, source: "run" }], hybrid: true } : null) }, ...io };
     case "dataset":
       return { kind: "dataset", id: "ds1", number: "2", title: "Support tickets", defaultTitle: "Dataset 2", payload: { description: "1,200 anonymised tickets", use: "retrieval", ...(full ? { format: "CSV", record_count: 1200, columns: ["id", "team"], source: "Helpdesk", sample: ["1, Billing"], licence: "CC BY 4.0", chunk_strategy: "By paragraph", chunk_size: 512 } : null) }, ...io };
     case "repo":

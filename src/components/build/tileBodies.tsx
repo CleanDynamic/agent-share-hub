@@ -12,6 +12,8 @@ import { CodeLines } from "@/components/code/CodeLines";
 import { CONNECTION_LABEL, MESSAGE_CHANNEL_LABEL, RESULT_THUMBS, resultHolds, stepRunsLabel, type CheckCase, type FileKind, type ResultFacts, type Step } from "@/lib/build/graph";
 import { manualLinesOf, manualWhereLabel, siteNameOf } from "@/lib/build/graph";
 import { decisionHeadline, decisionLines, expectedLine } from "@/lib/build/decision";
+import { decisionPipelineLines } from "@/lib/build/pipelineFields";
+import { recallSource, retrievalDetails, retrievalLine } from "@/lib/build/retrieval";
 import { formatSize } from "@/lib/build/readerSteps";
 import { REPO_USAGE_LABEL } from "@/lib/build/sourceTiles";
 import { splitVariables } from "@/lib/build/tileExtras";
@@ -93,11 +95,38 @@ export function DecisionTileBody({ step, indent = 0, lean = false }: { step: Ste
           {line.text}
         </span>
       ))}
+      {(lean ? decisionPipelineLines(facts).slice(0, 2) : decisionPipelineLines(facts)).map((line, index) => (
+        <span key={`p${index}`} data-testid={line.kind === "limit" ? "decision-limit" : "decision-pipeline"} style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
+          {line.text}
+        </span>
+      ))}
       {expected.map((line, index) => (
         <span key={`e${index}`} data-testid="decision-expected" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
           {line}
         </span>
       ))}
+    </div>
+  );
+}
+
+/* ── a retrieval (SV-29 P2) ── */
+
+/**
+ * "Retrieval · text-embedding-3-small · 6,000 categories · top 30 · Recall@1 38%, Recall@30 99.2%", then the index, the query and
+ * keyword search when said, and where the recall figures came from ("From the run", "Maker's figure", or on a copy "The original
+ * measured"). Drawn once for the composer's List and the build page.
+ */
+export function RetrievalTileBody({ step, indent = 0, lean = false }: { step: Step; indent?: number; lean?: boolean }) {
+  const facts = step.retrieval;
+  if (!facts) return null;
+  const source = recallSource(facts.recall);
+  return (
+    <div data-testid="retrieval-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
+      <span data-testid="retrieval-line" style={{ ...DATA_LINE, overflowWrap: "anywhere" }}>{retrievalLine(facts)}</span>
+      {lean ? null : retrievalDetails(facts).map((line) => (
+        <span key={line} data-testid="retrieval-detail" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>{line}</span>
+      ))}
+      {source ? <span data-testid="retrieval-source" style={text(12, 400, t.label)}>{source}</span> : null}
     </div>
   );
 }
