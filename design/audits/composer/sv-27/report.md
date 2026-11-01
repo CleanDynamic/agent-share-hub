@@ -2,7 +2,7 @@
 
 ```
 SV-27 · Agent deployment
-FAIL (Parts 0 to 10 done; Parts 11 to 14 left, see below; the composer chunk is 0.1 KB over its budget)
+FAIL (Parts 0 to 10 done; Parts 11 to 14 left, see below). The composer chunk is within its budget: 119,940 bytes.
 Branch / PR: claude/kind-cannon-rc1eqm (the session's designated branch; the prompt names sv-27-agent-deployment) / see the PR titled "SV-27 agent deployment"
 Facts in this prompt that were wrong on disk:
   - "My own code (API)" is OWN_CODE, an internal key the model menu reads (modelRules.ts), not drawn. The drawn none rows were
@@ -51,8 +51,13 @@ Knowledge base and relay: notes with templates yes (model; the window adds no no
   tagging and review yes · Agent Tincan left out for want of a source (typed as a provider name in the fixture)
 Partnership and affiliation: both kinds stored through the making writers yes (setPartnership on makingStep; no menu item or line
   yet) · shown on the build page no · dropped on fork yes (fork copies no making)
-Harness facts: entries with hosting, licence and defaults from a source: none · left empty for want of a source: OpenClaw,
-  Hermes Agent (no source page was read this session); Dots, Muse and Grok Bot left out for the same reason
+Harness facts: entries with defaults from a source (checked 2026-10): OpenClaw, approvals full, from
+  https://docs.openclaw.ai/tools/exec-approvals: "An unconfigured node uses the same `full` / `off` baseline as the Gateway."
+  (the wording asked for, with the page's code formatting); Hermes Agent, approvals reviewer, from
+  https://hermes-agent.nousresearch.com/docs/user-guide/security/ (approvals.mode defaults to smart: "Use an auxiliary LLM to
+  assess risk", low-risk commands auto-approved, dangerous ones auto-denied, "Uncertain cases escalate to a manual prompt") · left
+  empty for want of a source: both sandboxes (neither page names a default), hosting and licence for both; Dots, Muse and Grok Bot
+  left out
 Classification: Autonomy from approval mode yes · budget-only Limits no longer a gate yes
 Skills: origin saved yes · registry install line yes (SKILLS-TO-INSTALL.md in the downloaded folder)
 Setup for the agent: agent-owned items yes · download folder yes (setupFolder over readerSetup's agent:<id> items; no button
@@ -62,8 +67,9 @@ Architecture map: own chunk 3.7 KB · view stored through the making writers yes
 Changelog: hidden before migration yes (data layer) · what SV-20 would need for savers: an AFTER INSERT trigger on build_updates
   that writes one notification per saver of the build (SV-20's pattern), SECURITY DEFINER with search_path set and EXECUTE revoked
 Guide import: not done
-Chunks: composer 119.0 KB (main) → 120.1 KB · deployment window 3.3 KB · Deployment section 0.9 KB · agent deployment fields
-  3.0 KB · architecture map 3.7 KB · the shared deployment module 4.4 KB
+Chunks: composer 118,959 bytes (main) → 119,940 bytes (120,183 before the size pass) · deployment window 3,321 · Deployment
+  section 932 · agent deployment fields 3,240 · architecture map 3,632 · the shared deployment module 4,445. What SV-27 added,
+  module by module, and what moved out: size.md
 ```
 
 The first download was already 230.2 KB on main against its 200 KB budget (SV-26 reported it); it is 230.5 KB here, the Part 1
@@ -72,17 +78,24 @@ words now shared by Drafts and OpenBuilds.
 ## Checks
 
 - `npx tsc --noEmit -p tsconfig.app.json`: clean.
-- `npm test`: 10,251 tests, 10,250 passed; the flakes seen under load (`ca20.p2`, `ca21.p7`, `sv07.parts`, `ca26.p3`, `sv18.insert`)
+- `npm test`: 10,266 tests, 10,265 passed (the one failure, sv18.insert, passes alone here and on main); the flakes seen under load (`ca20.p2`, `ca21.p7`, `sv07.parts`, `ca26.p3`, `sv18.insert`)
   each pass alone and touch nothing this prompt changed; `ca21.p7` fails alone on main too.
 - `npm run lint`: 1,921 problems on main and the same here; 0 errors in the files this prompt changed.
-- `npm run build`: passes. `node scripts/check-size.mjs`: the composer chunk is 120.1 KB (0.1 KB over), the first download 230.6 KB.
+- `npm run build`: passes. `node scripts/check-size.mjs`: the composer chunk is 119.9 KB (119,940 bytes, within 120 KB), the first
+  download 230.4 KB (over its 200 KB budget, as on main at 230.2 KB).
 - Not run: `npx playwright test e2e/tier1`, `audit:motion`, `audit:pages`, `audit:themes`, `audit:contrast`, after screens.
 - Em dash search of the diff: none in shown copy.
 
+## Harness
+
+Harness has three states: a harness picked; Built in code (no harness), stored as `payload.built_in_code = true`; and Not sure,
+which stores nothing and reads "Not said". An old agent with no harness reads as Not said. The picker offers Not sure and Built in
+code as two rows. Framework shows only with Built in code. The model rules read Not said and Built in code as they read no harness
+before (any model). Classification reads Direct API only from Built in code; the setup prompt names no harness for either.
+
 ## Questions for Miles
 
-1. The composer chunk is 0.1 KB over 120 KB. The next session can take it under by moving `detailsView`'s agent deployment view
-   or the Add menu's group rendering out, or the budget can move to 121 KB.
-2. Should the harness facts (OpenClaw's default approvals) be read from their docs pages in a session allowed to fetch them?
-3. In the Add agent window, "Not sure" now reads "Built in code (no harness)", since both saved no harness. Keep a separate
-   "Not sure"?
+1. The composer chunk has 60 bytes of headroom. SV-28 to SV-30 will need more: size.md names the next candidates (Classification's
+   derive and the Add menu's entries, if both can wait for a click).
+2. The agent's "Add deployment" (with no deployment tiles) has no way into the Add menu's Deployment group aimed at it yet; the
+   unused state for it was removed in the size pass. Wire it in Part 11 or 14?
