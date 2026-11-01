@@ -8,6 +8,7 @@ import { toolName } from "@/lib/tools/registry";
 
 import type { Step } from "./graph";
 import { datasetOf, licenceLine, repoOf, repoDay, REPO_PIN_LABEL, systemPromptOf } from "./sourceTiles";
+import { evidenceText } from "./evidenceKinds";
 import {
   AGENT_PATTERN_LABEL,
   CHECK_METHOD_LABEL,
@@ -70,7 +71,7 @@ export function readerFacts(step: Pick<Step, "kind" | "text">, payload: Raw | un
     add({ label: "Reviewer", text: extras.reviewer ? CHECK_REVIEWER_LABEL[extras.reviewer] : "" });
     add({ label: "Scoring method", text: extras.scoring ? joined(SCORING_LABEL[extras.scoring.how], extras.scoring.how === "metric" ? extras.scoring.target : null) : "" });
     add({ label: "Model tested", text: extras.modelTested ? joined(extras.modelTested.model, extras.modelTested.version) : "" });
-    add({ label: "Evidence", text: extras.evidence ? (extras.evidence.mediaId ? (extras.evidence.name ?? "A file") : (extras.evidence.url ?? "")) : "" });
+    add({ label: "Evidence", text: evidenceText(extras.evidence) });
   } else if (step.kind === "tool") {
     const extras = toolExtrasOf(raw);
     add({ label: "Permissions", text: extras.permissions ? TOOL_PERMISSION_LABEL[extras.permissions] : "" });

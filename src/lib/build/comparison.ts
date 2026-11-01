@@ -6,6 +6,7 @@ import type { Json } from "@/integrations/supabase/types";
 
 import type { QuestionType } from "./decision";
 import { SOURCE_WORD, type FigureSource } from "./pipelineFields";
+import { EVIDENCE_KINDS, type EvidenceKind } from "./evidenceKinds";
 import { clean, registerCleaners } from "./tileExtras";
 
 type Raw = Record<string, unknown>;
@@ -170,9 +171,22 @@ export interface ComparisonRow {
   costPerItem?: MeasuredCost;
   outcome?: Outcome;
   reason?: string;
+  /** SV-30 P8: where the row's figure comes from, as a kind of evidence and an https link, when the maker gave one. */
+  evidence?: { kind: EvidenceKind; url: string };
 }
 
 const sourceOf = (raw: unknown): FigureSource => (raw === "run" ? "run" : raw === "original" ? "original" : "maker");
+
+/** SV-30 P8: a row's evidence, with the same kinds a Check has; the address is https only. */
+export function rowEvidenceOf(raw: unknown): ComparisonRow["evidence"] | null {
+  if (!isRecord(raw) || !EVIDENCE_KINDS.includes(raw.kind as EvidenceKind) || typeof raw.url !== "string") return null;
+  try {
+    const url = new URL(raw.url.trim());
+    return url.protocol === "https:" && url.hostname.includes(".") ? { kind: raw.kind as EvidenceKind, url: url.toString() } : null;
+  } catch {
+    return null;
+  }
+}
 
 /** The rows, read defensively; a row with no label is left out. */
 export function rowsOf(raw: unknown): ComparisonRow[] {
@@ -197,6 +211,7 @@ export function rowsOf(raw: unknown): ComparisonRow[] {
           ...(cost !== null && isRecord(entry.cost_per_item) ? { costPerItem: { cost, currency: entry.cost_per_item.currency === "GBP" ? ("GBP" as const) : ("USD" as const), source: sourceOf(entry.cost_per_item.source) } } : null),
           ...(outcome ? { outcome } : null),
           ...(reason ? { reason } : null),
+          ...(rowEvidenceOf(entry.evidence) ? { evidence: rowEvidenceOf(entry.evidence) as NonNullable<ComparisonRow["evidence"]> } : null),
         },
       ];
     })
@@ -219,6 +234,7 @@ export function rowsRefusal(rows: readonly ComparisonRow[]): string | null {
     if ((row.reason ?? "").trim().length > ROW_REASON_MAX) return `Reason: ${ROW_REASON_MAX} characters max`;
     if (row.value && figure(row.value.value) === null) return "A row's figure is a number.";
     if (row.costPerItem && figure(row.costPerItem.cost) === null) return "A row's cost is a number.";
+    if (row.evidence && !rowEvidenceOf(row.evidence)) return "A row's evidence is a kind and a link starting with https://.";
   }
   if (rows.filter((row) => row.outcome === "chosen").length > 1) return "Only one row can be chosen.";
   return null;
@@ -361,6 +377,7 @@ export function rowsPayload(rows: readonly ComparisonRow[]): Json {
     ...(row.costPerItem ? { cost_per_item: row.costPerItem } : null),
     ...(row.outcome ? { outcome: row.outcome } : null),
     ...(row.reason ? { reason: row.reason } : null),
+    ...(row.evidence ? { evidence: row.evidence } : null),
   })) as unknown as Json;
 }
 

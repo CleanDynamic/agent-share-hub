@@ -21,8 +21,10 @@ const labels = (kind: Parameters<typeof readerFacts>[0]["kind"], payload: Record
 describe("readerFacts", () => {
   it("is empty for every kind when the maker gave nothing", () => {
     for (const kind of ["prompt", "agent", "team", "check", "tool", "code", "system_prompt", "dataset", "repo", "file", "manual", "decision"] as const) {
-      expect(readerFacts({ kind, text: "x" }, {}), kind).toEqual([]);
-      expect(readerFacts({ kind, text: "x" }, undefined), kind).toEqual([]);
+      // SV-30 P8: a Check with no evidence says so: `Stated, no artefact`.
+      const none = kind === "check" ? [{ label: "Evidence", text: "Stated, no artefact" }] : [];
+      expect(readerFacts({ kind, text: "x" }, {}), kind).toEqual(none);
+      expect(readerFacts({ kind, text: "x" }, undefined), kind).toEqual(none);
     }
   });
 

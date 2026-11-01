@@ -29,6 +29,7 @@ import {
   variableNamesIn,
   variablesOf,
 } from "@/lib/build/tileExtras";
+import { EVIDENCE_KINDS, EVIDENCE_KIND_LABEL, EVIDENCE_TEXT_MAX, MEASURE_METRIC_MAX, MEASURE_UNIT_MAX, measurementLine } from "@/lib/build/evidenceKinds";
 import { ASKS_FOR, ASKS_FOR_LABEL, EVENT_MAX, INTERVAL_MAX, SENT_BY_CHOICES, asksForOf, originLine, originOf } from "@/lib/build/promptOrigin";
 import { toolName } from "@/lib/tools/registry";
 
@@ -336,10 +337,26 @@ export function checkRows(payload: Raw): ExtraRow[] {
     {
       name: CHECK_DIALOG_COPY.evidence,
       description: CHECK_DIALOG_COPY.evidenceLine,
-      summary: summaryOf(evidenceFile, evidenceFile ? null : evidence?.url),
-      fields: evidenceFile ? [] : [{ key: "url", label: CHECK_DIALOG_COPY.evidenceUrl, kind: "line" }],
-      values: { url: evidence?.url ?? "" },
-      toPatch: (v) => ({ evidence: v.url ? { url: v.url } : null }),
+      summary: summaryOf(evidence?.kind ? EVIDENCE_KIND_LABEL[evidence.kind] : null, evidence?.measurement ? measurementLine(evidence.measurement) : evidenceFile, evidenceFile || evidence?.measurement ? null : evidence?.url, evidence?.text ? "Pasted output" : null),
+      /* SV-30 P8: the kind says what it is; a measurement is five numbers, a test output is pasted. */
+      fields: evidenceFile
+        ? []
+        : [
+            { key: "kind", label: "Kind of evidence", kind: "choice", items: EVIDENCE_KINDS.map((value) => ({ value, label: EVIDENCE_KIND_LABEL[value] })) },
+            { key: "url", label: CHECK_DIALOG_COPY.evidenceUrl, kind: "line", when: (v) => v.kind !== "measurement" && v.kind !== "test_output" },
+            { key: "metric", label: "What was measured", kind: "line", max: MEASURE_METRIC_MAX, placeholder: "Latency", when: (v) => v.kind === "measurement" },
+            { key: "unit", label: "Unit", kind: "line", max: MEASURE_UNIT_MAX, placeholder: "ms", when: (v) => v.kind === "measurement" },
+            { key: "before", label: "Before", kind: "line", max: 14, when: (v) => v.kind === "measurement" },
+            { key: "after", label: "After", kind: "line", max: 14, when: (v) => v.kind === "measurement" },
+            { key: "runs", label: "Runs", kind: "line", max: 7, when: (v) => v.kind === "measurement" },
+            { key: "text", label: "Pasted output", kind: "text", rows: 5, max: EVIDENCE_TEXT_MAX, mono: true, when: (v) => v.kind === "test_output" },
+          ],
+      values: { kind: evidence?.kind ?? "", url: evidence?.url ?? "", metric: evidence?.measurement?.metric ?? "", unit: evidence?.measurement?.unit ?? "", before: evidence?.measurement ? String(evidence.measurement.before) : "", after: evidence?.measurement ? String(evidence.measurement.after) : "", runs: evidence?.measurement ? String(evidence.measurement.runs) : "", text: evidence?.text ?? "" },
+      toPatch: (v) => {
+        if (v.kind === "measurement") return v.metric || v.before || v.after || v.runs ? { evidence: { kind: "measurement", measurement: { metric: v.metric ?? "", unit: v.unit ?? "", before: Number(v.before), after: Number(v.after), runs: Number(v.runs) } } } : { evidence: null };
+        if (v.kind === "test_output") return v.text ? { evidence: { kind: "test_output", text: v.text } } : { evidence: null };
+        return v.url ? { evidence: { ...(v.kind ? { kind: v.kind } : null), url: v.url } } : { evidence: null };
+      },
       ...(evidenceFile ? { note: `${evidenceFile} attached` } : null),
     },
   ];

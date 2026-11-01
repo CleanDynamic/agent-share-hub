@@ -42,6 +42,7 @@ import {
   ModelIdControl,
   MessagesControl,
   OutputsControl,
+  ReviewControl,
   MethodControl,
   OwnCopyControl,
   StartedWithControl,
@@ -58,6 +59,7 @@ import {
   methodHeld,
   modelIdHeld,
   outputsHeld,
+  reviewHeld,
   timeHeld,
   togetherHeld,
   tokensHeld,
@@ -402,6 +404,9 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             </OptionalField>
             <OptionalField name="Output links" summary={outputsHeld(extras)} phone={phone}>
               <OutputsControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Human review" summary={reviewHeld(extras)} phone={phone}>
+              <ReviewControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.how} summary={methodHeld(extras)} phone={phone}>
               <MethodControl id={key} extras={extras} phone={phone} onChange={saveExtras} />

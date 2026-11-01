@@ -18,6 +18,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { COST_MAX, costField, countWords, figureOf, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type RunFacts, type SessionExtras } from "@/lib/build/sessionFacts";
 import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
+import { REVIEW_FILES_MAX, REVIEW_SCOPES, reviewLine, reviewRefusal, type ReviewScope } from "@/lib/build/sessionReview";
 import { OUTPUT_KINDS, OUTPUT_LABEL, OUTPUTS_MAX, outputRow, outputsCountLine, outputsRefusal, type OutputKind, type OutputLink } from "@/lib/build/sessionOutputs";
 import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
@@ -679,5 +680,49 @@ export function OutputsControl({ id, extras, phone, onChange }: { id: string; ex
         </>
       ) : null}
     </div>
+  );
+}
+
+/* ── SV-30 P8: how much a human reviewed ── */
+
+const REVIEW_CHOICE: Record<ReviewScope | "unsaid", string> = { unsaid: "Not said", none: "None", high_blast_radius: "High-blast-radius files only", all: "All changes" };
+export const reviewHeld = (extras: SessionExtras): string | null => (extras.review ? reviewLine(extras.review).replace(/^Human review: /, "") : null);
+/** None, the central files and migrations only (up to 10 paths, one per line), or all. A fact the maker states about their own work. */
+export function ReviewControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const [files, setFiles] = useState((extras.review?.files ?? []).join("\n"));
+  const [wrong, setWrong] = useState<string | null>(null);
+  const save = (scope: ReviewScope | "unsaid", text: string) => {
+    if (scope === "unsaid") return onChange({ ...extras, review: undefined });
+    const list = scope === "high_blast_radius" ? text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
+    const review = { scope, ...(list.length > 0 ? { files: list } : null) };
+    const why = reviewRefusal(review);
+    setWrong(why);
+    if (!why) onChange({ ...extras, review });
+  };
+  return (
+    <>
+      <ChoiceRows<ReviewScope | "unsaid">
+        label="Human review"
+        name={`review-${id}`}
+        phone={phone}
+        value={extras.review?.scope ?? "unsaid"}
+        onChange={(scope) => save(scope, files)}
+        rows={(["unsaid", ...REVIEW_SCOPES] as const).map((value) => ({ value, label: REVIEW_CHOICE[value] }))}
+      />
+      {extras.review?.scope === "high_blast_radius" ? (
+        <textarea
+          aria-label="Files reviewed"
+          rows={3}
+          value={files}
+          placeholder={`One path per line, ${REVIEW_FILES_MAX} at most`}
+          spellCheck={false}
+          onChange={(event) => setFiles(event.target.value)}
+          onBlur={() => save("high_blast_radius", files)}
+          style={{ ...typedArea(phone, ring(false)), fontFamily: DM_MONO, fontSize: phone ? 16 : 12 }}
+        />
+      ) : null}
+      {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}
+      {extras.from_original && extras.review ? <span style={text(12, 400, t.label)}>The original&apos;s</span> : null}
+    </>
   );
 }
