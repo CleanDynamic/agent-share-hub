@@ -85,6 +85,8 @@ import {
 } from "@/lib/build/evalHarness";
 
 import { FieldArea, FieldInput, Hint, Inline, OptionGrid, PANEL_LIST, Panel, RecipeButton, SegmentedField, TextLink, NARROW } from "./modalRecipes";
+import { EvidenceControl } from "./EvidenceControl";
+import { evidenceDraftOf, evidenceDraftRefusal, evidenceFromDraft, type EvidenceDraft, type EvidencePayload } from "@/lib/build/evidenceKinds";
 import { ModelPicker } from "./ModelPicker";
 import { OptionalField, summaryOf } from "./OptionalSection";
 import { PickMenu } from "./PickMenu";
@@ -147,6 +149,8 @@ interface RowDraft {
   costSource: FigureSource;
   outcome: Outcome | "";
   reason: string;
+  /** SV-30 P8: where the row's figure comes from, in the same control as a Check's evidence. */
+  evidence: EvidenceDraft;
 }
 
 const draftOfRow = (row: ComparisonRow): RowDraft => ({
@@ -159,6 +163,7 @@ const draftOfRow = (row: ComparisonRow): RowDraft => ({
   costSource: row.costPerItem?.source ?? "maker",
   outcome: row.outcome ?? "",
   reason: row.reason ?? "",
+  evidence: evidenceDraftOf(row.evidence ?? null),
 });
 
 const rowOfDraft = (draft: RowDraft): ComparisonRow => {
@@ -172,6 +177,8 @@ const rowOfDraft = (draft: RowDraft): ComparisonRow => {
     ...(cost !== null && Number.isFinite(cost) ? { costPerItem: { cost, currency: "USD" as const, source: draft.costSource } } : null),
     ...(draft.outcome ? { outcome: draft.outcome } : null),
     ...(draft.reason.trim() ? { reason: draft.reason.trim() } : null),
+    // A draft that is not whole yet (half a measurement) is held in the editor and not saved; the control says why.
+    ...(!evidenceDraftRefusal(draft.evidence) && evidenceFromDraft(draft.evidence) ? { evidence: evidenceFromDraft(draft.evidence) as EvidencePayload } : null),
   };
 };
 
@@ -183,7 +190,7 @@ function RowsEditor({ rows, onChange, phone, tiles }: { rows: ComparisonRow[]; o
   const push = (next: RowDraft[]) => {
     setDrafts(next);
     // Rows without a label are not saved; the writer says why a half-made row cannot be.
-    onChange(next.filter((draft) => draft.label.trim() || draft.value || draft.cost || draft.outcome).map(rowOfDraft));
+    onChange(next.filter((draft) => draft.label.trim() || draft.value || draft.cost || draft.outcome || evidenceFromDraft(draft.evidence)).map(rowOfDraft));
   };
   const edit = (at: number, patch: Partial<RowDraft>) => push(drafts.map((draft, i) => (i === at ? { ...draft, ...patch, ...(patch.kind && patch.kind !== draft.kind ? { outcome: "" as const } : null) } : draft)));
   return (
@@ -204,6 +211,7 @@ function RowsEditor({ rows, onChange, phone, tiles }: { rows: ComparisonRow[]; o
               <FieldInput phone={phone} mono width={NARROW.date} aria-label={`Cost per item of row ${at + 1}, dollars`} inputMode="decimal" value={draft.cost} placeholder="0.0005" onChange={(event) => edit(at, { cost: decimal(event.target.value) })} />
               <SegmentedField<"run" | "maker"> label={`Where the cost of row ${at + 1} came from`} phone={phone} items={SOURCES} value={draft.costSource === "run" ? "run" : "maker"} onChange={(costSource) => edit(at, { costSource })} />
             </Inline>
+            <EvidenceControl draft={draft.evidence} prefix={`Row ${at + 1}: `} phone={phone} onChange={(evidence) => edit(at, { evidence })} />
             <SegmentedField<Outcome | "none"> label={`Outcome of row ${at + 1}`} phone={phone} items={[{ value: "none", label: "Not decided" }, ...OUTCOMES_FOR[draft.kind].map((value) => ({ value, label: OUTCOME_LABEL[value] }))]} value={draft.outcome || "none"} onChange={(next) => edit(at, { outcome: next === "none" ? "" : next })} />
             {draft.outcome === "rejected" || draft.outcome === "ruled out" ? (
               <FieldInput phone={phone} aria-label={`Why row ${at + 1} was ${draft.outcome}`} maxLength={ROW_REASON_MAX} value={draft.reason} placeholder="Over 2,000 times the cost" onChange={(event) => edit(at, { reason: event.target.value })} />

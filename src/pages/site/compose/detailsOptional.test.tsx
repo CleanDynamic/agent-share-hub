@@ -73,16 +73,17 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   it("a check: Test method, Reviewer, Scoring method, Model tested, Evidence", () => {
     const rows = checkRows({ method: "review", reviewer: "client", scoring: { how: "metric", target: "95% correct" }, model_tested: { model: "Opus 5.5", version: "2026-09-30" }, evidence: { url: "https://example.com/results" } });
     expect(rows.map((r) => r.name)).toEqual(["Test method", "Reviewer", "Scoring method", "Model tested", "Evidence"]);
-    expect(rows.map((r) => r.summary)).toEqual(["Peer review", "Client", "Metric against a target · 95% correct", "Opus 5.5 · 2026-09-30", "https://example.com/results"]);
+    expect(rows.map((r) => r.summary)).toEqual(["Peer review", "Client", "Metric against a target · 95% correct", "Opus 5.5 · 2026-09-30", "Link · https://example.com/results"]);
     expect(rows[2].toPatch({ how: "pass_fail", target: "ignored" })).toEqual({ scoring: { how: "pass_fail", target: "" } });
     expect(rows[2].toPatch({ how: "", target: "" })).toEqual({ scoring: null });
   });
 
-  it("an evidence file is named and not editable here", () => {
+  it("an evidence file is named, and reads as test output when it has no kind; an address reads as a link (SV-30 P8)", () => {
     const evidence = checkRows({ evidence: { media_id: "m1", name: "results.csv" } })[4];
-    expect(evidence.summary).toBe("results.csv");
-    expect(evidence.fields).toEqual([]);
-    expect(evidence.note).toBe("results.csv attached");
+    expect(evidence.summary).toBe("Test run output · results.csv");
+    expect(JSON.parse(evidence.values.evidence)).toMatchObject({ kind: "test_output", mediaId: "m1", name: "results.csv" });
+    expect(evidence.toPatch(evidence.values)).toEqual({ evidence: { kind: "test_output", media_id: "m1", name: "results.csv" } });
+    expect(JSON.parse(checkRows({ evidence: { url: "https://example.com/r" } })[4].values.evidence).kind).toBe("link");
   });
 
   it("a tool: Permissions, Required plan, Setup steps, Alternatives", () => {

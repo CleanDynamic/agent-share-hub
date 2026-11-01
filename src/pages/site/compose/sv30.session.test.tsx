@@ -1,8 +1,9 @@
 // SV-30: the Session window's new fields.
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { fieldNamed } from "./optionalKit";
 import { AccessControl, EnvironmentControl, OutputsControl } from "./SessionExtrasFields";
 
 describe("SV-30 P4: environment and access in the Session window", () => {
@@ -54,5 +55,45 @@ describe("SV-30 P7: output links in the Session window", () => {
     expect(show.checked).toBe(false);
     fireEvent.click(show);
     expect(onChange).toHaveBeenCalledWith({ outputs: [{ kind: "commit", repo: "https://github.com/acme/app", sha: "abc1234" }], showOutputs: true });
+  });
+});
+
+describe("SV-30 P8: the one evidence control", () => {
+  it("is the Check window's evidence field, with every kind", async () => {
+    const { AddCheckDialog } = await import("./AddCheckDialog");
+    const onAdd = vi.fn();
+    render(<AddCheckDialog open onOpenChange={() => undefined} onAdd={onAdd} />);
+    fireEvent.change(screen.getByLabelText("Test description"), { target: { value: "Boots" } });
+    fireEvent.change(screen.getByLabelText("Pass criteria"), { target: { value: "Under 60 ms" } });
+    fireEvent.change(screen.getByLabelText("Passed"), { target: { value: "20" } });
+    fireEvent.change(screen.getByLabelText("Total"), { target: { value: "20" } });
+    fieldNamed("Evidence");
+    fireEvent.click(screen.getByRole("button", { name: "Before and after measurement" }));
+    for (const [label, value] of [["What was measured", "Boot time"], ["Unit", "ms"], ["Before", "120"], ["After", "58"], ["Runs measured", "20"]]) fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(onAdd.mock.calls[0][0].evidence).toEqual({ kind: "measurement", measurement: { metric: "Boot time", unit: "ms", before: 120, after: 58, runs: 20 } });
+  });
+});
+
+describe("SV-30 P8: a comparison row's evidence", () => {
+  it("is the same control, and is saved with the row", async () => {
+    const { AddCheckDialog } = await import("./AddCheckDialog");
+    const onAdd = vi.fn();
+    render(<AddCheckDialog open onOpenChange={() => undefined} onAdd={onAdd} />);
+    fireEvent.change(screen.getByLabelText("Test description"), { target: { value: "Which is faster" } });
+    fireEvent.change(screen.getByLabelText("Pass criteria"), { target: { value: "One wins" } });
+    fireEvent.change(screen.getByLabelText("Passed"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("Total"), { target: { value: "1" } });
+    fieldNamed("Scoring method");
+    fireEvent.click(screen.getByRole("radio", { name: "Comparison of approaches" }));
+    fieldNamed("Approaches");
+    fireEvent.change(screen.getByLabelText("Label of row 1"), { target: { value: "Old boot" } });
+    fireEvent.change(screen.getByLabelText("Label of row 2"), { target: { value: "New boot" } });
+    fireEvent.click(within(screen.getByRole("group", { name: "Row 2: Kind of evidence" })).getByRole("button", { name: "Test run output" }));
+    fireEvent.change(screen.getByLabelText("Row 2: Pasted output"), { target: { value: "58 ms over 20 runs" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    const rows = onAdd.mock.calls[0][0].extras.rows as { label: string; evidence?: unknown }[];
+    expect(rows.find((row) => row.label === "New boot")?.evidence).toEqual({ kind: "test_output", text: "58 ms over 20 runs" });
+    expect(rows.find((row) => row.label === "Old boot")?.evidence).toBeUndefined();
   });
 });

@@ -82,6 +82,7 @@ import {
 import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 import { isSummaryPayload, SUMMARY_COPY } from "./summaryTurn";
+import type { EvidencePayload } from "./evidenceKinds";
 import { partOfOf, runsWhereOf, type PartOf } from "./codePart";
 import { asksForOf, originOf, type AsksFor, type PromptOrigin } from "./promptOrigin";
 
@@ -2197,7 +2198,7 @@ export interface CheckInput {
   scoring?: { how: CheckScoring["how"]; target?: string } | null;
   modelTested?: { model: string; version: string } | null;
   /** A URL, or the id and name of one file already stored. */
-  evidence?: { url?: string; mediaId?: string; name?: string } | null;
+  evidence?: EvidencePayload | null;
   /** SV-29 P3, P4: the Check's other payload keys (test set, metric, rows, design, failure types, graders, runs per case, gate), each a stored shape; null leaves it out. Cleaned by the extras writer. */
   extras?: Record<string, unknown>;
 }
@@ -2433,7 +2434,7 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
       reviewer: input.reviewer ?? null,
       scoring: input.scoring ?? null,
       model_tested: input.modelTested ?? null,
-      evidence: input.evidence ? { url: input.evidence.url, media_id: input.evidence.mediaId, name: input.evidence.name } : null,
+      evidence: input.evidence ?? null,
       ...Object.fromEntries(Object.entries(input.extras ?? {}).filter(([, value]) => value !== null && value !== undefined)),
     });
     const crossWhy = comparisonPatchRefusal({ scoring: input.scoring ? { how: input.scoring.how } : undefined }, input.extras ?? {}) ?? evalHarnessPatchRefusal({ cases: given }, input.extras ?? {});

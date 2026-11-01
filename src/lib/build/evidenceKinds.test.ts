@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { rowEvidenceOf, rowsOf, rowsPayload, rowsRefusal } from "./comparison";
-import { evidenceText, measurementLine } from "./evidenceKinds";
+import { evidenceDraftOf, evidenceDraftRefusal, evidenceFromDraft, evidenceText, measurementLine } from "./evidenceKinds";
 import { methodOf } from "./forkRules";
 import { copiedFacts, extrasOf, extrasRefusal, sessionDetailLines } from "./sessionFacts";
 import { reviewLine, reviewOf, reviewRefusal } from "./sessionReview";
@@ -42,16 +42,26 @@ describe("SV-30 P8: evidence kinds", () => {
     expect(methodOf({ evidence: { kind: "measurement", measurement: measured } })).toMatchObject({ from_original: true });
     expect(methodOf({ tested: "x" })).not.toHaveProperty("from_original");
   });
-  it("gives a comparison row the same kinds for its source, https only", () => {
-    expect(rowEvidenceOf({ kind: "measurement", url: "https://example.com/run" })).toEqual({ kind: "measurement", url: "https://example.com/run" });
-    expect(rowEvidenceOf({ kind: "measurement", url: "http://example.com/run" })).toBeNull();
+  it("gives a comparison row the same kinds and the same shape as a Check's evidence", () => {
+    expect(rowEvidenceOf({ kind: "measurement", measurement: measured })).toEqual({ kind: "measurement", measurement: measured });
+    expect(rowEvidenceOf({ kind: "test_output", text: "42 passed" })).toEqual({ kind: "test_output", text: "42 passed" });
+    expect(rowEvidenceOf({ kind: "recording", url: "example.com/run" })).toEqual({ kind: "recording", url: "https://example.com/run" });
+    expect(rowEvidenceOf({ url: "not a link" })).toBeNull();
+    expect(rowEvidenceOf({ kind: "measurement", measurement: { ...measured, runs: 0 } })).toBeNull();
     const rows = rowsOf([
-      { kind: "approach", label: "A", tiles: [], evidence: { kind: "test_output", url: "https://example.com/a" } },
+      { kind: "approach", label: "A", tiles: [], evidence: { kind: "measurement", measurement: measured } },
       { kind: "approach", label: "B", tiles: [] },
     ]);
-    expect(rows[0].evidence).toEqual({ kind: "test_output", url: "https://example.com/a" });
+    expect(rows[0].evidence).toEqual({ kind: "measurement", measurement: measured });
     expect(rowsRefusal(rows)).toBeNull();
-    expect(JSON.parse(JSON.stringify(rowsPayload(rows)))[0].evidence.kind).toBe("test_output");
+    expect(JSON.parse(JSON.stringify(rowsPayload(rows)))[0].evidence.kind).toBe("measurement");
+  });
+  it("reads old evidence as a link, or as test output for a file, in one place for every control", () => {
+    expect(evidenceDraftOf({ url: "https://example.com/r" }).kind).toBe("link");
+    expect(evidenceDraftOf({ media_id: "m1", name: "log.txt" })).toMatchObject({ kind: "test_output", mediaId: "m1", name: "log.txt" });
+    expect(evidenceDraftOf(null).kind).toBe("");
+    expect(evidenceFromDraft({ ...evidenceDraftOf({ media_id: "m1", name: "log.txt" }) })).toEqual({ kind: "test_output", media_id: "m1", name: "log.txt" });
+    expect(evidenceDraftRefusal({ ...evidenceDraftOf(null), kind: "measurement", metric: "Latency", before: "120" })).toBe("Before and after are numbers.");
   });
 });
 

@@ -29,7 +29,8 @@ import {
   variableNamesIn,
   variablesOf,
 } from "@/lib/build/tileExtras";
-import { EVIDENCE_KINDS, EVIDENCE_KIND_LABEL, EVIDENCE_TEXT_MAX, MEASURE_METRIC_MAX, MEASURE_UNIT_MAX, measurementLine } from "@/lib/build/evidenceKinds";
+import { EVIDENCE_KIND_LABEL, evidenceDraftOf, evidenceDraftRefusal, evidenceFromDraft, measurementLine } from "@/lib/build/evidenceKinds";
+import { EvidenceControl } from "./EvidenceControl";
 import { PART_OF, PART_OF_LABEL, RUNS_WHERE_MAX, partOfOf, runsWhereOf, type PartOf } from "@/lib/build/codePart";
 import { ASKS_FOR, ASKS_FOR_LABEL, EVENT_MAX, INTERVAL_MAX, SENT_BY_CHOICES, asksForOf, originLine, originOf } from "@/lib/build/promptOrigin";
 import { toolName } from "@/lib/tools/registry";
@@ -77,7 +78,7 @@ import { FIELD_LABEL } from "./composeControls";
 /** The words the prompt window uses for the same two rows. */
 import { FULL_PROMPT_COPY } from "@/components/build/FullPromptWindow";
 
-export type ExtraKind = "line" | "text" | "lines" | "count" | "choice" | "model" | "tool";
+export type ExtraKind = "line" | "text" | "lines" | "count" | "choice" | "model" | "tool" | "evidence";
 
 export interface ExtraField {
   key: string;
@@ -106,11 +107,23 @@ export interface ExtraRow {
   note?: string;
 }
 
+const parseDraft = (value: string): unknown => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 
 /* ── one row's editors ── */
 
 function Editor({ field, value, phone, inBuild, set, commit }: { field: ExtraField; value: string; phone: boolean; inBuild: readonly string[]; set: (value: string, now?: boolean) => void; commit: () => void }) {
+  if (field.kind === "evidence") {
+    // SV-30 P8: the one evidence control; the row holds its draft as JSON in one value.
+    return <EvidenceControl draft={evidenceDraftOf(parseDraft(value))} onChange={(next, now) => set(JSON.stringify(next), now)} onBlur={commit} phone={phone} />;
+  }
   if (field.kind === "choice") {
     return <ChoiceGrid label={field.label} items={field.items ?? []} value={value || null} onChange={(next) => set(next ?? "", true)} phone={phone} allowClear columns={field.items && field.items.length > 4 ? 2 : 3} />;
   }
@@ -296,6 +309,7 @@ export function checkRows(payload: Raw): ExtraRow[] {
   const extras = checkExtrasOf(payload);
   const evidence = extras.evidence;
   const evidenceFile = evidence?.mediaId ? (evidence.name ?? "A file") : null;
+  const evidenceDraft = evidenceDraftOf(payload.evidence);
   return [
     {
       name: CHECK_DIALOG_COPY.method,
@@ -338,27 +352,15 @@ export function checkRows(payload: Raw): ExtraRow[] {
     {
       name: CHECK_DIALOG_COPY.evidence,
       description: CHECK_DIALOG_COPY.evidenceLine,
-      summary: summaryOf(evidence?.kind ? EVIDENCE_KIND_LABEL[evidence.kind] : null, evidence?.measurement ? measurementLine(evidence.measurement) : evidenceFile, evidenceFile || evidence?.measurement ? null : evidence?.url, evidence?.text ? "Pasted output" : null),
-      /* SV-30 P8: the kind says what it is; a measurement is five numbers, a test output is pasted. */
-      fields: evidenceFile
-        ? []
-        : [
-            { key: "kind", label: "Kind of evidence", kind: "choice", items: EVIDENCE_KINDS.map((value) => ({ value, label: EVIDENCE_KIND_LABEL[value] })) },
-            { key: "url", label: CHECK_DIALOG_COPY.evidenceUrl, kind: "line", when: (v) => v.kind !== "measurement" && v.kind !== "test_output" },
-            { key: "metric", label: "What was measured", kind: "line", max: MEASURE_METRIC_MAX, placeholder: "Latency", when: (v) => v.kind === "measurement" },
-            { key: "unit", label: "Unit", kind: "line", max: MEASURE_UNIT_MAX, placeholder: "ms", when: (v) => v.kind === "measurement" },
-            { key: "before", label: "Before", kind: "line", max: 14, when: (v) => v.kind === "measurement" },
-            { key: "after", label: "After", kind: "line", max: 14, when: (v) => v.kind === "measurement" },
-            { key: "runs", label: "Runs", kind: "line", max: 7, when: (v) => v.kind === "measurement" },
-            { key: "text", label: "Pasted output", kind: "text", rows: 5, max: EVIDENCE_TEXT_MAX, mono: true, when: (v) => v.kind === "test_output" },
-          ],
-      values: { kind: evidence?.kind ?? "", url: evidence?.url ?? "", metric: evidence?.measurement?.metric ?? "", unit: evidence?.measurement?.unit ?? "", before: evidence?.measurement ? String(evidence.measurement.before) : "", after: evidence?.measurement ? String(evidence.measurement.after) : "", runs: evidence?.measurement ? String(evidence.measurement.runs) : "", text: evidence?.text ?? "" },
+      summary: summaryOf(evidence?.kind ? EVIDENCE_KIND_LABEL[evidence.kind] : evidenceDraft.kind ? EVIDENCE_KIND_LABEL[evidenceDraft.kind] : null, evidence?.measurement ? measurementLine(evidence.measurement) : evidenceFile, evidenceFile || evidence?.measurement ? null : evidence?.url, evidence?.text ? "Pasted output" : null),
+      /* SV-30 P8: one control for the kind and the thing; evidence from before kinds reads as a link, or as test output when it is a file. */
+      fields: [{ key: "evidence", label: CHECK_DIALOG_COPY.evidence, kind: "evidence" }],
+      values: { evidence: JSON.stringify(evidenceDraft) },
       toPatch: (v) => {
-        if (v.kind === "measurement") return v.metric || v.before || v.after || v.runs ? { evidence: { kind: "measurement", measurement: { metric: v.metric ?? "", unit: v.unit ?? "", before: Number(v.before), after: Number(v.after), runs: Number(v.runs) } } } : { evidence: null };
-        if (v.kind === "test_output") return v.text ? { evidence: { kind: "test_output", text: v.text } } : { evidence: null };
-        return v.url ? { evidence: { ...(v.kind ? { kind: v.kind } : null), url: v.url } } : { evidence: null };
+        const draft = evidenceDraftOf(parseDraft(v.evidence ?? ""));
+        // A draft that cannot be saved yet (half a measurement) changes nothing; the control says why.
+        return { evidence: evidenceFromDraft(evidenceDraftRefusal(draft) ? evidenceDraft : draft) };
       },
-      ...(evidenceFile ? { note: `${evidenceFile} attached` } : null),
     },
   ];
 }

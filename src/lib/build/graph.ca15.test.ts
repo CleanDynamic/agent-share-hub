@@ -175,7 +175,7 @@ describe("a check's extras (CA-15 P5)", () => {
   });
 
   it("keeps one evidence file by its id and name, and a target only for a metric", async () => {
-    await addCheck(BUILD, [], { ...base, scoring: { how: "rating", target: "ignored" }, evidence: { mediaId: "m1", name: "results.csv" } });
+    await addCheck(BUILD, [], { ...base, scoring: { how: "rating", target: "ignored" }, evidence: { media_id: "m1", name: "results.csv" } });
     expect(written()).toMatchObject({ scoring: { how: "rating" }, evidence: { media_id: "m1", name: "results.csv" } });
     expect((written().scoring as Record<string, unknown>).target).toBeUndefined();
   });

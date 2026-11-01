@@ -1391,15 +1391,15 @@ function SandboxPageBody() {
   );
 
   const onAddCheck = useCallback(
-    async ({ evidenceFile, evidenceUrl, ...input }: AddCheckInput) => {
+    async ({ evidenceFile, evidenceDraft, ...input }: AddCheckInput) => {
       try {
         // CA-15 P5: evidence is a URL, or one file stored through the same media path as every other file.
-        let evidence: { url?: string; mediaId?: string; name?: string } | null = null;
+        let evidence = input.evidence ?? null;
         if (evidenceFile) {
           const build = await ensureBuild();
           const media = await nodes.run(() => uploadMedia({ buildId: build, file: evidenceFile }));
-          evidence = { mediaId: media.id, name: evidenceFile.name };
-        } else if (evidenceUrl) evidence = { url: evidenceUrl };
+          evidence = { ...(evidenceDraft?.kind ? { kind: evidenceDraft.kind } : null), media_id: media.id, name: evidenceFile.name };
+        }
         // A check uses the step it tested: the selected one, else the last agent, team or code.
         const id = await prompts.addCheckStep({ ...input, ...(evidence ? { evidence } : null), testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
         if (!id) return;
