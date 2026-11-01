@@ -632,18 +632,7 @@ export function OutputsControl({ id, extras, phone, onChange }: { id: string; ex
     <div data-testid="outputs-control" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {rows.map((row, index) => (
         <div key={index} data-testid="output-row" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minWidth: 0 }}>
-          <select
-            aria-label={`Kind of output ${index + 1}`}
-            value={row.kind}
-            onChange={(event) => commit(rows.map((other, at) => (at === index ? { kind: event.target.value as OutputKind, a: "", b: "" } : other)))}
-            style={{ ...typedField(phone, ring(false)), width: 150 }}
-          >
-            {OUTPUT_KINDS.map((kind) => (
-              <option key={kind} value={kind}>
-                {OUTPUT_LABEL[kind].one.replace(/^./, (c) => c.toUpperCase())}
-              </option>
-            ))}
-          </select>
+          <OutputKindMenu index={index} kind={row.kind} phone={phone} onPick={(kind) => commit(rows.map((other, at) => (at === index ? { kind, a: "", b: "" } : other)))} />
           <div style={{ flex: "1 1 200px", minWidth: 0 }}>
             <ExtrasInput key={`${id}:o${index}a:${row.a}`} label={row.kind === "commit" ? `Repository of output ${index + 1}` : `Link of output ${index + 1}`} value={row.a} placeholder={row.kind === "commit" ? "https://github.com/acme/app" : "https://…"} max={2000} phone={phone} onCommit={(a) => commit(rows.map((other, at) => (at === index ? { ...other, a } : other)))} />
           </div>
@@ -726,5 +715,27 @@ export function ReviewControl({ id, extras, phone, onChange }: { id: string; ext
       {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}
       {extras.from_original && extras.review ? <span style={text(12, 400, t.label)}>The original&apos;s</span> : null}
     </>
+  );
+}
+
+/** The kind of one output link, from a menu. */
+function OutputKindMenu({ index, kind, phone, onPick }: { index: number; kind: OutputKind; phone: boolean; onPick: (kind: OutputKind) => void }) {
+  const [open, setOpen] = useState(false);
+  const name = (value: OutputKind) => OUTPUT_LABEL[value].one.replace(/^./, (c) => c.toUpperCase());
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger asChild>
+        <MenuButton aria-label={`Kind of output ${index + 1}`} label="" value={name(kind)} open={open} style={{ width: 160, ...(phone ? { height: 44 } : null) }} />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z }}>
+          {OUTPUT_KINDS.map((value) => (
+            <Menu.Item key={value} onSelect={() => onPick(value)} style={menuItem(true, phone)}>
+              {name(value)}
+            </Menu.Item>
+          ))}
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
