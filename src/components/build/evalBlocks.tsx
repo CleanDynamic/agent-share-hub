@@ -5,6 +5,7 @@
    PURE: it takes the facts `buildSteps` already makes. The chart is drawn in SVG, hidden from screen readers, and its group carries
    a text summary. No motion. */
 
+import { evidenceDraftToFacts, evidenceText } from "@/lib/build/evidenceKinds";
 import type { CSSProperties } from "react";
 
 import { chartPoints, chartSummary, costWords, designLine, figureSourceWord, metricName, metricValue, OUTCOME_LABEL, ROW_KIND_LABEL, sortedRows, testSetLine, type Comparison } from "@/lib/build/comparison";
@@ -93,6 +94,7 @@ export function ComparisonBlock({ check, indent = 0 }: { check: CheckFacts; inde
                 <th scope="row" style={{ ...CELL, ...text(12.5, row.outcome === "chosen" ? 500 : 400, t.text) }}>
                   {row.label}
                   <span style={{ display: "block", ...text(11.5, 400, t.label) }}>{ROW_KIND_LABEL[row.kind]}</span>
+                  {row.evidence ? <span data-testid="comparison-evidence" style={{ display: "block", ...text(11.5, 400, t.label) }}>{`Evidence: ${evidenceText(evidenceDraftToFacts(row.evidence))}`}</span> : null}
                   {row.reason ? <span data-testid="comparison-reason" style={{ display: "block", ...text(12, 400, t.text2) }}>{row.reason}</span> : null}
                 </th>
                 <td style={CELL}>

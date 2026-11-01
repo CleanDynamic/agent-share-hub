@@ -23,11 +23,23 @@ export const sessionsSdlcTree: NodeTree[] = [
     reviewer: "you",
     evidence: { kind: "measurement", measurement: { metric: "Boot time", unit: "ms", before: 120, after: 58, runs: 20 } },
   }, "Boot benchmark"),
-  node("sd-c1", 4, "code", { session: S, language: "ts", filename: "vm/boot.ts", source: "export function boot(image: Image): Machine {\n  return fastBoot(image);\n}", part_of: "app" }, "Boot path"),
-  node("sd-c2", 5, "code", { session: S, language: "bash", filename: "bench/run.sh", source: "npm run bench -- --runs 20 --compare baseline.json", part_of: "eval_harness", runs_where: "Terminal 2, in the harness folder" }, "Run the benchmark"),
-  node("sd-c3", 6, "code", { session: S, language: "yaml", filename: ".github/workflows/bench.yml", source: "on: [pull_request]\njobs:\n  bench:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm run bench", part_of: "ci", runs_where: "GitHub Actions" }, "Benchmark in CI"),
+  node("sd-k2", 4, "eval_run", {
+    session: S,
+    tested: "Which boot path is faster, on the same machine",
+    passing: "The chosen path boots in under half the baseline",
+    passed: 20,
+    total: 20,
+    scoring: { how: "ab" },
+    rows: [
+      { kind: "approach", label: "Old boot path", tiles: [], outcome: "rejected", reason: "Twice the boot time", evidence: { kind: "test_output", text: "120 ms median over 20 runs" } },
+      { kind: "approach", label: "Cached boot path", tiles: [], outcome: "chosen", evidence: { kind: "measurement", measurement: { metric: "Boot time", unit: "ms", before: 120, after: 58, runs: 20 } } },
+    ],
+  }, "Old path against the cached path"),
+  node("sd-c1", 5, "code", { session: S, language: "ts", filename: "vm/boot.ts", source: "export function boot(image: Image): Machine {\n  return fastBoot(image);\n}", part_of: "app" }, "Boot path"),
+  node("sd-c2", 6, "code", { session: S, language: "bash", filename: "bench/run.sh", source: "npm run bench -- --runs 20 --compare baseline.json", part_of: "eval_harness", runs_where: "Terminal 2, in the harness folder" }, "Run the benchmark"),
+  node("sd-c3", 7, "code", { session: S, language: "yaml", filename: ".github/workflows/bench.yml", source: "on: [pull_request]\njobs:\n  bench:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm run bench", part_of: "ci", runs_where: "GitHub Actions" }, "Benchmark in CI"),
   // The session's plugin: its install line, never its files.
-  node("sd-s1", 7, "code", {
+  node("sd-s1", 8, "code", {
     source: "/plugin install perf-tools@acme-marketplace",
     language: "bash",
     setup: { session: S, kind: "plugin", loaded: "start" },
@@ -61,6 +73,7 @@ export const sessionsSdlcMaking = {
       ],
       messages: 3714,
       compactions: 2,
+      from_run: ["messages", "compactions"],
       outputs: [
         { kind: "commit", repo: "https://github.com/acme/vm", sha: "a1b2c3d" },
         { kind: "commit", repo: "https://github.com/acme/vm", sha: "e4f5a6b7c8" },

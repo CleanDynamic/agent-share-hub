@@ -84,7 +84,7 @@ import {
   type Sees,
 } from "@/lib/build/evalHarness";
 
-import { FieldArea, FieldInput, Hint, Inline, OptionGrid, PANEL_LIST, Panel, RecipeButton, SegmentedField, TextLink, NARROW } from "./modalRecipes";
+import { FieldArea, FieldInput, Hint, Inline, LabelText, OptionGrid, PANEL_LIST, Panel, RecipeButton, SegmentedField, TextLink, NARROW } from "./modalRecipes";
 import { EvidenceControl } from "./EvidenceControl";
 import { evidenceDraftOf, evidenceDraftRefusal, evidenceFromDraft, type EvidenceDraft, type EvidencePayload } from "@/lib/build/evidenceKinds";
 import { ModelPicker } from "./ModelPicker";
@@ -211,6 +211,7 @@ function RowsEditor({ rows, onChange, phone, tiles }: { rows: ComparisonRow[]; o
               <FieldInput phone={phone} mono width={NARROW.date} aria-label={`Cost per item of row ${at + 1}, dollars`} inputMode="decimal" value={draft.cost} placeholder="0.0005" onChange={(event) => edit(at, { cost: decimal(event.target.value) })} />
               <SegmentedField<"run" | "maker"> label={`Where the cost of row ${at + 1} came from`} phone={phone} items={SOURCES} value={draft.costSource === "run" ? "run" : "maker"} onChange={(costSource) => edit(at, { costSource })} />
             </Inline>
+            <LabelText>{`Evidence for row ${at + 1}`}</LabelText>
             <EvidenceControl draft={draft.evidence} prefix={`Row ${at + 1}: `} phone={phone} onChange={(evidence) => edit(at, { evidence })} />
             <SegmentedField<Outcome | "none"> label={`Outcome of row ${at + 1}`} phone={phone} items={[{ value: "none", label: "Not decided" }, ...OUTCOMES_FOR[draft.kind].map((value) => ({ value, label: OUTCOME_LABEL[value] }))]} value={draft.outcome || "none"} onChange={(next) => edit(at, { outcome: next === "none" ? "" : next })} />
             {draft.outcome === "rejected" || draft.outcome === "ruled out" ? (

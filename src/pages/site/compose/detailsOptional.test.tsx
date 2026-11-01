@@ -297,3 +297,16 @@ describe("a system prompt, a dataset and a GitHub repository in their windows (C
     expect(props.onRename).toHaveBeenCalledWith("ds", "Support tickets");
   });
 });
+
+describe("SV-30 P8: a stored measurement survives the Details row and the Check window's seed", () => {
+  const stored = { evidence: { kind: "measurement", measurement: { metric: "Latency", unit: "ms", before: 120, after: 58, runs: 20 } } };
+  it("reads back into the control and saves unchanged", () => {
+    const row = checkRows(stored)[4];
+    expect(JSON.parse(row.values.evidence)).toMatchObject({ kind: "measurement", metric: "Latency", before: "120", after: "58", runs: "20" });
+    expect(row.toPatch(row.values)).toEqual({ evidence: stored.evidence });
+  });
+  it("keeps what is saved when the draft is half a measurement", () => {
+    const row = checkRows(stored)[4];
+    expect(row.toPatch({ evidence: JSON.stringify({ ...JSON.parse(row.values.evidence), after: "" }) })).toEqual({ evidence: stored.evidence });
+  });
+});

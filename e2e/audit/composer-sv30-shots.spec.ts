@@ -42,7 +42,8 @@ const CASES: Case[] = [
   { name: "prompt-origins", path: LIST, then: scrollTestId("prompt-origin") },
   { name: "code-parts", path: LIST, then: scrollTestId("code-part-line") },
   // The Check with its before and after measurement.
-  { name: "check-evidence", path: `${LIST}&window=edit&for=sd-k1`, dialog: true, then: optionalAt("Evidence") },
+    { name: "check-window-evidence-kinds", path: `${LIST}&window=edit&for=sd-k1`, dialog: true, then: optionalAt("Evidence") },
+  { name: "comparison-row-evidence", path: `${LIST}&window=edit&for=sd-k2`, dialog: true, then: optionalAt("Approaches") },
   // The Session window, every new field.
   { name: "session-window-model", path: `${LIST}&window=session&for=${"typed-sdlc-fixture-0001"}`, dialog: true, then: optionalAt("Model ID") },
   { name: "session-window-access", path: `${LIST}&window=session&for=${"typed-sdlc-fixture-0001"}`, dialog: true, then: optionalAt("Access") },

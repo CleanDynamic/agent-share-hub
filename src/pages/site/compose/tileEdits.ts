@@ -8,7 +8,7 @@
 import type { AgentSetupValue } from "./AgentSetupFields";
 import type { AddAgentInput, AgentCurrent } from "./AddAgentDialog";
 import type { AddCheckInput, CheckSeed } from "./AddCheckDialog";
-import { EMPTY_EVIDENCE, evidenceDraftOf } from "@/lib/build/evidenceKinds";
+import { EMPTY_EVIDENCE, evidenceDraftFromJson } from "@/lib/build/evidenceKinds";
 import type { AddDatasetInput, DatasetCurrent } from "./AddDatasetDialog";
 import type { AddManualStepInput, ManualSeed } from "./AddManualStepDialog";
 import type { AddRepoInput, RepoCurrent } from "./AddRepoDialog";
@@ -132,7 +132,7 @@ export function checkCurrent(view: V<"check">): CheckSeed {
     target: value("Scoring method", "target"),
     model: value("Model tested", "model"),
     version: value("Model tested", "version"),
-    evidence: evidenceDraftOf(JSON.parse(evidence?.values.evidence ?? "null")),
+    evidence: evidenceDraftFromJson(evidence?.values.evidence),
     extras: extrasOf(payloadOf(view)),
   };
 }

@@ -29,7 +29,7 @@ import {
   variableNamesIn,
   variablesOf,
 } from "@/lib/build/tileExtras";
-import { EVIDENCE_KIND_LABEL, evidenceDraftOf, evidenceDraftRefusal, evidenceFromDraft, measurementLine } from "@/lib/build/evidenceKinds";
+import { EVIDENCE_KIND_LABEL, evidenceDraftFromJson, evidenceDraftOf, evidenceDraftRefusal, evidenceFromDraft, measurementLine } from "@/lib/build/evidenceKinds";
 import { EvidenceControl } from "./EvidenceControl";
 import { PART_OF, PART_OF_LABEL, RUNS_WHERE_MAX, partOfOf, runsWhereOf, type PartOf } from "@/lib/build/codePart";
 import { ASKS_FOR, ASKS_FOR_LABEL, EVENT_MAX, INTERVAL_MAX, SENT_BY_CHOICES, asksForOf, originLine, originOf } from "@/lib/build/promptOrigin";
@@ -122,7 +122,7 @@ const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.str
 function Editor({ field, value, phone, inBuild, set, commit }: { field: ExtraField; value: string; phone: boolean; inBuild: readonly string[]; set: (value: string, now?: boolean) => void; commit: () => void }) {
   if (field.kind === "evidence") {
     // SV-30 P8: the one evidence control; the row holds its draft as JSON in one value.
-    return <EvidenceControl draft={evidenceDraftOf(parseDraft(value))} onChange={(next, now) => set(JSON.stringify(next), now)} onBlur={commit} phone={phone} />;
+    return <EvidenceControl draft={evidenceDraftFromJson(value)} onChange={(next, now) => set(JSON.stringify(next), now)} onBlur={commit} phone={phone} />;
   }
   if (field.kind === "choice") {
     return <ChoiceGrid label={field.label} items={field.items ?? []} value={value || null} onChange={(next) => set(next ?? "", true)} phone={phone} allowClear columns={field.items && field.items.length > 4 ? 2 : 3} />;
@@ -357,7 +357,7 @@ export function checkRows(payload: Raw): ExtraRow[] {
       fields: [{ key: "evidence", label: CHECK_DIALOG_COPY.evidence, kind: "evidence" }],
       values: { evidence: JSON.stringify(evidenceDraft) },
       toPatch: (v) => {
-        const draft = evidenceDraftOf(parseDraft(v.evidence ?? ""));
+        const draft = evidenceDraftFromJson(v.evidence);
         // A draft that cannot be saved yet (half a measurement) changes nothing; the control says why.
         return { evidence: evidenceFromDraft(evidenceDraftRefusal(draft) ? evidenceDraft : draft) };
       },

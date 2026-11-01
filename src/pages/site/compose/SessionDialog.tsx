@@ -93,7 +93,7 @@ export const SESSION_DIALOG_COPY = {
   unit: "Unit",
   baseline: "Baseline",
   targetValue: "Target",
-  achieved: "Reached",
+  achieved: "Result",
   makersFigure: "Maker's figure",
   fromRun: "From the run",
   badTarget: "Metric, baseline and target are needed, and the numbers are numbers.",

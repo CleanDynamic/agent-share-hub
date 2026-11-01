@@ -633,13 +633,13 @@ export function OutputsControl({ id, extras, phone, onChange }: { id: string; ex
   return (
     <div data-testid="outputs-control" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {rows.map((row, index) => (
-        <div key={index} data-testid="output-row" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minWidth: 0 }}>
+        <div key={index} data-testid="output-row" style={{ display: "flex", alignItems: "center", flexWrap: phone ? "wrap" : "nowrap", gap: 8, minWidth: 0 }}>
           <OutputKindMenu index={index} kind={row.kind} phone={phone} onPick={(kind) => commit(rows.map((other, at) => (at === index ? { kind, a: "", b: "" } : other)))} />
-          <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+          <div style={{ flex: phone ? "1 1 200px" : "1 1 0", minWidth: 0 }}>
             <ExtrasInput key={`${id}:o${index}a:${row.a}`} label={row.kind === "commit" ? `Repository of output ${index + 1}` : `Link of output ${index + 1}`} value={row.a} placeholder={row.kind === "commit" ? "https://github.com/acme/app" : "https://…"} max={2000} phone={phone} onCommit={(a) => commit(rows.map((other, at) => (at === index ? { ...other, a } : other)))} />
           </div>
           {row.kind === "commit" ? (
-            <div style={{ width: 140 }}>
+            <div style={{ width: phone ? 140 : 112, flexShrink: 0 }}>
               <ExtrasInput key={`${id}:o${index}b:${row.b}`} label={`SHA of output ${index + 1}`} value={row.b} placeholder="a1b2c3d" max={40} phone={phone} onCommit={(b) => commit(rows.map((other, at) => (at === index ? { ...other, b } : other)))} />
             </div>
           ) : null}
@@ -727,7 +727,7 @@ function OutputKindMenu({ index, kind, phone, onPick }: { index: number; kind: O
   return (
     <Menu.Root open={open} onOpenChange={setOpen}>
       <Menu.Trigger asChild>
-        <MenuButton aria-label={`Kind of output ${index + 1}`} label="" value={name(kind)} open={open} style={{ width: 160, ...(phone ? { height: 44 } : null) }} />
+        <MenuButton aria-label={`Kind of output ${index + 1}`} label="" value={name(kind)} open={open} style={{ width: phone ? 160 : 140, ...(phone ? { height: 44 } : null) }} />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z }}>

@@ -1807,7 +1807,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
       />
       <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
-        <CodePartLine step={step} style={{ paddingLeft: INDENT }} />
+        <CodePartLine step={step} />
         <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
       </div>
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />

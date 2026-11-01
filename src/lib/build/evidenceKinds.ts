@@ -155,3 +155,30 @@ export function evidenceFromDraft(draft: EvidenceDraft): EvidencePayload | null 
   if (kind === "test_output") return draft.text.trim() ? { kind, text: draft.text.trim() } : null;
   return draft.url.trim() ? { ...(kind ? { kind } : null), url: draft.url.trim() } : null;
 }
+
+/** A draft read back from the JSON the Details row holds it as (a draft, not stored evidence): every field a string, missing ones empty. */
+export function evidenceDraftFromJson(text: string | null | undefined): EvidenceDraft {
+  let raw: unknown = null;
+  try {
+    raw = text ? JSON.parse(text) : null;
+  } catch {
+    raw = null;
+  }
+  if (!isRecord(raw)) return { ...EMPTY_EVIDENCE };
+  const kind = EVIDENCE_KINDS.includes(raw.kind as EvidenceKind) ? (raw.kind as EvidenceKind) : "";
+  return {
+    kind,
+    url: str(raw.url),
+    metric: str(raw.metric),
+    unit: str(raw.unit),
+    before: str(raw.before),
+    after: str(raw.after),
+    runs: str(raw.runs),
+    text: str(raw.text),
+    mediaId: str(raw.mediaId),
+    name: str(raw.name),
+  };
+}
+
+/** Stored evidence in the shape `evidenceText` reads. */
+export const evidenceDraftToFacts = (payload: EvidencePayload): EvidenceFacts => ({ kind: payload.kind, url: payload.url ?? null, mediaId: payload.media_id ?? null, name: payload.name ?? null, measurement: payload.measurement ?? null, text: payload.text ?? null });

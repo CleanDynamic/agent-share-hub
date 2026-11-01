@@ -55,6 +55,11 @@ describe("SV-30: the SDLC session on the build page", () => {
     expect(chat && chat.kind === "new" ? chat.outputs : "missing").toBeUndefined();
     expect(chat && chat.kind === "new" ? (chat.lines ?? []).join(" ") : "").not.toContain("commits");
   });
+  it("shows a comparison row's evidence under its label", () => {
+    page();
+    const rows = screen.getAllByTestId("comparison-evidence").map((node) => node.textContent);
+    expect(rows).toEqual(["Evidence: Boot time · Before 120 ms · after 58 ms · 20 runs", "Evidence: Test run output · Pasted output"]);
+  });
   it("shows each prompt's origin before its text, and what it asks for", () => {
     page();
     const origins = screen.getAllByTestId("prompt-origin").map((node) => node.textContent);
