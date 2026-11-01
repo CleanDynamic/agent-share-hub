@@ -385,7 +385,7 @@ export interface RunsWhen {
 }
 
 /** CA-13 rule 1: only runtime tiles branch. A prompt, manual step, file, result or session head never shows "Runs when". */
-export const RUNS_WHEN_KINDS = ["agent", "team", "code", "tool", "decision"] as const;
+export const RUNS_WHEN_KINDS = ["agent", "team", "code", "tool", "decision", "retrieval"] as const;
 
 export const canRunWhen = (kind: string): boolean => (RUNS_WHEN_KINDS as readonly string[]).includes(kind);
 

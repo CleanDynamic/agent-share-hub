@@ -57,7 +57,7 @@ import { runsOfCasesLine, evalHarnessOf, evalHarnessPatchRefusal, exampleCaseOf,
 import { comparisonOf, comparisonPatchRefusal, hasComparison, type Comparison } from "./comparison";
 import { isRetrievalTile, retrievalOf, retrievalPayload, retrievalRefusal, RETRIEVAL_TYPE, type RetrievalFacts } from "./retrieval";
 import { PIPELINE_KEYS, accuracyCeiling, pipelinePatchRefusal, pipelinePayload, pipelineRefusal, type PipelineFields } from "./pipelineFields";
-import { buildCostOf, costRefusal, runCostOf, type CostFigures, type RunCost } from "./cost";
+import { buildCostOf, costRefusal, ITEM_NOUN_MAX, runCostOf, VOLUME_MAX, volumeOf, type CostFigures, type RunCost, type Volume } from "./cost";
 import { helpersOf, helpersRefusal, type Helper } from "./helpers";
 import { outputShapeOf, shapeRefusal, type OutputShape } from "./answerShape";
 import { traceRefusal, traceUrlOf } from "./trace";
@@ -262,6 +262,8 @@ export interface Step {
   /** CA-13 P8: what it took to make (any tile) and what it costs to run (a runtime tile): never added together. */
   buildCost?: CostFigures;
   runCost?: RunCost;
+  /** SV-29 P5, a runtime tile: how many items it processes a day (`payload.volume`). */
+  volume?: Volume;
 }
 
 /** CA-12 P7: a tool tile's facts. */
@@ -1050,6 +1052,8 @@ function runtimeFactsOf(kind: StepKind, payload: Payload): Partial<Step> {
   if (kind === "agent" || kind === "team" || kind === "code" || kind === "tool" || kind === "decision" || kind === "retrieval") {
     const run = runCostOf(payload.run_cost);
     if (run) out.runCost = run;
+    const volume = volumeOf(payload.volume);
+    if (volume) out.volume = volume;
   }
   return out;
 }
@@ -1812,6 +1816,8 @@ export interface RuntimePatch {
   outputShape?: OutputShape | null;
   buildCost?: CostFigures | null;
   runCost?: RunCost | null;
+  /** SV-29 P5: items a day; null takes it off. */
+  volume?: Volume | null;
 }
 
 const RUNTIME_TYPES = new Set([AGENT_TYPE, TEAM_TYPE, CODE_TYPE, DECISION_TYPE, TOOL_TYPE, RETRIEVAL_TYPE]);
@@ -1873,7 +1879,16 @@ export async function setRuntimeFields(node: BuildNode, patch: RuntimePatch): Pr
       const why = costRefusal(patch.runCost);
       if (why) throw refuse("setRuntimeFields", why);
     }
-    set("run_cost", patch.runCost && runCostOf(patch.runCost) ? patch.runCost : null);
+    if (patch.runCost && patch.runCost.itemNoun && patch.runCost.itemNoun.trim().length > ITEM_NOUN_MAX) throw refuse("setRuntimeFields", `Item: ${ITEM_NOUN_MAX} characters max`);
+    if (patch.runCost && patch.runCost.per === "item" && !patch.runCost.itemNoun?.trim()) throw refuse("setRuntimeFields", "A cost per item says what the item is: a product, a ticket.");
+    // The stored key is `item_noun`; the figures read back through `runCostOf`.
+    const { itemNoun, ...stored } = patch.runCost ?? ({} as RunCost);
+    set("run_cost", patch.runCost && runCostOf(patch.runCost) ? { ...stored, ...(itemNoun?.trim() ? { item_noun: itemNoun.trim() } : null) } : null);
+  }
+  if ("volume" in patch) {
+    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime tile has a daily volume.");
+    if (patch.volume && volumeOf(patch.volume) === null) throw refuse("setRuntimeFields", `Daily volume: a whole number of items, up to ${VOLUME_MAX.toLocaleString("en-GB")}`);
+    set("volume", patch.volume ?? null);
   }
   return upsertNode(withPayload(node, payload));
 }

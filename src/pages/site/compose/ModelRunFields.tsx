@@ -55,7 +55,7 @@ function TypedValue({ label, value, max, placeholder, phone, numeric = false, on
   );
 }
 
-const hasMore = (run: ModelRun | null): boolean => Boolean(run && (run.weights_format || run.parameters || run.context_length || run.engine || run.draft_model || run.split));
+const hasMore = (run: ModelRun | null): boolean => Boolean(run && (run.weights_format || run.parameters || run.context_length || run.engine || run.draft_model || run.split || run.batch));
 
 export function ModelRunFields({ id, run, phone, hosts = [], onChange }: { id: string; run: ModelRun | null; phone: boolean; hosts?: readonly RunHostChoice[]; onChange: (run: ModelRun | null) => void }) {
   const precision = run?.precision;
@@ -140,6 +140,16 @@ export function ModelRunFields({ id, run, phone, hosts = [], onChange }: { id: s
           </Field>
           <Field id={`${id}-engine`} label={RUN_COPY.engine} hint={RUN_COPY.optional} group>
             <TypedValue key={`${id}:e:${run?.engine ?? ""}`} label={RUN_COPY.engine} value={run?.engine ?? ""} max={ENGINE_MAX} placeholder={RUN_COPY.engineHint} phone={phone} onCommit={(value) => save({ engine: value || undefined })} />
+          </Field>
+          <Field id={`${id}-batch`} label={RUN_COPY.batch} hint={RUN_COPY.batchHint} group>
+            <PickMenu<"yes" | "none">
+              label={RUN_COPY.batch}
+              options={[{ value: "yes" as const, label: "Yes" }, { value: "none" as const, label: RUN_COPY.none }]}
+              value={run?.batch ? "yes" : "none"}
+              placeholder={RUN_COPY.none}
+              phone={phone}
+              onChange={(choice) => save({ batch: choice === "yes" ? true : undefined })}
+            />
           </Field>
           <Field id={`${id}-draft`} label={RUN_COPY.draftModel} hint={RUN_COPY.optional} group>
             <TypedValue key={`${id}:d:${run?.draft_model ?? ""}`} label={RUN_COPY.draftModel} value={run?.draft_model ?? ""} max={DRAFT_MODEL_MAX} placeholder={RUN_COPY.draftModelHint} phone={phone} onCommit={(value) => save({ draft_model: value || undefined })} />

@@ -36,6 +36,8 @@ export interface ModelRun {
   server?: string;
   /** A `host` tile's node id. */
   host?: string;
+  /** SV-29 P5: requests are submitted as an asynchronous batch, usually at batch pricing. */
+  batch?: true;
 }
 
 export const PARAMETERS_MAX = 12;
@@ -72,6 +74,9 @@ export const RUN_COPY = {
   computer: "On my computer",
   server: "On a server",
   none: "Not said",
+  /* SV-29 P5. */
+  batch: "Batch inference",
+  batchHint: "Requests are submitted as an asynchronous batch",
 } as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -96,6 +101,7 @@ export function modelRunOf(value: unknown): ModelRun | null {
   if (server) run.server = server;
   const host = text(value.host, 64);
   if (host) run.host = host;
+  if (value.batch === true) run.batch = true;
   return Object.keys(run).length > 0 ? run : null;
 }
 
@@ -142,7 +148,7 @@ export function modelRunLine(model: string, run: ModelRun | null | undefined, co
   const engine = engineName ? (run.draft_model ? `${engineName} with draft model` : engineName) : run.draft_model ? "with draft model" : null;
   const host = run.host ? (context.host ?? null) : null;
   const place = host ? (gpusWord(host) ?? (host.name ? `on ${host.name}` : null)) : run.where ? placeWord(run.where) : null;
-  return [head, run.precision ? precisionWord(run.precision) : null, run.weights_format ?? null, engine, place].filter(Boolean).join(" · ");
+  return [head, run.precision ? precisionWord(run.precision) : null, run.weights_format ?? null, engine, place, run.batch ? "batch inference" : null].filter(Boolean).join(" · ");
 }
 
 /** Whether the model menu gains How it was run: the tool runs models on the maker's computer, or the model's weights are open. */

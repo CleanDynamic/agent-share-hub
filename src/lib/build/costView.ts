@@ -1,7 +1,7 @@
 // CA-13 P8: the build's cost lines, from its steps and sessions. Pure. "To build" reads sessions and tiles; "to run" reads
 // runtime tiles only; the two never meet (rule 3).
 
-import { buildLine, buildTotals, buildTotalsLine, partOfBuildCost, partOfSession, runLine, runTotals, runTotalsLines, type BuildPart, type RunTile } from "./cost";
+import { buildLine, buildTotals, buildTotalsLine, dailyLine, partOfBuildCost, partOfSession, runLine, runTotals, runTotalsLines, type BuildPart, type RunTile } from "./cost";
 import { helperSavingsLine } from "./helpers";
 import type { SessionGroup, Step } from "./graph";
 import { shownGroups } from "./graph";
@@ -43,7 +43,9 @@ export function costLines(steps: readonly Step[], groups: readonly SessionGroup[
 }
 
 /** The quiet line a tile shows: "Made in 1.2 s · 3,400 tokens · £0.01" for what it took to make; for a runtime tile, also what it costs to run. */
-export function tileCostLines(step: Pick<Step, "buildCost" | "runCost">, audience: "maker" | "reader", groups: readonly SessionGroup[]): { build: string | null; run: string | null } {
+export function tileCostLines(step: Pick<Step, "buildCost" | "runCost"> & Partial<Pick<Step, "volume">>, audience: "maker" | "reader", groups: readonly SessionGroup[]): { build: string | null; run: string | null; daily?: string } {
   const money = audience === "maker" || showsCost(groups);
-  return { build: buildLine(step.buildCost, money), run: runLine(step.runCost, money) };
+  // SV-29 P5: a second line for a cost per item with a daily volume. Derived; it is never added to another unit.
+  const daily = dailyLine(step.runCost, step.volume, money);
+  return { build: buildLine(step.buildCost, money), run: runLine(step.runCost, money), ...(daily ? { daily } : null) };
 }

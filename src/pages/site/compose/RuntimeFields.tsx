@@ -170,7 +170,7 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
       {runtime.costs ? (
         <>
           <CostFields key={`${id}:build:${runtime.costs.build ? 1 : 0}`} kind="build" value={runtime.costs.build} phone={phone} onChange={(next) => onRuntime(id, { buildCost: next as RuntimePatch["buildCost"] })} />
-          {runtime.costs.runtime ? <CostFields key={`${id}:run:${runtime.costs.run ? 1 : 0}`} kind="run" value={runtime.costs.run} phone={phone} onChange={(next) => onRuntime(id, { runCost: next as RuntimePatch["runCost"] })} /> : null}
+          {runtime.costs.runtime ? <CostFields key={`${id}:run:${runtime.costs.run ? 1 : 0}`} kind="run" value={runtime.costs.run} volume={runtime.costs.volume ?? null} phone={phone} onVolume={(volume) => onRuntime(id, { volume })} onChange={(next) => onRuntime(id, { runCost: next as RuntimePatch["runCost"] })} /> : null}
         </>
       ) : null}
     </div>
