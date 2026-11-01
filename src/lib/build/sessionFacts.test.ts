@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sessionsMetaOf } from "./making";
-import { togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
+import { modelWithId, togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
 
 describe("the line", () => {
   it("is absent when nothing is set", () => {
@@ -94,5 +94,25 @@ describe("sessions at the same time", () => {
     expect(togetherChanges({ b: ["c"], c: ["b"] }, "b", ["c"])).toEqual({});
     expect(togetherChanges({ b: ["c"], c: ["b", "a"], a: ["c"] }, "b", [])).toEqual({ b: [], c: ["a"] });
     expect(togetherChanges({ b: ["b", "c"] }, "b", ["b", "c"])).toEqual({ b: ["c"], c: ["b"] });
+  });
+});
+
+describe("SV-30 P1: model ID and reasoning effort", () => {
+  it("keeps both through the one read and write path, and the display name is unchanged", () => {
+    const meta = sessionsMetaOf({ sessions_meta: { "typed-1": { tool: "claude-code", date: "2026-10-20", model: "Claude Opus 4.5", model_id: " claude-opus-4-5-20251101 ", effort: "high" } } })["typed-1"];
+    expect(meta.model).toBe("Claude Opus 4.5");
+    expect(meta.model_id).toBe("claude-opus-4-5-20251101");
+    expect(meta.effort).toBe("high");
+    expect(withExtras({ tool: null, date: "" }, { model_id: "m-1", effort: "low" })).toMatchObject({ model_id: "m-1", effort: "low" });
+  });
+  it("says the ID beside the name, and the effort, on the line", () => {
+    expect(modelWithId("Claude Opus 4.5", "claude-opus-4-5-20251101")).toBe("Claude Opus 4.5 (claude-opus-4-5-20251101)");
+    expect(modelWithId(null, "claude-opus-4-5-20251101")).toBe("claude-opus-4-5-20251101");
+    expect(sessionFactsLine({ model: "Claude Opus 4.5", extras: { model_id: "claude-opus-4-5-20251101", effort: "high" } }, "reader")).toBe("Claude Opus 4.5 (claude-opus-4-5-20251101) · Reasoning effort: high");
+  });
+  it("refuses an ID over 80 characters and an effort that is not one, and reads them out of range as absent", () => {
+    expect(extrasRefusal({ model_id: "x".repeat(81) })).toBe("Model ID: 80 characters max");
+    expect(extrasRefusal({ effort: "max" as never })).toContain("Reasoning effort");
+    expect(extrasOf({ effort: "max", model_id: 4 })).toEqual({});
   });
 });

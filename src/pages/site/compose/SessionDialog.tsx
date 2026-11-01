@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/brand/Checkbox";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, type SessionGoal } from "@/lib/build/making";
 import { isIsoDay } from "@/lib/build/graph";
-import type { SessionExtras } from "@/lib/build/sessionFacts";
+import { modelWithId, type SessionExtras } from "@/lib/build/sessionFacts";
 import { modelLabel } from "@/lib/models/registry";
 
 import type { DetailsHandlers, SessionView } from "./DetailsPanel";
@@ -33,6 +33,8 @@ import { OptionalField, OptionalSection } from "./OptionalSection";
 import {
   CostControl,
   EXTRAS_COPY,
+  EffortControl,
+  ModelIdControl,
   MethodControl,
   OwnCopyControl,
   StartedWithControl,
@@ -41,7 +43,9 @@ import {
   TokensControl,
   TraceControl,
   costHeld,
+  effortHeld,
   methodHeld,
+  modelIdHeld,
   timeHeld,
   togetherHeld,
   tokensHeld,
@@ -164,7 +168,7 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
           )}
         </Row>
         <Row id={`${key}-model`} label={SESSION_DIALOG_COPY.model} phone={phone}>
-          <span style={BODY_TEXT}>{view.model ? modelLabel(view.model) : SESSION_DIALOG_COPY.notNamed}</span>
+          <span style={BODY_TEXT}>{modelWithId(view.model ? modelLabel(view.model) : null, extras.model_id) ?? SESSION_DIALOG_COPY.notNamed}</span>
         </Row>
 
         <Row id={`${key}-date`} label={SESSION_DIALOG_COPY.date} phone={phone}>
@@ -232,6 +236,12 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
 
         {h.onSessionExtras ? (
           <OptionalSection>
+            <OptionalField name={EXTRAS_COPY.modelId} summary={modelIdHeld(extras)} phone={phone}>
+              <ModelIdControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.effort} summary={effortHeld(extras)} phone={phone}>
+              <EffortControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
             <OptionalField name={EXTRAS_COPY.cost} summary={costHeld(extras)} phone={phone}>
               <CostControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
             </OptionalField>

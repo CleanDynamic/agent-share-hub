@@ -206,7 +206,7 @@ export function shortDate(iso: string | null | undefined): string {
 }
 
 /** CA-05 P2: the line under a session's head. */
-const factsOf = (group: SessionGroup, audience: "maker" | "reader"): string | null => sessionFactsLine({ extras: group.extras, words: group.longWords }, audience);
+const factsOf = (group: SessionGroup, audience: "maker" | "reader"): string | null => sessionFactsLine({ extras: group.extras, words: group.longWords, model: group.model }, audience);
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 

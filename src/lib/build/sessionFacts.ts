@@ -11,6 +11,7 @@
 // dollars) and is shown in it; it is never converted, because no rate is known here.
 
 import { traceUrlOf } from "./trace";
+import { EFFORTS, EFFORT_LABEL, type Effort } from "./tileExtras";
 
 export type Currency = "GBP" | "USD";
 
@@ -38,6 +39,10 @@ export interface SessionExtras {
   parallelWith?: string[];
   /** CA-05 P5: the branch or folder it worked in. */
   ownCopy?: string;
+  /** SV-30 P1: the provider's exact model ID, with its version or date ("claude-opus-4-5-20251101"). `model` stays the display name. */
+  model_id?: string;
+  /** SV-30 P1: the harness's reasoning effort for the session. */
+  effort?: Effort;
 }
 
 export const COST_MAX = 100_000;
@@ -45,10 +50,12 @@ export const TOKENS_MAX = 1_000_000_000_000;
 export const STARTED_WITH_MAX = 2000;
 export const OWN_COPY_MAX = 80;
 export const PARALLEL_MAX = 20;
+/** SV-30 P1: the longest model ID. */
+export const MODEL_ID_MAX = 80;
 /** A session over this many words is "long". */
 export const LONG_SESSION_WORDS = 100_000;
 
-const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy"] as const;
+const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -82,6 +89,9 @@ export function extrasOf(entry: unknown): SessionExtras {
     if (keys.length > 0) out.parallelWith = keys;
   }
   if (typeof entry.ownCopy === "string" && entry.ownCopy.trim()) out.ownCopy = entry.ownCopy.trim().slice(0, OWN_COPY_MAX);
+  const modelId = typeof entry.model_id === "string" ? entry.model_id.trim() : "";
+  if (modelId) out.model_id = modelId.slice(0, MODEL_ID_MAX);
+  if (EFFORTS.includes(entry.effort as Effort)) out.effort = entry.effort as Effort;
   return out;
 }
 
@@ -106,6 +116,8 @@ export function extrasRefusal(extras: SessionExtras): string | null {
   if (extras.cost !== undefined && (!Number.isFinite(extras.cost) || extras.cost < 0 || extras.cost > COST_MAX)) return `What it cost is a number from 0 to ${COST_MAX.toLocaleString("en-GB")}.`;
   if (extras.startedWith !== undefined && extras.startedWith.length > STARTED_WITH_MAX) return `Command: ${STARTED_WITH_MAX} characters max`;
   if (extras.ownCopy !== undefined && extras.ownCopy.length > OWN_COPY_MAX) return `Name: ${OWN_COPY_MAX} characters max`;
+  if (extras.model_id !== undefined && extras.model_id.trim().length > MODEL_ID_MAX) return `Model ID: ${MODEL_ID_MAX} characters max`;
+  if (extras.effort !== undefined && !EFFORTS.includes(extras.effort)) return "Reasoning effort is default, low or high.";
   if (extras.parallelWith && extras.parallelWith.length > PARALLEL_MAX) return `At most ${PARALLEL_MAX} sessions ran at the same time.`;
   return null;
 }
@@ -118,7 +130,17 @@ export const FACTS_COPY = {
   tokens: (tokens: number) => (tokens >= 1_000_000 ? `${(Math.round(tokens / 100_000) / 10).toString()} million tokens` : `${tokens.toLocaleString("en-GB")} tokens`),
   cached: "Later runs cost less, because the start is reused.",
   background: "Ran in the background",
+  /** SV-30 P1. */
+  effort: (effort: Effort) => `Reasoning effort: ${EFFORT_LABEL[effort].toLowerCase()}`,
 } as const;
+
+/** SV-30 P1: "Claude Opus 4.5 (claude-opus-4-5-20251101)"; the display name alone, or the ID alone, when only one is known. */
+export function modelWithId(display: string | null | undefined, id: string | null | undefined): string | null {
+  const name = display?.trim() ?? "";
+  const modelId = id?.trim() ?? "";
+  if (name && modelId && name !== modelId) return `${name} (${modelId})`;
+  return name || modelId || null;
+}
 
 /** The words of a session, to the nearest thousand: it is said as "about". */
 export const roundedWords = (words: number): number => Math.round(words / 1000) * 1000;
@@ -127,13 +149,15 @@ export interface FactsInput {
   extras?: SessionExtras;
   /** The session's own text, in words, worked out from its steps. */
   words?: number;
+  /** SV-30 P1: the session's display model name, so a model ID is said beside it. */
+  model?: string | null;
 }
 
 /**
  * The one optional line under a session head: the parts that exist, joined with " · ", or null. A maker sees all of
  * it; a reader sees the cost, the tokens and the cached sentence only when the maker ticked Show readers.
  */
-export function sessionFactsLine({ extras = {}, words = 0 }: FactsInput, audience: "maker" | "reader"): string | null {
+export function sessionFactsLine({ extras = {}, words = 0, model = null }: FactsInput, audience: "maker" | "reader"): string | null {
   const total = Math.max(words, extras.words ?? 0);
   const costShown = audience === "maker" || extras.showCost === true;
   const parts: string[] = [];
@@ -146,6 +170,8 @@ export function sessionFactsLine({ extras = {}, words = 0 }: FactsInput, audienc
     if (cost.length > 0) parts.push(cost.join(" and "));
     if (extras.cached) parts.push(FACTS_COPY.cached);
   }
+  if (extras.model_id) parts.push(modelWithId(model, extras.model_id) as string);
+  if (extras.effort) parts.push(FACTS_COPY.effort(extras.effort));
   if (extras.background) parts.push(FACTS_COPY.background);
   return parts.length > 0 ? parts.join(" · ") : null;
 }

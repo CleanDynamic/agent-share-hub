@@ -16,7 +16,8 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { COST_MAX, costField, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
+import { COST_MAX, costField, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
+import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -51,6 +52,12 @@ export const EXTRAS_COPY = {
   togetherNone: "No other session",
   ownCopy: "Own copy of the code",
   ownCopyHint: "fix-totals",
+  /** SV-30 P1. */
+  modelId: "Model ID",
+  modelIdHint: "claude-opus-4-5-20251101",
+  effort: "Reasoning effort",
+  makersFigure: "Maker's figure",
+  fromRun: "From the run",
 } as const;
 
 export function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal" | "numeric"; onCommit: (value: string) => void }) {
@@ -464,5 +471,33 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
         )}
       </div>
     </Field>
+  );
+}
+
+/* ── SV-30 P1: the exact model ID and the reasoning effort ── */
+
+/** The model ID, as the section counts it. */
+export const modelIdHeld = (extras: SessionExtras): string | null => extras.model_id ?? null;
+export function ModelIdControl({ id, extras, phone, fromRun, onChange }: { id: string; extras: SessionExtras; phone: boolean; fromRun?: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <>
+      <ExtrasInput key={`${id}:model_id:${extras.model_id ?? ""}`} label={EXTRAS_COPY.modelId} value={extras.model_id ?? ""} placeholder={EXTRAS_COPY.modelIdHint} max={MODEL_ID_MAX} phone={phone} onCommit={(value) => onChange({ ...extras, model_id: value.trim() || undefined })} />
+      {extras.model_id ? <span style={text(12, 400, t.label)}>{fromRun ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
+    </>
+  );
+}
+
+/** Reasoning effort, as the section counts it. */
+export const effortHeld = (extras: SessionExtras): string | null => (extras.effort ? EFFORT_LABEL[extras.effort] : null);
+export function EffortControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <ChoiceRows<Effort>
+      label={EXTRAS_COPY.effort}
+      name={`effort-${id}`}
+      phone={phone}
+      value={extras.effort ?? "default"}
+      onChange={(effort) => onChange({ ...extras, effort: effort === "default" ? undefined : effort })}
+      rows={EFFORTS.map((value) => ({ value, label: EFFORT_LABEL[value] }))}
+    />
   );
 }
