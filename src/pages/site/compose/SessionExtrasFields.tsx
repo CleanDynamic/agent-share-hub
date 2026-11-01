@@ -16,7 +16,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { COST_MAX, costField, countWords, figureOf, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type RunFacts, type SessionExtras } from "@/lib/build/sessionFacts";
+import { COST_MAX, costField, countWords, figureOf, sourceOfCount, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type RunFacts, type SessionExtras } from "@/lib/build/sessionFacts";
 import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
 import { REVIEW_FILES_MAX, REVIEW_SCOPES, reviewLine, reviewRefusal, type ReviewScope } from "@/lib/build/sessionReview";
 import { OUTPUT_KINDS, OUTPUT_LABEL, OUTPUTS_MAX, outputRow, outputsCountLine, outputsRefusal, type OutputKind, type OutputLink } from "@/lib/build/sessionOutputs";
@@ -598,11 +598,13 @@ function CountControl({ id, field, label, extras, run, phone, onChange }: { id: 
           inputMode="numeric"
           onCommit={(value) => {
             const n = Number(value.trim().replace(/,/g, ""));
-            onChange({ ...extras, [field]: value.trim() && Number.isInteger(n) && n > 0 ? n : undefined });
+            // A figure the maker types is theirs: it leaves From the run.
+            const kept = (extras.from_run ?? []).filter((key) => key !== field);
+            onChange({ ...extras, [field]: value.trim() && Number.isInteger(n) && n > 0 ? n : undefined, from_run: kept.length > 0 ? kept : undefined });
           }}
         />
       </div>
-      {figure ? <span style={text(12, 400, t.label)}>{figure.from === "run" ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
+      {figure ? <span style={text(12, 400, t.label)}>{(extras[field] !== undefined ? sourceOfCount(extras, field) : figure.from) === "run" ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
     </>
   );
 }

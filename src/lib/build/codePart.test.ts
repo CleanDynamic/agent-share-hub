@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { groupByPart, partLine, partOfOf, runsWhereOf } from "./codePart";
+import { partLine, partOfOf, runsWhereOf } from "./codePart";
 import { copyTogether } from "./copyTogether";
 import { methodOf } from "./forkRules";
 import { buildSteps } from "./graph";
@@ -33,14 +33,6 @@ describe("SV-30 P9: what code belongs to", () => {
   it("reads both onto the step", () => {
     const [step] = buildSteps([code("a", 1, { part_of: "eval_harness", runs_where: "Terminal 2" })]);
     expect(step).toMatchObject({ partOf: "eval_harness", runsWhere: "Terminal 2" });
-  });
-  it("groups by part only when more than one is present, and keeps the numbers", () => {
-    const steps = buildSteps([code("a", 1, { part_of: "app" }), code("b", 2, { part_of: "eval_harness" }), code("c", 3, { part_of: "app" }), code("d", 4, { part_of: "ci" })]);
-    const groups = groupByPart(steps);
-    expect(groups?.map((group) => [group.part, group.tiles.map((tile) => tile.number)])).toEqual([["app", ["1", "3"]], ["eval_harness", ["2"]], ["ci", ["4"]]]);
-    expect(steps.map((step) => step.number)).toEqual(["1", "2", "3", "4"]);
-    expect(groupByPart(buildSteps([code("a", 1, { part_of: "app" }), code("b", 2, { part_of: "app" })]))).toBeNull();
-    expect(groupByPart(buildSteps([code("a", 1, {}), code("b", 2, {})]))).toBeNull();
   });
   it("keeps both fields on a copy", () => {
     expect(methodOf({ part_of: "ci", runs_where: "GitHub Actions", build_cost: 4 })).toEqual({ part_of: "ci", runs_where: "GitHub Actions" });

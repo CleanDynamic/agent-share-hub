@@ -27,13 +27,6 @@ export function partLine(facts: { partOf?: PartOf | null; runsWhere?: string | n
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
-/** A session's Code tiles in groups by part, in the order each part first appears; null unless more than one part is present. Steps keep their numbers. */
-export function groupByPart<T extends { partOf?: PartOf | null }>(tiles: readonly T[]): { part: PartOf | null; tiles: T[] }[] | null {
-  const parts = [...new Set(tiles.map((tile) => tile.partOf ?? null))];
-  if (parts.length < 2) return null;
-  return parts.map((part) => ({ part, tiles: tiles.filter((tile) => (tile.partOf ?? null) === part) }));
-}
-
 /** The words the setup prompt introduces a code file with. */
 export const PART_INSTRUCTION: Record<PartOf, string> = {
   app: "Add this to the app",

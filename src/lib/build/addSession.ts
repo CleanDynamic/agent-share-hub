@@ -211,6 +211,7 @@ export async function addSessionToBuild(importId: string, target: AddTarget, onP
     prompts,
     isNew,
     workstream: target.kind === "existing" ? target.workstream : undefined,
+    run: runFactsOf(proposal.summary.turn_count || (proposal.summary.user_turn_count ?? 0) + (proposal.summary.assistant_turn_count ?? 0), prompts),
     onProgress,
     beforeStats: isNew ? () => recordCreatedVia(buildId, { destination: "new", importId, client: row.client, readerId: null }) : undefined,
   });
@@ -269,12 +270,26 @@ interface WriteSessionInput {
   /** SV-21: the person whose work the tiles and the session are, when not the build's maker (SV-16's credit). */
   credit?: string | null;
   onProgress?: TileProgress;
+  /** SV-30 P6: what the import showed of the session: its turns and its compaction summaries. Written with the session's entry, as From the run. */
+  run?: { messages?: number; compactions?: number };
   /** Run inside the guard, once the session is in place: a failure takes the session out again. */
   beforeStats?: () => Promise<void>;
 }
 
+/** SV-30 P6: the import's turn count, and how many of its prompts are Claude Code's compaction summaries. Nothing is inferred beyond that. */
+export function runFactsOf(turns: number | null | undefined, prompts: readonly Pick<PromptTile, "text">[]): { messages?: number; compactions?: number } {
+  const compactions = prompts.filter((prompt) => isSessionSummary(prompt.text)).length;
+  return { ...(typeof turns === "number" && turns > 0 ? { messages: turns } : null), ...(compactions > 0 ? { compactions } : null) };
+}
+
+/** The keys a session's entry takes from the run, each marked From the run. */
+const runExtras = (run: { messages?: number; compactions?: number } | undefined) => {
+  const from = (["messages", "compactions"] as const).filter((key) => run?.[key] !== undefined);
+  return from.length > 0 ? { ...run, from_run: from } : null;
+};
+
 /** The writes of one session into a build, whoever it comes from; undone as a whole if any of them fails. */
-async function writeSession({ buildId, sessionKey: importId, model, prompts, isNew, workstream, credit = null, onProgress, beforeStats }: WriteSessionInput): Promise<AddSessionResult> {
+async function writeSession({ buildId, sessionKey: importId, model, prompts, isNew, workstream, credit = null, run, onProgress, beforeStats }: WriteSessionInput): Promise<AddSessionResult> {
   const written: string[] = [];
   let oldRow: BuildSessionRow | undefined;
   let oldMeta: ReturnType<typeof sessionsMetaOf>[string] | undefined;
@@ -316,7 +331,7 @@ async function writeSession({ buildId, sessionKey: importId, model, prompts, isN
     }
     // CA-12: an entry in sessions_meta marks a session added this way, so its head is drawn even when it is the only one.
     if (!sessionsMetaOf(making)[importId]) {
-      await setSessionMeta(buildId, importId, { tool: null, date: "", ...(part ? { workstream: part } : null), ...(credit ? { contributor_id: credit } : null) });
+      await setSessionMeta(buildId, importId, { tool: null, date: "", ...(part ? { workstream: part } : null), ...(credit ? { contributor_id: credit } : null), ...runExtras(run) });
       marked = true;
     }
     const collapsed = startsCollapsed(prompts.length);

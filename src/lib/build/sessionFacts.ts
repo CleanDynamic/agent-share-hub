@@ -54,6 +54,8 @@ export interface SessionExtras {
   /** SV-30 P6: how many turns the session had, and how many times it was compacted. */
   messages?: number;
   compactions?: number;
+  /** SV-30 P6: which of these figures were read from the run when the session was added; any other is the maker's figure. */
+  from_run?: RunKey[];
   /** SV-30 P7: what the session produced, as the maker gave it, and whether readers see it. */
   outputs?: OutputLink[];
   showOutputs?: boolean;
@@ -62,6 +64,9 @@ export interface SessionExtras {
   /** SV-30: the outputs (and the review) came with a copy of the original: they are the original's evidence, not this build's. */
   from_original?: boolean;
 }
+
+export const RUN_KEYS = ["messages", "compactions"] as const;
+export type RunKey = (typeof RUN_KEYS)[number];
 
 /** SV-30 P6: what the run itself showed, per session: the import's turn count, and the compaction summaries among its turns. Never stored. */
 export interface RunFacts {
@@ -74,6 +79,9 @@ export function figureOf(maker: number | undefined, run: number | undefined): { 
   if (maker !== undefined) return { value: maker, from: "maker" };
   return run !== undefined && run > 0 ? { value: run, from: "run" } : null;
 }
+
+/** Where a stored count came from: the run it was read from when the session was added, or the maker. */
+export const sourceOfCount = (extras: SessionExtras, key: RunKey): "run" | "maker" => (extras.from_run?.includes(key) ? "run" : "maker");
 
 export const countWords = {
   messages: (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "message" : "messages"}`,
@@ -90,7 +98,7 @@ export const MODEL_ID_MAX = 80;
 /** A session over this many words is "long". */
 export const LONG_SESSION_WORDS = 100_000;
 
-const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access", "messages", "compactions", "outputs", "showOutputs", "review", "from_original"] as const;
+const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access", "messages", "compactions", "from_run", "outputs", "showOutputs", "review", "from_original"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -136,6 +144,10 @@ export function extrasOf(entry: unknown): SessionExtras {
   if (messages !== undefined && messages > 0) out.messages = messages;
   const compactions = whole(entry.compactions, 10_000);
   if (compactions !== undefined && compactions > 0) out.compactions = compactions;
+  if (Array.isArray(entry.from_run)) {
+    const kept = RUN_KEYS.filter((key) => (entry.from_run as unknown[]).includes(key) && out[key] !== undefined);
+    if (kept.length > 0) out.from_run = kept;
+  }
   const outputs = outputsOf(entry.outputs);
   if (outputs.length > 0) out.outputs = outputs;
   if (entry.showOutputs === true) out.showOutputs = true;
