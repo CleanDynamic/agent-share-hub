@@ -63,6 +63,7 @@ import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
 import { FOUND_RING, FindHit, FindProvider, NO_FIND, type FindView } from "@/components/build/FindHit";
 import { useItemRing, useRovingList } from "./buildFocus";
 import { CodeLines } from "@/components/code/CodeLines";
+import { CodePartLine } from "./CodePartLine";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
 import { ColourButton } from "@/components/brand/ColourButton";
@@ -728,7 +729,10 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
       </span>
       {step.kind === "code" ? (
-        <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+        <>
+          <CodePartLine step={step} />
+          <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+        </>
       ) : step.text ? (
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       ) : null}
@@ -1798,6 +1802,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
       />
       <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
+        <CodePartLine step={step} style={{ paddingLeft: INDENT }} />
         <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
       </div>
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />

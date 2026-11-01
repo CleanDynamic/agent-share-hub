@@ -30,6 +30,7 @@ import {
   variablesOf,
 } from "@/lib/build/tileExtras";
 import { EVIDENCE_KINDS, EVIDENCE_KIND_LABEL, EVIDENCE_TEXT_MAX, MEASURE_METRIC_MAX, MEASURE_UNIT_MAX, measurementLine } from "@/lib/build/evidenceKinds";
+import { PART_OF, PART_OF_LABEL, RUNS_WHERE_MAX, partOfOf, runsWhereOf, type PartOf } from "@/lib/build/codePart";
 import { ASKS_FOR, ASKS_FOR_LABEL, EVENT_MAX, INTERVAL_MAX, SENT_BY_CHOICES, asksForOf, originLine, originOf } from "@/lib/build/promptOrigin";
 import { toolName } from "@/lib/tools/registry";
 
@@ -415,6 +416,18 @@ export function codeRows(payload: Raw): ExtraRow[] {
       fields: [{ key: "filename", label: CODE_DIALOG_COPY.filename, kind: "line", max: 200, placeholder: CODE_DIALOG_COPY.filenamePlaceholder, mono: true }],
       values: { filename },
       toPatch: (v) => ({ filename: v.filename ?? "" }),
+    },
+    /* SV-30 P9: what it belongs to, and where it runs. */
+    {
+      name: "What it belongs to",
+      description: "",
+      summary: summaryOf(partOfOf(payload) ? PART_OF_LABEL[partOfOf(payload) as PartOf] : null, runsWhereOf(payload)),
+      fields: [
+        { key: "part_of", label: "Part of", kind: "choice", items: PART_OF.map((value) => ({ value, label: PART_OF_LABEL[value] })) },
+        { key: "runs_where", label: "Where it runs", kind: "line", max: RUNS_WHERE_MAX, placeholder: "Terminal 2, in the harness folder" },
+      ],
+      values: { part_of: partOfOf(payload) ?? "", runs_where: runsWhereOf(payload) ?? "" },
+      toPatch: (v) => ({ part_of: v.part_of || null, runs_where: v.runs_where ?? "" }),
     },
     {
       name: CODE_DIALOG_COPY.writtenWith,

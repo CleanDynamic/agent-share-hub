@@ -82,6 +82,7 @@ import {
 import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 import { isSummaryPayload, SUMMARY_COPY } from "./summaryTurn";
+import { partOfOf, runsWhereOf, type PartOf } from "./codePart";
 import { asksForOf, originOf, type AsksFor, type PromptOrigin } from "./promptOrigin";
 
 export const AGENT_TYPE = "agent_config";
@@ -169,6 +170,9 @@ export interface Step {
   filename?: string | null;
   /** CA-02 P7, code only: "start reading here". */
   entrypoint?: boolean;
+  /** SV-30 P9, code only: what it belongs to, and where it runs. */
+  partOf?: PartOf;
+  runsWhere?: string;
   /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null when it names none. */
   harness?: string | null;
   /** SV-27: the agent is built in the maker's own code (no harness), as the maker said (`payload.built_in_code`). */
@@ -992,7 +996,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "team" && patternOf(payload.pattern) ? { pattern: patternOf(payload.pattern) as AgentPattern } : null),
     ...(kind === "team" || kind === "agent" ? teamFactsOf(kind, payload) : null),
     ...(kind === "manual" && gateOf(payload) ? { gate: gateOf(payload) as Gate } : null),
-    ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
+    ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true, ...(partOfOf(payload) ? { partOf: partOfOf(payload) as PartOf } : null), ...(runsWhereOf(payload) ? { runsWhere: runsWhereOf(payload) as string } : null) } : null),
     ...(kind === "check" ? { check: checkFacts(payload, cases) } : null),
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),

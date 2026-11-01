@@ -96,7 +96,10 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   });
 
   it("code: File path and Generated with; a result: Caption", () => {
-    expect(codeRows({ filename: "src/app.ts", tool: "claude-code", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["File path", "src/app.ts"], ["Generated with", "Claude Code · Opus 5.5"]]);
+    expect(codeRows({ filename: "src/app.ts", tool: "claude-code", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["File path", "src/app.ts"], ["What it belongs to", null], ["Generated with", "Claude Code · Opus 5.5"]]);
+    // SV-30 P9: what it belongs to, and where it runs.
+    expect(codeRows({ part_of: "eval_harness", runs_where: "Terminal 2" })[1].summary).toBe("Part of the eval harness · Terminal 2");
+    expect(codeRows({ part_of: "eval_harness" })[1].toPatch({ part_of: "", runs_where: "" })).toEqual({ part_of: null, runs_where: "" });
     expect(resultRows({ caption: "As printed" }).map((r) => [r.name, r.summary])).toEqual([["Caption", "As printed"]]);
   });
 

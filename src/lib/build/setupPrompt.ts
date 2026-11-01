@@ -21,6 +21,7 @@ import { buildSteps, type Step } from "./graph";
 import { FIELD_WORDS, harnessEntry, notCarriedLine, skillFolder, type HarnessEntry } from "./harnessMap";
 import { precisionWord } from "./modelRun";
 import { hasPipelineSetup, pipelineSections } from "./pipelineSetup";
+import { PART_INSTRUCTION } from "./codePart";
 import { originNote } from "./promptOrigin";
 import { pluginInstallLine, setupItemsOf, type SetupItem } from "./setup";
 import {
@@ -395,7 +396,10 @@ export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tre
   const node = all.find((entry) => entry.id === id);
   const into: Collect = { variables: new Map(), secrets: [], notCarried: [] };
   // SV-29 P8: a Retrieval, Decision or Check tile (or "pipeline") asks for the pipeline's own setup prompt: no agent is needed.
-  if (id === "pipeline" || (node && PIPELINE_TYPES.has(node.type))) return finish(pipelineSections(buildSteps(tree as NodeTree[]), { showCost: build.showCost }), into);
+  if (id === "pipeline" || (node && PIPELINE_TYPES.has(node.type))) {
+    const steps = buildSteps(tree as NodeTree[]);
+    return finish([...pipelineSections(steps, { showCost: build.showCost }), ...codePartSections(steps)], into);
+  }
   if (!node || (node.type !== "agent_config" && node.type !== "team")) return { text: "", variables: [], secrets: [], notCarried: [] };
   const team = node.type === "team";
   const members = team ? all.filter((entry) => entry.parent_id === node.id && entry.type === "agent_config").sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) : [];
@@ -497,10 +501,28 @@ export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tre
   // SV-29 P8: the pipeline and its eval harness, when the build has them, before Fill in.
   const pipeline = buildSteps(tree as NodeTree[]);
   if (hasPipelineSetup(pipeline)) sections.push(...pipelineSections(pipeline, { showCost: build.showCost }));
+  sections.push(...codePartSections(pipeline));
   return finish(sections, into);
 }
 
 const PIPELINE_TYPES = new Set(["decision", "retrieval_config", "eval_run"]);
+
+/** SV-30 P9: each code tile that says what it belongs to, introduced by that part: "Add this to the eval harness, not the app:". */
+function codePartSections(steps: readonly Step[]): string[] {
+  const out: string[] = [];
+  const visit = (list: readonly Step[]) => {
+    for (const step of list) {
+      if (step.kind === "code" && step.partOf && step.text.trim()) {
+        const where = step.runsWhere ? ` It runs in: ${step.runsWhere}.` : "";
+        out.push(`${PART_INSTRUCTION[step.partOf]}${step.filename ? ` (${step.filename})` : ""}:${where}\n\n${fence(step.text)}`);
+      }
+      visit(step.children ?? []);
+      visit(step.sentWith ?? []);
+    }
+  };
+  visit(steps);
+  return out;
+}
 
 function finish(sections: string[], into: Collect): SetupPrompt {
   const variables = [...into.variables.entries()].map(([name, description]) => ({ name, description }));

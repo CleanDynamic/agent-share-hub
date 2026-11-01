@@ -30,6 +30,7 @@ import {
 
 import { Button } from "@/components/brand/Button";
 import { CodeLines } from "@/components/code/CodeLines";
+import { CodePartLine } from "../compose/CodePartLine";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
@@ -603,7 +604,10 @@ function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <>
           <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{[TILE_KIND[step.kind] ?? step.kind, name].filter(Boolean).join(" · ")}</span>
           {step.kind === "code" ? (
-            <CodeLines text={step.text} compact testId="code-lines" label={`${name ?? "Code"} text`} />
+            <>
+              <CodePartLine step={step} />
+              <CodeLines text={step.text} compact testId="code-lines" label={`${name ?? "Code"} text`} />
+            </>
           ) : step.text ? (
             <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
           ) : null}
@@ -1001,7 +1005,12 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
       <TypeLine step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
-      {step.kind === "code" ? <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} /> : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
+      {step.kind === "code" ? (
+        <>
+          <CodePartLine step={step} style={{ paddingLeft: INDENT }} />
+          <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
+        </>
+      ) : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />

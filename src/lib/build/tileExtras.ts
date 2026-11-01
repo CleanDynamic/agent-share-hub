@@ -366,6 +366,9 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     filename: lineCleaner("The file path", 200),
     tool: lineCleaner("The tool", 80),
     model: lineCleaner("The model", 80),
+    /* SV-30 P9: what it belongs to, and where it runs. */
+    part_of: (value) => (value === "app" || value === "eval_harness" || value === "ci" || value === "setup" ? value : null),
+    runs_where: lineCleaner("Where it runs", 40),
   },
   result: {
     caption: lineCleaner("A caption", 140),
