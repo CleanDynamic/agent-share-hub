@@ -5,7 +5,7 @@
    fall, what an input chip says, and which steps go into a result. */
 
 import { modelRunLine } from "@/lib/build/modelRun";
-import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
+import { sessionDetailLines, sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
 import { groupKey, groupKind, shownGroups, stepTitle, type ResultFacts, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 
@@ -53,7 +53,7 @@ export function dividers(
   const out = new Map<string, SourceSession>();
   const shown = shownGroups(groups);
   // CA-04 P4, P6: a lone session keeps its head when it has something to say there: Setup {n}, Worked until, Runs when.
-  const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal || sessionFactsLine({ extras: group.extras, words: group.longWords }, "maker") || togetherLine(group.extras, () => 0));
+  const says = (group: SessionGroup) => Boolean(setupCounts[groupKey(group)] || runsWhen[groupKey(group)] || group.goal || sessionFactsLine({ extras: group.extras, words: group.longWords }, "maker") || sessionDetailLines({ extras: group.extras, run: group.run }, "maker").length > 0 || togetherLine(group.extras, () => 0));
   // CA-12 P3: a session made here (Session 1 of a new post) always has its head, with its app or "No app chosen".
   if (shown.length === 0 || (shown.length === 1 && !says(shown[0]) && groupKind(shown[0]) !== "typed" && !shown[0].marked)) return out;
   const sessions = new Map(sourceSessions(groups, steps, [], {}, setupCounts, runsWhen).map((session) => [session.key, session]));

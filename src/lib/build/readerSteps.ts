@@ -50,7 +50,7 @@ import { isSetupPayload, setupOfNode, setupOwnerKey, SETUP_KIND_LABEL, setupItem
 import { goalLine, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "./making";
 import { modelRunLine } from "./modelRun";
 import { runsWhenLine } from "./runsFrom";
-import { sessionFactsLine, togetherLine } from "./sessionFacts";
+import { sessionDetailLines, sessionFactsLine, togetherLine } from "./sessionFacts";
 import { outputRow } from "./sessionOutputs";
 import { settingLines } from "./startedWith";
 import { mediaUrl, type MediaRef } from "./media";
@@ -87,6 +87,8 @@ export type ReaderChat =
       runsWhen?: string;
       /** CA-05 P2: length, cost and nobody watching, as a reader gets them: the cost only when the maker ticked Show readers. */
       facts?: string;
+      /** SV-30: the labelled lines under an open head: Access, Produced, Length, Human review. */
+      lines?: string[];
       /** SV-30 P7: what it produced, as links, only when the maker ticked Show readers. */
       outputs?: { label: string; href: string | null }[];
       /** CA-05 P3: the command that opened the session, as pasted, and the settings it names in plain words. */
@@ -542,6 +544,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     tiles: group.stepNumbers.length,
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
     ...factsOfGroup(group),
+    ...(sessionDetailLines({ extras: group.extras, run: group.run }, "reader").length > 0 ? { lines: sessionDetailLines({ extras: group.extras, run: group.run }, "reader") } : null),
     ...(group.extras?.showOutputs && group.extras.outputs?.length ? { outputs: group.extras.outputs.map(outputRow) } : null),
     ...togetherOfGroup(group, context.groups),
     ...(group.extras?.startedWith ? { startedWith: { command: group.extras.startedWith, settings: settingLines(group.extras.startedWith) } } : null),

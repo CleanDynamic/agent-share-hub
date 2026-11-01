@@ -832,6 +832,11 @@ function SessionLines({ session }: { session: SourceSession }) {
       ) : null}
       {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
       {session.facts ? <DotLine testId="facts-line">{session.facts}</DotLine> : null}
+      {(session.lines ?? []).map((line) => (
+        <DotLine key={line} testId="session-detail-line">
+          {line}
+        </DotLine>
+      ))}
       {session.together ? <DotLine testId="together-line">{session.together}</DotLine> : null}
     </>
   );

@@ -752,10 +752,17 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
       ) : null}
       {chat.runsWhen && !fold?.folded ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
       {chat.facts && !fold?.folded ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
+      {!fold?.folded
+        ? (chat.lines ?? []).map((line) => (
+            <DotLine key={line} testId="session-detail-line">
+              {line}
+            </DotLine>
+          ))
+        : null}
       {chat.outputs && !fold?.folded ? (
         <div data-testid="outputs" style={{ marginLeft: SETUP_INDENT, display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ paddingTop: 2 }}>
-            <ReadAll label="Produced" onRead={() => setOutputsOpen((value) => !value)} expanded={outputsOpen} />
+            <ReadAll label="Show the links" onRead={() => setOutputsOpen((value) => !value)} expanded={outputsOpen} />
           </span>
           {outputsOpen ? (
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>

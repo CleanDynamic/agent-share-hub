@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { sessionsMetaOf } from "./making";
 import { methodOf } from "./forkRules";
 import { proposedAccess } from "./sessionAccess";
-import { copiedFacts, figureOf } from "./sessionFacts";
+import { copiedFacts, figureOf, sessionDetailLines } from "./sessionFacts";
 import { modelWithId, togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
 
 describe("the line", () => {
@@ -124,9 +124,8 @@ describe("SV-30 P4: environment, isolation and access", () => {
   const facts = { environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }, { system: "tests", scope: "write" }, { system: "prod_logs", scope: "read" }, { system: "deploy", scope: "write" }, { system: "feature_flags", scope: "write" }] };
   it("saves each key through the one path, and says them as facts", () => {
     expect(extrasOf({ ...facts })).toEqual(facts);
-    expect(sessionFactsLine({ extras: facts as never }, "reader")).toBe(
-      "Cloud sandbox · Isolation: git worktree · Could install packages · Access: code (write) · tests (write) · production logs (read) · deploy (write) · feature flags (write)",
-    );
+    expect(sessionFactsLine({ extras: facts as never }, "reader")).toBe("Cloud sandbox · Isolation: git worktree · Could install packages");
+    expect(sessionDetailLines({ extras: facts as never }, "reader")).toEqual(["Access: code (write) · tests (write) · production logs (read) · deploy (write) · feature flags (write)"]);
     expect(sessionsMetaOf({ sessions_meta: { "typed-1": { tool: null, date: "2026-10-20", ...facts } } })["typed-1"]).toMatchObject(facts);
   });
   it("reads nothing it does not know and keeps a system once", () => {
@@ -150,19 +149,20 @@ describe("SV-30: what a copy of a session keeps", () => {
     // What it produced is the original's evidence: kept, labelled, and not shown to readers until the copier ticks Show readers.
     const outputs = [{ kind: "pull_request", url: "https://github.com/acme/app/pull/9" }];
     expect(copiedFacts({ outputs, showOutputs: true, environment: "local" })).toEqual({ environment: "local", outputs, from_original: true });
-    expect(sessionFactsLine({ extras: { ...copiedFacts({ outputs }), showOutputs: true } as never }, "reader")).toBe("The original's: 1 pull request");
+    expect(sessionDetailLines({ extras: { ...copiedFacts({ outputs }), showOutputs: true } as never }, "reader")).toEqual(["Produced, the original's: 1 pull request"]);
   });
 });
 
 describe("SV-30 P6: how the session was driven", () => {
   it("saves messages and compactions, and says them beside the other figures", () => {
     expect(extrasOf({ messages: 3714, compactions: 2 })).toEqual({ messages: 3714, compactions: 2 });
-    expect(sessionFactsLine({ extras: { messages: 3714, compactions: 2, tokens: 52_000, showCost: true, background: true } }, "reader")).toBe("52,000 tokens · 3,714 messages · 2 compactions · Ran in the background");
-    expect(sessionFactsLine({ extras: { compactions: 1 } }, "maker")).toBe("1 compaction");
+    expect(sessionFactsLine({ extras: { messages: 3714, compactions: 2, tokens: 52_000, showCost: true, background: true } }, "reader")).toBe("52,000 tokens · Ran in the background");
+    expect(sessionDetailLines({ extras: { messages: 3714, compactions: 2 } }, "reader")).toEqual(["Length: 3,714 messages · 2 compactions"]);
+    expect(sessionDetailLines({ extras: { compactions: 1 } }, "maker")).toEqual(["Length: 1 compaction"]);
   });
   it("uses what the run showed when the maker gave no figure, and the maker's own figure over it", () => {
-    expect(sessionFactsLine({ run: { messages: 90, compactions: 2 } }, "reader")).toBe("90 messages · 2 compactions");
-    expect(sessionFactsLine({ extras: { messages: 12 }, run: { messages: 90 } }, "reader")).toBe("12 messages");
+    expect(sessionDetailLines({ run: { messages: 90, compactions: 2 } }, "reader")).toEqual(["Length: 90 messages · 2 compactions"]);
+    expect(sessionDetailLines({ extras: { messages: 12 }, run: { messages: 90 } }, "reader")).toEqual(["Length: 12 messages"]);
     expect(figureOf(undefined, 2)).toEqual({ value: 2, from: "run" });
     expect(figureOf(5, 2)).toEqual({ value: 5, from: "maker" });
     expect(figureOf(undefined, 0)).toBeNull();

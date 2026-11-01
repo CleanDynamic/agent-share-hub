@@ -250,7 +250,7 @@ export interface FactsInput {
 }
 
 /**
- * The one optional line under a session head: the parts that exist, joined with " · ", or null. A maker sees all of
+ * The one optional line under a session head: the parts that exist (SV-30: with the model ID, effort and where it ran; the rest are `sessionDetailLines`), joined with " · ", or null. A maker sees all of
  * it; a reader sees the cost, the tokens and the cached sentence only when the maker ticked Show readers.
  */
 export function sessionFactsLine({ extras = {}, words = 0, model = null, run = {} }: FactsInput, audience: "maker" | "reader"): string | null {
@@ -266,23 +266,30 @@ export function sessionFactsLine({ extras = {}, words = 0, model = null, run = {
     if (cost.length > 0) parts.push(cost.join(" and "));
     if (extras.cached) parts.push(FACTS_COPY.cached);
   }
-  const messages = figureOf(extras.messages, run.messages);
-  const compactions = figureOf(extras.compactions, run.compactions);
-  if (messages) parts.push(countWords.messages(messages.value));
-  if (compactions) parts.push(countWords.compactions(compactions.value));
-  // SV-30 P7: the count of what it produced; readers get it only when the maker ticked Show readers.
-  const produced = audience === "maker" || extras.showOutputs === true ? outputsCountLine(extras.outputs ?? []) : null;
-  if (produced) parts.push(extras.from_original ? `The original's: ${produced}` : produced);
-  // SV-30 P8: how much a human reviewed. It is a fact the maker states about their own work, so readers see it.
-  if (extras.review) parts.push(extras.from_original ? `The original's: ${reviewLine(extras.review)}` : reviewLine(extras.review));
   if (extras.model_id) parts.push(modelWithId(model, extras.model_id) as string);
   if (extras.effort) parts.push(FACTS_COPY.effort(extras.effort));
   const environment = environmentLine(extras);
   if (environment) parts.push(environment);
-  const access = accessLine(extras.access);
-  if (access) parts.push(access);
   if (extras.background) parts.push(FACTS_COPY.background);
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/** SV-30: the labelled lines under an open session's head, one fact each: Access, Produced, Length and Human review. Each only when it has something to say. */
+export function sessionDetailLines({ extras = {}, run = {} }: Pick<FactsInput, "extras" | "run">, audience: "maker" | "reader"): string[] {
+  const original = extras.from_original === true;
+  const lines: string[] = [];
+  const access = accessLine(extras.access);
+  if (access) lines.push(access);
+  // What it produced: readers get it only when the maker ticked Show readers.
+  const produced = audience === "maker" || extras.showOutputs === true ? outputsCountLine(extras.outputs ?? []) : null;
+  if (produced) lines.push(original ? `Produced, the original's: ${produced}` : `Produced: ${produced}`);
+  const messages = figureOf(extras.messages, run.messages);
+  const compactions = figureOf(extras.compactions, run.compactions);
+  const length = [messages ? countWords.messages(messages.value) : null, compactions ? countWords.compactions(compactions.value) : null].filter((part): part is string => part !== null);
+  if (length.length > 0) lines.push(`Length: ${length.join(" · ")}`);
+  // How much a human reviewed is a fact the maker states about their own work, so readers see it.
+  if (extras.review) lines.push(original ? `The original's ${reviewLine(extras.review).replace(/^Human review/, "human review")}` : reviewLine(extras.review));
+  return lines;
 }
 
 /* ── a Claude Code result file ── */

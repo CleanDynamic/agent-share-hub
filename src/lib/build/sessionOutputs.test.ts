@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { extrasOf, extrasRefusal, sessionFactsLine } from "./sessionFacts";
+import { extrasOf, extrasRefusal, sessionDetailLines, sessionFactsLine } from "./sessionFacts";
 import { outputRow, outputsCountLine, outputsOf, outputsRefusal } from "./sessionOutputs";
 
 const commit = (sha: string) => ({ kind: "commit" as const, repo: "https://github.com/acme/app", sha });
@@ -29,9 +29,10 @@ describe("SV-30 P7: output links", () => {
   });
   it("shows readers the count only when Show readers is ticked, and the maker always", () => {
     const outputs = [commit("abc1234"), { kind: "pull_request" as const, url: "https://github.com/acme/app/pull/9" }];
-    expect(sessionFactsLine({ extras: { outputs } }, "maker")).toBe("1 commit · 1 pull request");
-    expect(sessionFactsLine({ extras: { outputs } }, "reader")).toBeNull();
-    expect(sessionFactsLine({ extras: { outputs, showOutputs: true } }, "reader")).toBe("1 commit · 1 pull request");
+    expect(sessionDetailLines({ extras: { outputs } }, "maker")).toEqual(["Produced: 1 commit · 1 pull request"]);
+    expect(sessionDetailLines({ extras: { outputs } }, "reader")).toEqual([]);
+    expect(sessionDetailLines({ extras: { outputs, showOutputs: true } }, "reader")).toEqual(["Produced: 1 commit · 1 pull request"]);
+    expect(sessionFactsLine({ extras: { outputs, showOutputs: true } }, "reader")).toBeNull();
     expect(extrasOf({ outputs, showOutputs: true })).toEqual({ outputs, showOutputs: true });
   });
   it("points a commit at its repository's commit page and a link at itself", () => {

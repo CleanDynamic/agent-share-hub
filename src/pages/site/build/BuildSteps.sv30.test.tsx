@@ -30,23 +30,21 @@ function page() {
 }
 
 describe("SV-30: the SDLC session on the build page", () => {
-  it("says what the session was, as facts", () => {
+  it("says the head in one line, and the rest as labelled lines of their own", () => {
     page();
-    const facts = screen.getByTestId("facts-line").textContent ?? "";
-    expect(facts).toContain("3,714 messages · 2 compactions");
-    expect(facts).toContain("3 commits · 1 pull request");
-    expect(facts).toContain("Claude Opus 4.5 (claude-opus-4-5-20251101)");
-    expect(facts).toContain("Reasoning effort: high");
-    expect(facts).toContain("Cloud sandbox");
-    expect(facts).toContain("Access: code (write) · tests (write) · run the app (write) · production logs (read) · deploy (write) · feature flags (write) · issues (write)");
-    expect(facts).toContain("Human review: high-blast-radius files only (vm/boot.ts, db/migrations/0042_boot_cache.sql)");
-    expect(facts).toContain("Ran in the background");
+    expect(screen.getByTestId("facts-line").textContent).toBe("Claude Opus 4.5 (claude-opus-4-5-20251101) · Reasoning effort: high · Cloud sandbox · Isolation: git worktree · Could install packages · Ran in the background");
+    expect(screen.getAllByTestId("session-detail-line").map((node) => node.textContent)).toEqual([
+      "Access: code (write) · tests (write) · run the app (write) · production logs (read) · deploy (write) · feature flags (write) · issues (write)",
+      "Produced: 3 commits · 1 pull request",
+      "Length: 3,714 messages · 2 compactions",
+      "Human review: high-blast-radius files only (vm/boot.ts, db/migrations/0042_boot_cache.sql)",
+    ]);
     expect(screen.getByTestId("goal-line").textContent).toContain("Worked until VM speed 2x · baseline 1x · reached 2.1x");
   });
   it("lists the output links, opening from the head, only because Show readers is ticked", () => {
     page();
     const outputs = screen.getByTestId("outputs");
-    fireEvent.click(within(outputs).getByRole("button", { name: /Produced/ }));
+    fireEvent.click(within(outputs).getByRole("button", { name: /Show the links/ }));
     expect(within(outputs).getAllByRole("link")).toHaveLength(4);
     expect(within(outputs).getAllByRole("link")[0].getAttribute("href")).toBe("https://github.com/acme/vm/commit/a1b2c3d");
   });
@@ -55,7 +53,7 @@ describe("SV-30: the SDLC session on the build page", () => {
     const making = { ...sessionsSdlcMaking, sessions_meta: { [Object.keys(sessionsSdlcMaking.sessions_meta)[0]]: meta } } as unknown as Making;
     const chat = readerSteps(sessionsSdlcTree, making, new Map())[0].chat;
     expect(chat && chat.kind === "new" ? chat.outputs : "missing").toBeUndefined();
-    expect(chat && chat.kind === "new" ? chat.facts : "").not.toContain("commits");
+    expect(chat && chat.kind === "new" ? (chat.lines ?? []).join(" ") : "").not.toContain("commits");
   });
   it("shows each prompt's origin before its text, and what it asks for", () => {
     page();

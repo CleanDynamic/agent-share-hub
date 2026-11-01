@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { rowEvidenceOf, rowsOf, rowsPayload, rowsRefusal } from "./comparison";
 import { evidenceText, measurementLine } from "./evidenceKinds";
 import { methodOf } from "./forkRules";
-import { copiedFacts, extrasOf, extrasRefusal, sessionFactsLine } from "./sessionFacts";
+import { copiedFacts, extrasOf, extrasRefusal, sessionDetailLines } from "./sessionFacts";
 import { reviewLine, reviewOf, reviewRefusal } from "./sessionReview";
 import { checkExtrasOf, cleanExtras } from "./tileExtras";
 
@@ -70,11 +70,11 @@ describe("SV-30 P8: review scope", () => {
     expect(reviewLine({ scope: "none" })).toBe("Human review: none");
     expect(reviewLine({ scope: "all" })).toBe("Human review: all changes");
     expect(reviewLine({ scope: "high_blast_radius", files: ["db/migrate.sql", "src/core.ts"] })).toBe("Human review: high-blast-radius files only (db/migrate.sql, src/core.ts)");
-    expect(sessionFactsLine({ extras: { review: { scope: "none" } } }, "reader")).toBe("Human review: none");
+    expect(sessionDetailLines({ extras: { review: { scope: "none" } } }, "reader")).toEqual(["Human review: none"]);
   });
   it("is the original's evidence on a copy, labelled", () => {
     const copy = copiedFacts({ review: { scope: "all" }, effort: "high" });
     expect(copy).toEqual({ effort: "high", review: { scope: "all" }, from_original: true });
-    expect(sessionFactsLine({ extras: copy }, "reader")).toContain("The original's: Human review: all changes");
+    expect(sessionDetailLines({ extras: copy }, "reader")).toEqual(["The original's human review: all changes"]);
   });
 });
