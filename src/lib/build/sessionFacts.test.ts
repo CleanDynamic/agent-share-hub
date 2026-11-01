@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { sessionsMetaOf } from "./making";
 import { methodOf } from "./forkRules";
 import { proposedAccess } from "./sessionAccess";
-import { copiedFacts } from "./sessionFacts";
+import { copiedFacts, figureOf } from "./sessionFacts";
 import { modelWithId, togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
 
 describe("the line", () => {
@@ -147,5 +147,24 @@ describe("SV-30: what a copy of a session keeps", () => {
     const run = { model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }], cost: 3.4, currency: "GBP", tokens: 5000, background: true, ms: 60000 };
     expect(copiedFacts(run)).toEqual({ model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }] });
     expect(copiedFacts(undefined)).toEqual({});
+  });
+});
+
+describe("SV-30 P6: how the session was driven", () => {
+  it("saves messages and compactions, and says them beside the other figures", () => {
+    expect(extrasOf({ messages: 3714, compactions: 2 })).toEqual({ messages: 3714, compactions: 2 });
+    expect(sessionFactsLine({ extras: { messages: 3714, compactions: 2, tokens: 52_000, showCost: true, background: true } }, "reader")).toBe("52,000 tokens · 3,714 messages · 2 compactions · Ran in the background");
+    expect(sessionFactsLine({ extras: { compactions: 1 } }, "maker")).toBe("1 compaction");
+  });
+  it("uses what the run showed when the maker gave no figure, and the maker's own figure over it", () => {
+    expect(sessionFactsLine({ run: { messages: 90, compactions: 2 } }, "reader")).toBe("90 messages · 2 compactions");
+    expect(sessionFactsLine({ extras: { messages: 12 }, run: { messages: 90 } }, "reader")).toBe("12 messages");
+    expect(figureOf(undefined, 2)).toEqual({ value: 2, from: "run" });
+    expect(figureOf(5, 2)).toEqual({ value: 5, from: "maker" });
+    expect(figureOf(undefined, 0)).toBeNull();
+  });
+  it("refuses a count that is not a whole number", () => {
+    expect(extrasRefusal({ messages: 1.5 })).toBe("Messages is a whole number.");
+    expect(extrasRefusal({ compactions: -1 })).toBe("Compactions is a whole number.");
   });
 });

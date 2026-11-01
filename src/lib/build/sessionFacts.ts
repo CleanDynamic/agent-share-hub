@@ -49,7 +49,27 @@ export interface SessionExtras {
   isolation?: Isolation;
   can_install?: boolean;
   access?: AccessEntry[];
+  /** SV-30 P6: how many turns the session had, and how many times it was compacted. */
+  messages?: number;
+  compactions?: number;
 }
+
+/** SV-30 P6: what the run itself showed, per session: the import's turn count, and the compaction summaries among its turns. Never stored. */
+export interface RunFacts {
+  messages?: number;
+  compactions?: number;
+}
+
+/** The count to show and whether it was read from the run: the maker's own figure wins, then the run's. */
+export function figureOf(maker: number | undefined, run: number | undefined): { value: number; from: "maker" | "run" } | null {
+  if (maker !== undefined) return { value: maker, from: "maker" };
+  return run !== undefined && run > 0 ? { value: run, from: "run" } : null;
+}
+
+export const countWords = {
+  messages: (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "message" : "messages"}`,
+  compactions: (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "compaction" : "compactions"}`,
+};
 
 export const COST_MAX = 100_000;
 export const TOKENS_MAX = 1_000_000_000_000;
@@ -61,7 +81,7 @@ export const MODEL_ID_MAX = 80;
 /** A session over this many words is "long". */
 export const LONG_SESSION_WORDS = 100_000;
 
-const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access"] as const;
+const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access", "messages", "compactions"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -103,6 +123,10 @@ export function extrasOf(entry: unknown): SessionExtras {
   if (typeof entry.can_install === "boolean") out.can_install = entry.can_install;
   const access = accessOf(entry.access);
   if (access.length > 0) out.access = access;
+  const messages = whole(entry.messages, TOKENS_MAX);
+  if (messages !== undefined && messages > 0) out.messages = messages;
+  const compactions = whole(entry.compactions, 10_000);
+  if (compactions !== undefined && compactions > 0) out.compactions = compactions;
   return out;
 }
 
@@ -147,6 +171,8 @@ export function extrasRefusal(extras: SessionExtras): string | null {
   if (extras.environment !== undefined && !ENVIRONMENTS.includes(extras.environment)) return "Where it ran is the maker's machine, a remote environment or a cloud sandbox.";
   if (extras.isolation !== undefined && !ISOLATIONS.includes(extras.isolation)) return "Isolation is a worktree, a container, a virtual machine or none.";
   if (extras.access && (extras.access.length > ACCESS_SYSTEMS.length || accessOf(extras.access).length !== extras.access.length)) return "Access is a system and read or write, once each.";
+  if (extras.messages !== undefined && !(Number.isInteger(extras.messages) && extras.messages >= 0)) return "Messages is a whole number.";
+  if (extras.compactions !== undefined && !(Number.isInteger(extras.compactions) && extras.compactions >= 0 && extras.compactions <= 10_000)) return "Compactions is a whole number.";
   if (extras.parallelWith && extras.parallelWith.length > PARALLEL_MAX) return `At most ${PARALLEL_MAX} sessions ran at the same time.`;
   return null;
 }
@@ -180,13 +206,15 @@ export interface FactsInput {
   words?: number;
   /** SV-30 P1: the session's display model name, so a model ID is said beside it. */
   model?: string | null;
+  /** SV-30 P6: what the import showed (its turns, its compaction summaries), used where the maker gave no figure. */
+  run?: RunFacts;
 }
 
 /**
  * The one optional line under a session head: the parts that exist, joined with " · ", or null. A maker sees all of
  * it; a reader sees the cost, the tokens and the cached sentence only when the maker ticked Show readers.
  */
-export function sessionFactsLine({ extras = {}, words = 0, model = null }: FactsInput, audience: "maker" | "reader"): string | null {
+export function sessionFactsLine({ extras = {}, words = 0, model = null, run = {} }: FactsInput, audience: "maker" | "reader"): string | null {
   const total = Math.max(words, extras.words ?? 0);
   const costShown = audience === "maker" || extras.showCost === true;
   const parts: string[] = [];
@@ -199,6 +227,10 @@ export function sessionFactsLine({ extras = {}, words = 0, model = null }: Facts
     if (cost.length > 0) parts.push(cost.join(" and "));
     if (extras.cached) parts.push(FACTS_COPY.cached);
   }
+  const messages = figureOf(extras.messages, run.messages);
+  const compactions = figureOf(extras.compactions, run.compactions);
+  if (messages) parts.push(countWords.messages(messages.value));
+  if (compactions) parts.push(countWords.compactions(compactions.value));
   if (extras.model_id) parts.push(modelWithId(model, extras.model_id) as string);
   if (extras.effort) parts.push(FACTS_COPY.effort(extras.effort));
   const environment = environmentLine(extras);

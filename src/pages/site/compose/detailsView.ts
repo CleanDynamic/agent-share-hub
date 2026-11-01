@@ -304,6 +304,7 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     ...(group?.goal ? { goal: group.goal } : null),
     // CA-05: cost, background and the rest.
     ...(group?.extras ? { extras: group.extras } : null),
+    ...(group?.run ? { run: group.run } : null),
     // CA-05 P5: the other sessions it could have run beside; an old build's run of typed prompts has no stable key to name.
     ...(shownGroups(ctx.groups).filter((other) => groupKey(other) !== source.key && groupKind(other) !== "legacy").length > 0
       ? { others: shownGroups(ctx.groups).filter((other) => groupKey(other) !== source.key && groupKind(other) !== "legacy").map((other) => ({ key: groupKey(other), label: `Session ${other.number}${other.tool ? ` · ${other.tool}` : ""}` })) }

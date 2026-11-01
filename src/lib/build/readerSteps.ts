@@ -546,7 +546,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
 
 /** CA-05 P2: the line under a session's head, as a reader gets it. */
 function factsOfGroup(group: SessionGroup): { facts?: string } {
-  const facts = sessionFactsLine({ extras: group.extras, words: group.longWords, model: group.model }, "reader");
+  const facts = sessionFactsLine({ extras: group.extras, words: group.longWords, model: group.model, run: group.run }, "reader");
   return facts ? { facts } : {};
 }
 

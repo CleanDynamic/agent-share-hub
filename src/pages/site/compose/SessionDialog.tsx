@@ -34,11 +34,13 @@ import { BODY_TEXT, Block, BlockHead, FieldArea, FieldInput, Hint, Inline, Label
 import { OptionalField, OptionalSection } from "./OptionalSection";
 import {
   AccessControl,
+  CompactionsControl,
   CostControl,
   EXTRAS_COPY,
   EnvironmentControl,
   EffortControl,
   ModelIdControl,
+  MessagesControl,
   MethodControl,
   OwnCopyControl,
   StartedWithControl,
@@ -47,9 +49,11 @@ import {
   TokensControl,
   TraceControl,
   accessHeld,
+  compactionsHeld,
   costHeld,
   effortHeld,
   environmentHeld,
+  messagesHeld,
   methodHeld,
   modelIdHeld,
   timeHeld,
@@ -387,6 +391,12 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.trace} description={EXTRAS_COPY.traceHint} summary={extras.traceUrl ?? null} phone={phone}>
               <TraceControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Messages" summary={messagesHeld(extras, view.run)} phone={phone}>
+              <MessagesControl id={key} extras={extras} run={view.run} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Compactions" summary={compactionsHeld(extras, view.run)} phone={phone}>
+              <CompactionsControl id={key} extras={extras} run={view.run} phone={phone} onChange={saveExtras} />
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.how} summary={methodHeld(extras)} phone={phone}>
               <MethodControl id={key} extras={extras} phone={phone} onChange={saveExtras} />

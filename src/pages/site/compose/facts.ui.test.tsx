@@ -90,7 +90,7 @@ describe("Session window › What it cost, Show readers and How did you work?", 
     const onSessionExtras = mount(session());
     openOptional();
     expect((screen.getByRole("radio", { name: "Supervised" }) as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "Background" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Ran in the background" }));
     save();
     expect(onSessionExtras).toHaveBeenCalledWith("typed-a", { background: true });
   });

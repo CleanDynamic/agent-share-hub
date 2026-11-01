@@ -78,7 +78,7 @@ import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnec
 import type { Gate } from "@/lib/build/teamFields";
 import type { AgentSetupValue } from "./AgentSetupFields";
 import type { OtherSession } from "./SessionExtrasFields";
-import type { SessionExtras } from "@/lib/build/sessionFacts";
+import type { RunFacts, SessionExtras } from "@/lib/build/sessionFacts";
 import type { SessionGoal } from "@/lib/build/making";
 import type { SetupLoaded, SetupPlugin } from "@/lib/build/setup";
 import { Swap } from "./buildMotion";
@@ -163,6 +163,8 @@ export interface SessionView {
   goal?: SessionGoal | null;
   /** CA-05: what the session carries beyond its steps (cost, background, ...). Absent in older fixtures. */
   extras?: SessionExtras;
+  /** SV-30 P6: what the import showed of the session: its turns and compaction summaries. */
+  run?: RunFacts;
   /** CA-05 P5: the build's other sessions, for Ran at the same time as. Absent or empty: the menu is not shown. */
   others?: readonly OtherSession[];
 }

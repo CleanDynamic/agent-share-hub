@@ -32,7 +32,7 @@ describe("SV-07 P7 · Claude Code's summary", () => {
   it("becomes a Summary tile: called what it is, with its word count, and counted as no prompt", () => {
     const steps = buildSteps(tree);
     expect(steps[0]).toMatchObject({ kind: "prompt", summary: true, defaultTitle: SUMMARY_COPY.title });
-    expect(typeLineOf(steps[0])).toBe(`Summary · ${steps[0].words} words`);
+    expect(typeLineOf(steps[0])).toBe(`Compaction summary · ${steps[0].words} words`);
     expect(steps[1].summary).toBeUndefined();
     const groups = sessionGroups(steps, [], {}, { [IMPORT]: { tool: null, date: "" } }, [IMPORT]);
     const [row] = sourceSessions(groups, steps, [{ id: IMPORT, client: "claude-code", model: null, targetBuildId: null, modelName: null, firstPrompt: "Make the menu", promptCount: 3, turnCount: 6, createdAt: "2026-10-10T10:00:00Z", buildId: "b" }]);
@@ -41,7 +41,7 @@ describe("SV-07 P7 · Claude Code's summary", () => {
     expect(row.imported).toBeUndefined();
   });
 
-  it("is drawn on the List as Summary of an earlier chat, never as a prompt's place", () => {
+  it("is drawn on the List as Compaction summary, never as a prompt's place", () => {
     const steps = buildSteps(tree);
     render(
       <MemoryRouter>
@@ -49,8 +49,8 @@ describe("SV-07 P7 · Claude Code's summary", () => {
       </MemoryRouter>,
     );
     const card = screen.getAllByTestId("step-card").find((element) => element.getAttribute("data-kind") === "summary") as HTMLElement;
-    expect(card.getAttribute("aria-label")).toMatch(/^Summary of an earlier chat/);
-    expect(within(card).getByTestId("prompt-eyebrow").textContent).toMatch(/^Summary · \d+ words$/);
+    expect(card.getAttribute("aria-label")).toMatch(/^Compaction summary/);
+    expect(within(card).getByTestId("prompt-eyebrow").textContent).toMatch(/^Compaction summary · \d+ words$/);
   });
 
   it("Convert makes it a prompt, keeping everything it holds", () => {
@@ -116,5 +116,12 @@ describe("SV-07 P7 · the same chat imported twice, on the page", () => {
     fireEvent.click(twin);
     await settled(2);
     await waitFor(() => expect(screen.getAllByTestId("also-in").map((line) => line.textContent)).toEqual([REPEAT_COPY.alsoIn(1)]), { timeout: 15_000 });
+  });
+});
+
+describe("SV-30 P6: the relabel", () => {
+  it("is called a Compaction summary, and its stored kind is unchanged", () => {
+    expect(SUMMARY_COPY.title).toBe("Compaction summary");
+    expect(isSummaryPayload({ text: "This session is being continued from a previous conversation that ran out of context" })).toBe(true);
   });
 });

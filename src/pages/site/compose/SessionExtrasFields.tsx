@@ -16,7 +16,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { COST_MAX, costField, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
+import { COST_MAX, costField, countWords, figureOf, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type RunFacts, type SessionExtras } from "@/lib/build/sessionFacts";
 import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
 import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
@@ -41,7 +41,7 @@ export const EXTRAS_COPY = {
   showReadersLine: "Off: cost hidden from readers",
   how: "Method",
   watching: "Supervised",
-  background: "Background",
+  background: "Ran in the background",
   time: "How long it ran",
   timeHint: "Minutes",
   tokens: "Tokens used",
@@ -567,3 +567,40 @@ export function AccessControl({ id, extras, proposed = [], phone, onChange }: { 
   );
 }
 const ACCESS_SCOPES_UI: readonly AccessScope[] = ["read", "write"];
+
+/* ── SV-30 P6: how the session was driven ── */
+
+/** How many turns, and how many compactions; a figure read from the run is said so, the maker's own is the maker's. */
+export const messagesHeld = (extras: SessionExtras, run?: RunFacts): string | null => {
+  const figure = figureOf(extras.messages, run?.messages);
+  return figure ? countWords.messages(figure.value) : null;
+};
+export const compactionsHeld = (extras: SessionExtras, run?: RunFacts): string | null => {
+  const figure = figureOf(extras.compactions, run?.compactions);
+  return figure ? countWords.compactions(figure.value) : null;
+};
+function CountControl({ id, field, label, extras, run, phone, onChange }: { id: string; field: "messages" | "compactions"; label: string; extras: SessionExtras; run?: RunFacts; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const figure = figureOf(extras[field], run?.[field]);
+  return (
+    <>
+      <div style={{ width: 120 }}>
+        <ExtrasInput
+          key={`${id}:${field}:${extras[field] ?? ""}`}
+          label={label}
+          value={figure ? String(figure.value) : ""}
+          placeholder={field === "messages" ? "3714" : "2"}
+          max={9}
+          phone={phone}
+          inputMode="numeric"
+          onCommit={(value) => {
+            const n = Number(value.trim().replace(/,/g, ""));
+            onChange({ ...extras, [field]: value.trim() && Number.isInteger(n) && n > 0 ? n : undefined });
+          }}
+        />
+      </div>
+      {figure ? <span style={text(12, 400, t.label)}>{figure.from === "run" ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
+    </>
+  );
+}
+export const MessagesControl = (props: Omit<Parameters<typeof CountControl>[0], "field" | "label">) => <CountControl {...props} field="messages" label="Messages" />;
+export const CompactionsControl = (props: Omit<Parameters<typeof CountControl>[0], "field" | "label">) => <CountControl {...props} field="compactions" label="Compactions" />;

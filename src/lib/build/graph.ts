@@ -50,7 +50,7 @@ import { modelLabel } from "@/lib/models/registry";
 import { HEX_HINT, normaliseHex } from "@/lib/theme/partColour";
 import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
-import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
+import { extrasOf, LONG_SESSION_WORDS, type RunFacts, type SessionExtras } from "./sessionFacts";
 import { numberSessions } from "./sessionNumbers";
 import { failureTypesOf } from "./evalHarness";
 import { runsOfCasesLine, evalHarnessOf, evalHarnessPatchRefusal, exampleCaseOf, runExtrasOf, runExtrasRefusal, stabilityCounts, STABILITIES, FLAKY_CAUSES, type EvalHarness, type FlakyCause, type RunExtras, type Stability, type StabilityCounts } from "./evalHarness";
@@ -399,6 +399,8 @@ export interface SessionGroup {
   title?: string;
   /** SV-21: the maker opened the session as a request (`sessions_meta[key].open`). Absent when they did not. */
   open?: { problem: string };
+  /** SV-30 P6: what the import showed of it: its turns, and the compaction summaries among them. Never stored. */
+  run?: RunFacts;
   /**
    * CA-12: the session has an entry in `sessions_meta`. A session added the CA-12 way is given one, so its head is always
    * drawn; an old build's lone imported session has none and is drawn as it was, without a head.
@@ -1375,6 +1377,10 @@ export function sessionGroups(
     if (meta[key]?.title) group.title = meta[key].title;
     if (meta[key]?.open) group.open = meta[key].open;
     if (meta[key]) group.marked = true;
+    // SV-30 P6: the import's turn count, and the compaction summaries among the session's own tiles.
+    const turns = known.get(key)?.turns ?? 0;
+    const summaries = group.stepNumbers.filter((number) => stepsByNumber.get(number)?.summary).length;
+    if (turns > 0 || summaries > 0) group.run = { ...(turns > 0 ? { messages: turns } : null), ...(summaries > 0 ? { compactions: summaries } : null) };
     const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
     if (words > LONG_SESSION_WORDS) group.longWords = words;
   }
